@@ -1669,7 +1669,7 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
    } else {
       if (event == sgeE_ALL_EVENTS) {
          int i;
-         for(i = (int)sgeE_ALL_EVENTS; i < (int)sgeE_EVENTSIZE; i++) {
+         for(i = (int)sgeE_ALL_EVENTS + 1; i < (int)sgeE_EVENTSIZE; i++) {
             ec2_add_subscriptionElement(thiz, (ev_event)i, EV_NOT_FLUSHED, -1);
          }
       } else {
@@ -1733,7 +1733,7 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
    } else {
       if (const lList *subscribed = lGetList(sge_evc->ec, EV_subscribed)) {
          if (event == sgeE_ALL_EVENTS) {
-            for (int e = sgeE_ALL_EVENTS; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
+            for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
                if (lListElem *sub_el = lGetElemUlongRW(subscribed, EVS_id, e)) {
                   lSetBool(sub_el, EVS_flush, flush);
                   lSetUlong(sub_el, EVS_interval, intervall);
@@ -1916,7 +1916,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
    } else {
       if (event == sgeE_ALL_EVENTS) {
          int i;
-         for (i = (int)sgeE_ALL_EVENTS; i < (int)sgeE_EVENTSIZE; i++) {
+         for (i = (int)sgeE_ALL_EVENTS + 1; i < (int)sgeE_EVENTSIZE; i++) {
             ec2_remove_subscriptionElement(thiz, (ev_event)i);
          }
          ec2_add_subscriptionElement(thiz, sgeE_QMASTER_GOES_DOWN, EV_FLUSHED, 0);
@@ -2083,15 +2083,30 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
 /*      } else if (interval < 0 || interval > EV_MAX_FLUSH) {
          WARNING(MSG_EVENT_ILLEGALFLUSHTIME_I, interval); */
       } else {
-         const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+         if (event == sgeE_ALL_EVENTS) {
+            for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
+               const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, e);
 
-         if (sub_event == nullptr) {
-            ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+               if (sub_event == nullptr) {
+                  ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+               } else {
+                  ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
+               }
+               if (lGetBool(sge_evc->ec, EV_changed)) {
+                  ret = true;
+               }
+            }
          } else {
-            ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
-         }
-         if (lGetBool(sge_evc->ec, EV_changed)) {
-            ret = true;
+            const lListElem *sub_event = lGetElemUlong(lGetList(sge_evc->ec, EV_subscribed), EVS_id, event);
+
+            if (sub_event == nullptr) {
+               ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
+            } else {
+               ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
+            }
+            if (lGetBool(sge_evc->ec, EV_changed)) {
+               ret = true;
+            }
          }
       }
    }
