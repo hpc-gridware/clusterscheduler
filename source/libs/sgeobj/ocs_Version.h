@@ -28,12 +28,6 @@
 
 namespace ocs {
    class Version {
-      static const uint32_t OCS_VERSION;
-      static const std::string OCS_VERSION_STRING;
-      static const std::string OCS_LONG_PRODUCT_NAME;
-      static const std::string OCS_SHORT_PRODUCT_NAME;
-
-      static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR;
    public:
       static uint32_t get_version();
       static std::string get_version_string();

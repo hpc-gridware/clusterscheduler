@@ -41,11 +41,11 @@
 #define OCS_VERSION_PATCH 3
 #define OCS_VERSION_SUFFIX ""
 
-const std::string ocs::Version::OCS_VERSION_STRING = std::to_string(OCS_VERSION_MAJOR) + "."
-         + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX;
-const uint32_t ocs::Version::OCS_VERSION = 0x10009000;
+static const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
+         + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
+static const uint32_t OCS_VERSION{0x10009000};
 
-const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSIONS_VECTOR = {
+static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR{
    { 0x10000000, "5.0"},
    { 0x10000001, "5.1"},
    { 0x10000002, "5.2"},
@@ -73,15 +73,15 @@ const std::vector<std::tuple<uint32_t, std::string>> ocs::Version::OCS_ALL_VERSI
    { 0x100020F8, "6.2u5"},
    { 0x10003000, "8.0.x Univa"},
    { 0x10003001, "8.0.x Some Gridengine"},
-   { OCS_VERSION, get_version_string().c_str()},
+   { OCS_VERSION, OCS_VERSION_STRING},
 };
 
 #ifdef ADD_GRIDWARE_COPYRIGHT
-const std::string ocs::Version::OCS_LONG_PRODUCT_NAME = "Gridware Cluster Scheduler";
-const std::string ocs::Version::OCS_SHORT_PRODUCT_NAME = "GCS";
+static const std::string OCS_LONG_PRODUCT_NAME{"Gridware Cluster Scheduler"};
+static const std::string OCS_SHORT_PRODUCT_NAME{"GCS"};
 #else
-const std::string ocs::Version::OCS_LONG_PRODUCT_NAME = "Open Cluster Scheduler";
-const std::string ocs::Version::OCS_SHORT_PRODUCT_NAME = "OCS";
+static const std::string OCS_LONG_PRODUCT_NAME{"Open Cluster Scheduler"};
+static const std::string OCS_SHORT_PRODUCT_NAME{"OCS"};
 #endif
 
 std::string
@@ -94,11 +94,13 @@ ocs::Version::get_version() {
    return OCS_VERSION;
 }
 
-std::string ocs::Version::get_short_product_name(){
+std::string
+ocs::Version::get_short_product_name() {
    return OCS_SHORT_PRODUCT_NAME;
 }
 
-std::string ocs::Version::get_long_product_name(){
+std::string
+ocs::Version::get_long_product_name() {
    return OCS_LONG_PRODUCT_NAME;
 }
 
@@ -173,21 +175,21 @@ ocs::Version::do_versions_match(lList **alpp, const uint32_t version, const char
 
 
 #if !(ADD_COPYRIGHT || ADD_HPC_GRIDWARE_COPYRIGHT)
-extern const char SFLN_ELN[] = "\n\
+extern const char SFLN_ELN[]{"\n\
    Cluster Scheduler is based on code donated by Sun Microsystems.\n\
    The copyright is owned by Sun Microsystems and other contributors.\n\
    It has been made available to the open source community under the SISSL license.\n\
-   For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n";
+   For further information and the latest news visit: @fBhttp://gridengine.sunsource.net\n\n"};
 
-extern const char DQS_ACK[] = "\n\
+extern const char DQS_ACK[]{"\n\
 We would like to acknowledge and thank the efforts of the\n\
-Florida State University in creating the DQS program.\n";
+Florida State University in creating the DQS program.\n"};
 
 #endif
 
 #ifndef ADD_HPC_GRIDWARE_COPYRIGHT
 
-extern const char SISSL[] = "\n\
+extern const char SISSL[]{"\n\
 The Contents of this file are made available subject to the terms of\n\
 the Sun Industry Standards Source License Version 1.2\n\
 \n\
@@ -212,6 +214,6 @@ The Initial Developer of the Original Code is: Sun Microsystems, Inc.\n\
 \n\
 Copyright: 2001 by Sun Microsystems, Inc.\n\
 \n\
-All Rights Reserved.\n";
+All Rights Reserved.\n"};
 
 #endif
