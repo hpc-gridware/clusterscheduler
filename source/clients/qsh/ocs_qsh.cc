@@ -2273,7 +2273,7 @@ static void delete_job(u_long32 job_id, lList *jlp)
       return;
    }
 
-   snprintf(job_str, sizeof(job_str), sge_u32, job_id);
+   snprintf(job_str, sizeof(job_str), sge_uu32, job_id);
    lAddElemStr(&idlp, ID_str, job_str, ID_Type);
 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_DEL, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &idlp, nullptr, nullptr);

@@ -921,7 +921,7 @@ void update_job_usage(const char* qualified_hostname)
             /* search matching job report */
             if (!(jr = get_job_report(job_id, ja_task_id, pe_task_id))) {
                /* should not happen in theory */
-               ERROR("could not find job report for job " sge_u32"." sge_u32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
+               ERROR("could not find job report for job " sge_uu32"." sge_uu32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
 #ifdef COMPILE_DC
 #ifdef DEBUG_DC
                ptf_show_registered_jobs();

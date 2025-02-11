@@ -952,7 +952,7 @@ const char *sge_get_active_job_file_path(dstring *buffer, u_long32 job_id,
       DRETURN(nullptr);
    }
 
-   sge_dstring_sprintf(buffer, "%s/" sge_u32"." sge_u32, ACTIVE_DIR, job_id, ja_task_id);
+   sge_dstring_sprintf(buffer, "%s/" sge_uu32"." sge_uu32, ACTIVE_DIR, job_id, ja_task_id);
 
    if (pe_task_id != nullptr) {
       sge_dstring_append_char(buffer, '/');

@@ -402,7 +402,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_task_id = lGetString(petep, PET_id);
    }
 
-   DPRINTF("job: %ld jatask: %ld petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
+   DPRINTF("job: " sge_uu32 " jatask: " sge_uu32 " petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
 
    master_q = responsible_queue(jep, jatep, petep);
    SGE_ASSERT((master_q));
@@ -416,8 +416,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       DRETURN(-3); /* error only relevant for this user */
    }
 
-   sge_get_active_job_file_path(&active_dir, job_id,
-                                ja_task_id, pe_task_id, nullptr);
+   sge_get_active_job_file_path(&active_dir, job_id, ja_task_id, pe_task_id, nullptr);
 
    umask(022);
 
@@ -758,7 +757,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       } else {
          if (lGetString(jep, JB_script_file) != nullptr) {
             /* JG: TODO: use some function to create path */
-            str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_u32, execd_spool_dir, EXEC_DIR,
+            str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_uu32, execd_spool_dir, EXEC_DIR,
                                                   job_id);
          } else {
             /*
@@ -801,7 +800,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             token = sge_strtok(buffer, delim);
             while (token != nullptr) {
                if (is_first_token) {
-                  sge_dstring_sprintf(&new_qrsh_command, "%s/%s/" sge_u32,
+                  sge_dstring_sprintf(&new_qrsh_command, "%s/%s/" sge_uu32,
                                       execd_spool_dir, EXEC_DIR, job_id);
                   is_first_token = 0;
                } else {
@@ -1441,7 +1440,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    } else {
       fprintf(fp, "job_name=%s\n", lGetString(jep, JB_job_name));
    }
-   fprintf(fp, "job_id=" sge_u32 "\n", job_id);
+   fprintf(fp, "job_id=" sge_uu32 "\n", job_id);
    fprintf(fp, "ja_task_id=" sge_u32 "\n", job_is_array(jep) ? ja_task_id : 0);
    if (petep != nullptr) {
       fprintf(fp, "pe_task_id=%s\n", pe_task_id);
@@ -1929,13 +1928,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
        lGetString(jep, JB_cred)) {
 
       char ccname[1024];
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_uu32, "sge", job_id);
       putenv(ccname);
    }
 
    DPRINTF("**********************CHILD*********************\n");
    shepherd_name = SGE_SHEPHERD;
-   snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
+   snprintf(ps_name, sizeof(ps_name), "%s-" sge_uu32, shepherd_name, job_id);
 
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();
@@ -1982,7 +1981,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    fp = fopen("error", "w");
    if (fp) {
-      fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
+      fprintf(fp, "failed to exec shepherd for job" sge_uu32"\n", job_id);
       FCLOSE(fp);
    }
 

@@ -706,20 +706,18 @@ sge_get_ar_id(monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__,
-                  &ar_id_control.ar_id_mutex);
+   sge_mutex_lock("ar_id_mutex", "sge_get_ar_id", __LINE__, &ar_id_control.ar_id_mutex);
 
-   ar_id_control.ar_id++;
-   ar_id_control.changed = true;
-   if (ar_id_control.ar_id > MAX_SEQNUM) {
-      DPRINTF("highest ar number MAX_SEQNUM %d exceeded, starting over with 1\n", MAX_SEQNUM);
-      ar_id_control.ar_id = 1;
+   if (ar_id_control.ar_id >= MAX_SEQNUM) {
+      DPRINTF("highest ar number MAX_SEQNUM %d reached, starting over with 1\n", MAX_SEQNUM);
+      ar_id_control.ar_id = 0;
       is_store_ar = true;
    }
+   ar_id_control.ar_id++;
+   ar_id_control.changed = true;
    ar_id = ar_id_control.ar_id;
 
-   sge_mutex_unlock("ar_id_mutex", "sge_get_ar_id", __LINE__,
-                    &ar_id_control.ar_id_mutex);
+   sge_mutex_unlock("ar_id_mutex", "sge_get_ar_id", __LINE__, &ar_id_control.ar_id_mutex);
 
    if (is_store_ar) {
       sge_store_ar_id(nullptr, monitor);
