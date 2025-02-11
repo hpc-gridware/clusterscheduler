@@ -4453,6 +4453,8 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
    /* signal all application threads waiting for a job event */
    pthread_cond_broadcast (&Master_japi_job_list_finished_cv);
 
+   pthread_exit(nullptr);
+
    DRETURN(nullptr);
 
 SetupFailed:
