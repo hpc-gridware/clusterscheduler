@@ -226,12 +226,12 @@ expand_path(dstring *dstr_exp_path, const char *in_path, u_long32 job_id, u_long
             s = t + sizeof("$HOME") - 1;
          }
          if (!strncmp(t, "$JOB_ID", sizeof("$JOB_ID") - 1)) {
-            sge_dstring_sprintf_append(dstr_exp_path, sge_u32, job_id);
+            sge_dstring_sprintf_append(dstr_exp_path, sge_uu32, job_id);
             s = t + sizeof("$JOB_ID") - 1;
          }
          if (ja_task_id) {
             if (!strncmp(t, "$TASK_ID", sizeof("$TASK_ID") - 1)) {
-               sge_dstring_sprintf_append(dstr_exp_path, sge_u32, ja_task_id);
+               sge_dstring_sprintf_append(dstr_exp_path, sge_uu32, ja_task_id);
                s = t + sizeof("$TASK_ID") - 1;
             }
          }

@@ -1185,7 +1185,7 @@ sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
       const char *job_id_str = nullptr;
       char job_id[40];
       if (!job_name_flag) {
-         snprintf(job_id, sizeof(job_id), sge_u32, lGetPosUlong(jep, job_id_pos));
+         snprintf(job_id, sizeof(job_id), sge_uu32, lGetPosUlong(jep, job_id_pos));
          job_id_str = job_id;
       } else {
          /* format: <delimiter>old_name<delimiter>new_name */
@@ -1369,7 +1369,7 @@ sge_gdi_mod_job(const sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task
       const char *job_id_str = nullptr;
       char job_id[40];
       if (!job_name_flag) {
-         snprintf(job_id, sizeof(job_id), sge_u32, lGetPosUlong(jep, job_id_pos));
+         snprintf(job_id, sizeof(job_id), sge_uu32, lGetPosUlong(jep, job_id_pos));
          job_id_str = job_id;
       } else {
          job_id_str = job_mod_name;
@@ -3015,14 +3015,11 @@ sge_get_job_number(monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
-   sge_mutex_lock("job_number_mutex", "sge_get_job_number", __LINE__,
-                  &job_number_control.job_number_mutex);
+   sge_mutex_lock("job_number_mutex", "sge_get_job_number", __LINE__, &job_number_control.job_number_mutex);
 
-   job_number_control.job_number++;
-   job_number_control.changed = true;
-   if (job_number_control.job_number > MAX_SEQNUM) {
-      DPRINTF("highest job number MAX_SEQNUM %d exceeded, starting over with 1\n", MAX_SEQNUM);
-      job_number_control.job_number = 1;
+   if (job_number_control.job_number >= MAX_SEQNUM) {
+      DPRINTF("highest job number MAX_SEQNUM " sge_uu32 " reached, starting over with 1\n", MAX_SEQNUM);
+      job_number_control.job_number = 0;
       is_store_job = true;
       /*
        * We need to sleep at least for one second to make sure
@@ -3032,10 +3029,11 @@ sge_get_job_number(monitoring_t *monitor) {
        */
       sge_usleep(1000000);
    }
+   job_number_control.job_number++;
+   job_number_control.changed = true;
    job_nr = job_number_control.job_number;
 
-   sge_mutex_unlock("job_number_mutex", "sge_get_job_number", __LINE__,
-                    &job_number_control.job_number_mutex);
+   sge_mutex_unlock("job_number_mutex", "sge_get_job_number", __LINE__, &job_number_control.job_number_mutex);
 
    if (is_store_job) {
       sge_store_job_number(nullptr, monitor);

@@ -2480,13 +2480,12 @@ bool job_parse_key(char *key, u_long32 *job_id, u_long32 *ja_task_id,
 const char *jobscript_get_key(const lListElem *jep, dstring *buffer)
 {
    const char *ret = nullptr;
-   int job_id = lGetUlong(jep, JB_job_number);
-   
+
    DENTER(TOP_LAYER);
    if (buffer != nullptr) {
-      ret = sge_dstring_sprintf(buffer, "%s:%d.%s",
+      ret = sge_dstring_sprintf(buffer, "%s:" sge_uu32 ".%s",
                                 object_type_get_name(SGE_TYPE_JOBSCRIPT), 
-                                job_id, lGetString(jep, JB_exec_file));
+                                lGetUlong(jep, JB_job_number), lGetString(jep, JB_exec_file));
    }
    DRETURN(ret);
 }

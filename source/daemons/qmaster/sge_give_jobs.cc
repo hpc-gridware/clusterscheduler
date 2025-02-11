@@ -1840,7 +1840,7 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
       }
 
    } else {
-      WARNING("It is impossible to move task " sge_u32" of job " sge_u32 " to the list of finished jobs\n", ja_task_id, job_id);
+      WARNING("It is impossible to move task " sge_uu32" of job " sge_uu32 " to the list of finished jobs\n", ja_task_id, job_id);
    }
 
    DRETURN(True);

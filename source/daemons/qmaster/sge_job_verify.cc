@@ -584,7 +584,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     */
    if (lGetString(jep, JB_script_file)) {
       dstring string = DSTRING_INIT;
-      sge_dstring_sprintf(&string, "%s/%d", EXEC_DIR, (int) lGetUlong(jep, JB_job_number));
+      sge_dstring_sprintf(&string, "%s/" sge_uu32, EXEC_DIR, lGetUlong(jep, JB_job_number));
       lSetString(jep, JB_exec_file, sge_dstring_get_string(&string));
       sge_dstring_free(&string);
    }

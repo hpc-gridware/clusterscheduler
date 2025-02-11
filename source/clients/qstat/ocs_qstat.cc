@@ -870,7 +870,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
       int i;
       int line_length = qstat_env->longest_queue_length-10+1;
       char * seperator = sge_malloc(line_length);
-      const char *part1 = "%s%-7.7s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
+      const char *part1 = "%s%-10.10s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
       const char *part3 = ".";
 	   const char *part5 = "s %s %s%s%s%s%s%s";
       size_t part6_size = strlen(part1) + strlen(part3) + strlen(part5) + 20;
@@ -936,12 +936,13 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    /* job number / ja task id */
    if (print_job_id) {
       if (hide_data) {
-         sge_dstring_sprintf_append(&job_output, "%7s ", "*");
+         // maximum job id is U_LONG32_MAX = 4294967295 = 10 digits
+         sge_dstring_sprintf_append(&job_output, "%10s ", "*");
       } else {
-         sge_dstring_sprintf_append(&job_output, "%7d ", (int)jid);
+         sge_dstring_sprintf_append(&job_output, "%10" sge_fuu32 " ", jid);
       }
    } else {
-      sge_dstring_sprintf_append(&job_output, "        ");
+      sge_dstring_sprintf_append(&job_output, "           ");
    }
    
    if (print_job_id) {
@@ -2157,7 +2158,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       for_each_rw(elem1, jlp) {
          char buffer[256];
  
-         snprintf(buffer, sizeof(buffer), sge_U32CFormat, sge_u32c(lGetUlong(elem1, JB_job_number)));
+         snprintf(buffer, sizeof(buffer), sge_uu32, lGetUlong(elem1, JB_job_number));
          elem2 = lGetElemStrRW(jid_list, ST_name, buffer);     
          
          if (elem2) {

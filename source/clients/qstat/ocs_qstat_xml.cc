@@ -417,7 +417,7 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
    
-   xml_append_Attr_I(attribute_list, "JB_job_number", jid); 
+   xml_append_Attr_U(attribute_list, "JB_job_number", jid);
    xml_append_Attr_D(attribute_list, "JAT_prio", summary->nprior);
    if( sge_ext) {
       xml_append_Attr_D(attribute_list, "JAT_ntix", summary->ntckts);

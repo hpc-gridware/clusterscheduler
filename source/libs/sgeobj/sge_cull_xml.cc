@@ -378,9 +378,9 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int
                break;
                case lUlongT:
                   if (!fp) {
-                     DPRINTF( sge_u32, lGetPosUlong(ep, i));
+                     DPRINTF( sge_uu32, lGetPosUlong(ep, i));
                   } else {
-                     fprintf(fp, sge_u32, lGetPosUlong(ep, i));
+                     fprintf(fp, sge_uu32, lGetPosUlong(ep, i));
                   }
                   break;
             case lUlong64T:
@@ -575,6 +575,12 @@ lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char 
 lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value) {
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%d", value);
+   return append_Attr_S(attributeList, name, buffer);
+}
+
+lListElem *xml_append_Attr_U(lList *attributeList, const char *name, u_long32 value) {
+   char buffer[20];
+   snprintf(buffer, sizeof(buffer), sge_uu32, value);
    return append_Attr_S(attributeList, name, buffer);
 }
 

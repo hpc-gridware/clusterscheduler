@@ -383,7 +383,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
          sge_dstring_init(&msg_log_ds, msg_log, sizeof(msg_log));
 
          if (job_id) {
-            msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_u32" %s", job_id, msg_str);
+            msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_uu32" %s", job_id, msg_str);
          } else {
             msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Your job %s", msg_str);
          }
@@ -510,13 +510,13 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
          }
 
          if (do_logging) {
-            msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_u32" %s", job_number, msg_str);
+            msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_uu32" %s", job_number, msg_str);
             schedd_log(msg_log_str, nullptr, monitor_next_run);
          }
       } else {
          if (do_logging) {
             if (job_number) {
-               msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_u32" %s", job_number, msg_str);
+               msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Job " sge_uu32" %s", job_number, msg_str);
             } else {
                msg_log_str = sge_dstring_sprintf(&msg_log_ds, "Your job %s", msg_str);
             }

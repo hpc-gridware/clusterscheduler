@@ -1041,7 +1041,10 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
 
    u_long64 now = sge_get_gmt64();
 
-   DEBUG("queue_signal: %d, queue: %s, job: %d, jatask: %d", how, (qep ? lGetString(qep, QU_full_name) : "none"), (int) (jep ? lGetUlong(jep, JB_job_number) : -1), (int) (jatep ? lGetUlong(jatep, JAT_task_number) : -1) );
+   DEBUG("queue_signal: %d, queue: %s, job: " sge_uu32 ", jatask: " sge_uu32, how,
+      (qep != nullptr ? lGetString(qep, QU_full_name) : "none"),
+      jep != nullptr ? lGetUlong(jep, JB_job_number) : 0,
+      jatep != nullptr ? lGetUlong(jatep, JAT_task_number) : 0);
 
    if (!jep && (how == SGE_SIGSTOP || how == SGE_SIGCONT)) {
       sge_propagate_queue_suspension(lGetString(qep, QU_full_name), how);

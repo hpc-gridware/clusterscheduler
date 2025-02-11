@@ -87,7 +87,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (!(flags & FLG_QALTER)) {
       if (lGetUlong(job, JB_job_number))
-         printf("job_number:                 %d\n", (int) lGetUlong(job, JB_job_number));
+         printf("job_number:                 " sge_uu32 "\n", lGetUlong(job, JB_job_number));
       else
          printf("job_number:                 %s\n", MSG_JOB_UNASSIGNED);
    }

@@ -124,12 +124,14 @@
 #  define sge_uu32   "%u"
 #  define sge_x32    "%x"
 #  define sge_fu32   "d"
+#  define sge_fuu32   "u"
 #else
 #  define sge_u64    "%llu"
 #  define sge_u32    "%ld"
 #  define sge_uu32   "%lu"
 #  define sge_x32    "%lx"
 #  define sge_fu32   "ld"
+#  define sge_fuu32   "lu"
 #endif
 
 #define uid_t_fmt "%u"
