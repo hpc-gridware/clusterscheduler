@@ -520,6 +520,7 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
          /* TODO: SG: what and where for usage */
          evc->ec_subscribe(evc, sgeE_JOB_USAGE);
          evc->ec_subscribe(evc, sgeE_JOB_FINAL_USAGE);
+         evc->ec_subscribe(evc, sgeE_JOB_FINISH);
          break;
       case SGE_TYPE_JOB_SCHEDD_INFO:
          evc->ec_subscribe(evc, sgeE_JOB_SCHEDD_INFO_LIST);
@@ -851,7 +852,7 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_JOB_MOD_SCHED_PRIORITY);
          evc->ec_unsubscribe(evc, sgeE_JOB_USAGE);
          evc->ec_unsubscribe(evc, sgeE_JOB_FINAL_USAGE);
-/*          evc->ec_unsubscribe(evc, sgeE_JOB_FINISH); */
+         evc->ec_unsubscribe(evc, sgeE_JOB_FINISH);
          break;
       case SGE_TYPE_JOB_SCHEDD_INFO:
          evc->ec_unsubscribe(evc, sgeE_JOB_SCHEDD_INFO_LIST);
@@ -1211,14 +1212,9 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
          case sgeE_JOB_MOD_SCHED_PRIORITY:
          case sgeE_JOB_USAGE:
          case sgeE_JOB_FINAL_USAGE:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_JOB, SGE_EMA_MOD, event);
-            break;
-#if 0
          case sgeE_JOB_FINISH:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_JOB, SGE_EMA_MOD, event);
             break;
-#endif
-
          case sgeE_JOB_SCHEDD_INFO_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_JOB_SCHEDD_INFO, SGE_EMA_LIST, event);
             break;

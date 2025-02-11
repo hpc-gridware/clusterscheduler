@@ -1069,7 +1069,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
 }
 
 static int
-add_job_list_to_schedule(const lList *job_list, bool suspended, lList *host_list, lList *queue_list, lList *rqs_list,
+add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, lList *host_list, lList *queue_list, lList *rqs_list,
                          const lList *centry_list, const lList *acl_list, const lList *hgroup_list, lList *ar_list,
                          bool for_job_scheduling, u_long64 now)
 {
@@ -1117,16 +1117,6 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *host_list
 
          a.gdil = lGetListRW(ja_task, JAT_granted_destin_identifier_list);
          a.slots = nslots_granted(a.gdil, nullptr);
-         a.pe = lGetObject(ja_task, JAT_pe_object);
-         const char *pe_name = lGetString(ja_task, JAT_granted_pe);
-         if (pe_name != nullptr && a.pe == nullptr) {
-            CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
-         }
-         if (pe_name != nullptr && a.pe != nullptr && sge_strnullcmp(pe_name, lGetString(a.pe, PE_name)) != 0) {
-            CRITICAL("===> granted_pe is %s but pe_object is %s", pe_name, lGetString(a.pe, PE_name));
-         }
-         /* no need (so far) for passing ckpt information to debit_scheduled_job() */
-
          a.host_list = host_list;
          a.queue_list = queue_list;
          a.centry_list = centry_list;
@@ -1134,19 +1124,44 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *host_list
          a.acl_list = acl_list;
          a.hgrp_list = hgroup_list;
          a.ar_list = ar_list;
-         a.gep     = gep;
+         a.gep = gep;
+
+         // Step 1/3 We need the current PE for the resource utilization calculation
+         const char *pe_name = lGetString(ja_task, JAT_granted_pe);
+         a.pe = pe_list_locate(pe_list, pe_name);
+         if (pe_name != nullptr && a.pe == nullptr) {
+            CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
+         }
+
+         // Step 2/3: adjust current PE with the settings of the PE object of the jatask so that
+         //           the utilization is calculated correctly (PE settings might have changed meanwhile)
+         //
+         // - safe original value of PE_ignore_slave_requests_on_master_host
+         // - replace the value in the PE object to that one of the PE object of the jatask
+         // - This has to be reset further down below (step 4/4)
+         bool org_sromh = false;
+         if (a.pe != nullptr) {
+            lListElem *old_pe = lGetObject(ja_task, JAT_pe_object);
+            bool old_sromh = lGetBool(old_pe, PE_ignore_slave_requests_on_master_host);
+
+            org_sromh = lGetBool(a.pe, PE_ignore_slave_requests_on_master_host);
+            lSetBool(a.pe, PE_ignore_slave_requests_on_master_host, old_sromh);
+         }
 
          if (DPRINTF_IS_ACTIVE) {
             DSTRING_STATIC(dstr, 64);
-            DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule " "start "
-                    "%s duration %.0f\n",
-                    lGetUlong(jep, JB_job_number),
-                    lGetUlong(ja_task, JAT_task_number), sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
+            DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule start %s duration %.0f\n",
+                    lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number),
+                    sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
          }
 
-         /* only update resource utilization schedule  
-            RUE_utililized_now is already set through events */
+         // Step 3/4: only update resource utilization schedule RUE_utilized_now is already set through events
          debit_scheduled_job(&a, nullptr, nullptr, false, type, for_job_scheduling);
+
+         // Step 4/4: debiting is done. Reset the PE object with the original value
+         if (a.pe != nullptr) {
+            lSetBool(a.pe, PE_ignore_slave_requests_on_master_host, org_sromh);
+         }
       }
    }
 
@@ -1192,10 +1207,10 @@ void prepare_resource_schedules(const lList *running_jobs, const lList *suspende
 {
    DENTER(TOP_LAYER);
 
-   add_job_list_to_schedule(running_jobs, false, host_list, queue_list,
+   add_job_list_to_schedule(running_jobs, false, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
                             ar_list, for_job_scheduling, now);
-   add_job_list_to_schedule(suspended_jobs, true, host_list, queue_list,
+   add_job_list_to_schedule(suspended_jobs, true, pe_list, host_list, queue_list,
                             rqs_list, centry_list, acl_list, hgroup_list,
                             ar_list, for_job_scheduling, now);
    add_calendar_to_schedule(queue_list, now);

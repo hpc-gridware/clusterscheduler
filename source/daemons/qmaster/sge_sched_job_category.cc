@@ -206,21 +206,21 @@ sge_is_job_category_reservation_rejected(const lListElem *job) {
 /*-------------------------------------------------------------------------*/
 bool
 sge_is_job_category_rejected_(lRef cat) {
-   return lGetUlong((lListElem *) cat, CT_rejected) ? true : false;
+   return lGetBool((lListElem *) cat, CT_rejected);
 }
 
 /*-------------------------------------------------------------------------*/
 bool
 sge_is_job_category_reservation_rejected_(lRef cat) {
-   return lGetUlong((lListElem *) cat, CT_reservation_rejected) ? true : false;
+   return lGetBool((lListElem *) cat, CT_reservation_rejected);
 }
 
 /*-------------------------------------------------------------------------*/
 void
 sge_reject_category(lRef cat, bool with_reservation) {
-   lSetUlong((lListElem *) cat, CT_rejected, 1);
+   lSetBool((lListElem *) cat, CT_rejected, true);
    if (with_reservation) {
-      lSetUlong((lListElem *) cat, CT_reservation_rejected, 1);
+      lSetBool((lListElem *) cat, CT_reservation_rejected, true);
    }
 }
 
@@ -284,18 +284,30 @@ sge_reset_job_category() {
 
    lListElem *cat;
    for_each_rw (cat, CATEGORY_LIST) {
+      // deallocate memory stored in the cache itself
       lListElem *cache;
       for_each_rw(cache, lGetList(cat, CT_cache)) {
-         int *range = (int *) lGetRef(cache, CCT_pe_job_slots);
+         auto *range = static_cast<int *>(lGetRef(cache, CCT_pe_job_slots));
          sge_free(&range);
          lSetRef(cache, CCT_pe_job_slots, nullptr);
       }
 
-      lSetUlong(cat, CT_rejected, 0);
+      // now assignment (@todo make it boolean in master branch)
+      lSetBool(cat, CT_rejected, false);
+
+      // reservation assignment (@todo make it boolean in master branch)
+      lSetBool(cat, CT_reservation_rejected, false);
+
+      // @todo remove in master branch. This field is unused
       lSetInt(cat, CT_count, -1);
+
+      // reset the cache and the messages added flag
       lSetList(cat, CT_cache, nullptr);
       lSetBool(cat, CT_messages_added, false);
+
+      // reset cached resource contribution
       lSetBool(cat, CT_rc_valid, false);
+      lSetDouble(cat, CT_resource_contribution, 0.0);
    }
 
    DRETURN(0);

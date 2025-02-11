@@ -637,6 +637,9 @@ object_get_subtype(int nm)
       case BN_joker:
          ret = VA_Type;
          break;
+      case TEST_obj_jb:
+         ret = JB_Type;
+         break;
    }
    return ret;
 }

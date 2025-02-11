@@ -304,17 +304,14 @@ qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem
 *******************************************************************************/
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem, const lListElem *pe) {
-   bool ret = false;
-   const lListElem *re_ref_elem;
-
    DENTER(TOP_LAYER);
-   for_each_ep(re_ref_elem, lGetList(this_elem, QU_pe_list)) {
-      if (pe_is_matching(pe, lGetString(re_ref_elem, ST_name))) {
-         ret = true;
-         break;
+   const lListElem *pe_name_elem;
+   for_each_ep(pe_name_elem, lGetList(this_elem, QU_pe_list)) {
+      if (strcmp(lGetString(pe, PE_name), lGetString(pe_name_elem, ST_name)) == 0) {
+         DRETURN(true);
       }
    }
-   DRETURN(ret);
+   DRETURN(false);
 }
 
 /****** sgeobj/qinstance/qinstance_is_calendar_referenced() *******************

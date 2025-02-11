@@ -42,9 +42,8 @@
 *    Number of jobs of this category used in this schuling run
 *    If -1, then CT_refcount is used
 *
-*    SGE_ULONG(CT_rejected) - Rejected
-*    Has this category been rejected as it can not be dispached now?
-*    @todo make it a boolean
+*    SGE_BOOL(CT_rejected) - Rejected
+*    Has this category been rejected as it can not be dispatched now?
 *
 *    SGE_LIST(CT_cache) - Cache
 *    Stores all info, which cannot run this job category.
@@ -59,9 +58,8 @@
 *    SGE_BOOL(CT_rc_valid) - Resource Contribution valid
 *    Indicates whether the cached CT_resource_contribution is valid.
 *
-*    SGE_ULONG(CT_reservation_rejected) - Reservation Rejected
+*    SGE_BOOL(CT_reservation_rejected) - Reservation Rejected
 *    Has this category been rejected as it can not be reserved?
-*    @todo make it a boolean
 *
 */
 
@@ -81,12 +79,12 @@ LISTDEF(CT_Type)
    SGE_STRING(CT_str, CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(CT_refcount, CULL_DEFAULT)
    SGE_INT(CT_count, CULL_DEFAULT)
-   SGE_ULONG(CT_rejected, CULL_DEFAULT)
+   SGE_BOOL(CT_rejected, CULL_DEFAULT)
    SGE_LIST(CT_cache, CCT_Type, CULL_DEFAULT)
    SGE_BOOL(CT_messages_added, CULL_DEFAULT)
    SGE_DOUBLE(CT_resource_contribution, CULL_DEFAULT)
    SGE_BOOL(CT_rc_valid, CULL_DEFAULT)
-   SGE_ULONG(CT_reservation_rejected, CULL_DEFAULT)
+   SGE_BOOL(CT_reservation_rejected, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(CTN)

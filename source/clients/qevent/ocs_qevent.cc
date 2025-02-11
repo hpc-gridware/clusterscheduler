@@ -169,15 +169,35 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
             }
          }
       }
-   
+      if (event_type == sgeE_JOB_MOD_SCHED_PRIORITY) {
+         u_long job_id = lGetUlong(event, ET_intkey);
+         u_long task_id = lGetUlong(event, ET_intkey2);
+         fprintf(stdout,"JOB_MOD_SCHED_PRIORITY (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
+         Global_jobs_running--;
+         fflush(stdout);
+      }
+      if (event_type == sgeE_JOB_USAGE) {
+         u_long job_id = lGetUlong(event, ET_intkey);
+         u_long task_id = lGetUlong(event, ET_intkey2);
+         fprintf(stdout,"JOB_USAGE (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
+         Global_jobs_running--;
+         fflush(stdout);
+      }
       if (event_type == sgeE_JOB_FINAL_USAGE) {
          /* lList *jat = lGetList(event,ET_new_version); */
          u_long job_id = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
          /* lWriteElemTo(event, stdout); */
-         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
+         fprintf(stdout,"JOB_FINAL_USAGE (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
          Global_jobs_running--;
          fflush(stdout);  
+      }
+      if (event_type == sgeE_JOB_FINISH) {
+         u_long job_id = lGetUlong(event, ET_intkey);
+         u_long task_id = lGetUlong(event, ET_intkey2);
+         fprintf(stdout,"JOB_FINISH (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
+         Global_jobs_running--;
+         fflush(stdout);
       }
       if (event_type == sgeE_JOB_ADD) {
          const lList *jat = lGetListRW(event,ET_new_version);
@@ -224,9 +244,6 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
          if (task_running) {
          }
-      }
-
-      if (event_type == sgeE_JOB_FINAL_USAGE) {
       }
 
       if (event_type == sgeE_JOB_ADD) {
@@ -549,6 +566,7 @@ int main(int argc, char *argv[])
                   evc->ec_unsubscribe(evc, sgeE_JOB_MOD_SCHED_PRIORITY);
                   evc->ec_unsubscribe(evc, sgeE_JOB_USAGE);
                   evc->ec_unsubscribe(evc, sgeE_JOB_FINAL_USAGE);
+                  evc->ec_unsubscribe(evc, sgeE_JOB_FINISH);
                /*   evc->ec_unsubscribe(evc, sgeE_JOB_ADD); */
 
                   /* free the what and where mask */
@@ -666,6 +684,7 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    /* and have our events flushed immediately */
    evc->ec_set_flush(evc, sgeE_JATASK_MOD, true, 1);
    evc->ec_set_flush(evc, sgeE_JOB_FINAL_USAGE, true, 1);
+   evc->ec_set_flush(evc, sgeE_JOB_FINISH, true, 1);
    evc->ec_set_flush(evc, sgeE_JOB_ADD, true, 1);
    evc->ec_set_flush(evc, sgeE_JOB_DEL, true, 1);
 

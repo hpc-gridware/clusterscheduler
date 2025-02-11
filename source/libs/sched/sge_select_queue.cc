@@ -442,14 +442,14 @@ is_acceptable_result(sge_assignment_t *a) {
 dispatch_t
 sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 {
+   DENTER(TOP_LAYER);
    int matched_pe_count = 0;
    lListElem *pe;
    lListElem *queue;
    const char *pe_request, *pe_name;
    dispatch_t result, best_result = DISPATCH_NEVER_CAT;
    int old_logging = 0;
-
-   DENTER(TOP_LAYER);
+   DSTRING_STATIC(time_str, 64);
 
    pe_request = lGetString(best->job, JB_pe);
 
@@ -493,8 +493,8 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
                best_result = find_best_result(best_result, result);
                continue;
             }
-            DPRINTF("### first ### reservation in PE \"%s\" at " sge_u32" with %d soft violations\n",
-                    pe_name, best->start, best->soft_violations);
+            DPRINTF("### first ### reservation in PE \"%s\" at %s with %d soft violations\n",
+                    pe_name, sge_ctime64(best->start, &time_str), best->soft_violations);
          } else { /* test with all other pes */
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
@@ -741,6 +741,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    bool is_first = true;
    int old_logging = 0;
    category_use_t use_category;
+   DSTRING_STATIC(time_str, 64);
 
    DENTER(TOP_LAYER);
 
@@ -772,8 +773,8 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    old_logging = schedd_mes_get_logging(); /* store logging mode */
    for (pe_time = first_time ; pe_time; pe_time = sge_qeti_next(qeti)) {
-      DPRINTF("SELECT PE TIME(%s, " sge_u32") tries at " sge_u64"\n",
-               best->pe_name, best->job_id, pe_time);
+      DPRINTF("SELECT PE TIME(%s, " sge_u32") tries at %s\n",
+               best->pe_name, best->job_id, sge_ctime64(pe_time, &time_str));
       tmp_assignment.start = pe_time;
 
       /* this is an additional run, we have already at least one possible match,
@@ -792,12 +793,12 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
       if (result == DISPATCH_OK) {
          if (tmp_assignment.gdil) {
-            DPRINTF("SELECT PE TIME: earlier assignment at " sge_u64"\n", pe_time);
+            DPRINTF("SELECT PE TIME: earlier assignment at %s\n", sge_ctime64(pe_time, &time_str));
          }
          assignment_copy(best, &tmp_assignment, true);
          assignment_release(&tmp_assignment);
       } else {
-         DPRINTF("SELECT PE TIME: no earlier assignment at " sge_u64"\n", pe_time);
+         DPRINTF("SELECT PE TIME: no earlier assignment at %s\n", sge_ctime64(pe_time, &time_str));
          break;
       }
    }
@@ -813,7 +814,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    switch (result) {
    case DISPATCH_OK:
-      DPRINTF("SELECT PE TIME(%s, %d) returns " sge_u32"\n", best->pe_name, best->slots, best->start);
+      DPRINTF("SELECT PE TIME(%s, %d) returns %s\n", best->pe_name, best->slots, sge_ctime64(best->start, &time_str));
       break;
    case DISPATCH_NEVER_CAT:
       DPRINTF("SELECT PE TIME(%s, %d) returns <category_never>\n", best->pe_name, best->slots);
@@ -1823,53 +1824,49 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 static bool
 job_is_forced_centry_missing(const sge_assignment_t *a, const lListElem *queue_or_host, bool is_qinstance)
 {
-   bool ret = false;
-   const lListElem *centry;
-
    DENTER(TOP_LAYER);
-   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
-      /* Optimization: Have a forced_centry_list in the assignment structure
-       * and only iterate over this list.
-       */
-      for_each_ep(centry, a->centry_list) {
-         const char *name = lGetString(centry, CE_name);
-         bool is_forced = lGetUlong(centry, CE_requestable) == REQU_FORCED ? true : false;
-         if (!is_forced) {
-            // no forced attribute - nothing to do
-            continue;
-         }
+   bool ret = false;
 
-         bool might_be_missing = true;
+   if (a->job != nullptr && a->centry_list != nullptr && queue_or_host != nullptr) {
+      const void *iterator = nullptr;
+      const lListElem *centry;
+      const lListElem *next_centry = lGetElemUlongFirst(a->centry_list, CE_requestable, REQU_FORCED, &iterator);
+      while ((centry = next_centry) != nullptr) {
+         next_centry = lGetElemUlongNext(a->centry_list, CE_requestable, REQU_FORCED, &iterator);
+
+         // check if the forced centry was requested; if so, we can continue with the next centry
+         const char *name = lGetString(centry, CE_name);
+         bool skip_further_checks = false;
          const lListElem *jrs;
          for_each_ep (jrs, lGetList(a->job, JB_request_set_list)) {
             const lList *res_list = lGetList(jrs, JRS_hard_resource_list);
             if (is_requested(res_list, name)) {
                // if requested we are fine
-               might_be_missing = false;
+               skip_further_checks = true;
                break;
             }
          }
+         if (skip_further_checks) {
+            continue;
+         }
 
-         if (might_be_missing) {
-            // the forced centry was not requested, we need to check if it is defined
-            // in the complex values of the given queue or host object
-            if (is_qinstance) {
-               if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
-                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                                 SCHEDD_INFO_NOTREQFORCEDRES_SS,
-                                 name, lGetString(queue_or_host, QU_full_name));
-                  ret = true;
-                  break;
-               }
-            } else {
-               if (host_is_centry_a_complex_value(queue_or_host, centry)) {
-                  schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                                 SCHEDD_INFO_NOFORCEDRES_SS,
-                                 name, lGetHost(queue_or_host, EH_name));
-                  ret = true;
-                  break;
+         // if the centry was not requested then we need to complain about it if it is defined in the current object (queue or host)
+         if (is_qinstance) {
+            if (qinstance_is_centry_a_complex_value(queue_or_host, centry)) {
+               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                              SCHEDD_INFO_NOTREQFORCEDRES_SS,
+                              name, lGetString(queue_or_host, QU_full_name));
+               ret = true;
+               break;
+            }
+         } else {
+            if (host_is_centry_a_complex_value(queue_or_host, centry)) {
+               schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                              SCHEDD_INFO_NOFORCEDRES_SS,
+                              name, lGetHost(queue_or_host, EH_name));
+               ret = true;
+               break;
 
-               }
             }
          }
       } // end loop over all complex definitions
@@ -4033,16 +4030,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
          // loop over the sorted host list
          for_each_rw (hep, a->host_list) {
-            int hslots = 0, hslots_qend = 0;
-            const char *eh_name = lGetHost(hep, EH_name);
-
             // we already handled global resources
-            // @todo (CS-456) they will have EH_seq_no U_LONG32_MAX, be at the end - do we really want to do all the strcmp()?
-            if (strcasecmp(eh_name, SGE_GLOBAL_NAME) == 0 || strcasecmp(eh_name, SGE_TEMPLATE_NAME) == 0) {
+            if (hep == a->gep) {
                continue;
             }
 
             /* this host does not work for this category, skip it */
+            const char *eh_name = lGetHost(hep, EH_name);
             if (skip_host_list && lGetElemStr(skip_host_list, CTI_name, eh_name)) {
                continue;
             }
@@ -4061,6 +4055,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             // @todo when we are in an additional round of the do ... while loop, couldn't we skip parallel_tag_hosts_queues()?
             //       the number of available slots should already be in QU_tag / QU_tag_qend?
             //       hslots = sum(QU_tag), and hslots_qend = sum(QU_tag_qend)?
+            int hslots = 0, hslots_qend = 0;
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
                bool need_master = !have_master_host;
                bool is_master_host = (hep == master_host);
@@ -6232,12 +6227,13 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
          DPRINTF("QS_STATE is empty, skipping extensive checks!\n");
          used = 0;
       } else if (schedule_based || utilized != 0) {
+         DSTRING_STATIC(time_str, 64);
          if (!a->is_reservation) {
             start = a->now;
          }
          used = utilization_max(uep, start, a->duration, false);
-         DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(" sge_u64", " sge_u64") returns %f\n",
-               object_name, start, a->duration, used);
+         DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(%s, " sge_u64") returns %f\n",
+               object_name, sge_ctime64(start, &time_str), a->duration, used);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
          if (additional_usage != nullptr) {
             const lListElem *add_usage_ep = lGetElemStr(additional_usage, CE_name, name);
@@ -6306,8 +6302,9 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const l
          }
       }
 
-      DPRINTF("\t\t%s: ri_slots_by_time: %s=%f has %d (%d) slots at time " sge_u64 "%s (avail: %f total: %f)\n",
-              object_name, name, request_val, *slots, *slots_qend, start,
+      DSTRING_STATIC(time_str, 64);
+      DPRINTF("\t\t%s: ri_slots_by_time: %s=%f has %d (%d) slots at time %s %s (avail: %f total: %f)\n",
+              object_name, name, request_val, *slots, *slots_qend, sge_ctime64(start, &time_str),
               !a->is_reservation?" (= now)":"", total - used, total);
    }
 

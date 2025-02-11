@@ -171,6 +171,8 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_r
                      QU_state, QI_AMBIGUOUS,
                      QU_state, QI_UNKNOWN);         /* only known queues              */
 
+                     // @todo: here are also states missing that make queues unavailable
+
       if (what == nullptr || where == nullptr) {
          DPRINTF("failed creating where or what describing non available queues\n");
       } else {
@@ -485,6 +487,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
       // queues could have been disabled in the meantime, we still need to book into them
       // @todo what about suspended queues etc. - are they also in the dis_queue_list?
+      // @todo see ensure_valid_what_and_where()
       if (dis_queue_elem != nullptr) {
          lAppendList(lists->queue_list, lists->dis_queue_list);
       }
@@ -901,7 +904,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                   sge_reject_category(cat, false);
                }
                /* here no reservation was made for a job that couldn't be started now
-                  or the job is not dispatchable at all */
+                  or the job is not dispatch-able at all */
                schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
 
                /* Remove pending job if there are no pending tasks anymore (including the current) */
@@ -974,6 +977,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
          /* no more free queues - then exit */
          if (lGetNumberOfElem(lists->queue_list) == 0) {
+            DPRINTF("no more free queues\n");
             break;
          }
 
@@ -1206,7 +1210,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    if (result == DISPATCH_OK) {
       // create the granted resource list containing all granted consumables
       // including RSMAPs and the info which RSMAP ids were granted
-      add_granted_resource_list(ja_task, job, a.pe, a.gdil, host_list);
+      add_granted_resource_list(&a, ja_task, job, host_list);
 
       /* in SGEEE we must account for job tickets on hosts due to parallel jobs */
       {

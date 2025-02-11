@@ -336,7 +336,7 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
       where_what->what_pe = lIntVector2What(PE_Type, pe_nm);
    }
 
-   /* qinstances */
+   // qinstances (remaining are available, disabled, calendar disabled, orphaned, alarm, suspend alarm)
    if (where_what->where_queue == nullptr) {
       where_what->where_queue = lWhere("%T("
                                        " !(%I m= %u) &&"
@@ -346,22 +346,24 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
                                        " !(%I m= %u) &&"
                                        " !(%I m= %u))",
                                        tmp_what_descr,
-                                       QU_state, QI_SUSPENDED,        /* only not suspended queues      */
-                                       QU_state, QI_SUSPENDED_ON_SUBORDINATE,
-                                       QU_state, QI_CAL_SUSPENDED,
-                                       QU_state, QI_ERROR,            /* no queues in error state       */
-                                       QU_state, QI_UNKNOWN,
-                                       QU_state, QI_AMBIGUOUS
-      );         /* only known queues              */
+                                       QU_state, QI_SUSPENDED,                // only not suspended queues
+                                       QU_state, QI_SUSPENDED_ON_SUBORDINATE, // not suspended on subordinate
+                                       QU_state, QI_CAL_SUSPENDED,            // not suspended on calendar
+                                       QU_state, QI_ERROR,                    // not in error state
+                                       QU_state, QI_UNKNOWN,                  // not in unknown state
+                                       QU_state, QI_AMBIGUOUS                 // not in ambiguous state
+
+                                       // @todo: what about the QI_ORPHANED, QI_ALARM, QI_SUSPEND_ALARM ???
+      );
    }
    if (where_what->what_queue == nullptr) {
       where_what->what_queue = lIntVector2What(QU_Type, qinstance_field_ids);
    }
 
-   /* qinstances */
+   // qinstances (remaining are calendar suspended (possibly also orphaned, alarm, suspend alarm) but not also ...)
    if (where_what->where_queue2 == nullptr) {
       where_what->where_queue2 = lWhere("%T("
-                                        "  (%I m= %u) &&"
+                                        "  (%I m= %u) &&"                        // todo: only calendar suspended queues ???
                                         " !(%I m= %u) &&"
                                         " !(%I m= %u) &&"
                                         " !(%I m= %u) &&"
@@ -370,15 +372,15 @@ ensure_valid_what_and_where(sge_where_what_t *where_what) {
                                         " !(%I m= %u) &&"
                                         " !(%I m= %u))",
                                         tmp_what_descr,
-                                        QU_state, QI_CAL_SUSPENDED,
-                                        QU_state, QI_CAL_DISABLED,
-                                        QU_state, QI_SUSPENDED,        /* only not suspended queues      */
-                                        QU_state, QI_SUSPENDED_ON_SUBORDINATE,
-                                        QU_state, QI_ERROR,            /* no queues in error state       */
-                                        QU_state, QI_UNKNOWN,
-                                        QU_state, QI_DISABLED,
-                                        QU_state, QI_AMBIGUOUS
-      );         /* only known queues              */
+                                        QU_state, QI_CAL_SUSPENDED,              // only calendar suspended queues
+                                        QU_state, QI_CAL_DISABLED,               // not calendar disabled
+                                        QU_state, QI_SUSPENDED,                  // not suspended
+                                        QU_state, QI_SUSPENDED_ON_SUBORDINATE,   // not suspended on subordinate
+                                        QU_state, QI_ERROR,                      // not in error state
+                                        QU_state, QI_UNKNOWN,                    // not in unknown state
+                                        QU_state, QI_DISABLED,                   // not disabled
+                                        QU_state, QI_AMBIGUOUS                   // not in ambiguous state
+      );
    }
    if (where_what->what_queue2 == nullptr) {
       where_what->what_queue2 = lWhat("%T(ALL)", tmp_what_descr);

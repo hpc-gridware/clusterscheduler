@@ -62,6 +62,15 @@
 *    SGE_STRING(TEST_string) - string type attribute
 *    This field holds a string value.
 *
+*    SGE_REF(TEST_ref) - reference type attribute to store a pointer
+*    This filed hold a pointer
+*
+*    SGE_OBJECT(TEST_obj_jb) - object type attribute to store JB_Type an object
+*    This filed hold a object reference.
+*
+*    SGE_OBJECT(TEST_obj_any) - object type attribute to store any other object
+*    This filed hold a object reference.
+*
 */
 
 enum {
@@ -74,13 +83,16 @@ enum {
    TEST_float,
    TEST_double,
    TEST_host,
-   TEST_string
+   TEST_string,
+   TEST_ref,
+   TEST_obj_jb,
+   TEST_obj_any
 };
 
 LISTDEF(TEST_Type)
    SGE_BOOL(TEST_bool, CULL_HASH | CULL_SPOOL)
    SGE_CHAR(TEST_char, CULL_SPOOL)
-   SGE_ULONG(TEST_uint32, CULL_SPOOL | CULL_UNIQUE)
+   SGE_ULONG(TEST_uint32, CULL_SPOOL | CULL_UNIQUE | CULL_PRIMARY_KEY)
    SGE_ULONG64(TEST_uint64, CULL_SPOOL | CULL_HASH)
    SGE_INT(TEST_int, CULL_SPOOL)
    SGE_LONG(TEST_long, CULL_SPOOL)
@@ -88,6 +100,9 @@ LISTDEF(TEST_Type)
    SGE_DOUBLE(TEST_double, CULL_SPOOL)
    SGE_HOST(TEST_host, CULL_SPOOL)
    SGE_STRING(TEST_string, CULL_SPOOL)
+   SGE_REF(TEST_ref, CULL_ANY_SUBTYPE, CULL_DEFAULT)
+   SGE_OBJECT(TEST_obj_jb, JB_Type, CULL_DEFAULT)
+   SGE_OBJECT(TEST_obj_any, CULL_ANY_SUBTYPE, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(TESTN)
@@ -101,6 +116,9 @@ NAMEDEF(TESTN)
    NAME("TEST_double")
    NAME("TEST_host")
    NAME("TEST_string")
+   NAME("TEST_ref")
+   NAME("TEST_obj_jb")
+   NAME("TEST_obj_any")
 NAMEEND
 
 #define TEST_SIZE sizeof(TESTN)/sizeof(char *)

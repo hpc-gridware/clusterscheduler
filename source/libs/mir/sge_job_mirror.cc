@@ -175,6 +175,9 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
          */
          bool ret = job_update_master_list_usage(*list, event);
          DRETURN(ret?SGE_EMA_OK:SGE_EMA_FAILURE);
+      } else if (event_type == sgeE_JOB_FINISH) {
+         // @todo instead of data of a job a job report is received. why?
+         DRETURN(SGE_EMA_OK);
       } else {
          /* this is the true modify event.
           * we may not update several fields:
