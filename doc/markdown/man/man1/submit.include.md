@@ -14,17 +14,17 @@
 
 # SYNTAX
 
-`qsub` \[ *options* \] \[ *command* \[ *command_args* \] \| -- \[ *command_args* \]\]
+`qsub` \[ *options* \] \[ *command* \[ *command_args* \] \| \-\- \[ *command_args* \]\]
 
-`qsh` \[ *options* \] \[ -- *xterm_args* \]
+`qsh` \[ *options* \] \[ \-\- *xterm_args* \]
 
 `qlogin` \[ *options* \]
 
 `qrsh` \[ *options* \] \[ *command* \[ *command_args* \]\]
 
-`qalter` \[ *options* \] *wc_job_range_list* \[ -- \[ *command_args* \]\]
+`qalter` \[ *options* \] *wc_job_range_list* \[ \-\- \[ *command_args* \]\]
 
-`qalter` \[ *options* \] `-u` *user_list* \| -`uall` \[ -- \[ *command_args* \]\]
+`qalter` \[ *options* \] `-u` *user_list* \| -`uall` \[ \-\- \[ *command_args* \]\]
 
 `qresub` \[ *options* \] *job_id_list*
 
