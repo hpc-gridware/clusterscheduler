@@ -1,6 +1,66 @@
 # Full List of Fixes
 
-# Release notes - Cluster Scheduler - 9.0.2
+# Release notes - Cluster Scheduler 
+
+## 9.0.3
+
+### Improvement
+
+[CS-400](https://hpc-gridware.atlassian.net/browse/CS-400) need different resource requests for master and slave tasks
+
+[CS-558](https://hpc-gridware.atlassian.net/browse/CS-558) Install guide should explain automatic installation
+
+[CS-986](https://hpc-gridware.atlassian.net/browse/CS-986) debug output \(DPRINTF etc., enabled via dl.\[c\]sh\) should contain a timestamp
+
+[CS-987](https://hpc-gridware.atlassian.net/browse/CS-987) shadowd\_migrate test should be reported as unsupported instead of failed when the cluster set-up does not support running it
+
+[CS-989](https://hpc-gridware.atlassian.net/browse/CS-989) add testsuite option to stop testing if a valgrind error is found
+
+[CS-996](https://hpc-gridware.atlassian.net/browse/CS-996) sge\_qmaster internal gdi requests do not need to initialize and later parse authentication information
+
+[CS-1010](https://hpc-gridware.atlassian.net/browse/CS-1010) qmaster complains about event client not properly initialized
+
+[CS-1016](https://hpc-gridware.atlassian.net/browse/CS-1016) Provide a description of using Podman with Gridware Cluster Scheduler in the Admin Guide
+
+[CS-1017](https://hpc-gridware.atlassian.net/browse/CS-1017) Provide a description of resource reservation in the Admin Guide
+
+### Epic
+
+[CS-173](https://hpc-gridware.atlassian.net/browse/CS-173) Job counter should be greater than 10 mio.
+
+### Task
+
+[CS-945](https://hpc-gridware.atlassian.net/browse/CS-945) Adapt cmake to change version strings on various places when sgeobj/ocs\_Version.cc is changed
+
+[CS-1006](https://hpc-gridware.atlassian.net/browse/CS-1006) Release notes are not available for OCS on the web server
+
+### Sub-task
+
+[CS-929](https://hpc-gridware.atlassian.net/browse/CS-929) Enhance the gen\_types tool to generate lwdb object files
+
+[CS-932](https://hpc-gridware.atlassian.net/browse/CS-932) documents all lwdb methods
+
+### Bug
+
+[CS-630](https://hpc-gridware.atlassian.net/browse/CS-630) several testsuite tests fail in environments where primary hostname is fully qualified
+
+[CS-715](https://hpc-gridware.atlassian.net/browse/CS-715) Describe binary replacement for patch release in the installation guide
+
+[CS-921](https://hpc-gridware.atlassian.net/browse/CS-921) behavior of qalter is unclear regarding the modification of command arguments
+
+[CS-959](https://hpc-gridware.atlassian.net/browse/CS-959) sge\_qmaster shutdown takes too long
+
+[CS-981](https://hpc-gridware.atlassian.net/browse/CS-981) start of advance reservation can be slightly delayed
+
+[CS-990](https://hpc-gridware.atlassian.net/browse/CS-990) Active reservations for parallel jobs will cause core of master during restart
+
+[CS-992](https://hpc-gridware.atlassian.net/browse/CS-992) Scheduler makes no reservation for jobs after execd or sometimes qmaster restart
+
+[CS-994](https://hpc-gridware.atlassian.net/browse/CS-994) Instead of reserving slots for a PE job it is started immediately
+
+[CS-997](https://hpc-gridware.atlassian.net/browse/CS-997) Output shows negative timestamps for resource bookings
+
+[CS-998](https://hpc-gridware.atlassian.net/browse/CS-998) Scheduler creates unnecessary resource schedules that cost performance
 
 ## v9.0.2
 
