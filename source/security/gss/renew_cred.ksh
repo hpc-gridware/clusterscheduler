@@ -54,7 +54,7 @@ sleep_time=900                  # time to sleep between renewing TGTs
 kinit='/usr/krb5/bin/kinit'     # path to kinit binary
 
 cd /tmp
-while /bin/true
+while /usr/bin/true
 do
 
    x=`find . -name 'krb5cc_sge_*' -o \
