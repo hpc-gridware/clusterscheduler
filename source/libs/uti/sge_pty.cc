@@ -46,6 +46,7 @@
 #  include <stropts.h>
 #  include <termio.h>
 #elif defined(FREEBSD) || defined(NETBSD)
+#  include <libutil.h>
 #  include <termios.h>
 #else
 
@@ -285,11 +286,17 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
    if (getuid() == SGE_SUPERUSER_UID) {
       seteuid(SGE_SUPERUSER_UID);
    }
-   if ((fdm = ptym_open(pts_name)) < 0) {
-      sge_dstring_sprintf(err_msg, "can't open master pty \"%s\": %d, %s",
-                          pts_name, errno, strerror(errno));
+#if defined(FREEBSD) || defined(NETBSD)
+   if (openpty(&fdm, &fds, pts_name, nullptr, nullptr) < 0) {
+      sge_dstring_sprintf(err_msg, "can't open master and slave pty: %d, %s", errno, strerror(errno));
       return -1;
    }
+#else
+   if ((fdm = ptym_open(pts_name)) < 0) {
+      sge_dstring_sprintf(err_msg, "can't open master pty \"%s\": %d, %s", pts_name, errno, strerror(errno));
+      return -1;
+   }
+#endif
 #if defined(USE_PTY_AND_PIPE_ERR)
    if (pipe(fd_pipe_err) == -1) {
       sge_dstring_sprintf(err_msg, "can't create pipe for stderr: %d, %s",
@@ -301,17 +308,20 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       return -1;
    } else if (pid == 0) {     /* child */
       if ((g_newpgrp = setsid()) < 0) {
-         sge_dstring_sprintf(err_msg, "setsid() error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "setsid() error: %d, %s", errno, strerror(errno));
          return -1;
       }
 
+#if defined(FREEBSD) || defined(NETBSD)
+      // fds is already the slave that was created by openpty
+#else
       /* Open pty slave */
       if ((fds = ptys_open(fdm, pts_name)) < 0) {
          seteuid(old_euid);
          sge_dstring_sprintf(err_msg, "can't open slave pty: %d", fds);
          return -1;
       }
+#endif
       seteuid(old_euid);
       close(fdm);
 

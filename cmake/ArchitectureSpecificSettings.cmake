@@ -188,7 +188,7 @@ function(architecture_specific_settings)
       set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
       add_compile_definitions(FREEBSD GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
       add_compile_options(-fPIC)
-      add_link_options(-lpthread)
+      add_link_options(-lpthread -lutil)
 
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
