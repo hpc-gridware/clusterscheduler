@@ -674,40 +674,23 @@ u_long32 job_get_submit_ja_tasks(const lListElem *job)
    return ((end - start) / step + 1); 
 }
  
-/****** sgeobj/job/job_enroll() ***********************************************
-*  NAME
-*     job_enroll() -- enrolls a array task into the JB_ja_tasks lists 
-*
-*  SYNOPSIS
-*     lListElem *job_enroll(lListElem *job, lList **answer_list, 
-*                           u_long32 ja_task_number) 
-*
-*  FUNCTION
-*     The task with 'ja_task_number' will be enrolled into the 
-*     JB_ja_tasks list of 'job' when this function is called. 
-*
-*  INPUTS
-*     lListElem *job          - JB_Type 
-*     lList **answer_list     - AN_Type 
-*     u_long32 ja_task_number - task number 
-*
-*  RESULT
-*     lListElem * - the ja_task
-*
-******************************************************************************/
-lListElem *job_enroll(lListElem *job, lList **answer_list,
-                      u_long32 ja_task_number)
-{
-   lListElem *ja_task = nullptr;
-
+/** @brief Enrolls a task into the JB_ja_tasks list of a job
+ *
+ * @param job the job
+ * @param answer_list the answer list
+ * @param ja_task_number the task number
+ *
+ * @return the enrolled task
+ */
+lListElem *
+job_enroll(lListElem *job, lList **answer_list, u_long32 ja_task_number) {
    DENTER(TOP_LAYER);
 
    object_delete_range_id(job, answer_list, JB_ja_n_h_ids, ja_task_number);
-
-   ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_number, JB_ja_tasks);
+   lListElem *ja_task = lGetSubUlongRW(job, JAT_task_number, ja_task_number, JB_ja_tasks);
    if (ja_task == nullptr) {
       lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
-      lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number); 
+      lListElem *template_task = job_get_ja_task_template_pending(job, ja_task_number);
 
       if (ja_task_list == nullptr) {
          ja_task_list = lCreateList("ulong_sublist", lGetElemDescr(template_task) );
@@ -718,7 +701,49 @@ lListElem *job_enroll(lListElem *job, lList **answer_list,
    }
 
    DRETURN(ja_task);
-}  
+}
+
+/** @brief Unenrolls a task from the JB_ja_tasks list of a job
+ *
+ * The task ID is added to the list of unenrolled tasks not in hold state (n_h)
+ *
+ * @param job the job
+ * @param answer_list the answer list
+ * @param ja_task the task to unenroll
+ */
+void
+job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task) {
+   DENTER(TOP_LAYER);
+   if (job == nullptr || ja_task == nullptr || *ja_task == nullptr) {
+      // nothing to do
+      DRETURN_VOID;
+   }
+
+   lList *ja_task_list = lGetListRW(job, JB_ja_tasks);
+   if (ja_task_list == nullptr) {
+      // no enrolled task - should never happen
+      DRETURN_VOID;
+   }
+
+   // add the task id to the list of unenrolled tasks
+   u_long32 ja_task_id = lGetUlong(*ja_task, JAT_task_number);
+   lList *ids = lGetListRW(job, JB_ja_n_h_ids);
+   const lList *before_ids = ids;
+   range_list_insert_id(&ids, answer_list, ja_task_id);
+   range_list_compress(ids);
+   if (before_ids == nullptr) {
+      lSetList(job, JB_ja_n_h_ids, ids);
+   }
+
+   // remove the enrolled task
+   lRemoveElem(ja_task_list, ja_task);
+
+   // trash the list if it was the last task
+   if (lGetNumberOfElem(ja_task_list) == 0) {
+      lSetList(job, JB_ja_tasks, nullptr);
+   }
+   DRETURN_VOID;
+}
 
 /****** sge_job/job_count_rescheduled_ja_tasks() *******************************
 *  NAME
