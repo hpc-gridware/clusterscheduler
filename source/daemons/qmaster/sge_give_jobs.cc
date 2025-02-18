@@ -1249,6 +1249,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
 
+         // @todo send event and do this earlier
          sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr,
                          session, jep, jatep, nullptr, false, true, gdi_session);
 

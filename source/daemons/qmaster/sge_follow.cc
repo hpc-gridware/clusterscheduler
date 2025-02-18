@@ -235,6 +235,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          }
 
          /* search and enroll task */
+         bool enrolled_task = false;
          jatp = job_search_task(jep, nullptr, task_number);
          if (jatp == nullptr) {
             if (range_list_is_id_within(lGetList(jep, JB_ja_n_h_ids), task_number)) {
@@ -243,16 +244,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   WARNING(MSG_JOB_FINDJOBTASK_UU, sge_u32c(task_number), sge_u32c(job_number));
                   DRETURN(-1);
                }
-
-               /* spooling of the JATASK will be done later
-                * TODO: we could reduce the number of events sent:
-                * Currently we send the ADD event, and a MOD event.
-                * This could be reduced to just the ADD event, if we
-                * roll back creation of the ja_task in every error situation
-                * (delete the ja_task *and* rollback the range information).
-                */
-               sge_add_event(0, sgeE_JATASK_ADD, job_number, task_number,
-                             nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
+               enrolled_task = true;
             } else {
                INFO(MSG_JOB_IGNORE_DELETED_TASK_UU, sge_u32c(job_number), sge_u32c(task_number));
                DRETURN(0);
@@ -261,7 +253,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
          /* job is not pending - we got the order twice? */
          if (lGetUlong(jatp, JAT_status) != JIDLE) {
-            ERROR(MSG_ORD_TWICE_UU, sge_u32c(job_number), sge_u32c(task_number));
+            if (enrolled_task) {
+               job_unenroll(jep, nullptr, &jatp);
+            }
+            ERROR(MSG_ORD_TWICE_UU, job_number, task_number);
             DRETURN(-1);
          }
 
@@ -269,6 +264,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          if (or_pe) {
             pe = pe_list_locate(master_pe_list, or_pe);
             if (pe == nullptr) {
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                ERROR(MSG_OBJ_UNABLE2FINDPE_S, or_pe);
                DRETURN(-2);
             }
@@ -279,7 +277,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          if (lGetUlong(jep, JB_ar)) {
             lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
             if (ar == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(lGetUlong(jep, JB_ar)), sge_u32c(lGetUlong(jep, JB_job_number)));
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
+               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, lGetUlong(jep, JB_ar), lGetUlong(jep, JB_job_number));
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-2);
             }
@@ -317,9 +318,12 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
              *  find and check queue
              */
             if (!q_name) {
-               ERROR(SFNMAX, MSG_OBJ_NOQNAME);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
+               ERROR(SFNMAX, MSG_OBJ_NOQNAME);
                DRETURN(-2);
             }
 
@@ -329,21 +333,25 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             qep = cqueue_list_locate_qinstance(master_cqueue_list, q_name);
             if (qep == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, q_name, sge_u32c(job_number));
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
+               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, q_name, job_number);
                DRETURN(-2);
             }
 
             /* check queue version */
             if (q_version != lGetUlong(qep, QU_version)) {
-               WARNING(MSG_ORD_QVERSION_SUU, q_name, sge_u32c(q_version), sge_u32c( lGetUlong(qep, QU_version)));
-
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                /* try to repair schedd data */
                qinstance_add_event(qep, sgeE_QINSTANCE_MOD, gdi_session);
-
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
+               WARNING(MSG_ORD_QVERSION_SUU, q_name, q_version,  lGetUlong(qep, QU_version));
                DRETURN(-1);
             }
 
@@ -358,7 +366,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             if (!sge_has_access_(lGetString(jep, JB_owner), lGetString(jep, JB_group), lGetList(jep, JB_grp_list),
                                  lGetList(qep, QU_acl), lGetList(qep, QU_xacl),
                                  master_userset_list)) {
-               ERROR(MSG_JOB_JOBACCESSQ_US, sge_u32c(job_number), q_name);
+               ERROR(MSG_JOB_JOBACCESSQ_US, job_number, q_name);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-1);
@@ -366,7 +377,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             /* ensure that this queue has enough free slots */
             if (lGetUlong(qep, QU_job_slots) - qinstance_slots_used(qep) < q_slots) {
-               ERROR(MSG_JOB_FREESLOTS_USUU, sge_u32c(q_slots), q_name, sge_u32c(job_number), sge_u32c(task_number));
+               ERROR(MSG_JOB_FREESLOTS_USUU, q_slots, q_name, job_number, task_number);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-1);
@@ -379,12 +393,18 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
              */
             if (qinstance_state_is_error(qep)) {
                WARNING(MSG_JOB_QMARKEDERROR_S, q_name);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-1);
             }
             if (qinstance_state_is_cal_suspended(qep)) {
                WARNING(MSG_JOB_QSUSPCAL_S, q_name);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-1);
@@ -402,6 +422,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             hep = host_list_locate(exec_host_list, lGetHost(qep, QU_qhostname));
             if (hep == nullptr) {
                ERROR(MSG_JOB_UNABLE2FINDHOST_S, lGetHost(qep, QU_qhostname));
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(-2);
@@ -412,7 +435,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                for_each_ep(ruep, lGetList(hep, EH_reschedule_unknown_list)) {
                   if (job_number == lGetUlong(ruep, RU_job_number)
                       && task_number == lGetUlong(ruep, RU_task_number)) {
-                     ERROR(MSG_JOB_UNABLE2STARTJOB_US, sge_u32c(lGetUlong(ruep, RU_job_number)), lGetHost(qep, QU_qhostname));
+                     ERROR(MSG_JOB_UNABLE2STARTJOB_US, lGetUlong(ruep, RU_job_number), lGetHost(qep, QU_qhostname));
+                     if (enrolled_task) {
+                        job_unenroll(jep, nullptr, &jatp);
+                     }
                      lFreeList(&gdil);
                      lSetString(jatp, JAT_granted_pe, nullptr);
                      DRETURN(-1);
@@ -544,7 +570,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
             /* Consumable check failed - we cannot start this job! */
             if (!consumables_ok) {
-               ERROR(MSG_JOB_RESOURCESNOLONGERAVAILABLE_UU, sge_u32c(job_number), sge_u32c(task_number));
+               ERROR(MSG_JOB_RESOURCESNOLONGERAVAILABLE_UU, job_number, task_number);
+               if (enrolled_task) {
+                  job_unenroll(jep, nullptr, &jatp);
+               }
                lFreeList(&gdil);
                lSetString(jatp, JAT_granted_pe, nullptr);
                DRETURN(0);
@@ -558,6 +587,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          if (pe != nullptr) {
             lSetObject(jatp, JAT_pe_object, lCopyElem(pe));
          }
+
+         // @todo: can this be summaized with the mod event that will set the job in t-state?
+         sge_add_event(0, sgeE_JATASK_ADD, job_number, task_number,
+                      nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
 
          if (sge_give_job(jep, jatp, master_qep, master_host, monitor, gdi_session)) {
             /* setting of queues in state unheard is done by sge_give_job() */
