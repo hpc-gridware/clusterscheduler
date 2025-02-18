@@ -81,7 +81,7 @@ lCondition *lWhereFromElem(const lListElem *where){
       }
    }
    else {
-      ERROR(MSG_PACK_WRONGPACKTYPE_UI, sge_u32c(lGetUlong(where, PACK_id)), SGE_WHERE);
+      ERROR(MSG_PACK_WRONGPACKTYPE_UI, lGetUlong(where, PACK_id), SGE_WHERE);
    }
    DRETURN(cond);
 }

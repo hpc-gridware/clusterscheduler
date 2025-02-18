@@ -205,7 +205,7 @@ static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
       lSetDouble(jep, JB_wtcontr, wtc);
       lSetDouble(jep, JB_urg, absolute_urgency);
 
-/*      DPRINTF("--- job " sge_U32CFormat " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
+/*      DPRINTF("--- job " sge_uu32 " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
             lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency);
 */            
       
@@ -365,7 +365,7 @@ double sge_normalize_value(double value, double range_min, double range_max)
 {
    double result;
 
-   if (range_max - range_min < SGE_EPSILON)
+   if (range_max - range_min < DBL_EPSILON)
       result = 0.5;
    else
       result = (value - range_min)/( range_max - range_min);

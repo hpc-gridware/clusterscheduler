@@ -379,7 +379,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                               }
                            }
                            /* should never happen */
-                           ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, sge_u32c(jobid), sge_u32c(jataskid), pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(lGetUlong(jatep, JAT_status)));
+                           ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(lGetUlong(jatep, JAT_status)));
                         }
                      }
 
@@ -411,7 +411,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                      }
                      break;
                   default:
-                     ERROR(MSG_JOB_REPORTRUNQ_SUUSSU, rhost, sge_u32c(jobid), sge_u32c(jataskid), pe_task_id_str ? pe_task_id_str : "master", queue_name, sge_u32c(status));
+                     ERROR(MSG_JOB_REPORTRUNQ_SUUSSU, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : "master", queue_name, status);
                      break;
                }
             } else {
@@ -424,7 +424,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                   retry is triggered if execd reports
                   this job again as running
                */
-               ERROR(MSG_JOB_REPORTRUNFALSE_SUUSS, rhost, sge_u32c(jobid), sge_u32c(jataskid), pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name);
+               ERROR(MSG_JOB_REPORTRUNFALSE_SUUSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name);
                pack_ack(pb, ACK_SIGNAL_JOB, jobid, jataskid, nullptr);
             }
             break;
@@ -594,7 +594,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         skip_job_exit = 1;
                         break;
                      default:
-                        ERROR(MSG_JOB_REPORTEXITJ_UUU, sge_u32c(jobid), sge_u32c(jataskid), sge_u32c(status));
+                        ERROR(MSG_JOB_REPORTEXITJ_UUU, jobid, jataskid, status);
                         break;
                   }
                } else {
@@ -694,19 +694,19 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
                               switch (sge_signo) {
                                  case SGE_SIGXFSZ:
-                                    INFO(MSG_JOB_FILESIZEEXCEED_SSUU, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid));
+                                    INFO(MSG_JOB_FILESIZEEXCEED_SSUU, pe_task_id_str, rhost, jobid, jataskid);
                                     break;
                                  case SGE_SIGXCPU:
-                                    INFO(MSG_JOB_CPULIMEXCEED_SSUU, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid));
+                                    INFO(MSG_JOB_CPULIMEXCEED_SSUU, pe_task_id_str, rhost, jobid, jataskid);
                                     break;
                                  default:
-                                    INFO(MSG_JOB_DIEDTHROUGHSIG_SSUUS, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid), sge_sig2str( sge_signo));
+                                    INFO(MSG_JOB_DIEDTHROUGHSIG_SSUUS, pe_task_id_str, rhost, jobid, jataskid, sge_sig2str( sge_signo));
                                     break;
                               }
                            } else if (failed == 0) {
-                              INFO(MSG_JOB_TASKFINISHED_SSUU, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid));
+                              INFO(MSG_JOB_TASKFINISHED_SSUU, pe_task_id_str, rhost, jobid, jataskid);
                            } else {
-                              INFO(MSG_JOB_TASKFAILED_SSUUU, pe_task_id_str, rhost, sge_u32c(jobid), sge_u32c(jataskid), sge_u32c(failed));
+                              INFO(MSG_JOB_TASKFAILED_SSUUU, pe_task_id_str, rhost, jobid, jataskid, failed);
                            }
 
                            if (failed == SSTATE_FAILURE_AFTER_JOB && !lGetString(jep, JB_checkpoint_name)) {
@@ -734,7 +734,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         }
                      }
                      /* should never happen */
-                     ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, sge_u32c(jobid), sge_u32c(jataskid), pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(lGetUlong(jatep, JAT_status)));
+                     ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(lGetUlong(jatep, JAT_status)));
                   }
                }
             }
@@ -745,7 +745,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
          }
             break;
          default:
-            ERROR(MSG_EXECD_UNKNOWNJ_SUUSUS, rhost, sge_u32c(jobid), sge_u32c(jataskid), pe_task_id_str ? pe_task_id_str : MSG_MASTER, sge_u32c(rstate), queue_name);
+            ERROR(MSG_EXECD_UNKNOWNJ_SUUSUS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, rstate, queue_name);
 
 
             pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);

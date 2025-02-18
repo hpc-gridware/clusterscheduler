@@ -776,7 +776,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
          command_pid = sge_peopen("/bin/sh", 0, cmd, nullptr, env, &fp_in, &fp_out, &fp_err, false);
 
          if (command_pid == -1) {
-            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, sge_u32c(lGetUlong(jep, JB_job_number)));
+            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, lGetUlong(jep, JB_job_number));
          }
 
          str = sge_bin2string(fp_out, 0);
@@ -791,10 +791,10 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
          lSetString(jep, JB_cred, str);
 
          if (ret) {
-            ERROR(MSG_SEC_NOCRED_USSI, sge_u32c(lGetUlong(jep, JB_job_number)), rhost, binary, ret);
+            ERROR(MSG_SEC_NOCRED_USSI, lGetUlong(jep, JB_job_number), rhost, binary, ret);
          }
       } else {
-         ERROR(MSG_SEC_NOCREDNOBIN_US,  sge_u32c(lGetUlong(jep, JB_job_number)), binary);
+         ERROR(MSG_SEC_NOCREDNOBIN_US,  lGetUlong(jep, JB_job_number), binary);
          ret_value = false;       
       }
    }
@@ -848,7 +848,7 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 
          if (command_pid == -1) {
             strcpy(tmpstr, SGE_EVENT);
-            ERROR(MSG_SEC_STARTDELCREDCMD_SU, binary, sge_u32c(lGetUlong(jep, JB_job_number)));
+            ERROR(MSG_SEC_STARTDELCREDCMD_SU, binary, lGetUlong(jep, JB_job_number));
             strcpy(SGE_EVENT, tmpstr);
          }
 
@@ -864,13 +864,13 @@ void delete_credentials(const char *sge_root, lListElem *jep)
 
          if (ret != 0) {
             strcpy(tmpstr, SGE_EVENT);
-            ERROR(MSG_SEC_DELCREDRETCODE_USI, sge_u32c(lGetUlong(jep, JB_job_number)), binary, ret);
+            ERROR(MSG_SEC_DELCREDRETCODE_USI, lGetUlong(jep, JB_job_number), binary, ret);
             strcpy(SGE_EVENT, tmpstr);
          }
 
       } else {
          strcpy(tmpstr, SGE_EVENT);
-         ERROR(MSG_SEC_DELCREDNOBIN_US,  sge_u32c(lGetUlong(jep, JB_job_number)), binary);
+         ERROR(MSG_SEC_DELCREDNOBIN_US,  lGetUlong(jep, JB_job_number), binary);
          strcpy(SGE_EVENT, tmpstr);
       }
    }
@@ -903,7 +903,7 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
       char *env[2];
 
       if (do_authentication && lGetString(jep, JB_cred) == nullptr) {
-         ERROR(MSG_SEC_NOAUTH_U, sge_u32c(lGetUlong(jep, JB_job_number)));
+         ERROR(MSG_SEC_NOAUTH_U, lGetUlong(jep, JB_job_number));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
       }
@@ -922,7 +922,7 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
          command_pid = sge_peopen("/bin/sh", 0, cmd, nullptr, env, &fp_in, &fp_out, &fp_err, false);
 
          if (command_pid == -1) {
-            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, sge_u32c(lGetUlong(jep, JB_job_number)));
+            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, lGetUlong(jep, JB_job_number));
          }
 
          sge_string2bin(fp_in, lGetString(jep, JB_cred));
@@ -935,7 +935,7 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
          ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
 
          if (ret) {
-            ERROR(MSG_SEC_NOSTORECRED_USI, sge_u32c(lGetUlong(jep, JB_job_number)), binary, ret);
+            ERROR(MSG_SEC_NOSTORECRED_USI, lGetUlong(jep, JB_job_number), binary, ret);
          }
 
          /*
@@ -943,13 +943,13 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
           */
 
          if (do_authentication && (ret != 0)) {
-            ERROR(MSG_SEC_NOAUTH_U, sge_u32c(lGetUlong(jep, JB_job_number)));
+            ERROR(MSG_SEC_NOAUTH_U, lGetUlong(jep, JB_job_number));
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
       } else {
-         ERROR(MSG_SEC_NOSTORECREDNOBIN_US, sge_u32c(lGetUlong(jep, JB_job_number)), binary);
+         ERROR(MSG_SEC_NOSTORECREDNOBIN_US, lGetUlong(jep, JB_job_number), binary);
       }
    }
 #ifdef KERBEROS
@@ -1038,7 +1038,7 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
          command_pid = sge_peopen("/bin/sh", 0, cmd, nullptr, env, &fp_in, &fp_out, &fp_err, false);
 
          if (command_pid == -1) {
-            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, sge_u32c(lGetUlong(jelem, JB_job_number)));
+            ERROR(MSG_SEC_NOSTARTCMD4GETCRED_SU, binary, lGetUlong(jelem, JB_job_number));
          }
 
          sge_string2bin(fp_in, lGetString(jelem, JB_cred));
@@ -1051,7 +1051,7 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
          ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
 
          if (ret) {
-            ERROR(MSG_SEC_NOSTORECRED_USI, sge_u32c(lGetUlong(jelem, JB_job_number)), binary, ret);
+            ERROR(MSG_SEC_NOSTORECRED_USI, lGetUlong(jelem, JB_job_number), binary, ret);
          }
 
          /*
@@ -1059,14 +1059,14 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
           */                                                  
                                                               
          if (do_authentication && (ret != 0)) {               
-            ERROR(MSG_SEC_KRBAUTHFAILURE, sge_u32c(lGetUlong(jelem, JB_job_number)));
+            ERROR(MSG_SEC_KRBAUTHFAILURE, lGetUlong(jelem, JB_job_number));
             sge_dstring_sprintf(err_str, MSG_SEC_KRBAUTHFAILUREONHOST,
-                    sge_u32c(lGetUlong(jelem, JB_job_number)),
+                    lGetUlong(jelem, JB_job_number),
                     unqualified_hostname);                 
             *general = GFSTATE_JOB;                            
          }                                                    
       } else {
-         ERROR(MSG_SEC_NOSTORECREDNOBIN_US, sge_u32c(lGetUlong(jelem, JB_job_number)), binary);
+         ERROR(MSG_SEC_NOSTORECREDNOBIN_US, lGetUlong(jelem, JB_job_number), binary);
       }
    }
    DRETURN(ret);
@@ -1098,7 +1098,7 @@ struct dispatch_entry *de
       size_t pw_buffer_size;
 
       if ((rc = krb_encrypt_tgt_creds(tgt_creds, &outbuf))) {
-         ERROR(MSG_SEC_KRBENCRYPTTGTUSER_SUS, lGetString(jelem, JB_owner), sge_u32c(lGetUlong(jelem, JB_job_number)), error_message(rc));
+         ERROR(MSG_SEC_KRBENCRYPTTGTUSER_SUS, lGetString(jelem, JB_owner), lGetUlong(jelem, JB_job_number), error_message(rc));
       }
 
       if (rc == 0)
@@ -1125,7 +1125,7 @@ struct dispatch_entry *de
          }
 
       } else {
-         ERROR(MSG_SEC_NOUID_SU, lGetString(jelem, JB_owner), sge_u32c(lGetUlong(jelem, JB_job_number)));
+         ERROR(MSG_SEC_NOUID_SU, lGetString(jelem, JB_owner), lGetUlong(jelem, JB_job_number));
       }
 
       /* clear TGT out of client entry (this frees the TGT credentials) */
@@ -1164,7 +1164,7 @@ void tgt2cc(lListElem *jep, const char *rhost)
       inbuf.data = krb_str2bin(tgtstr, nullptr, &inbuf.length);
       if (inbuf.length) {
          if ((rc = krb_decrypt_tgt_creds(&inbuf, &tgt_creds))) {
-            ERROR(MSG_SEC_KRBDECRYPTTGT_US, sge_u32c(jid), error_message(rc));
+            ERROR(MSG_SEC_KRBDECRYPTTGT_US, jid, error_message(rc));
          }
       }
       if (rc == 0)

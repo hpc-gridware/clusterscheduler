@@ -86,7 +86,7 @@ heartbeat_initialize()
    if (getenv("SGE_TEST_HEARTBEAT_TIMEOUT") != nullptr) {
       u_long32 test_timeout = SGE_STRTOU_LONG32(getenv("SGE_TEST_HEARTBEAT_TIMEOUT"));
       set_inc_qmaster_heartbeat_test_mode(test_timeout);
-      DPRINTF("heartbeat timeout test enabled (timeout=" sge_U32CFormat ")\n", sge_u32c(test_timeout));
+      DPRINTF("heartbeat timeout test enabled (timeout=" sge_uu32 ")\n", test_timeout);
    }
 
    DRETURN_VOID;

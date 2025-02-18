@@ -750,7 +750,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 
    qeti = sge_qeti_allocate(best);
    if (qeti == nullptr) {
-      ERROR("could not allocate qeti object needed reservation " "scheduling of parallel job " sge_U32CFormat, sge_u32c(best->job_id));
+      ERROR("could not allocate qeti object needed reservation " "scheduling of parallel job " sge_uu32, best->job_id);
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -7151,7 +7151,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
             }
             if (acl_ep != nullptr){
                dstring buffer = DSTRING_INIT;
-               sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
+               sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                               SCHEDD_INFO_HASNOPERMISSION_SS, SGE_OBJ_AR,
                               sge_dstring_get_string(&buffer));
@@ -7181,7 +7181,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
             }
             if (acl_ep == nullptr){
                dstring buffer = DSTRING_INIT;
-               sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
+               sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                               SCHEDD_INFO_HASNOPERMISSION_SS, SGE_OBJ_AR,
                               sge_dstring_get_string(&buffer));

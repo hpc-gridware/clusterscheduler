@@ -3786,10 +3786,10 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                         MSG_CL_TCP_FW_ENDPOINT_X_DOESNT_MATCH_Y_SSUSSU,
                         connection->local->comp_host,
                         connection->local->comp_name,
-                        sge_u32c(connection->local->comp_id),
+                        static_cast<u_long32>(connection->local->comp_id),
                         connection->client_dst->comp_host,
                         connection->client_dst->comp_name,
-                        sge_u32c(connection->client_dst->comp_id));
+                        static_cast<u_long32>(connection->client_dst->comp_id));
 
                cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_ACCESS_DENIED, tmp_buffer);
 
@@ -3835,7 +3835,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                            MSG_CL_TCP_FW_ENDPOINT_X_ALREADY_CONNECTED_SSU,
                            connection->remote->comp_host,
                            connection->remote->comp_name,
-                           sge_u32c(connection->remote->comp_id));
+                           static_cast<u_long32>(connection->remote->comp_id));
 
                   cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_ENDPOINT_NOT_UNIQUE, tmp_buffer);
 
@@ -3899,7 +3899,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                               MSG_CL_TCP_FW_ENDPOINT_X_NOT_FROM_RESERVED_PORT_SSU,
                               connection->remote->comp_host,
                               connection->remote->comp_name,
-                              sge_u32c(connection->remote->comp_id));
+                              static_cast<u_long32>(connection->remote->comp_id));
 
                      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_RESERVED_PORT_CONNECTION, tmp_buffer);
 
@@ -3932,7 +3932,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                               MSG_CL_TCP_FW_ENDPOINT_X_NOT_FROM_LOCAL_HOST_SSUS,
                               connection->remote->comp_host,
                               connection->remote->comp_name,
-                              sge_u32c(connection->remote->comp_id),
+                              static_cast<u_long32>(connection->remote->comp_id),
                               connection->local->comp_host);
 
                      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_LOCAL_HOST_CONNECTION, tmp_buffer);
@@ -3991,7 +3991,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                               MSG_CL_TCP_FW_STANDARD_ENDPOINT_X_NOT_FROM_RESERVED_PORT_SSU,
                               connection->remote->comp_host,
                               connection->remote->comp_name,
-                              sge_u32c(connection->remote->comp_id));
+                              static_cast<u_long32>(connection->remote->comp_id));
                      cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_RESERVED_PORT_CONNECTION, tmp_buffer);
                      connection->crm_state = CL_CRM_CS_DENIED;
                      connection_status = CL_CONNECT_RESPONSE_MESSAGE_CONNECTION_STATUS_DENIED;

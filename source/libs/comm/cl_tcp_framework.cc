@@ -1704,10 +1704,10 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                          connection->remote->comp_host != nullptr &&
                          connection->remote->comp_name != nullptr) {
                         char tmp_string[1024];
-                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                  connection->remote->comp_host,
                                  connection->remote->comp_name,
-                                 sge_u32c(connection->remote->comp_id));
+                                 connection->remote->comp_id);
                         CL_LOG_STR(CL_LOG_ERROR, "select error:", tmp_string);
                         cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, tmp_string);
                      }
@@ -1802,10 +1802,10 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
                             connection->remote->comp_host != nullptr &&
                             connection->remote->comp_name != nullptr) {
                            char tmp_string[1024];
-                           snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                           snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                     connection->remote->comp_host,
                                     connection->remote->comp_name,
-                                    sge_u32c(connection->remote->comp_id));
+                                    connection->remote->comp_id);
                            CL_LOG_STR(CL_LOG_ERROR, "poll() revents error:", tmp_string);
                            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, tmp_string);
                         }

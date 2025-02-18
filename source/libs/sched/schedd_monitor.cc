@@ -49,15 +49,12 @@
 
 static char schedd_log_file[SGE_PATH_MAX + 1] = "";
 
-void schedd_set_schedd_log_file()
-{
-   const char *cell_root = bootstrap_get_cell_root();
-   
+void schedd_set_schedd_log_file() {
    DENTER(TOP_LAYER);
 
    if (!*schedd_log_file) {
+      const char *cell_root = bootstrap_get_cell_root();
       snprintf(schedd_log_file, sizeof(schedd_log_file), "%s/%s/%s", cell_root, "common", SCHED_LOG_NAME);
-      DPRINTF("schedd log file >>%s<<\n", schedd_log_file);
    }
 
    DRETURN_VOID;
@@ -75,19 +72,15 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
 
    if (monitor_next_run) {
       /* do logging (-tsm) */
-      FILE *fp = nullptr;
-      DSTRING_STATIC(dstr, 64);
-
-      const char *time_str = sge_ctime64(sge_get_gmt64(), &dstr);
-
-      fp = fopen(schedd_log_file, "a");
+      FILE *fp = fopen(schedd_log_file, "a");
       if (fp == nullptr) {
          DPRINTF("could not open schedd_log_file " SFQ "\n", schedd_log_file);
          DRETURN(-1);
       }
 
-      fprintf(fp, "%s|", time_str);
-      fprintf(fp, "%s\n", logstr);
+      DSTRING_STATIC(dstr, 64);
+      const char *time_str = sge_ctime64(sge_get_gmt64(), &dstr);
+      fprintf(fp, "%s|%s\n", time_str, logstr);
       FCLOSE(fp);
    }
 
@@ -101,20 +94,19 @@ FCLOSE_ERROR:
 #define NUM_ITEMS_ON_LINE 10
 
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm) {
-   int fields[] = { 0, 0 };
-   const char *delis[] = {nullptr, " ", nullptr};
-   lList *lp_part = nullptr;
-   const lListElem *ep = nullptr;
-
    DENTER(TOP_LAYER);
 
    if (monitor_alpp == nullptr && !monitor_next_run) {
       DRETURN(0);
    }
 
+   int fields[] = { 0, 0 };
    fields[0] = nm;
 
+   const char *delis[] = {nullptr, " ", nullptr};
+   const lListElem *ep = nullptr;
    for_each_ep(ep, lp) {
+      lList *lp_part = nullptr;
       if (!lp_part) {
          lp_part = lCreateList("partial list", lGetListDescr(lp));
       }
@@ -137,16 +129,15 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
    DRETURN(0);
 }
 
-const char *job_descr(
-u_long32 jobid 
-) {
+const char *
+job_descr(u_long32 jobid) {
    static char descr[20];
 
    if (jobid) {
       snprintf(descr, sizeof(descr), "Job " sge_u32, jobid);
       return descr;
-   } else
-      return "Job";
-   
+   }
+
+   return "Job";
 }
 

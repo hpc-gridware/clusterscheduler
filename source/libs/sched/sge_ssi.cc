@@ -122,7 +122,7 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
    }
 
    /* create id structure */
-   snprintf(job_id_str, sizeof(job_id_str), sge_U32CFormat, sge_u32c(job_id));
+   snprintf(job_id_str, sizeof(job_id_str), sge_uu32, job_id);
    ref_ep = lAddElemStr(&ref_list, ID_str, job_id_str, ID_Type);
    ref_ep = lAddSubUlong(ref_ep, RN_min, ja_task_id, ID_ja_structure, RN_Type);
    lSetUlong(ref_ep, RN_max, ja_task_id);

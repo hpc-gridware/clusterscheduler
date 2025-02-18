@@ -2876,10 +2876,10 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
                   elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                   CL_LOG_STR(CL_LOG_ERROR, "read from connection: setting close flag! Reason:",
                              cl_get_error_text(return_value));
-                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                            elem->connection->remote->comp_host,
                            elem->connection->remote->comp_name,
-                           sge_u32c(elem->connection->remote->comp_id));
+                           elem->connection->remote->comp_id);
                   cl_commlib_push_application_error(CL_LOG_ERROR, return_value, tmp_string);
                }
             }
@@ -2918,10 +2918,10 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
                   elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                   CL_LOG_STR(CL_LOG_ERROR, "write to connection: setting close flag! Reason:",
                              cl_get_error_text(return_value));
-                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                            elem->connection->remote->comp_host,
                            elem->connection->remote->comp_name,
-                           sge_u32c(elem->connection->remote->comp_id));
+                           elem->connection->remote->comp_id);
                   cl_commlib_push_application_error(CL_LOG_ERROR, return_value, tmp_string);
                }
             }
@@ -2930,10 +2930,10 @@ static int cl_com_trigger(cl_com_handle_t *handle, int synchron) {
             if (elem->connection->write_buffer_timeout_time != 0) {
                if (now.tv_sec >= elem->connection->write_buffer_timeout_time) {
                   CL_LOG(CL_LOG_ERROR, "write timeout for connected endpoint");
-                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                  snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                            elem->connection->remote->comp_host,
                            elem->connection->remote->comp_name,
-                           sge_u32c(elem->connection->remote->comp_id));
+                           elem->connection->remote->comp_id);
                   cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SEND_TIMEOUT, tmp_string);
                   elem->connection->connection_state = CL_CLOSING;
                   elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
@@ -7180,10 +7180,10 @@ static void *cl_com_handle_read_thread(void *t_conf) {
                         elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                         CL_LOG_STR(CL_LOG_ERROR, "read from connection: setting close flag! Reason:",
                                    cl_get_error_text(return_value));
-                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                  elem->connection->remote->comp_host,
                                  elem->connection->remote->comp_name,
-                                 sge_u32c(elem->connection->remote->comp_id));
+                                 elem->connection->remote->comp_id);
                         cl_commlib_push_application_error(CL_LOG_ERROR, return_value, tmp_string);
                      } else if (cl_com_get_ignore_timeouts_flag()) {
                         elem->connection->connection_state = CL_CLOSING;
@@ -7541,10 +7541,10 @@ static void *cl_com_handle_write_thread(void *t_conf) {
                               elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
                               CL_LOG_STR(CL_LOG_ERROR, "write to connection: setting close flag! Reason:",
                                          cl_get_error_text(return_value));
-                              snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                              snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                        elem->connection->remote->comp_host,
                                        elem->connection->remote->comp_name,
-                                       sge_u32c(elem->connection->remote->comp_id));
+                                       elem->connection->remote->comp_id);
                               cl_commlib_push_application_error(CL_LOG_ERROR, return_value, tmp_string);
                            } else if (cl_com_get_ignore_timeouts_flag()) {
                               elem->connection->connection_state = CL_CLOSING;
@@ -7556,10 +7556,10 @@ static void *cl_com_handle_write_thread(void *t_conf) {
                         if (elem->connection->write_buffer_timeout_time != 0) {
                            if (now.tv_sec >= elem->connection->write_buffer_timeout_time) {
                               CL_LOG(CL_LOG_ERROR, "write timeout for connected endpoint");
-                              snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                              snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                        elem->connection->remote->comp_host,
                                        elem->connection->remote->comp_name,
-                                       sge_u32c(elem->connection->remote->comp_id));
+                                       elem->connection->remote->comp_id);
                               cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SEND_TIMEOUT, tmp_string);
                               elem->connection->connection_state = CL_CLOSING;
                               elem->connection->connection_sub_state = CL_COM_DO_SHUTDOWN;
@@ -7645,7 +7645,7 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
       if (strlen(resolved_host) >= CL_MAXHOSTNAMELEN) {
          char tmp_buffer[1024];
          snprintf(tmp_buffer, 1024, MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU,
-                  resolved_host, sge_u32c(CL_MAXHOSTNAMELEN));
+                  resolved_host, static_cast<u_long32>(CL_MAXHOSTNAMELEN));
          cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_HOSTNAME_LENGTH_ERROR, tmp_buffer);
          sge_free(&resolved_host);
          return CL_RETVAL_HOSTNAME_LENGTH_ERROR;

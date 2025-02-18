@@ -287,7 +287,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 
          if (h_cpu < cpu_val || h_vmem < vmem_val) {
             cpu_exceeded = (h_cpu < cpu_val);
-            WARNING(MSG_JOB_EXCEEDHLIM_USSFF, sge_u32c(jobid), cpu_exceeded ? "h_cpu" : "h_vmem",
+            WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, cpu_exceeded ? "h_cpu" : "h_vmem",
                     q?lGetString(q, QU_full_name) : "-",
                     cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? h_cpu : h_vmem);
             signal_job(jobid, jataskid, SGE_SIGKILL);
@@ -296,7 +296,7 @@ static void force_job_rlimit(const char* qualified_hostname)
 
          if (s_cpu < cpu_val || s_vmem < vmem_val) {
             cpu_exceeded = (s_cpu < cpu_val);
-            WARNING(MSG_JOB_EXCEEDSLIM_USSFF, sge_u32c(jobid), cpu_exceeded ? "s_cpu" : "s_vmem",
+            WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, cpu_exceeded ? "s_cpu" : "s_vmem",
             q?lGetString(q, QU_full_name) : "-",
             cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? s_cpu : s_vmem);
             signal_job(jobid, jataskid, SGE_SIGXCPU);
@@ -509,7 +509,7 @@ int do_ck_to_do(bool is_qmaster_down) {
             if (now >= lGetUlong64(jep, JB_hard_wallclock_gmt)) {
                if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
                    now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
-                  WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
+                  WARNING(MSG_EXECD_EXCEEDHWALLCLOCK_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
@@ -527,7 +527,7 @@ int do_ck_to_do(bool is_qmaster_down) {
             if (now >= lGetUlong64(jep, JB_soft_wallclock_gmt)) {
                if (lGetUlong64(jatep, JAT_pending_signal_delivery_time) == 0 ||
                    now > lGetUlong64(jatep, JAT_pending_signal_delivery_time)) {
-                  WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
+                  WARNING(MSG_EXECD_EXCEEDSWALLCLOCK_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
                   if (sge_execd_ja_task_is_tightly_integrated(jatep)) {
                      sge_kill_petasks(jep, jatep);
                   }
@@ -706,7 +706,7 @@ static int sge_start_jobs()
          }
       }
    }
-   DPRINTF("execd_ck_to_do: started " sge_U32CFormat " jobs\n", sge_u32c(jobs_started));
+   DPRINTF("execd_ck_to_do: started " sge_uu32 " jobs\n", jobs_started);
 
    DRETURN(0);
 }

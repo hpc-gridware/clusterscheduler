@@ -332,10 +332,10 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       task_number = lGetUlong(this_jatep, JAT_task_number);
 
       if (job_is_array(jep)) {
-         snprintf(mail_ids, sizeof(mail_ids), sge_U32CFormat"." sge_U32CFormat, sge_u32c(job_number), sge_u32c(task_number));
+         snprintf(mail_ids, sizeof(mail_ids), sge_uu32"." sge_uu32, job_number, task_number);
          sge_strlcpy(mail_type, MSG_RU_TYPEJOBARRAY, sizeof(mail_type));
       } else {
-         snprintf(mail_ids, sizeof(mail_ids), sge_U32CFormat, sge_u32c(job_number));
+         snprintf(mail_ids, sizeof(mail_ids), sge_uu32, job_number);
          sge_strlcpy(mail_type, MSG_RU_TYPEJOB, sizeof(mail_type));
       }
 

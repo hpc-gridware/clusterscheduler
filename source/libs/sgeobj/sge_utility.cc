@@ -186,7 +186,7 @@ an_status_t verify_str_key(
 
    /* check string length first, if too long -> error */
    if (strlen(str) > str_length) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_LENGTH_U, sge_u32c(str_length));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_LENGTH_U, static_cast<u_long32>(str_length));
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       return STATUS_EUNKNOWN;
    }

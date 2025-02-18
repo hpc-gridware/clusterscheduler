@@ -257,8 +257,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
       if (!(qep=lGetObject(gdil_ep, JG_queue))) {
          qnm = lGetString(gdil_ep, JG_qname);
-         sge_dstring_sprintf(&err_str, MSG_JOB_MISSINGQINGDIL_SU, qnm, 
-                             sge_u32c(lGetUlong(jelem, JB_job_number)));
+         sge_dstring_sprintf(&err_str, MSG_JOB_MISSINGQINGDIL_SU, qnm, lGetUlong(jelem, JB_job_number));
          goto Error;
       }
 
@@ -336,7 +335,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
                   DPRINTF("errno: %d\n", errno);
                   sge_dstring_sprintf(&err_str, MSG_EXECD_NOWRITESCRIPT_SIUS, 
                                       lGetString(jelem, JB_exec_file), nwritten, 
-                                      sge_u32c(lGetUlong(jelem, JB_script_size)), 
+                                      lGetUlong(jelem, JB_script_size),
                                       strerror(errno));
                   close(fd);
                   goto Error;
@@ -677,7 +676,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
    /* do not accept the task if job is not parallel or 'control_slaves' is not active */
    if (!(pe=lGetObject(jatep, JAT_pe_object)) || !lGetBool(pe, PE_control_slaves)) {
-      ERROR(MSG_JOB_TASKNOSUITABLEJOB_U, sge_u32c(jobid));
+      ERROR(MSG_JOB_TASKNOSUITABLEJOB_U, jobid);
       goto Error;
    }
 
@@ -728,7 +727,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       gdil = job_get_queue_with_task_about_to_exit(jep, jatep, petep, qualified_hostname, requested_queue);
 
       if (gdil == nullptr) {  /* also no already exited task found -> no way to start new task */
-         ERROR(MSG_JOB_NOFREEQ_USSS, sge_u32c(jobid), lGetString(petrep, PETR_owner), host, qualified_hostname);
+         ERROR(MSG_JOB_NOFREEQ_USSS, jobid, lGetString(petrep, PETR_owner), host, qualified_hostname);
          lFreeElem(&petep);
          goto Error;
       }

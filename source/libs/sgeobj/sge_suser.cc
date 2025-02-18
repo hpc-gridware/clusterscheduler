@@ -315,11 +315,11 @@ int suser_register_new_job(const lListElem *job, u_long32 max_u_jobs,
 *  RESULT
 *     number of jobs in the system
 ******************************************************************************/
-int suser_job_count(const lListElem *job, const lList *master_suser_list)
+u_long32 suser_job_count(const lListElem *job, const lList *master_suser_list)
 {
    const char *submit_user = nullptr;
    lListElem *suser = nullptr;
-   int ret = 0;    
+   u_long32 ret = 0;
 
    DENTER(TOP_LAYER);
    submit_user = lGetString(job, JB_owner);  

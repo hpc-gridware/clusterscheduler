@@ -347,7 +347,7 @@ FCLOSE_ERROR:
                if (shepherd_trace) {
                   char err_str[256];
 
-                  sprintf(err_str, MSG_SGE_KILLINGPIDXY_UI , sge_u32c(pid), groups);
+                  sprintf(err_str, MSG_SGE_KILLINGPIDXY_UI, static_cast<u_long32>(pid), groups);
                   shepherd_trace(err_str);
                }
 
@@ -357,8 +357,7 @@ FCLOSE_ERROR:
                if (shepherd_trace) {
                   char err_str[256];
 
-                  sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_UI ,
-                     sge_u32c(atol(dent->d_name)), groups);
+                  sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_UI, static_cast<u_long32>(atol(dent->d_name)), groups);
                   shepherd_trace(err_str);
                }
             }

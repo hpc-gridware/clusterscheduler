@@ -164,7 +164,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
                                         now);
          ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
-         sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
+         sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
          lRemoveElem(ar_master_list, &ar);
 
@@ -256,8 +256,8 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    }
 
    if (max_advance_reservations > 0 &&
-       max_advance_reservations <= (u_long32) lGetNumberOfElem(master_ar_list)) {
-      ERROR(MSG_AR_MAXARSPERCLUSTER_U, sge_u32c(max_advance_reservations));
+       max_advance_reservations <= lGetNumberOfElem(master_ar_list)) {
+      ERROR(MSG_AR_MAXARSPERCLUSTER_U, max_advance_reservations);
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       goto DOITAGAIN;
    }
@@ -310,7 +310,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
       goto ERROR;
    }
 
-   INFO(MSG_AR_GRANTED_U, sge_u32c(ar_id));
+   INFO(MSG_AR_GRANTED_U, ar_id);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(0);
 
@@ -354,7 +354,7 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
+   sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ep, AR_id));
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    sge_dstring_get_string(&buffer), SGE_TYPE_AR, true);
    answer_list_output(&answer_list);
@@ -429,7 +429,7 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
    /*
    ** send sgeE_AR_MOD/sgeE_AR_ADD event
    */
-   sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ep, AR_id));
+   sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ep, AR_id));
    sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
                  sge_dstring_get_string(&buffer), nullptr, nullptr, ep, packet->gdi_session);
    sge_dstring_free(&buffer);
@@ -585,7 +585,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    nxt = lFirstRW(*master_ar_list);
    while ((ar = nxt)) {
       u_long32 ar_id = lGetUlong(ar, AR_id);
-      sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
+      sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
       nxt = lNextRW(ar);
 
@@ -596,7 +596,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
       removed_one = true;
 
       if (!has_manager_privileges && strcmp(packet->user, lGetString(ar, AR_owner))) {
-         ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
+         ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_AR, ar_id);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          continue;
       }
@@ -625,14 +625,14 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
 
          lRemoveElem(*master_ar_list, &ar);
 
-         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
+         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_AR, ar_id);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          sge_event_spool(alpp, 0, sgeE_AR_DEL,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true, packet->gdi_session);
       } else {
-         INFO(MSG_JOB_REGDELX_SSU, packet->user, SGE_OBJ_AR, sge_u32c(ar_id));
+         INFO(MSG_JOB_REGDELX_SSU, packet->user, SGE_OBJ_AR, ar_id);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          sge_event_spool(alpp, 0, sgeE_AR_MOD,
                          ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
@@ -917,12 +917,12 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lList *master_ar_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
 
    if (!(ar = ar_list_locate(master_ar_list, ar_id))) {
-      ERROR(MSG_EVE_TE4AR_U, sge_u32c(ar_id));
+      ERROR(MSG_EVE_TE4AR_U, ar_id);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
    }
 
-   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
+   sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
    if (state == AR_EXITED) {
       u_long64 timestamp = sge_get_gmt64();
@@ -1410,7 +1410,7 @@ ar_list_has_reservation_due_to_ckpt(const lList *ar_master_list, lList **answer_
 
       if (ckpt_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(ckpt_string_list, ST_name, ckpt_string) == nullptr) {
-            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, SGE_ATTR_CKPT_LIST, sge_u32c(lGetUlong(ar, AR_id)));
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, ckpt_string, SGE_ATTR_CKPT_LIST, lGetUlong(ar, AR_id));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1468,7 +1468,7 @@ ar_list_has_reservation_due_to_pe(const lList *ar_master_list, lList **answer_li
 
       if (pe_string != nullptr && lGetElemStr(lGetList(ar, AR_granted_slots), JG_qname, qinstance_name)) {
          if (lGetElemStr(pe_string_list, ST_name, pe_string) == nullptr) {
-            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, SGE_ATTR_PE_LIST, sge_u32c(lGetUlong(ar, AR_id)));
+            ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_SSU, pe_string, SGE_ATTR_PE_LIST, lGetUlong(ar, AR_id));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -1537,7 +1537,7 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
       }
    }
    if (max_res_slots > new_slots) {
-      ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_PE_SLOTS_U, sge_u32c(max_res_slots));
+      ERROR(MSG_PARSE_MOD_REJECTED_DUE_TO_AR_PE_SLOTS_U, max_res_slots);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = true;
    }
@@ -1877,7 +1877,7 @@ sge_ar_list_conflicts_with_calendar(lList **answer_list, const char *qinstance_n
          u_long64 duration = lGetUlong64(ar, AR_duration);
 
          if (!calendar_open_in_time_frame(cal_ep, start_time, duration)) {
-            ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), SGE_ATTR_CALENDAR, sge_u32c(lGetUlong(ar, AR_id)));
+            ERROR(MSG_PARSE_MOD2_REJECTED_DUE_TO_AR_SSU, lGetString(cal_ep, CAL_name), SGE_ATTR_CALENDAR, lGetUlong(ar, AR_id));
             answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(true);
          }
@@ -2091,7 +2091,7 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_ty
                sge_ar_state_set_waiting(ar);
             }
             /* this info is not spooled */
-            sge_dstring_sprintf(&buffer, sge_U32CFormat, lGetUlong(ar, AR_id));
+            sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ar, AR_id));
             sge_add_event(0, sgeE_AR_MOD, 0, 0,
                           sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
          }
@@ -2146,9 +2146,9 @@ sge_ar_send_mail(lListElem *ar, int type) {
       case MAIL_AT_BEGINNING:
          sge_ctime64(lGetUlong64(ar, AR_start_time), &buffer);
          sge_dstring_sprintf(&subject, MSG_MAIL_ARSTARTEDSUBJ_US,
-                             sge_u32c(ar_id), ar_name ? ar_name : "none");
+                             ar_id, ar_name ? ar_name : "none");
          sge_dstring_sprintf(&body, MSG_MAIL_ARSTARTBODY_USSS,
-                             sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                             ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
                              sge_dstring_get_string(&buffer));
          mail_type = MSG_MAIL_TYPE_ARSTART;
          break;
@@ -2156,17 +2156,17 @@ sge_ar_send_mail(lListElem *ar, int type) {
          if (lGetUlong(ar, AR_state) == AR_DELETED) {
             sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARDELETEDSUBJ_US,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none");
+                                ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARDELETETBODY_USSS,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARDELETE;
          } else {
             sge_ctime64(lGetUlong64(ar, AR_end_time), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AREXITEDSUBJ_US,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none");
+                                ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AREXITBODY_USSS,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AREND;
          }
@@ -2175,17 +2175,17 @@ sge_ar_send_mail(lListElem *ar, int type) {
          if (lGetUlong(ar, AR_state) == AR_ERROR) {
             sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_ARERRORSUBJ_US,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none");
+                                ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_ARERRORBODY_USSS,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_ARERROR;
          } else {
             sge_ctime64(sge_get_gmt64(), &buffer);
             sge_dstring_sprintf(&subject, MSG_MAIL_AROKSUBJ_US,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none");
+                                ar_id, ar_name ? ar_name : "none");
             sge_dstring_sprintf(&body, MSG_MAIL_AROKBODY_USSS,
-                                sge_u32c(ar_id), ar_name ? ar_name : "none", lGetString(ar, AR_owner),
+                                ar_id, ar_name ? ar_name : "none", lGetString(ar, AR_owner),
                                 sge_dstring_get_string(&buffer));
             mail_type = MSG_MAIL_TYPE_AROK;
          }

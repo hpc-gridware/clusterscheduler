@@ -1431,7 +1431,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          if (const char *name = lGetString(hold_jid, JRE_job_name); name != nullptr) {
             sge_dstring_sprintf_append(&buffer, "%s", name);
          } else {
-            sge_dstring_sprintf_append(&buffer, sge_U32CFormat, sge_u32c(lGetUlong(hold_jid, JRE_job_number)));
+            sge_dstring_sprintf_append(&buffer, sge_uu32, lGetUlong(hold_jid, JRE_job_number));
          }
          first = false;
       }
@@ -1450,7 +1450,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
             sge_dstring_sprintf_append(&buffer, "%s", name);
          } else {
             u_long32 jid = lGetUlong(hold_jid, JRE_job_number);
-            sge_dstring_sprintf_append(&buffer, sge_U32CFormat, sge_u32c(jid));
+            sge_dstring_sprintf_append(&buffer, sge_uu32, jid);
          }
          first = false;
       }
@@ -1479,7 +1479,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    // -js job_share (optional)
    if (u_long32 job_share = lGetUlong(old_job, JB_jobshare); job_share > 0) {
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s js " sge_U32CFormat, prefix, sge_u32c(job_share));
+      sge_dstring_sprintf(&buffer, "%s js " sge_uu32, prefix, job_share);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
@@ -1636,8 +1636,8 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          if (strcmp("linear", strategy_without_automatic) == 0 || strcmp("striding", strategy_without_automatic) == 0) {
             /* binding_amount */
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_amount " sge_U32CFormat, prefix,
-                                sge_u32c(lGetUlong(binding, BN_parameter_n)));
+            sge_dstring_sprintf(&buffer, "%s binding_amount " sge_uu32, prefix,
+                                lGetUlong(binding, BN_parameter_n));
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          }
 
@@ -1647,14 +1647,14 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          if (strcmp("linear", strategy) == 0 || strcmp("striding", strategy) == 0) {
             /* binding_socket */
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_socket " sge_U32CFormat, prefix,
-                                sge_u32c(lGetUlong(binding, BN_parameter_socket_offset)));
+            sge_dstring_sprintf(&buffer, "%s binding_socket " sge_uu32, prefix,
+                                lGetUlong(binding, BN_parameter_socket_offset));
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
             /* binding_core */
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_core " sge_U32CFormat, prefix,
-                                sge_u32c(lGetUlong(binding, BN_parameter_core_offset)));
+            sge_dstring_sprintf(&buffer, "%s binding_core " sge_uu32, prefix,
+                                lGetUlong(binding, BN_parameter_core_offset));
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          }
 
@@ -1664,8 +1664,8 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          if (strcmp("striding", strategy_without_automatic) == 0) {
             /* binding_step */
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_step " sge_U32CFormat, prefix,
-                                sge_u32c(lGetUlong(binding, BN_parameter_striding_step_size)));
+            sge_dstring_sprintf(&buffer, "%s binding_step " sge_uu32, prefix,
+                                lGetUlong(binding, BN_parameter_striding_step_size));
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          }
 
@@ -1685,7 +1685,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
 
             /* binding_strategy */
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_exp_n " sge_U32CFormat, prefix, sge_u32c(socket));
+            sge_dstring_sprintf(&buffer, "%s binding_exp_n " sge_uu32, prefix, socket);
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
             for (i = 0; i < socket; i++) {
@@ -1731,10 +1731,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          u_long32 max = lGetUlong(range, RN_max);
 
          sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s pe_min " sge_U32CFormat, prefix, sge_u32c(min));
+         sge_dstring_sprintf(&buffer, "%s pe_min " sge_uu32, prefix, min);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s pe_max " sge_U32CFormat, prefix, sge_u32c(max));
+         sge_dstring_sprintf(&buffer, "%s pe_max " sge_uu32, prefix, max);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
       }
    }
@@ -1840,13 +1840,13 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
           */
          if (max != 1 || min != 1 || step != 1) {
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s t_min " sge_U32CFormat, prefix, sge_u32c(min));
+            sge_dstring_sprintf(&buffer, "%s t_min " sge_uu32, prefix, min);
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s t_max " sge_U32CFormat, prefix, sge_u32c(max));
+            sge_dstring_sprintf(&buffer, "%s t_max " sge_uu32, prefix, max);
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
             sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s t_step " sge_U32CFormat, prefix, sge_u32c(step));
+            sge_dstring_sprintf(&buffer, "%s t_step " sge_uu32, prefix, step);
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          }
       }

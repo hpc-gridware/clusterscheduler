@@ -1127,7 +1127,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (is_start) {
 
          DPRINTF("looking for immediate parallel assignment for job "
-                         sge_U32CFormat"." sge_U32CFormat " requesting pe \"%s\" duration " sge_U32CFormat "\n",
+                         sge_uu32"." sge_uu32 " requesting pe \"%s\" duration " sge_u64 "\n",
                          a.job_id, a.ja_task_id, pe_name, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
@@ -1138,7 +1138,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF("looking for parallel reservation for job "
-                            sge_U32CFormat"." sge_U32CFormat " requesting pe \"%s\" duration " sge_U32CFormat "\n",
+                            sge_uu32"." sge_uu32 " requesting pe \"%s\" duration " sge_uu32 "\n",
                             a.job_id, a.ja_task_id, pe_name, a.duration);
             is_computed_reservation = true;
             a.start = DISPATCH_TIME_QUEUE_END;
@@ -1164,7 +1164,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
       if (is_start) {
          DPRINTF("looking for immediate sequential assignment for job "
-                         sge_U32CFormat"." sge_U32CFormat " duration " sge_U32CFormat "\n", a.job_id,
+                         sge_uu32"." sge_uu32 " duration " sge_u64 "\n", a.job_id,
                          a.ja_task_id, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
@@ -1178,7 +1178,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NOT_AT_TIME) {
          if (is_reserve) {
             DPRINTF("looking for sequential reservation for job "
-                            sge_U32CFormat"." sge_U32CFormat " duration " sge_U32CFormat "\n",
+                            sge_uu32"." sge_uu32 " duration " sge_u64 "\n",
                             a.job_id, a.ja_task_id, a.duration);
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;

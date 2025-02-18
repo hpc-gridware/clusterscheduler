@@ -3061,7 +3061,7 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
    if (const u_long32 ul = lGetPosUlong(job_elem, nm); ul != 0) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
-      sge_dstring_sprintf_append(category_str, sge_U32CFormat, ul);
+      sge_dstring_sprintf_append(category_str, sge_uu32, ul);
       sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);

@@ -1083,7 +1083,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       }
 
       if (jep != nullptr) {
-         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) { // todo: remove last param, no longer used
+         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
             continue;
          }
 

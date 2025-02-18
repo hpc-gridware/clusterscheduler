@@ -118,7 +118,7 @@ lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaski
    }
 
    lAppendElem(jr_list, jr);
-   DPRINTF("adding job report for " sge_U32CFormat "." sge_U32CFormat "\n", sge_u32c(jobid), sge_u32c(jataskid));
+   DPRINTF("adding job report for " sge_uu32 "." sge_uu32 "\n", jobid, jataskid);
 
    if (jep != nullptr) {
       jatep = job_search_task(jep, nullptr, jataskid);
@@ -227,7 +227,7 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
       char *p;
       double parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
-         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number))); /* use default value */
+         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, lGetUlong(jr, JR_job_number)); /* use default value */
          lSetDouble(usage, UA_value, val); 
          DRETURN(-1);
       }

@@ -544,11 +544,11 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
-                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>");
+                        sge_qmaster_port, mastername?mastername:"<nullptr>");
             } else {
                /* For unusual errors, give more detail */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
-                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
+                        sge_qmaster_port, mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_SENDINGGDIREQUESTFAILED);
@@ -611,11 +611,11 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
             /*this error appears, if qmaster or any qmaster thread is not responding, or overloaded*/
             if (gdi_error == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
                cl_com_SIRM_t* cl_endpoint_status = nullptr;
-               DPRINTF("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS=" sge_U32CFormat "\n", sge_u32c(runs));
+               DPRINTF("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS=" sge_uu32 "\n", runs);
 
                cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
                if (handle != nullptr) {
-                  DPRINTF("TEST_2372_OUTPUT: GDI_TIMEOUT=" sge_U32CFormat "\n", sge_u32c(handle->synchron_receive_timeout));
+                  DPRINTF("TEST_2372_OUTPUT: GDI_TIMEOUT=%d\n", handle->synchron_receive_timeout);
                }
                if (do_ping) {
                   DPRINTF("TEST_2372_OUTPUT: CL_PING=TRUE\n");
@@ -651,14 +651,14 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
-                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>");
+                        sge_qmaster_port, mastername?mastername:"<nullptr>");
             } else {
                /* For unusual errors, give more detail */
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
-                        sge_u32c(sge_qmaster_port), mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
+                        sge_qmaster_port, mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_RECEIVEGDIREQUESTFAILED_US, sge_u32c(message_id), cl_get_error_text(gdi_error));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_RECEIVEGDIREQUESTFAILED_US, message_id, cl_get_error_text(gdi_error));
          }
          answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
       }
@@ -1008,7 +1008,7 @@ void ocs::gdi::Packet::debug_print() {
    DPRINTF("packet->host = " SFQ "\n", host);
    DPRINTF("packet->commproc = " SFQ "\n", commproc);
    DPRINTF("packet->auth_info = " SFQ "\n", auth_info ? auth_info : "<null>");
-   DPRINTF("packet->version = " sge_U32CFormat "\n", sge_u32c(version));
+   DPRINTF("packet->version = " sge_uu32 "\n", version);
    DPRINTF("packet->tasks = %d\n", tasks.size());
 
    for (auto *task : tasks) {

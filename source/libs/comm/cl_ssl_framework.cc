@@ -2037,7 +2037,7 @@ static int cl_com_ssl_transform_ssl_error(unsigned long ssl_error, char* buffer,
          break;
       }
       default: {
-         snprintf(help_buf, 1024, MSG_CL_COMMLIB_SSL_ERROR_NR_AND_TEXT_USS, sge_u32c(ssl_error), module, error_text);
+         snprintf(help_buf, 1024, MSG_CL_COMMLIB_SSL_ERROR_NR_AND_TEXT_USS, static_cast<u_long32>(ssl_error), module, error_text);
          *transformed_error = strdup(help_buf);
       }
    }
@@ -2077,7 +2077,7 @@ static int cl_com_ssl_log_ssl_errors(const char* function_name) {
 
    while((ssl_error = cl_com_ssl_func__ERR_get_error())) {
       cl_com_ssl_func__ERR_error_string_n(ssl_error,buffer,512);
-      snprintf(help_buf, 1024, MSG_CL_COMMLIB_SSL_ERROR_USS, sge_u32c(ssl_error), func_name, buffer);
+      snprintf(help_buf, 1024, MSG_CL_COMMLIB_SSL_ERROR_USS, static_cast<u_long32>(ssl_error), func_name, buffer);
       CL_LOG(CL_LOG_ERROR,help_buf);
 
       ret_val = cl_com_ssl_transform_ssl_error(ssl_error,buffer,512, &transformed_ssl_error);
@@ -4197,10 +4197,10 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_co
                      if (connection->remote            != nullptr &&
                          connection->remote->comp_host != nullptr &&
                          connection->remote->comp_name != nullptr) {
-                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                        snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                  connection->remote->comp_host,
                                  connection->remote->comp_name,
-                                 sge_u32c(connection->remote->comp_id));
+                                 connection->remote->comp_id);
                         CL_LOG_STR(CL_LOG_ERROR, "select error:", tmp_string);
                         cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, tmp_string);
                      }
@@ -4291,10 +4291,10 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_co
                             connection->remote->comp_host != nullptr &&
                             connection->remote->comp_name != nullptr) {
                            char tmp_string[1024];
-                           snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSU,
+                           snprintf(tmp_string, 1024, MSG_CL_COMMLIB_CLOSING_SSL,
                                     connection->remote->comp_host,
                                     connection->remote->comp_name,
-                                    sge_u32c(connection->remote->comp_id));
+                                    connection->remote->comp_id);
                            CL_LOG_STR(CL_LOG_ERROR, "poll() revents error:", tmp_string);
                            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SELECT_ERROR, tmp_string);
                         }

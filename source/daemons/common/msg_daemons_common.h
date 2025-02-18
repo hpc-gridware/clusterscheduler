@@ -40,23 +40,23 @@
 /* CR: don't localize mail subject, until we send it in Mime format!
  *  The message definition is not l10n'ed (no _() macro used)!!!
  */
-#define MSG_MAIL_SUBJECT_JA_TASK_SUSP_UUS       "Job-array task " sge_U32CFormat "." sge_U32CFormat " (" SFN ") Suspended"
-#define MSG_MAIL_SUBJECT_JOB_SUSP_US            "Job " sge_U32CFormat " (" SFN ") Suspended"
-#define MSG_MAIL_SUBJECT_JA_TASK_CONT_UUS       "Job-array task " sge_U32CFormat "." sge_U32CFormat " (" SFN ") Continued"
-#define MSG_MAIL_SUBJECT_JOB_CONT_US            "Job " sge_U32CFormat " (" SFN ") Continued"
-#define MSG_MAIL_SUBJECT_SUU                    SFN ": Job-array task " sge_U32CFormat "." sge_U32CFormat " failed"
-#define MSG_MAIL_SUBJECT_SU                     SFN ": Job " sge_U32CFormat " failed"
-#define MSG_MAIL_SUBJECT_JA_TASK_COMP_UUS       "Job-array task " sge_U32CFormat "." sge_U32CFormat " (" SFN ") Complete"
-#define MSG_MAIL_SUBJECT_JOB_COMP_US            "Job " sge_U32CFormat " (" SFN ") Complete"
-#define MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS     "Job-array task " sge_U32CFormat "." sge_U32CFormat " (" SFN ") " SFN
-#define MSG_MAIL_SUBJECT_JOB_STATE_USS          "Job " sge_U32CFormat " (" SFN ") " SFN
-#define MSG_MAIL_BODY_USSSSSSS                  "Job " sge_U32CFormat " caused action: " SFN "\n User        = " SFN "\n Queue       = " SFN "\n Start Time  = " SFN "\n End Time    = " SFN "\nfailed " SFN ":" SFN
+#define MSG_MAIL_SUBJECT_JA_TASK_SUSP_UUS       "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") Suspended"
+#define MSG_MAIL_SUBJECT_JOB_SUSP_US            "Job " sge_uu32 " (" SFN ") Suspended"
+#define MSG_MAIL_SUBJECT_JA_TASK_CONT_UUS       "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") Continued"
+#define MSG_MAIL_SUBJECT_JOB_CONT_US            "Job " sge_uu32 " (" SFN ") Continued"
+#define MSG_MAIL_SUBJECT_SUU                    SFN ": Job-array task " sge_uu32 "." sge_uu32 " failed"
+#define MSG_MAIL_SUBJECT_SU                     SFN ": Job " sge_uu32 " failed"
+#define MSG_MAIL_SUBJECT_JA_TASK_COMP_UUS       "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") Complete"
+#define MSG_MAIL_SUBJECT_JOB_COMP_US            "Job " sge_uu32 " (" SFN ") Complete"
+#define MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS     "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") " SFN
+#define MSG_MAIL_SUBJECT_JOB_STATE_USS          "Job " sge_uu32 " (" SFN ") " SFN
+#define MSG_MAIL_BODY_USSSSSSS                  "Job " sge_uu32 " caused action: " SFN "\n User        = " SFN "\n Queue       = " SFN "\n Start Time  = " SFN "\n End Time    = " SFN "\nfailed " SFN ":" SFN
 
 
 #define MSG_MASTER                                             _MESSAGE(27001, _("master"))
 #define MSG_STARTUP_STARTINGUP_SSS                             _MESSAGE(27002, _("starting up " SFN " " SFN " (" SFN ")"))
 #define MSG_SHADOWD_CONTROLLEDSHUTDOWN_S                       _MESSAGE(27003, _("controlled shutdown " SFN))
-#define MSG_SHADOWD_CONTROLLEDSHUTDOWN_SU                      _MESSAGE(27000, _("controlled shutdown " SFN " (exit state = " sge_U32CFormat ")"))
+#define MSG_SHADOWD_CONTROLLEDSHUTDOWN_SI                      _MESSAGE(27000, _("controlled shutdown " SFN " (exit state = %d)"))
 #define MSG_ERROR_CANTSWITCHTOADMINUSER                        _MESSAGE(27004, _("can't switch to admin_user"))
 #define MSG_ALIAS_INVALIDSYNTAXOFPATHALIASFILEX_S              _MESSAGE(27005, _("invalid syntax of path alias file " SFQ))
 #define MSG_ALIAS_CANTREAD_SS                                  _MESSAGE(27006, _("can't read path aliasing file " SFQ ": " SFN))
@@ -71,7 +71,7 @@
 #define MSG_LIST_ERRORFORMATINGSHELLLIST                       _MESSAGE(27016, _("Error formatting shell_list"))
 #define MSG_LIST_ERRORFORMATINGENVIRONMENTLISTASV              _MESSAGE(27017, _("Error formatting environment list as -v"))
 #define MSG_LIST_ERRORFORMATINGJOBARGUMENTS                    _MESSAGE(27018, _("Error formatting job argumentents"))
-#define MSG_JOB_INVALIDVALUEFORCHECKPOINTATTRIBINJOB_U         _MESSAGE(27019, _("ERROR! invalid value for checkpoint attribute in job " sge_U32CFormat))
+#define MSG_JOB_INVALIDVALUEFORCHECKPOINTATTRIBINJOB_U         _MESSAGE(27019, _("ERROR! invalid value for checkpoint attribute in job " sge_uu32))
 #define MSG_LIST_ERRORFORMATINGHARDRESOURCELISTASL             _MESSAGE(27020, _("Error formatting hard_resource_list as -l"))
 #define MSG_JOB_JOBHASPEWITHNORANGES                           _MESSAGE(27021, _("Job has parallel environment with no ranges"))
 #define MSG_LIST_ERRORFORMATINGRANGESINPE                      _MESSAGE(27022, _("Error formatting ranges in -pe"))
@@ -100,11 +100,11 @@
 #define MSG_MAIL_NOMAIL3_I                   _MESSAGE(27051, _("mailer was stopped due to signal %d - killing"))
 #define MSG_MAIL_NOSUBJ                      _MESSAGE(27052, _("<no subject>"))
 #define MSG_MAIL_PARSE_S                     _MESSAGE(27053, _("Error parsing mail list " SFQ))
-#define MSG_GFSTATE_PEJOB_U                  _MESSAGE(27054, _("PE Job " sge_U32CFormat " will be deleted"))
+#define MSG_GFSTATE_PEJOB_U                  _MESSAGE(27054, _("PE Job " sge_uu32 " will be deleted"))
 #define MSG_GFSTATE_QUEUE_S                  _MESSAGE(27055, _("Queue " SFQ " set to ERROR"))
 #define MSG_GFSTATE_HOST_S                   _MESSAGE(27056, _("All Queues on host " SFQ " set to ERROR"))
-#define MSG_GFSTATE_JOB_UU                   _MESSAGE(27057, _("Job-array task " sge_U32CFormat "." sge_U32CFormat " set to ERROR"))
-#define MSG_GFSTATE_JOB_U                    _MESSAGE(27058, _("Job " sge_U32CFormat " set to ERROR"))
+#define MSG_GFSTATE_JOB_UU                   _MESSAGE(27057, _("Job-array task " sge_uu32 "." sge_uu32 " set to ERROR"))
+#define MSG_GFSTATE_JOB_U                    _MESSAGE(27058, _("Job " sge_uu32 " set to ERROR"))
 
 #define MSG_CONF_NOCONFVALUE_S               _MESSAGE(27059, _("can't get configuration value for " SFQ))
 #define MSG_CONF_ATLEASTONECHAR              _MESSAGE(27060, _("variables need at least one character"))

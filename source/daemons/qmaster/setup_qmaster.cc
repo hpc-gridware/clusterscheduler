@@ -648,10 +648,10 @@ communication_setup() {
 
       /* log startup info into qmaster messages file */
       log_state_set_log_level(LOG_INFO);
-      INFO(MSG_QMASTER_FD_HARD_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_max));
-      INFO(MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U, sge_u32c(qmaster_rlimits.rlim_cur));
-      INFO(MSG_QMASTER_MAX_FILE_DESCRIPTORS_LIMIT_U, sge_u32c(max_connections));
-      INFO(MSG_QMASTER_MAX_EVC_LIMIT_U, sge_u32c(mconf_get_max_dynamic_event_clients()));
+      INFO(MSG_QMASTER_FD_HARD_LIMIT_SETTINGS_U, static_cast<u_long32>(qmaster_rlimits.rlim_max));
+      INFO(MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U, static_cast<u_long32>(qmaster_rlimits.rlim_cur));
+      INFO(MSG_QMASTER_MAX_FILE_DESCRIPTORS_LIMIT_L, max_connections);
+      INFO(MSG_QMASTER_MAX_EVC_LIMIT_I, mconf_get_max_dynamic_event_clients());
       log_state_set_log_level(old_ll);
    }
 
@@ -1088,7 +1088,7 @@ setup_qmaster() {
    {
       u_long32 saved_logginglevel = log_state_get_log_level();
       log_state_set_log_level(LOG_INFO);
-      INFO(MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU, sge_u32c(lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB))), sge_u32c(time_end - time_start));
+      INFO(MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU, lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), static_cast<u_long32>(time_end - time_start));
       log_state_set_log_level(saved_logginglevel);
    }
 
@@ -1297,10 +1297,10 @@ static void debit_all_jobs_from_qs() {
 
             lListElem *qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
             if (qep == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(lGetUlong(jep, JB_job_number)));
+               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, lGetUlong(jep, JB_job_number));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else if (ar_id != 0 && (ar = lGetElemUlong(master_ar_list, AR_id, ar_id)) == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number)));
+               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, lGetUlong(jep, JB_job_number));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
             } else {
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdi, JG_qhostname));
@@ -1332,8 +1332,8 @@ static void debit_all_jobs_from_qs() {
                      qinstance_debit_consumable(queue, jep, ar_pe, master_centry_list, slots, master_task,
                                                 do_per_host_booking, nullptr);
                   } else {
-                     ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
-                           sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
+                     ERROR("job " sge_uu32 " runs in queue " SFQ " not reserved by AR " sge_uu32,
+                           lGetUlong(jep, JB_job_number), lGetString(gdi, JG_qname), ar_id);
                   }
                }
             }

@@ -706,7 +706,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
             DRETURN_(sge_gettext__((char *) msg_str));
          } else {
             message_p.l->counter = (message_p.l->counter) + 1;
-            DPRINTF_("message count: " sge_U32CFormat "\n", sge_u32c(message_p.l->counter));
+            DPRINTF_("message count: " sge_uu32 "\n", message_p.l->counter);
             DRETURN_(message_p.l->local_message);
          }
       }

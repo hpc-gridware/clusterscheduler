@@ -698,7 +698,7 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
                                              ANSWER_QUALITY_ERROR,
                                              MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU,
                                              "entries",
-                                             sge_u32c(lGetUlong(ar, AR_id)));
+                                             lGetUlong(ar, AR_id));
                      lFreeList(&new_master_userset_list);
                      goto ERROR;
                   }
