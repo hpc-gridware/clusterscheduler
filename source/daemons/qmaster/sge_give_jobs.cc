@@ -1245,7 +1245,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
          // @todo send event and do this earlier
          sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr,
-                         session, jep, jatep, nullptr, false, true, gdi_session);
+                         session, jep, jatep, nullptr, true, true, gdi_session);
 
          if (job_get_not_enrolled_ja_tasks(jep)) {
             no_unlink = 1;

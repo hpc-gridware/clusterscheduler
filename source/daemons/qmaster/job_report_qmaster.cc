@@ -165,53 +165,54 @@ status2str(u_long32 status) {
 *******************************************************************************/
 void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *commproc,
                         sge_pack_buffer *pb, monitoring_t *monitor, u_long64 gdi_session) {
-   lList *jrl = lGetListRW(report, REP_list); /* JR_Type */
-   lListElem *jep, *jr, *ep, *jatep = nullptr;
-
-   char job_id_buffer[MAX_STRING_SIZE];
-   dstring job_id_dstring;
-   const char *job_id_string;
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-
    DENTER(TOP_LAYER);
-
-   sge_dstring_init(&job_id_dstring, job_id_buffer, MAX_STRING_SIZE);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   lList *jrl = lGetListRW(report, REP_list); /* JR_Type */
 
    DPRINTF("received job report with %d elements:\n", lGetNumberOfElem(jrl));
 
-   /* 
+   /*
    ** first process job reports of sub tasks to ensure this we put all these 
    ** job reports to the top of the 'jrl' list this is necessary to ensure 
    ** slave tasks get accounted on a shm machine 
-   ** TODO: could be sorted on execd
    */
+   // @todo CS-1026 Improve performance by moving sorting of job reports from the master to the execd's
    {
       static lSortOrder *jr_sort_order = nullptr;
       if (!jr_sort_order) {
          DPRINTF("parsing job report sort order\n");
-         jr_sort_order = lParseSortOrderVarArg(JR_Type, "%I-",
-                                               JR_pe_task_id_str);
+         jr_sort_order = lParseSortOrderVarArg(JR_Type, "%I-", JR_pe_task_id_str);
       }
       lSortList(jrl, jr_sort_order);
    }
+
+   // buffer for job / ja-task / pe-task ID string (used in debug and logging messages
+   char job_id_buffer[MAX_STRING_SIZE];
+   dstring job_id_dstring;
+   const char *job_id_string;
+   sge_dstring_init(&job_id_dstring, job_id_buffer, sizeof(job_id_buffer));
 
    /*
    ** now check all job reports found in step 1 are 
    ** removed from job report list
    */
+   lListElem *jr;
    for_each_rw(jr, jrl) {
       const char *queue_name;
-      const char *pe_task_id_str = lGetString(jr, JR_pe_task_id_str);
       u_long32 status = 0;
-      lListElem *petask = nullptr;
       int fret;
-      u_long32 jobid, rstate = 0, jataskid = 0;
 
-      jobid = lGetUlong(jr, JR_job_number);
-      jataskid = lGetUlong(jr, JR_ja_task_number);
-      rstate = lGetUlong(jr, JR_state);
+      // find job/task/pe-task ID and state in report
+      u_long32 jobid = lGetUlong(jr, JR_job_number);
+      u_long32 jataskid = lGetUlong(jr, JR_ja_task_number);
+      const char *pe_task_id_str = lGetString(jr, JR_pe_task_id_str);
+      u_long32 rstate = lGetUlong(jr, JR_state);
 
-      jep = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
+      // find the corresponding objects
+      lListElem *jep = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid);
+      lListElem *jatep = nullptr;
+      lListElem *petask = nullptr;
+      bool petask_already_existed = false;
       if (jep != nullptr) {
          jatep = lGetElemUlongRW(lGetList(jep, JB_ja_tasks), JAT_task_number, jataskid);
 
@@ -220,6 +221,9 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
             if (pe_task_id_str != nullptr) {
                petask = lGetSubStrRW(jatep, PET_id, pe_task_id_str, JAT_task_list);
+               if (petask != nullptr) {
+                  petask_already_existed = true;
+               }
             }
          }
       }
@@ -314,9 +318,6 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                               lGetString(jep, JB_session), lGetListRW(jatep, JAT_scaled_usage_list), gdi_session);
                         }
                      } else {
-                        /* register running task qmaster will log accounting for all registered tasks */
-                        bool new_task = false;
-
                         /* do we expect a pe task report from this host? */
                         if (ja_task_is_tightly_integrated(jatep, master_pe_list) &&
                             lGetElemHost(lGetList(jatep, JAT_granted_destin_identifier_list), JG_qhostname, rhost)) {
@@ -325,16 +326,15 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            if (petask == nullptr) {
                               /* here qmaster hears the first time about this task
                                  and thus adds it to the task list of the appropriate job */
-                              new_task = true;
                               DPRINTF("--- task (#%d) " SFN " -> running\n",
                                       lGetNumberOfElem(lGetList(jatep, JAT_task_list)), job_id_string);
                               petask = lAddSubStr(jatep, PET_id, pe_task_id_str, JAT_task_list, PET_Type);
                               lSetUlong(petask, PET_status, JRUNNING);
-                              /* JG: TODO: this should be delivered from execd! */
+                              // @todo CS-1026: This should be delivered from execd as part of the report
                               lSetUlong64(petask, PET_start_time, sge_get_gmt64());
                               lSetList(petask, PET_granted_destin_identifier_list, nullptr);
-                              if ((ep = lAddSubHost(petask, JG_qhostname, rhost, PET_granted_destin_identifier_list,
-                                                    JG_Type))) {
+                              lListElem *ep;
+                              if ((ep = lAddSubHost(petask, JG_qhostname, rhost, PET_granted_destin_identifier_list, JG_Type))) {
                                  lSetString(ep, JG_qname, queue_name);
                               }
                            }
@@ -351,7 +351,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                                        lGetListRW(petask, PET_scaled_usage));
 
                            /* notify scheduler of task usage event */
-                           if (new_task) {
+                           if (!petask_already_existed) {
                               sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                               jobid, jataskid, pe_task_id_str, nullptr,
                                               lGetString(jep, JB_session),
@@ -405,7 +405,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD,
                                            jobid, jataskid, nullptr, nullptr,
                                            lGetString(jep, JB_session),
-                                           jep, jatep, nullptr, false, true, gdi_session);
+                                           jep, jatep, nullptr, true, true, gdi_session);
                         }
                         answer_list_output(&answer_list);
                      }
@@ -688,6 +688,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
 
                            /* get rid of this job in case a task died from XCPU/XFSZ or
                               exited with a core dump */
+                           lListElem *ep;
                            if (failed == SSTATE_FAILURE_AFTER_JOB
                                && (ep = lGetElemStrRW(lGetList(jr, JR_usage), UA_name, "signal"))) {
                               u_long32 sge_signo = (u_long32) lGetDouble(ep, UA_value);

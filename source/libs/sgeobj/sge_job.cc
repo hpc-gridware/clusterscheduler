@@ -2007,18 +2007,16 @@ const char *job_get_id_string(u_long32 job_id, u_long32 ja_task_id,
 {
    DENTER(TOP_LAYER);
 
-   if(job_id == 0) {
+   if (job_id == 0) {
       sge_dstring_sprintf(buffer, "");
    } else {
-      if(ja_task_id == 0) {
+      if (ja_task_id == 0) {
          sge_dstring_sprintf(buffer, MSG_JOB_JOB_ID_U, job_id);
       } else {
-         if(pe_task_id == nullptr) {
-            sge_dstring_sprintf(buffer, MSG_JOB_JOB_JATASK_ID_UU,
-                                job_id, ja_task_id);
+         if (pe_task_id == nullptr) {
+            sge_dstring_sprintf(buffer, MSG_JOB_JOB_JATASK_ID_UU, job_id, ja_task_id);
          } else {
-            sge_dstring_sprintf(buffer, MSG_JOB_JOB_JATASK_PETASK_ID_UUS,
-                               job_id, ja_task_id, pe_task_id);
+            sge_dstring_sprintf(buffer, MSG_JOB_JOB_JATASK_PETASK_ID_UUS, job_id, ja_task_id, pe_task_id);
          }
       }
    }   
