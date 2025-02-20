@@ -49,7 +49,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_Version.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "comm/cl_commlib.h"
@@ -507,9 +507,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
             }
    
             /* try to unpack gdi data */
-            if ( strstr( cl_values[6] , "TAG_GDI_REQUEST") != nullptr ) {
+            if (strstr( cl_values[6] , "TAG_GDI_REQUEST") != nullptr) {
                unsigned long buffer_length = 0;
-               if (  cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
+               if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
@@ -526,8 +526,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         } else {
                            printf("version   : %s\n", "nullptr");
                         }
-                        if (packet->auth_info) {
-                           printf("auth_info   : %s\n", packet->auth_info);
+                        if (buf.auth_info != nullptr) {
+                           printf("auth_info   : %s\n", buf.auth_info);
                         } else {
                            printf("auth_info   : %s\n", "nullptr");
                         }
@@ -579,7 +579,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
             }
             if (strstr(cl_values[6], "TAG_REPORT_REQUEST") != nullptr) {
                unsigned long buffer_length = 0;
-               if (  cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
+               if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
@@ -600,9 +600,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                }
             }
    
-            if ( strstr( cl_values[6] , "TAG_EVENT_CLIENT_EXIT") != nullptr ) {
+            if (strstr( cl_values[6] , "TAG_EVENT_CLIENT_EXIT") != nullptr) {
                unsigned long buffer_length = 0;
-               if (  cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
+               if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
@@ -717,7 +717,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
             if (strstr(cl_values[6], "TAG_SIGQUEUE") != nullptr) {
                unsigned long buffer_length = 0;
-               if (  cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
+               if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
                   printf("binary buffer length is %lu\n",buffer_length);  

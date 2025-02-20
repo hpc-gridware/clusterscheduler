@@ -124,6 +124,7 @@ typedef struct {
    int scheduler_thread_count;
    bool job_spooling;
    bool ignore_fqdn;
+   bool use_munge;
 } sge_bootstrap_ts1_t;
 
 static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
@@ -143,6 +144,7 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         0, // scheduler_thread_count
         false, // job_spooling
         false, // ignore_fqdn
+        false, // use_munge
 };
 
 static void
@@ -188,6 +190,9 @@ set_qmaster_spool_dir(const char *qmaster_spool_dir) {
 static void
 set_security_mode(const char *security_mode) {
    sge_bootstrap_tl1.security_mode = sge_strdup(sge_bootstrap_tl1.security_mode, security_mode);
+#if defined(OCS_WITH_MUNGE)
+   sge_bootstrap_tl1.use_munge = strcasecmp(sge_bootstrap_tl1.security_mode, "munge") == 0;
+#endif
 }
 
 // FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 64 threads
@@ -510,4 +515,14 @@ int bootstrap_get_scheduler_thread_count() {
    int scheduler_thread_count = sge_bootstrap_tl1.scheduler_thread_count;
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return scheduler_thread_count;
+}
+
+bool bootstrap_get_use_munge() {
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   bool use_munge = sge_bootstrap_tl1.use_munge;
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+   return use_munge;
 }

@@ -33,61 +33,26 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "basis_types.h"
-#include "sge_dstring.h"
-#include "uti/sge_component.h"
+#define SGE_SEC_BUFSIZE 1024
 
-#define PATH_SEPARATOR "/"
-#define COMMON_DIR "common"
-#define BOOTSTRAP_FILE "bootstrap"
-#define CONF_FILE "configuration"
-#define SCHED_CONF_FILE "sched_configuration"
-#define ACCT_FILE "accounting"
-#define REPORTING_FILE "reporting"
-#define LOCAL_CONF_DIR "local_conf"
-#define SHADOW_MASTERS_FILE "shadow_masters"
+void sge_security_exit(int i);
 
-#define PATH_SEPARATOR "/"
-#define PATH_SEPARATOR_CHAR '/'
+#ifdef SECURE
+/* int 0 on success, -1 on failure */
+int sge_ssl_setup_security_path(const char *progname, const char *username);
+#endif
 
-const char *
-bootstrap_get_admin_user();
-
-const char *
-bootstrap_get_default_domain();
+bool sge_encrypt(const char *intext, char *outbuf, int outsize);
+bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
+bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
 
 bool
-bootstrap_get_ignore_fqdn();
+sge_security_verify_user(const char *host, const char *commproc, u_long32 id, const char *user);
 
-const char *
-bootstrap_get_spooling_method();
-
-const char *
-bootstrap_get_spooling_lib();
-
-const char *
-bootstrap_get_spooling_params();
-
-const char *
-bootstrap_get_binary_path();
-
-const char *
-bootstrap_get_qmaster_spool_dir();
-
-const char *
-bootstrap_get_security_mode();
-
-int
-bootstrap_get_listener_thread_count();
-
-int
-bootstrap_get_worker_thread_count();
-
-int
-bootstrap_get_reader_thread_count();
-
-int
-bootstrap_get_scheduler_thread_count();
-
-bool
-bootstrap_get_use_munge();
+bool sge_security_verify_unique_identifier(bool check_admin_user, 
+                                           const char* user, 
+                                           const char* progname,
+                                           unsigned long progid, 
+                                           const char* hostname, 
+                                           const char* commproc, 
+                                           unsigned long commid);

@@ -118,7 +118,7 @@ int sge_execd_process_messages()
 
          switch (msg.tag) {
             case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
-               if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
+               if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
                   do_job_exec(&msg, &apb);
                   is_apb_used = true;
                   atag = msg.tag;
@@ -135,7 +135,7 @@ int sge_execd_process_messages()
                break;
             case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
                case ocs::gdi::ClientServerBase::TAG_SIGJOB:
-               if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
+               if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
                   do_signal_queue(&msg, &apb);
                   is_apb_used = true;
                   atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;

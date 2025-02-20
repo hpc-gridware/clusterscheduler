@@ -108,7 +108,7 @@ int pack_get_chunk() {
 *
 *  SYNOPSIS
 *     int init_packbuffer(sge_pack_buffer *pb, int initial_size, 
-*                         int just_count) 
+*                         bool just_count, bool with_auth_info)
 *
 *  FUNCTION
 *     Initialize a packing buffer.
@@ -133,9 +133,14 @@ int pack_get_chunk() {
 *                           If a value of 0 is given as initial_size, a size 
 *                           of chunk_size (global variable, see function 
 *                           pack_set_chunk) will be used.
-*     int just_count      - if true, no memory will be allocated and the 
+*     bool just_count     - if true, no memory will be allocated and the
 *                           "just_count" property of the packbuffer will 
 *                           be set.
+*     bool with_auth_info - if true, the packbuffer will be initialized with
+*                           authentication information (user and group information)
+*                           This is the case for all pack buffers which are used for
+*                           communication between components.
+*                           For spooling operations no auth_info is needed.
 *
 *  RESULT
 *     int - PACK_SUCCESS on success
@@ -151,13 +156,16 @@ int pack_get_chunk() {
 *     gdi/request_internal/sge_gdi_packet_get_pb_size()
 *******************************************************************************/
 int
-init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
+init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool with_auth_info) {
    DENTER(PACK_LAYER);
 
    if (pb == nullptr) {
       ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT);
       DRETURN(PACK_FORMAT);
    }
+
+   // clear all data
+   memset(pb, 0, sizeof(sge_pack_buffer));
 
    if (!just_count) {
       if (initial_size == 0) {
@@ -166,7 +174,17 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
          initial_size += 2 * INTSIZE;  /* space for version information */
       }
 
-      memset(pb, 0, sizeof(sge_pack_buffer));
+      // if auth_info is requested then get it from the component module
+      // and add its length to the initial_size
+      if (with_auth_info) {
+         pb->auth_info = component_get_auth_info();
+         if (pb->auth_info != nullptr) {
+            initial_size += strlen(pb->auth_info) + 1;
+         }
+      }
+      if (pb->auth_info != nullptr) {
+         initial_size += strlen(pb->auth_info) + 1;
+      }
 
       pb->head_ptr = sge_malloc(initial_size);
       if (pb->head_ptr == nullptr) {
@@ -180,15 +198,13 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
       pb->mem_size = initial_size;
 
       pb->bytes_used = 0;
-      pb->just_count = 0;
+      pb->just_count = false;
       pb->version = CULL_VERSION;
       packint(pb, 0);              /* pad 0 byte -> error handing in former versions */
-      packint(pb, pb->version);    /* version information is included in buffer      */
+      packint(pb, pb->version);      /* version information is included in buffer      */
+      packstr(pb, pb->auth_info);
    } else {
-      pb->head_ptr = pb->cur_ptr = nullptr;
-      pb->mem_size = 0;
-      pb->bytes_used = 0;
-      pb->just_count = 1;
+      pb->just_count = true;
    }
 
    DRETURN(PACK_SUCCESS);
@@ -202,7 +218,7 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count) {
     MT-NOTE: init_packbuffer_from_buffer() is MT safe (assumptions)
  **************************************************************/
 int
-init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
+init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen, bool with_auth_info) {
    DENTER(PACK_LAYER);
 
    if (!pb && !buf) {
@@ -219,15 +235,22 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
    /* check cull version (only if buffer contains any data) */
    if (buflen > 0) {
       int ret;
-      u_long32 pad, version;
 
+      u_long32 pad;
       if ((ret = unpackint(pb, &pad)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
 
+      u_long32 version;
       if ((ret = unpackint(pb, &version)) != PACK_SUCCESS) {
          DRETURN(ret);
       }
+
+      char *auth_info;
+      if ((ret = unpackstr(pb, &auth_info)) != PACK_SUCCESS) {
+         DRETURN(ret);
+      }
+      pb->auth_info = auth_info;
 
       if (pad != 0 || version != CULL_VERSION) {
          ERROR(MSG_CULL_PACK_WRONG_VERSION_XX, (unsigned int) version, CULL_VERSION);
@@ -235,6 +258,16 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
       }
 
       pb->version = version;
+
+      // verify auth_info
+      if (with_auth_info) {
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         if (!component_parse_auth_info(&error_dstr, pb->auth_info, &pb->uid, pb->username, MAX_USER_GROUP,
+            &pb->gid, pb->groupname, MAX_USER_GROUP, &pb->grp_amount, &pb->grp_array)) {
+            ERROR(SFNMAX, sge_dstring_get_string(&error_dstr));
+            DRETURN(PACK_AUTHINFO);
+         }
+      }
    } else {
       pb->version = CULL_VERSION;
    }
@@ -246,7 +279,9 @@ init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen) {
 /* MT-NOTE: clear_packbuffer() is MT safe */
 void clear_packbuffer(sge_pack_buffer *pb) {
    if (pb != nullptr) {
-      sge_free(&(pb->head_ptr));
+      sge_free(&pb->head_ptr);
+      sge_free(&pb->auth_info);
+      sge_free(&pb->grp_array);
    }
 }
 
@@ -711,6 +746,8 @@ const char *cull_pack_strerror(int errnum) {
          return MSG_CULL_PACK_BADARG;
       case PACK_VERSION:
          return MSG_CULL_PACK_VERSION;
+      case PACK_AUTHINFO:
+         return MSG_CULL_PACK_AUTHINFO;
       default:
          /* JG: TODO: we should have some global error message for all strerror functions */
          return "";

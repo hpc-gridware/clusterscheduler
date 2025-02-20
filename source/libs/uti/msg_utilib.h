@@ -198,4 +198,18 @@
 #define MSG_LCK_RWLOCKUNLOCKFAILED_SSS          _MESSAGE(59217, _(SFQ " failed to unlock " SFQ " - error: " SFQ))
 #define MSG_SGETEXT_SGEROOTNOTFOUND_S           _MESSAGE(59218, _("SGE_ROOT directory " SFQ " doesn't exist"))
 
+/* ocs_Munge.cc */
+#define MSG_MUNGE_ALREADY_INITIALIZED           _MESSAGE(59230, _("Munge already initialized"))
+#define MSG_MUNGE_OPEN_LIBMUNGE_SS              _MESSAGE(59231, _("can't open shared library " SFN ": " SFN))
+#define MSG_MUNGE_LOAD_FUNC_SS                  _MESSAGE(59232, _("can't load function " SFN ": " SFN))
+
+/* ocs_component.cc */
+#define MSG_UTI_MUNGE_ENCODE_FAILED_S        _MESSAGE(59240, _("failed to munge encode authinfo: " SFN))
+#define MSG_UTI_MUNGE_DECODE_FAILED_S        _MESSAGE(59241, _("failed to munge decode authinfo: " SFN))
+#define MSG_UTI_MUNGE_AUTH_UID_MISMATCH_II   _MESSAGE(59242, _("uid mismatch between munge (" uid_t_fmt ") and auth_info (" uid_t_fmt ")"))
+#define MSG_UTI_MUNGE_AUTH_GID_MISMATCH_II   _MESSAGE(59243, _("gid mismatch between munge (" gid_t_fmt ") and auth_info (" gid_t_fmt ")"))
+#define MSG_UTI_UNABLE_TO_EXTRACT_UID        _MESSAGE(59244, _("unable to extract uid from auth_info"))
+#define MSG_UTI_UNABLE_TO_EXTRACT_GID        _MESSAGE(59245, _("unable to extract gid from auth_info"))
+#define MSG_UTI_UNABLE_TO_EXTRACT_NSUP       _MESSAGE(59246, _("unable to extract number of supplementary groups from auth_info"))
+#define MSG_UTI_UNABLE_TO_EXTRACT_SUP_S      _MESSAGE(59247, _("unable to extract supplementary groups from auth_info: " SFN))
 // clang-format on

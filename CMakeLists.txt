@@ -86,6 +86,7 @@ option(WITH_JNI "Add JNI code for libraries like libdrmaa" ON)
 option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
 option(WITH_PYTHON "Enable Python external bindings" OFF)
 option(WITH_BOOST "Enable Boost framework" OFF)
+option(WITH_MUNGE "Enable Munge authentication" ON)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -163,6 +164,10 @@ if (WITH_JEMALLOC)
 else ()
    set(SGE_JEMALLOC_LIB "")
 endif ()
+
+if (WITH_MUNGE)
+   add_compile_definitions("OCS_WITH_MUNGE")
+endif()
 
 #if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")
 if (NOT WITH_SPOOL_BERKELEYDB AND NOT WITH_SPOOL_DYNAMIC)

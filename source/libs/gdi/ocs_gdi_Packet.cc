@@ -22,12 +22,14 @@
 
 #include "basis_types.h"
 
+#include "uti/ocs_Munge.h"
 #include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_bootstrap_env.h"
+#include "uti/sge_security.h"
 
 #include "sgeobj/ocs_Version.h"
 #include "sgeobj/sge_answer.h"
@@ -35,7 +37,6 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/sge_gdi_data.h"
-#include "gdi/sge_security.h"
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_Task.h"
 
@@ -108,7 +109,7 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
 ocs::gdi::Packet::Packet()
        : mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), is_handled(false), is_intern_request(false),
          request_type(PACKET_GDI_REQUEST), commproc_id(0),
-         response_id(0), gdi_session(0), version(0), auth_info(nullptr), uid(0), gid(0), amount(0), grp_array(nullptr),
+         response_id(0), gdi_session(0), version(0), uid(0), gid(0), amount(0), grp_array(nullptr),
          ds_type(0) {
    DENTER(TOP_LAYER);
    version = ocs::Version::get_version();
@@ -125,8 +126,11 @@ ocs::gdi::Packet::~Packet() {
    }
    pthread_mutex_destroy(&mutex);
    pthread_cond_destroy(&cond);
-   sge_free(&auth_info);
-   sge_free(&grp_array);
+   // in case of internal requests we borrow the supplementary groups from the component module
+   // do not free them!
+   if (!is_intern_request) {
+      sge_free(&grp_array);
+   }
    DRETURN_VOID;
 }
 
@@ -135,187 +139,6 @@ ocs::gdi::Packet::append_task(gdi::Task *task) {
    DENTER(TOP_LAYER);
    tasks.push_back(task);
    DRETURN(tasks.size() - 1);
-}
-
-/**
- * @brief Fill the auth_info field of the packet with user specific information.
- *
- * Will add the primaray user and group names and IDs as well as the supplementary group
- * information (also names and IDs) and pack it into the auth_info field of the GDI packet.
- *
- * @param packet_handle    Pointer to the GDI packet
- * @return                 True if successfull. False if encrypting the information failed.
- */
-bool
-ocs::gdi::Packet::initialize_auth_info() {
-   DENTER(TOP_LAYER);
-   bool ret = true;
-
-   // fetch primary names and IDs for user and group
-   uid_t tmp_uid = component_get_uid();
-   gid_t tmp_gid = component_get_gid();
-   const char *username = component_get_username();
-   const char *groupname = component_get_groupname();
-
-   // fetch supplementary groups
-   component_get_supplementray_groups(&amount, &grp_array);
-
-   // show information in debug output
-   dstring dbg_msg = DSTRING_INIT;
-   ocs_id2dstring(&dbg_msg, tmp_uid, username, tmp_gid, groupname, amount, grp_array);
-   sge_dstring_free(&dbg_msg);
-
-   // create one compact string containing primary user and group information as
-   // well as supplementary groups (id and names)
-   constexpr char sep = static_cast<char>(0xff);
-   dstring buffer_unencrypted = DSTRING_INIT;
-   sge_dstring_sprintf(&buffer_unencrypted, uid_t_fmt "%c" gid_t_fmt "%c%s%c%s%c%d",
-                       tmp_uid, sep, tmp_gid, sep, username, sep, groupname, sep, amount);
-
-   for (int i = 0; i < amount; i++) {
-      sge_dstring_sprintf_append(&buffer_unencrypted, "%c" gid_t_fmt "%c%s",
-                                 sep, grp_array[i].id, sep, grp_array[i].name);
-   }
-
-   // supplementary group data is not required anymore (no need to free because this was borrowed from the component above)
-   amount = 0;
-   grp_array = nullptr;
-
-   // encrypt and store the information
-   size_t size = sge_dstring_strlen(&buffer_unencrypted) * 3;
-   char *obuffer = sge_malloc(size);
-   SGE_ASSERT(obuffer != nullptr);
-   if (sge_encrypt(sge_dstring_get_string(&buffer_unencrypted), obuffer, size)) {
-      auth_info = sge_strdup(nullptr, obuffer);
-   } else {
-      ret = false;
-   }
-
-   sge_free(&obuffer);
-   sge_dstring_free(&buffer_unencrypted);
-
-   DRETURN(ret);
-}
-
-bool
-ocs::gdi::Packet::parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array)
-{
-   DENTER(TOP_LAYER);
-   char auth_buffer[2 * SGE_SEC_BUFSIZE];
-   int dlen = 0;
-
-   // decrypt received auth_info
-   if (auth_info == nullptr || !sge_decrypt(auth_info, strlen(auth_info), auth_buffer, &dlen)) {
-      ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   bool ret = true;
-   saved_vars_s *context = nullptr;
-   constexpr char separator[] = "\xff";
-   const char *token;
-   const char *next_token = sge_strtok_r(auth_buffer, separator, &context);
-   int pos = 0;
-   while ((token = next_token) != nullptr) {
-      switch (pos) {
-         case 0:
-            if (uid != nullptr && sscanf(token, uid_t_fmt, uid) != 1) {
-               ERROR(SFNMAX, "unable to extract uid form auth_info");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-         case 1:
-            if (gid != nullptr && sscanf(token, gid_t_fmt, gid) != 1) {
-               ERROR(SFNMAX, "unable to extract gid form auth_info");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-         case 2:
-            if (user != nullptr) {
-               sge_strlcpy(user, token, user_len);
-            }
-            break;
-         case 3:
-            if (group) {
-               sge_strlcpy(group, token, group_len);
-            }
-            break;
-         case 4:
-            if (amount != nullptr && grp_array != nullptr) {
-               if (sscanf(token, "%d", amount) == 1) {
-                  if (*amount > 0) {
-                     const size_t size = *amount * sizeof(ocs_grp_elem_t);
-                     *grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(size));
-                     if (*grp_array == nullptr) {
-                        ERROR(SFNMAX, "unable to extract number of supplementary groups from auth_info");
-                        answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-                        ret = false;
-                     }
-                  } else {
-                     // no error but there are no supplementary groups
-                     break;
-                  }
-               }
-            }
-            break;
-         default:
-            // beginning from token 5 we will find the supplementary gids and group names
-            int idx = (pos - 5) / 2;
-            if (idx < *amount) {
-               if (pos % 2 == 1) {
-                  gid_t supplementary_gid;
-
-                  if (sscanf(token, gid_t_fmt, &supplementary_gid) == 1) {
-                     (*grp_array)[idx].id= supplementary_gid;
-                  } else {
-                     ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (failed parsing gid)");
-                     answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-                     ret = false;
-                  }
-               } else {
-                  sge_strlcpy((*grp_array)[idx].name, token, sizeof((*grp_array)[idx].name));
-               }
-            } else {
-               ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (to many IDs)");
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               ret = false;
-            }
-            break;
-      }
-
-      // early return if an error happens during parsing authinfo
-      if (!ret) {
-         break;
-      }
-      pos++;
-      next_token = sge_strtok_r(nullptr, separator, &context);
-   }
-
-   // beginning with v9.0.0 authinfo has to contain at least 5 token (uid, uname, git, gname, #grps)
-   if (pos < 4) {
-      ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (old client tried to connect)");
-            answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      ret = false;
-   } else if (pos < (4 + (*amount) * 2)) {
-      ERROR(SFNMAX, "unable to extract supplementary groups from auth_info (unexpected amount of supplementary groups)");
-            answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      ret = false;
-   }
-
-   sge_free_saved_vars(context);
-   if (!ret) {
-      // cleanup in case of errors
-      sge_free(grp_array);
-   } else {
-      // show information in debug output
-      dstring dbg_msg = DSTRING_INIT;
-      ocs_id2dstring(&dbg_msg, *uid, user, *gid, group, *amount, *grp_array);
-      sge_dstring_free(&dbg_msg);
-   }
-   DRETURN(ret);
 }
 
 void
@@ -413,7 +236,7 @@ ocs::gdi::Packet::wait_till_handled() {
 *     Returns if the given packet was already handled by a worker thread.
 *     "true" means that the packet is completely done so that a call
 *     to ocs::gdi::Client::sge_gdi_packet_wait_till_handled() will return immediately. If
-*     "false" is returned the the packet is not finished so a call to
+*     "false" is returned the packet is not finished so a call to
 *     ocs::gdi::Client::sge_gdi_packet_wait_till_handled() might block when it is called
 *     afterwards.
 *
@@ -510,7 +333,7 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
       if (size > 0) {
          int pack_ret;
 
-         pack_ret = init_packbuffer(&pb, size, 0);
+         pack_ret = init_packbuffer(&pb, size);
          if (pack_ret != PACK_SUCCESS) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, "unable to prepare packbuffer for sending request");
             ret = false;
@@ -729,11 +552,18 @@ bool
 ocs::gdi::Packet::execute_internal(lList **answer_list) {
    DENTER(TOP_LAYER);
 
+   // fill in packet data for internal request - we don't get it via a pack buffer
    strncpy(commproc, prognames[QMASTER], sizeof(commproc)-1);
    strncpy(host, ClientBase::gdi_get_act_master_host(false), sizeof(host)-1);
+   // @todo make a function for filling in all the user data in a single call
+   uid = component_get_uid();
+   gid = component_get_gid();
+   sge_strlcpy(user, component_get_username(), sizeof(user));
+   sge_strlcpy(group, component_get_groupname(), sizeof(group));
+   component_get_supplementray_groups(&amount, &grp_array);
    is_intern_request = true;
 
-   bool ret = parse_auth_info(&tasks[0]->answer_list, &uid, user, sizeof(user), &gid, group, sizeof(group), &amount, &grp_array);
+   bool ret = true;
 
    /*
     * append the packet to the packet list of the worker threads
@@ -771,7 +601,7 @@ ocs::gdi::Packet::get_pb_size() {
    lList *local_answer_list = nullptr;
    sge_pack_buffer tmppb;
 
-   init_packbuffer(&tmppb, 0, 1);
+   init_packbuffer(&tmppb, 0, true, false);
    local_ret = pack(&local_answer_list, &tmppb);
    if (local_ret) {
       ret = pb_used(&tmppb);
@@ -859,7 +689,6 @@ ocs::gdi::Packet::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
    bool ret;
    int pack_ret;
    u_long32 tmp_version = 0;
-   char *tmp_auth_info = nullptr;
 
    if ((pack_ret = unpackint(pb, &tmp_version))) {
       goto error_with_mapping;
@@ -873,10 +702,6 @@ ocs::gdi::Packet::unpack_header(lList **answer_list, sge_pack_buffer *pb) {
     **                 together with (hopefully coming) further communication
     **                 redesign.
     */
-   if ((pack_ret = unpackstr(pb, &tmp_auth_info))) {
-      goto error_with_mapping;
-   }
-   auth_info = tmp_auth_info;
 error_with_mapping:
    ret = sge_gdi_map_pack_errors(pack_ret, answer_list);
    DRETURN(ret);
@@ -911,10 +736,6 @@ ocs::gdi::Packet::pack_header(lList **answer_list, sge_pack_buffer *pb) {
    int pack_ret;
 
    pack_ret = packint(pb, version);
-   if (pack_ret != PACK_SUCCESS) {
-      goto error_with_mapping;
-   }
-   pack_ret = packstr(pb, auth_info);
    if (pack_ret != PACK_SUCCESS) {
       goto error_with_mapping;
    }
@@ -1007,7 +828,6 @@ void ocs::gdi::Packet::debug_print() {
 
    DPRINTF("packet->host = " SFQ "\n", host);
    DPRINTF("packet->commproc = " SFQ "\n", commproc);
-   DPRINTF("packet->auth_info = " SFQ "\n", auth_info ? auth_info : "<null>");
    DPRINTF("packet->version = " sge_U32CFormat "\n", sge_u32c(version));
    DPRINTF("packet->tasks = %d\n", tasks.size());
 

@@ -73,7 +73,7 @@
 #include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 
 #include "spool/sge_spooling.h"
 
@@ -438,7 +438,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
          u_long32 dummymid = 0;
          sge_pack_buffer send_pb;
 
-         init_packbuffer(&send_pb, 0, 0);
+         init_packbuffer(&send_pb, 0);
 
          pack_job_delivery(&send_pb, jep, feature_get_active_featureset_id());
          if (simulate_execd) {
@@ -592,7 +592,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    */
    lSetList(tmpjep, JB_ja_template, nullptr);
 
-   if (init_packbuffer(&pb, 0, 0) != PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 0) != PACK_SUCCESS) {
       lFreeElem(&tmpjep);
       DRETURN(-1);
    }

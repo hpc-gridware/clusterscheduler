@@ -32,9 +32,10 @@ set(LIBRARY_SOURCES
         ocs_gdi_Packet.cc
         ocs_gdi_Target.cc
         ocs_gdi_Task.cc
+        ocs_gdi_security.cc
       sge_gdi_data.cc
       sge_qexec.cc
-      sge_security.cc)
+)
 set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

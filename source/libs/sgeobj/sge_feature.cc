@@ -59,6 +59,7 @@ static const featureset_names_t featureset_list[] = {
    {FEATURE_DCE_SECURITY,           "dce"},
    {FEATURE_KERBEROS_SECURITY,      "kerberos"},
    {FEATURE_CSP_SECURITY,           "csp"},
+   {FEATURE_MUNGE_SECURITY,         "munge"},
    {FEATURE_UNINITIALIZED,          nullptr}
 };
 /* *INDENT-ON* */

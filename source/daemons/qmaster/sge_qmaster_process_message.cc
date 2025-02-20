@@ -41,6 +41,7 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_Session.h"
@@ -54,7 +55,7 @@
 #include "sgeobj/sge_manop.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 
 #include "comm/commlib.h"
 
@@ -364,10 +365,14 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
    // check auth_info (user/group)
    if (local_ret) {
-      local_ret = packet->parse_auth_info(&packet->tasks[0]->answer_list,
-                                          &(packet->uid), packet->user, sizeof(packet->user),
-                                          &(packet->gid), packet->group, sizeof(packet->group),
-                                          &packet->amount, &packet->grp_array);
+      // copy data from the packbuffer
+      packet->uid = pb_in->uid;
+      packet->gid = pb_in->gid;
+      sge_strlcpy(packet->user, pb_in->username, sizeof(packet->user));
+      sge_strlcpy(packet->group, pb_in->groupname, sizeof(packet->group));
+      // we move the supplementary groups to the packet!
+      packet->amount = pb_in->grp_amount; pb_in->grp_amount = 0;
+      packet->grp_array = pb_in->grp_array; ; pb_in->grp_array = nullptr;
 
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
@@ -400,7 +405,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      init_packbuffer(&packet->pb, 0, 0);
+      init_packbuffer(&packet->pb, 0);
 
       if (packet != nullptr) {
          lList *tmp_anser_list = nullptr;
@@ -431,7 +436,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    bool ds_enabled = !mconf_get_disable_secondary_ds();
    if (ds_enabled && ds_type == ocs::DataStore::LISTENER) {
       // prepare packbuffer for the clients answer
-      init_packbuffer(&(packet->pb), 0, 0);
+      init_packbuffer(&(packet->pb), 0);
 
       lList *tmp_answer_list = nullptr;
       packet->pack_header(&tmp_answer_list, &packet->pb);

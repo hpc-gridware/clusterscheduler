@@ -168,8 +168,9 @@
 #define MSG_CULL_PACK_FORMAT              _MESSAGE(41155, _("invalid input parameter"))
 #define MSG_CULL_PACK_BADARG              _MESSAGE(41156, _("bad argument"))
 #define MSG_CULL_PACK_VERSION             _MESSAGE(41157, _("wrong cull version"))
+#define MSG_CULL_PACK_AUTHINFO            _MESSAGE(41158, _("incorrect authentication information"))
 
-#define MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS              _MESSAGE(41158, _("!!!!!!!!!!!11 lGetPosObject() got an invalid pos !!!!!!!!"))
+#define MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS              _MESSAGE(41160, _("!!!!!!!!!!!11 lGetPosObject() got an invalid pos !!!!!!!!"))
 #define MSG_CULL_GETOBJECT_WRONGTYPEFORFIELDXY_SS          _MESSAGE(41161, _("lGetObject: wrong type for field " SFN " (" SFN ")"))
 #define MSG_CULL_DECHAINOBJECT_WRONGTYPEFORFIELDXY_S       _MESSAGE(41163, _("lDechainObject: wrong type for field " SFN " (" SFN ")"))
 #define MSG_CULL_GETBOOL_WRONGTYPEFORFIELDXY_SS            _MESSAGE(41165, _("lGetBool: wrong type for field " SFN " (" SFN ")"))

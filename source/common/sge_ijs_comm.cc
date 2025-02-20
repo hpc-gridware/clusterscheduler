@@ -52,7 +52,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "gdi/sge_security.h"
 #include "gdi/msg_gdilib.h"
 
 #include "comm/cl_data_types.h"

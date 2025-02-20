@@ -75,7 +75,7 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_binding.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 
 #include "spool/classic/read_write_job.h"
 

@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
 #endif
 
    /* test just count */
-   if ((pack_ret = init_packbuffer(&pb, 100, 1)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100, true, false)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
    clear_packbuffer(&pb);
 
    /* test packing */
-   if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
    lFreeElem(&copy);
 
    /* test partial packing */
-   if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }

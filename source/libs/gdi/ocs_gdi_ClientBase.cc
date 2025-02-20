@@ -43,6 +43,7 @@
 
 #include "comm/commlib.h"
 
+#include "uti/ocs_Munge.h"
 #include "uti/msg_utilib.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
@@ -52,6 +53,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_security.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_uidgid.h"
@@ -63,7 +65,6 @@
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "gdi/sge_gdi_data.h"
 #include "gdi/msg_gdilib.h"
-#include "gdi/sge_security.h"
 
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"
@@ -73,6 +74,7 @@
 static void gdi_default_exit_func(int i) {
    sge_security_exit(i);
    cl_com_cleanup_commlib();
+   component_ts0_destroy();
 }
 
 /************* COMMLIB HANDLERS from sge_any_request ************************/
@@ -513,6 +515,21 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       if (master == nullptr && !(me_who == QMASTER)) {
          DRETURN(CL_RETVAL_UNKNOWN);
       }
+
+   if (bootstrap_get_use_munge()) {
+#if defined (OCS_WITH_MUNGE)
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (!ocs::uti::Munge::initialize(&error_dstr)) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_GDI_MUNGE_INIT_FAILED_S, sge_dstring_get_string(&error_dstr));
+         DRETURN(CL_RETVAL_UNKNOWN);
+      }
+#else
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
+      DRETURN(CL_RETVAL_UNKNOWN);
+#endif
+   }
 
       /*
       ** CSP initialize

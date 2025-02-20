@@ -65,6 +65,9 @@ void starting_up()
                                        feature_get_active_featureset_id())); 
    }
    INFO(MSG_STARTUP_STARTINGUP_SSS, feature_get_product_name(FS_SHORT, &ds3), sge_dstring_get_string(&ds2), sge_get_arch());
+   if (bootstrap_get_use_munge()) {
+      INFO(SFNMAX, MSG_STARTUP_USING_MUNGE);
+   }
 
    sge_dstring_free(&ds2);
    sge_dstring_free(&ds3);

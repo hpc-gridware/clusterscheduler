@@ -228,7 +228,7 @@ sge_worker_main(void *arg) {
           * prepare buffer for sending an answer 
           */
          if (!packet->is_intern_request && packet->request_type == PACKET_GDI_REQUEST) {
-            init_packbuffer(&(packet->pb), 0, 0);
+            init_packbuffer(&(packet->pb), 0);
          }
 
          MONITOR_MESSAGES(p_monitor);

@@ -49,7 +49,7 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_answer.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "comm/cl_commlib.h"
@@ -93,17 +93,12 @@ void
 sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(GDI_LAYER);
 
-   if (!packet->parse_auth_info(&(task->answer_list), &packet->uid, packet->user, sizeof(packet->user),
-                                &packet->gid, packet->group, sizeof(packet->group), &packet->amount, &packet->grp_array)) {
-      ERROR(SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
-      answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-      DRETURN_VOID;
-   }
-
    // show information in debug output
-   dstring dbg_msg = DSTRING_INIT;
-   ocs_id2dstring(&dbg_msg, packet->uid, packet->user, packet->gid, packet->group, packet->amount, packet->grp_array);
-   sge_dstring_free(&dbg_msg);
+   if (DPRINTF_IS_ACTIVE) {
+      dstring dbg_msg = DSTRING_INIT;
+      ocs_id2dstring(&dbg_msg, packet->uid, packet->user, packet->gid, packet->group, packet->amount, packet->grp_array);
+      sge_dstring_free(&dbg_msg);
+   }
 
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    if (!manop_is_manager(packet, master_manager_list)) {
@@ -280,6 +275,7 @@ void
 sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);
    ocs::gdi::ClientBase::shutdown();
+   component_ts0_destroy();
 
    DRETURN_VOID;
 }

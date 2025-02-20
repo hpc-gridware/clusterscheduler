@@ -472,7 +472,7 @@ ErrUsage()
              "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-db|-udb|-bup|-rst| \n" \
              "       -copycerts <host|hostlist>|-v|-upd|-upd-execd|-upd-rc| \n" \
              "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
-             "       [-auto <filename>] [-nr] [-csp] \n" \
+             "       [-auto <filename>] [-nr] [-csp] [-munge]\n" \
              "       [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
              "   -m         install qmaster host\n" \
              "   -um        uninstall qmaster host\n" \
@@ -501,6 +501,7 @@ ErrUsage()
              "   -nr        set reschedule to false\n" \
              "   -csp       install system with security framework protocol\n" \
              "              functionality\n" \
+             "   -munge     install system with Munge authentication enabled\n" \
              "   -oldijs    configure old interactive job support\n" \
              "   -afs       install system with AFS functionality\n" \
              "   -noremote  supress remote installation during autoinstall\n" \
@@ -1155,6 +1156,20 @@ CheckConfigFile()
          $INFOTEXT -e "Your >COPY_COMMAND< entry is invalid"
          $INFOTEXT -log "Your >COPY_COMMAND< entry is invalid"
          is_valid="false"
+      fi
+   fi
+
+   if [ "$MUNGE" = "true" ]; then
+      # check if munge is available, e.g. via systemctl status munge.service, must exit 0
+      # @todo check on freebsd
+      type systemctl >/dev/null 2>&1
+      if [ $? -eq 0 ]; then
+         systemctl status munge.services >/dev/null 2>&1
+         if [ $? -ne 0 ]; then
+            $INFOTEXT -e "Set-up with Munge authentication was requested but Munge service is not running"
+            $INFOTEXT -log "Set-up with Munge authentication was requested but Munge service is not running"
+            is_valid="false"
+         fi
       fi
    fi
 

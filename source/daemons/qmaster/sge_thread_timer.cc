@@ -51,7 +51,7 @@
 #include "uti/sge_os.h"
 #include "uti/sge_thread_ctrl.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "basis_types.h"
@@ -79,6 +79,14 @@ static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
+   DRETURN_VOID;
+}
+
+static void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+#ifdef KERBEROS
+   krb_check_for_idle_clients();
+#endif
    DRETURN_VOID;
 }
 

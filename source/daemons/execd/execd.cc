@@ -229,7 +229,7 @@ int main(int argc, char **argv)
       sge_unsetenv("XAUTHORITY");
    }
 
-   parse_cmdline_execd(argv);   
+   parse_cmdline_execd(argv);
    
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
@@ -438,7 +438,9 @@ static void execd_exit_func(int i)
          sge_smf_temporary_disable_instance();
       }
    }
-#endif  
+#endif
+
+   component_ts0_destroy();
    DRETURN_VOID;
 }
 

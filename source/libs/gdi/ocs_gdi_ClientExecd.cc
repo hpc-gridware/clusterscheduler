@@ -205,7 +205,7 @@ int ocs::gdi::ClientExecd::report_list_send(const lList *rlp, const char *rhost,
    DENTER(TOP_LAYER);
 
    /* prepare packing buffer */
-   if ((ret = init_packbuffer(&pb, 1024, 0)) == PACK_SUCCESS) {
+   if ((ret = init_packbuffer(&pb, 1024)) == PACK_SUCCESS) {
       ret = cull_pack_list(&pb, rlp);
    }
 

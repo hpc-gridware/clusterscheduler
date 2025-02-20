@@ -71,7 +71,7 @@ int sge_send_ack_to_qmaster(u_long32 type, u_long32 ulong_val,
    DENTER(TOP_LAYER);
 
    /* send an ack to the qmaster for the events */
-   if (init_packbuffer(&pb, 1024, 0) != PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
       DRETURN(CL_RETVAL_MALLOC);
    }
 

@@ -789,8 +789,7 @@ spool_berkeleydb_read_list(lList **answer_list, bdb_info info,
 
                DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
-               cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, 
-                                                      data_dbt.size);
+               cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, data_dbt.size, false);
                if (cull_ret != PACK_SUCCESS) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
@@ -861,7 +860,7 @@ spool_berkeleydb_write_object(lList **answer_list, bdb_info info,
       sge_pack_buffer pb;
       int cull_ret;
 
-      cull_ret = init_packbuffer(&pb, 8192, 0);
+      cull_ret = init_packbuffer(&pb, 8192, false, false);
       if (cull_ret != PACK_SUCCESS) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
@@ -1700,8 +1699,7 @@ spool_berkeleydb_read_object(lList **answer_list, bdb_info info,
 
          DPRINTF(("read object with key " SFQ ", size %d\n",
                   key_dbt.data, data_dbt.size));
-         cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, 
-                                                data_dbt.size);
+         cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, data_dbt.size, false);
          if (cull_ret != PACK_SUCCESS) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 

@@ -47,7 +47,7 @@ lListElem *lWhereToElem(const lCondition *where){
    sge_pack_buffer pb;
    DENTER(CULL_LAYER);
 
-   if (init_packbuffer(&pb, 1024, 0) == PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_cond(&pb, where) == PACK_SUCCESS) {
          whereElem = lCreateElem(PACK_Type);
          lSetUlong(whereElem, PACK_id, SGE_WHERE);
@@ -60,29 +60,28 @@ lListElem *lWhereToElem(const lCondition *where){
 }
 
 lCondition *lWhereFromElem(const lListElem *where){
-   lCondition *cond = nullptr;
-   sge_pack_buffer pb;
-   int size=0;
-   char *buffer;
-   int ret=0;
    DENTER(CULL_LAYER);
 
+   lCondition *cond = nullptr;
+
    if (lGetUlong(where, PACK_id) == SGE_WHERE) {
-      size = getByteArray(&buffer, where, PACK_string);
-      if (size <= 0){
+      sge_pack_buffer pb;
+      char *buffer;
+      int ret = 0;
+      int size = getByteArray(&buffer, where, PACK_string);
+      if (size <= 0) {
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
-      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size)) == PACK_SUCCESS) {
+      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
          cull_unpack_cond(&pb, &cond);
          clear_packbuffer(&pb);
-      }
-      else {
+      } else {
          sge_free(&buffer);
          ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
       }
-   }
-   else {
+   } else {
       ERROR(MSG_PACK_WRONGPACKTYPE_UI, sge_u32c(lGetUlong(where, PACK_id)), SGE_WHERE);
    }
+
    DRETURN(cond);
 }
 
@@ -93,7 +92,7 @@ lListElem *lWhatToElem(const lEnumeration *what)
 
    DENTER(CULL_LAYER);
 
-   if (init_packbuffer(&pb, 1024, 0) == PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (cull_pack_enum(&pb, what) == PACK_SUCCESS) {
          whatElem = lCreateElem(PACK_Type);
          lSetUlong(whatElem, PACK_id, SGE_WHAT);
@@ -107,26 +106,25 @@ lListElem *lWhatToElem(const lEnumeration *what)
 }
 
 lEnumeration *lWhatFromElem(const lListElem *what){
+   DENTER(CULL_LAYER);
    lEnumeration *cond = nullptr;
    sge_pack_buffer pb;
    int size=0;
    char *buffer;
    int ret=0;
-   DENTER(CULL_LAYER);
 
    if (lGetUlong(what, PACK_id) == SGE_WHAT) {
       size = getByteArray(&buffer, what, PACK_string);
       if (size <= 0){
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
-      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size)) == PACK_SUCCESS) {
+      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
          cull_unpack_enum(&pb, &cond);
          clear_packbuffer(&pb);
       } else {
          sge_free(&buffer);
          ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
       }
-   }
-   else {
+   } else {
       ERROR(MSG_PACK_WRONGPACKTYPE_UI, lGetUlong(what, PACK_id), SGE_WHAT);
    }
    DRETURN(cond);

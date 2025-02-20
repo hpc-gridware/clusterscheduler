@@ -33,29 +33,17 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sge_qmaster_timed_event.h"
+#include "cull/cull_list.h"
+#include "uti/sge_dstring.h"
+#include "uti/sge_security.h"
 
 #ifdef KERBEROS
 #   include "krb_lib.h"
 #endif
 
-#define SGE_SEC_BUFSIZE 1024
-
-void sge_security_exit(int i);
-
-#ifdef SECURE
-/* int 0 on success, -1 on failure */
-int sge_ssl_setup_security_path(const char *progname, const char *username);
-#endif
-
-
 #ifdef KERBEROS
 int kerb_job(lListElem *jelem, struct dispatch_entry *de);
 #endif
-
-bool sge_encrypt(const char *intext, char *outbuf, int outsize);
-bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
-bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
 
 void tgt2cc(lListElem *jep, const char *rhost);
 void tgtcclr(lListElem *jep, const char *rhost);
@@ -69,16 +57,3 @@ int store_sec_cred2(const char* sge_root,
                     int do_authentication, 
                     int *general, 
                     dstring *err_str);
-
-bool
-sge_security_verify_user(const char *host, const char *commproc, u_long32 id, const char *user);
-
-bool sge_security_verify_unique_identifier(bool check_admin_user, 
-                                           const char* user, 
-                                           const char* progname,
-                                           unsigned long progid, 
-                                           const char* hostname, 
-                                           const char* commproc, 
-                                           unsigned long commid);
-
-void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor);
