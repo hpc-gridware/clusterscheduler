@@ -298,7 +298,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
    ret = init_packbuffer_from_buffer(&pb, msg, msg_len);
    if (ret != PACK_SUCCESS) {
-      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSIS, host, prognames[EXECD], from_id, cull_pack_strerror(ret));
+      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, prognames[EXECD], from_id, cull_pack_strerror(ret));
       DRETURN(-1);
    }
 

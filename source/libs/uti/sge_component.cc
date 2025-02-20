@@ -56,7 +56,8 @@ typedef struct {
 } sge_component_user_t;
 
 #define COMPONENT_MUTEX_NAME "component_mutex"
-typedef struct {
+
+typedef struct component_ts0_t {
    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
    sge_component_user_t users[COMPONENT_NUM_USERS];
    int current_user = COMPONENT_START_USER;
