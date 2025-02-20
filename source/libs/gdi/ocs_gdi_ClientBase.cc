@@ -71,6 +71,8 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
 
+#include "msg_common.h"
+
 static void gdi_default_exit_func(int i) {
    sge_security_exit(i);
    cl_com_cleanup_commlib();

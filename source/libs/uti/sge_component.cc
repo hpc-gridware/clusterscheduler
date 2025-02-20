@@ -809,9 +809,8 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
       sge_strlcpy(auth_buffer, local_auth_buffer, sizeof(auth_buffer));
       sge_free(&local_auth_buffer);
 #else
-         ERROR(SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
-         answer_list_add(answer_list, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-         DRETURN(false);
+      sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
+      DRETURN(false);
 #endif
    } else {
       int dlen = 0;
