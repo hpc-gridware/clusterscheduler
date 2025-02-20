@@ -1164,10 +1164,10 @@ CheckConfigFile()
       # @todo check on freebsd
       type systemctl >/dev/null 2>&1
       if [ $? -eq 0 ]; then
-         systemctl status munge.services >/dev/null 2>&1
+         output=`systemctl status munge.service 2>&1`
          if [ $? -ne 0 ]; then
-            $INFOTEXT -e "Set-up with Munge authentication was requested but Munge service is not running"
-            $INFOTEXT -log "Set-up with Munge authentication was requested but Munge service is not running"
+            $INFOTEXT -e "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
+            $INFOTEXT -log "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
             is_valid="false"
          fi
       fi
