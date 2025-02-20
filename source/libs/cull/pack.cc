@@ -178,9 +178,6 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool 
       // and add its length to the initial_size
       if (with_auth_info) {
          pb->auth_info = component_get_auth_info();
-         if (pb->auth_info != nullptr) {
-            initial_size += strlen(pb->auth_info) + 1;
-         }
       }
       if (pb->auth_info != nullptr) {
          initial_size += strlen(pb->auth_info) + 1;

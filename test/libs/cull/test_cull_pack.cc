@@ -41,6 +41,7 @@
 
 #include "cull/cull.h"
 
+#include "uti/ocs_Munge.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 
@@ -184,6 +185,18 @@ int main(int argc, char *argv[]) {
 
    lInit(nmv);
 
+   if (bootstrap_get_use_munge()) {
+#if defined (OCS_WITH_MUNGE)
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (!ocs::uti::Munge::initialize(&error_dstr)) {
+         fprintf(stderr, "initializing Munge failed: %s\n", sge_dstring_get_string(&error_dstr));
+         return EXIT_FAILURE;
+      }
+#else
+      fprintf(stderr, SFNMAX, "built without Munge");
+      return EXIT_FAILURE;
+#endif
+   }
    /* create an element */
    ep = lCreateElem(TEST_Type);
    obj = lCreateElem(TEST_Type);
@@ -248,6 +261,7 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
    }
 
+   counted_size += strlen(pb.auth_info) + 1;
    if (counted_size != pb.bytes_used) {
       printf("just_count does not work, reported " sge_u32", expected " sge_u32"\n", counted_size,
              (u_long32) pb.bytes_used);
@@ -338,6 +352,7 @@ int main(int argc, char *argv[]) {
    unlink(filename);
 
    /* cleanup and exit */
+   ocs::uti::Munge::shutdown();
    lFreeElem(&ep);
    return EXIT_SUCCESS;
    FCLOSE_ERROR:
