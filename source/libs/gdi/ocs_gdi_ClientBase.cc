@@ -520,11 +520,13 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 
    if (bootstrap_get_use_munge()) {
 #if defined (OCS_WITH_MUNGE)
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      if (!ocs::uti::Munge::initialize(&error_dstr)) {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_GDI_MUNGE_INIT_FAILED_S, sge_dstring_get_string(&error_dstr));
-         DRETURN(CL_RETVAL_UNKNOWN);
+      if (!ocs::uti::Munge::is_initialized()) {
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         if (!ocs::uti::Munge::initialize(&error_dstr)) {
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                    MSG_GDI_MUNGE_INIT_FAILED_S, sge_dstring_get_string(&error_dstr));
+            DRETURN(CL_RETVAL_UNKNOWN);
+         }
       }
 #else
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,

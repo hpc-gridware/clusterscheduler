@@ -70,6 +70,8 @@ public:
    static munge_decode_func_t munge_decode_func;
    static munge_strerror_func_t munge_strerror_func;
 
+   static bool is_initialized();
+
    static bool initialize(dstring *error_dstr);
    static void shutdown();
 

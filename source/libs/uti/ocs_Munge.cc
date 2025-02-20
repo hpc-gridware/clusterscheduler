@@ -42,6 +42,10 @@ namespace ocs::uti {
    munge_enum_int_to_str_func_t Munge::munge_enum_int_to_str_func = nullptr;
    munge_enum_str_to_int_func_t Munge::munge_enum_str_to_int_func = nullptr;
 
+   bool Munge::is_initialized() {
+      return lib_handle != nullptr;
+   }
+
    bool Munge::initialize(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
