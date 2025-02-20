@@ -183,7 +183,7 @@ ocs::TerminationManager::get_stacktrace(bool demangle_names) {
 
 
 void
-ocs::TerminationManager::show_stacktrace(u_int32_t level) {
+ocs::TerminationManager::show_stacktrace(uint32_t level) {
    std::stringstream ss;
 
    ss << get_stacktrace(true);
