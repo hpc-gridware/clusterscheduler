@@ -846,7 +846,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    }
 
    if (id >= EV_ID_FIRST_DYNAMIC || name == nullptr || *name == 0) {
-      WARNING(MSG_EVENT_ILLEGAL_ID_OR_NAME_US, sge_u32c(id), name != nullptr ? name : "nullptr" );
+      WARNING(MSG_EVENT_ILLEGAL_ID_OR_NAME_US, static_cast<u_long32>(id), name != nullptr ? name : "nullptr" );
    } else {
       sge_evc->ec = lCreateElem(EV_Type);
 
@@ -1208,7 +1208,7 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      DPRINTF("EVC: change event client to " sge_U32CFormat "\n", (u_long32)handling);
+      DPRINTF("EVC: change event client to " sge_uu32 "\n", static_cast<u_long32>(handling));
 
       ret = (lGetUlong(sge_evc->ec, EV_busy_handling) != handling) ? true : false;
 
@@ -1509,7 +1509,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 
          if (new_id != 0) {
             lSetUlong(sge_evc->ec, EV_id, new_id);
-            DPRINTF("REGISTERED with id " sge_U32CFormat "\n", new_id);
+            DPRINTF("REGISTERED with id " sge_uu32 "\n", new_id);
             lSetBool(sge_evc->ec, EV_changed, false);
             sge_evc->need_register = false;
 
@@ -2958,7 +2958,7 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
          if (wrong_number)
             *wrong_number = j;
 
-         ERROR(MSG_EVENT_HIGHESTEVENTISXWHILEWAITINGFORY_UU , sge_u32c(j), sge_u32c(i));
+         ERROR(MSG_EVENT_HIGHESTEVENTISXWHILEWAITINGFORY_UU , j, i);
       }
 
       /* ensure number of first event is lower or equal "waiting_for" */
@@ -2967,7 +2967,7 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
          if (wrong_number) {
             *wrong_number = j;
          }
-         ERROR(MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU, sge_u32c(j), sge_u32c(i));
+         ERROR(MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU, j, i);
          ret = false;
       } else {
 

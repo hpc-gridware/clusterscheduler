@@ -476,10 +476,9 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
    for_each_ep(pid, lGetList(osjob, JO_pid_list)) {
       if (setpriority(PRIO_PROCESS, lGetUlong(pid, JP_pid), pri) < 0 &&
           errno != ESRCH) {
-         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, sge_u32c(lGetUlong(job, JL_job_ID)), sge_u32c(lGetUlong(pid, JP_pid)), strerror(errno));
+         ERROR(MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS, lGetUlong(job, JL_job_ID), lGetUlong(pid, JP_pid), strerror(errno));
       } else {
-         DPRINTF("Changing Priority of process " sge_u32 " to " sge_u32 "\n",
-                 sge_u32c(lGetUlong(pid, JP_pid)), sge_u32c((u_long32) pri));
+         DPRINTF("Changing Priority of process " sge_uu32 " to %ld\n", lGetUlong(pid, JP_pid), pri);
       }
    }
    DRETURN_VOID;
@@ -1681,13 +1680,13 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
       next_job = lNextRW(job);
 
       if (lGetUlong(job, JL_job_ID) == job_id) {
-         DPRINTF("PTF: found job id " sge_U32CFormat "\n", job_id);
+         DPRINTF("PTF: found job id " sge_uu32 "\n", job_id);
          os_job_list = lGetListRW(job, JL_OS_job_list);
          next_os_job = lFirstRW(os_job_list);
          while ((os_job = next_os_job)) {
             next_os_job = lNextRW(os_job);
             if (lGetUlong(os_job, JO_ja_task_ID ) == ja_task_id) {
-               DPRINTF("PTF: found job task id " sge_U32CFormat "\n", ja_task_id);
+               DPRINTF("PTF: found job task id " sge_uu32 "\n", ja_task_id);
                psIgnoreJob(ptf_get_osjobid(os_job));
                DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", lGetUlong(os_job, JO_OS_job_ID));
                lRemoveElem(os_job_list, &os_job);

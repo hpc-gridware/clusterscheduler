@@ -155,7 +155,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          ;
       } else {
          // unknown tag
-         ERROR(MSG_COM_UNKNOWN_TAG, sge_u32c(ack_tag));
+         ERROR(MSG_COM_UNKNOWN_TAG, ack_tag);
          lFreeElem(&ack);
          DRETURN_VOID;
       }
@@ -657,12 +657,12 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
          if (!(jep = lGetElemUlongRW(master_job_list, JB_job_number, ack_ulong))) {
-            ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, sge_u32c(ack_ulong));
+            ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, ack_ulong);
             DRETURN_VOID;
          }
          jatep = job_search_task(jep, nullptr, ack_ulong2);
          if (jatep == nullptr) {
-            ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU, host, sge_u32c(ack_ulong2), sge_u32c(ack_ulong));
+            ERROR(MSG_COM_ACKEVENTFORUNKNOWNTASKOFJOB_SUU, host, ack_ulong2, ack_ulong);
             DRETURN_VOID;
          }
 

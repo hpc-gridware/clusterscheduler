@@ -198,10 +198,10 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
                 procs->ki_rgid != 0 && procs->ki_svgid != 0) {
                 kill(procs->ki_pid, sig);
 	             sprintf(err_str, MSG_SGE_KILLINGPIDXY_UI,
-		            sge_u32c(procs->ki_pid), add_grp_id);
+		            static_cast<u_long32>(procs->ki_pid), add_grp_id);
 	    } else {
 	       sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_UI ,
-		       sge_u32c(procs->ki_pid), add_grp_id);
+		       static_cast<u_long32>(procs->ki_pid), add_grp_id);
 	    }
 	    if (shepherd_trace)
 	       shepherd_trace(err_str);
@@ -238,9 +238,9 @@ void pdc_kill_addgrpid(gid_t add_grp_id, int sig,
                 procs->kp_eproc.e_pcred.p_svuid != 0 &&
                 procs->kp_eproc.e_pcred.p_rgid != 0 && procs->kp_eproc.e_pcred.p_svgid != 0) {
                kill(procs->kp_proc.p_pid, sig);
-               snprintf(err_str, sizeof(err_str), MSG_SGE_KILLINGPIDXY_UI, sge_u32c(procs->kp_proc.p_pid), add_grp_id);
+               snprintf(err_str, sizeof(err_str), MSG_SGE_KILLINGPIDXY_UI, static_cast<u_long32>(procs->kp_proc.p_pid), add_grp_id);
             } else {
-               snprintf(err_str, sizeof(err_str), MSG_SGE_DONOTKILLROOTPROCESSXY_UI, sge_u32c(procs->kp_proc.p_pid), add_grp_id);
+               snprintf(err_str, sizeof(err_str), MSG_SGE_DONOTKILLROOTPROCESSXY_UI, static_cast<u_long32>(procs->kp_proc.p_pid), add_grp_id);
             }
             if (shepherd_trace) {
                shepherd_trace(err_str);

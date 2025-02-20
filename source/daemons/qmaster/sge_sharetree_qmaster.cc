@@ -203,7 +203,7 @@ check_sharetree(lList **alpp, lListElem *node, const lList *user_list, const lLi
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {
-      ERROR(MSG_STREE_NOVALIDNODEREF_U, sge_u32c(lGetUlong(node, STN_id)));
+      ERROR(MSG_STREE_NOVALIDNODEREF_U, lGetUlong(node, STN_id));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }

@@ -36,7 +36,7 @@
 #include "uti/sge_dstring.h"
 
 
-#define MAX_TRIGGER_SCRIPTS 10
+#define MAX_TRIGGER_SCRIPTS (10)
 #define QEVENT_JB_END 1
 #define QEVENT_JB_TASK_END 2
 

@@ -249,7 +249,7 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
       if (fromcommproc[0] != '\0' && fromhost[0] != '\0') {
          /* The connection was closed, reopen it */
          ret = cl_commlib_open_connection(handle, fromhost, fromcommproc, *fromid);
-         INFO("reopen connection to %s,%s," sge_U32CFormat " (1)\n", fromhost, fromcommproc, sge_u32c( *fromid));
+         INFO("reopen connection to %s,%s," sge_uu32 " (1)\n", fromhost, fromcommproc, static_cast<u_long32>(*fromid));
          if (ret == CL_RETVAL_OK) {
             INFO("reconnected successfully\n");
             ret = cl_commlib_receive_message(handle, fromhost, fromcommproc, *fromid, (bool) synchron, 0, &message,
@@ -269,7 +269,7 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
       }
 
       if (sender != nullptr) {
-         DEBUG("received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id));
+         DEBUG("received from: %s,%lu\n", sender->comp_host, sender->comp_id);
          if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
             strcpy(fromcommproc, sender->comp_name);
          }
@@ -398,7 +398,7 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       if (commproc[0] != '\0' && rhost[0] != '\0') {
          /* The connection was closed, reopen it */
          i = cl_commlib_open_connection(handle, (char *) rhost, (char *) commproc, usid);
-         INFO("reopen connection to %s,%s," sge_U32CFormat " (2)\n", rhost, commproc, sge_u32c(usid));
+         INFO("reopen connection to %s,%s," sge_uu32 " (2)\n", rhost, commproc, usid);
          if (i == CL_RETVAL_OK) {
             INFO("reconnected successfully\n");
             i = cl_commlib_receive_message(handle, rhost, commproc, usid,
@@ -449,7 +449,7 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
 
       /* TODO: there are two cases for any and addressed communication partner, two functions are needed */
       if (sender != nullptr) {
-         DEBUG("received from: %s," sge_U32CFormat "\n", sender->comp_host, sge_u32c(sender->comp_id));
+         DEBUG("received from: %s,%ld\n", sender->comp_host, sender->comp_id);
          if (rhost[0] == '\0') {
             strcpy(rhost, sender->comp_host); /* If we receive from anybody return the sender */
          }

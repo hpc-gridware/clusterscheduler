@@ -240,7 +240,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       gettimeofday(&end_time, nullptr);
       if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000)
           > jsv_threshold || jsv_threshold == 0) {
-         INFO(MSG_JSV_THRESHOLD_UU, sge_u32c(lGetUlong(*jep, JB_job_number)), sge_u32c((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000));
+         INFO(MSG_JSV_THRESHOLD_UU, lGetUlong(*jep, JB_job_number), static_cast<u_long32>((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000));
       }
       if (!lret) {
          DRETURN(STATUS_EUNKNOWN);
@@ -261,7 +261,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
        !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
       if (!spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep)) {
          spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-         ERROR(MSG_JOB_NOWRITE_US, sge_u32c(lGetUlong(*jep, JB_job_number)), strerror(errno));
+         ERROR(MSG_JOB_NOWRITE_US, lGetUlong(*jep, JB_job_number), strerror(errno));
          answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EDISK);
       }
@@ -275,7 +275,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
                         *jep, nullptr, nullptr, true, true, packet->gdi_session)) {
       spool_transaction(alpp, spool_get_default_context(), STC_rollback);
-      ERROR(MSG_JOB_NOWRITE_U, sge_u32c(lGetUlong(*jep, JB_job_number)));
+      ERROR(MSG_JOB_NOWRITE_U, lGetUlong(*jep, JB_job_number));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       if ((lGetString(*jep, JB_exec_file) != nullptr)) {
          unlink(lGetString(*jep, JB_exec_file));
@@ -317,10 +317,10 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
 
    if (!job_is_array(*jep)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOB_US,
-               sge_u32c(lGetUlong(*jep, JB_job_number)), lGetString(*jep, JB_job_name));
+               lGetUlong(*jep, JB_job_number), lGetString(*jep, JB_job_name));
    } else {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOBARRAY_UUUUS, sge_u32c(lGetUlong(*jep, JB_job_number)),
-               sge_u32c(start), sge_u32c(end), sge_u32c(step), lGetString(*jep, JB_job_name));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOBARRAY_UUUUS, lGetUlong(*jep, JB_job_number),
+               start, end, step, lGetString(*jep, JB_job_name));
    }
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
@@ -495,7 +495,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
 
       /* Does user have privileges to delete the job/task? */
       if (job_check_owner(packet, job_number, master_job_list, master_manager_list, master_operator_list)) {
-         ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_JOB, sge_u32c(job_number));
+         ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_JOB, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          njobs++;
          /* continue with next job */
@@ -741,9 +741,9 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modi
       if (jid_flag) {
          if (is_array) {
             if (start == end) {
-               ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SUS, jobid, sge_u32c(start), sge_dstring_get_string(&user_list_string));
+               ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SUS, jobid, start, sge_dstring_get_string(&user_list_string));
             } else {
-               ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUUS, jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step), sge_dstring_get_string(&user_list_string));
+               ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUUS, jobid, start, end, step, sge_dstring_get_string(&user_list_string));
             }
          } else {
             ERROR(MSG_SGETEXT_DEL_JOB_SS, jobid, sge_dstring_get_string(&user_list_string));
@@ -760,9 +760,9 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modi
       /* should not be possible */
       if (is_array) {
          if (start == end) {
-            ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SU, jobid, sge_u32c(start));
+            ERROR(MSG_SGETEXT_DOESNOTEXISTTASK_SU, jobid, start);
          } else {
-            ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUU, jobid, sge_u32c(start), sge_u32c(end), sge_u32c(step));
+            ERROR(MSG_SGETEXT_DOESNOTEXISTTASKRANGE_SUUU, jobid, start, end, step);
          }
       } else {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, SGE_OBJ_JOB, jobid);
@@ -967,14 +967,14 @@ void job_ja_task_send_abort_mail(const lListElem *job,
    if (send_abort_mail) {
       if (job_is_array(job)) {
          sge_dstring_sprintf(&subject, MSG_MAIL_TASKKILLEDSUBJ_UUS,
-                             sge_u32c(job_id), sge_u32c(ja_task_id), job_name);
+                             job_id, ja_task_id, job_name);
          sge_dstring_sprintf(&body, MSG_MAIL_TASKKILLEDBODY_UUSSS,
-                             sge_u32c(job_id), sge_u32c(ja_task_id), job_name, ruser, rhost);
+                             job_id, ja_task_id, job_name, ruser, rhost);
       } else {
          sge_dstring_sprintf(&subject, MSG_MAIL_JOBKILLEDSUBJ_US,
-                             sge_u32c(job_id), job_name);
+                             job_id, job_name);
          sge_dstring_sprintf(&body, MSG_MAIL_JOBKILLEDBODY_USSS,
-                             sge_u32c(job_id), job_name, ruser, rhost);
+                             job_id, job_name, ruser, rhost);
       }
       if (err_str != nullptr) {
          sge_dstring_append(&body, "\n");
@@ -1016,13 +1016,13 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          j = nullptr;
 
          if (job_is_array(j)) {
-            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
+            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, job_number, task_number);
          } else {
-            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
+            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, job_number);
          }
          answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } else {
-         ERROR(MSG_COM_NOSYNCEXECD_SU, ruser, sge_u32c(job_number));
+         ERROR(MSG_COM_NOSYNCEXECD_SU, ruser, job_number);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       }
    } else {
@@ -1032,9 +1032,9 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
          if (job_is_array(j)) {
-            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
+            ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, job_number, task_number);
          } else {
-            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
+            ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, job_number);
          }
 
          job_report_init_from_job_with_usage(dummy_jr, j, t, nullptr, now);
@@ -1059,9 +1059,9 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
           */
 
          if (job_is_array(j)) {
-            INFO(MSG_JOB_REGDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
+            INFO(MSG_JOB_REGDELTASK_SUU, ruser, job_number, task_number);
          } else {
-            INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
+            INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, job_number);
          }
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -1246,7 +1246,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       if (strcmp(packet->user, lGetString(jobep, JB_owner))
           && !manop_is_operator(packet, master_manager_list, master_operator_list)
           && !manop_is_manager(packet, master_manager_list)) {
-         ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, sge_u32c(jobid), MSG_JOB_CHANGEATTR);
+         ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, MSG_JOB_CHANGEATTR);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          lFreeWhere(&job_where);
          sge_free(&job_mod_name);
@@ -1283,7 +1283,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          answer_list_output(&answer_list);
 
          if (!dbret) {
-            ERROR(MSG_JOB_NOALTERNOWRITE_U, sge_u32c(jobid));
+            ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeList(&tmp_alp);
@@ -1360,7 +1360,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          if (trigger & RECHAIN_JA_AD_HOLD)
             job_suc_pre_ad(new_job);
 
-         INFO(MSG_SGETEXT_MODIFIEDINLIST_SSUS, packet->user, packet->host, sge_u32c(jobid), MSG_JOB_JOB);
+         INFO(MSG_SGETEXT_MODIFIEDINLIST_SSUS, packet->user, packet->host, jobid, MSG_JOB_JOB);
       }
    }
    lFreeWhere(&job_where);
@@ -1591,7 +1591,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
          }
 
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SETSHAREFUNC_SSUUU,
-                  packet->user, packet->host, sge_u32c(jobid), sge_u32c(jataskid), sge_u32c(uval));
+                  packet->user, packet->host, jobid, jataskid, uval);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
@@ -1671,7 +1671,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
                 !manop_is_operator(packet, master_manager_list, master_operator_list)) {
                u_long32 new_mask = op_code_and_hold & ~MINUS_H_TGT_USER;
                lSetPosUlong(tep, pos, new_mask);
-               ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, sge_u32c(jobid), is_sub_op_code ? MSG_JOB_RMHOLDUSER : MSG_JOB_SETHOLDUSER);
+               ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, is_sub_op_code ? MSG_JOB_RMHOLDUSER : MSG_JOB_SETHOLDUSER);
                answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_ENOOPR);
             }
@@ -1683,9 +1683,9 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
 
       if (new_hold != old_hold) {
          if (is_array) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JATASK_SUU, MSG_JOB_HOLD, sge_u32c(jobid), sge_u32c(jataskid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JATASK_SUU, MSG_JOB_HOLD, jobid, jataskid);
          } else {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HOLD, sge_u32c(jobid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HOLD, jobid);
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
@@ -1877,7 +1877,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          DRETURN(STATUS_EUNKNOWN);
       }
       if (!new_job_is_array && jep_ja_task_number > 1) {
-         ERROR(MSG_JOB_NOJOBARRAY_U, sge_u32c(jobid));
+         ERROR(MSG_JOB_NOJOBARRAY_U, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -1971,7 +1971,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          *trigger |= MOD_EVENT;
       }
 
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SETOVERRIDETICKS_SSUU, packet->user, packet->host, sge_u32c(jobid), sge_u32c(uval));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SETOVERRIDETICKS_SSUU, packet->user, packet->host, jobid, uval);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -1993,7 +1993,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
       lSetUlong(new_job, JB_priority, uval);
 
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_PRIOSET_SSUI, packet->user, packet->host, sge_u32c(jobid), ((int) (uval)) - BASE_PRIORITY);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_PRIOSET_SSUI, packet->user, packet->host, jobid, ((int) (uval)) - BASE_PRIORITY);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2016,7 +2016,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
       lSetUlong(new_job, JB_jobshare, uval);
 
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBSHARESET_SSUU, packet->user, packet->host, sge_u32c(jobid), sge_u32c(uval));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBSHARESET_SSUU, packet->user, packet->host, jobid, uval);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2038,7 +2038,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       /* ok, do it */
       lSetUlong(new_job, JB_ar, uval);
 
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBARSET_SSUU, packet->user, packet->host, sge_u32c(jobid), sge_u32c(uval));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBARSET_SSUU, packet->user, packet->host, jobid, uval);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2053,7 +2053,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       } else {
          lSetUlong64(new_job, JB_deadline, lGetUlong64(jep, JB_deadline));
          *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_DEADLINETIME, sge_u32c(jobid));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_DEADLINETIME, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
    }
@@ -2064,7 +2064,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_execution_time\n");
       lSetUlong64(new_job, JB_execution_time, lGetUlong64(jep, JB_execution_time));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STARTTIME, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STARTTIME, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2077,7 +2077,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetString(new_job, JB_account, lGetString(jep, JB_account));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ACCOUNT, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ACCOUNT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2086,7 +2086,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_cwd\n");
       lSetString(new_job, JB_cwd, lGetString(jep, JB_cwd));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_WD, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_WD, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2103,7 +2103,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetString(new_job, JB_checkpoint_name, ckpt_name);
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_CKPT, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_CKPT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2117,7 +2117,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetList(new_job, JB_stderr_path_list, lCopyList("", lGetList(jep, JB_stderr_path_list)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDERRPATHLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDERRPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2131,7 +2131,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetList(new_job, JB_stdin_path_list, lCopyList("", lGetList(jep, JB_stdin_path_list)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDINPATHLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDINPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2140,7 +2140,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_reserve\n");
       lSetBool(new_job, JB_reserve, lGetBool(jep, JB_reserve));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESERVE, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESERVE, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2149,7 +2149,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_merge_stderr\n");
       lSetBool(new_job, JB_merge_stderr, lGetBool(jep, JB_merge_stderr));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MERGEOUTPUT, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MERGEOUTPUT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2166,7 +2166,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetString(new_job, JB_pe, pe_name);
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_PE, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_PE, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2191,7 +2191,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       lSetList(new_job, JB_pe_range, pe_range);
 
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2232,7 +2232,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
             job_set_hard_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
             *trigger |= MOD_EVENT;
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDRESOURCELIST, sge_u32c(jobid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDRESOURCELIST, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
@@ -2255,7 +2255,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             }
             job_set_soft_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
             *trigger |= MOD_EVENT;
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTRESOURCELIST, sge_u32c(jobid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTRESOURCELIST, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
@@ -2269,7 +2269,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             }
             job_set_hard_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
             *trigger |= MOD_EVENT;
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDQLIST, sge_u32c(jobid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_HARDQLIST, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
@@ -2283,7 +2283,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             }
             job_set_soft_queue_list(new_job, lCopyList(nullptr, queue_list), scope);
             *trigger |= MOD_EVENT;
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTQLIST, sge_u32c(jobid));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTQLIST, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
       } // foreach scope
@@ -2296,7 +2296,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    if ((pos = lGetPosViaElem(jep, JB_mail_options, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_mail_options\n");
       lSetUlong(new_job, JB_mail_options, lGetUlong(jep, JB_mail_options));
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILOPTIONS, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILOPTIONS, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2305,7 +2305,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_mail_list\n");
       lSetList(new_job, JB_mail_list,
                lCopyList("", lGetList(jep, JB_mail_list)));
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2331,7 +2331,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
 
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_JOBNAME, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_JOBNAME, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2345,7 +2345,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       lList *req_list = nullptr, *pred_list = nullptr;
 
       if (lGetPosViaElem(jep, JB_ja_tasks, SGE_NO_ABORT) != -1) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, sge_u32c(jobid));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          DRETURN(STATUS_EUNKNOWN);
@@ -2414,7 +2414,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          int fields[] = {JRE_job_number, 0};
          uni_print_list(nullptr, str_predec, sizeof(str_predec) - 1, new_pre_list, fields, delis, 0);
          uni_print_list(nullptr, str_exited, sizeof(str_exited) - 1, exited_pre_list, fields, delis, 0);
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_HOLDLISTMOD_USS, sge_u32c(jobid), str_predec, str_exited);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_HOLDLISTMOD_USS, jobid, str_predec, str_exited);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
       lFreeList(&exited_pre_list);
@@ -2429,7 +2429,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       lList *req_list = nullptr, *pred_list = nullptr;
 
       if (lGetPosViaElem(jep, JB_ja_tasks, SGE_NO_ABORT) != -1) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, sge_u32c(jobid));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          DRETURN(STATUS_EUNKNOWN);
@@ -2498,7 +2498,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          int fields[] = {JRE_job_number, 0};
          uni_print_list(nullptr, str_predec, sizeof(str_predec) - 1, new_pre_list, fields, delis, 0);
          uni_print_list(nullptr, str_exited, sizeof(str_exited) - 1, exited_pre_list, fields, delis, 0);
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_HOLDARRAYLISTMOD_USS, sge_u32c(jobid), str_predec, str_exited);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_HOLDARRAYLISTMOD_USS, jobid, str_predec, str_exited);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
       lFreeList(&exited_pre_list);
@@ -2509,7 +2509,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_notify\n");
       lSetBool(new_job, JB_notify, lGetBool(jep, JB_notify));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_NOTIFYBEHAVIOUR, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_NOTIFYBEHAVIOUR, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2523,7 +2523,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetList(new_job, JB_stdout_path_list, lCopyList("", lGetList(jep, JB_stdout_path_list)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDOUTPATHLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDOUTPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2554,7 +2554,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          lSetString(new_job, JB_project, new_project);
          may_not_be_running = 1;
          *trigger |= MOD_EVENT;
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_PROJECT, sge_u32c(jobid));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_PROJECT, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
    }
@@ -2567,7 +2567,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
                lCopyList("", lGetList(jep, JB_binding)));
 
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_BINDING, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_BINDING, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2576,7 +2576,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_restart\n");
       lSetUlong(new_job, JB_restart, lGetUlong(jep, JB_restart));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESTARTBEHAVIOR, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESTARTBEHAVIOR, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2590,7 +2590,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
       lSetList(new_job, JB_shell_list, lCopyList("", lGetList(jep, JB_shell_list)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SHELLLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SHELLLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2617,7 +2617,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       lSetList(new_job, JB_env_list, lCopyList("", lGetList(jep, JB_env_list)));
       lAddList(lGetListRW(new_job, JB_env_list), &prefix_vars);
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ENVLIST, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ENVLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
       /* remove potentially dangerous environment variables */
@@ -2629,7 +2629,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_qs_args\n");
       lSetList(new_job, JB_qs_args, lCopyList("", lGetList(jep, JB_qs_args)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_QSARGS, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_QSARGS, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2638,7 +2638,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_job_args\n");
       lSetList(new_job, JB_job_args, lCopyList("", lGetList(jep, JB_job_args)));
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SCRIPTARGS, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SCRIPTARGS, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2659,7 +2659,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DPRINTF("got new JB_context\n");
       set_context(lGetListRW(jep, JB_context), new_job);
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_CONTEXT, sge_u32c(jobid));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_CONTEXT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
@@ -2677,13 +2677,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
       lSetUlong(new_job, JB_ja_task_concurrency, task_concurrency);
       *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_TASK_CONCURRENCY, sge_u32c(task_concurrency));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_TASK_CONCURRENCY, task_concurrency);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
    /* deny certain modifications of running jobs */
    if (may_not_be_running && is_running) {
-      ERROR(MSG_SGETEXT_CANT_MOD_RUNNING_JOBS_U, sge_u32c(jobid));
+      ERROR(MSG_SGETEXT_CANT_MOD_RUNNING_JOBS_U, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -2731,7 +2731,7 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
-         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp));
+         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, job_number, temp);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          is_cycle = true;
@@ -2746,7 +2746,7 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
       pre_nr = lGetUlong(pre_elem, JRE_job_number);
       if (pre_nr == job_number) {
          u_long32 temp = lGetUlong(new_job, JB_job_number);
-         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, sge_u32c(job_number), sge_u32c(temp));
+         ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, job_number, temp);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
          is_cycle = true;
@@ -2815,7 +2815,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
          if (SGE_STRTOU_LONG32(pre_ident) == jobid) {
             lFreeList(&predecessors_id);
             DPRINTF("got my own jobid in JRE_job_name\n");
-            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid));
+            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -2929,7 +2929,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, u_long64 gdi_sessio
          if (SGE_STRTOU_LONG32(pre_ident) == jobid) {
             lFreeList(&predecessors_id);
             DPRINTF("got my own jobid in JRE_job_name\n");
-            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, sge_u32c(jobid));
+            ERROR(MSG_JOB_MOD_GOTOWNJOBIDINHOLDJIDOPTION_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
@@ -3402,7 +3402,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
    DPRINTF("SEEK jobid " sge_u32" for COPY operation\n", seek_jid);
 
    if (!(old_jep = lGetElemUlong(master_job_list, JB_job_number, seek_jid))) {
-      ERROR(MSG_SGETEXT_DOESNOTEXIST_SU, SGE_OBJ_JOB, sge_u32c(seek_jid));
+      ERROR(MSG_SGETEXT_DOESNOTEXIST_SU, SGE_OBJ_JOB, seek_jid);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -3707,7 +3707,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
          sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED,
                         COMMIT_UNENROLLED_TASK | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
 
-         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_JOB, sge_u32c(job_number));
+         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_JOB, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          njobs++;
          continue;
@@ -3801,7 +3801,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                          * qdel will delete the job (code part of the qmaster<->execd protocol)
                          */
                         if (qinstance_state_is_unknown(qinstance)) {
-                           INFO(MSG_JOB_CHGFORCED_UU, sge_u32c(job_number), sge_u32c(task_number));
+                           INFO(MSG_JOB_CHGFORCED_UU, job_number, task_number);
                            forced = true;
                         } else {
                            if (job_is_tight_parallel(job, master_pe_list)) {
@@ -3836,7 +3836,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                    (lGetUlong(tmp_task, JAT_state) & JDELETED &&
                     lGetUlong64(tmp_task, JAT_pending_signal_delivery_time) > sge_get_gmt64() &&
                     !forced)) {
-                  INFO(MSG_JOB_ALREADYDELETED_U, sge_u32c(job_number));
+                  INFO(MSG_JOB_ALREADYDELETED_U, job_number);
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   continue;
                }
@@ -3846,7 +3846,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                 * qdel and delete remaining jobs later
                 */
                if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
-                  INFO(MSG_JOB_DISCONTTASKTRANS_SUU, packet->user, sge_u32c(job_number), sge_u32c(task_number));
+                  INFO(MSG_JOB_DISCONTTASKTRANS_SUU, packet->user, job_number, task_number);
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
                   *deletion_time_reached = true;
                   sge_free(&dupped_session);
@@ -3881,24 +3881,24 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
 
             range_list_sort_uniq_compress(range_list, nullptr, true);
             range_list_print_to_string(range_list, &tid_string, false, false, false);
-            INFO(MSG_JOB_DELETETASKS_SSU, packet->user, sge_dstring_get_string(&tid_string), sge_u32c(job_number));
+            INFO(MSG_JOB_DELETETASKS_SSU, packet->user, sge_dstring_get_string(&tid_string), job_number);
             sge_dstring_free(&tid_string);
          } else {
             u_long32 task_id = range_list_get_first_id(range_list, nullptr);
 
-            INFO(MSG_JOB_DELETETASK_SUU, packet->user, sge_u32c(job_number), sge_u32c(task_id));
+            INFO(MSG_JOB_DELETETASK_SUU, packet->user, job_number, task_id);
          }
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
       if ((*alltasks) && showmessage) {
          get_rid_of_schedd_job_messages(job_number);
-         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_JOB, sge_u32c(job_number));
+         INFO(MSG_JOB_DELETEX_SSU, packet->user, SGE_OBJ_JOB, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       }
 
       if ((njobs > 0 || (*deleted_tasks) > 0) && ((sge_get_gmt64() - start_time) > max_job_deletion_time)) {
-         INFO(MSG_JOB_DISCONTINUEDTRANS_SU, packet->user, sge_u32c(job_number));
+         INFO(MSG_JOB_DISCONTINUEDTRANS_SU, packet->user, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
          *deletion_time_reached = true;
          sge_free(&dupped_session);

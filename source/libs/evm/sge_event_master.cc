@@ -475,7 +475,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
 
    /* EV_ID_ANY is 0, therefore the compare is always true (Irix complained) */
    if (id >= EV_ID_FIRST_DYNAMIC) { /* invalid request */
-      ERROR(MSG_EVE_ILLEGALIDREGISTERED_U, sge_u32c(id));
+      ERROR(MSG_EVE_ILLEGALIDREGISTERED_U, id);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -504,7 +504,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       ep = eventclient_list_locate_by_adress(host, commproc, commproc_id);
 
       if (ep != nullptr) {
-         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
+         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, commproc_id);
 
          /* delete old event client entry, and we already hold the lock! */
          remove_event_client(&ep, false);
@@ -518,7 +518,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
          DRETURN(STATUS_ESEMANTIC);
       }
 
-      INFO(MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time));
+      INFO(MSG_EVE_REG_SUU, name, id, ed_time);
 
       /* Set the new id for this client. */
       lSetUlong(clio, EV_id, id);
@@ -541,12 +541,12 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
 
       if ((ep = get_event_client(id)) != nullptr) {
          /* we already have this special client */
-         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, sge_u32c(commproc_id));
+         ERROR(MSG_EVE_CLIENTREREGISTERED_SSSU, name, host, commproc, commproc_id);
 
          /* delete old event client entry, and we already have the mutex! */
          remove_event_client(&ep, false);
       } else {
-         INFO(MSG_EVE_REG_SUU, name, sge_u32c(id), sge_u32c(ed_time));
+         INFO(MSG_EVE_REG_SUU, name, id, ed_time);
       }
    }
 
@@ -718,7 +718,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    if (event_client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(id), "modify");
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, id, "modify");
       DRETURN_VOID;
    }
 
@@ -731,7 +731,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    if (ev_d_time < 1) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
-      ERROR(MSG_EVE_INVALIDINTERVAL_U, sge_u32c(ev_d_time));
+      ERROR(MSG_EVE_INVALIDINTERVAL_U, ev_d_time);
       DRETURN_VOID;
    }
 
@@ -817,7 +817,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    }
    /* busy_handling changed */
    if (busy_handling != lGetUlong(event_client, EV_busy_handling)) {
-      DPRINTF("EVM: event client %s changes to " sge_U32CFormat "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
+      DPRINTF("EVM: event client %s changes to " sge_uu32 "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
       lSetUlong(event_client, EV_busy_handling, busy_handling);
    }
 
@@ -871,7 +871,7 @@ sge_remove_event_client(u_long32 event_client_id) {
 
    if (client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "remove");
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
       DRETURN_VOID;
    }
    lSetUlong(client, EV_state, EV_terminated);
@@ -929,7 +929,7 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
 
          if (max > max_allowed_value) {
             max = max_allowed_value;
-            WARNING(MSG_CONF_NR_DYNAMIC_EVENT_CLIENT_EXCEEDS_MAX_FILEDESCR_U, sge_u32c(max));
+            WARNING(MSG_CONF_NR_DYNAMIC_EVENT_CLIENT_EXCEEDS_MAX_FILEDESCR_U, max);
          }
       }
    }
@@ -944,7 +944,7 @@ sge_set_max_dynamic_event_clients(u_long32 new_value) {
        * prevents new event clients, but allows the old ones there to drain off naturally.
        */
       Event_Master_Control.max_event_clients = max;
-      INFO(MSG_SET_MAXDYNEVENTCLIENT_U, sge_u32c(max));
+      INFO(MSG_SET_MAXDYNEVENTCLIENT_U, max);
 
       /* we have to rebuild the event client id range list */
       lFreeList(&Event_Master_Control.client_ids);
@@ -1142,7 +1142,7 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, u_long32 event_client_
    DENTER(TOP_LAYER);
 
    if (event_client_id <= EV_ID_ANY) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown");
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "shutdown");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(EINVAL);
    }
@@ -1164,11 +1164,11 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, u_long32 event_client_
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
       } else {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
-                  sge_u32c(lGetUlong(client, EV_id)), lGetHost(client, EV_host));
+                  lGetUlong(client, EV_id), lGetHost(client, EV_host));
       }
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "shutdown");
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "shutdown");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = EINVAL;
    }
@@ -1211,7 +1211,7 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, u_long32 event_client_
 int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **alpp, monitoring_t *monitor)
 {
    const lListElem *client;
-   int id = 0;
+   u_long32 id = 0;
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
@@ -1233,7 +1233,7 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **a
       sge_add_event_for_client(id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session);
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_COM_SHUTDOWNNOTIFICATION_SUS, lGetString(client, EV_name),
-               sge_u32c(id), lGetHost(client, EV_host));
+               id, lGetHost(client, EV_host));
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } /* for_each */
 
@@ -1785,7 +1785,7 @@ sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
    client = get_event_client(event_client_id);
 
    if (client == nullptr) {
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "process acknowledgements");
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "process acknowledgements");
    } else {
       u_long32 event_number = lGetUlong(request, EVR_event_number);
       u_long64 timestamp = lGetUlong64(request, EVR_timestamp);
@@ -1843,7 +1843,7 @@ sge_deliver_events_immediately(u_long32 event_client_id)
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
    if ((client = get_event_client(event_client_id)) == nullptr) {
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(event_client_id), "deliver events immediately");
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "deliver events immediately");
    } else {
       flush_events(client, 0);
       sge_event_master_flush_requests(true);
@@ -1891,7 +1891,7 @@ sge_resync_schedd(monitoring_t *monitor, u_long64 gdi_session)
 
       ret = 0;
    } else {
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, sge_u32c(EV_ID_SCHEDD), "resynchronize");
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, static_cast<u_long32>(EV_ID_SCHEDD), "resynchronize");
       ret = -1;
    }
 
@@ -3270,7 +3270,7 @@ allocate_new_dynamic_id(lList **answer_list)
    DENTER(TOP_LAYER);
 
    if (range_list_is_empty(Event_Master_Control.client_ids)) {
-      ERROR(MSG_TO_MANY_DYNAMIC_EC_U, sge_u32c(Event_Master_Control.max_event_clients));
+      ERROR(MSG_TO_MANY_DYNAMIC_EC_U, Event_Master_Control.max_event_clients);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
    } else {
       id = range_list_get_first_id(Event_Master_Control.client_ids, answer_list);

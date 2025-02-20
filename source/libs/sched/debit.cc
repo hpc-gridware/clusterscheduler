@@ -237,7 +237,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
                      continue;
                   }
                   if (lGetSubStr(order, OQ_dest_queue, sge_dstring_get_string(&queue_name), OR_queuelist)) {
-                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name));
+                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, lGetUlong(job, JB_job_number), lGetUlong(order, OR_job_number), qname, sge_dstring_get_string(&queue_name));
                   }
                }
 
@@ -246,7 +246,7 @@ debit_job_from_queues(lListElem *job, const lListElem *pe, lList *granted, lList
                      continue;
                   }
                   if (lGetSubStr(order, OQ_dest_queue, sge_dstring_get_string(&queue_name), OR_queuelist)) {
-                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(lGetUlong(order, OR_job_number)), qname, sge_dstring_get_string(&queue_name));
+                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, lGetUlong(job, JB_job_number), lGetUlong(order, OR_job_number), qname, sge_dstring_get_string(&queue_name));
                   }
                }
             }
@@ -346,9 +346,7 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListE
                       const lList *centry_list, int slots, bool is_master_task, bool do_per_host_booking,
                       bool *just_check) {
    int mods = 0;
-   mods += rc_debit_consumable(jep, pe, hep, centry_list, slots,
-                               EH_consumable_config_list,
-                               EH_resource_utilization,
+   mods += rc_debit_consumable(jep, pe, hep, centry_list, slots, EH_consumable_config_list, EH_resource_utilization,
                                lGetHost(hep, EH_name), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
       mods += ja_task_debit_host_rsmaps(jatep, hep, slots, just_check);
@@ -383,8 +381,6 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListE
 static int
 debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *pe,
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list) {
-   bool master_task = true;
-
    DENTER(TOP_LAYER);
 
    if (lGetUlong(job, JB_ar) != 0) {
@@ -395,6 +391,7 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
    /* debit for all hosts */
    const lListElem *gdil_ep;
    const char *last_hostname = nullptr;
+   bool master_task = true;
    for_each_ep(gdil_ep, granted) {
       lListElem *rqs = nullptr;
       int slots = lGetUlong(gdil_ep, JG_slots);
@@ -412,13 +409,12 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
 
 static int
 debit_job_from_ar(lListElem *job, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list) {
-   bool master_task = true;
-   const lListElem *gel = nullptr;
-
    DENTER(TOP_LAYER);
 
    const lListElem *ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar));
    if (ar != nullptr) {
+      bool master_task = true;
+      const lListElem *gel = nullptr;
       const char *last_hostname = nullptr;
       for_each_ep(gel, granted) {
          int slots = lGetUlong(gel, JG_slots);

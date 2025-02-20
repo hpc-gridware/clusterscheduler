@@ -639,12 +639,12 @@ void show_active_jobs(lList *joblist, int flags, const bool binding)
       printf("%-8s", lGetString(job, TACCDJ_state));
 
       /* processor count for all running tasks */
-      printf("%-6" sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_core)));
+      printf("%-6" sge_uu32_letter, lGetUlong(job, TACCDJ_core));
 
       if (flags) {
          /* -l mode: print hosts and queue */
          const char *queue = lGetString(job, TACCDJ_queue);
-         printf("%-6" sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_host)));
+         printf("%-6" sge_uu32_letter, lGetUlong(job, TACCDJ_host));
          if (queue != nullptr) {
             strncpy(trunc_string, queue, 13);
             trunc_string[13] = '\0';
@@ -756,12 +756,12 @@ void show_waiting_jobs(lList *joblist, int flags)
       printf("%-8s", lGetString(job, TACCDJ_state));
 
       /* processor count for all running tasks */
-      printf("%-6" sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_core)));
+      printf("%-6" sge_uu32_letter, lGetUlong(job, TACCDJ_core));
 
       if (flags) {
          /* -l mode: print hosts and queue */
          const char *queue = lGetString(job, TACCDJ_queue);
-         printf("%-6" sge_U32CLetter, sge_u32c(lGetUlong(job, TACCDJ_host)));
+         printf("%-6" sge_uu32_letter, lGetUlong(job, TACCDJ_host));
          if (queue != nullptr) {
             strncpy(trunc_string, queue, 13);
             trunc_string[13] = '\0';

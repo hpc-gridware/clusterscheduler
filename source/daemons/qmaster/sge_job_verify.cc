@@ -526,7 +526,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          u_long32 submit_size = range_list_get_number_of_ids(range_list);
 
          if (submit_size > max_aj_tasks) {
-            ERROR(MSG_JOB_MORETASKSTHAN_U, sge_u32c(max_aj_tasks));
+            ERROR(MSG_JOB_MORETASKSTHAN_U, max_aj_tasks);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
@@ -583,7 +583,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
 
    /* check max_jobs */
    if (job_list_register_new_job(master_job_list, mconf_get_max_jobs(), 0)) {
-      INFO(MSG_JOB_ALLOWEDJOBSPERCLUSTER, sge_u32c(mconf_get_max_jobs()));
+      INFO(MSG_JOB_ALLOWEDJOBSPERCLUSTER, mconf_get_max_jobs());
       answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_NOTOK_DOAGAIN);
    }
@@ -591,7 +591,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    if (lGetUlong(jep, JB_verify_suitable_queues) != JUST_VERIFY &&
        lGetUlong(jep, JB_verify_suitable_queues) != POKE_VERIFY) {
       if (suser_check_new_job(jep, mconf_get_max_u_jobs(), master_suser_list) != 0) {
-         INFO(MSG_JOB_ALLOWEDJOBSPERUSER_UU, sge_u32c(mconf_get_max_u_jobs()), sge_u32c(suser_job_count(jep, master_suser_list)));
+         INFO(MSG_JOB_ALLOWEDJOBSPERUSER_UU, mconf_get_max_u_jobs(), suser_job_count(jep, master_suser_list));
          answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_NOTOK_DOAGAIN);
       }
@@ -791,16 +791,16 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          u_long64 ar_start_time, ar_end_time, job_duration;
          u_long64 now_time, job_execution_time;
 
-         DPRINTF("job -ar " sge_u32"\n", sge_u32c(ar_id));
+         DPRINTF("job -ar " sge_u32"\n", ar_id);
 
          ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == nullptr) {
-            ERROR(MSG_JOB_NOAREXISTS_U, sge_u32c(ar_id));
+            ERROR(MSG_JOB_NOAREXISTS_U, ar_id);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          } else if ((lGetUlong(ar, AR_state) == AR_DELETED) ||
                     (lGetUlong(ar, AR_state) == AR_EXITED)) {
-            ERROR(MSG_JOB_ARNOLONGERAVAILABE_U, sge_u32c(ar_id));
+            ERROR(MSG_JOB_ARNOLONGERAVAILABE_U, ar_id);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -829,12 +829,12 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
 
             /* fit the timeframe */
             if (job_duration > (ar_end_time - ar_start_time)) {
-               ERROR(MSG_JOB_HRTLIMITTOOLONG_U, sge_u32c(ar_id));
+               ERROR(MSG_JOB_HRTLIMITTOOLONG_U, ar_id);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
             }
             if ((job_execution_time + job_duration) > ar_end_time) {
-               ERROR(MSG_JOB_HRTLIMITOVEREND_U, sge_u32c(ar_id));
+               ERROR(MSG_JOB_HRTLIMITOVEREND_U, ar_id);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_DENIED);
             }

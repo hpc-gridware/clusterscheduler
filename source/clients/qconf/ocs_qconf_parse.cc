@@ -1121,8 +1121,7 @@ int sge_parse_qconf(char *argv[])
          unspecified = sge_search_unspecified_node(ep);
          
          if (unspecified != nullptr) {
-            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U,
-                    sge_u32c(lGetUlong(unspecified, STN_id)));
+            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U, lGetUlong(unspecified, STN_id));
             fprintf(stderr, "\n");
 
             lFreeElem(&ep);
@@ -1865,7 +1864,7 @@ int sge_parse_qconf(char *argv[])
             case 'e':
                break;
             default:
-               ERROR(MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, sge_u32c(prog_number));
+               ERROR(MSG_ANSWER_XISNOTAVALIDOPTIONY_SU, *spp, prog_number);
                sge_usage(QCONF, stderr);
                DRETURN(1);
          }
@@ -3292,8 +3291,7 @@ int sge_parse_qconf(char *argv[])
          unspecified = sge_search_unspecified_node(ep);
          
          if (unspecified != nullptr) {
-            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U,
-                    sge_u32c(lGetUlong(unspecified, STN_id)));
+            fprintf(stderr, MSG_STREE_NOVALIDNODEREF_U, lGetUlong(unspecified, STN_id));
             fprintf(stderr, "\n");
             sge_parse_return = 1;
 
@@ -5958,7 +5956,7 @@ show_thread_list() {
       printf("%-15s %s\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
       printf("--------------------\n");
       for_each_ep(ep, lp) {
-         printf("%-15s " sge_U32CFormat "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
+         printf("%-15s " sge_uu32 "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
       }
    }
    lFreeList(&alp);

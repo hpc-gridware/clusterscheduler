@@ -231,29 +231,29 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
              }
           } else if (general == GFSTATE_JOB) {
              if (is_array) {
-                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_UU, sge_u32c(jobid), sge_u32c(jataskid));
+                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_UU, jobid, jataskid);
              } else {
-                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_U, sge_u32c(jobid));
+                snprintf(str_general, sizeof(str_general), MSG_GFSTATE_JOB_U, jobid);
              }
           } else {
              sge_strlcpy(str_general, MSG_NONE, sizeof(str_general));
           }
       } else {
           /* This is a pe task */
-          snprintf(str_general, sizeof(str_general), MSG_GFSTATE_PEJOB_U, sge_u32c(jobid));
+          snprintf(str_general, sizeof(str_general), MSG_GFSTATE_PEJOB_U, jobid);
       }
 
       if (is_array) {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SUU, 
-                 feature_get_product_name(FS_SHORT_VERSION, &ds), sge_u32c(jobid), sge_u32c(jataskid));
+                 feature_get_product_name(FS_SHORT_VERSION, &ds), jobid, jataskid);
       } else {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SU, 
-                 feature_get_product_name(FS_SHORT_VERSION, &ds), sge_u32c(jobid));
+                 feature_get_product_name(FS_SHORT_VERSION, &ds), jobid);
       }
 
       snprintf(sge_mail_body, sizeof(sge_mail_body),
               MSG_MAIL_BODY_USSSSSSS,
-              sge_u32c(jobid),
+              jobid,
               str_general,
               job_owner, q, sge_mail_start, sge_mail_end,
               get_sstate_description(failed),

@@ -281,9 +281,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          break;
 
       default:
-/*          ERROR(MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type)); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
+                                 MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
          DRETURN(-1);
    }
 
@@ -1020,7 +1019,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 
       default: /* error unknown type */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
+                                 MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
          ret = false;
          break;
    }
@@ -1105,7 +1104,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
                break;
             default:
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
+                                       MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
                ret = false;
          }
       }
@@ -1132,7 +1131,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 
             default:
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                       MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(type));
+                                       MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, type);
                ret = false;
          }
       }
@@ -1267,7 +1266,7 @@ centry_urgency_contribution(int slots, const char *name, double value,
          break;
 
    default:
-      ERROR(MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, sge_u32c(complex_type));
+      ERROR(MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U, complex_type);
       contribution = 0;
       break;
    }
@@ -1629,7 +1628,7 @@ int slot_signum(int slots) {
  * @param[in] do_per_host_booking shall booking be done for a per-host consumable (true only for the first task on a host)
  * @return true, if booking shall be done, else false
  */
-bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking, bool some_booking_done) {
+bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking) {
    bool ret = true;
 
    switch (consumable) {
@@ -1644,7 +1643,7 @@ bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per
       case CONSUMABLE_HOST:
          // if we do not do per_host_booking,
          // or we already did the booking for a per-host variable
-         if (!do_per_host_booking || some_booking_done) {
+         if (!do_per_host_booking) {
             ret = false;
          }
          break;

@@ -1411,7 +1411,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* the following values are needed by the reaper */
    if (mailrec_unparse(lGetList(jep, JB_mail_list), mail_str, sizeof(mail_str))) {
-      ERROR(MSG_MAIL_MAILLISTTOOLONG_U, sge_u32c(job_id));
+      ERROR(MSG_MAIL_MAILLISTTOOLONG_U, job_id);
    }
    fprintf(fp, "mail_list=%s\n", mail_str);
    fprintf(fp, "mail_options=" sge_u32 "\n", lGetUlong(jep, JB_mail_options));
@@ -1816,20 +1816,19 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_ctime64(lGetUlong64(jatep, JAT_start_time), &ds);
 
          if (job_is_array(jep)) {
-            sge_dstring_sprintf(&subject, MSG_MAIL_STARTSUBJECT_UUS, sge_u32c(job_id),
-                                sge_u32c(ja_task_id), lGetString(jep, JB_job_name));
+            sge_dstring_sprintf(&subject, MSG_MAIL_STARTSUBJECT_UUS, job_id,
+                                ja_task_id, lGetString(jep, JB_job_name));
             sge_dstring_sprintf(&body, MSG_MAIL_STARTBODY_UUSSSSS,
-                                sge_u32c(job_id),
-                                sge_u32c(ja_task_id),
+                                job_id, ja_task_id,
                                 lGetString(jep, JB_job_name),
                                 lGetString(jep, JB_owner),
                                 lGetString(master_q, QU_qname),
                                 lGetHost(master_q, QU_qhostname), sge_dstring_get_string(&ds));
          } else {
-            sge_dstring_sprintf(&subject, MSG_MAIL_STARTSUBJECT_US, sge_u32c(job_id),
+            sge_dstring_sprintf(&subject, MSG_MAIL_STARTSUBJECT_US, job_id,
                                 lGetString(jep, JB_job_name));
             sge_dstring_sprintf(&body, MSG_MAIL_STARTBODY_USSSSS,
-                                sge_u32c(job_id),
+                                job_id,
                                 lGetString(jep, JB_job_name),
                                 lGetString(jep, JB_owner),
                                 lGetString(master_q, QU_qname),

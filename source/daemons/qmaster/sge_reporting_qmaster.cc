@@ -405,7 +405,7 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
 
       sge_dstring_sprintf(&job_dstring,
                           sge_u64"%c"
-                          sge_U32CFormat"%c"
+                          sge_uu32"%c"
                           "%d%c"
                           "%s%c"
                           "%s%c"
@@ -414,10 +414,10 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
                           "%s%c"
                           "%s%c"
                           "%s%c"
-                          sge_U32CFormat
+                          sge_uu32
                           "\n",
                           submission_time, REPORTING_DELIMITER,
-                          sge_u32c(job_number), REPORTING_DELIMITER,
+                          job_number, REPORTING_DELIMITER,
                           -1, REPORTING_DELIMITER, /* means: no ja_task yet */
                           NONE_STR, REPORTING_DELIMITER,
                           job_name, REPORTING_DELIMITER,
@@ -426,7 +426,7 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
                           project, REPORTING_DELIMITER,
                           department, REPORTING_DELIMITER,
                           account, REPORTING_DELIMITER,
-                          sge_u32c(priority));
+                          priority);
 
       /* write record to reporting buffer */
       create_record("new_job", sge_dstring_get_string(&job_dstring));
@@ -502,17 +502,17 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 ev
       account = lGetStringNotNull(job, JB_account);
 
       sge_dstring_sprintf(&job_dstring,
-                          sge_u64 "%c%s%c" sge_U32CFormat "%c%d%c%s%c%s%c%s%c%s%c" sge_U32CFormat "%c" sge_U32CFormat "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
+                          sge_u64 "%c%s%c" sge_uu32 "%c%d%c%s%c%s%c%s%c%s%c" sge_uu32 "%c" sge_uu32 "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
                           (u_long64)sge_gmt64_to_time_t(event_time), REPORTING_DELIMITER,
                           event, REPORTING_DELIMITER,
-                          sge_u32c(job_id), REPORTING_DELIMITER,
+                          job_id, REPORTING_DELIMITER,
                           ja_task_id, REPORTING_DELIMITER,
                           pe_task_id, REPORTING_DELIMITER,
                           state, REPORTING_DELIMITER,
                           user, REPORTING_DELIMITER,
                           host, REPORTING_DELIMITER,
-                          sge_u32c(state_time), REPORTING_DELIMITER,
-                          sge_u32c(priority), REPORTING_DELIMITER,
+                          state_time, REPORTING_DELIMITER,
+                          priority, REPORTING_DELIMITER,
                           submission_time, REPORTING_DELIMITER,
                           job_name, REPORTING_DELIMITER,
                           owner, REPORTING_DELIMITER,
@@ -1013,12 +1013,12 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                               sge_u64 "%c"
                               SFN "%c"
                               sge_u64 "%c"
-                              sge_U32CFormat"%c"
+                              sge_uu32"%c"
                               "%s\n",
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "new_ar", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
+                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
                               (owner != nullptr) ? owner : "");
    // @todo use create_record
    sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
@@ -1079,7 +1079,7 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR_submission_time */
-                              sge_U32CFormat"%c"   /* AR_id */
+                              sge_uu32"%c"   /* AR_id */
                               "%s%c"               /* AR_name */
                               "%s%c"               /* AR_account */
                               sge_u64 "%c"   /* AR_start_time */
@@ -1090,7 +1090,7 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                               "ar_attr", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
+                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
                               (ar_name != nullptr) ? ar_name : "", REPORTING_DELIMITER,
                               (ar_account != nullptr) ? ar_account : "", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_start_time)), REPORTING_DELIMITER,
@@ -1157,7 +1157,7 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR submission time */
-                              sge_U32CFormat"%c"   /* AR_id */
+                              sge_uu32"%c"   /* AR_id */
                               "%s%c"               /* AR_state as string*/
                               "%s%c"               /* event as string*/
                               "%s\n",              /* message */
@@ -1165,7 +1165,7 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                               "ar_log", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
+                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
                               sge_dstring_get_string(&state_string), REPORTING_DELIMITER,
                               ar_get_string_from_event(event), REPORTING_DELIMITER,
                               (ar_description != nullptr) ? ar_description : "");
@@ -1285,15 +1285,15 @@ ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR_submission_time */
-                              sge_U32CFormat"%c"   /* AR_id */
+                              sge_uu32"%c"   /* AR_id */
                               "%s%c"               /* cqueue */
                               "%s%c"               /* execution hostname */
-                              sge_U32CFormat"\n",  /* number of slots */
+                              sge_uu32"\n",  /* number of slots */
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "ar_acct", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)), REPORTING_DELIMITER,
-                              sge_u32c(lGetUlong(ar, AR_id)), REPORTING_DELIMITER,
+                              lGetUlong(ar, AR_id), REPORTING_DELIMITER,
                               cqueue_name, REPORTING_DELIMITER,
                               hostname, REPORTING_DELIMITER,
                               slots);

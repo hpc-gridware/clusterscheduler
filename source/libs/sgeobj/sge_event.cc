@@ -72,366 +72,366 @@ const char *event_text(const lListElem *event, dstring *buffer)
 
    /* -------------------- */
    case sgeE_ADMINHOST_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "ADMINHOST", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ADMINHOST", n);
       break;
    case sgeE_ADMINHOST_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "ADMINHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "ADMINHOST", strkey);
       break;
    case sgeE_ADMINHOST_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "ADMINHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "ADMINHOST", strkey);
       break;
    case sgeE_ADMINHOST_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "ADMINHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "ADMINHOST", strkey);
       break;
 
    /* -------------------- */
    case sgeE_CALENDAR_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "CALENDAR", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CALENDAR", n);
       break;
    case sgeE_CALENDAR_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "CALENDAR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "CALENDAR", strkey);
       break;
    case sgeE_CALENDAR_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "CALENDAR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "CALENDAR", strkey);
       break;
    case sgeE_CALENDAR_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "CALENDAR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "CALENDAR", strkey);
       break;
 
    /* -------------------- */
    case sgeE_CKPT_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI,  sge_u32c(number), "CKPT", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI,  number, "CKPT", n);
       break;
    case sgeE_CKPT_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "CKPT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "CKPT", strkey);
       break;
    case sgeE_CKPT_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "CKPT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "CKPT", strkey);
       break;
    case sgeE_CKPT_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "CKPT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "CKPT", strkey);
       break;
 
    /* -------------------- */
    case sgeE_CONFIG_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "CONFIG", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CONFIG", n);
       break;
    case sgeE_CONFIG_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "CONFIG", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "CONFIG", strkey);
       break;
    case sgeE_CONFIG_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "CONFIG", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "CONFIG", strkey);
       break;
    case sgeE_CONFIG_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "CONFIG", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "CONFIG", strkey);
       break;
 
    /* -------------------- */
    case sgeE_EXECHOST_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "EXECHOST", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "EXECHOST", n);
       break;
    case sgeE_EXECHOST_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "EXECHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "EXECHOST", strkey);
       break;
    case sgeE_EXECHOST_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "EXECHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "EXECHOST", strkey);
       break;
    case sgeE_EXECHOST_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "EXECHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "EXECHOST", strkey);
       break;
 
    /* -------------------- */
    case sgeE_JATASK_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JATASK_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JATASK_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JATASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    /* -------------------- */
    case sgeE_PETASK_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_PETASK_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 #if 0      
    /* JG: we'll have it soon ;-) */
    case sgeE_PETASK_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 #endif
 
    /* -------------------- */
    case sgeE_JOB_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "JOB", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "JOB", n);
       break;
    case sgeE_JOB_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_MOD_SCHED_PRIORITY:
       sge_dstring_sprintf(buffer, MSG_EVENT_MODSCHEDDPRIOOFJOBXTOY_USI, 
-            sge_u32c(number), 
+            number,
             job_get_id_string(intkey, intkey2, strkey, &id_dstring),
             ((int)lGetUlong(lFirst(lp), JB_priority))-BASE_PRIORITY);
       break;
    case sgeE_JOB_USAGE:
       sge_dstring_sprintf(buffer, MSG_EVENT_JOBXUSAGE_US, 
-         sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+         number, job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_FINAL_USAGE:
       sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINALUSAGE_US, 
-         sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+         number, job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    case sgeE_JOB_FINISH:
       sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINISH_US, 
-         sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+         number, job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    /* -------------------- */
    case sgeE_JOB_SCHEDD_INFO_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "JOB_SCHEDD_INFO", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "JOB_SCHEDD_INFO", n);
       break;
    case sgeE_JOB_SCHEDD_INFO_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_SCHEDD_INFO_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_SCHEDD_INFO_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    /* -------------------- */
    case sgeE_MANAGER_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "MANAGER", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "MANAGER", n);
       break;
    case sgeE_MANAGER_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "MANAGER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "MANAGER", strkey);
       break;
    case sgeE_MANAGER_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "MANAGER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "MANAGER", strkey);
       break;
    case sgeE_MANAGER_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "MANAGER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "MANAGER", strkey);
       break;
 
    /* -------------------- */
    case sgeE_OPERATOR_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "OPERATOR", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "OPERATOR", n);
       break;
    case sgeE_OPERATOR_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "OPERATOR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "OPERATOR", strkey);
       break;
    case sgeE_OPERATOR_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "OPERATOR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "OPERATOR", strkey);
       break;
    case sgeE_OPERATOR_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "OPERATOR", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "OPERATOR", strkey);
       break;
 
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
-      sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, sge_u32c(number), 
+      sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, number,
          lGetNumberOfNodes(nullptr, lp, STN_children),
          lGetNumberOfLeafs(nullptr, lp, STN_children));
       break;
 
    /* -------------------- */
    case sgeE_PE_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "PE", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "PE", n);
       break;
    case sgeE_PE_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "PE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "PE", strkey);
       break;
    case sgeE_PE_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "PE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "PE", strkey);
       break;
    case sgeE_PE_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "PE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "PE", strkey);
       break;
 
    /* -------------------- */
    case sgeE_PROJECT_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "PROJECT", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "PROJECT", n);
       break;
    case sgeE_PROJECT_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "PROJECT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "PROJECT", strkey);
       break;
    case sgeE_PROJECT_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "PROJECT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "PROJECT", strkey);
       break;
    case sgeE_PROJECT_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "PROJECT", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "PROJECT", strkey);
       break;
 
    /* -------------------- */
    case sgeE_QMASTER_GOES_DOWN:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "QMASTER GOES DOWN");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "QMASTER GOES DOWN");
       break;
 
    /* -------------------- */
    case sgeE_ACK_TIMEOUT:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "ACK TIMEOUT");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "ACK TIMEOUT");
       break;
 
    /* -------------------- */
    case sgeE_CQUEUE_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "CLUSTER QUEUE", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CLUSTER QUEUE", n);
       break;
    case sgeE_CQUEUE_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "CLUSTER QUEUE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "CLUSTER QUEUE", strkey);
       break;
    case sgeE_CQUEUE_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "CLUSTER QUEUE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "CLUSTER QUEUE", strkey);
       break;
    case sgeE_CQUEUE_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "CLUSTER QUEUE", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "CLUSTER QUEUE", strkey);
       break;
 
    /* -------------------- */
    case sgeE_QINSTANCE_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDQINSTANCE_USS, sge_u32c(number), strkey, strkey2);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDQINSTANCE_USS, number, strkey, strkey2);
       break;
    case sgeE_QINSTANCE_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELQINSTANCE_USS, sge_u32c(number), strkey, strkey2);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELQINSTANCE_USS, number, strkey, strkey2);
       break;
    case sgeE_QINSTANCE_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODQINSTANCE_USS, sge_u32c(number), strkey, strkey2);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODQINSTANCE_USS, number, strkey, strkey2);
       break;
    case sgeE_QINSTANCE_USOS:
-      sge_dstring_sprintf(buffer, MSG_EVENT_UNSUSPENDQUEUEXONSUBORDINATE_US, sge_u32c(number), strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_UNSUSPENDQUEUEXONSUBORDINATE_US, number, strkey);
       break;
    case sgeE_QINSTANCE_SOS:
-      sge_dstring_sprintf(buffer, MSG_EVENT_SUSPENDQUEUEXONSUBORDINATE_US, sge_u32c(number), strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_SUSPENDQUEUEXONSUBORDINATE_US, number, strkey);
       break;
 
    /* -------------------- */
    case sgeE_SCHED_CONF:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "SCHEDULER CONFIG");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "SCHEDULER CONFIG");
       break;
 
    /* -------------------- */
    case sgeE_SCHEDDMONITOR:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "TRIGGER SCHEDULER MONITORING");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "TRIGGER SCHEDULER MONITORING");
       break;
 
    /* -------------------- */
    case sgeE_SHUTDOWN:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "SHUTDOWN");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "SHUTDOWN");
       break;
 
    /* -------------------- */
    case sgeE_SUBMITHOST_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "SUBMITHOST", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "SUBMITHOST", n);
       break;
    case sgeE_SUBMITHOST_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "SUBMITHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "SUBMITHOST", strkey);
       break;
    case sgeE_SUBMITHOST_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "SUBMITHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "SUBMITHOST", strkey);
       break;
    case sgeE_SUBMITHOST_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "SUBMITHOST", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "SUBMITHOST", strkey);
       break;
 
    /* -------------------- */
    case sgeE_USER_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "USER", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "USER", n);
       break;
    case sgeE_USER_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "USER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "USER", strkey);
       break;
    case sgeE_USER_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "USER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "USER", strkey);
       break;
    case sgeE_USER_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "USER", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "USER", strkey);
       break;
 
    /* -------------------- */
    case sgeE_USERSET_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "USER SET", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "USER SET", n);
       break;
    case sgeE_USERSET_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "USER SET", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "USER SET", strkey);
       break;
    case sgeE_USERSET_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "USER SET", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "USER SET", strkey);
       break;
    case sgeE_USERSET_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "USER SET", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "USER SET", strkey);
       break;
 
    /* -------------------- */
    case sgeE_HGROUP_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "HOST GROUP", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "HOST GROUP", n);
       break;
    case sgeE_HGROUP_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "HOST GROUP", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "HOST GROUP", strkey);
       break;
    case sgeE_HGROUP_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "HOST GROUP", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "HOST GROUP", strkey);
       break;
    case sgeE_HGROUP_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "HOST GROUP", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "HOST GROUP", strkey);
       break;
 
    /* -------------------- */
    case sgeE_CENTRY_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "COMPLEX ENTRY", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "COMPLEX ENTRY", n);
       break;
    case sgeE_CENTRY_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "COMPLEX ENTRY", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "COMPLEX ENTRY", strkey);
       break;
    case sgeE_CENTRY_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "COMPLEX ENTRY", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "COMPLEX ENTRY", strkey);
       break;
    case sgeE_CENTRY_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "COMPLEX ENTRY", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "COMPLEX ENTRY", strkey);
       break;
 
    /* -------------------- */
    case sgeE_RQS_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "RESOURCE QUOTA", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "RESOURCE QUOTA", n);
       break;
    case sgeE_RQS_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "RESOURCE QUOTA", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "RESOURCE QUOTA", strkey);
       break;
    case sgeE_RQS_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "RESOURCE QUOTA", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "RESOURCE QUOTA", strkey);
       break;
    case sgeE_RQS_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "RESOURCE QUOTA", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "RESOURCE QUOTA", strkey);
       break;
 
    /* -------------------- */
    case sgeE_AR_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, sge_u32c(number), "ADVANCE RESERVATION", n);
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ADVANCE RESERVATION", n);
       break;
    case sgeE_AR_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, sge_u32c(number), "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
       break;
    case sgeE_AR_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
       break;
    case sgeE_AR_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
       break;
 
    /* -------------------- */
    default:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, sge_u32c(number), "????????");
+      sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "????????");
       break;
    }
 

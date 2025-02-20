@@ -41,6 +41,7 @@
 #else
 #include <errno.h>
 #include <limits.h>
+#include <stdbool.h>
 #endif
 
 #include <sys/types.h>
@@ -62,35 +63,15 @@
 #  define _SGE_GETTEXT__(x) (x)
 #endif
 
-#if !defined(__cplusplus)
-#include <stdbool.h>
-#endif
-
-#define SGE_EPSILON 0.00001
-
 #define FALSE_STR "FALSE"
 #define TRUE_STR  "TRUE"
 
 #define NONE_STR  "NONE"
 
 #if defined(TARGET_64BIT)
-#  define sge_U32CFormat "%u"
-#  define sge_U32CLetter "u"
-#  define sge_u32c(x)  (unsigned int)(x)
-
-#  define sge_X32CFormat "%x"
-#  define sge_x32c(x)  (unsigned int)(x)
-
-#define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
+#  define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #else
-#  define sge_U32CFormat "%ld"
-#  define sge_U32CLetter "ld"
-#  define sge_u32c(x)  (unsigned long)(x)
-
-#  define sge_X32CFormat "%lx"
-#  define sge_x32c(x)  (unsigned long)(x)
-
-#define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
+#  define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #endif
 
 #include <sys/param.h>
@@ -115,23 +96,24 @@
 #define U_LONG64_MAX std::numeric_limits<u_long64>::max()
 #define LONG32_MAX   2147483647
 
-
 /* set sge_u32 and sge_x32 for 64 or 32 bit machines */
 /* sge_uu32 for strictly unsigned, not nice, but did I use %d for an unsigned? */
 #if defined(TARGET_64BIT) || defined(FREEBSD) || defined(NETBSD)
-#  define sge_u64    "%lu"
-#  define sge_u32    "%d"
-#  define sge_uu32   "%u"
-#  define sge_x32    "%x"
-#  define sge_fu32   "d"
-#  define sge_fuu32   "u"
+#  define sge_uu32_letter  "u"
+#  define sge_u64          "%lu"
+#  define sge_u32          "%d"
+#  define sge_uu32         "%u"
+#  define sge_x32          "%x"
+#  define sge_fu32         "d"
+#  define sge_fuu32        "u"
 #else
-#  define sge_u64    "%llu"
-#  define sge_u32    "%ld"
-#  define sge_uu32   "%lu"
-#  define sge_x32    "%lx"
-#  define sge_fu32   "ld"
-#  define sge_fuu32   "lu"
+#  define sge_uu32_letter  "lu"
+#  define sge_u64          "%llu"
+#  define sge_u32          "%ld"
+#  define sge_uu32         "%lu"
+#  define sge_x32          "%lx"
+#  define sge_fu32         "ld"
+#  define sge_fuu32        "lu"
 #endif
 
 #define uid_t_fmt "%u"
@@ -139,7 +121,7 @@
 #define pid_t_fmt "%d"
 
 /* _POSIX_PATH_MAX is only 255 and this is less than in most real systmes */
-#define SGE_PATH_MAX    1024
+#define SGE_PATH_MAX    static_cast<u_long32>(1024)
 
 #define MAX_STRING_SIZE 2048
 typedef char stringT[MAX_STRING_SIZE];

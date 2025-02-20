@@ -183,7 +183,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_INFO, MSG_PEREFINJOB_SU,
-                                    pe_name, sge_u32c(job_id));
+                                    pe_name, job_id);
             ret = true;
             break;
          }
@@ -364,11 +364,11 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
 
    if (slots > MAX_SEQNUM) {
       if (alpp == nullptr) {
-         ERROR(MSG_ATTR_INVALID_ULONGVALUE_USUU, sge_u32c(slots), "slots", sge_u32c(0), sge_u32c(MAX_SEQNUM));
+         ERROR(MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots", 0, MAX_SEQNUM);
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, sge_u32c(slots), 
-                                 "slots", sge_u32c(0), sge_u32c(MAX_SEQNUM));
+                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, slots,
+                                 "slots", static_cast<u_long32>(0), static_cast<u_long32>(MAX_SEQNUM));
       }
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -564,8 +564,8 @@ lListElem* pe_create_template(char *pe_name)
    }
 
    lSetString(pep, PE_allocation_rule, "$pe_slots");
-   lSetString(pep, PE_start_proc_args, "/bin/true");
-   lSetString(pep, PE_stop_proc_args, "/bin/true");
+   lSetString(pep, PE_start_proc_args, "/usr/bin/true");
+   lSetString(pep, PE_stop_proc_args, "/usr/bin/true");
 
    /* PE_control_slaves initialized implicitly to false */
    lSetBool(pep, PE_job_is_first_task, TRUE);

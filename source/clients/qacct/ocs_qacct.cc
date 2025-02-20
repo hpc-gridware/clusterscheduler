@@ -731,7 +731,7 @@ int main(int argc, char **argv) {
       } else if (i_ret > 0) {
 	      break;
       } else if (i_ret < 0) {
-	      ERROR(MSG_HISTORY_IGNORINGINVALIDENTRYINLINEX_U , sge_u32c(line));
+	      ERROR(MSG_HISTORY_IGNORINGINVALIDENTRYINLINEX_U , line);
 	      continue;
       }
 
@@ -887,13 +887,13 @@ int main(int argc, char **argv) {
       if (!options.jobfound) {
          if (options.job_number) {
             if (options.taskstart && options.taskend && options.taskstep) {
-               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_DDDD, sge_u32c(options.job_number), sge_u32c(options.taskstart), sge_u32c(options.taskend), sge_u32c(options.taskstep));
+               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_UUUU, options.job_number, options.taskstart, options.taskend, options.taskstep);
             } else {
-               ERROR(MSG_HISTORY_JOBIDXNOTFOUND_D, sge_u32c(options.job_number));
+               ERROR(MSG_HISTORY_JOBIDXNOTFOUND_U, options.job_number);
             }
          } else {
             if (options.taskstart && options.taskend && options.taskstep) {
-               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_SDDD, options.job_name, sge_u32c(options.taskstart),sge_u32c(options.taskend),sge_u32c(options.taskstep));
+               ERROR(MSG_HISTORY_JOBARRAYTASKSWXYZNOTFOUND_SUUU, options.job_name, options.taskstart, options.taskend, options.taskstep);
             } else {
                ERROR(MSG_HISTORY_JOBNAMEXNOTFOUND_S, options.job_name);
             }

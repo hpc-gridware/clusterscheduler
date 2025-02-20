@@ -611,7 +611,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED);
             if (handle == nullptr) {
                if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_execd_port), cl_get_error_text(cl_ret));
+                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), static_cast<u_long32>(my_component_id), sge_execd_port, cl_get_error_text(cl_ret));
                }
             }
             break;
@@ -644,7 +644,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
                                           0); /* select timeout is set to 1 second 0 usec */
             if (handle == nullptr) {
                if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
-                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), sge_u32c(my_component_id), sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
+                  ERROR(MSG_GDI_CANT_GET_COM_HANDLE_SSUUS, qualified_hostname, component_get_component_name(), static_cast<u_long32>(my_component_id), sge_qmaster_port, cl_get_error_text(cl_ret));
                }
             } else {
                char act_resolved_qmaster_name[CL_MAXHOSTNAMELEN];
@@ -693,8 +693,8 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             if (handle == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, component_get_qualified_hostname(),
-                                       component_get_component_name(), sge_u32c(my_component_id),
-                                       sge_u32c(sge_qmaster_port), cl_get_error_text(cl_ret));
+                                       component_get_component_name(), static_cast<u_long32>(my_component_id),
+                                       sge_qmaster_port, cl_get_error_text(cl_ret));
             }
             break;
       }
@@ -710,7 +710,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          communication lib setup */
       DPRINTF("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n");
       while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
-         DPRINTF("timeout: " sge_U32CFormat "\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec));
+         DPRINTF("timeout: " sge_uu32 "\n", static_cast<u_long32>(now.tv_sec - handle->start_time.tv_sec));
          cl_commlib_trigger(handle, 1);
          gettimeofday(&now, nullptr);
       }
@@ -1003,7 +1003,7 @@ ocs::gdi::ClientBase::gdi_is_alive(lList **answer_list) {
    }
 
    if (status != nullptr) {
-      DEBUG(MSG_GDI_ENDPOINT_UPTIME_UU, sge_u32c(status->runtime), sge_u32c(status->application_status));
+      DEBUG(MSG_GDI_ENDPOINT_UPTIME_UU, static_cast<u_long32>(status->runtime), static_cast<u_long32>(status->application_status));
       cl_com_free_sirm_message(&status);
    }
 

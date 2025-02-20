@@ -170,7 +170,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
    if ((this_seqno < last_seqno && (last_seqno - this_seqno) <= 9000) &&
        !(last_seqno > 9990 && this_seqno < 10)) {
       /* this must be an old report, log and then ignore it */
-      INFO(MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS, sge_u32c(this_seqno), sge_u32c(last_seqno), rhost);
+      INFO(MSG_QMASTER_RECEIVED_OLD_LOAD_REPORT_UUS, this_seqno, last_seqno, rhost);
       DRETURN_VOID;
    }
 

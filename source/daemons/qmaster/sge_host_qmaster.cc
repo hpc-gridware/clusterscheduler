@@ -553,7 +553,7 @@ host_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
             if (lGetElemHost(lGetList(ar, AR_granted_slots), JG_qhostname, host)) {
                if (!sge_ar_have_users_access(nullptr, ar, host, lGetList(new_host, EH_acl),
                                              lGetList(new_host, EH_xacl), master_userset_list)) {
-                  ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c(lGetUlong(ar, AR_id)));
+                  ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, lGetUlong(ar, AR_id));
                   answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   goto ERROR;
                }
@@ -1146,9 +1146,9 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
                      jep_JB_job_name = lGetString(jep, JB_job_name);
 
                      snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_JOBKILLEDSUBJ_US,
-                              sge_u32c(jep_JB_job_number), jep_JB_job_name);
+                              jep_JB_job_number, jep_JB_job_name);
                      snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_JOBKILLEDBODY_USS,
-                              sge_u32c(jep_JB_job_number), jep_JB_job_name, hostname);
+                              jep_JB_job_number, jep_JB_job_name, hostname);
                      cull_mail(QMASTER, mail_users, sge_mail_subj, sge_mail_body, "job abortion");
                   }
 

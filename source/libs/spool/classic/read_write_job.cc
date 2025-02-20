@@ -363,7 +363,7 @@ int job_write_spool_file(lListElem *job, u_long32 ja_taskid,
       u_long64 duration = sge_get_gmt64() - start;
       if (duration > sge_gmt32_to_gmt64(30)) {
          /* administrators need to be aware of suspicious spooling delays */
-         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF, sge_u32c(lGetUlong(job, JB_job_number)), sge_u32c(ja_taskid),
+         WARNING(MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF, lGetUlong(job, JB_job_number), ja_taskid,
                  sge_gmt64_to_gmt32_double(duration));
       }
    }
@@ -842,7 +842,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
 
                sge_get_file_path(script_file, sizeof(script_file), JOB_SCRIPT_FILE, FORMAT_DEFAULT, flags, job_id, 0, nullptr);
                if (SGE_STAT(script_file, &stat_buffer)) {
-                  ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, sge_u32c(lGetUlong(job, JB_job_number)));
+                  ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, lGetUlong(job, JB_job_number));
                   job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list", job, 0);
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
                   lRemoveElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), &job);
@@ -852,7 +852,7 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
  
             /* check if filename has same name which is stored job id */
             if (lGetUlong(job, JB_job_number) != job_id) {
-               ERROR(MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U, sge_u32c(job_id));
+               ERROR(MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U, job_id);
                job_remove_spool_file(job_id, 0, nullptr, flags);
                /* 
                 * script is not deleted here, 

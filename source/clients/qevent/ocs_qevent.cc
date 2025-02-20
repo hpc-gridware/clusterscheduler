@@ -284,7 +284,7 @@ static void qevent_trigger_scripts( int qevent_event, qevent_options *option_str
 }
 
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event ) {
-   u_long jobid, taskid;
+   u_long32 jobid, taskid;
    const char* event_name;
    int pid;
    char buffer[MAX_STRING_SIZE];
@@ -323,17 +323,17 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
          exit_status = status;
 
       if ( WEXITSTATUS(exit_status) == 0 ) {
-         INFO("exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status)));
+         INFO("exit status of script: " sge_uu32 "\n", WEXITSTATUS(exit_status));
       } else {
-         ERROR("exit status of script: " sge_U32CFormat "\n", sge_u32c(WEXITSTATUS(exit_status)));
+         ERROR("exit status of script: " sge_uu32 "\n", WEXITSTATUS(exit_status));
       }
       DRETURN_VOID;
    } else {
       const char *basename = sge_basename( script_file, '/' );
       /*      SETPGRP;  */
       /*      sge_close_all_fds(nullptr); */
-      snprintf(buffer, sizeof(buffer), sge_U32CFormat,sge_u32c(jobid));
-      snprintf(buffer2, sizeof(buffer2), sge_U32CFormat,sge_u32c(taskid));
+      snprintf(buffer, sizeof(buffer), sge_uu32, jobid);
+      snprintf(buffer2, sizeof(buffer2), sge_uu32, taskid);
       execlp(script_file, basename, event_name, buffer, buffer2, (char *) nullptr);
    }
    exit(1);
@@ -394,8 +394,8 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
          int ok = 0;
          if (option_struct->trigger_option_count >= MAX_TRIGGER_SCRIPTS ) {
             sge_dstring_sprintf(option_struct->error_message,
-                                "option \"-trigger\": only " sge_U32CFormat " trigger arguments supported\n",
-                                sge_u32c(MAX_TRIGGER_SCRIPTS) );
+                                "option \"-trigger\": only %d trigger arguments supported\n",
+                                MAX_TRIGGER_SCRIPTS);
             break; 
          }
 

@@ -239,7 +239,7 @@
 #define MSG_ANSWER_NOLISTNAMEPROVIDEDTODUX_S       _MESSAGE(23130, _("no list_name provided to \"-du " SFN "\""))
 #define MSG_TREE_CANTDELROOTNODE                   _MESSAGE(23131, _("can't delete root node"))
 #define MSG_TREE_CANTDELNODESWITHCHILD             _MESSAGE(23132, _("can't delete nodes with children"))
-#define MSG_ANSWER_XISNOTAVALIDOPTIONY_SU          _MESSAGE(23133, _(SFQ " is not a valid option " sge_U32CFormat))
+#define MSG_ANSWER_XISNOTAVALIDOPTIONY_SU          _MESSAGE(23133, _(SFQ " is not a valid option " sge_uu32))
 
 #define MSG_CALENDAR_XISNOTACALENDAR_S             _MESSAGE(23135, _(SFN " is not a calendar"))
 #define MSG_CKPT_XISNOTCHKPINTERFACEDEF_S          _MESSAGE(23136, _(SFN " is not a checkpointing interface definition"))
@@ -287,7 +287,7 @@
 #define MSG_TREE_UNABLETOLACATEXINSHARETREE_S      _MESSAGE(23208, _("Unable to locate " SFN " in sharetree"))
 #define MSG_OBJ_NOSTREEELEM                        _MESSAGE(23209, _("no sharetree element"))
 
-#define MSG_STREE_NOVALIDNODEREF_U                 _MESSAGE(23222, _("found reference to node " sge_U32CFormat " but no specification"))
+#define MSG_STREE_NOVALIDNODEREF_U                 _MESSAGE(23222, _("found reference to node " sge_uu32 " but no specification"))
 
 #define MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION _MESSAGE(23228, _("can't create scheduler configuration"))
 #define MSG_JOB_CANNOT_REMOVE_SS                   _MESSAGE(23229, _("can not remove file " SFN ": " SFN))
@@ -304,7 +304,7 @@
 #define MSG_CPLX_ATTRIBISNEG_S                     _MESSAGE(23258, _("attribute " SFQ " is consumable but has a negative value"))
 #define MSG_SGETEXT_UNKNOWN_RESOURCE_S             _MESSAGE(23259, _("unknown resource " SFQ))
 #define MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S     _MESSAGE(23260, _("resource " SFQ " configured as non requestable"))
-#define MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U            _MESSAGE(23261, _("unknown complex attribute type " sge_U32CFormat))
+#define MSG_SGETEXT_UNKNOWN_ATTR_TYPE_U            _MESSAGE(23261, _("unknown complex attribute type " sge_uu32))
 #define MSG_SGETEXT_UNKNOWN_ATTR_TYPE_S            _MESSAGE(23262, _("unknown complex attribute type " SFQ))
 
 #define MSG_CONF_GETCONF_S            _MESSAGE(23276, _("getting configuration: " SFN))
@@ -949,16 +949,16 @@
 #define MSG_ERRORCREATINGOBJECT           _MESSAGE(60403, _("error creating object"))
 #define MSG_ERRORCREATINGLIST             _MESSAGE(60404, _("error creating list"))
 
-#define MSG_SEC_NOCRED_USSI               _MESSAGE(60406, _("could not get credentials for job " sge_U32CFormat " for execution host " SFN " - command " SFQ " failed with return code %d"))
-#define MSG_SEC_STARTDELCREDCMD_SU        _MESSAGE(60407, _("can't start command " SFQ " for job " sge_U32CFormat " to delete credentials"))
-#define MSG_SEC_NOAUTH_U                  _MESSAGE(60408, _("job " sge_U32CFormat " rejected because authentication failed (no credentials supplied)"))
-#define MSG_SEC_NOSTORECRED_USI           _MESSAGE(60409, _("could not store credentials for job " sge_U32CFormat" - command " SFQ " failed with return code %d"))
-#define MSG_SEC_NOSTORECREDNOBIN_US       _MESSAGE(60410, _("could not store client credentials for job " sge_U32CFormat" - " SFN " binary does not exist"))
+#define MSG_SEC_NOCRED_USSI               _MESSAGE(60406, _("could not get credentials for job " sge_uu32 " for execution host " SFN " - command " SFQ " failed with return code %d"))
+#define MSG_SEC_STARTDELCREDCMD_SU        _MESSAGE(60407, _("can't start command " SFQ " for job " sge_uu32 " to delete credentials"))
+#define MSG_SEC_NOAUTH_U                  _MESSAGE(60408, _("job " sge_uu32 " rejected because authentication failed (no credentials supplied)"))
+#define MSG_SEC_NOSTORECRED_USI           _MESSAGE(60409, _("could not store credentials for job " sge_uu32" - command " SFQ " failed with return code %d"))
+#define MSG_SEC_NOSTORECREDNOBIN_US       _MESSAGE(60410, _("could not store client credentials for job " sge_uu32" - " SFN " binary does not exist"))
 #define MSG_SEC_DELCREDSTDERR_S           _MESSAGE(60411, _("delete_cred stderr: " SFN))
-#define MSG_SEC_DELCREDRETCODE_USI        _MESSAGE(60412, _("could not delete credentials for job " sge_U32CFormat " - command " SFQ " failed with return code %d"))
-#define MSG_SEC_DELCREDNOBIN_US           _MESSAGE(60413, _("could not delete credentials for job " sge_U32CFormat " - " SFN " binary does not exist"))
+#define MSG_SEC_DELCREDRETCODE_USI        _MESSAGE(60412, _("could not delete credentials for job " sge_uu32 " - command " SFQ " failed with return code %d"))
+#define MSG_SEC_DELCREDNOBIN_US           _MESSAGE(60413, _("could not delete credentials for job " sge_uu32 " - " SFN " binary does not exist"))
 #define MSG_SEC_PUTCREDSTDERR_S           _MESSAGE(60414, _("put_cred stderr: " SFN))
-#define MSG_SEC_NOSTARTCMD4GETCRED_SU     _MESSAGE(60415, _("can't start command " SFQ " for job " sge_U32CFormat " to get credentials"))
+#define MSG_SEC_NOSTARTCMD4GETCRED_SU     _MESSAGE(60415, _("can't start command " SFQ " for job " sge_uu32 " to get credentials"))
 #define MSG_PE_ALLOCRULE_SS               _MESSAGE(60416, _("parameter allocation_rule of pe " SFQ ": " SFN))
 #define MSG_GDI_OUTOFMEMORY               _MESSAGE(60418, _("out of memory"))
 #define MSG_COM_UNPACKINT_I               _MESSAGE(60419, _("unpacking integer %d failed"))
@@ -1042,7 +1042,7 @@
 
 #define MSG_PACK_ERRORUNPACKING_S         _MESSAGE(60714, _("error unpacking: " SFN))
 #define MSG_PACK_INVALIDPACKDATA          _MESSAGE(60715, _("the pack string contained invalid characters"))
-#define MSG_PACK_WRONGPACKTYPE_UI         _MESSAGE(60716, _("wrong pack type (got: " sge_U32CFormat " / expected %d"))
+#define MSG_PACK_WRONGPACKTYPE_UI         _MESSAGE(60716, _("wrong pack type (got: " sge_uu32 " / expected %d"))
 #define MSG_GDI_USAGE_ace_OPT_NAME        "[-ace ce_name]"
 #define MSG_GDI_UTEXT_ace_OPT_NAME        _MESSAGE(60717, _("add a new complex entry"))
 #define MSG_GDI_USAGE_dce_OPT_NAME        "[-dce ce_name]"

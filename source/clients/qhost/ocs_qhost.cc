@@ -206,7 +206,7 @@ static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const ch
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);
-   printf("   <hostvalue name='%s'>" sge_U32CFormat "</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), sge_u32c(value));
+   printf("   <hostvalue name='%s'>" sge_uu32 "</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
 
    DRETURN(QHOST_SUCCESS);
 }
@@ -279,7 +279,7 @@ static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const c
    
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>" sge_U32CFormat "</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx), sge_u32c(value));
+   printf(" name='%s'>" sge_uu32 "</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
    
    DRETURN(QHOST_SUCCESS);
 }
@@ -333,7 +333,7 @@ static int xml_report_job_ulong64_value(qhost_report_handler_t* handler, const c
    
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>" sge_U32CFormat "</jobvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), sge_u32c(value));
+   printf(" name='%s'>" sge_u64 "</jobvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
    
    DRETURN(QHOST_SUCCESS);
 }

@@ -522,7 +522,7 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
                   if (!sge_ar_have_users_access(nullptr, ar, lGetString(qinstance, QU_full_name),
                                                 lGetList(qinstance, QU_acl), lGetList(qinstance, QU_xacl),
                                                 master_userset_list)) {
-                     ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS, sge_u32c( lGetUlong(ar, AR_id)));
+                     ERROR(MSG_PARSE_MOD3_REJECTED_DUE_TO_AR_SU, SGE_ATTR_USER_LISTS,  lGetUlong(ar, AR_id));
                      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                      ret = false;
                      break;

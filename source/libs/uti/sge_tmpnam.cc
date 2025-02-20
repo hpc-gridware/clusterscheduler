@@ -155,7 +155,7 @@ static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message) {
    if (sge_dstring_strlen(aBuffer) + strlen(tmp_file_string) >= SGE_PATH_MAX) {
       sge_dstring_append(aBuffer, tmp_file_string);
       sge_dstring_sprintf(error_message, MSG_TMPNAM_SGE_MAX_PATH_LENGTH_US,
-                          sge_u32c(SGE_PATH_MAX), sge_dstring_get_string(aBuffer));
+                          SGE_PATH_MAX, sge_dstring_get_string(aBuffer));
       return -1;
    }
 

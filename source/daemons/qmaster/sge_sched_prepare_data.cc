@@ -682,7 +682,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
                   ja_task = job_search_task(job, nullptr, ja_task_id);
 
                   if (ja_task == nullptr) {
-                     ERROR(MSG_CANTFINDTASKINJOB_UU, sge_u32c(ja_task_id), sge_u32c(job_id));
+                     ERROR(MSG_CANTFINDTASKINJOB_UU, ja_task_id, job_id);
                      DRETURN(SGE_EMA_FAILURE);
                   }
 

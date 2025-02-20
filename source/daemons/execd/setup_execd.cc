@@ -195,14 +195,14 @@ int job_initialize_job(lListElem *job)
          if (lGetUlong(ja_task, JAT_status) == JRUNNING) {
             ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
-               ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id));
+               ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
          for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             if (lGetUlong(pe_task, PET_status) == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {
-                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), sge_u32c(job_id), lGetString(pe_task, PET_id));
+                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, lGetString(pe_task, PET_id));
                }
             }
          }

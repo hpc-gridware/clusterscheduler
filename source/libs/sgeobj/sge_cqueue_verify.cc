@@ -379,8 +379,8 @@ cqueue_verify_job_slots(lListElem *cqueue, lList **answer_list, lListElem *attr_
 
       if (slots > MAX_SEQNUM) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, sge_u32c(slots), "slots",
-                                 sge_u32c(0), sge_u32c(MAX_SEQNUM));
+                                 MSG_ATTR_INVALID_ULONGVALUE_USUU, slots, "slots",
+                                 0, MAX_SEQNUM);
          ret = false;
       }
    }

@@ -137,7 +137,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
                         qinstance_state_set_manual_suspended(master_q, true);
                         if (!VALID(JSUSPENDED, lGetUlong(jatep, JAT_state))) {
                            if (lGetUlong(jep, JB_checkpoint_attr)& CHECKPOINT_SUSPEND) {
-                              INFO(MSG_JOB_INITMIGRSUSPQ_U, sge_u32c(lGetUlong(jep, JB_job_number)));
+                              INFO(MSG_JOB_INITMIGRSUSPQ_U, lGetUlong(jep, JB_job_number));
                               signal = SGE_MIGRATE;
                            }   
                            if (sge_execd_deliver_signal(signal, jep, jatep) == 0) {
@@ -226,7 +226,7 @@ int sge_execd_deliver_signal(u_long32 sig, const lListElem *jep, lListElem *jate
 
    DENTER(TOP_LAYER);
 
-   INFO(MSG_JOB_SIGNALTASK_UUS,   sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)), sge_sig2str(sig));
+   INFO(MSG_JOB_SIGNALTASK_UUS, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number), sge_sig2str(sig));
 
    // for simulated jobs fill in the job report
    if (mconf_get_simulate_jobs()) {
@@ -362,17 +362,17 @@ void sge_send_suspend_mail(u_long32 signal, lListElem *master_q, lListElem *jep,
        if (signal == SGE_SIGSTOP) {
           /* suspended */
           if (job_is_array(jep)) {
-              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JA_TASK_SUSP_UUS, sge_u32c(jobid), sge_u32c(taskid), job_name);
+              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JA_TASK_SUSP_UUS, jobid, taskid, job_name);
           } else {
-              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JOB_SUSP_US, sge_u32c(jobid), job_name);
+              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JOB_SUSP_US, jobid, job_name);
           }
           mail_type = MSG_MAIL_TYPE_SUSP;
        } else if (signal == SGE_SIGCONT ) {
           /* continued */
           if (job_is_array(jep)) {
-              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JA_TASK_CONT_UUS, sge_u32c(jobid), sge_u32c(taskid), job_name);
+              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JA_TASK_CONT_UUS, jobid, taskid, job_name);
           } else {
-              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JOB_CONT_US, sge_u32c(jobid), job_name);
+              snprintf(mail_subject, sizeof(mail_subject), MSG_MAIL_SUBJECT_JOB_CONT_US, jobid, job_name);
           }
           mail_type = MSG_MAIL_TYPE_CONT;
        } else {
@@ -563,7 +563,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
       }
    } else {
       if ((signal == SGE_SIGSTOP) && (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_SUSPEND)) {
-         INFO(MSG_JOB_INITMIGRSUSPJ_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(lGetUlong(jatep, JAT_task_number)));
+         INFO(MSG_JOB_INITMIGRSUSPJ_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
          signal = SGE_MIGRATE;
          getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
       } else if (signal == SGE_SIGSTOP) {

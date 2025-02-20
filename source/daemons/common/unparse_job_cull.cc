@@ -610,7 +610,7 @@ static int sge_unparse_checkpoint_option(lListElem *job, lList **pcmdline, lList
       } else {
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_JOB_INVALIDVALUEFORCHECKPOINTATTRIBINJOB_U,
-                                 sge_u32c(lGetUlong(job, JB_job_number)));
+                                 lGetUlong(job, JB_job_number));
          DRETURN(-1);
       }
    }

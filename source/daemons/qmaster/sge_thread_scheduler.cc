@@ -118,8 +118,8 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
    }
 
    /* a new record */
-   fprintf(fp, sge_U32CFormat":" sge_U32CFormat ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", sge_u32c(job_id),
-           sge_u32c(ja_taskid), state, start_time, end_time - start_time, level_char, object_name,
+   fprintf(fp, sge_uu32":" sge_uu32 ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", job_id,
+           ja_taskid, state, start_time, end_time - start_time, level_char, object_name,
            name, utilization);
    FCLOSE(fp);
 

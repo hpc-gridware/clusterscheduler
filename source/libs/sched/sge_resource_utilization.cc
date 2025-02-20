@@ -180,7 +180,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          name = lGetString(queue, QU_full_name);
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
             DPRINTF("-------------------------------------------\n");
-            DPRINTF("AR " sge_U32CFormat " QUEUE \"%s\"\n", ar_id, name);
+            DPRINTF("AR " sge_uu32 " QUEUE \"%s\"\n", ar_id, name);
             for_each_ep(cr, lGetList(queue, QU_resource_utilization)) {
                utilization_print(cr, name);
             }
@@ -838,7 +838,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
          }
       }
 
-      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) {
+      if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
          continue;
       }
 
@@ -988,7 +988,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
             }
          }
 
-         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking, false)) {
+         if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
             continue;
          }
 
@@ -1110,7 +1110,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
                aren't cancelled due to default_duration only be in effect */
 
             if (for_job_scheduling && sconf_get_max_reservations() > 0) {
-               WARNING(MSG_SCHEDD_SHOULDHAVEFINISHED_UUU, sge_u32c(a.job_id), sge_u32c(a.ja_task_id), sge_u32c(now - a.duration - a.start + 1));
+               WARNING(MSG_SCHEDD_SHOULDHAVEFINISHED_UUU, a.job_id, a.ja_task_id, static_cast<u_long32>(now - a.duration - a.start + 1));
             }
             a.duration = (now - a.start) + interval;
          }
@@ -1150,7 +1150,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
 
          if (DPRINTF_IS_ACTIVE) {
             DSTRING_STATIC(dstr, 64);
-            DPRINTF("Adding job " sge_U32CFormat "." sge_U32CFormat " into schedule start %s duration %.0f\n",
+            DPRINTF("Adding job " sge_uu32 "." sge_uu32 " into schedule start %s duration %.0f\n",
                     lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number),
                     sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
          }

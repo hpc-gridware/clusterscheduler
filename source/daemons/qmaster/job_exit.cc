@@ -132,9 +132,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    }
 
    if (failed) {        /* a problem occurred */
-      WARNING(MSG_JOB_FAILEDONHOST_UUSSSS, sge_u32c(jobid), sge_u32c(jataskid), hostname, general_failure ? MSG_GENERAL : "", get_sstate_description(failed), err_str);
+      WARNING(MSG_JOB_FAILEDONHOST_UUSSSS, jobid, jataskid, hostname, general_failure ? MSG_GENERAL : "", get_sstate_description(failed), err_str);
    } else {
-      INFO(MSG_JOB_JFINISH_UUS, sge_u32c(jobid), sge_u32c(jataskid), hostname);
+      INFO(MSG_JOB_JFINISH_UUS, jobid, jataskid, hostname);
    }
 
    /*-------------------------------------------------*/
@@ -142,7 +142,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    /* test if this job is in state JRUNNING or JTRANSFERING */
    if (lGetUlong(jatep, JAT_status) != JRUNNING &&
        lGetUlong(jatep, JAT_status) != JTRANSFERING) {
-      ERROR(MSG_JOB_JEXITNOTRUN_UU, sge_u32c(lGetUlong(jep, JB_job_number)), sge_u32c(jataskid));
+      ERROR(MSG_JOB_JEXITNOTRUN_UU, lGetUlong(jep, JB_job_number), jataskid);
       DRETURN_VOID;
    }
 
@@ -180,7 +180,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
                /* no jobs registered in advance reservation */
                dstring buffer = DSTRING_INIT;
 
-               sge_dstring_sprintf(&buffer, sge_U32CFormat, sge_u32c(ar_id));
+               sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
                ar_do_reservation(ar, false, gdi_session);
 
@@ -302,7 +302,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
                   sge_qmaster_qinstance_state_set_error(qinstance, true, gdi_session);
 
-                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, lGetString(qinstance, QU_qname), sge_u32c(jobid), host);
+                  sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS, lGetString(qinstance, QU_qname), jobid, host);
                   qinstance_message_add(qinstance, QI_ERROR, sge_dstring_get_string(&error)); 
                   ERROR(SFNMAX, sge_dstring_get_string(&error));
                   sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD, 0, 0, lGetString(qinstance, QU_qname),
@@ -320,7 +320,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          dstring error = DSTRING_INIT;
 
          sge_dstring_sprintf(&error, MSG_LOG_QERRORBYJOBHOST_SUS,
-                             lGetString(queueep, QU_qname), sge_u32c(jobid), hostname);
+                             lGetString(queueep, QU_qname), jobid, hostname);
 
          /* general error -> this queue cant run any job */
          sge_qmaster_qinstance_state_set_error(queueep, true, gdi_session);

@@ -101,7 +101,7 @@ sge_worker_initialize() {
    reporting_initialize();
    DPRINTF("accounting and reporting module has been initialized\n");
 
-   INFO(MSG_QMASTER_THREADCOUNT_US, sge_u32c(max_initial_worker_threads), threadnames[WORKER_THREAD]);
+   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_worker_threads, threadnames[WORKER_THREAD]);
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_worker_threads; i++) {
       cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),

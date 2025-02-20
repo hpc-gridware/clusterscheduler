@@ -121,7 +121,7 @@ lList *joblist
 
             if ((rc = krb_decrypt_tgt_creds(&tgtbuf, &tgt_creds))) {
 
-               ERROR(MSG_KRB_COULDNOTDECRYPTTGTFORJOBXY_DS, sge_u32c(lGetUlong(job, JB_job_number)), error_message(rc));
+               ERROR(MSG_KRB_COULDNOTDECRYPTTGTFORJOBXY_DS, lGetUlong(job, JB_job_number), error_message(rc));
 
             }
 
@@ -156,7 +156,7 @@ lList *joblist
 		        FLAGS2OPTS(tgt->ticket_flags)|KDC_OPT_RENEW,
 		        tgt->addresses, &creds, &new_creds[0])))) {
 
-		     ERROR(MSG_KRB_COULDNOTRENEWTGTFORJOBXY_DS, sge_u32c(lGetUlong(job, JB_job_number)), error_message(rc));
+		     ERROR(MSG_KRB_COULDNOTRENEWTGTFORJOBXY_DS, lGetUlong(job, JB_job_number), error_message(rc));
 
 		  }
 
@@ -171,7 +171,7 @@ lList *joblist
 
 		     if ((rc = krb_encrypt_tgt_creds(new_creds, &outbuf))) {
 
-			ERROR(MSG_KRB_COULDNOTECRYPTTGTFORJOBXY_DS, sge_u32c(lGetUlong(job, JB_job_number)), error_message(rc));
+			ERROR(MSG_KRB_COULDNOTECRYPTTGTFORJOBXY_DS, lGetUlong(job, JB_job_number), error_message(rc));
 
 		     } else {
 
@@ -196,12 +196,12 @@ lList *joblist
 				    lGetUlong(job, JB_job_number),
 				    new_creds))) {
 
-			       ERROR(MSG_KRB_COULDNOTSTORERENEWEDTGTFORXJOBY_SD, lGetString(job, JB_owner), sge_u32c(lGetUlong(job, JB_job_number)));
+			       ERROR(MSG_KRB_COULDNOTSTORERENEWEDTGTFORXJOBY_SD, lGetString(job, JB_owner), lGetUlong(job, JB_job_number));
                            }
 
                         } else {
 
-			   ERROR(MSG_KRB_COULDNOTGETUSERIDFORXY_SD , lGetString(job, JB_owner), sge_u32c(lGetUlong(job, JB_job_number)));
+			   ERROR(MSG_KRB_COULDNOTGETUSERIDFORXY_SD , lGetString(job, JB_owner), lGetUlong(job, JB_job_number));
                         }
 		     }
 

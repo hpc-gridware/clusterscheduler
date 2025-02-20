@@ -191,7 +191,7 @@ int main(int argc, char **argv)
       
    /* Initialize path for temporary logging until we chdir to spool */
    my_pid = getpid();
-   snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." sge_U32CFormat "", TMP_ERR_FILE_EXECD, sge_u32c(my_pid));
+   snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." sge_uu32 "", TMP_ERR_FILE_EXECD, my_pid);
    log_state_set_log_file(tmp_err_file_name);
 
    /* exit func for sge_exit() */
@@ -710,9 +710,9 @@ bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job
    // references are expected (e.g. because KEEP_ACTIVE changed
    if (!ignore_missing_job_task) {
       if (*job == nullptr) {
-         ERROR(MSG_JOB_TASKWITHOUTJOB_U, sge_u32c(job_id));
+         ERROR(MSG_JOB_TASKWITHOUTJOB_U, job_id);
       } else if (*ja_task == nullptr) {
-         ERROR(MSG_JOB_TASKNOTASKINJOB_UU, sge_u32c(job_id), sge_u32c(ja_task_id));
+         ERROR(MSG_JOB_TASKNOTASKINJOB_UU, job_id, ja_task_id);
       }
    }
 

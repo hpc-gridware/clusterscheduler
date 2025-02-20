@@ -72,10 +72,10 @@ int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
       for_each_ep(jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
             if (lGetUlong(jep, JB_checkpoint_attr) & CHECKPOINT_AT_SHUTDOWN) {
-               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, sge_u32c(lGetUlong(jep, JB_job_number)));
+               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, lGetUlong(jep, JB_job_number));
                sge_signal = SGE_MIGRATE;
             } else {
-               WARNING(MSG_JOB_KILLSHUTDOWN_U, sge_u32c(lGetUlong(jep, JB_job_number)));
+               WARNING(MSG_JOB_KILLSHUTDOWN_U, lGetUlong(jep, JB_job_number));
                sge_signal = SGE_SIGKILL;
             }
             sge_execd_deliver_signal(sge_signal, jep, jatep);
