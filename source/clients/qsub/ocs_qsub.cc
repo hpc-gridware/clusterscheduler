@@ -56,6 +56,7 @@
 
 #include "gdi/sge_security.h"
 #include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
