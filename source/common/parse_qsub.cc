@@ -68,9 +68,8 @@
 
 static int var_list_parse_from_environment(lList **lpp, char **envp);
 static int sge_parse_checkpoint_interval(const char *time_str);
-static int set_yn_option (lList **opts, u_long32 opt, const char *arg, const char *value,
-                          lList **alpp);
-
+static int set_yn_option (lList **opts, u_long32 opt, const char *arg, const char *value, lList **alpp);
+static int ocs_parse_sync_switch(lList **opts, u_long32 opt, const char *arg, const char *value, lList **alpp);
 
 
 /*
@@ -1571,23 +1570,21 @@ DTRACE;
 
 /*----------------------------------------------------------------------------*/
      /*  -sync y[es]|n[o] */
+     /*  -sync r|x|n */
 
-      if(!strcmp("-sync", *sp)) {
+      if (!strcmp("-sync", *sp)) {
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
-            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
-                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
-         /* next field is yes/no switch */
          sp++;
          if(!*sp) {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-sync" );
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-sync");
             DRETURN(answer);
          }
          
          DPRINTF("\"-sync %s\"\n", *sp);
          
-         if (set_yn_option (pcmdline, sync_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
+         if (ocs_parse_sync_switch(pcmdline, sync_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
             DRETURN(answer);
          }
 
@@ -2220,6 +2217,74 @@ static int set_yn_option (lList **opts, u_long32 opt, const char *arg, const cha
    }
    
    return STATUS_OK;
+}
+
+/** @brief Parse the -sync option switch
+ *
+ * Supports the old and new format of the -sync option switch.
+ * Old format: -sync y(es)|n(o)
+ * New format: -sync r|y|x|E|n
+ *
+ *    r - job start
+ *    x or y - job end
+ *    n - no sync
+ *
+ * @param opts list of options
+ * @param opt option code
+ * @param arg option argument
+ * @param value option value
+ * @param alpp answer list
+ *
+ * @return STATUS_OK if success, STATUS_ERROR1 otherwise
+ */
+static int
+ocs_parse_sync_switch(lList **opts, u_long32 opt, const char *arg, const char *value, lList **alpp) {
+   DENTER(TOP_LAYER);
+   u_long32 sync_bits = SYNC_UNINITIALIZED;
+
+   // -sync yes|no (pre OCS format )
+   if (strcasecmp("yes", value) == 0) {
+      sync_bits = SYNC_JOB_END;
+   } else if (strcasecmp ("no", value) == 0) {
+      sync_bits = SYNC_NO;
+   }
+
+   // -sync r|y|x|E|n (new OCS format)
+   if (sync_bits == SYNC_UNINITIALIZED) {
+      const int len = strlen(value);
+      for (int pos = 0; pos < len; pos++) {
+         switch (value[pos]) {
+         case 'r':
+            sync_bits |= SYNC_JOB_START;
+            break;
+         case 'x':
+         case 'y':
+            sync_bits |= SYNC_JOB_END;
+            break;
+         case 'n':
+            sync_bits |= SYNC_NO;
+            break;
+         default:
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_INVALIDOPTIONARGUMENT_SS, arg, value);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ERROR1);
+         }
+      }
+   }
+
+   // check if SYNC_NO was combined with other bits which might make no sense
+   if ((sync_bits & SYNC_NO) != 0 && sync_bits != SYNC_NO) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_INVALIDOPTIONARGUMENT_SS, arg, value);
+      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ERROR1);
+   }
+
+   // transport bits via opts list
+   lListElem *ep_opt = nullptr;
+   ep_opt = sge_add_arg(opts, opt, lUlongT, arg, value);
+   lSetUlong(ep_opt,SPA_argval_lUlongT, sync_bits);
+
+   DRETURN(STATUS_OK);
 }
 
 /* This method is not thread safe.  Fortunately, it is only used by the

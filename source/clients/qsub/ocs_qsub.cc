@@ -47,6 +47,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_daemonize.h"
 
 #include "comm/commlib.h"
 
@@ -54,8 +55,8 @@
 #include "japi/japiP.h"
 
 #include "gdi/sge_security.h"
-#include "sgeobj/sge_daemonize.h"
 #include "gdi/sge_gdi.h"
+#include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sig_handlers.h"
 #include "basis_types.h"
@@ -63,6 +64,7 @@
 #include "parse_job_cull.h"
 #include "ocs_client_parse.h"
 #include "ocs_client_job.h"
+#include "parse_qsub.h"
 #include "msg_clients_common.h"
 #include "msg_qsub.h"
 #include "msg_qmaster.h"
@@ -93,7 +95,7 @@ main(int argc, const char **argv)
    int exit_status = 0;
    int just_verify;
    int tmp_ret;
-   int wait_for_job = 0, is_immediate = 0;
+   int is_immediate = 0;
    dstring session_key_out = DSTRING_INIT;
    dstring diag = DSTRING_INIT;
    dstring jobid = DSTRING_INIT;
@@ -208,9 +210,12 @@ main(int argc, const char **argv)
    /* If "-sync y" is set, wait for the job to end. */
    /* Remove all -sync switches since cull_parse_job_parameter()
     * doesn't know what to do with them. */
+   bool wait_for_job = false;
+   u_long32 sync_opt = SYNC_NO;
    while ((ep = lGetElemStrRW(opts_all, SPA_switch_val, "-sync"))) {
-      if (lGetInt(ep, SPA_argval_lIntT) == TRUE) {
-         wait_for_job = 1;
+      sync_opt = lGetUlong(ep, SPA_argval_lUlongT);
+      if (sync_opt != SYNC_NO) {
+         wait_for_job = true;
       }
 
       lRemoveElem(opts_all, &ep);
@@ -416,19 +421,15 @@ main(int argc, const char **argv)
          }
       }
 
+      // We have to wait for certain job states
       if (wait_for_job) {
-         /* Rather than using japi_synchronize on ALL for bulk jobs, we use
-          * japi_wait on ANY num_tasks times because with synchronize, we would
-          * have to wait for all the tasks to finish before we know if any
-          * finished. */
-         for (count = 0; count < num_tasks; count++) {
-            /* Since there's only one running job in the session, we can just
-             * wait for ANY. */
-            if ((tmp_ret = japi_wait(DRMAA_JOB_IDS_SESSION_ANY, &jobid, &stat,
-                          DRMAA_TIMEOUT_WAIT_FOREVER, JAPI_JOB_FINISH, &event,
-                          nullptr, &diag)) != DRMAA_ERRNO_SUCCESS) {
-               if ((tmp_ret != DRMAA_ERRNO_EXIT_TIMEOUT) &&
-                   (tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION)) {
+
+         // JOB START: just wait for the first task to start
+         if ((sync_opt & SYNC_JOB_START) == SYNC_JOB_START) {
+            tmp_ret = japi_wait(DRMAA_JOB_IDS_SESSION_ANY, &jobid, &stat, DRMAA_TIMEOUT_WAIT_FOREVER, JAPI_JOB_START, &event, nullptr, &diag);
+
+            if (tmp_ret != DRMAA_ERRNO_SUCCESS) {
+               if (tmp_ret != DRMAA_ERRNO_EXIT_TIMEOUT && tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION) {
                   fprintf(stderr, "\n");
                   fprintf(stderr, MSG_QSUB_COULDNOTWAITFORJOB_S, sge_dstring_get_string(&diag));
                   fprintf(stderr, "\n");
@@ -436,19 +437,37 @@ main(int argc, const char **argv)
 
                exit_status = 1;
                goto Error;
+            } else {
+               printf(MSG_QSUB_JOBHASSTARTED_S, sge_dstring_get_string(&jobid));
             }
+         }
 
-            /* report how job finished */
-            /* If the job is an array job, use the first non-zero exit code as
-             * the exit code for qsub. */
-            if (exit_status == 0) {
-               exit_status = report_exit_status(stat,
-                                              sge_dstring_get_string(&jobid));
-            }
-            /* If we've already found a non-zero exit code, just print the exit
-             * info for the task. */
-            else {
-               report_exit_status(stat, sge_dstring_get_string(&jobid));
+         // JOB END: Now wait for the end of *all* tasks
+         if ((sync_opt & SYNC_JOB_END) == SYNC_JOB_END) {
+            for (count = 0; count < num_tasks; count++) {
+               // Rather than using japi_synchronize on ALL for bulk jobs, we use japi_wait on ANY num_tasks times because with synchronize, we would
+               // have to wait for all the tasks to finish before we know if any finished.
+               // Since there's only one running job in the session, we can just  wait for ANY.
+               tmp_ret = japi_wait(DRMAA_JOB_IDS_SESSION_ANY, &jobid, &stat, DRMAA_TIMEOUT_WAIT_FOREVER, JAPI_JOB_FINISH, &event, nullptr, &diag);
+               if (tmp_ret != DRMAA_ERRNO_SUCCESS) {
+                  if (tmp_ret != DRMAA_ERRNO_EXIT_TIMEOUT && tmp_ret != DRMAA_ERRNO_NO_ACTIVE_SESSION) {
+                     fprintf(stderr, "\n");
+                     fprintf(stderr, MSG_QSUB_COULDNOTWAITFORJOB_S, sge_dstring_get_string(&diag));
+                     fprintf(stderr, "\n");
+                  }
+
+                  exit_status = 1;
+                  goto Error;
+               }
+
+               // report how job finished
+               if (exit_status == 0) {
+                  // If the job is an array job, use the first non-zero exit code as the exit code for qsub.
+                  exit_status = report_exit_status(stat, sge_dstring_get_string(&jobid));
+               } else {
+                  // If we've already found a non-zero exit code, just print the exit info for the task.
+                  report_exit_status(stat, sge_dstring_get_string(&jobid));
+               }
             }
          }
       }
