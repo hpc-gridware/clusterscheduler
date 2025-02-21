@@ -851,7 +851,7 @@
 #define MSG_GDI_USAGE_Aattr_OPT                          "[-Aattr obj_nm fname obj_id_list]"
 #define MSG_GDI_UTEXT_Aattr_OPT                          _MESSAGE(23483, _("add to a list attribute of an object")) 
 
-#define MSG_GDI_USAGE_sync_OPT_YN                        "[-sync y[es]|n[o]]"
+#define MSG_GDI_USAGE_sync_OPT_YN                        "[-sync r|x|n]"
 #define MSG_GDI_UTEXT_sync_OPT_YN                        _MESSAGE(23484, _("wait for job to end and return exit code"))
 
 #define MSG_GDI_USAGE_JQ_DEST_OPR                        "job_queue_list"

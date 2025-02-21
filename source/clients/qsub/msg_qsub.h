@@ -55,5 +55,6 @@
 #define MSG_QSUB_INTERRUPTED                 _MESSAGE(210015, _("Interrupted!"))
 #define MSG_QSUB_TERMINATING                 _MESSAGE(210016, _("Please wait while qsub shuts down."))
 #define MSG_QSUB_COULDNOTREADSCRIPT_S        _MESSAGE(210017, _("Unable to read script file because of error: "))
+#define MSG_QSUB_JOBHASSTARTED_S             _MESSAGE(210018, _("Job " SFN " has started.\n"))
 
 // clang-format on
