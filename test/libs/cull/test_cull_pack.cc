@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
          return EXIT_FAILURE;
       }
 #else
-      fprintf(stderr, SFNMAX, "built without Munge");
+      fprintf(stderr, SFNMAX, "built without Munge\n");
       return EXIT_FAILURE;
 #endif
    }

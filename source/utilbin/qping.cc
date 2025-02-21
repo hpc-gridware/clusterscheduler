@@ -511,8 +511,13 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                unsigned long buffer_length = 0;
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
-   
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+
+                  // unpack the message content
+                  // we may *not* decode the auth_info - at least not with munge authentication, as Munge will decode
+                  // a certificate only once, and it needs to be decoded in the message receiver as well.
+                  // we do not output the parsed auth_info anyway, so we skip decoding and just output the raw auth_info
+                  // string.
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      ocs::gdi::Packet *packet = new ocs::gdi::Packet();
                
                      if (packet->unpack(nullptr, &buf)) {
@@ -582,7 +587,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      lList *rep = nullptr;
    
                      if (cull_unpack_list(&buf, &rep) == 0) {
@@ -605,7 +610,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      u_long32 client_id = 0;
                      if (unpackint(&buf, &client_id) == PACK_SUCCESS) {
                         printf("      unpacked event client exit (binary buffer length %lu):\n", buffer_length );
@@ -621,7 +626,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer, &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      lListElem *ack = nullptr;
 
                      while (pb_unused(&buf) > 0) {
@@ -644,7 +649,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer, &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      if (strcmp(sender_comp_name, "qmaster") == 0) {
                         u_long32 feature_set;
                         lListElem *job = nullptr;
@@ -682,7 +687,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      u_long32 jobid    = 0;
                      u_long32 job_signal   = 0;
                      u_long32 jataskid = 0;
@@ -722,7 +727,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                   printf("binary buffer length is %lu\n",buffer_length);  
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length) == PACK_SUCCESS) {
+                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      u_long32 jobid    = 0;
                      u_long32 queue_signal   = 0;
                      u_long32 jataskid = 0;
