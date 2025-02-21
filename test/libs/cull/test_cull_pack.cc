@@ -352,7 +352,9 @@ int main(int argc, char *argv[]) {
    unlink(filename);
 
    /* cleanup and exit */
+#if defined(OCS_WITH_MUNGE)
    ocs::uti::Munge::shutdown();
+#endif
    lFreeElem(&ep);
    return EXIT_SUCCESS;
    FCLOSE_ERROR:
