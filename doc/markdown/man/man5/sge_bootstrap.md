@@ -108,8 +108,11 @@ The default location for the master spool directory is \<xxqs_name_sxx_root>/\<c
 
 The security mode defines the set of security features the installed cluster is using.
 
-Possible security mode settings are none, afs, dce, kerberos, csp. (no additional security, AFS, DCE, KERBEROS, 
-CSP security model).
+Possible security mode settings are none (no additional security) and munge (Munge authentication of all communication requests).
+Munge authentication can be enabled at installation time or later by editing the bootstrap file. This requires a re-start of all xxQS_NAMExx components.
+See also the chapter about Munge in the installation guide.
+
+Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs, dce, kerberos, csp (AFS, DCE, KERBEROS, CSP security model).
 
 ## *listener_threads*
 

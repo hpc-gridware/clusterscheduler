@@ -60,6 +60,15 @@ high availability setup, this area also needs to be on a shared file system. If 
 your setup and are not planning to set up high availability, it is recommended that you use a local file system 
 for spooling.
 
+### Munge service
+
+When munge authentication shall be enabled for the xxQS_NAMExx cluster, the munge service must be set up on all
+hosts within the security realm (the cluster). The munge key must be created on one host and distributed to all other
+hosts. The munge service must be started on all hosts within the security realm.
+
+See also [Installing Munge].
+
+
 ## Product Component Overview
 
 The image below displays the components of a complete xxQS_NAMExx setup. The subsequent sections provide 
