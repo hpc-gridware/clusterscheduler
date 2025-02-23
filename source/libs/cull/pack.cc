@@ -46,7 +46,7 @@
 #  include <rpc/xdr.h>
 #endif
 
-#if defined(SOLARIS)
+#if defined(SOLARIS) || defined(DARWIN)
 #define htobe64(x) htonll(x)
 #define be64toh(x) ntohll(x)
 #endif

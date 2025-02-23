@@ -32,6 +32,7 @@ long get_milli() {
 }
 
 int main(int argc, const char *argv[]) {
+#ifndef DARWIN
 #if defined(SOLARIS)
    const int num_clocks = 3;
    int clock_ids[num_clocks] = {CLOCK_VIRTUAL, CLOCK_REALTIME, CLOCK_MONOTONIC};
@@ -99,6 +100,6 @@ int main(int argc, const char *argv[]) {
        pthread_cond_destroy(&condition);
        pthread_mutex_destroy(&mutex);
     }
-
+#endif
     return 0;
 }

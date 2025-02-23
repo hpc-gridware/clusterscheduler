@@ -40,11 +40,15 @@ namespace ocs::uti {
    int condition_initialize(pthread_cond_t *condition) {
       int ret{0};
 
+#ifdef DARWIN
+      ret = pthread_cond_init(condition, nullptr);
+#else
       pthread_condattr_t attr;
       pthread_condattr_init(&attr);
       pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 
       ret = pthread_cond_init(condition, &attr);
+#endif
 
       return ret;
    }
