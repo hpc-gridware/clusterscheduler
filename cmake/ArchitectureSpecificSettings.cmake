@@ -232,6 +232,11 @@ function(architecture_specific_settings)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
 
       set(JNI_ARCH "darwin" PARENT_SCOPE)
+      if (WITH_MUNGE)
+         # for macOS we need to use the MacPorts munge package
+         include_directories(/opt/local/var/macports/software/munge/munge-0.5.14_2.darwin_24.arm64/opt/local/include)
+         link_directories(/usr/local/lib)
+      endif()
    else ()
       # unknown platform
       message(WARNING "no arch specific compiler options for ${SGE_ARCH}")
