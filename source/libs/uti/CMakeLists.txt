@@ -23,6 +23,7 @@ set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
       config_file.cc
       ocs_JsonUtil.cc
+      ocs_Munge.cc
       ocs_TerminationManager.cc
       ocs_cond.cc
       sge_afsutil.cc
@@ -60,6 +61,7 @@ set(LIBRARY_SOURCES
       sge_pty.cc
       sge_rmon_macros.cc
       sge_rmon_monitoring_level.cc
+      sge_security.cc
       sge_signal.cc
       sge_sl.cc
       sge_smf.cc

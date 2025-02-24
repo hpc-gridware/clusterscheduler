@@ -80,10 +80,21 @@ enum thread_type_t {
    READER_THREAD, // 9
 };
 
+enum component_user_type_t {
+   COMPONENT_FIRST_USER = 0,
+   COMPONENT_START_USER = COMPONENT_FIRST_USER,
+   COMPONENT_ADMIN_USER,
+
+   COMPONENT_NUM_USERS
+};
+
 extern const char *prognames[];
 extern const char *threadnames[];
 
 typedef void (*sge_exit_func_t)(int);
+
+void component_ts0_init();
+void component_ts0_destroy();
 
 void
 component_do_log();
@@ -156,3 +167,14 @@ component_get_exit_func();
 
 void
 component_set_exit_func(sge_exit_func_t exit_func);
+
+void
+component_set_current_user_type(component_user_type_t type);
+
+char *
+component_get_auth_info();
+
+bool
+component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array);
+
+

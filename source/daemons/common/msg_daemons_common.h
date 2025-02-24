@@ -146,4 +146,5 @@
 #define MSG_HEART_CANT_SIGNAL                _MESSAGE(27100, _("can't send signal to signal thread"))
 #define MSG_HEART_CANNOTOPEN_SS              _MESSAGE(27101, _("can't open heartbeat file " SFQ ": " SFN))
 
+#define MSG_STARTUP_USING_MUNGE              _MESSAGE(27102, _("using Munge authentication"))
 // clang-format on

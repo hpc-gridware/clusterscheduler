@@ -586,7 +586,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
    DENTER(TOP_LAYER);
 
    /* prepare packing buffer */
-   if ((ret = init_packbuffer(&pb, 4096, 0))) {
+   if ((ret = init_packbuffer(&pb, 4096))) {
 	  ERROR(MSG_KRB_INITPACKBUFFERFAILED_S, cull_pack_strerror(ret));
 	  goto error;
    }

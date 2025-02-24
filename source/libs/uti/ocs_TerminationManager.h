@@ -20,8 +20,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <string>
 #include <csignal>
+#include <cstdint>
+#include <string>
 
 namespace ocs {
    class TerminationManager {
@@ -48,7 +49,7 @@ namespace ocs {
       get_stacktrace(bool demangle_names);
 
       static void
-      show_stacktrace(u_int32_t level);
+      show_stacktrace(uint32_t level);
 
       static void
       trigger_segfault();

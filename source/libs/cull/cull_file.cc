@@ -92,7 +92,7 @@ int lWriteElemToDisk(const lListElem *ep, const char *prefix, const char *name,
    }
 
    /* init packing buffer */
-   ret = init_packbuffer(&pb, 8192, 0);
+   ret = init_packbuffer(&pb, 8192, false, false);
 
    /* pack ListElement */
    if (ret == PACK_SUCCESS) {
@@ -239,7 +239,7 @@ lListElem *lReadElemFromDisk(const char *prefix, const char *name,
       DRETURN(nullptr);
    }
 
-   if ((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size)) != PACK_SUCCESS) {
+   if ((ret = init_packbuffer_from_buffer(&pb, buf, statbuf.st_size, false)) != PACK_SUCCESS) {
       ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, cull_pack_strerror(ret));
    }
    ret = cull_unpack_elem(&pb, &ep, type);

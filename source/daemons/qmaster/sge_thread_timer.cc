@@ -51,7 +51,7 @@
 #include "uti/sge_os.h"
 #include "uti/sge_thread_ctrl.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 #include "gdi/ocs_gdi_Packet.h"
 
 #include "basis_types.h"
@@ -112,8 +112,6 @@ sge_timer_register_event_handler() {
    te_register_event_handler(sge_zombie_job_cleanup_handler, TYPE_ZOMBIE_JOB_CLEANUP_EVENT);
 
    te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);
-
-   te_register_event_handler(sge_security_event_handler, TYPE_SECURITY_EVENT);
 
    te_register_event_handler(ocs::SessionManager::session_cleanup_handler, TYPE_SESSION_CLEANUP_EVENT);
 

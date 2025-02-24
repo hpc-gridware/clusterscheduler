@@ -111,7 +111,7 @@ host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::Cli
       }
    }
 
-   if (init_packbuffer(&pb, 256, 0) == PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 256) == PACK_SUCCESS) {
       u_long32 dummy = 0;
 
       packint(&pb, x);

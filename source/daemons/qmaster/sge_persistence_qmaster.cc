@@ -236,7 +236,7 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
       unsigned long sleep_time = spooling_wait_time;
       bool do_sleep = false;
       do {
-         /* 
+         /*
           * find out if there is a qping -dump client connected to qmaster
           */
          cl_com_handle_t *handle = cl_com_get_handle("qmaster", 1);

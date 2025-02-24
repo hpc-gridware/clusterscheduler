@@ -50,6 +50,7 @@
 #include <pthread.h>
 
 #include "uti/msg_utilib.h"
+#include "uti/sge_component.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
@@ -232,6 +233,9 @@ sge_switch2admin_user() {
       }
    }
 
+   // update component
+   component_set_current_user_type(COMPONENT_ADMIN_USER);
+
    exit:
 DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
         (long) geteuid(), (long) getegid(), (long) uid, (long) gid);
@@ -312,9 +316,12 @@ sge_switch2start_user() {
       }
    }
 
-   exit:
-DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
-        (long) geteuid(), (long) getegid(), (long) uid, (long) gid);
+   // update component
+   component_set_current_user_type(COMPONENT_START_USER);
+
+exit:
+   DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),
+      (long) geteuid(), (long) getegid(), (long) uid, (long) gid);
    DRETURN(ret);
 } /* sge_switch2start_user() */
 

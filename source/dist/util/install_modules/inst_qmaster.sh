@@ -547,20 +547,37 @@ SetProductMode()
          exit 1
       else
          CSP_PREFIX="csp"
-      fi  
+      fi
    else
       CSP_PREFIX=""
    fi
 
-      if [ $AFS = "false" ]; then
-         if [ $CSP = "false" ]; then
+   if [ $MUNGE = true ]; then
+      SEC_COUNT=`strings $SGE_BIN/sge_qmaster | grep "EMUNGE_SUCCESS" | wc -l`
+      if [ $SEC_COUNT -ne 1 ]; then
+         $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-DWITH_MUNGE=ON< option!\n"
+         $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to cancel the installation >> "
+         exit 1
+      else
+         MUNGE_PREFIX="munge"
+      fi
+   else
+      MUNGE_PREFIX=""
+   fi
+
+   if [ $AFS = "false" ]; then
+      if [ $CSP = "false" ]; then
+         if [ $MUNGE = "false" ]; then
             PRODUCT_MODE="none"
          else
-            PRODUCT_MODE="${CSP_PREFIX}"
+            PRODUCT_MODE="${MUNGE_PREFIX}"
          fi
       else
-         PRODUCT_MODE="${AFS_PREFIX}"
+         PRODUCT_MODE="${CSP_PREFIX}"
       fi
+   else
+      PRODUCT_MODE="${AFS_PREFIX}"
+   fi
 }
 
 

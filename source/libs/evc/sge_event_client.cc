@@ -1590,7 +1590,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
    if (sge_evc->ec != nullptr) {
       sge_pack_buffer pb;
 
-      if (init_packbuffer(&pb, sizeof(u_long32), 0) == PACK_SUCCESS) {
+      if (init_packbuffer(&pb, sizeof(u_long32)) == PACK_SUCCESS) {
          /* error message is output from init_packbuffer */
          int send_ret;
          lList *alp = nullptr;

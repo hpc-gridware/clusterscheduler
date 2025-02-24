@@ -196,10 +196,8 @@ function(architecture_specific_settings)
 
       set(JNI_ARCH "freebsd" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "sol-.*")
-      # Disable Python for unsupported qmaster architectures
-      set(WITH_PYTHON OFF PARENT_SCOPE)
+      # Solaris (unsupported for qmaster)
 
-      # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
       # @todo CS-983 Processor set binding on Solaris is broken
       # add_compile_definitions(SOLARIS BINDING_SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
@@ -207,6 +205,8 @@ function(architecture_specific_settings)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
+      set(WITH_MUNGE OFF PARENT_SCOPE)
+      set(WITH_PYTHON OFF PARENT_SCOPE)
 
       set(JNI_ARCH "solaris" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "darwin-arm64")

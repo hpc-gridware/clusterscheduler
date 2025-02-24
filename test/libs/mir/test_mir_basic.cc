@@ -64,7 +64,7 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
    DENTER(TOP_LAYER);
 
    events++;
-   init_packbuffer(&pb, 0, 1);
+   init_packbuffer(&pb, 0, true, false);
    cull_pack_elem(&pb, event);
    events_size += pb.bytes_used;
 

@@ -1050,7 +1050,7 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
       pnm = prognames[EXECD];
       hnm = lGetHost(qep, QU_qhostname);
 
-      if ((i = init_packbuffer(&pb, 256, 0)) == PACK_SUCCESS) {
+      if ((i = init_packbuffer(&pb, 256)) == PACK_SUCCESS) {
          /* identifier for acknowledgement */
          if (jep) {
             /*

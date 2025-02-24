@@ -52,7 +52,7 @@
 #include "japi/japi.h"
 #include "japi/japiP.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "sig_handlers.h"

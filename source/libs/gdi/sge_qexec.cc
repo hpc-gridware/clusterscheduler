@@ -177,7 +177,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       lSetString(petrep, PETR_queuename, queuename);
    }
 
-   if (init_packbuffer(&pb, 1024, 0) != PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
       lFreeElem(&petrep);
       snprintf(lasterror, sizeof(lasterror), SFN, MSG_GDI_OUTOFMEMORY);
       DRETURN(nullptr);
@@ -298,7 +298,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
    ret = init_packbuffer_from_buffer(&pb, msg, msg_len);
    if (ret != PACK_SUCCESS) {
-      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(ret));
+      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, prognames[EXECD], from_id, cull_pack_strerror(ret));
       DRETURN(-1);
    }
 

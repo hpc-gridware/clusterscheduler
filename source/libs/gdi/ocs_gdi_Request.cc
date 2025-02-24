@@ -65,7 +65,6 @@ ocs::gdi::Request::request(lList **alpp, Mode::ModeValue mode, gdi::Target::Targ
    // create a new packet if it does not exist
    if (packet == nullptr) {
       packet = new Packet();
-      packet->initialize_auth_info();
    }
 
    // create a new task and append it to the packet

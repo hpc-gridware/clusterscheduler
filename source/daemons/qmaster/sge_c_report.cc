@@ -199,7 +199,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
             } else {
                if (!is_pb_used) {
                   is_pb_used = true;
-                  init_packbuffer(&pb, 1024, 0);
+                  init_packbuffer(&pb, 1024);
                }
                sge_update_load_values(rhost, lGetListRW(report, REP_list), packet->gdi_session);
 
@@ -255,7 +255,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
             MONITOR_EJOB(monitor);
             if (!is_pb_used) {
                is_pb_used = true;
-               init_packbuffer(&pb, 1024, 0);
+               init_packbuffer(&pb, 1024);
             }
             process_job_report(report, hep, rhost, commproc, &pb, monitor, packet->gdi_session);
             break;

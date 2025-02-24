@@ -64,7 +64,7 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_report.h"
 
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 
 #include "spool/classic/read_write_job.h"
 

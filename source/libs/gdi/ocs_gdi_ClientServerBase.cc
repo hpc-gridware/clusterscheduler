@@ -435,7 +435,6 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
          *mid = message->message_id;
       }
 
-
       /* fill it in the packing buffer */
       i = init_packbuffer_from_buffer(pb, (char *) message->message, message->message_length);
 
@@ -443,7 +442,7 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       message->message = nullptr;
 
       if (i != PACK_SUCCESS) {
-         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_S, cull_pack_strerror(i));
+         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, sender->comp_host, sender->comp_name, static_cast<u_long32>(sender->comp_id), cull_pack_strerror(i));
          PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
          DRETURN(CL_RETVAL_READ_ERROR);
       }

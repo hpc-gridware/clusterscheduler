@@ -692,7 +692,7 @@ ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
          u_long32 dummymid = 0;
          sge_pack_buffer pb;
 
-         init_packbuffer(&pb, 256, 0); /* this is more than sufficient */
+         init_packbuffer(&pb, 256); /* this is more than sufficient */
          pack_ack(&pb, type, job_id, ja_task_id, nullptr);
          /*
           * Send the ack to slave exec host. No special error handling done.

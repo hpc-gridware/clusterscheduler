@@ -41,6 +41,7 @@
 
 #include "cull/cull.h"
 
+#include "uti/ocs_Munge.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 
@@ -184,6 +185,18 @@ int main(int argc, char *argv[]) {
 
    lInit(nmv);
 
+   if (bootstrap_get_use_munge()) {
+#if defined (OCS_WITH_MUNGE)
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (!ocs::uti::Munge::initialize(&error_dstr)) {
+         fprintf(stderr, "initializing Munge failed: %s\n", sge_dstring_get_string(&error_dstr));
+         return EXIT_FAILURE;
+      }
+#else
+      fprintf(stderr, SFNMAX, "built without Munge\n");
+      return EXIT_FAILURE;
+#endif
+   }
    /* create an element */
    ep = lCreateElem(TEST_Type);
    obj = lCreateElem(TEST_Type);
@@ -225,7 +238,7 @@ int main(int argc, char *argv[]) {
 #endif
 
    /* test just count */
-   if ((pack_ret = init_packbuffer(&pb, 100, 1)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100, true, false)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -238,7 +251,7 @@ int main(int argc, char *argv[]) {
    clear_packbuffer(&pb);
 
    /* test packing */
-   if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -248,6 +261,7 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
    }
 
+   counted_size += strlen(pb.auth_info) + 1;
    if (counted_size != pb.bytes_used) {
       printf("just_count does not work, reported " sge_u32", expected " sge_u32"\n", counted_size,
              (u_long32) pb.bytes_used);
@@ -281,7 +295,7 @@ int main(int argc, char *argv[]) {
    lFreeElem(&copy);
 
    /* test partial packing */
-   if ((pack_ret = init_packbuffer(&pb, 100, 0)) != PACK_SUCCESS) {
+   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
       printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
       return EXIT_FAILURE;
    }
@@ -338,6 +352,9 @@ int main(int argc, char *argv[]) {
    unlink(filename);
 
    /* cleanup and exit */
+#if defined(OCS_WITH_MUNGE)
+   ocs::uti::Munge::shutdown();
+#endif
    lFreeElem(&ep);
    return EXIT_SUCCESS;
    FCLOSE_ERROR:

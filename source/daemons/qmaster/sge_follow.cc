@@ -1625,7 +1625,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
       if (hep &&sge_gmt32_to_gmt64(last_heard_from + 10 * mconf_get_load_report_time()) > now) {
          sge_pack_buffer pb;
 
-         if (init_packbuffer(&pb, sizeof(u_long32) * 3 * n, 0) == PACK_SUCCESS) {
+         if (init_packbuffer(&pb, sizeof(u_long32) * 3 * n) == PACK_SUCCESS) {
             u_long32 dummyid = 0;
             const lListElem *ep2;
             for_each_ep(ep2, to_send) {

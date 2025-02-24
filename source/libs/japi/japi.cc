@@ -510,7 +510,7 @@ int japi_init(const char *contact, const char *session_key_in,
     * called.  Since the handle hasn't been closed yet, it doesn't need to be
     * explicitly created.  If japi_init() gets called more than once, it's fair
     * to assume that later calls will be doing something more than just
-    * initializing to prep for outputing usage information.  At least, that's
+    * initializing to prep for outputting usage information.  At least, that's
     * how it looks right now. */
    /* Besides, it looks like creating the handle wasn't the real problem.  The
     * real problem was the call to read_dynamic_attributes() from japi_init().
@@ -520,22 +520,21 @@ int japi_init(const char *contact, const char *session_key_in,
    if (!virgin_session) {
       lList *answer_list = nullptr;
       int commlib_error = CL_RETVAL_OK;
-      handle = cl_com_get_handle(component_get_component_name(), 0);
+      const char *component_name = component_get_component_name();
+      handle = cl_com_get_handle(component_name, 0);
       if (handle == nullptr) {
-
          /* check if master is alive */
          commlib_error = ocs::gdi::ClientBase::prepare_enroll(&answer_list);
          if (commlib_error == CL_RETVAL_OK) {
             commlib_error = ocs::gdi::ClientBase::gdi_is_alive(&answer_list);
          }
-         handle = cl_com_get_handle(component_get_component_name(), 0);
+         handle = cl_com_get_handle(component_name, 0);
       }
       if (handle == nullptr) {
          sge_dstring_sprintf (diag, MSG_JAPI_NO_HANDLE_S, cl_get_error_text(commlib_error));
          DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
       }
-   }
-   else {
+   } else {
       virgin_session = false;
    }
 
@@ -544,10 +543,8 @@ int japi_init(const char *contact, const char *session_key_in,
       const char *unqualified_hostname = component_get_unqualified_hostname();
 
       /* spawn implementation thread japi_implementation_thread() */
-      ret = japi_enable_job_wait(username, unqualified_hostname, session_key_in, session_key_out, handler,
-                                  diag);
-   }
-   else {
+      ret = japi_enable_job_wait(username, unqualified_hostname, session_key_in, session_key_out, handler, diag);
+   } else {
       /* This doesn't need to be protected by a lock because by definition we
        * only get here if there are no other threads. */
       japi_session_key = (char *)JAPI_SINGLE_SESSION_KEY;
@@ -557,8 +554,7 @@ int japi_init(const char *contact, const char *session_key_in,
    JAPI_LOCK_SESSION();
    if (ret == DRMAA_ERRNO_SUCCESS) {
       japi_session = JAPI_SESSION_ACTIVE;
-   }
-   else {
+   } else {
       japi_session = JAPI_SESSION_INACTIVE;
    }
    JAPI_UNLOCK_SESSION();
@@ -619,8 +615,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
    JAPI_LOCK_SESSION();
    /* JAPI_SESSION_INITIALIZING if we're called from japi_init() or
     * JAPI_SESSION_ACTIVE if we're called from the client code directly. */
-   if ((japi_session != JAPI_SESSION_INITIALIZING) &&
-         (japi_session != JAPI_SESSION_ACTIVE)) {
+   if (japi_session != JAPI_SESSION_INITIALIZING && japi_session != JAPI_SESSION_ACTIVE) {
       JAPI_UNLOCK_SESSION();
       japi_standard_error(DRMAA_ERRNO_NO_ACTIVE_SESSION, diag);
       DRETURN(DRMAA_ERRNO_NO_ACTIVE_SESSION);
@@ -631,8 +626,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
     * that called this function. */
    /* When init_thread is set in japi_init(), it's guarded by the session
     * mutex, so we know there's no race condition here. */
-   else if ((japi_session == JAPI_SESSION_INITIALIZING) &&
-            (init_thread != pthread_self())) {
+   if (japi_session == JAPI_SESSION_INITIALIZING && init_thread != pthread_self()) {
       JAPI_UNLOCK_SESSION();
       japi_standard_error(DRMAA_ERRNO_ALREADY_ACTIVE_SESSION, diag);
       DRETURN(DRMAA_ERRNO_ALREADY_ACTIVE_SESSION);
@@ -655,10 +649,11 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
 
    /* Note that we're in the process of starting up so that other calls to this
     * function fail. */
-   if (!session_key_in)
+   if (!session_key_in) {
       japi_ec_state = JAPI_EC_STARTING;
-   else
+   } else {
       japi_ec_state = JAPI_EC_RESTARTING;
+   }
 
    /* It's safe to unlock both locks here because we have the ec
     * state set so that no other functions can disturb us. */
@@ -947,8 +942,7 @@ int japi_exit(int flag, dstring *diag)
       DPRINTF (("Waiting for event client to terminate.\n"));
       pthread_join (japi_event_client_thread, nullptr);
       japi_ec_state = JAPI_EC_DOWN;
-   }
-   else {
+   } else {
       JAPI_UNLOCK_EC_STATE();
    }
 

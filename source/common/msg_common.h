@@ -969,6 +969,7 @@
 #define MSG_SGETEXT_KILL_FAILED_SSS       _MESSAGE(60503, _("" SFN "@" SFN " failed to kill " SFN))
 #define MSG_GDI_FAILEDTOEXTRACTAUTHINFO   _MESSAGE(60600, _("failed to extract authentication information"))
 #define MSG_INAVLID_PARAMETER_IN_S        _MESSAGE(60601, _("invalid parameter in " SFN))
+#define MSG_AUTHINFO_IS_NULL              _MESSAGE(60602, _("authentication information is nullptr"))
 #define MSG_OBJ_PE                        _MESSAGE(60603, _("parallel environment"))
 #define MSG_SGETEXT_MISSINGCULLFIELD_SS   _MESSAGE(60604, _("missing cull field " SFQ " in " SFN "()"))
 #define MSG_OBJ_USERLIST                  _MESSAGE(60605, _("user list"))
@@ -1056,5 +1057,7 @@
 #define MSG_GDI_UTEXT_sce_OPT_NAME        _MESSAGE(60722, _("show a complex entry"))
 #define MSG_GDI_USAGE_scel_OPT            "[-scel]"
 #define MSG_GDI_UTEXT_scel_OPT            _MESSAGE(60723, _("show all complex entry names"))
+
+#define MSG_GDI_BUILT_WITHOUT_MUNGE       _MESSAGE(60724, _("product was built without Munge support"))
 
 // clang-format on

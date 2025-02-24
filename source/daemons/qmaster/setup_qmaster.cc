@@ -791,6 +791,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
       }
    }
    ocs::gdi::ClientBase::shutdown();
+   component_ts0_destroy();
 
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */

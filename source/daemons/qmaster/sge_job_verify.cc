@@ -48,7 +48,7 @@
 #include "uti/sge_time.h"
 
 #include "gdi/ocs_gdi_Packet.h"
-#include "gdi/sge_security.h"
+#include "gdi/ocs_gdi_security.h"
 
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"

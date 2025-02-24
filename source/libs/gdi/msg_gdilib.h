@@ -92,7 +92,7 @@
 #define MSG_GDI_RECEIVEGDIREQUESTFAILED_US               _MESSAGE(43122, _("failed receiving gdi request response for mid=" sge_uu32 " (" SFN ")."))
 #define MSG_GDI_REQUESTFORMATERROR                       _MESSAGE(43124, _("format error while packing gdi request"))
 #define MSG_GDI_UNEXPECTEDERRORWHILEPACKINGGDIREQUEST    _MESSAGE(43125, _("unexpected error while packing gdi request"))
-#define MSG_GDI_ERRORUNPACKINGGDIREQUEST_S               _MESSAGE(43126, _("error unpacking gdi request: " SFN))
+#define MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS            _MESSAGE(43126, _("error unpacking gdi request from %s/%s/" sge_uu32 ": " SFN))
 #define MSG_GDI_ERROR_INVALIDVALUEXFORARTOOP_D           _MESSAGE(43127, _("invalid value (" sge_uu32 ") for ar->op"))
 #define MSG_GDI_GDI_ALREADY_SETUP                        _MESSAGE(43128, _("GDI already setup"))
 #define MSG_GDI_SGEGDIFAILED_S                           _MESSAGE(43129, _("sge_gdi on list " SFQ " failed"))
@@ -126,5 +126,8 @@
 #define MSG_GDI_MASTER_ON_HOST_X_RUNINNG_TERMINATE_S _MESSAGE(55013, _("qmaster on host " SFQ " is still running - terminating"))
 
 #define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is nullptr"))
+
+#define MSG_GDI_MUNGE_INIT_FAILED_S          _MESSAGE(55016, _("Munge initialization failed: " SFN))
+#define MSG_GDI_PARSING_AUTHINFO_FAILED_SSIS _MESSAGE(55017, _("parsing auth info failed for " SFN "/" SFN "/%uh: " SFN))
 
 // clang-format on

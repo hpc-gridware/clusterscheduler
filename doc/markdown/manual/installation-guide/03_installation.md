@@ -32,10 +32,19 @@ Here are the steps required to complete the installation.
    # cd $SGE_ROOT
    ```
    
-3. Start the installation process by executing the `install_qmaster` script and read and follow the given instructions.
+3. Start the installation process by executing the `install_qmaster` script and read and follow the given instructions.   
 
    ```
    # ./install_qmaster
+   ```
+   In order to install with Munge authentication pass the `-munge` option to the installation script.
+
+   ```
+    # ./install_qmaster -munge
+   ```
+   
+   Read and follow the given instructions.
+   ```
    Welcome to the Cluster Scheduler installation
    ---------------------------------------------
  
@@ -741,6 +750,13 @@ The auto installation is also able to install services on remote hosts if either
    ```
    cd $SGE_ROOT
    ./inst_sge -m -auto $SGE_ROOT/my_template.conf
+   ```
+
+   In order to install with Munge authentication pass the `-munge` option to the installation script.
+
+   ```
+   cd $SGE_ROOT
+   ./inst_sge -munge -m -auto $SGE_ROOT/my_template.conf
    ```
    
 4. If you have a list of hosts specified as EXEC_HOST_LIST parameter in the configuration file AND when you have passwordless `ssh` or `rsh` access to those hosts then you can install the execution service on those hosts remotely from the master machine.

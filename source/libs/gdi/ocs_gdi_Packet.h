@@ -85,21 +85,6 @@ namespace ocs::gdi {
       std::vector<ocs::gdi::Task *> tasks;
 
       /*
-       * encrypted authenitication information. This information will
-       * be decrypted to the field "uid", "gid", "user" and "group"
-       * part of this structure
-       *
-       * EB: TODO: Cleanup: remove "auth_info" from ocs::gdi::Packet
-       *
-       *    authinfo is not needed in this structure because the
-       *    same information is stored in "uid", "gid", "user" and "group"
-       *    If these elements are initialized during unpacking a packet
-       *    and if the GDI functions don't want to access auth_info
-       *    anymore then we can remove that field from this structure.
-       */
-      char *auth_info;
-
-      /*
        * User/group information of that user which used GDI functionality.
        * Used in qmasters GDI handling code to identify if that
        * user has the allowance to do the requested GDI activities.
@@ -135,8 +120,6 @@ namespace ocs::gdi {
       ~Packet();
 
       int append_task(gdi::Task *task);
-      bool initialize_auth_info();
-      bool parse_auth_info(lList **answer_list, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array);
 
       void create_multi_answer(lList **malpp);
 

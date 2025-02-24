@@ -93,22 +93,32 @@
 *
 ****************************************************************************
 */
-#define CULL_VERSION 0x10020000
+#define CULL_VERSION 0x10021000
+#include <uti/sge_uidgid.h>
 
+#define MAX_USER_GROUP 512
 typedef struct {
    char *head_ptr;
    char *cur_ptr;
    size_t mem_size;
    size_t bytes_used;
-   int just_count;
+   bool just_count;
    int version;
+   char *auth_info;
+   uid_t uid;
+   gid_t gid;
+   char username[MAX_USER_GROUP];
+   char groupname[MAX_USER_GROUP];
+   int grp_amount;
+   ocs_grp_elem_t *grp_array;
+
 } sge_pack_buffer;
 
 int
-init_packbuffer(sge_pack_buffer *pb, size_t initial_size, int just_count);
+init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count = false, bool with_auth_info = true);
 
 int
-init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen);
+init_packbuffer_from_buffer(sge_pack_buffer *pb, char *buf, u_long32 buflen, bool with_auth_info = true);
 
 void
 clear_packbuffer(sge_pack_buffer *pb);
@@ -156,7 +166,8 @@ enum {
    PACK_ENOMEM = -1,
    PACK_FORMAT = -2,
    PACK_BADARG = -3,
-   PACK_VERSION = -4
+   PACK_VERSION = -4,
+   PACK_AUTHINFO = -5
 };
 
 const char *cull_pack_strerror(int errnum);

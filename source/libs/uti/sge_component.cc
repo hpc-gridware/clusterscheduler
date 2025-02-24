@@ -21,11 +21,17 @@
 #include <cstring>
 #include <pthread.h>
 
-#include "uti/sge_hostname.h"
-#include "uti/sge_log.h"
-#include "uti/sge_string.h"
-#include "uti/sge_uidgid.h"
-#include "uti/sge_rmon_macros.h"
+#include "ocs_Munge.h"
+#include "sge_hostname.h"
+#include "sge_log.h"
+#include "sge_mtutil.h"
+#include "sge_security.h"
+#include "sge_string.h"
+#include "sge_uidgid.h"
+#include "sge_rmon_macros.h"
+
+#include "msg_common.h"
+#include "msg_utilib.h"
 
 #include "sge_component.h"
 
@@ -35,13 +41,7 @@
 #define MAX_HOSTNAME (2*1024)
 
 typedef struct {
-   char log_buffer[MAX_LOG_BUFFER]; ///< Log buffer for storing log messages.
-   int thread_id; ///< Thread ID.
-   char thread_name[MAX_COMP_NAME]; ///< Name of the thread.
-
-   int component_id; ///< Component ID.
-   char component_name[MAX_COMP_NAME]; ///< Name of the component.
-
+   bool user_initialized; ///< Flag indicating if the user structure has already been initialized.
    uid_t uid; ///< User ID.
    gid_t gid; ///< Primary group ID.
    char username[MAX_USER_GROUP]; ///< User name.
@@ -50,6 +50,28 @@ typedef struct {
    bool supplementary_grp_initialized; ///< Flag indicating if supplementary groups are initialized.
    int amount; ///< Number of supplementary groups.
    ocs_grp_elem_t *grp_array; ///< Array containing supplementary group IDs and names.
+
+   dstring unencrypted_auth_info;  ///< dstring for building and caching the unencrypted auth_info string
+   const char *cached_auth_info;   ///< cached encrypted auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted
+} sge_component_user_t;
+
+#define COMPONENT_MUTEX_NAME "component_mutex"
+
+typedef struct component_ts0_t {
+   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; ///< mutex protecting the thread shared data
+   sge_component_user_t users[COMPONENT_NUM_USERS];   ///< user specific information
+   component_user_type_t current_user = COMPONENT_START_USER;  ///< the current user, index into the users array
+} sge_component_ts0_t;
+
+sge_component_ts0_t component_ts0_data{};
+
+typedef struct {
+   char log_buffer[MAX_LOG_BUFFER]; ///< Log buffer for storing log messages.
+   int thread_id; ///< Thread ID.
+   char thread_name[MAX_COMP_NAME]; ///< Name of the thread.
+
+   int component_id; ///< Component ID.
+   char component_name[MAX_COMP_NAME]; ///< Name of the component.
 
    bool qmaster_internal; ///< Flag indicating if the component is qmaster internal.
    bool daemonized; ///< Flag indicating if the component is daemonized.
@@ -60,7 +82,6 @@ typedef struct {
 
 static pthread_once_t component_once = PTHREAD_ONCE_INIT;
 static pthread_key_t sge_component_tl0_key;
-
 
 /**
  * \brief Set the component ID.
@@ -107,21 +128,21 @@ static void set_exit_func(sge_component_tl0_t *tl, sge_exit_func_t exit_func) {
 /**
  * \brief Set the group ID.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] gid Group ID to set.
  */
-static void set_gid(sge_component_tl0_t *tl, gid_t gid) {
-   tl->gid = gid;
+static void set_gid(sge_component_user_t *user, gid_t gid) {
+   user->gid = gid;
 }
 
 /**
  * \brief Set the group name.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] group_name Group name to set.
  */
-static void set_group_name(sge_component_tl0_t *tl, const char *group_name) {
-   strncpy(tl->groupname, group_name, sizeof(tl->groupname) - 1);
+static void set_group_name(sge_component_user_t *user, const char *group_name) {
+   strncpy(user->groupname, group_name, sizeof(user->groupname) - 1);
 }
 
 /**
@@ -149,13 +170,13 @@ static void set_qmaster_internal(sge_component_tl0_t *tl, bool qmaster_internal)
 /**
  * \brief Set the supplementary groups.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] amount Number of supplementary groups.
  * \param[in] grp_array Array of supplementary group elements.
  */
-static void set_supplementray_groups(sge_component_tl0_t *tl, int amount, ocs_grp_elem_t *grp_array) {
-   tl->amount = amount;
-   tl->grp_array = grp_array;
+static void set_supplementray_groups(sge_component_user_t *user, int amount, ocs_grp_elem_t *grp_array) {
+   user->amount = amount;
+   user->grp_array = grp_array;
 }
 
 /**
@@ -173,11 +194,11 @@ static void set_thread_name(sge_component_tl0_t *tl, const char *thread_name) {
 /**
  * \brief Set the user ID.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] uid User ID to set.
  */
-static void set_uid(sge_component_tl0_t *tl, uid_t uid) {
-   tl->uid = uid;
+static void set_uid(sge_component_user_t *user, uid_t uid) {
+   user->uid = uid;
 }
 
 /**
@@ -195,11 +216,102 @@ static void set_unqualified_hostname(sge_component_tl0_t *tl, const char *unqual
 /**
  * \brief Set the username.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] username Username to set.
  */
-static void set_username(sge_component_tl0_t *tl, const char *username) {
-   strncpy(tl->username, username, sizeof(tl->username)-1);
+static void set_username(sge_component_user_t *user, const char *username) {
+   strncpy(user->username, username, sizeof(user->username)-1);
+}
+
+/**
+ * \brief Initialize the thread shared user data.
+ *
+ * Fills in user specific data for the current user.
+ * We do lazy initialization of the supplementary groups, they are only initialized when first needed.
+ * The caller needs to hold the component mutex.
+ */
+static void component_ts0_init_user() {
+   // assuming that we hold the component mutex
+   // setup uid/gid and corresponding names
+   char user_name[256];
+   char group_name[256];
+   uid_t uid = geteuid();
+   gid_t gid = getegid();
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   set_uid(user, uid);
+   set_gid(user, gid);
+   SGE_ASSERT(sge_uid2user(uid, user_name, sizeof(user_name), MAX_NIS_RETRIES) == 0);
+   SGE_ASSERT(sge_gid2group(gid, group_name, sizeof(group_name), MAX_NIS_RETRIES) == 0);
+   set_username(user, user_name);
+   set_group_name(user, group_name);
+
+   // supplementary groups are lazy initialized in component_get
+   user->supplementary_grp_initialized = false;
+   set_supplementray_groups(user, 0, nullptr);
+
+   // we'll initialize the unencrypted auth info when first needed
+   sge_dstring_init_dynamic(&user->unencrypted_auth_info, 0);
+   user->cached_auth_info = nullptr;
+}
+
+/**
+ * \brief Initialize the thread shared data for supplemantary groups.
+ *
+ * The function is called on demand, when the data is first needed.
+ * The caller needs to hold the component mutex.
+ */
+static void component_ts0_init_supplementary_groups() {
+   // assuming that we hold the component mutex
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   char err_str[MAX_STRING_SIZE];
+   int amount_l = 0;
+   ocs_grp_elem_t *grp_array_l = nullptr;
+   bool lret = ocs_get_groups(&amount_l, &grp_array_l, err_str, sizeof(err_str));
+   set_supplementray_groups(user, amount_l, grp_array_l);
+   if (!lret) {
+      ERROR(SFNMAX, err_str);
+   }
+   user->supplementary_grp_initialized = true;
+}
+
+/**
+ * \brief Destroy the thread shared user specific data.
+ *
+ * The function is called from component_ts0_destroy().
+ */
+static void component_ts0_destroy_user(component_user_type_t user_type) {
+   sge_dstring_free(&component_ts0_data.users[user_type].unencrypted_auth_info);
+   sge_free(&component_ts0_data.users[user_type].cached_auth_info);
+   if (component_ts0_data.users[user_type].supplementary_grp_initialized) {
+      sge_free(&component_ts0_data.users[user_type].grp_array);
+   }
+}
+
+/**
+ * \brief Initialize the thread shared data.
+ *
+ * The function can be called during a component's initialization.
+ * Otherwise, data is initialized on demand.
+ */
+void component_ts0_init() {
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   component_ts0_init_user();
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+}
+
+/**
+ * \brief Destroy the thread shared data.
+ *
+ * The function shall be called in the component's exit function.
+ */
+void component_ts0_destroy() {
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   for (int i = COMPONENT_FIRST_USER; i < COMPONENT_NUM_USERS; i++) {
+      component_ts0_destroy_user(component_user_type_t(i));
+   }
+
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 }
 
 /**
@@ -209,8 +321,6 @@ static void set_username(sge_component_tl0_t *tl, const char *username) {
  */
 static void component_tl0_destroy(void *tl) {
    auto _tl = (sge_component_tl0_t *) tl;
-
-   sge_free(&_tl->grp_array);
 
    // wrapping structure
    sge_free(&_tl);
@@ -235,22 +345,6 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
    set_thread_name(tl, "unknown");
    set_daemonized(tl, false);
    set_qmaster_internal(tl, false);
-
-   // setup uid/gid and corresponding names
-   char user[256];
-   char group[256];
-   uid_t uid = geteuid();
-   gid_t gid = getegid();
-   set_uid(tl, uid);
-   set_gid(tl, gid);
-   SGE_ASSERT(sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES) == 0);
-   SGE_ASSERT(sge_gid2group(gid, group, sizeof(group), MAX_NIS_RETRIES) == 0);
-   set_username(tl, user);
-   set_group_name(tl, group);
-
-   // supplementary groups are lazy initialized in component_get
-   tl->supplementary_grp_initialized = false;
-   set_supplementray_groups(tl, 0, nullptr);
 
    // setup short and long hostnames
    char *s = nullptr;
@@ -367,8 +461,17 @@ sge_exit_func_t component_get_exit_func() {
  * \return The group ID.
  */
 gid_t component_get_gid() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->gid;
+   gid_t ret;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   if (!user->user_initialized) {
+      component_ts0_init_user();
+   }
+   ret = user->gid;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return ret;
 }
 
 /**
@@ -377,8 +480,17 @@ gid_t component_get_gid() {
  * \return The group name.
  */
 const char *component_get_groupname() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->groupname;
+   const char *ret;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   if (!user->user_initialized) {
+      component_ts0_init_user();
+   }
+   ret = user->groupname;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return ret;
 }
 
 /**
@@ -417,24 +529,17 @@ const char *component_get_qualified_hostname() {
  * \param[out] grp_array Array of supplementary group elements.
  */
 void component_get_supplementray_groups(int *amount, ocs_grp_elem_t **grp_array) {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
    // Lazy initialize of supplementary groups.
-   if (!tl->supplementary_grp_initialized) {
-      char err_str[MAX_STRING_SIZE];
-      int amount_l = 0;
-      ocs_grp_elem_t *grp_array_l = nullptr;
-      bool lret = ocs_get_groups(&amount_l, &grp_array_l, err_str, sizeof(err_str));
-      set_supplementray_groups(tl, amount_l, grp_array_l);
-      if (!lret) {
-         ERROR("%s", err_str);
-      }
-      tl->supplementary_grp_initialized = true;
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   if (!user->supplementary_grp_initialized) {
+      component_ts0_init_supplementary_groups();
    }
 
    // Pass values to caller
-   *amount = tl->amount;
-   *grp_array = tl->grp_array;
+   *amount = user->amount;
+   *grp_array = user->grp_array;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 }
 
 /**
@@ -463,8 +568,17 @@ const char *component_get_thread_name() {
  * \return The user ID.
  */
 uid_t component_get_uid() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->uid;
+   uid_t ret;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   if (!user->user_initialized) {
+      component_ts0_init_user();
+   }
+   ret = user->uid;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return ret;
 }
 
 /**
@@ -483,8 +597,17 @@ const char *component_get_unqualified_hostname() {
  * \return The username.
  */
 const char *component_get_username() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->username;
+   const char * ret;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   if (!user->user_initialized) {
+      component_ts0_init_user();
+   }
+   ret = user->username;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return ret;
 }
 
 /**
@@ -584,19 +707,305 @@ void component_do_log() {
    DPRINTF("   component_name                   >%s<\n", tl->component_name);
    DPRINTF("   daemonized                       >%s<\n", tl->daemonized);
    DPRINTF("   exit_func                        >%p<\n", tl->exit_func);
-   DPRINTF("USER ===\n");
-   DPRINTF("   uid                              >%d<\n", tl->uid);
-   DPRINTF("   gid                              >%d<\n", tl->gid);
-   DPRINTF("   username                         >%s<\n", tl->username);
-   DPRINTF("   groupname                        >%s<\n", tl->groupname);
-   DPRINTF("   supplementary_grp_initialized    >%0<\n", tl->supplementary_grp_initialized);
-   if (tl->supplementary_grp_initialized) {
-      for (int i = 0; i <= tl->amount; i++) {
-         DPRINTF("      grp_array               >%s< >%d<\n", tl->grp_array[i].name, tl->grp_array[i].id);
-      }
-   }
    DPRINTF("HOST ===\n");
    DPRINTF("   qualified_hostname               >%s<\n", tl->qualified_hostname);
    DPRINTF("   unqualified_hostname             >%s<\n", tl->unqualified_hostname);
+
+   // thread shared info
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   DPRINTF("USER ===\n");
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+   DPRINTF("   uid                              >%d<\n", user->uid);
+   DPRINTF("   gid                              >%d<\n", user->gid);
+   DPRINTF("   username                         >%s<\n", user->username);
+   DPRINTF("   groupname                        >%s<\n", user->groupname);
+   DPRINTF("   supplementary_grp_initialized    >%0<\n", user->supplementary_grp_initialized);
+   if (user->supplementary_grp_initialized) {
+      for (int i = 0; i <= user->amount; i++) {
+         DPRINTF("      grp_array               >%s< >%d<\n", user->grp_array[i].name, user->grp_array[i].id);
+      }
+   }
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
    DRETURN_VOID;
+}
+
+/**
+ * \brief Set the current user type.
+ *
+ * Sets the current user type. This can be the start user or the admin user.
+ * The function is currently only called in sge_execd which does a user switch
+ * between the start user (root) and the admin user.
+ *
+ * \param[in] type The user Type to set (COMPONENT_START_USER or COMPONENT_ADMIN_USER).
+ */
+void
+component_set_current_user_type(component_user_type_t type) {
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   if (type >= COMPONENT_FIRST_USER && type < COMPONENT_NUM_USERS) {
+      component_ts0_data.current_user = type;
+      if (!component_ts0_data.users[type].user_initialized) {
+         component_ts0_init_user();
+      }
+   }
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+}
+
+/**
+ * \brief Get an authentification information string for the current user.
+ *
+ * Returns a string containing the user ID, group ID, username, groupname and supplementary groups.
+ * It is encrypted, either by a simple custom encryption or by Munge.
+ * The custom encryption is generated once and is cached, as it will never change.
+ * For Munge authentication a new certificate is generated for every call.
+ *
+ * It is in the responsibility of the caller to free the returned string.
+ */
+char *
+component_get_auth_info() {
+   DENTER(TOP_LAYER);
+   char *ret = nullptr;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
+
+   // initialize the unencrypted auth info if not already done
+   if (sge_dstring_strlen(&user->unencrypted_auth_info) == 0) {
+      if (!user->user_initialized) {
+         component_ts0_init_user();
+      }
+      if (!user->supplementary_grp_initialized) {
+         component_ts0_init_supplementary_groups();
+      }
+
+      // create one compact string containing primary user and group information as
+      // well as supplementary groups (id and names)
+      constexpr char sep = static_cast<char>(0xff);
+      sge_dstring_sprintf(&user->unencrypted_auth_info, uid_t_fmt "%c" gid_t_fmt "%c%s%c%s%c%d",
+                          user->uid, sep, user->gid, sep, user->username, sep, user->groupname, sep, user->amount);
+
+      for (int i = 0; i < user->amount; i++) {
+         sge_dstring_sprintf_append(&user->unencrypted_auth_info, "%c" gid_t_fmt "%c%s",
+                                    sep, user->grp_array[i].id, sep, user->grp_array[i].name);
+      }
+   }
+
+   if (bootstrap_get_use_munge()) {
+#if defined(OCS_WITH_MUNGE)
+      // we need to encode the auth info in every call to this function
+      // even if the user information and the payload will never change
+      // munge certificates are valid for a limited time only and for a single use
+      char *munge_auth_info = nullptr;
+      munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
+         sge_dstring_get_string(&user->unencrypted_auth_info), sge_dstring_strlen(&user->unencrypted_auth_info) + 1);
+      if (err != EMUNGE_SUCCESS) {
+         ERROR(MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
+      } else {
+         ret = munge_auth_info;
+      }
+#else
+      ERROR(SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
+#endif
+   } else {
+      if (user->cached_auth_info == nullptr) {
+         // encrypt and store the information once - it will never change
+         size_t size = sge_dstring_strlen(&user->unencrypted_auth_info) * 3;
+         char *obuffer = sge_malloc(size);
+         SGE_ASSERT(obuffer != nullptr);
+         if (sge_encrypt(sge_dstring_get_string(&user->unencrypted_auth_info), obuffer, size)) {
+            user->cached_auth_info = obuffer;
+         }
+      }
+      // if available we return the cached auth info
+      if (user->cached_auth_info != nullptr) {
+         ret = strdup(user->cached_auth_info);
+      }
+   }
+
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   DRETURN(ret);
+}
+
+/**
+ * \brief Parse the authentication information string.
+ *
+ * Parses a given authentication information string and extracts the user ID, group ID, username, groupname and supplementary groups.
+ * It can either be encrypted by a simple custom encryption or by Munge.
+ *
+ * Should errors occur, the function returns false and an error message.
+ *
+ * \param[in] error_dstr Pointer to a dstring for storing an error message.
+ * \param[in] auth_info Authentication information string to parse.
+ * \param[out] uid Pointer to the user ID.
+ * \param[out] user Pointer to the username.
+ * \param[in] user_len Length of the username buffer.
+ * \param[out] gid Pointer to the group ID.
+ * \param[out] group Pointer to the groupname.
+ * \param[in] group_len Length of the groupname buffer.
+ * \param[out] amount Pointer to the number of supplementary groups.
+ * \param[out] grp_array Pointer to the array of supplementary group elements.
+ */
+bool
+component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array) {
+   DENTER(TOP_LAYER);
+   char auth_buffer[2 * SGE_SEC_BUFSIZE];
+
+   if (auth_info == nullptr) {
+      sge_dstring_sprintf(error_dstr, SFNMAX, MSG_AUTHINFO_IS_NULL);
+      DRETURN(false);
+   }
+
+   // decrypt received auth_info
+   uid_t munge_uid{0};
+   gid_t munge_gid{0};
+   bool use_munge = bootstrap_get_use_munge();
+   if (use_munge) {
+#if defined(OCS_WITH_MUNGE)
+      munge_err_t err;
+      char *local_auth_buffer{nullptr};
+      int local_len{0};
+      err = ocs::uti::Munge::munge_decode_func(auth_info, nullptr, (void **)(&local_auth_buffer), &local_len,
+         &munge_uid, &munge_gid);
+      if (err != EMUNGE_SUCCESS) {
+         sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_DECODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
+         DRETURN(false);
+      }
+      sge_strlcpy(auth_buffer, local_auth_buffer, sizeof(auth_buffer));
+      sge_free(&local_auth_buffer);
+#else
+      sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
+      DRETURN(false);
+#endif
+   } else {
+      int dlen = 0;
+      if (!sge_decrypt(auth_info, strlen(auth_info), auth_buffer, &dlen)) {
+         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
+         DRETURN(false);
+      }
+   }
+
+   bool ret = true;
+   saved_vars_s *context = nullptr;
+   constexpr char separator[] = "\xff";
+   const char *token;
+   const char *next_token = sge_strtok_r(auth_buffer, separator, &context);
+   int pos = 0;
+   while ((token = next_token) != nullptr) {
+      switch (pos) {
+         case 0:
+            uid_t auth_uid;
+            if (sscanf(token, uid_t_fmt, &auth_uid) == 1) {
+               if (uid != nullptr) {
+                  *uid = auth_uid;
+               }
+               // verify that auth_info uid matches Munge uid
+               if (use_munge && munge_uid != auth_uid) {
+                  sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_AUTH_UID_MISMATCH_II, munge_uid, auth_uid);
+                  ret = false;
+               }
+            } else {
+               sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_UID);
+               ret = false;
+            }
+            break;
+         case 1:
+            gid_t auth_gid;
+            if (sscanf(token, gid_t_fmt, &auth_gid) == 1) {
+               if (gid != nullptr) {
+                  *gid = auth_gid;
+               }
+               // verify that auth_info gid matches Munge gid
+               if (use_munge && munge_gid != auth_gid) {
+                  sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_AUTH_UID_MISMATCH_II, munge_gid, auth_gid);
+                  ret = false;
+               }
+            } else {
+               sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_GID);
+               ret = false;
+            }
+            break;
+         case 2:
+            if (user != nullptr) {
+               sge_strlcpy(user, token, user_len);
+            }
+            break;
+         case 3:
+            if (group != nullptr) {
+               sge_strlcpy(group, token, group_len);
+            }
+            break;
+         case 4:
+            if (amount != nullptr && grp_array != nullptr) {
+               if (sscanf(token, "%d", amount) == 1) {
+                  if (*amount > 0) {
+                     const size_t size = *amount * sizeof(ocs_grp_elem_t);
+                     *grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(size));
+                     if (*grp_array == nullptr) {
+                        sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_NSUP);
+                        ret = false;
+                     }
+                  } else {
+                     // no error but there are no supplementary groups
+                     break;
+                  }
+               }
+            }
+            break;
+         default:
+            if (amount != nullptr && grp_array != nullptr) {
+               // beginning from token 5 we will find the supplementary gids and group names
+               int idx = (pos - 5) / 2;
+               if (idx < *amount) {
+                  if (pos % 2 == 1) {
+                     gid_t supplementary_gid;
+
+                     if (sscanf(token, gid_t_fmt, &supplementary_gid) == 1) {
+                        (*grp_array)[idx].id= supplementary_gid;
+                     } else {
+                        sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "failed parsing gid");
+                        ret = false;
+                     }
+                  } else {
+                     sge_strlcpy((*grp_array)[idx].name, token, sizeof((*grp_array)[idx].name));
+                  }
+               } else {
+                  sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "too many IDs");
+                  ret = false;
+               }
+            }
+            break;
+      }
+
+      // early return if an error happens during parsing authinfo
+      if (!ret) {
+         break;
+      }
+      pos++;
+      next_token = sge_strtok_r(nullptr, separator, &context);
+   }
+
+   // beginning with v9.0.0 authinfo has to contain at least 5 token (uid, uname, git, gname, #grps)
+   if (pos < 4) {
+      sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "old client tried to connect");
+      ret = false;
+   } else if (amount != nullptr && (pos < (4 + (*amount) * 2))) {
+      sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "unexpected amount of supplementary groups");
+      ret = false;
+   }
+
+   sge_free_saved_vars(context);
+   if (!ret) {
+      // cleanup in case of errors
+      sge_free(grp_array);
+   } else {
+      // show information in debug output
+      if (DPRINTF_IS_ACTIVE) {
+         dstring dbg_msg = DSTRING_INIT;
+         ocs_id2dstring(&dbg_msg, *uid, user, *gid, group, *amount, *grp_array);
+         sge_dstring_free(&dbg_msg);
+      }
+   }
+
+   DRETURN(ret);
 }
