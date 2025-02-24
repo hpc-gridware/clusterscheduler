@@ -3152,7 +3152,8 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       lFreeList(&alp);
    }
 
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &jt);
+   u_long32 sync_option = SYNC_NO;
+   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &jt, &sync_option);
 
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);

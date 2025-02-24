@@ -127,6 +127,13 @@ enum {
    POKE_VERIFY          /* -w p do verification with all resource utilizations in place (poke) */
 };
 
+typedef enum {
+   SYNC_UNINITIALIZED = 0x00000000,
+   SYNC_NO            = 0x00000001,
+   SYNC_JOB_END       = 0x00000002,
+   SYNC_JOB_START     = 0x00000004,
+} sync_switch_t;
+
 /************    scheduling constants   *****************************************/
 /* priorities are in the range from -1023 to 1024 */
 /* to put them in into u_long we need to add 1024 */
@@ -539,6 +546,12 @@ job_set_command_line(lListElem *job, const char *client);
 
 void
 job_set_command_line(lListElem *job, int argc, const char *argv[]);
+
+void
+job_set_sync_options(lListElem *job, u_long32 sync_options);
+
+std::string
+job_get_sync_options_string(const lListElem *job);
 
 bool
 job_is_visible(const char *owner, bool is_manager, bool show_department_view, const lList *acl_list);

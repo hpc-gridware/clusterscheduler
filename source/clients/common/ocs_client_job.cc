@@ -572,6 +572,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       }
    }
 
+   if (lGetPosViaElem(job, JB_sync_options, SGE_NO_ABORT) >= 0) {
+      if (lGetUlong(job, JB_sync_options)) {
+         std::string sync_flags =  job_get_sync_options_string(job);
+         printf("sync_options:               %s\n", sync_flags.c_str());
+      }
+   }
+
    if (lGetPosViaElem(job, JB_ja_structure, SGE_NO_ABORT) >= 0) {
       u_long32 start, end, step;
 

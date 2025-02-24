@@ -58,12 +58,6 @@
 #define FLG_USE_PSEUDOS 1
 #define FLG_QALTER      2
 
-typedef enum {
-   SYNC_UNINITIALIZED = 0x00000000,
-   SYNC_NO            = 0x00000001,
-   SYNC_JOB_END       = 0x00000002,
-   SYNC_JOB_START     = 0x00000004,
-} sync_switch_t;
 
 /* I've added a -wd option to cull_parse_job_parameter() to deal with the
  * DRMAA_WD attribute.  It makes sense to me that since -wd exists and is

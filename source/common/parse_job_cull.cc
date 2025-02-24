@@ -106,7 +106,7 @@ const char *default_prefix = "#$";
 */
 lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *cell_root, 
                                 const char *unqualified_hostname, const char *qualified_hostname, 
-                                lList *cmdline, lListElem **pjob) 
+                                lList *cmdline, lListElem **pjob, u_long32 *sync_options)
 {
    const char *cp;
    lListElem *ep;
@@ -116,9 +116,8 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
    DENTER(TOP_LAYER); 
 
-   if (!pjob) {
-      answer_list_add(&answer,  MSG_PARSE_NULLPOINTERRECEIVED, 
-                      STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+   if (pjob == nullptr || sync_options == nullptr) {
+      answer_list_add(&answer,  MSG_PARSE_NULLPOINTERRECEIVED, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(answer);
    }
 
@@ -130,6 +129,14 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
          DRETURN(answer);
       }
    }
+
+   // -sync options
+   *sync_options = SYNC_NO;
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-sync"))) {
+      *sync_options = lGetUlong(ep, SPA_argval_lUlongT);
+      lRemoveElem(cmdline, &ep);
+   }
+   job_set_sync_options(*pjob, *sync_options);
 
    /*
    ** path aliasing

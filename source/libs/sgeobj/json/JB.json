@@ -1051,5 +1051,15 @@
 			"subClassName": "Variable",
 			"subCullPrefix": "VA",
 			"flags":	[{ "name":  "SPOOL" }]
+		}, {
+			"name":	"sync_options",
+			"summary":	"sync options",
+			"description":	[{
+				"line":	"Bits that have been specified to the -sync switch."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
 		}]
 }

@@ -112,7 +112,8 @@ enum {
    JB_binding,
    JB_submission_command_line,
    JB_grp_list,
-   JB_joker
+   JB_joker,
+   JB_sync_options
 };
 
 constexpr const int JB_Type[] = {
@@ -200,6 +201,7 @@ constexpr const int JB_Type[] = {
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
+   JB_sync_options,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -287,7 +289,8 @@ constexpr const int JB_Type[] = {
    {JB_binding, "JB_binding", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_submission_command_line, "JB_submission_command_line", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_sync_options, "JB_sync_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

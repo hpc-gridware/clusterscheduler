@@ -4546,6 +4546,15 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (pty < 2) { // 2 means: do not specify it but use the default for the client
       job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
    }
+
+   // -sync <options_flags>
+   // -sync n which is the default will be silently ignored
+   u_long32 sync_options = lGetUlong(job, JB_sync_options);
+   if (sync_options != SYNC_NO) {
+      std::string sync_flags = job_get_sync_options_string(job);
+      job_add_opt_to_comand_line(dstr, "-sync", sync_flags.c_str());
+   }
+
    job_add_bool_opt_to_command_line(job, dstr, "-R", JB_reserve, true);
    if (lGetUlong(job, JB_restart) == 2) {
       job_add_opt_to_comand_line(dstr, "-r", "no");
@@ -4602,10 +4611,45 @@ void job_set_command_line(lListElem *job, const char *client) {
  * @param[in] argc   the argument count
  * @param[in] argv   the argument vector
  */
-void job_set_command_line(lListElem *job, int argc, const char *argv[]) {
+void
+job_set_command_line(lListElem *job, int argc, const char *argv[]) {
    dstring dstr = DSTRING_INIT;
    lSetString(job, JB_submission_command_line, sge_dstring_from_argv(&dstr, argc, argv, true, true));
    sge_dstring_free(&dstr);
+}
+
+/** @brief Sets the sync options for a job.
+ *
+ * @param job
+ * @param sync_options
+ */
+void
+job_set_sync_options(lListElem *job, u_long32 sync_options) {
+   lSetUlong(job, JB_sync_options, sync_options);
+}
+
+/** @brief get the letter combination that represents the sync options
+ *
+ * @param job
+ * @return the letter combination
+ */
+std::string
+job_get_sync_options_string(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   u_long32 sync_options = lGetUlong(job, JB_sync_options);
+   if (sync_options == SYNC_NO) {
+      DRETURN("n");
+   }
+
+   std::string ret = "";
+   if (sync_options == SYNC_JOB_START) {
+      ret += "r";
+   }
+   if (sync_options == SYNC_JOB_END) {
+      ret += "x";
+   }
+   DRETURN(ret);
 }
 
 /** @brief Checks if a job should be visible to the current user.

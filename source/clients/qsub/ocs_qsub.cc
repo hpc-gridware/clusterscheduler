@@ -90,7 +90,6 @@ main(int argc, const char **argv)
    lList *opts_all = nullptr;
    lListElem *job = nullptr;
    lList *alp = nullptr;
-   lListElem *ep;
    int exit_status = 0;
    int just_verify;
    int tmp_ret;
@@ -207,26 +206,9 @@ main(int argc, const char **argv)
       sge_exit(tmp_ret);
    }
 
-   /* If "-sync y" is set, wait for the job to end. */
-   /* Remove all -sync switches since cull_parse_job_parameter()
-    * doesn't know what to do with them. */
-   bool wait_for_job = false;
    u_long32 sync_opt = SYNC_NO;
-   while ((ep = lGetElemStrRW(opts_all, SPA_switch_val, "-sync"))) {
-      sync_opt = lGetUlong(ep, SPA_argval_lUlongT);
-      if (sync_opt != SYNC_NO) {
-         wait_for_job = true;
-      }
+   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, opts_all, &job, &sync_opt);
 
-      lRemoveElem(opts_all, &ep);
-   }
-
-   if (wait_for_job) {
-      DPRINTF("Wait for job end\n");
-   }
-
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname,
-                                  qualified_hostname, opts_all, &job);
    job_set_command_line(job, argc, argv);
 
    if (sge_getenv("SGE_DEBUG_DUMP_JOB") != nullptr) {
@@ -254,7 +236,7 @@ main(int argc, const char **argv)
       sge_exit(0);
    }
 
-   if (is_immediate || wait_for_job) {
+   if (is_immediate || sync_opt != SYNC_NO) {
       pthread_t sigt;
 
       qsub_setup_sig_handlers();
@@ -378,7 +360,7 @@ main(int argc, const char **argv)
       printf("%s\n", MSG_JOB_VERIFYFOUNDQ);
    }
 
-   if ((wait_for_job || is_immediate) && !just_verify) {
+   if ((sync_opt != SYNC_NO || is_immediate) && !just_verify) {
       int event;
 
       if (is_immediate) {
@@ -422,7 +404,7 @@ main(int argc, const char **argv)
       }
 
       // We have to wait for certain job states
-      if (wait_for_job) {
+      if (sync_opt != SYNC_NO) {
 
          // JOB START: just wait for the first task to start
          if ((sync_opt & SYNC_JOB_START) == SYNC_JOB_START) {
