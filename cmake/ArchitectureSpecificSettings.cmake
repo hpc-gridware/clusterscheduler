@@ -195,6 +195,11 @@ function(architecture_specific_settings)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
 
       set(JNI_ARCH "freebsd" PARENT_SCOPE)
+      if (WITH_MUNGE)
+         # the munge package installs to /usr/local
+         include_directories(/usr/local/include)
+         link_directories(/usr/local/lib)
+      endif()
    elseif (SGE_ARCH MATCHES "sol-.*")
       # Solaris (unsupported for qmaster)
 
