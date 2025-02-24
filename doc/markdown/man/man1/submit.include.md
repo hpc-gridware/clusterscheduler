@@ -1090,25 +1090,40 @@ defined JSV instances as parameter with the names *global_q_soft* and *global_l_
 Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
 
-## -sync y\[es\]\|n\[o\]  
+## -sync r|x|n (or y\[es\]\|n\[o\])  
 
 Available for `qsub`.
 
-`-sync y` causes `qsub` to wait for the job to complete before exiting. If the job completes successfully, 
+The `-sync` option *yes* and *no* are deprecated. Use *r*, *x* and *n* instead. `qsub -sync yes` is equivalent to
+`qsub -sync x` and `qsub -sync no` is equivalent to `qsub -sync n`.
+
+`-sync` causes `qsub` to wait for one or multiple job states to be reached before exiting. The option argument
+specifies the job state(s) to wait for. 
+
+If `-sync r` is used `qsub` will wait for the job to leave the *qw* state before it terminates. 
+If `-sync r` is used in conjunction with `-t n[-m[:s]]`, `qsub` will wait for at least one task of the array job to 
+leave the queues-waiting state. A task is considered to leave the queues-waiting state if it enters the running 
+state or if it is deleted before start.
+
+`-sync x` causes `qsub` to wait for the job to complete before exiting. If the job completes successfully, 
 The exit code of `qsub` will be that of the completed job. If the job fails to complete successfully,
 `qsub` will print out an error message indicating why the job failed and will have an exit code of 1. If `qsub` 
-is interrupted, e.g. with CTRL-C, before the job completes, the job will be canceled. With the `-sync n` option, 
-`qsub` will exit with an exit code of 0 as soon as the job is submitted successfully. `-sync n` is default for
-`qsub`.
+is interrupted, e.g. with CTRL-C, before the job completes, the job will be canceled.
 
-If `-sync y` is used in conjunction with `-now y`, `qsub` will behave as though only `-now y` were given until the 
-job has been successfully scheduled, after which time `qsub` will behave as though only `-sync y` were given.  
-If `-sync y` is used in conjunction with `-t n[-m[:s]]`, `qsub` will wait for all the job's tasks to complete 
-before exiting. If all the job's tasks complete successfully, The exit code ob `qsub` will be that of the first 
-completed job tasks with a non-zero exit code, or 0 if all job tasks exited with an exit code of 0. If any of the 
-job's tasks fail to complete successfully, `qsub` will print out an error message indicating why the job task(s) 
-failed and will have an exit code of 1. If `qsub` is interrupted, e.g. with CTRL-C, before the job completes, 
+If `-sync x` is used in conjunction with `-t n[-m[:s]]`, `qsub` will wait for all the job's tasks to complete
+before exiting. If all the job's tasks complete successfully, The exit code ob `qsub` will be that of the first
+completed job tasks with a non-zero exit code, or 0 if all job tasks exited with an exit code of 0. If any of the
+job's tasks fail to complete successfully, `qsub` will print out an error message indicating why the job task(s)
+failed and will have an exit code of 1. If `qsub` is interrupted, e.g. with CTRL-C, before the job completes,
 all the job's tasks will be canceled.
+
+With the `-sync n` option (default if nothing else is specified), `qsub` will exit with an exit code of 0 as soon as 
+the job is submitted successfully. 
+
+If `-sync rx` is used, `qsub` will behave as though only `-sync r` were given until the job has been started,
+after which time `qsub` will behave as though only `-sync x` were given. If `-sync ...` is used in conjunction with 
+`-now y`, `qsub` will behave as though only `-now y` were given until the job has been successfully scheduled, 
+after which time `qsub` will behave as though only `-sync ...` were given.  
 
 Information that this switch was specified during submission is not available in the JSV context. (see `-jsv` option 
 above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
