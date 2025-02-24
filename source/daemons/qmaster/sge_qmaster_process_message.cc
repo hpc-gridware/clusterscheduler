@@ -371,8 +371,10 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       sge_strlcpy(packet->user, pb_in->username, sizeof(packet->user));
       sge_strlcpy(packet->group, pb_in->groupname, sizeof(packet->group));
       // we move the supplementary groups to the packet!
-      packet->amount = pb_in->grp_amount; pb_in->grp_amount = 0;
-      packet->grp_array = pb_in->grp_array; ; pb_in->grp_array = nullptr;
+      packet->amount = pb_in->grp_amount;
+      pb_in->grp_amount = 0;
+      packet->grp_array = pb_in->grp_array;
+      pb_in->grp_array = nullptr;
 
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }

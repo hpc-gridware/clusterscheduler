@@ -317,7 +317,7 @@ sge_switch2start_user() {
    }
 
    // update component
-   component_set_current_user_type(COMPONENT_ADMIN_USER);
+   component_set_current_user_type(COMPONENT_START_USER);
 
 exit:
    DPRINTF("uid=%ld; gid=%ld; euid=%ld; egid=%ld auid=%ld; agid=%ld\n", (long) getuid(), (long) getgid(),

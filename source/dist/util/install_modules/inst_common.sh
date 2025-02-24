@@ -1161,16 +1161,23 @@ CheckConfigFile()
 
    if [ "$MUNGE" = "true" ]; then
       # check if munge is available, e.g. via systemctl status munge.service, must exit 0
-      # @todo check on freebsd
-      type systemctl >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
-         output=`systemctl status munge.service 2>&1`
-         if [ $? -ne 0 ]; then
-            $INFOTEXT -e "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
-            $INFOTEXT -log "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
-            is_valid="false"
-         fi
-      fi
+      case $SGE_ARCH in
+         lx-*)
+            type systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+               output=`systemctl status munge.service 2>&1`
+               if [ $? -ne 0 ]; then
+                  $INFOTEXT -e "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
+                  $INFOTEXT -log "Set-up with Munge authentication was requested but Munge service is not running:\n$output"
+                  is_valid="false"
+               fi
+            fi
+            ;;
+         *)
+            $INFOTEXT -e "Cannot check if munge is up and running on architecture $SGE_ARCH."
+            $INFOTEXT -log "Cannot check if munge is up and running on architecture $SGE_ARCH."
+            ;;
+      esac
    fi
 
    if [ "$is_valid" = "false" ]; then

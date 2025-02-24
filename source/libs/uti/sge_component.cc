@@ -58,9 +58,9 @@ typedef struct {
 #define COMPONENT_MUTEX_NAME "component_mutex"
 
 typedef struct component_ts0_t {
-   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-   sge_component_user_t users[COMPONENT_NUM_USERS];
-   int current_user = COMPONENT_START_USER;
+   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; ///< mutex protecting the thread shared data
+   sge_component_user_t users[COMPONENT_NUM_USERS];   ///< user specific information
+   component_user_type_t current_user = COMPONENT_START_USER;  ///< the current user, index into the users array
 } sge_component_ts0_t;
 
 sge_component_ts0_t component_ts0_data{};
@@ -128,7 +128,7 @@ static void set_exit_func(sge_component_tl0_t *tl, sge_exit_func_t exit_func) {
 /**
  * \brief Set the group ID.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] gid Group ID to set.
  */
 static void set_gid(sge_component_user_t *user, gid_t gid) {
@@ -138,7 +138,7 @@ static void set_gid(sge_component_user_t *user, gid_t gid) {
 /**
  * \brief Set the group name.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] group_name Group name to set.
  */
 static void set_group_name(sge_component_user_t *user, const char *group_name) {
@@ -170,7 +170,7 @@ static void set_qmaster_internal(sge_component_tl0_t *tl, bool qmaster_internal)
 /**
  * \brief Set the supplementary groups.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] amount Number of supplementary groups.
  * \param[in] grp_array Array of supplementary group elements.
  */
@@ -194,7 +194,7 @@ static void set_thread_name(sge_component_tl0_t *tl, const char *thread_name) {
 /**
  * \brief Set the user ID.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] uid User ID to set.
  */
 static void set_uid(sge_component_user_t *user, uid_t uid) {
@@ -216,13 +216,20 @@ static void set_unqualified_hostname(sge_component_tl0_t *tl, const char *unqual
 /**
  * \brief Set the username.
  *
- * \param[in] tl Pointer to the thread-local component structure.
+ * \param[in] user Pointer to the currently active user structure.
  * \param[in] username Username to set.
  */
 static void set_username(sge_component_user_t *user, const char *username) {
    strncpy(user->username, username, sizeof(user->username)-1);
 }
 
+/**
+ * \brief Initialize the thread shared user data.
+ *
+ * Fills in user specific data for the current user.
+ * We do lazy initialization of the supplementary groups, they are only initialized when first needed.
+ * The caller needs to hold the component mutex.
+ */
 static void component_ts0_init_user() {
    // assuming that we hold the component mutex
    // setup uid/gid and corresponding names
@@ -247,6 +254,12 @@ static void component_ts0_init_user() {
    user->cached_auth_info = nullptr;
 }
 
+/**
+ * \brief Initialize the thread shared data for supplemantary groups.
+ *
+ * The function is called on demand, when the data is first needed.
+ * The caller needs to hold the component mutex.
+ */
 static void component_ts0_init_supplementary_groups() {
    // assuming that we hold the component mutex
    sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
@@ -261,20 +274,36 @@ static void component_ts0_init_supplementary_groups() {
    user->supplementary_grp_initialized = true;
 }
 
+/**
+ * \brief Destroy the thread shared user specific data.
+ *
+ * The function is called from component_ts0_destroy().
+ */
 static void component_ts0_destroy_user(component_user_type_t user_type) {
    sge_dstring_free(&component_ts0_data.users[user_type].unencrypted_auth_info);
+   sge_free(&component_ts0_data.users[user_type].cached_auth_info);
    if (component_ts0_data.users[user_type].supplementary_grp_initialized) {
       sge_free(&component_ts0_data.users[user_type].grp_array);
    }
 }
 
+/**
+ * \brief Initialize the thread shared data.
+ *
+ * The function can be called during a component's initialization.
+ * Otherwise, data is initialized on demand.
+ */
 void component_ts0_init() {
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
    component_ts0_init_user();
    sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 }
 
-// call this function in the gdi_default_exit_func()
+/**
+ * \brief Destroy the thread shared data.
+ *
+ * The function shall be called in the component's exit function.
+ */
 void component_ts0_destroy() {
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 
@@ -701,6 +730,15 @@ void component_do_log() {
    DRETURN_VOID;
 }
 
+/**
+ * \brief Set the current user type.
+ *
+ * Sets the current user type. This can be the start user or the admin user.
+ * The function is currently only called in sge_execd which does a user switch
+ * between the start user (root) and the admin user.
+ *
+ * \param[in] type The user Type to set (COMPONENT_START_USER or COMPONENT_ADMIN_USER).
+ */
 void
 component_set_current_user_type(component_user_type_t type) {
    sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
@@ -713,6 +751,16 @@ component_set_current_user_type(component_user_type_t type) {
    sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 }
 
+/**
+ * \brief Get an authentification information string for the current user.
+ *
+ * Returns a string containing the user ID, group ID, username, groupname and supplementary groups.
+ * It is encrypted, either by a simple custom encryption or by Munge.
+ * The custom encryption is generated once and is cached, as it will never change.
+ * For Munge authentication a new certificate is generated for every call.
+ *
+ * It is in the responsibility of the caller to free the returned string.
+ */
 char *
 component_get_auth_info() {
    DENTER(TOP_LAYER);
@@ -751,7 +799,7 @@ component_get_auth_info() {
       munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
          sge_dstring_get_string(&user->unencrypted_auth_info), sge_dstring_strlen(&user->unencrypted_auth_info) + 1);
       if (err != EMUNGE_SUCCESS) {
-         ERROR("failed to Munge encode for user " sge_uu32 ": " SFN ": " SFN, user->uid, user->username, ocs::uti::Munge::munge_strerror_func(err));
+         ERROR(MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
       } else {
          ret = munge_auth_info;
       }
@@ -779,19 +827,35 @@ component_get_auth_info() {
    DRETURN(ret);
 }
 
+/**
+ * \brief Parse the authentication information string.
+ *
+ * Parses a given authentication information string and extracts the user ID, group ID, username, groupname and supplementary groups.
+ * It can either be encrypted by a simple custom encryption or by Munge.
+ *
+ * Should errors occur, the function returns false and an error message.
+ *
+ * \param[in] error_dstr Pointer to a dstring for storing an error message.
+ * \param[in] auth_info Authentication information string to parse.
+ * \param[out] uid Pointer to the user ID.
+ * \param[out] user Pointer to the username.
+ * \param[in] user_len Length of the username buffer.
+ * \param[out] gid Pointer to the group ID.
+ * \param[out] group Pointer to the groupname.
+ * \param[in] group_len Length of the groupname buffer.
+ * \param[out] amount Pointer to the number of supplementary groups.
+ * \param[out] grp_array Pointer to the array of supplementary group elements.
+ */
 bool
 component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array) {
    DENTER(TOP_LAYER);
    char auth_buffer[2 * SGE_SEC_BUFSIZE];
 
    if (auth_info == nullptr) {
-      // @todo different error message, authinfo is null
       sge_dstring_sprintf(error_dstr, SFNMAX, MSG_AUTHINFO_IS_NULL);
       DRETURN(false);
    }
 
-   //INFO("<=== received auth info: %s", auth_info);
-   //printf("<=== received auth info: %s\n", auth_info);
    // decrypt received auth_info
    uid_t munge_uid{0};
    gid_t munge_gid{0};

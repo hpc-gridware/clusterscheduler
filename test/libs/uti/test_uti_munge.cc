@@ -55,6 +55,10 @@ test_munge() {
       } else {
          std::cout << "munge decode succeeded, output is " << decoded_payload << std::endl;
          std::cout << "uid: " << uid << ", gid: " << gid << std::endl;
+         if (strcmp(payload, decoded_payload) != 0) {
+            std::cerr << "decoded payload (" << decoded_payload << ") differs from original payload (" << payload << ")" << std::endl;
+            ret = false;
+         }
       }
    }
 

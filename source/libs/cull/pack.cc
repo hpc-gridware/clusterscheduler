@@ -178,9 +178,15 @@ init_packbuffer(sge_pack_buffer *pb, size_t initial_size, bool just_count, bool 
       // and add its length to the initial_size
       if (with_auth_info) {
          pb->auth_info = component_get_auth_info();
+         if (pb->auth_info == nullptr) {
+            // ERROR printing has been done in component_get_auth_info()
+            DRETURN(PACK_AUTHINFO);
+         }
       }
       if (pb->auth_info != nullptr) {
          initial_size += strlen(pb->auth_info) + 1;
+      } else {
+         initial_size += 1;
       }
 
       pb->head_ptr = sge_malloc(initial_size);

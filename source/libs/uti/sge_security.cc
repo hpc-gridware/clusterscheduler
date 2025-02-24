@@ -490,68 +490,6 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 #endif
 
 
-/****** gdi/security/sge_security_initialize() ********************************
-*  NAME
-*     sge_security_initialize -- initialize sge security
-*
-*  SYNOPSIS
-*     int sge_security_initialize(char *name);
-*
-*  FUNCTION
-*     Initialize sge security by initializing the underlying security
-*     mechanism and setup the corresponding data structures
-*
-*  INPUTS
-*     name - name of enrolling program
-*
-*  RETURN
-*     0  in case of success, something different otherwise 
-*
-*  NOTES
-*     MT-NOTE: sge_security_initialize() is MT safe (assumptions)
-******************************************************************************/
-
-#if 0
-static int sge_security_initialize(const char *progname, const char *username)
-{
-   DENTER(TOP_LAYER);
-
-#ifdef SECURE
-   {
-
-     /*
-      * The dummy_string is only neccessary to be able to check with
-      * strings command in installation scripts whether the SECURE
-      * compile option was used at compile time.
-      * 
-      */
-      static const char* dummy_string = nullptr;
-
-      dummy_string = sge_dummy_sec_string;
-      if (dummy_string != nullptr) {
-         DPRINTF("secure dummy string: %s\n", dummy_string);
-      } else {
-         DPRINTF("secure dummy string not available\n");
-      }
-
-      if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
-         if (sge_ssl_setup_security_path(progname, username)) {
-            DRETURN(-1);
-         }
-      }
-   }
-#endif
-
-#ifdef KERBEROS
-   if (krb_init(name)) {
-      DRETURN(-1);
-   }
-#endif   
-
-   DRETURN(0);
-}
-#endif
-
 /****** gdi/security/sge_security_exit() **************************************
 *  NAME
 *     sge_security_exit -- exit sge security

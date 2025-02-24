@@ -82,14 +82,6 @@ sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-static void sge_security_event_handler(te_event_t anEvent, monitoring_t *monitor) {
-   DENTER(TOP_LAYER);
-#ifdef KERBEROS
-   krb_check_for_idle_clients();
-#endif
-   DRETURN_VOID;
-}
-
 /****** qmaster/sge_thread_timer/sge_timer_register_event_handler() *************
 *  NAME
 *     sge_timer_register_event_handler() -- register event handlers
@@ -120,8 +112,6 @@ sge_timer_register_event_handler() {
    te_register_event_handler(sge_zombie_job_cleanup_handler, TYPE_ZOMBIE_JOB_CLEANUP_EVENT);
 
    te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);
-
-   te_register_event_handler(sge_security_event_handler, TYPE_SECURITY_EVENT);
 
    te_register_event_handler(ocs::SessionManager::session_cleanup_handler, TYPE_SESSION_CLEANUP_EVENT);
 

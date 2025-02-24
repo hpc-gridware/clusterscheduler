@@ -76,11 +76,6 @@ public:
    static void shutdown();
 
    static void print_munge_enums();
-
-#if 0
-   static Munge *get_instance();
-   void print_munge_config();
-#endif
 };
 } // ocs::uti
 #endif
