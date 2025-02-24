@@ -127,7 +127,7 @@
 
 #define MSG_GDI_CONTEXT_NULL             _MESSAGE(55015, _("context is nullptr"))
 
-#define MSG_GDI_MUNGE_INIT_FAILED_S          _MESSAGE(55016, _("Munge initialization failed: " SFN))
+#define MSG_GDI_MUNGE_INIT_FAILED_S          _MESSAGE(55016, _("Munge initialization failed: " SFNMAX))
 #define MSG_GDI_PARSING_AUTHINFO_FAILED_SSIS _MESSAGE(55017, _("parsing auth info failed for " SFN "/" SFN "/%uh: " SFN))
 
 // clang-format on

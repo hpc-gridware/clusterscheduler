@@ -56,7 +56,11 @@ namespace ocs::uti {
          ret = false;
       }
       if (ret) {
+#ifdef DARWIN
+         const char *libmunge = "libmunge.dylib";
+#else
          const char *libmunge = "libmunge.so.2";
+#endif
          lib_handle = dlopen(libmunge, RTLD_LAZY);
          if (lib_handle == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_MUNGE_OPEN_LIBMUNGE_SS, libmunge, dlerror());
