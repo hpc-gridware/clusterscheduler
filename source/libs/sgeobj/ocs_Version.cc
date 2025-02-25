@@ -38,8 +38,8 @@
 // CMakeList.txt and dist/inst_sge will be updated automatically during the next cmake run
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 0
-#define OCS_VERSION_PATCH 3
-#define OCS_VERSION_SUFFIX ""
+#define OCS_VERSION_PATCH 4
+#define OCS_VERSION_SUFFIX "alpha"
 
 static const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
