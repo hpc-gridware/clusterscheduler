@@ -39,6 +39,7 @@ RUN dnf install -y openssl-devel && dnf clean all
 # for building binaries
 RUN dnf install -y git autoconf automake gcc-toolset-13 systemd-devel patchelf && dnf clean all
 RUN dnf install -y libtirpc-devel  && dnf clean all
+RUN dnf --enablerepo=powertools install -y munge-devel  && dnf clean all
 
 # building documentation
 RUN dnf --enablerepo=devel install -y pandoc texlive texlive-xetex \

@@ -88,7 +88,7 @@ dnf -y install munge-devel
 
 If this does not work:
 ```bash
-dnf --enablerepo=powertools install munge-devel
+dnf --enablerepo=powertools -y install munge-devel
 ```
 
 ### CentOS 7
