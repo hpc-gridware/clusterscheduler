@@ -180,10 +180,6 @@ void sge_timer_start_periodic_tasks() {
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(sge_gmt32_to_gmt64(10), TYPE_SECURITY_EVENT, RECURRING_EVENT, 0, 0, "security-event");
-   te_add_event(ev);
-   te_free_event(&ev);
-
    ev = te_new_event(sge_gmt32_to_gmt64(120), TYPE_SESSION_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "session-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
