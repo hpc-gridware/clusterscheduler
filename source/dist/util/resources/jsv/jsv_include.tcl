@@ -38,14 +38,20 @@ set logfile "/tmp/jsv_[pid].log"
 # Might be "initialized", "started" or "verifying"
 set state "initialized"
 
-set jsv_cli_params [list a ar A b ckpt cwd C display dl e hard h hold_jid \
+set jsv_cli_params [list a ar A b ckpt cwd display dl e h hold_jid \
                          hold_jid_ad i inherit j js m M masterq notify \
-                         now N noshell nostdin o ot P p pty R r shell sync S t \
+                         now N noshell nostdin o ot P p pty R r shell sync S \
                          tc terse u w wd]
 
-set jsv_mod_params [list ac l_hard l_soft q_hard q_soft pe_min pe_max pe_name \
-                         binding_strategy binding_type binding_amount binding_socket \
-                         binding_core binding_step binding_exp_n]
+set jsv_mod_params [list ac \
+                         binding_strategy binding_type binding_amount binding_socket binding_core binding_step binding_exp_n \
+                         c_interval c_occasion \
+                         global_l_hard master_l_hard slave_l_hard l_hard \
+                         global_q_hard master_q_hard slave_q_hard q_hard \
+                         global_l_soft l_soft \
+                         global_q_soft q_soft \
+                         pe_min pe_max pe_name \
+                         t_min t_max t_step]
 
 set jsv_add_params [list CLIENT CONTEXT VERSION JOB_ID SCRIPT SCRIPT_ARGS USER]
 
