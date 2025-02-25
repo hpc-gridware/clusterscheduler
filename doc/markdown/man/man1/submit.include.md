@@ -943,9 +943,8 @@ or to the slave queues by using the `-scope` option.
 
 `qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
 after a restart or migration of the job, however.
-
 If this option is specified then these hard and soft queue requests will be passed to defined JSV instances
-as parameter with the names *\<scope>_q_hard* and *\<scope>_q_soft*. \<scope> will be replaced by the scope of
+as parameter with the names *\<scope>\_q_hard* and *\<scope>\_q_soft*. \<scope> will be replaced by the scope of
 the resource request (e.g. *global*, *master* or *slave*).
 
 For compatibility with older versions and flavours of Grid Engine, the parameters names *q_hard*, *q_soft*
