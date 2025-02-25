@@ -52,9 +52,9 @@ __jsv_state="initialized"
 
 # Following strings are switch names of command line clients (qsub, qrsh, ...) 
 # and these strings will also be used as variable suffixes in this script
-__jsv_cli_params="a ar A b ckpt cwd C display dl e hard h hold_jid\
+__jsv_cli_params="a ar A b ckpt cwd display dl e h hold_jid\
                 hold_jid_ad i inherit j js m M masterq notify\
-                now N noshell nostdin o ot P p pty R r shell sync S t\
+                now N noshell nostdin o ot P p pty R r shell sync S\
                 tc terse u w wd"
 
 # These names are the suffixes of variable names which will contain
@@ -73,10 +73,16 @@ __jsv_cli_params="a ar A b ckpt cwd C display dl e hard h hold_jid\
 #     binding_socket: binding socket (-binding [<type>] <strategy>:<amount>:<socket>:<core>)
 #     binding_core: binding core (-binding [<type>] <strategy>:<amount>:<socket>:<core>)
 #     binding_step: binding step (-binding [<type>] "striding":<amount>:<step>)
-#     binding_exp_n: length of explicit list (-binding [<type>] "explisit":<socket0>,<core0>:...)
-__jsv_mod_params="ac l_hard l_soft q_hard q_soft pe_min pe_max pe_name\
-                  binding_strategy binding_type binding_amount binding_socket\
-                  binding_core binding_step binding_exp_n"
+#     binding_exp_n: length of explicit list (-binding [<type>] "explicit":<socket0>,<core0>:...)
+__jsv_mod_params="ac\
+                  binding_strategy binding_type binding_amount binding_socket binding_core binding_step binding_exp_n\
+                  c_interval c_occasion\
+                  global_l_hard master_l_hard slave_l_hard l_hard\
+                  global_q_hard master_q_hard slave_q_hard q_hard\
+                  global_l_soft l_soft\
+                  global_q_soft q_soft\
+                  pe_min pe_max pe_name\
+                  t_min t_max t_step"
 
 # Here are the suffixes of variable names which do not directly appear
 # as named switches in a client.
