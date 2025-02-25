@@ -9,6 +9,6 @@ control_slaves       FALSE
 job_is_first_task    TRUE
 urgency_slots        min
 accounting_summary   FALSE
-ign_sreq_on_mhosts   FALSE
+ign_sreq_on_mhost    FALSE
 master_forks_slaves  FALSE
 daemon_forks_slaves  FALSE
