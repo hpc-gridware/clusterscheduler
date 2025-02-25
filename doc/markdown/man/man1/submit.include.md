@@ -692,7 +692,7 @@ resources does not contain a resource that is marked as consumable. However, the
 effective after a restart or migration of the job.
 
 If this option is specified then these hard and soft resource requirements will be passed to defined JSV instances 
-as parameter with the names *\<scope>_l_hard* and *\<scope>_l_hard*. \<scope> will be replaced by the scope of 
+as parameter with the names *\<scope>\_l_hard* and *\<scope>\_l_hard*. \<scope> will be replaced by the scope of 
 the resource request (e.g. *global*, *master* or *slave*). If regular expressions will be used for resource requests, 
 then these expressions will be passed to JSV as they are. Also shortcut names for resources will not be expanded.
 
