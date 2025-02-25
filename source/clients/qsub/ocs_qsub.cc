@@ -438,6 +438,7 @@ main(int argc, const char **argv)
                goto Error;
             } else {
                printf(MSG_QSUB_JOBHASSTARTED_S, sge_dstring_get_string(&jobid));
+               printf("\n");
             }
          }
 
