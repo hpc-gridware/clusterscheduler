@@ -1,5 +1,5 @@
 # Version: 9.0.0
-# 
+#
 # DO NOT MODIFY THIS FILE MANUALLY!
 #
 pe_name              make
@@ -13,6 +13,6 @@ control_slaves       TRUE
 job_is_first_task    FALSE
 urgency_slots        min
 accounting_summary   TRUE
-ign_sreq_on_mhosts   FALSE
+ign_sreq_on_mhost    FALSE
 master_forks_slaves  FALSE
 daemon_forks_slaves  FALSE
