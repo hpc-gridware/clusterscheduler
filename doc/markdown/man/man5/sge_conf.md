@@ -980,7 +980,7 @@ components provided with xxQS_NAMExx are used.
 
 Specifies soft and hard resource limits as implemented by the setrlimit(2) system call. See this manual page on 
 your system for more information. These parameters complete the list of limits set by the RESOURCE LIMITS parameter 
-of the queue configuration as described in xxsq_name_sxx_queue_conf(5). Unlike the resource limits in the queue configuration,
+of the queue configuration as described in xxqs_name_sxx_queue_conf(5). Unlike the resource limits in the queue configuration,
 these resource limits are set for every job on this execution host. If a value is not specified, the resource limit 
 is inherited from the execution daemon process. Because this would lead to unpredicted results, if only one limit 
 of a resource is set (soft or hard), the corresponding other limit is set to the same value.  
@@ -989,7 +989,7 @@ be opened by any process of a job. *S_MAXPROC* and *H_MAXPROC* specify the maxim
 can be created by the job user on this execution host *S_MEMORYLOCKED* and *H_MEMORYLOCKED* specify the maximum 
 number of bytes of virtual memory that may be locked into RAM.  
 *S_LOCKS* and *H_LOCKS* specify the maximum number of file locks any process of a job may establish.  
-All of these values can be specified using the multiplier letters k, K, m, M, g and G, see xxsq_name_sxx_types(1) 
+All of these values can be specified using the multiplier letters k, K, m, M, g and G, see xxqs_name_sxx_types(1) 
 for details.
 
 ***INHERIT_ENV***
@@ -1023,7 +1023,7 @@ job termination.
 This parameter defines the interval how often the PDC (Portable Data Collector) is executed by the execution 
 daemon. The PDC is responsible for enforcing the resource limits s_cpu, h_cpu, s_vmem and h_vmem (see
 xxqs_name_sxx_queue_conf(5)) and job usage collection. The parameter can be set to a time_specifier (see 
-xxsq_name_sxx_types(5)) , to *PER_LOAD_REPORT* or to *NEVER*. If this parameter is set to *PER_LOAD_REPORT* the PDC is
+xxqs_name_sxx_types(5)) , to *PER_LOAD_REPORT* or to *NEVER*. If this parameter is set to *PER_LOAD_REPORT* the PDC is
 triggered in the same interval as *load_report_time* (see above). If this parameter is set to *NEVER* the PDC run is 
 never triggered. The default is 1 second.  
 Note: A PDC run is quite compute extensive may degrade the performance of the running jobs. But if the PDC runs less 
@@ -1065,7 +1065,7 @@ If this parameter is set to true, the reporting file is written. The reporting f
 for monitoring and analysis, like job accounting, job log, host load and consumables, queue status and consumables 
 and sharetree configuration and usage. Attention: Depending on the size and load of the cluster, the reporting 
 file can become quite large. Only activate the reporting file if you have a process running that will consume the 
-reporting file! See  xxsq_name_sxx_reporting(5) for further information about format and contents of the
+reporting file! See  xxqs_name_sxx_reporting(5) for further information about format and contents of the
 reporting file.
 
 ***monitoring***
@@ -1094,14 +1094,14 @@ default to the value of the *flush_time* parameter.
 ***joblog***  
 
 If this parameter is set to true, the reporting file will contain job logging information. See  
-xxsq_name_sxx_reporting(5) for more information about job logging.
+xxqs_name_sxx_reporting(5) for more information about job logging.
 
 ***sharelog***  
 
 The xxQS_NAMExx qmaster can dump information about sharetree configuration and use to the reporting file. The 
 parameter *sharelog* sets an interval in which sharetree information will be dumped. It is set in the format 
 HH:MM:SS. A value of 00:00:00 configures qmaster not to dump sharetree information. Intervals of several minutes 
-up to hours are sensible values for this parameter. See xxsq_name_sxx__reporting(5) for further information 
+up to hours are sensible values for this parameter. See xxqs_name_sxx__reporting(5) for further information 
 about sharelog.
 
 ***log_consumables***  
@@ -1112,7 +1112,7 @@ reporting file, whenever a consumable resource changes either in definition, or 
 of an arbitrary consumable resource changes. When *log_consumables* is set to false (default), only those 
 variables will be written to the reporting file, that are configured in the *report_variables* in the exec host
 configuration and whose definition or value actually changed. This parameter is deprecated and will get removed 
-in the next major release. See  xxsq_name_sxx_host_conf(5) for further information about *report_variables*.
+in the next major release. See  xxqs_name_sxx_host_conf(5) for further information about *report_variables*.
 
 ***old_accounting*** 
 
@@ -1261,7 +1261,7 @@ also *FORBID_APPERROR*).
 ## reprioritize
 
 Note: Deprecated, may be removed in future release. This flag enables or disables the reprioritization of jobs based on
-their ticket amount. The *reprioritize_interval* in xxsq_name_sxx_sched_conf(5).
+their ticket amount. The *reprioritize_interval* in xxqs_name_sxx_sched_conf(5).
 Takes effect only if *reprioritize* is set to true. To turn off job reprioritization, the *reprioritize* flag must 
 be set to false ** and the *reprioritize_interval* to 0 which is the default.
 
@@ -1274,9 +1274,9 @@ This JSV instance will be used to verify job specifications of jobs before they 
 internal master database. The global configuration entry for this value cannot be overwritten by execution host local
 configurations.
 
-Find more details concerning JSV in xxsq_name_sxx_jsv(1) and xxsq_name_sxx_request(1).
+Find more details concerning JSV in xxqs_name_sxx_jsv(1) and xxqs_name_sxx_request(1).
 
-The syntax of the *jsv_url* is specified in xxsq_name_sxx_types(1).
+The syntax of the *jsv_url* is specified in xxqs_name_sxx_types(1).
 
 ## jsv_allowed_mod
 
@@ -1293,7 +1293,7 @@ that no modification should be allowed. *none* Please note that even if *none* i
 (or the corresponding library depending on your architecture - e.g.
 /usr/java/jre/lib/i386/server/libjvm.so) The referenced libjvm version must be at least 1.5. It is needed by the 
 JVM qmaster thread only. If the Java VM needs additional starting parameters they can be set in *additional_jvm_args*. 
-If the JVM thread is started at all can be defined in the xxsq_name_sxx_bootstrap(5) file. If *libjvm_path* is empty 
+If the JVM thread is started at all can be defined in the xxqs_name_sxx_bootstrap(5) file. If *libjvm_path* is empty 
 or an incorrect path the JVM thread fails to start.
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
