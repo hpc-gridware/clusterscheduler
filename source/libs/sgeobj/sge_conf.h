@@ -100,6 +100,7 @@ char* mconf_get_rsh_daemon();
 char* mconf_get_rsh_command();
 char* mconf_get_jsv_url();
 char* mconf_get_jsv_allowed_mod();
+char* mconf_get_gdi_request_limits();
 char* mconf_get_rlogin_daemon();
 char* mconf_get_rlogin_command();
 u_long32 mconf_get_reschedule_unknown();

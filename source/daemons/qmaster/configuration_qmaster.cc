@@ -66,6 +66,7 @@
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_RequestLimits.h"
 
 #include "configuration_qmaster.h"
 #include "ocs_ReportingFileWriter.h"
@@ -119,68 +120,45 @@ sge_get_config_version_for_host(const char *aName);
  */
 int
 sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lList **answer_list) {
-   lListElem *local = nullptr;
-   lListElem *global = nullptr;
-   int ret = -1;
-   const char *cell_root = bootstrap_get_cell_root();
-   const char *qualified_hostname = component_get_qualified_hostname();
-   u_long32 progid = component_get_component_id();
-
    DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
+   // read the spooled list
    spool_read_list(answer_list, aSpoolContext, config_list, SGE_TYPE_CONFIG);
 
-   /*
-    * For Urubu (6.2u2) we won't have and update script. Therefore the master
-    * has to be able to cope with a missing "jsv_url" string. 
-    *
-    * TODO: Nethertheless we have to add the "jsv_url" to the update script
-    *       for the first release after Urubu.
-    */
-   {
-      lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
+   lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
+   if (global != nullptr) {
+      const lList *entries = lGetList(global, CONF_entries);
 
-      if (global != nullptr) {
-         const lList *entries = lGetList(global, CONF_entries);
-         lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
-
-         if (jsv_url == nullptr) {
-            jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
-            if (jsv_url != nullptr) {
-               lSetString(jsv_url, CF_value, "none");
-            }
-         }
+      // add jsv_url if it is missing
+      lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
+      if (jsv_url == nullptr) {
+         jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
+         lSetString(jsv_url, CF_value, "none");
       }
-   }
-   /*
-    * For Urubu (6.2u2) we won't have and update script. Therefore the master
-    * has to be able to cope with a missing "jsv_allowed_mod" string. 
-    *
-    * TODO: Nethertheless we have to add the "jsv_allowed_mod" to the update 
-    *       script for the first release after Urubu.
-    */
-   {
-      lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
 
-      if (global != nullptr) {
-         const lList *entries = lGetList(global, CONF_entries);
-         lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
+      // add jsv_allowed_mod if it is missing
+      lListElem *jsv_allowed_mod = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
+      if (jsv_allowed_mod == nullptr) {
+         jsv_allowed_mod = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
+         lSetString(jsv_allowed_mod, CF_value, "ac,h,i,e,o,j,M,N,p,w");
+      }
 
-         if (jsv_url == nullptr) {
-            jsv_url = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
-            if (jsv_url != nullptr) {
-               lSetString(jsv_url, CF_value, "ac,h,i,e,o,j,M,N,p,w");
-            }
-         }
+      // add gdi_request_limits if the attribute is missing
+      lListElem *gdi_request_limits = lGetElemStrRW(entries, CF_name, "gdi_request_limits");
+      if (gdi_request_limits == nullptr) {
+         gdi_request_limits = lAddSubStr(global, CF_name, "gdi_request_limits", CONF_entries, CF_Type);
+         lSetString(gdi_request_limits, CF_value, "none");
       }
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    answer_list_output(answer_list);
 
+   const char *qualified_hostname = component_get_qualified_hostname();
    DPRINTF("qualified_hostname: '%s'\n", qualified_hostname);
+   lListElem *local = nullptr;
    if ((local = sge_get_configuration_for_host(qualified_hostname)) == nullptr) {
       /* write a warning into messages file, if no local config exists*/
       WARNING(MSG_CONFIG_NOLOCAL_S, qualified_hostname);
@@ -191,7 +169,9 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
       DRETURN(-1);
    }
 
-   ret = merge_configuration(answer_list, progid, cell_root, global, local, nullptr);
+   u_long32 progid = component_get_component_id();
+   const char *cell_root = bootstrap_get_cell_root();
+   int ret = merge_configuration(answer_list, progid, cell_root, global, local, nullptr);
    answer_list_output(answer_list);
 
    lFreeElem(&local);

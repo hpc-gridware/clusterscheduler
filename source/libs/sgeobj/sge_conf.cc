@@ -108,6 +108,7 @@ struct confel {                       /* cluster configuration parameters */
     char        *rsh_command;         /* eg rsh -p $PORT $HOST command */
     char        *jsv_url;             /* jsv url */
     char        *jsv_allowed_mod;     /* allowed modifications for end users if JSV is enabled */
+    char        *gdi_request_limits;  /* request limits for GDI commands */
     char        *rlogin_daemon;       /* eg /usr/sbin/in.rlogind */
     char        *rlogin_command;      /* eg rlogin -p $PORT $HOST */
     u_long32    reschedule_unknown;   /* timout value used for auto. resch. */ 
@@ -132,7 +133,7 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
-   nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
+   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
    0, 0, nullptr, 0, nullptr, nullptr, nullptr
 };
 static bool is_new_config = false;
@@ -370,6 +371,7 @@ static tConfEntry conf_entries[] = {
  { "rsh_command",                1, "none",                    1, nullptr},
  { "jsv_url",                    0, "none",                    1, nullptr},
  { "jsv_allowed_mod",            0, "none",                    1, nullptr},
+ { "gdi_request_limits",         0, "none",                    1, nullptr},
  { "rlogin_daemon",              1, "none",                    1, nullptr},
  { "rlogin_command",             1, "none",                    1, nullptr},
  { "reschedule_unknown",         1, RESCHEDULE_UNKNOWN,        1, nullptr},
@@ -551,6 +553,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "rsh_command", &Master_Config.rsh_command, nullptr, 0);
    chg_conf_val(lpCfg, "jsv_url", &Master_Config.jsv_url, nullptr, 0);
    chg_conf_val(lpCfg, "jsv_allowed_mod", &Master_Config.jsv_allowed_mod, nullptr, 0);
+   chg_conf_val(lpCfg, "gdi_request_limits", &Master_Config.gdi_request_limits, nullptr, 0);
    chg_conf_val(lpCfg, "rlogin_daemon", &Master_Config.rlogin_daemon, nullptr, 0);
    chg_conf_val(lpCfg, "rlogin_command", &Master_Config.rlogin_command, nullptr, 0);
 
@@ -1218,6 +1221,7 @@ void sge_show_conf()
    DPRINTF("conf.rsh_command            >%s<\n", Master_Config.rsh_command?Master_Config.rsh_command:"none");
    DPRINTF("conf.jsv_url                >%s<\n", Master_Config.jsv_url?Master_Config.jsv_url:"none");
    DPRINTF("conf.jsv_allowed_mod        >%s<\n", Master_Config.jsv_allowed_mod?Master_Config.jsv_allowed_mod:"none");
+   DPRINTF("conf.gdi_request_limits     >%s<\n", Master_Config.gdi_request_limits?Master_Config.gdi_request_limits:"none");
    DPRINTF("conf.rlogin_daemon          >%s<\n", Master_Config.rlogin_daemon?Master_Config.rlogin_daemon:"none");
    DPRINTF("conf.rlogin_command         >%s<\n", Master_Config.rlogin_command?Master_Config.rlogin_command:"none");
    DPRINTF("conf.reschedule_unknown     >%u<\n", (unsigned) Master_Config.reschedule_unknown);
@@ -1302,6 +1306,7 @@ static void clean_conf() {
    sge_free(&Master_Config.rsh_command);
    sge_free(&Master_Config.jsv_url);
    sge_free(&Master_Config.jsv_allowed_mod);
+   sge_free(&Master_Config.gdi_request_limits);
    sge_free(&Master_Config.rlogin_daemon);
    sge_free(&Master_Config.rlogin_command);
    sge_free(&Master_Config.auto_user_default_project);
@@ -1829,6 +1834,16 @@ char* mconf_get_jsv_allowed_mod() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(jsv_allowed_mod);
+}
+
+/* returned pointer needs to be freed */
+char* mconf_get_gdi_request_limits() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   char* gdi_request_limits = sge_strdup(nullptr, Master_Config.gdi_request_limits);
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   sge_strip_white_space_at_eol(gdi_request_limits);
+   DRETURN(gdi_request_limits);
 }
 
 /* returned pointer needs to be freed */

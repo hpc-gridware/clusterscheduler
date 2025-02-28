@@ -52,6 +52,7 @@
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/ocs_Version.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_RequestLimits.h"
 #include "sgeobj/sge_manop.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -387,10 +388,21 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       }
    }
 
-   // handle GDI request limits
-   if (local_ret) {
-      // TODO handle gdi request limits
-      ;
+   // handle GDI request limits but only if request is not triggered by a manager
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   if (local_ret && !manop_is_manager(packet, master_manager_list)) {
+      ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
+      limits_instance.parse_from_config(&packet->tasks[0]->answer_list);
+
+      for (auto *task : packet->tasks) {
+         if (limits_instance.will_exceed_limit(packet, task, &packet->tasks[0]->answer_list)) {
+            // answer was written by will_exceed_limit()
+            local_ret = false;
+
+            // we can stop here. one gdi task is enough to exceed the limit in order to reject a multi request.
+            break;
+         }
+      }
    }
 
    // handle request specific requirements already here so that we save time potentially in the worker
