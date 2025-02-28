@@ -1045,6 +1045,69 @@ in one load report interval. The default for *execd_params* is none.
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
+## gdi_request_limits
+
+This value is a global configuration parameter only, and is used to prevent denial-of-service attacks on the xxsq_name_sxx_qmaster(8) process.
+
+    gdi_reuqest_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
+
+This setting defines the maximum number of GDI requests that will be accepted by the xxsq_name_sxx_qmaster(8) process. The limits set apply to non-manager users. The default value is *NONE* which means that there is no limit. The value for this parameter has the following syntax:
+
+    gdi_reuqest_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
+
+Multiple *limit_rule*'s can be specified separated by commas. They will be evaluated from left to right. The first matching rule for an incoming request is used by xxsq_name_sxx_qmaster(8) to decide whether or not to accept the request. Each *limit_rule* has the following syntax:
+
+    limit_rule := source ':' type ':' object ':' user ':' host '=' limit .
+
+Each section of the limit rule that is separated by a colon allows you to filter for requests with the corresponding request attributes. Each limit rule ends with an equal sign followed by the limit value (a positive integer). That integer specifies the requests per second that are accepted.
+
+The following request characteristics can be used:
+
+- *source* : The source of the request. Possible values are names of command line tools names such as *qsub*, *qstat*, *qalter*. *qconf*, *qhost*, ... that send GDI requests.
+- *type* : The type of the request can be either *add*, *mod*, *del* or *get* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *mod* requests.
+- *object* : The object of the request. Possible values are
+  - *job* : Job
+  - *cqueue* : Cluster Queue
+  - *ahost*, *ehost*, *shost* : Admin, Execution, Submission Host
+  - *sharetree* : Share Tree
+  - *eclient* : Event Clients
+  - *cplx* : Complex
+  - *conf* : Configuration
+  - *manager*, *operator* : Manager, Operator
+  - *pe* : Parallel Environment
+  - *sched_conf* : Scheduler Configuration
+  - *user* : User
+  - *user_set* : User Sets
+  - *prj* : Projects
+  - *stree* : Share Tree
+  - *ckpt* : Checkpointing Environment
+  - *cal* : Calendar
+  - *hgroup* : Host Group
+  - *rqs* : Resource Quota Set
+  - *ar* : Advance Reservation
+- *host* : The name of the host (or host group) from which the request is being sent.
+- *user* : The username of the user sending the request or the name of a user list.
+
+For all filter sections, fmatch(1) patterns are allowed as long as they do not contain a colon character or an equal sign.
+
+If *host* and/or *user* specifies a host or user group, the limit applies to all hosts or users in the group combined. Also in case of patterns, the limit applies to all matching objects combined.
+Only the first matching rule is used to decide whether to accept the request. Therefore, more specific rules should be placed before more general rules.
+
+Note that command line clients may send multiple GDI requests to the xxsq_name_sxx_qmaster(8) process for a single command call. Reducing a limit below a certain threshold (e.g. 15 for qstat) may lead to scenarios where the command line tool is no longer able to trigger GDI requests anymore for regular users without manager privileges.
+
+To enforce the limits, time is divided into 1-second intervals. The algorithm tracks the number of requests in the current second and the previous second. Each time a request arrives, the number of requests within a sliding 1-second window is calculated. This window includes the requests from the current second and a proportionate number of requests from the previous second. The difference between the number of requests in this window and the limit determines whether a new request can be accepted or rejected. The algorithm assumes that requests were evenly distributed in the previous second to prevent spikes at the start of a new interval.
+
+For example:
+
+    gdi_request_limits=*:add:job:john:*=500,
+                       *:add:job:*:*=50,
+                       qstat:get:*:*:*=50000,
+
+The first rule allows user *john* to submit 500 jobs per second. The second rule allows all (remaining) users to post 50 jobs per second. Both rules are submit client independent. This means that users can use any submit client (qsub, qrsh, DRMAA client or GUI) to submit jobs. Any attempt to submit more jobs will be rejected and the user will see the limit rule that has been violated.
+
+The third rule allows the *qstat* commands to query the status via *qstat* for 60000 requests per second. Please note that one *qstat* command can trigger multiple GDI requests at once. For example, *qstat -f* will query will request up to 15 different objects (job, queue, ehost, cplx etc.) in one command. Therefore, the limit should be set to a value that is high enough to allow users to get all the information they need in one command, or in other words, the
+limit of 60000 get requests will allow about 4000 *qstat -f* commands per second or 60000 *qstat -j* commands per second.
+
 ## reporting_params
 
 Used to define the behavior of reporting modules in the xxQS_NAMExx qmaster. Changes to the *reporting_params* 
