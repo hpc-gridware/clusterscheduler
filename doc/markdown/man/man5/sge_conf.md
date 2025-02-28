@@ -790,7 +790,7 @@ used if no value is entered. The range of valid values is \> 0 and \<= 5. (e.g. 
 ***gdi_timeout***
 
 Sets how long the communication will wait for gdi send/receive operations. The default value is set to 60 seconds. 
-After this time, the communication library will retry, if "gdi_retries" is configured, receiving the gdi request. 
+After this time, the communication library will retry, if *gdi_retries* is configured, receiving the gdi request. 
 In case of not configured "gdi_retries" the communication will return with a "gdi receive failure" (e.g.
 gdi_timeout=120 will set the timeout time to 120 sec) Configuring no gdi_timeout value, the value defaults to 60 sec.
 
@@ -1049,11 +1049,7 @@ The global configuration entry for this value may be overwritten by the executio
 
 This value is a global configuration parameter only, and is used to prevent denial-of-service attacks on the xxqs_name_sxx_qmaster(8) process.
 
-    gdi_reuqest_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
-
-This setting defines the maximum number of GDI requests that will be accepted by the xxqs_name_sxx_qmaster(8) process. The limits set apply to non-manager users. The default value is *NONE* which means that there is no limit. The value for this parameter has the following syntax:
-
-    gdi_reuqest_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
+    gdi_request_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
 
 Multiple *limit_rule*'s can be specified separated by commas. They will be evaluated from left to right. The first matching rule for an incoming request is used by xxqs_name_sxx_qmaster(8) to decide whether or not to accept the request. Each *limit_rule* has the following syntax:
 
@@ -1101,11 +1097,11 @@ For example:
 
     gdi_request_limits=*:add:job:john:*=500,
                        *:add:job:*:*=50,
-                       qstat:get:*:*:*=50000,
+                       qstat:get:*:*:*=50000
 
 The first rule allows user *john* to submit 500 jobs per second. The second rule allows all (remaining) users to post 50 jobs per second. Both rules are submit client independent. This means that users can use any submit client (qsub, qrsh, DRMAA client or GUI) to submit jobs. Any attempt to submit more jobs will be rejected and the user will see the limit rule that has been violated.
 
-The third rule allows the *qstat* commands to query the status via *qstat* for 60000 requests per second. Please note that one *qstat* command can trigger multiple GDI requests at once. For example, *qstat -f* will query will request up to 15 different objects (job, queue, ehost, cplx etc.) in one command. Therefore, the limit should be set to a value that is high enough to allow users to get all the information they need in one command, or in other words, the
+The third rule allows the *qstat* commands to query the status via *qstat* for 60000 requests per second. Please note that one *qstat* command can trigger multiple GDI requests at once. For example, *qstat -f* will query up to 15 different objects (job, queue, ehost, cplx etc.) in one command. Therefore, the limit should be set to a value that is high enough to allow users to get all the information they need in one command, or in other words, the
 limit of 60000 get requests will allow about 4000 *qstat -f* commands per second or 60000 *qstat -j* commands per second.
 
 ## reporting_params
