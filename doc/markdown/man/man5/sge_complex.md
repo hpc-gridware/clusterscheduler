@@ -162,7 +162,7 @@ Default queue resource. The soft and hard limit of stack size set to a queue.
 
 ### arch
 
-Reported by each execution daemon per default. The architecture of the host compiled into the xxsq_name_sxx_execd(8)
+Reported by each execution daemon per default. The architecture of the host compiled into the xxqs_name_sxx_execd(8)
 which describes the platform and architecture for which the execution daemon is targeted: e.g. lx-amd64, lx-arm64,
 sol-amd64, lx-riscv64, ...
 
@@ -439,7 +439,7 @@ The urgency value allows influencing job priorities on a per resource base. The 
 for each resource when determining the resource request related urgency contribution. For numeric type resource 
 requests the addend is the product of the urgency value, the jobs assumed slot allocation and the per slot request as
 specified via `-l` option to qsub(1). For string type requests the resources urgency value is directly used as 
-addend. Urgency values are of type real. See under xxsq_name_sxx_priority(5) for an overview on job priorities.
+addend. Urgency values are of type real. See under xxqs_name_sxx_priority(5) for an overview on job priorities.
 
 # SEE ALSO
 
