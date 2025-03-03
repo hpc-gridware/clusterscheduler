@@ -1288,6 +1288,7 @@ static void debit_all_jobs_from_qs() {
          const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
          /* don't look at states - we only trust in "granted destin. ident. list" */
+         bool do_per_global_host_booking = true;
          const char *last_hostname = nullptr;
          for_each_ep(gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             u_long32 ar_id = lGetUlong(jep, JB_ar);
@@ -1310,7 +1311,7 @@ static void debit_all_jobs_from_qs() {
                debit_host_consumable(jep, jatep, pe,
                                      host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                       SGE_GLOBAL_NAME), master_centry_list, slots,
-                                     master_task, do_per_host_booking, nullptr);
+                                     master_task, do_per_global_host_booking, nullptr);
                debit_host_consumable(jep, jatep, pe,
                                      host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                       lGetHost(qep, QU_qhostname)), master_centry_list,
@@ -1339,6 +1340,7 @@ static void debit_all_jobs_from_qs() {
                }
             }
             master_task = false;
+            do_per_global_host_booking = false;
          }
       }
    }

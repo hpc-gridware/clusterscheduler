@@ -270,7 +270,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    lList *resource_diagram;
    lListElem *thiz, *prev, *start, *end;
    const char *name = lGetString(cr, RUE_name);
-   char level_char = CENTRY_LEVEL_TO_CHAR(level);
    u_long64 end_time;
    int nm;
    double util_prev;
@@ -300,7 +299,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    end_time = utilization_endtime(start_time, duration);
 
    serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time,
-         level_char, object_name, name, utilization);
+                     level, object_name, name, utilization);
 
    /* ensure resource diagram is initialized */
    if (resource_diagram == nullptr) {
@@ -706,14 +705,10 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
                a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type, for_job_scheduling, false);
       }
 
-      /* global */
-      rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, a->slots,
-                             EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
-                             a->start, a->duration, GLOBAL_TAG, for_job_scheduling, true, true);
-
       bool is_master_task = true;
       const lListElem *gdil_ep;
       const char *last_eh_name = nullptr;
+      bool do_per_global_host_booking = true;
       for_each_ep(gdil_ep, a->gdil) {
          int slots = lGetUlong(gdil_ep, JG_slots);
          const char *eh_name = lGetHost(gdil_ep, JG_qhostname);
@@ -724,14 +719,20 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          const lListElem *rqs = nullptr;
          bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
-         /* hosts */
+         // global
+         // we really need to do it per gdil_ep, because we have to consider is_master_task and ign_sreq_on_mhost
+         rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, slots,
+                                EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
+                                a->start, a->duration, GLOBAL_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
+
+         // host
          if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
             rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
                                    EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
                                    a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
          }
 
-         /* queues */
+         // queue
          if ((qep = qinstance_list_locate2(a->queue_list, qname)) != nullptr) {
             /* 
              * The nullptr case happens in case of queues that were sorted out b/c they
@@ -768,6 +769,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          sge_free(&queue);
          is_master_task = false;
+         do_per_global_host_booking = false;
       }
 
       sge_dstring_free(&rue_name);

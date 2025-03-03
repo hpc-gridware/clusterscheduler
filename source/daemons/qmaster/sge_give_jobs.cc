@@ -959,6 +959,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                   MSG_LOG_SENT2EXECD);
 
          global_host_ep = host_list_locate(master_exechost_list, "global");
+         bool do_per_global_host_booking = true;
          const char *last_hostname = nullptr;
          const lListElem *gdil_ep;
          const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
@@ -1003,7 +1004,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
                /* debit consumable resources */
                if (debit_host_consumable(jep, jatep, pe, global_host_ep, master_centry_list, tmp_slot, master_task,
-                                         do_per_host_booking,
+                                         do_per_global_host_booking,
                                          nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
@@ -1050,6 +1051,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                }
             }
             master_task = false;
+            do_per_global_host_booking = false;
          }
 
          lSetUlong64(jatep, JAT_wallclock_limit, task_wallclock);
@@ -1529,6 +1531,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    cqueue_list_x_on_subordinate_gdil(master_cqueue_list, false, gdi_list, monitor, gdi_session);
 
    global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+   bool do_per_global_host_booking = true;
 
    const char *pe_name = lGetString(ja_task, JAT_granted_pe);
    lListElem *pe = lGetObject(ja_task, JAT_pe_object);
@@ -1560,7 +1563,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 
             /* undebit consumable resources */
             if (debit_host_consumable(job, ja_task, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
-                                      do_per_host_booking, nullptr) > 0) {
+                                      do_per_global_host_booking, nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
                ocs::ReportingFileWriter::create_host_consumable_records(&answer_list, global_host_ep, job, now);
@@ -1607,6 +1610,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
          }
       }
       master_task = false;
+      do_per_global_host_booking = false;
    }
 
    /* free granted resources of the parallel environment */

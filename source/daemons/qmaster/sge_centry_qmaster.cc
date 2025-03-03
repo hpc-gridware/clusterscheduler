@@ -527,6 +527,7 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
          const char *last_hostname = nullptr;
          const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
+         bool do_per_global_host_booking = true;
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             int qslots;
 
@@ -538,6 +539,9 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
 
             qslots = lGetUlong(gdil, JG_slots);
 
+            debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
+                                  master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
+
             bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
             debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list,
                                                                         lGetHost(qep, QU_qhostname)),
@@ -547,9 +551,8 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
                                        nullptr);
             slots += qslots;
             master_task = false;
+            do_per_global_host_booking = false;
          }
-         debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
-                               master_centry_list, slots, true, true, nullptr);
       }
    }
 

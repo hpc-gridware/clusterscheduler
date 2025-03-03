@@ -39,6 +39,7 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_schedd_conf.h"
 
 #include "sge_serf.h"
@@ -87,7 +88,7 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 *
 *  SYNOPSIS
 *     void serf_record_entry(u_long32 job_id, u_long32 ja_taskid, const char 
-*     *state, u_long32 start_time, u_long32 end_time, char level_char, const 
+*     *state, u_long32 start_time, u_long32 end_time, u_long32 level, const
 *     char *object_name, const char *name, double utilization) 
 *
 *  FUNCTION
@@ -132,10 +133,12 @@ void serf_init(record_schedule_entry_func_t write, new_schedule_func_t newline)
 *     MT-NOTE:     MT safety of registered recording function
 *******************************************************************************/
 void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
-      const char *type, u_long64 start_time, u_long64 end_time, char level_char,
-      const char *object_name, const char *name, double utilization)
+                       const char *type, u_long64 start_time, u_long64 end_time, u_long32 level,
+                       const char *object_name, const char *name, double utilization)
 {
    DENTER(TOP_LAYER);
+
+   char level_char = CENTRY_LEVEL_TO_CHAR(level);
 
    /* human-readable format */
    if (DPRINTF_IS_ACTIVE) {
