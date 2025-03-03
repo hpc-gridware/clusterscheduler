@@ -282,6 +282,7 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
    so = lParseSortOrderVarArg(lGetListDescr(host_list), "%I+", EH_sort_value);
 
    global = host_list_locate(host_list, "global");
+   bool do_per_global_host_booking = true;
 
    load_formula = sconf_get_load_formula();
 
@@ -304,9 +305,10 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
       }
 
       debit_host_consumable(job, ja_task, pe, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots,
-                            is_master_task, do_per_host_booking, nullptr);
+                            is_master_task, do_per_global_host_booking, nullptr);
       debit_host_consumable(job, ja_task, pe, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
       is_master_task = false;
+      do_per_global_host_booking = false;
 
       /* compute new combined load for this host and put it into the host */
       old_sort_value = lGetDouble(hep, EH_sort_value);
