@@ -1540,7 +1540,6 @@ match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstri
 *
 *******************************************************************************/
 static void clear_resource_tags(lList *resources, u_long32 max_tag) {
-
    lListElem *attr;
    for_each_rw (attr, resources) {
       if (lGetUlong(attr, CE_tagged) <= max_tag) {
@@ -6502,9 +6501,16 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
           (need_master || is_master_host) &&
           lGetBool(a->pe, PE_ignore_slave_requests_on_master_host)) {
          if (master_slot != 0) {
-            // we can run the master task here, ignore slave requests
-            DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE\n", object_name);
-            continue;
+            if (strcmp(object_name, SGE_GLOBAL_NAME) == 0) {
+               // we are matching the global host here, need to do this in any case
+               // even if we are on the master host and ignore slave requests
+               // we need the result of the global matching when checking the next (slave) host
+               DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE, but need to handle global resources\n", object_name);
+            } else {
+               // we can run the master task here, ignore slave request
+               DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE, skipping check on master host/queue\n", object_name);
+               continue;
+            }
          } else {
             // we cannot run the master task here, try to use the host/the queue for slave tasks
             DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE but no master task, potential slave host\n",
