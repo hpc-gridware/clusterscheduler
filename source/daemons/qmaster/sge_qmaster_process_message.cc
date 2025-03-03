@@ -388,6 +388,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       }
    }
 
+#if defined(WITH_EXTENSIONS)
    // handle GDI request limits but only if request is not triggered by a manager
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    if (local_ret && !manop_is_manager(packet, master_manager_list)) {
@@ -404,6 +405,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
          }
       }
    }
+#endif   
 
    // handle request specific requirements already here so that we save time potentially in the worker
    //    - manager/operator permissions
