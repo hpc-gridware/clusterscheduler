@@ -2,7 +2,51 @@
 
 # Release notes - Cluster Scheduler 
 
-## 9.0.3
+## v9.0.4
+
+### Improvement
+
+[CS-566](https://hpc-gridware.atlassian.net/browse/CS-566) Add new test scenarios for JSV \[master|slave\]\_l\_hard attribute
+
+### New Feature
+
+[CS-777](https://hpc-gridware.atlassian.net/browse/CS-777) Improve qsub -sync so that is support multiple state \(like r\)
+
+[CS-1056](https://hpc-gridware.atlassian.net/browse/CS-1056) Develop a User-Friendly ShareTree Editor for Admins to Easily Manage and View Large ShareTrees
+
+### Sub-task
+
+[CS-1035](https://hpc-gridware.atlassian.net/browse/CS-1035) Fix compile issues for macOS
+
+[CS-1037](https://hpc-gridware.atlassian.net/browse/CS-1037) Fix build environment for macOS and build for OCS and GCS
+
+[CS-1038](https://hpc-gridware.atlassian.net/browse/CS-1038) Fix remote login problem for macOS regular users
+
+### Task
+
+[CS-937](https://hpc-gridware.atlassian.net/browse/CS-937) do full valgrind test on V90\_BRANCH \(9.0.2/9.0.3\)
+
+### Bug
+
+[CS-634](https://hpc-gridware.atlassian.net/browse/CS-634) a job requesting a pty fails on freebsd
+
+[CS-1022](https://hpc-gridware.atlassian.net/browse/CS-1022) qrsh to a freebsd host fails with "qrsh\_starter: executing child process bash failed: No such file or directory"
+
+[CS-1023](https://hpc-gridware.atlassian.net/browse/CS-1023) qtelemetry reports hosts with long and short hostnames
+
+[CS-1024](https://hpc-gridware.atlassian.net/browse/CS-1024) qdel reports jobs as "is already in deletion" although qstat shows that job in 'qw' state
+
+[CS-1047](https://hpc-gridware.atlassian.net/browse/CS-1047) JSV might have access to job attributes of a previous job verification
+
+[CS-1049](https://hpc-gridware.atlassian.net/browse/CS-1049) Fix MPI templates to contain ignore slave task requests on master host
+
+[CS-1053](https://hpc-gridware.atlassian.net/browse/CS-1053) with pe setting ign\_sreq\_on\_mhost=true job having a slave request on a globally defined resource are not scheduled
+
+[CS-1054](https://hpc-gridware.atlassian.net/browse/CS-1054) with pe setting ign\_sreq\_on\_mhost=true a globally defined resource which is requested for slave scope is not booked into the resource diagram
+
+[CS-1055](https://hpc-gridware.atlassian.net/browse/CS-1055) sge prefix in man pages is not correctly replaced in certain man page files
+
+## v9.0.3
 
 ### Improvement
 

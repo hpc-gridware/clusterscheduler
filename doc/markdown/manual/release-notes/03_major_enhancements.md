@@ -1,5 +1,18 @@
 # Major Enhancements
 
+## v9.0.3 and v9.0.4 (IT IS STRONGLY RECOMMENDED TO UPGRADE TO PATCH 9.0.4)
+
+### Critical bug fixes
+
+* Fixed several critical bugs that caused
+
+  - the `sge_qmaster` to crash
+  - issues in the internal bookkeeping of the scheduler
+  - jobs to be stuck in the system without beeing able to delete them
+  - ...
+
+  Find the full List of fixes in the next chapter.
+
 ## v9.0.2
 
 ### Enhanced NVIDIA GPU Support with qgpu
