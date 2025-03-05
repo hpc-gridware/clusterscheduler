@@ -174,6 +174,29 @@ pkg install pkg:/developer/java/jdk-8
 There is no Maven package in the Solaris 11 package manager,
 so you need to install it [manually](https://maven.apache.org/install.html).
 
+
+### OpenIndiana, OmniOS, ... (default for osol-amd64)
+
+```
+pkg install pkg:/developer/build/automake
+pkg install pkg:/developer/build/autoconf
+pkg install pkg:/developer/gcc-14
+pkg install pkg:/developer/versioning/git
+pkg install pkg:/developer/debug/gdb
+pkg install pkg:/developer/build/cmake
+pkg install pkg:/terminal/xterm
+pkg install pkg:/shell/expect
+pkg install pkg:/developer/documentation-tool/doxygen
+pkg install pkg:/image/graphviz
+pkg install pkg:/image/gnuplot
+```
+
+#### for repository drmaa-java
+```
+pkg install pkg:/developer/java/openjdk8
+pkg install pkg:/developer/build/maven
+```
+
 ### SUSE Tumbleweed (default for lx-riscv64)
 
 ```
