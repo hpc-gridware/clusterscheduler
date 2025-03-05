@@ -129,10 +129,10 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
    int ret = QHOST_SUCCESS;
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
    bool is_manager = false;
-#define HEAD_FORMAT_DEPT "%-23s %-13s%4s %4s %4s %4s %5s %7s %7s %7s %7s\n"
-#define HEAD_FORMAT "%-23s %-13.13s%4.4s %4.4s %4.4s %4.4s %5.5s %7.7s %7.7s %7.7s %7.7s\n"
+#define HEAD_FORMAT_DEPT "%-23s %-13s%4s %5s %5s %5s %6s %7s %7s %7s %7s\n"
+#define HEAD_FORMAT "%-23s %-13.13s%4.4s %5.5s %5.5s %5.5s %6.6s %7.7s %7.7s %7.7s %7.7s\n"
 #define HEAD_FORMAT_OLD_DEPT "%-23s %-13s%4s %5s %7s %7s %7s %7s\n"
-#define HEAD_FORMAT_OLD "%-23s %-13.13s%4.4s %5.5s %7.7s %7.7s %7.7s %7.7s\n"
+#define HEAD_FORMAT_OLD "%-23s %-13.13s%4.4s %6.6s %7.7s %7.7s %7.7s %7.7s\n"
    
    DENTER(TOP_LAYER);
    
@@ -271,9 +271,9 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
                   MSG_HEADER_LOAD, MSG_HEADER_MEMTOT, MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, 
                   MSG_HEADER_SWAPUS);
             }
-            printf("-------------------------------------------------------------------------------");
+            printf("--------------------------------------------------------------------------------");
             if (show_binding) {
-               printf("---------------");
+               printf("------------------");
             } 
             printf("\n");
          }
