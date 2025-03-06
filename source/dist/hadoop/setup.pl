@@ -136,17 +136,21 @@ sub do_pe_install {
   open FILE, ">/tmp/hadoop_pe_setup.$$";
 
   print FILE <<"END";
-pe_name            hadoop
-slots              99999
-user_lists         NONE
-xuser_lists        NONE
-start_proc_args    $ENV{PWD}/pestart.sh
-stop_proc_args     $ENV{PWD}/pestop.sh
-allocation_rule    1
-control_slaves     TRUE
-job_is_first_task  FALSE
-urgency_slots      min
-accounting_summary TRUE
+pe_name              hadoop
+slots                99999
+user_lists           NONE
+xuser_lists          NONE
+start_proc_args      $ENV{PWD}/pestart.sh
+stop_proc_args       $ENV{PWD}/pestop.sh
+allocation_rule      1
+control_slaves       TRUE
+job_is_first_task    FALSE
+urgency_slots        min
+accounting_summary   TRUE
+ign_sreq_on_mhost    FALSE
+master_forks_slaves  FALSE
+daemon_forks_slaves  FALSE
+
 END
 
   close FILE;
@@ -172,7 +176,7 @@ sub do_load_sensor_install {
   mkdir "/tmp/hadoop_load_sensor_setup.$$";
   open FILE, ">/tmp/hadoop_load_sensor_setup.$$/global";
 
-  print FILE `qconf -sconf | awk '{ if (\$1 == "load_sensor") { print \$1, "$ENV{PWD}/load_sensor.sh" } else { print \$1, \$2 } }'`;
+  print FILE `env SGE_SINGLE_LINE=1 qconf -sconf | awk '{ if (\$1 == "load_sensor") { print \$1, "$ENV{PWD}/load_sensor.sh" } else { print \$1, \$2 } }'`;
 
   close FILE;
 
