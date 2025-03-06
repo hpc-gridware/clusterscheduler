@@ -115,13 +115,19 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         ${hwloc_path})
             else ()
                 list(APPEND 3rdparty_list 3rd_party_hwloc)
+                if(SGE_ARCH STREQUAL "osol-amd64")
+                  set(CUSTOM_CFLAGS CFLAGS=-Wno-incompatible-pointer-types)
+                endif()
                 externalproject_add(
                         3rd_party_hwloc
                         EXCLUDE_FROM_ALL TRUE
                         PREFIX ${3rdparty_build_path}/hwloc
                         INSTALL_DIR ${3rdparty_install_path}
                         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-                        CONFIGURE_COMMAND ./configure --prefix ${3rdparty_install_path} --enable-static --disable-libxml2
+                        CONFIGURE_COMMAND ./configure
+                           --prefix ${3rdparty_install_path}
+                           --enable-static --disable-libxml2
+                           ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make

@@ -37,6 +37,7 @@ target_link_libraries(
       qsh
       PRIVATE clientscommon
       gdi
+      sched
       sgeobj
       cull
       comm

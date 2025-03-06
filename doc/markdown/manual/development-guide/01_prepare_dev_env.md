@@ -184,6 +184,7 @@ pkg install pkg:/developer/gcc-14
 pkg install pkg:/developer/versioning/git
 pkg install pkg:/developer/debug/gdb
 pkg install pkg:/developer/build/cmake
+pkg install pkg:/developer/build/gnu-make
 pkg install pkg:/terminal/xterm
 pkg install pkg:/shell/expect
 pkg install pkg:/developer/documentation-tool/doxygen

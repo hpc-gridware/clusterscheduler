@@ -67,6 +67,7 @@ fi
 ossysname="`$UNAME -s`"
 osmachine="`$UNAME -m`"
 osrelease="`$UNAME -r`"
+ososname="`$UNAME -o`"
 
 case $ossysname in
 Darwin)
@@ -225,6 +226,18 @@ Linux)
    ARCH=${unsupported}lx-${lxmachine}
    ;;
 SunOS)
+   case $ososname in
+      illumos)
+         SOLARCH="osol"
+         ;;
+      Solaris)
+         SOLARCH="sol"
+         ;;
+      *)
+         SOLARCH="unknown-sol"
+         ;;
+   esac
+
    case $osmachine in
    sun4)
       ARCH=UNSUPPORTED-sun4
@@ -237,9 +250,9 @@ SunOS)
          ;;
       5.[91]*)
          if [ `isainfo -b` = 64 ]; then
-            ARCH=sol-amd64
+            ARCH=$SOLARCH-amd64
          else
-            ARCH=sol-x86
+            ARCH=$SOLARCH-x86
          fi
          ;;
       *)
@@ -257,10 +270,16 @@ SunOS)
          fi
          ;;
       5.[91]*)
-         if [ `isainfo -b` = 64 ]; then
-            ARCH=sol-sparc64
+         if [ "$ososname" = "illumos" ]; then
+            SOLARCH="osol"
          else
-            ARCH=sol-sparc
+            SOLARCH="sol"
+         fi
+
+         if [ `isainfo -b` = 64 ]; then
+            ARCH=$SOLARCH-sparc64
+         else
+            ARCH=$SOLARCH-sparc
          fi
          ;;
       *)

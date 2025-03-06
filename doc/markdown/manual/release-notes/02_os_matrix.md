@@ -38,7 +38,9 @@ xxQS_NAMExx components on the other axis.
 | Redhat Linux     | 9       | x86-64       |           x           |         x         |          x           |
 | Rocky Linux      | 8       | x86-64       |           x           |         x         |          x           |
 | Rocky Linux      | 9       | x86-64       |           x           |         x         |          x           |
-| Solaris          | 11      | x86-64       |           -           |         a         |          x           |
+| Solaris          | 11      | x86-64       |           a           |         a         |          x           |
+| OmniOS           | 11      | x86-64       |           a           |         a         |          a           |
+| OpenIndiana      | 11      | x86-64       |           a           |         a         |          a           |
 | SUSE Leap Linux  | 15      | x86-64       |           x           |         x         |          x           |
 | SUSE Tumbleweed  |         | x86-64       |           a           |         x         |          x           |
 | Ubuntu Linux     | 20.04   | x86-64       |           x           |         x         |          x           |
@@ -57,5 +59,5 @@ xxQS_NAMExx components on the other axis.
 > older operating systems if the OS version has been supported in the past. Please contact our sales and support 
 > team for more information.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

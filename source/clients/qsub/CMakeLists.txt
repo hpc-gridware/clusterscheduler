@@ -37,6 +37,7 @@ target_link_libraries(
       commlists
       evc
       gdi
+      sched
       sgeobj
       cull
       uti

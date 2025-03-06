@@ -214,6 +214,10 @@ function(architecture_specific_settings)
       set(WITH_PYTHON OFF PARENT_SCOPE)
 
       set(JNI_ARCH "solaris" PARENT_SCOPE)
+      if (SGE_ARCH STREQUAL "osol-amd64")
+         add_compile_definitions(__EXTENSIONS__)
+         set(NSL_LIB socket nsl PARENT_SCOPE)
+      endif()
    elseif (SGE_ARCH MATCHES "darwin-arm64")
       # Disable Python for unsupported qmaster architectures
       set(WITH_PYTHON OFF PARENT_SCOPE)

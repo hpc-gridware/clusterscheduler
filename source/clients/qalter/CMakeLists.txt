@@ -33,6 +33,7 @@ target_link_libraries(
       qalter
       PRIVATE clientscommon
       gdi
+      sched
       sgeobj
       cull
       comm

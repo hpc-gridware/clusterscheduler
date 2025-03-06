@@ -63,7 +63,7 @@ fi
 ROOTGROUP=root
 
 case $ARCH in
- sol-*|usol-*)
+ sol-*|usol-*|osol-*)
    AWK=/usr/bin/nawk
    ECHO=/usr/bin/echo
    RC_FILE=sysv_rc
