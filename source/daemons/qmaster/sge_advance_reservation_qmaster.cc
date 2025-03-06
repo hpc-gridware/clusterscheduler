@@ -42,6 +42,7 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
+#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -72,6 +73,7 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_qref.h"
 
+#include "sched/debit.h"
 #include "sched/sge_resource_utilization.h"
 #include "sched/sge_select_queue.h"
 #include "sched/sge_job_schedd.h"
@@ -1156,7 +1158,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
       splitted_job_lists[SPLIT_SUSPENDED] = &suspended_list;
       splitted_job_lists[SPLIT_RUNNING] = &running_list;
 
-      /* splitted job lists must be freed */
+      /* split job lists must be freed */
       split_jobs(&master_job_list, mconf_get_max_aj_instances(), splitted_job_lists, true);
    }
 
@@ -1218,7 +1220,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
          ret = false;
       } else {
          lSetList(ar, AR_granted_slots, a.gdil);
-         ar_initialize_reserved_queue_list(ar);
+         ar_initialize_resource_booking(ar);
          a.gdil = nullptr;
 
          ar_do_reservation(ar, true, gdi_session);
@@ -1543,209 +1545,301 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
    DRETURN(ret);
 }
 
-/****** sge_advance_reservation_qmaster/ar_initialize_reserved_queue_list() ******
-*  NAME
-*     ar_initialize_reserved_queue_list() -- initialize reserved queue structure
+/**
+ * @brief add a consumable to an AR resource's (queue or host) complex_values
+ * @param target the target queue or host (from the AR_reserved_queues or AR_reserved_hosts)
+ * @param source  the source queue or host (from the master queue or host list)
+ * @param nm EH_consumable_config_list or QU_consumable_config_list
+ * @param cr complex object
+ * @param name name of the complex
+ * @param doubleval capacity to store in the target object
+ * @param stringval capacity formatted as string
+ */
+static void
+ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lListElem *cr, const char *name, double doubleval, const char * stringval) {
+   DENTER(TOP_LAYER);
+
+   // is the complex defined in the source objects complex_values at all?
+   const lListElem *master_cr = lGetSubStr(source, CE_name, name, nm);
+   if (master_cr != nullptr) {
+      // make sure that the ??_consumable_config_list exists in target (host or queue)
+      lListElem *ccobj = nullptr;
+      lList *cclist = lGetListRW(target, nm);
+      if (cclist == nullptr) {
+         cclist = lCreateList("", CE_Type);
+         lSetList(target, nm, cclist);
+      } else {
+         // we might already have the consumable in the list (for hosts having multiple qinstances / the global host)
+         ccobj = lGetElemStrRW(cclist, CE_name, name);
+      }
+      if (ccobj == nullptr) {
+         // if it did not exist, create it
+         ccobj = lCopyElem(cr);
+         lSetDouble(ccobj, CE_doubleval, doubleval);
+         lSetString(ccobj, CE_stringval, stringval);
+         lAppendElem(cclist, ccobj);
+      } else {
+         // if it already existed, add the doubleval to the existing value and re-create the stringval
+         lAddDouble(ccobj, CE_doubleval, doubleval);
+         double sum = lGetDouble(ccobj, CE_doubleval);
+         DSTRING_STATIC(dstr, 512);
+         lSetString(ccobj, CE_stringval, sge_dstring_sprintf(&dstr, "%f", sum));
+      }
+   }
+   DRETURN_VOID;
+}
+
+/**
+ * @brief add a non consumable complex to an AR resource's (queue or host) complex_values
+ * @param target the target queue or host (from the AR_reserved_queues or AR_reserved_hosts)
+ * @param source  the source queue or host (from the master queue or host list)
+ * @param nm EH_consumable_config_list or QU_consumable_config_list
+ * @param name name of the complex
+ */
+static void
+ar_add_non_consumable(lListElem *target, const lListElem *source, int nm, const char *name) {
+   // is the complex defined in the source objects complex_values at all?
+   const lListElem *cr = lGetSubStr(source, CE_name, name, nm);
+   if (cr != nullptr) {
+      // make sure that the ??_consumable_config_list exists in target (host or queue)
+      lListElem *ccobj = nullptr;
+      lList *cclist = lGetListRW(target, nm);
+      if (cclist == nullptr) {
+         cclist = lCreateList("", CE_Type);
+         lSetList(target, nm, cclist);
+      } else {
+         // we might already have the complex entry in the list (for hosts having multiple qinstances / the global host)
+         ccobj = lGetElemStrRW(cclist, CE_name, name);
+      }
+      if (ccobj == nullptr) {
+         // if it does not yet exist, add it
+         lAppendElem(cclist, lCopyElem(cr));
+      }
+   }
+}
+
+/**
+ * @brief fetch the amount of resources requested for an AR
+ * @param ar the AR object
+ * @param cr the complex definition (for default requests)
+ * @param cr_name  the complex/request name
+ * @return 0.0 if the resource was not requested, else the requested amount
+ */
+static bool
+ar_get_request_or_default(const lListElem *ar, const lListElem *cr, const char *cr_name, double &request_value) {
+   double ret = false;
+
+   const lListElem *request = lGetSubStr(ar, CE_name, cr_name, AR_resource_list);
+   if (request != nullptr) {
+      // resource was explicitly requested
+      request_value = lGetDouble(request, CE_doubleval);
+      ret = true;
+   } else {
+      // resource was not requested but there might be a default request
+      const char *default_string = lGetString(cr, CE_defaultval);
+      double default_double;
+      if (default_string != nullptr && parse_ulong_val(&default_double, NULL, lGetUlong(cr, CE_valtype), default_string, NULL, 0) != 0) {
+         request_value = default_double;
+         ret = true;
+      }
+   }
+
+   return ret;
+}
+
+/****** sge_advance_reservation_qmaster/ar_initialize_resource_booking() *******
+*  \brief Initialize reserved queue structure.
 *
-*  SYNOPSIS
-*     void ar_initialize_reserved_queue_list(lListElem *ar) 
+*  \details
+*  The function creates the resource booking lists (AR_reserved_queues and AR_reserved_hosts)
+*  that store the necessary data to debit jobs in an AR. The elements of the lists are
+*  reduced elements of QU_Type and EH_Type.
 *
-*  FUNCTION
-*     The function creates the list AR_reserved_queues that stores the necessary
-*     data to debit jobs in a AR. The Elements in the queue are a reduced
-*     element of type QI_Type
+*  \param[in] ar  Advance reservation that should be initialized.
 *
-*  INPUTS
-*     lListElem *ar - advance reservation that should be initialized
-*
-*  NOTES
-*     MT-NOTE: ar_initialize_reserved_queue_list() is not MT safe 
+*  \note
+*  MT-NOTE: ar_initialize_resource_booking() is not MT safe.
 *******************************************************************************/
 void
-ar_initialize_reserved_queue_list(lListElem *ar) {
+ar_initialize_resource_booking(lListElem *ar) {
+   DENTER(TOP_LAYER);
+
    const lListElem *gep;
    const lList *gdil = lGetList(ar, AR_granted_slots);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
    dstring buffer = DSTRING_INIT;
 
-   static int queue_field[] = {QU_qhostname,
-                               QU_qname,
-                               QU_full_name,
-                               QU_job_slots,
-                               QU_consumable_config_list,
-                               QU_tagged4schedule,
-                               QU_resource_utilization,
-                               QU_message_list,
-                               QU_state,
-                               QU_s_rt,
-                               QU_h_rt,
-                               QU_s_cpu,
-                               QU_h_cpu,
-                               QU_s_fsize,
-                               QU_h_fsize,
-                               QU_s_data,
-                               QU_h_data,
-                               QU_s_stack,
-                               QU_h_stack,
-                               QU_s_core,
-                               QU_h_core,
-                               QU_s_rss,
-                               QU_h_rss,
-                               QU_s_vmem,
-                               QU_h_vmem,
-                               NoName};
-   static const char *value = "INFINITY";
-   static int attr[] = {
-           QU_s_cpu, QU_h_cpu, QU_s_fsize, QU_h_fsize, QU_s_data,
-           QU_h_data, QU_s_stack, QU_h_stack, QU_s_core, QU_h_core,
-           QU_s_rss, QU_h_rss, QU_s_vmem, QU_h_vmem, NoName
+   static int queue_fields[] {
+      QU_qhostname,
+      QU_qname,
+      QU_full_name,
+      QU_job_slots,
+      QU_consumable_config_list,
+      QU_resource_utilization,
+      QU_message_list,
+      QU_state,
+      NoName
    };
 
-   lDescr *rdp = nullptr;
-   lEnumeration *what;
-   lList *queue_list;
+   static int host_fields[] {
+      EH_name,
+      EH_consumable_config_list,
+      EH_resource_utilization,
+      NoName
+   };
 
-   DENTER(TOP_LAYER);
+   lEnumeration *queue_what = lIntVector2What(QU_Type, queue_fields);
+   lEnumeration *host_what = lIntVector2What(EH_Type, host_fields);
 
-   what = lIntVector2What(QU_Type, queue_field);
-   lReduceDescr(&rdp, QU_Type, what);
-   lFreeWhat(&what);
+   lDescr *queue_descr = nullptr;
+   lDescr *host_descr = nullptr;
+   lReduceDescr(&queue_descr, QU_Type, queue_what);
+   lReduceDescr(&host_descr, EH_Type, host_what);
+   lFreeWhat(&queue_what);
+   lFreeWhat(&host_what);
 
-   queue_list = lCreateList("", rdp);
+   // these are the AR's AR_reserved_queues and AR_reserved_hosts lists
+   // the AR_reserved_hosts list gets a global host element
+   lList *queue_list = nullptr;
+   lList *host_list = nullptr;
+   lListElem *global_host = lAddElemHost(&host_list, EH_name, SGE_GLOBAL_NAME, host_descr);
+   const lListElem *master_global_host = lGetElemHost(master_exechost_list, EH_name, SGE_GLOBAL_NAME);
 
    bool is_master_queue = true;
    const char *last_hostname = nullptr;
    for_each_ep(gep, gdil) {
-      int index = 0;
-      u_long32 slots = lGetUlong(gep, JG_slots);
-      lListElem *queue = lCreateElem(rdp);
-      lList *crl = nullptr;
-      const lListElem *cr;
-      lListElem *new_cr;
-
       const char *queue_name = lGetString(gep, JG_qname);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
-
       const char *host_name = lGetHost(gep, JG_qhostname);
-      lSetHost(queue, QU_qhostname, host_name);
-      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
 
-      lSetString(queue, QU_full_name, queue_name);
+      // create queue with slot booking
+      lListElem *queue = lAddElemStr(&queue_list, QU_full_name, queue_name, queue_descr);
       lSetString(queue, QU_qname, cqueue_name);
-
-      sge_dstring_clear(&buffer);
-      double_print_time_to_dstring(sge_gmt64_to_gmt32_double(lGetUlong64(ar, AR_duration)), &buffer);
-      lSetString(queue, QU_h_rt, sge_dstring_get_string(&buffer));
-      lSetString(queue, QU_s_rt, sge_dstring_get_string(&buffer));
-
-      /*
-       * initialize values
-       */
-      while (attr[index] != NoName) {
-         lSetString(queue, attr[index], value);
-         index++;
-      }
-
+      lSetHost(queue, QU_qhostname, host_name);
+      u_long32 slots = lGetUlong(gep, JG_slots);
       lSetUlong(queue, QU_job_slots, slots);
 
-      for_each_ep(cr, lGetList(ar, AR_resource_list)) {
+      const lListElem *master_cqueue = cqueue_list_locate(master_cqueue_list, cqueue_name);
+      const lListElem *master_queue = cqueue_locate_qinstance(master_cqueue, host_name);
+
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
+
+      // get or create host (one host can appear multiple times in gdil)
+      lListElem *host = lGetElemHostRW(host_list, EH_name, host_name);
+      if (host == nullptr) {
+         host = lAddElemHost(&host_list, EH_name, host_name, host_descr);
+      }
+      const lListElem *master_host = lGetElemHost(master_exechost_list, EH_name, host_name);
+
+      // now we have queue, host and global host objects, fill in the granted complex_values
+
+      // loop over the defined complex values and add them to the queue and hosts if
+      // - they have been requested
+      // - or they have a default request
+      // - they are defined on the queue, host, global layer
+      // - non-requested exclusive? no. they will have effect in the booking of the AR itself
+      const lListElem *cr;
+      for_each_ep (cr, master_centry_list) {
+         const char *cr_name = lGetString(cr, CE_name);
          u_long32 consumable = lGetUlong(cr, CE_consumable);
-         if (consumable != CONSUMABLE_NO) {
-            double newval;
-
-            if (lGetUlong(cr, CE_consumable) == CONSUMABLE_YES) {
-               newval = lGetDouble(cr, CE_doubleval) * slots;
-            } else if (consumable == CONSUMABLE_JOB) {
-               if (!is_master_queue) {
-                  /* job consumables are only attached to the selected masterq */
-                  continue;
+         if (consumable == CONSUMABLE_NO) {
+            // non-consumable, add the definition from the master object (if defined on the layer)
+            ar_add_non_consumable(global_host, master_global_host, EH_consumable_config_list, cr_name);
+            ar_add_non_consumable(host, master_host, EH_consumable_config_list, cr_name);
+            ar_add_non_consumable(queue, master_queue, QU_consumable_config_list, cr_name);
+         } else {
+            double request_or_default = 0.0;
+            bool requested = ar_get_request_or_default(ar, cr, cr_name, request_or_default);
+            if (requested) {
+               // there is something to book
+               // it is a consumable, add the requested capacity to the booking (if defined on the layer)
+               double doubleval;
+               if (consumable == CONSUMABLE_YES) {
+                  doubleval = request_or_default * slots;
+               } else if (consumable == CONSUMABLE_JOB) {
+                  if (!is_master_queue) {
+                     continue;
+                  }
+                  doubleval = request_or_default;
+               } else { // CONSUMABLE_HOST
+                  if (!do_per_host_booking) {
+                     continue;
+                  }
+                  doubleval = request_or_default;
                }
-               newval = lGetDouble(cr, CE_doubleval);
-            } else {
-               // must be CONSUMABLE_HOST
-               if (!do_per_host_booking) {
-                  continue;
-               }
-               newval = lGetDouble(cr, CE_doubleval);
+               const char *stringval = sge_dstring_sprintf(&buffer, "%f", doubleval);
+               ar_add_consumable(global_host, master_global_host, EH_consumable_config_list, cr, cr_name, doubleval, stringval);
+               ar_add_consumable(host, master_host, EH_consumable_config_list, cr, cr_name, doubleval, stringval);
+               ar_add_consumable(queue, master_queue, QU_consumable_config_list, cr, cr_name, doubleval, stringval);
             }
-
-            sge_dstring_sprintf(&buffer, "%f", newval);
-            new_cr = lCopyElem(cr);
-            lSetString(new_cr, CE_stringval, sge_dstring_get_string(&buffer));
-            lSetDouble(new_cr, CE_doubleval, newval);
-
-            if (crl == nullptr) {
-               crl = lCreateList("", CE_Type);
-            }
-            lAppendElem(crl, new_cr);
          }
       }
 
-      lSetList(queue, QU_consumable_config_list, crl);
-      lAppendElem(queue_list, queue);
-
-      /* ensure availability of implicit slot request */
-      qinstance_set_conf_slots_used(queue);
-
-      /* initialize QU_resource_utilization */
-      qinstance_debit_consumable(queue, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
-
       /* initialize QU_state */
-      {
-         const lListElem *master_cqueue;
-         const lListElem *master_queue;
-
-         master_cqueue = lGetElemStr(master_cqueue_list, CQ_name, cqueue_name);
-         if (master_cqueue != nullptr) {
-            if ((master_queue = lGetSubStr(master_cqueue, QU_full_name,
-                                           queue_name, CQ_qinstances)) != nullptr) {
-               if (qinstance_state_is_ambiguous(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_AMBIGUOUS));
-                  qinstance_set_error(queue, QI_AMBIGUOUS, sge_dstring_get_string(&buffer), true);
-               }
-               if (qinstance_state_is_alarm(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_ALARM));
-                  qinstance_set_error(queue, QI_ALARM, sge_dstring_get_string(&buffer), true);
-               }
-               if (qinstance_state_is_suspend_alarm(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_SUSPEND_ALARM));
-                  qinstance_set_error(queue, QI_SUSPEND_ALARM, sge_dstring_get_string(&buffer), true);
-               }
-               if (qinstance_state_is_manual_disabled(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_DISABLED));
-                  qinstance_set_error(queue, QI_DISABLED, sge_dstring_get_string(&buffer), true);
-               }
-               if (qinstance_state_is_unknown(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_UNKNOWN));
-                  qinstance_set_error(queue, QI_UNKNOWN, sge_dstring_get_string(&buffer), true);
-               }
-               if (qinstance_state_is_error(master_queue)) {
-                  lAddUlong(ar, AR_qi_errors, 1);
-                  sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
-                                      qinstance_state_as_string(QI_ERROR));
-                  qinstance_set_error(queue, QI_ERROR, sge_dstring_get_string(&buffer), true);
-               }
-            }
-         }
+      if (qinstance_state_is_ambiguous(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_AMBIGUOUS));
+         qinstance_set_error(queue, QI_AMBIGUOUS, sge_dstring_get_string(&buffer), true);
+      }
+      if (qinstance_state_is_alarm(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_ALARM));
+         qinstance_set_error(queue, QI_ALARM, sge_dstring_get_string(&buffer), true);
+      }
+      if (qinstance_state_is_suspend_alarm(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_SUSPEND_ALARM));
+         qinstance_set_error(queue, QI_SUSPEND_ALARM, sge_dstring_get_string(&buffer), true);
+      }
+      if (qinstance_state_is_manual_disabled(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_DISABLED));
+         qinstance_set_error(queue, QI_DISABLED, sge_dstring_get_string(&buffer), true);
+      }
+      if (qinstance_state_is_unknown(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_UNKNOWN));
+         qinstance_set_error(queue, QI_UNKNOWN, sge_dstring_get_string(&buffer), true);
+      }
+      if (qinstance_state_is_error(master_queue)) {
+         lAddUlong(ar, AR_qi_errors, 1);
+         sge_dstring_sprintf(&buffer, "reserved queue %s is %s", queue_name,
+                             qinstance_state_as_string(QI_ERROR));
+         qinstance_set_error(queue, QI_ERROR, sge_dstring_get_string(&buffer), true);
       }
 
       sge_free(&cqueue_name);
       is_master_queue = false;
    }
-   lSetList(ar, AR_reserved_queues, queue_list);
 
-   sge_free(&rdp);
+   lListElem *queue;
+   for_each_rw(queue, queue_list) {
+      // make sure all complex attributes are properly filled in
+      centry_list_fill_config(lGetListRW(queue, QU_consumable_config_list), master_centry_list);
+      // ensure availability of implicit slot request
+      qinstance_set_conf_slots_used(queue);
+      // initialize QU_resource_utilization
+      qinstance_debit_consumable(queue, nullptr, nullptr, master_centry_list, 0, true, true, nullptr);
+   }
+   lListElem *host;
+   for_each_rw(host, host_list) {
+      // make sure all complex attributes are properly filled in
+      centry_list_fill_config(lGetListRW(host, EH_consumable_config_list), master_centry_list);
+      debit_host_consumable(nullptr, nullptr, nullptr, host, master_centry_list, 0, true, true, nullptr);
+   }
+
+   lSetList(ar, AR_reserved_queues, queue_list);
+   lSetList(ar, AR_reserved_hosts, host_list);
+
+   sge_free(&queue_descr);
+   sge_free(&host_descr);
    sge_dstring_free(&buffer);
 
    DRETURN_VOID;

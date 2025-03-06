@@ -196,47 +196,45 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
-   int ar_id = lGetUlong(a->job, JB_ar);
-   sge_qeti_t *iter = nullptr;
-   lListElem *next_queue, *qep;
-   const lListElem *hep;
-
    DENTER(TOP_LAYER);
 
-   if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
+   sge_qeti_t *iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t));
+   if (iter == nullptr) {
       DRETURN(nullptr);
    }
 
+   int ar_id = lGetUlong(a->job, JB_ar);
    if (ar_id == 0) {
-      /* add "slot" resource utilization entry of parallel environment */
-      if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS, 
+      // add "slot" resource utilization entry of parallel environment
+      // when running within an AR, slots are limited on the queue level, no need to add them here
+      if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS,
                      lGetList(a->pe, PE_resource_utilization), lGetUlong(a->pe, PE_slots), true)) {
          sge_qeti_release(&iter);
          DRETURN(nullptr);
       }
+   }
 
-      /* add references to global resource utilization entries 
-         that might affect jobs queue end time */
-      // @todo CS-599 we have a->gep
-      if ((hep = host_list_locate(a->host_list, SGE_GLOBAL_NAME))) {
-         if (sge_add_qeti_resource_container(&iter->cr_refs_global, 
-                  lGetList(hep, EH_resource_utilization), lGetList(hep, EH_consumable_config_list), 
-                  a->centry_list, a->job)!=0) {
-            sge_qeti_release(&iter);
-            DRETURN(nullptr);
-         }
+   // add references to global resource utilization entries that might affect jobs queue end time
+   // @todo CS-599 we have a->gep
+   lListElem *global_host = host_list_locate(a->host_list, SGE_GLOBAL_NAME);
+   if (global_host != nullptr) {
+      if (sge_add_qeti_resource_container(&iter->cr_refs_global,
+               lGetList(global_host, EH_resource_utilization),
+               lGetList(global_host, EH_consumable_config_list),
+               a->centry_list, a->job)!=0) {
+         sge_qeti_release(&iter);
+         DRETURN(nullptr);
       }
    }
 
-   /* add references to per host resource utilization entries 
-      that might affect jobs queue end time */
+   // add references to per host resource utilization entries that might affect jobs queue end time
+   const lListElem *hep;
    for_each_ep(hep, a->host_list) {
-      const char *eh_name;
-      int is_relevant;
-      const void *queue_iterator = nullptr;
+      const char *eh_name = lGetHost(hep, EH_name);
 
       // @todo CS-599 compare against a->gep
-      if (!strcmp((eh_name=lGetHost(hep, EH_name)), SGE_GLOBAL_NAME)) {
+      // we already handled the global host above
+      if (strcmp(eh_name, SGE_GLOBAL_NAME) == 0) {
          continue;
       }   
 
@@ -244,11 +242,13 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          continue;
       }
 
-      /* There must be at least one queue referenced with the parallel
-         environment that resides at this host. And secondly we only 
-         consider those hosts that match this job (statically) */
-      is_relevant = false;
-      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator); 
+      // There must be at least one queue referenced with the parallel
+      // environment that resides at this host. And secondly we only
+      // consider those hosts that match this job (statically)
+      int is_relevant = false;
+      const void *queue_iterator = nullptr;
+      lListElem *next_queue, *qep;
+      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
           (qep = next_queue);
            next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
 
@@ -256,28 +256,18 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
             continue;
          }
 
-         /* consider only those queues that match this job (statically) */
+         // consider only those queues that match this job (statically)
          if (sge_queue_match_static(a, qep) != DISPATCH_OK) { 
             continue;
          }   
 
-         if (ar_id == 0) {
-            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, 
-                     lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list), 
-                           a->centry_list, a->job)!=0) {
-               sge_qeti_release(&iter);
-               DRETURN(nullptr);
-            }
-         } else {
-            const char *qname = lGetString(qep, QU_full_name);
-            const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
-            const lListElem *ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
-            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, lGetList(ar_queue, QU_resource_utilization),
-                                  lGetList(ar_queue, QU_consumable_config_list), a->centry_list, a->job)!=0) {
-               sge_qeti_release(&iter);
-               DRETURN(nullptr);
-            }
+         if (sge_add_qeti_resource_container(&iter->cr_refs_queue,
+                  lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list),
+                        a->centry_list, a->job)!=0) {
+            sge_qeti_release(&iter);
+            DRETURN(nullptr);
          }
+
          is_relevant = true;
       }
       if (is_relevant) {

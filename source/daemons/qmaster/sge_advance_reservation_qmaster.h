@@ -68,7 +68,7 @@ int
 ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session);
 
 void
-ar_initialize_reserved_queue_list(lListElem *ar);
+ar_initialize_resource_booking(lListElem *ar);
 
 void
 sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor);

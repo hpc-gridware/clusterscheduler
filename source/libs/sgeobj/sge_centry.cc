@@ -765,6 +765,34 @@ centry_list_fill_request(lList *this_list, lList **answer_list, const lList *mas
    DRETURN(0);
 }
 
+/**
+ * @brief fill in configuration attributes into a list of complex attributes
+ *
+ * The function makes sure that all configuration attributes of objects in a CE_Type list
+ * are properly filled in.
+ * The actual configuration values are taken from the complex definition (the master_centry_list).
+ *
+ * @param centry_list
+ * @param master_centry_list
+ */
+void
+centry_list_fill_config(lList *centry_list, const lList *master_centry_list) {
+   lListElem *centry;
+   for_each_rw(centry, centry_list) {
+      const lListElem *master_centry = centry_list_locate(master_centry_list, lGetString(centry, CE_name));
+      if (master_centry != nullptr) {
+         lSetString(centry, CE_name, lGetString(master_centry, CE_name));
+         lSetString(centry, CE_shortcut, lGetString(master_centry, CE_shortcut));
+         lSetUlong(centry, CE_valtype, lGetUlong(master_centry, CE_valtype));
+         lSetUlong(centry, CE_relop, lGetUlong(master_centry, CE_relop));
+         lSetUlong(centry, CE_requestable, lGetUlong(master_centry, CE_requestable));
+         lSetUlong(centry, CE_consumable, lGetUlong(master_centry, CE_consumable));
+         lSetString(centry, CE_defaultval, lGetString(master_centry, CE_defaultval));
+         lSetString(centry, CE_urgency_weight, lGetString(master_centry, CE_urgency_weight));
+      }
+   }
+}
+
 bool
 centry_list_are_queues_requestable(const lList *this_list) {
    bool ret = false;

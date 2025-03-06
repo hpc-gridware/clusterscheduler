@@ -220,3 +220,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *loa
                  int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);
+
+void
+sge_ar_swap_resource_lists(sge_assignment_t &a);

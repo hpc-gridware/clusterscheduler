@@ -964,23 +964,31 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_SENT, MSG_QMASTER, qualified_hostname, jr, jep, jatep, nullptr,
                                   MSG_LOG_SENT2EXECD);
 
-         global_host_ep = host_list_locate(master_exechost_list, "global");
+         global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
          bool do_per_global_host_booking = true;
+
+         u_long32 ar_id = lGetUlong(jep, JB_ar);
+         lListElem *ar = nullptr;
+         lListElem *ar_global_host = nullptr;
+         if (ar_id != 0) {
+            ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id);
+            if (ar == nullptr) {
+               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(jobid));
+               DRETURN_VOID;
+            } else {
+               ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
+            }
+         }
+
          const char *last_hostname = nullptr;
          const lListElem *gdil_ep;
          const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
          for_each_rw(gdil_ep, gdil) {
-            lListElem *ar = nullptr;
-            u_long32 ar_id = lGetUlong(jep, JB_ar);
             const char *queue_name = lGetString(gdil_ep, JG_qname);
             lListElem *queue = nullptr;
 
             if ((queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name)) == nullptr) {
                ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(jobid));
-               master_task = false;
-            } else if (ar_id != 0 && (ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id)) == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(jobid));
-               master_task = false;
             } else {
                const char *queue_hostname = lGetHost(queue, QU_qhostname);
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
@@ -1043,16 +1051,24 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                         sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs, gdi_session);
                      }
                   }
-               } else {
+               } else if (ar != nullptr) {
                   /* debit in advance reservation */
-                  lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-                  if (qinstance_debit_consumable(queue, jep, pe, master_centry_list, tmp_slot, master_task,
-                                                 do_per_host_booking, nullptr) > 0) {
-                     dstring buffer = DSTRING_INIT;
+                  lListElem *queue = lGetSubStrRW(ar, QU_full_name, queue_name, AR_reserved_queues);
+                  int bookings = 0;
+                  bookings += qinstance_debit_consumable(queue, jep, pe, master_centry_list, tmp_slot, master_task,
+                                                 do_per_host_booking, nullptr) > 0;
+                  if (ar_global_host != nullptr) {
+                     bookings += debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+                  }
+                  lListElem *host = lGetSubHostRW(ar, EH_name, queue_hostname, AR_reserved_hosts);
+                  if (host != nullptr) {
+                     bookings += debit_host_consumable(jep, jatep, pe, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+                  }
+                  if (bookings > 0) {
+                     DSTRING_STATIC(buffer, 32);
                      /* this info is not spooled */
                      sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
                      sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
-                     sge_dstring_free(&buffer);
                   }
                }
             }
@@ -1542,21 +1558,28 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    const char *pe_name = lGetString(ja_task, JAT_granted_pe);
    lListElem *pe = lGetObject(ja_task, JAT_pe_object);
 
+   u_long32 ar_id = lGetUlong(job, JB_ar);
+   lListElem *ar = nullptr;
+   lListElem *ar_global_host = nullptr;
+   if (ar_id != 0) {
+      ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id);
+      if (ar == nullptr) {
+         ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(job_id));
+         DRETURN_VOID;
+      } else {
+         ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
+      }
+   }
+
    /* free granted resources of the queue */
    const char *last_hostname = nullptr;
    const lListElem *gdil_ep;
    for_each_ep(gdil_ep, gdi_list) {
-      u_long32 ar_id = lGetUlong(job, JB_ar);
       const char *queue_name = lGetString(gdil_ep, JG_qname);
       lListElem *queue = nullptr;
-      lListElem *ar = nullptr;
 
       if ((queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name)) == nullptr) {
          ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(job_id));
-         master_task = false;
-      } else if (ar_id != 0 && (ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id)) == nullptr) {
-         ERROR("can't find advance reservation " sge_U32CFormat " referenced in job " sge_U32CFormat, sge_u32c(ar_id), sge_u32c(job_id));
-         master_task = false;
       } else {
          const char *queue_hostname = lGetHost(queue, QU_qhostname);
          bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
@@ -1603,14 +1626,23 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                }
             } else {
                /* undebit in advance reservation */
-               lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdil_ep, JG_qname), AR_reserved_queues);
-               if (qinstance_debit_consumable(queue, job, pe, master_centry_list, -tmp_slot, master_task,
-                                              do_per_host_booking, nullptr) > 0) {
-                  dstring buffer = DSTRING_INIT;
+               lListElem *queue = lGetSubStrRW(ar, QU_full_name, queue_name, AR_reserved_queues);
+               int bookings = 0;
+               bookings += qinstance_debit_consumable(queue, job, pe, master_centry_list, -tmp_slot, master_task,
+                                              do_per_host_booking, nullptr) > 0;
+               if (ar_global_host != nullptr) {
+                  bookings += debit_host_consumable(job, ja_task, pe, ar_global_host, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+               }
+               lListElem *host = lGetSubHostRW(ar, EH_name, queue_hostname, AR_reserved_hosts);
+               if (host != nullptr) {
+                  bookings += debit_host_consumable(job, ja_task, pe, host, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+               }
+
+               if (bookings > 0) {
+                  DSTRING_STATIC(buffer, 32);
                   /* this info is not spooled */
                   sge_dstring_sprintf(&buffer, sge_U32CFormat, ar_id);
                   sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
-                  sge_dstring_free(&buffer);
                }
             }
          }

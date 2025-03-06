@@ -162,6 +162,8 @@
 #define MSG_SCHEDD_INFO_QNOTARRESERVED                _MESSAGE(47149, _("Jobs can not run because queue was not reserved by advance reservation"))  
 #define MSG_SCHEDD_INFO_ARISINERROR_I                 _MESSAGE(47150, _("cannot run because requested advance reservation " sge_U32CFormat " is in error state"))
 #define MSG_SCHEDD_INFO_ARISINERROR                   _MESSAGE(47151, _("Jobs can not run because requested advance reservation is in error state"))  
+#define MSG_SCHEDD_INFO_HNOTARRESERVED_SI             _MESSAGE(47152, _("cannot run on host " SFQ " because it was not reserved by advance reservation " sge_U32CFormat))
+#define MSG_SCHEDD_INFO_HNOTARRESERVED                _MESSAGE(47153, _("Jobs can not run because host was not reserved by advance reservation"))
 
 #define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS       _MESSAGE(47168, _("pe >" SFN "<: failed parsing allocation rule " SFQ))
 #define MSG_PROJECT                                   _MESSAGE(47170, _("project"))

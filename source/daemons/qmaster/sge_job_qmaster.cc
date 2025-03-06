@@ -3308,12 +3308,18 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
             }
          }
 
+         // in case of running in an AR, we swap resources to the AR state
+         sge_ar_swap_resource_lists(a);
+
          /* check if this job can be actually scheduled */
          if (pe_name) {
             sge_select_parallel_environment(&a, master_pe_list);
          } else {
             sge_sequential_assignment(&a);
          }
+
+         // in case of running in an AR, we swap resources back to the normal state
+         sge_ar_swap_resource_lists(a);
 
          /* stop dreaming */
          if (verify_mode != POKE_VERIFY) {
