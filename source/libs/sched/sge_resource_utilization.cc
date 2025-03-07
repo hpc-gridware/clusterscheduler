@@ -173,8 +173,17 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    /* advance reservations */
    for_each_ep(ep, ar_list) {
       u_long32 ar_id = lGetUlong(ep, AR_id);
-      const lListElem *queue;
 
+      const lListElem *host;
+      for_each_ep(host, lGetList(ep, AR_reserved_hosts)) {
+         name = lGetHost(host, EH_name);
+         DPRINTF("-------------------------------------------\n");
+         DPRINTF("AR " sge_U32CFormat " HOST \"%s\"\n", ar_id, name);
+         for_each_ep(cr, lGetList(host, EH_resource_utilization)) {
+            utilization_print(cr, name);
+         }
+      }
+      const lListElem *queue;
       for_each_ep(queue, lGetList(ep, AR_reserved_queues)) {
          name = lGetString(queue, QU_full_name);
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
@@ -776,7 +785,10 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       /* debit AR-job */
       const lListElem *ar = lGetElemUlong(a->ar_list, AR_id, ar_id);
       if (ar != nullptr) {
+         lListElem *ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
+
          bool is_master_task = true;
+         bool do_per_global_host_booking = true;
          const char *last_eh_name = nullptr;
          const lListElem *gdil_ep;
          for_each_ep(gdil_ep, a->gdil) {
@@ -790,7 +802,19 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                       a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
+            if (ar_global_host != nullptr) {
+               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, ar_global_host, a->centry_list, slots,
+                                      EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
+                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
+            }
+            lListElem *host = lGetSubHostRW(ar, EH_name, eh_name, AR_reserved_hosts);
+            if (host != nullptr) {
+               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
+                                      EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
+                                      a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
+            }
             is_master_task = false;
+            do_per_global_host_booking = false;
          }
       }
    }

@@ -1065,7 +1065,7 @@ setup_qmaster() {
    {
       lListElem *ar;
       for_each_rw(ar, *ocs::DataStore::get_master_list(SGE_TYPE_AR)) {
-         ar_initialize_reserved_queue_list(ar);
+         ar_initialize_resource_booking(ar);
       }
    }
 
@@ -1254,20 +1254,32 @@ remove_invalid_job_references(int user) {
 
 static void debit_all_jobs_from_qs() {
    DENTER(TOP_LAYER);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
    const lListElem *gdi;
-   const char *queue_name;
-   int slots;
 
    lListElem *jep;
-   lListElem *next_jep = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB));
+   lListElem *next_jep = lFirstRW(master_job_list);
    while ((jep = next_jep)) {
       /* maybe we have to delete this job */
       next_jep = lNextRW(jep);
+
+      u_long32 ar_id = lGetUlong(jep, JB_ar);
+      lListElem *ar = nullptr;
+      lListElem *ar_global_host = nullptr;
+      if (ar_id != 0) {
+         ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id);
+         if (ar == nullptr) {
+            ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number)));
+            lRemoveElem(master_job_list, &jep);
+            continue;
+         } else {
+            ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
+         }
+      }
 
       lListElem *jatep = nullptr;
       lListElem *next_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
@@ -1281,21 +1293,17 @@ static void debit_all_jobs_from_qs() {
          bool do_per_global_host_booking = true;
          const char *last_hostname = nullptr;
          for_each_ep(gdi, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            u_long32 ar_id = lGetUlong(jep, JB_ar);
-            const lListElem *ar = nullptr;
-
-            queue_name = lGetString(gdi, JG_qname);
-            slots = (int)lGetUlong(gdi, JG_slots);
+            const char *queue_name = lGetString(gdi, JG_qname);
+            int slots = (int)lGetUlong(gdi, JG_slots);
 
             lListElem *qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
             if (qep == nullptr) {
                ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, sge_u32c(lGetUlong(jep, JB_job_number)));
                lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
-            } else if (ar_id != 0 && (ar = lGetElemUlong(master_ar_list, AR_id, ar_id)) == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, sge_u32c(ar_id), sge_u32c(lGetUlong(jep, JB_job_number)));
-               lRemoveElem(lGetListRW(jep, JB_ja_tasks), &jatep);
+               break;
             } else {
-               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdi, JG_qhostname));
+               const char *host_name = lGetHost(gdi, JG_qhostname);
+               bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
                /* debit in all layers */
                lListElem *rqs = nullptr;
                debit_host_consumable(jep, jatep, pe,
@@ -1304,28 +1312,35 @@ static void debit_all_jobs_from_qs() {
                                      master_task, do_per_global_host_booking, nullptr);
                debit_host_consumable(jep, jatep, pe,
                                      host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
-                                                      lGetHost(qep, QU_qhostname)), master_centry_list,
+                                                      host_name), master_centry_list,
                                      slots, master_task, do_per_host_booking, nullptr);
                qinstance_debit_consumable(qep, jep, pe, master_centry_list, slots, master_task,
                                           do_per_host_booking, nullptr);
-               for_each_rw (rqs, master_rqs_list) {
-                  rqs_debit_consumable(rqs, jep, gdi, pe, master_centry_list,
-                                       *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
-                                       *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), slots, master_task, do_per_host_booking);
-               }
-               if (ar != nullptr) {
-                  const char *ar_pe_name = lGetString(ar, AR_granted_pe);
-                  const lListElem *ar_pe = nullptr;
-                  if (ar_pe_name != nullptr) {
-                     ar_pe = lGetElemStr(master_pe_list, PE_name, ar_pe_name);
+               if (ar_id == 0) {
+                  for_each_rw (rqs, master_rqs_list) {
+                     rqs_debit_consumable(rqs, jep, gdi, pe, master_centry_list,
+                                          *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
+                                          *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP), slots, master_task, do_per_host_booking);
                   }
+               } else if (ar != nullptr) {
                   lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gdi, JG_qname), AR_reserved_queues);
                   if (queue != nullptr) {
-                     qinstance_debit_consumable(queue, jep, ar_pe, master_centry_list, slots, master_task,
+                     qinstance_debit_consumable(queue, jep, pe, master_centry_list, slots, master_task,
                                                 do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_U32CFormat " runs in queue " SFQ " not reserved by AR " sge_U32CFormat,
                            sge_u32c(lGetUlong(jep, JB_job_number)), lGetString(gdi, JG_qname), sge_u32c(ar_id));
+                  }
+
+                  if (ar_global_host != nullptr) {
+                     debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
+                  }
+                  lListElem *host = lGetSubHostRW(ar, EH_name, host_name, AR_reserved_hosts);
+                  if (host != nullptr) {
+                     debit_host_consumable(jep, jatep, pe, host, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
+                  } else {
+                     ERROR("job " sge_U32CFormat " runs on host " SFQ " not reserved by AR " sge_U32CFormat,
+                           sge_u32c(lGetUlong(jep, JB_job_number)), host_name, sge_u32c(ar_id));
                   }
                }
             }
