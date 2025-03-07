@@ -35,7 +35,7 @@
 *    SGE_HOST(QU_qhostname) - @todo add summary
 *    @todo add description
 *
-*    SGE_STRING(QU_qname) - @todo add summary
+*    SGE_STRING(QU_qname) - cluster queue name
 *    @todo add description
 *
 *    SGE_STRING(QU_full_name) - @todo add summary
@@ -325,7 +325,7 @@ enum {
 
 LISTDEF(QU_Type)
    SGE_HOST(QU_qhostname, CULL_HASH | CULL_SPOOL)
-   SGE_STRING(QU_qname, CULL_SPOOL)
+   SGE_STRING(QU_qname, CULL_HASH | CULL_SPOOL)
    SGE_STRING(QU_full_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(QU_tag, CULL_DEFAULT)
    SGE_ULONG64(QU_available_at, CULL_DEFAULT)

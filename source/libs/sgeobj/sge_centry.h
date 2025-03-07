@@ -170,6 +170,9 @@ centry_list_fill_request(lList *centry_list, lList **answer_list, const lList *m
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable);
 
+void
+centry_list_fill_config(lList *centry_list, const lList *master_centry_list);
+
 bool
 centry_list_are_queues_requestable(const lList *this_list);
 

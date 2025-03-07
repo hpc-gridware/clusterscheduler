@@ -1119,6 +1119,9 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
     *------------------------------------------------------------------*/
    a.gep = host_list_locate(host_list, SGE_GLOBAL_NAME);
 
+   // in case of running in an AR, we swap resources to the AR state
+   sge_ar_swap_resource_lists(a);
+
    if ((pe_name = lGetString(job, JB_pe)) != nullptr) {
       /*------------------------------------------------------------------
        * SELECT POSSIBLE QUEUE(S) FOR THIS PE JOB
@@ -1193,6 +1196,9 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          }
       }
    }
+
+   // in case of running in an AR, we swap resources back to the original state
+   sge_ar_swap_resource_lists(a);
 
    /*------------------------------------------------------------------
     * BUILD ORDERS LIST THAT TRANSFERS OUR DECISIONS TO QMASTER

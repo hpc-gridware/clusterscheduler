@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -54,10 +54,10 @@
 /* At that point in time we only keep references to in the iterator that
  * allow for efficiently iterating through relevant queue end times in
  * that affect resource utilization of a particular job.
- * 
+ *
  * Further improvements with sge_qeti_t might allow to notably reduce
- * the time for the actual resource selection: It might be useful for 
- * example to enhance sge_qeti_t towards keeping all information required 
+ * the time for the actual resource selection: It might be useful for
+ * example to enhance sge_qeti_t towards keeping all information required
  * for decide very quickly about eligibility of each host/queue.
  */
 struct sge_qeti_s {
@@ -67,14 +67,14 @@ struct sge_qeti_s {
    lList *cr_refs_queue;
 };
 
-/* 
+/*
  *  Assume a parallel job with a license and h_vmem request. At the time
- *  when we seek for reservation the changes with the resource utilization 
+ *  when we seek for reservation the changes with the resource utilization
  *  diagrams relevant for this job are marked with a '+'
  *
  *  After initializing the time iterator using sge_qeti_allocate() the
- *  iterator keeps references to all resource instances (QETI_resource_instance) 
- *  shown in the diagram below and all queue end next (QETI_queue_end_next) 
+ *  iterator keeps references to all resource instances (QETI_resource_instance)
+ *  shown in the diagram below and all queue end next (QETI_queue_end_next)
  *  references refer to the very end of those resource diagrams.
  *
  *  mpi_pe  slots      +------+-----------+
@@ -85,9 +85,9 @@ struct sge_qeti_s {
  *  Queue2  slots   +--+------+---+-------+
  *                  6  5      4   3       2     1
  *
- *  After sge_qeti_first() returned time mark #1 the queue end next 
+ *  After sge_qeti_first() returned time mark #1 the queue end next
  *  references for Global license and the Queue1 slot point to #2.
- *  Then after sge_qeti_next() returned time mark #2 the queue end 
+ *  Then after sge_qeti_next() returned time mark #2 the queue end
  *  next references for Queue1/2 slot point to #3 whereas all remaining
  *  queue end next references point to #4 ...
  *
@@ -100,11 +100,11 @@ struct sge_qeti_s {
 *     sge_qeti_list_add() -- Adds a resource utilization to QETI resource list
 *
 *  SYNOPSIS
-*     static int sge_qeti_list_add(lList **lpp, const char *name, lList* 
-*     rue_lp, double total, bool must_exist) 
+*     static int sge_qeti_list_add(lList **lpp, const char *name, lList*
+*     rue_lp, double total, bool must_exist)
 *
 *  FUNCTION
-*     ??? 
+*     ???
 *
 *  INPUTS
 *     lList **lpp      - QETI resource list
@@ -117,7 +117,7 @@ struct sge_qeti_s {
 *     static int -  0 on success
 *
 *  NOTES
-*     MT-NOTE: sge_qeti_list_add() is not MT safe 
+*     MT-NOTE: sge_qeti_list_add() is not MT safe
 *******************************************************************************/
 static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp, double total, bool must_exist)
 {
@@ -146,7 +146,7 @@ static int sge_qeti_list_add(lList **lpp, const char *name, const lList* rue_lp,
    DRETURN(0);
 }
 
-static int 
+static int
 sge_add_qeti_resource_container(lList **qeti_to_add, const lList* rue_list,
                                 const lList* total_list, const lList* centry_list, const lListElem *job)
 {
@@ -197,39 +197,39 @@ sge_qeti_t *sge_qeti_allocate2(lList *cr_list)
 sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
 {
    DENTER(TOP_LAYER);
-   sge_qeti_t *iter = nullptr;
-   lListElem *next_queue, *qep;
-   const lListElem *hep;
 
-   if (!(iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t)))) {
+   sge_qeti_t *iter = (sge_qeti_t *)calloc(1, sizeof(sge_qeti_t));
+   if (iter == nullptr) {
       DRETURN(nullptr);
    }
 
    int ar_id = lGetUlong(a->job, JB_ar);
    if (ar_id == 0) {
-      /* add "slot" resource utilization entry of parallel environment */
-      if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS, 
+      // add "slot" resource utilization entry of parallel environment
+      // when running within an AR, slots are limited on the queue level, no need to add them here
+      if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS,
                      lGetList(a->pe, PE_resource_utilization), lGetUlong(a->pe, PE_slots), true)) {
          sge_qeti_release(&iter);
          DRETURN(nullptr);
       }
+   }
 
-      // add references to global resource utilization entries that might affect jobs queue end time
-      if (a->gep != nullptr) {
-         if (sge_add_qeti_resource_container(&iter->cr_refs_global, lGetList(a->gep, EH_resource_utilization),
-                                      lGetList(a->gep, EH_consumable_config_list), a->centry_list, a->job) != 0) {
-            sge_qeti_release(&iter);
-            DRETURN(nullptr);
-         }
+   // add references to global resource utilization entries that might affect jobs queue end time
+   if (a->gep != nullptr) {
+      if (sge_add_qeti_resource_container(&iter->cr_refs_global,
+               lGetList(a->gep, EH_resource_utilization),
+               lGetList(a->gep, EH_consumable_config_list),
+               a->centry_list, a->job)!=0) {
+         sge_qeti_release(&iter);
+         DRETURN(nullptr);
       }
    }
 
-   /* add references to per host resource utilization entries 
-      that might affect jobs queue end time */
+   // add references to per host resource utilization entries that might affect jobs queue end time
+   const lListElem *hep;
    for_each_ep(hep, a->host_list) {
-      int is_relevant;
-      const void *queue_iterator = nullptr;
-
+      const char *eh_name = lGetHost(hep, EH_name);
+      // we already handled the global host above
       if (hep == a->gep) {
          continue;
       }
@@ -238,12 +238,13 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          continue;
       }
 
-      /* There must be at least one queue referenced with the parallel
-         environment that resides at this host. And secondly we only 
-         consider those hosts that match this job (statically) */
-      is_relevant = false;
-      const char *eh_name = lGetHost(hep, EH_name);
-      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator); 
+      // There must be at least one queue referenced with the parallel
+      // environment that resides at this host. And secondly we only
+      // consider those hosts that match this job (statically)
+      int is_relevant = false;
+      const void *queue_iterator = nullptr;
+      lListElem *next_queue, *qep;
+      for (next_queue = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator);
           (qep = next_queue);
            next_queue = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &queue_iterator)) {
 
@@ -251,28 +252,18 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
             continue;
          }
 
-         /* consider only those queues that match this job (statically) */
-         if (sge_queue_match_static(a, qep) != DISPATCH_OK) { 
+         // consider only those queues that match this job (statically)
+         if (sge_queue_match_static(a, qep) != DISPATCH_OK) {
             continue;
-         }   
-
-         if (ar_id == 0) {
-            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, 
-                     lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list), 
-                           a->centry_list, a->job)!=0) {
-               sge_qeti_release(&iter);
-               DRETURN(nullptr);
-            }
-         } else {
-            const char *qname = lGetString(qep, QU_full_name);
-            const lListElem *ar_ep = lGetElemUlong(a->ar_list, AR_id, ar_id);
-            const lListElem *ar_queue = lGetSubStr(ar_ep, QU_full_name, qname, AR_reserved_queues);
-            if (sge_add_qeti_resource_container(&iter->cr_refs_queue, lGetList(ar_queue, QU_resource_utilization),
-                                  lGetList(ar_queue, QU_consumable_config_list), a->centry_list, a->job)!=0) {
-               sge_qeti_release(&iter);
-               DRETURN(nullptr);
-            }
          }
+
+         if (sge_add_qeti_resource_container(&iter->cr_refs_queue,
+                  lGetList(qep, QU_resource_utilization), lGetList(qep, QU_consumable_config_list),
+                        a->centry_list, a->job)!=0) {
+            sge_qeti_release(&iter);
+            DRETURN(nullptr);
+         }
+
          is_relevant = true;
       }
       if (is_relevant) {
@@ -340,7 +331,7 @@ static void sge_qeti_max_end_time(const char *layer, u_long64 *max_time, const l
    DRETURN_VOID;
 }
 
-/* switch queue end next references to the next entry 
+/* switch queue end next references to the next entry
    whose time is larger or equal the specified time */
 static void sge_qeti_switch_to_next(const char *layer, u_long64 time, lList *cref_lp)
 {
@@ -371,22 +362,22 @@ static void sge_qeti_switch_to_next(const char *layer, u_long64 time, lList *cre
 
 /****** sge_qeti/sge_qeti_next_before() ****************************************
 *  NAME
-*     sge_qeti_next_before() -- ??? 
+*     sge_qeti_next_before() -- ???
 *
 *  SYNOPSIS
 *     void sge_qeti_next_before(sge_qeti_t *qeti, u_long64 start)
 *
 *  FUNCTION
-*     All queue end next references are set in a way that will 
+*     All queue end next references are set in a way that will
 *     sge_qeti_next() return a time value that is before (i.e. less than)
 *     start.
 *
 *  INPUTS
-*     sge_qeti_t *qeti - ??? 
+*     sge_qeti_t *qeti - ???
 *     u_long64 start   - ???
 *
 *  NOTES
-*     MT-NOTE: sge_qeti_next_before() is MT safe 
+*     MT-NOTE: sge_qeti_next_before() is MT safe
 *******************************************************************************/
 void sge_qeti_next_before(sge_qeti_t *qeti, u_long64 start)
 {
@@ -399,26 +390,26 @@ void sge_qeti_next_before(sge_qeti_t *qeti, u_long64 start)
 
 /****** sge_resource_utilization/sge_qeti_first() ******************************
 *  NAME
-*     sge_qeti_first() -- 
+*     sge_qeti_first() --
 *
 *  SYNOPSIS
 *     u_long64 sge_qeti_first(sge_qeti_t *qeti)
 *
 *  FUNCTION
-*     Initialize/Reinitialize Queue End Time Iterator. All queue end next 
+*     Initialize/Reinitialize Queue End Time Iterator. All queue end next
 *     references are initialized to the queue end of all resourece instances.
 *     Before we return the time that is most in the future queue end next
 *     references are switched to the next entry that is earlier than the time
 *     that was returned.
 *
 *  INPUTS
-*     sge_qeti_t *qeti - ??? 
+*     sge_qeti_t *qeti - ???
 *
 *  RESULT
 *     u_long64 -
 *
 *  NOTES
-*     MT-NOTE: sge_qeti_first() is MT safe 
+*     MT-NOTE: sge_qeti_first() is MT safe
 *******************************************************************************/
 u_long64 sge_qeti_first(sge_qeti_t *qeti)
 {
@@ -440,19 +431,19 @@ u_long64 sge_qeti_first(sge_qeti_t *qeti)
 
    DPRINTF("sge_qeti_first() determines %s\n", sge_ctime64(all_resources_queue_end_time, &time_str));
 
-   /* switch to the next entry with all queue end next references whose 
+   /* switch to the next entry with all queue end next references whose
       time is larger (?) or equal to all resources queue end time */
    sge_qeti_switch_to_next("P", all_resources_queue_end_time, qeti->cr_refs_pe);
    sge_qeti_switch_to_next("G", all_resources_queue_end_time, qeti->cr_refs_global);
    sge_qeti_switch_to_next("H", all_resources_queue_end_time, qeti->cr_refs_host);
    sge_qeti_switch_to_next("Q", all_resources_queue_end_time, qeti->cr_refs_queue);
-     
+
    DRETURN(all_resources_queue_end_time);
 }
 
 /****** sge_resource_utilization/sge_qeti_next() *******************************
 *  NAME
-*     sge_qeti_next() -- ??? 
+*     sge_qeti_next() -- ???
 *
 *  SYNOPSIS
 *     u_long64 sge_qeti_next(sge_qeti_t *qeti)
@@ -463,13 +454,13 @@ u_long64 sge_qeti_first(sge_qeti_t *qeti)
 *     that was returned.
 *
 *  INPUTS
-*     sge_qeti_t *qeti - ??? 
+*     sge_qeti_t *qeti - ???
 *
 *  RESULT
 *     u_long64 -
 *
 *  NOTES
-*     MT-NOTE: sge_qeti_next() is MT safe 
+*     MT-NOTE: sge_qeti_next() is MT safe
 *******************************************************************************/
 u_long64 sge_qeti_next(sge_qeti_t *qeti)
 {
@@ -485,7 +476,7 @@ u_long64 sge_qeti_next(sge_qeti_t *qeti)
 
    DPRINTF("sge_qeti_next() determines %s\n", sge_ctime64(all_resources_queue_end_time, &time_str));
 
-   /* switch to the next entry with all queue end next references whose 
+   /* switch to the next entry with all queue end next references whose
       time is larger (?) or equal to all resources queue end time */
    sge_qeti_switch_to_next("P", all_resources_queue_end_time, qeti->cr_refs_pe);
    sge_qeti_switch_to_next("G", all_resources_queue_end_time, qeti->cr_refs_global);
@@ -500,23 +491,23 @@ u_long64 sge_qeti_next(sge_qeti_t *qeti)
 *     sge_qeti_release() -- Release queue end time iterator
 *
 *  SYNOPSIS
-*     void sge_qeti_release(sge_qeti_t *qeti) 
+*     void sge_qeti_release(sge_qeti_t *qeti)
 *
 *  FUNCTION
-*     Release all resources of the queue end time iterator. Refered 
+*     Release all resources of the queue end time iterator. Refered
 *     resource utilization diagrams are not affected.
 *
 *  INPUTS
-*     sge_qeti_t *qeti - ??? 
+*     sge_qeti_t *qeti - ???
 *
 *  NOTES
-*     MT-NOTE: sge_qeti_release() is MT safe 
+*     MT-NOTE: sge_qeti_release() is MT safe
 *******************************************************************************/
 void sge_qeti_release(sge_qeti_t **qeti)
 {
    if (qeti == nullptr || *qeti == nullptr) {
       return;
-   }   
+   }
 
    lFreeList(&((*qeti)->cr_refs_pe));
    lFreeList(&((*qeti)->cr_refs_global));

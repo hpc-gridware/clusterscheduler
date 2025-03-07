@@ -606,7 +606,7 @@ namespace ocs {
                writer.Key(name);
                writer.StartObject();
 
-               DSTRING_STATIC(dstr, 100);
+               DSTRING_STATIC(dstr, 512);
                utilization_print_to_dstring(cep, &dstr);
                write_json(writer, "utilization", sge_dstring_get_string(&dstr));
 

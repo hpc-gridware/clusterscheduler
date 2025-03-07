@@ -214,6 +214,11 @@ int main(int argc, const char **argv) {
    }
    lFreeList(&answer_list);
 
+   // for debugging
+   if (sge_getenv("SGE_DEBUG_DUMP_AR") != nullptr) {
+      lWriteListTo(qrstat_env.ar_list, stdout);
+   }
+
    /*
     * stage 4: create output in correct format
     */

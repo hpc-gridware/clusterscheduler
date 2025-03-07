@@ -1250,7 +1250,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, #A"=%s\n", sge_exec_job_get_limit(&dstr_limit, QU_##A, #A, T, master_q, jatep, petep, qualified_hostname))
                                  \
    {
-      DSTRING_STATIC(dstr_limit, 64);
+      DSTRING_STATIC(dstr_limit, 512);
       WRITE_COMPLEX_AND_CONSUMABLE_ATTR(h_vmem, TYPE_MEM);
       WRITE_COMPLEX_AND_CONSUMABLE_ATTR(s_vmem, TYPE_MEM);
 

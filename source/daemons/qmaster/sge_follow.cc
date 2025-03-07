@@ -270,7 +270,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          }
 
          /* job is running in an advance reservation - find it */
-         if (lGetUlong(jep, JB_ar)) {
+         u_long32 ar_id = lGetUlong(jep, JB_ar);
+         if (ar_id != 0) {
             lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
             if (ar == nullptr) {
                if (enrolled_task) {

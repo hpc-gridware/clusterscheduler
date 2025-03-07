@@ -1190,13 +1190,11 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
       slots = lAddSubStr(this_elem, CE_name, "slots", QU_consumable_config_list, CE_Type);
    }
    if (slots != nullptr) {
-      dstring buffer = DSTRING_INIT;
+      DSTRING_STATIC(buffer, 32);
       u_long32 slots_value = lGetUlong(this_elem, QU_job_slots);
 
-      sge_dstring_sprintf(&buffer, sge_u32, slots_value);
       lSetDouble(slots, CE_doubleval, slots_value);
-      lSetString(slots, CE_stringval, sge_dstring_get_string(&buffer));
-      sge_dstring_free(&buffer);
+      lSetString(slots, CE_stringval, sge_dstring_sprintf(&buffer, sge_uu32, slots_value));
    }
    DRETURN_VOID;
 }
