@@ -1556,7 +1556,7 @@ ar_list_has_reservation_for_pe_with_slots(const lList *ar_master_list, lList **a
  * @param stringval capacity formatted as string
  */
 static void
-ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lListElem *cr, const char *name, double doubleval, const char * stringval) {
+ar_add_consumable(lListElem *target, const lListElem *source, int nm, const lListElem *cr, const char *name, double doubleval, const char *stringval) {
    DENTER(TOP_LAYER);
 
    // is the complex defined in the source objects complex_values at all?

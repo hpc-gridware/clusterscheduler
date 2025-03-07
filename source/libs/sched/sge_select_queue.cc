@@ -1620,12 +1620,12 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
                                SCHEDD_INFO_QINOTARRESERVED_SI, qinstance_name, ar_id);
          DRETURN(DISPATCH_NEVER_CAT);
       }
-   }
-
-   /* this is not advance reservation job, we have to drop queues in orphaned state */
-   if (lGetUlong(queue, QU_state) == QI_ORPHANED) {
-      schedd_mes_add_global(a->monitor_alpp, a->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, qinstance_name);
-      DRETURN(DISPATCH_NEVER_CAT);
+   } else {
+      /* this is not advance reservation job, we have to drop queues in orphaned state */
+      if (lGetUlong(queue, QU_state) == QI_ORPHANED) {
+         schedd_mes_add_global(a->monitor_alpp, a->monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, qinstance_name);
+         DRETURN(DISPATCH_NEVER_CAT);
+      }
    }
 
    /* check if job owner has access rights to the queue */

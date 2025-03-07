@@ -1333,7 +1333,7 @@ static void debit_all_jobs_from_qs() {
                   }
 
                   if (ar_global_host != nullptr) {
-                     debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
+                     debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
                   }
                   lListElem *host = lGetSubHostRW(ar, EH_name, host_name, AR_reserved_hosts);
                   if (host != nullptr) {
