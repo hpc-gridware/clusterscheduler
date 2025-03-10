@@ -48,6 +48,9 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 set_target_properties(berkeleydb PROPERTIES IMPORTED_LOCATION
                         ${berkeleydb_path})
             else ()
+                if(SGE_ARCH STREQUAL "lx-riscv64")
+                  set(CUSTOM_CFLAGS CFLAGS=-Wno-implicit-int)
+                endif()
                 list(APPEND 3rdparty_list 3rd_party_berkeleydb)
                 externalproject_add(
                         3rd_party_berkeleydb
@@ -58,7 +61,9 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         GIT_TAG master
                         # update config.guess and config.sub with current versions of the installed automake
                         PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
-                        CONFIGURE_COMMAND dist/configure --prefix ${3rdparty_install_path}
+                        CONFIGURE_COMMAND dist/configure
+                           --prefix ${3rdparty_install_path}
+                           ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make clean all
