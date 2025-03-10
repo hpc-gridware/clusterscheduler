@@ -48,12 +48,9 @@ This roadmap outlines our strategic goals to modernize, expand, and streamline t
 
 ## Join the Conversations
 
-We would love for you to join us in this exciting project! Please share your questions, suggestions, or interest in
-contributing to this project. You can reach out to us via the public users Google Group. If you are just curious about
-the project's progress, you can subscribe to the Git Google Group for our project.
+We would be delighted if you would join us in this exciting project! Please let us know if you have any questions or suggestions, or if you are interested in participating in this project. Click here for the latest discussions.
 
-- user+subscribe@clusterscheduler.org
-- git+subscribe@clusterscheduler.org
+- [Discussions](https://github.com/hpc-gridware/clusterscheduler/discussions)
 
 ## Commercial Offering
 
