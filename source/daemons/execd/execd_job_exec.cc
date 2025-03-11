@@ -84,13 +84,11 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
 
 int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
-   int ret = 1;
-   u_long32 feature_set;
-   const char *admin_user = bootstrap_get_admin_user();
-   const char *progname = component_get_component_name();
-
    DENTER(TOP_LAYER);
 
+   int ret = 1;
+
+   u_long32 feature_set;
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
       ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
@@ -104,10 +102,21 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
       lListElem *job, *ja_task;
       lList *answer_list = nullptr;
 
+      // in case of Munge authentication check if the sender is the admin user (sge_qmaster)
+      if (bootstrap_get_use_munge()) {
+         if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, true, false, false)) {
+            DRETURN(0);
+         }
+      }
+
+#if defined(SECURE)
+      const char *admin_user = bootstrap_get_admin_user();
+      const char *progname = component_get_component_name();
       if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0,
                                             aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN(0);
       }
+#endif
        
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
          answer_list_output(&answer_list);
@@ -139,7 +148,15 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
          }
       }
    } else {
-      /* start a pe task */ 
+      // start a pe task
+      // in case of Munge authentication check re-resolve and check the user
+      // no need to re-resolve the supplementary groups - they are not used in starting tasks
+      if (bootstrap_get_use_munge()) {
+         if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, false, true, false)) {
+            DRETURN(0);
+         }
+      }
+
       lListElem *petrep;
       lList *answer_list = nullptr;
 

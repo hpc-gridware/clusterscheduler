@@ -59,6 +59,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 
 #include "cull/msg_cull.h"
 
@@ -825,3 +826,56 @@ pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *file) {
    }
 }
 
+bool
+cull_reresolve_check_user(sge_pack_buffer *pb, dstring *error, bool local_uid_gid, bool reresolve_user, bool reresolve_supp_grp) {
+   DENTER(PACK_LAYER);
+   bool ret = true;
+
+   // check if the user (uid, git) is the same as we are running with
+   // this is required for communication between components like sge_qmaster and sge_execd
+   if (local_uid_gid) {
+      if (pb->uid != component_get_uid() || pb->gid != component_get_gid()) {
+         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_UIDGIDMISMATCH_UUUU,
+            pb->uid, pb->gid, component_get_uid(), component_get_gid());
+         ret = false;
+      }
+   }
+
+   if (ret && reresolve_user) {
+      char buffer[MAX_USER_GROUP]{};
+      if (sge_uid2user(pb->uid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
+         // sge_uid2user() calls ERROR in case of errors
+         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEUSER_U, pb->uid);
+         ret = false;
+      } else {
+         if (strcmp(pb->username, buffer) != 0) {
+            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS, pb->username, buffer);
+            sge_strlcpy(pb->username, buffer, MAX_USER_GROUP);
+         }
+      }
+      if (sge_gid2group(pb->gid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
+         // sge_gid2user() calls ERROR in case of errors
+         sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEGROUP_U, pb->gid);
+         ret = false;
+      } else {
+         if (strcmp(pb->groupname, buffer) != 0) {
+            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS, pb->groupname, buffer);
+            sge_strlcpy(pb->groupname, buffer, MAX_USER_GROUP);
+         }
+      }
+   }
+
+   if (ret && reresolve_supp_grp) {
+      int amount;
+      ocs_grp_elem_t *grp_array;
+      if (ocs_get_groups(pb->username, pb->gid, &amount, &grp_array, error)) {
+         sge_free(&pb->grp_array);
+         pb->grp_amount = amount;
+         pb->grp_array = grp_array;
+      } else {
+         ret = false;
+      }
+   }
+
+   DRETURN(ret);
+}

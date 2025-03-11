@@ -67,6 +67,7 @@
 #include "sge_c_gdi.h"
 #include "msg_qmaster.h"
 #include "msg_common.h"
+#include "msg_daemons_common.h"
 
 
 static void
@@ -130,6 +131,15 @@ static void
 do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
+   // in case of Munge authentication: re-resolve and check user and groups
+   // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
+   //       but e.g. for event client ack we should pass the user information to the event master
+   if (bootstrap_get_use_munge()) {
+      if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&message->buf, false, true, false)) {
+         DRETURN_VOID;
+      }
+   }
+
    while (pb_unused(&(message->buf)) > 0) {
       lListElem *ack = nullptr;
 
@@ -142,6 +152,12 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       // check the tag and the sender
       u_long32 ack_tag = lGetUlong(ack, ACK_type);
       if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
+         if (bootstrap_get_use_munge()) {
+            if (message->buf.uid != component_get_uid()) {
+               ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
+            }
+         }
+#if defined(SECURE)
          // accept only ack requests from admin or root
          const char *admin_user = bootstrap_get_admin_user();
          const char *component = component_get_component_name();
@@ -151,8 +167,9 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
             lFreeElem(&ack);
             DRETURN_VOID;
          }
+#endif
       } else if (ack_tag == ACK_EVENT_DELIVERY) {
-         // TODO: here we should check if the event belongs to the user who send the request
+         // TODO: here we should check if the event belongs to the user who sent the request
          ;
       } else {
          // unknown tag
@@ -364,6 +381,11 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       local_ret = ocs::Version::do_versions_match(&packet->tasks[0]->answer_list, packet->version, packet->host, packet->commproc, packet->commproc_id);
    }
 
+   // in case of Munge authentication: re-resolve and check user and groups
+   if (local_ret && bootstrap_get_use_munge()) {
+      local_ret = ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(pb_in, false, true, true);
+   }
+
    // check auth_info (user/group)
    if (local_ret) {
       // copy data from the packbuffer
@@ -380,7 +402,8 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
 
-   // check CSP mode if enabled
+   // verify user (must be admin user in case the sender is a daemon)
+   // verify security mode if enabled
    if (local_ret) {
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
@@ -524,18 +547,26 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 *******************************************************************************/
 static void
 do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
-   lList *rep = nullptr;
-   const char *admin_user = bootstrap_get_admin_user();
-   const char *myprogname = component_get_component_name();
-
    DENTER(TOP_LAYER);
 
+   // in case of Munge authentication: we only accept reports from the admin user (the same user we are running under)
+   if (bootstrap_get_use_munge()) {
+      if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, true, false, false)) {
+         DRETURN_VOID;
+      }
+   }
+
+#if defined(SECURE)
    /* Load reports are only accepted from admin/root user */
+   const char *admin_user = bootstrap_get_admin_user();
+   const char *myprogname = component_get_component_name();
    if (!sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
                                               aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
       DRETURN_VOID;
    }
+#endif
 
+   lList *rep = nullptr;
    if (cull_unpack_list(&(aMsg->buf), &rep)) {
       ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
       DRETURN_VOID;
@@ -577,6 +608,16 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
 
    DENTER(TOP_LAYER);
 
+   // in case of Munge authentication: re-resolve and check user and groups
+   // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
+   //       but we should verify the user information below, better, create an event master event instead of
+   //       accessing event client data here in listener thread
+   if (bootstrap_get_use_munge()) {
+      if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, false, true, false)) {
+         DRETURN_VOID;
+      }
+   }
+
    if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
       ERROR(MSG_COM_UNPACKINT_I, 1);
       DPRINTF("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name);
@@ -584,20 +625,6 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
    }
 
    DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
-
-   /*
-   ** check for scheduler shutdown if the request comes from admin or root
-   ** TODO: further enhancement could be matching the owner of the event client
-   **       with the request owner
-   */
-   if (client_id == 1) {
-      const char *admin_user = bootstrap_get_admin_user();
-      const char *myprogname = component_get_component_name();
-      if (false == sge_security_verify_unique_identifier(true, admin_user, myprogname, 0,
-                                                         aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
-         DRETURN_VOID;
-      }
-   }
 
    sge_remove_event_client(client_id);
 
