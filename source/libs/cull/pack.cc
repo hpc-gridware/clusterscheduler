@@ -826,6 +826,25 @@ pb_print_to(sge_pack_buffer *pb, bool only_header, FILE *file) {
    }
 }
 
+/**
+ * @brief re-resolve and check user information
+ *
+ * The function can do multiple verifications on user data and optionally do re-resolving.
+ * If local_uid_gid is true then we expect uid and gid of the request to match the uid and gid of the current
+ * process. This is done to ensure daemon to daemon communication is coming from the right user.
+ * If reresolve_user is true then user information will be re-resolved. If the re-resolved information differs from
+ * the data in the request then it is corrected and an informational message is returned in the error dstring.
+ * If reresolve_supp_grp is true the the supplementary groups will be re-resolved.
+ * Errors happening during the operations described above will be reported in the error dstring
+ * and false will be returned.
+ *
+ * @param pb pack buffer with usage information
+ * @param error dstring for reporting errors
+ * @param local_uid_gid only accept requests with the same uid and gid?
+ * @param reresolve_user  re-resolve and correct the user and group name?
+ * @param reresolve_supp_grp  re-resolve the supplementary group ids?
+ * @return true if all was ok, possibly names were corrected, false on errors
+ */
 bool
 cull_reresolve_check_user(sge_pack_buffer *pb, dstring *error, bool local_uid_gid, bool reresolve_user, bool reresolve_supp_grp) {
    DENTER(PACK_LAYER);

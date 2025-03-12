@@ -1315,6 +1315,16 @@ ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_s
    DRETURN(true);
 }
 
+/**
+ * @brief returns supplementary group ids for a specific user
+ *
+ * @param user user name
+ * @param gid gid of the user
+ * @param amount used to return the number of group ids
+ * @param grp_array used to return the array of group ids
+ * @param error_dstr dstring to return error messages
+ * @return true if the supplementary group information could be retrieved, else false (and error_dstr contains the reason)
+ */
 bool
 ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_array, dstring *error_dstr) {
    DENTER(TOP_LAYER);

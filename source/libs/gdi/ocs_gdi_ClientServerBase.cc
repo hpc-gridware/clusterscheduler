@@ -490,6 +490,20 @@ ocs::gdi::ClientServerBase::to_string(unsigned long tag_value) {
    return "TAG_NOT_DEFINED";
 }
 
+/**
+ * @brief re-resolve and check user information
+ *
+ * Calls cull_reresolve_check_user() and reacts to the result:
+ * If an error is reported this will be output as ERROR message.
+ * If no error is reported but the dstring passed into cull_reresolve_check_user() contains a message
+ * then it is output as INFO message.
+ *
+ * @param pb the pack buffer containing the request and usage data
+ * @param local_uid_gid only accept requests with the same uid and gid?
+ * @param reresolve_user  re-resolve and correct the user and group name?
+ * @param reresolve_supp_grp  re-resolve the supplementary group ids?
+ * @return true if all was ok, possibly names were corrected, false on errors
+ */
 bool
 ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bool local_uid_gid, bool reresolve_user,
                                                          bool reresolve_supp_grp) {
