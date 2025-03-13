@@ -141,6 +141,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
          }
       }
    } else {
+      /* start a pe task */
       lListElem *petrep;
       lList *answer_list = nullptr;
 

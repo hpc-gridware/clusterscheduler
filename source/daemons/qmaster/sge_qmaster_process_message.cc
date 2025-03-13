@@ -153,7 +153,8 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       u_long32 ack_tag = lGetUlong(ack, ACK_type);
       if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
          if (bootstrap_get_use_munge()) {
-            if (message->buf.uid != component_get_uid()) {
+            // messages needs to come from execd running as same admin user or root
+            if (message->buf.uid != component_get_uid() && message->buf.uid != 0) {
                ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
             }
          }
@@ -402,8 +403,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       packet->gdi_session = ocs::SessionManager::get_session_id(packet->user);
    }
 
-   // verify user (must be admin user in case the sender is a daemon)
-   // verify security mode if enabled
+   // check CSP mode if enabled
    if (local_ret) {
       if (!sge_security_verify_user(packet->host, packet->commproc, packet->commproc_id, packet->user)) {
          CRITICAL(MSG_SEC_CRED_SSSI, packet->user, packet->host, packet->commproc, (int) packet->commproc_id);
@@ -610,7 +610,7 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
 
    // in case of Munge authentication: re-resolve and check user and groups
    // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
-   //       but we should verify the user information below, better, create an event master event instead of
+   //       but we should verify the user information below, better, create an event master request instead of
    //       accessing event client data here in listener thread
    if (bootstrap_get_use_munge()) {
       if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, false, true, false)) {

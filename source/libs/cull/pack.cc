@@ -850,10 +850,11 @@ cull_reresolve_check_user(sge_pack_buffer *pb, dstring *error, bool local_uid_gi
    DENTER(PACK_LAYER);
    bool ret = true;
 
-   // check if the user (uid, git) is the same as we are running with
+   // check if the user (uid, gid) is the same as we are running with or root
    // this is required for communication between components like sge_qmaster and sge_execd
    if (local_uid_gid) {
-      if (pb->uid != component_get_uid() || pb->gid != component_get_gid()) {
+      if ((pb->uid != component_get_uid() && pb->uid != 0) ||
+          (pb->gid != component_get_gid() && pb->gid != 0)) {
          sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_UIDGIDMISMATCH_UUUU,
             pb->uid, pb->gid, component_get_uid(), component_get_gid());
          ret = false;
