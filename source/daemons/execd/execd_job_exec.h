@@ -35,7 +35,7 @@
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
-int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb);
+int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster);
 
 int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg);
 

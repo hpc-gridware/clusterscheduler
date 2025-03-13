@@ -727,12 +727,14 @@ sge_security_verify_user(const char *host, const char *commproc, u_long32 id, co
       DRETURN(false);
    }
 
+#if defined(SECURE)
    const char *component_name = component_get_component_name();
    bool check_admin_user = is_daemon(commproc);
    const char *user = check_admin_user ? admin_user : gdi_user;
    if (!sge_security_verify_unique_identifier(check_admin_user, user, component_name, 0, host, commproc, id)) {
       DRETURN(false);
    }
+#endif
 
 #ifdef KERBEROS
 

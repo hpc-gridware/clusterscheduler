@@ -109,76 +109,100 @@ int sge_execd_process_messages()
 
       ret = ocs::gdi::ClientServerBase::gdi_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
                                                         &msg.tag, &buffer, &buflen, 0);
-      init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
-
       if (ret == CL_RETVAL_OK) {
-         bool is_apb_used = false;
-         sge_pack_buffer apb;
-         ocs::gdi::ClientServerBase::ClientServerBaseTag atag = ocs::gdi::ClientServerBase::TAG_NONE;
-
-         switch (msg.tag) {
-            case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
-               if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
-                  do_job_exec(&msg, &apb);
-                  is_apb_used = true;
-                  atag = msg.tag;
-               }
-               break;
-            case ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW:
-               do_job_slave(&msg);
-               break;
-            case ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET:
-               do_ticket(&msg);
-               break;
-            case ocs::gdi::ClientServerBase::TAG_ACK_REQUEST:
-               do_ack(&msg);
-               break;
-            case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
-               case ocs::gdi::ClientServerBase::TAG_SIGJOB:
-               if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
-                  do_signal_queue(&msg, &apb);
-                  is_apb_used = true;
-                  atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
-               }
-               break;
-            case ocs::gdi::ClientServerBase::TAG_KILL_EXECD:
-               do_kill_execd(&msg);
-#if defined(SOLARIS)
-               if (sge_smf_used() == 1) {
-		  /* We must stop, we don't care about current or next planned service state */
-                  sge_smf_temporary_disable_instance();
-               }
-#endif   
-               break;
-            case ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF:
-               do_get_new_conf(&msg);
-                /* calculate alive check interval based on load report time POS 2/2 
-                 * If modified, please also change POS 1/2
-                 */
-               load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
-               alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
-               if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
-                  alive_check_interval += load_report_time;
+         int pack_ret = init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
+         if (pack_ret == PACK_SUCCESS) {
+            bool from_qmaster = (strcmp(msg.snd_name, prognames[QMASTER]) == 0);
+            bool authentication_ok = true;
+            // in case of Munge authentication check and optionally re-resolve the user
+            if (bootstrap_get_use_munge()) {
+               if (from_qmaster) {
+                  // Message from qmaster? Check if it is coming from the admin user.
+                  if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, true, false, false)) {
+                     authentication_ok = false;
+                  }
                } else {
-                  alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
+                  // Messages from non qmaster are pe-task start orders,
+                  // re-resolve and check the user
+                  // no need to re-resolve the supplementary groups - they are not used in starting tasks
+                  if (bootstrap_get_use_munge()) {
+                     if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, false, true, false)) {
+                        authentication_ok = false;
+                     }
+                  }
                }
-               break;
-            case ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT:
-               execd_trash_load_report();
-               sge_set_flush_lr_flag(true);
-               break;
-            default:
-               DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
-               break;
-         }
-         last_heard = now;
-         clear_packbuffer(&(msg.buf));
-         if (is_apb_used) {
-            if (pb_filled(&apb)) {
-               ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
-                                                           atag, &apb, nullptr);
             }
-            clear_packbuffer(&apb);
+
+            if (authentication_ok) {
+               bool is_apb_used = false;
+               sge_pack_buffer apb;
+               ocs::gdi::ClientServerBase::ClientServerBaseTag atag = ocs::gdi::ClientServerBase::TAG_NONE;
+
+               switch (msg.tag) {
+                  case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
+                     if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
+                        do_job_exec(&msg, &apb, from_qmaster);
+                        is_apb_used = true;
+                        atag = msg.tag;
+                     }
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW:
+                     do_job_slave(&msg);
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET:
+                     do_ticket(&msg);
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_ACK_REQUEST:
+                     do_ack(&msg);
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
+                     case ocs::gdi::ClientServerBase::TAG_SIGJOB:
+                     if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
+                        do_signal_queue(&msg, &apb);
+                        is_apb_used = true;
+                        atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
+                     }
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_KILL_EXECD:
+                     do_kill_execd(&msg);
+#if defined(SOLARIS)
+                  if (sge_smf_used() == 1) {
+                     /* We must stop, we don't care about current or next planned service state */
+                     sge_smf_temporary_disable_instance();
+                  }
+#endif
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF:
+                     do_get_new_conf(&msg);
+                  /* calculate alive check interval based on load report time POS 2/2
+                   * If modified, please also change POS 1/2
+                   */
+                  load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
+                  alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
+                  if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
+                     alive_check_interval += load_report_time;
+                  } else {
+                     alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
+                  }
+                  break;
+                  case ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT:
+                     execd_trash_load_report();
+                  sge_set_flush_lr_flag(true);
+                  break;
+                  default:
+                     DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
+                  break;
+               }
+               last_heard = now;
+               clear_packbuffer(&(msg.buf));
+               if (is_apb_used) {
+                  if (pb_filled(&apb)) {
+                     ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
+                                                                 atag, &apb, nullptr);
+                  }
+                  clear_packbuffer(&apb);
+               }
+            }
          }
       } else {
          switch (ret) {

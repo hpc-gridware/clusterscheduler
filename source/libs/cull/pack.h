@@ -171,3 +171,5 @@ enum {
 };
 
 const char *cull_pack_strerror(int errnum);
+
+bool cull_reresolve_check_user(sge_pack_buffer *pb, dstring *error, bool local_uid_gid, bool reresolve_user, bool reresolve_supp_grp);

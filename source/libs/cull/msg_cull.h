@@ -187,4 +187,9 @@
 #define MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION          _MESSAGE(41176, _("!!!!!!!!!! lGetPosUlong64() got an invalid pos !!!!!!!!!!!!"))
 #define MSG_CULL_WHERE_SHOULDBEULONG64T                    _MESSAGE(41177, _("lWhere (should be a lUlong64T)"))
 
+#define MSG_CULL_AUTHINFO_UIDGIDMISMATCH_UUUU              _MESSAGE(41180, _("uid and gid information from message ( " uid_t_fmt ":" gid_t_fmt ") does not match local user and group information ( " uid_t_fmt ":" gid_t_fmt ")"))
+#define MSG_CULL_AUTHINFO_COULDNOTRESOLVEUSER_U            _MESSAGE(41181, _("could not resolve user name for uid " uid_t_fmt))
+#define MSG_CULL_AUTHINFO_COULDNOTRESOLVEGROUP_U           _MESSAGE(41182, _("could not resolve group name for gid " gid_t_fmt))
+#define MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS            _MESSAGE(41183, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
+#define MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS           _MESSAGE(41184, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
 // clang-format on

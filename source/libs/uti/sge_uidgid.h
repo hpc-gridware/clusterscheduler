@@ -111,6 +111,8 @@ get_pw_buffer_size();
 
 bool
 ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_str_len);
+bool
+ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_array, dstring *error_dstr);
 
 void
 ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,

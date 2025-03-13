@@ -82,15 +82,13 @@ extern volatile int jobs_to_start;
 static int handle_job(lListElem *jelem, lListElem *jatep, int slave);
 static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id, sge_pack_buffer *apb);
 
-int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb)
+int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer *apb, bool from_qmaster)
 {
-   int ret = 1;
-   u_long32 feature_set;
-   const char *admin_user = bootstrap_get_admin_user();
-   const char *progname = component_get_component_name();
-
    DENTER(TOP_LAYER);
 
+   int ret = 1;
+
+   u_long32 feature_set;
    /* ------- featureset */
    if (unpackint(&(aMsg->buf), &feature_set)) {
       ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
@@ -100,14 +98,18 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
    /* if request comes from qmaster: start a job
     * else it is a request to start a pe task
     */
-   if (strcmp(aMsg->snd_name, prognames[QMASTER]) == 0) {
+   if (from_qmaster) {
       lListElem *job, *ja_task;
       lList *answer_list = nullptr;
 
+#if defined(SECURE)
+      const char *admin_user = bootstrap_get_admin_user();
+      const char *progname = component_get_component_name();
       if (!sge_security_verify_unique_identifier(true, admin_user, progname, 0,
                                             aMsg->snd_host, aMsg->snd_name, aMsg->snd_id)) {
          DRETURN(0);
       }
+#endif
        
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
          answer_list_output(&answer_list);
@@ -139,7 +141,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
          }
       }
    } else {
-      /* start a pe task */ 
+      /* start a pe task */
       lListElem *petrep;
       lList *answer_list = nullptr;
 

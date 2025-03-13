@@ -56,6 +56,51 @@ int check_get_buffer_size() {
    return ret;
 }
 
+int check_supplementary_groups() {
+   printf("\n");
+   int ret = EXIT_SUCCESS;
+   int amount1;
+   ocs_grp_elem_t *grp_array;
+   char error_str[MAX_STRING_SIZE];
+   if (!ocs_get_groups(&amount1, &grp_array, error_str, sizeof(error_str))) {
+      fprintf(stderr, "ocs_get_groups(1) failed: %s\n", error_str);
+      ret = EXIT_FAILURE;
+   } else {
+      for (int i = 0; i < amount1; i++) {
+         printf("Group %d:\t" gid_t_fmt "\t%s\n", i, grp_array[i].id, grp_array[i].name);
+      }
+   }
+   sge_free(&grp_array);
+
+   printf("\n");
+   DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+   uid_t uid = getuid();
+   gid_t gid = getgid();
+   char user[MAX_STRING_SIZE];
+   sge_uid2user(uid, user, sizeof(user), MAX_NIS_RETRIES);
+   int amount2;
+   if (!ocs_get_groups(user, gid, &amount2, &grp_array, &error_dstr)) {
+      fprintf(stderr, "ocs_get_groups(2) failed: %s\n", sge_dstring_get_string(&error_dstr));
+      ret = EXIT_FAILURE;
+   } else {
+      if (amount1 != amount2) {
+         fprintf(stderr, "ocs_get_groups() variants reported different amount of groups: %d vs. %d\n", amount1, amount2);
+         ret = EXIT_FAILURE;
+      } else {
+         for (int i = 0; i < amount2; i++) {
+            printf("Group %d:\t" gid_t_fmt "\t%s\n", i, grp_array[i].id, grp_array[i].name);
+         }
+      }
+   }
+   sge_free(&grp_array);
+
+   return ret;
+}
+
 int main(int argc, char *argv[]) {
-   return check_get_buffer_size();
+   int ret = check_get_buffer_size();
+   if (ret == EXIT_SUCCESS) {
+      ret = check_supplementary_groups();
+   }
+   return ret;
 }

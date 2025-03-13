@@ -780,9 +780,33 @@ component_get_auth_info() {
 
       // create one compact string containing primary user and group information as
       // well as supplementary groups (id and names)
+      uid_t uid = user->uid;
+      gid_t gid = user->gid;
+      const char *username = user->username;
+      const char *groupname = user->groupname;
+#if defined (ENABLE_DEBUG_CHECKS)
+      // for testing purposes we want to be able to fake the user information
+      const char *fake_uid = sge_getenv("SGE_DEBUG_FAKE_UID");
+      if (fake_uid != nullptr) {
+         uid = atoi(fake_uid);
+      }
+      const char *fake_gid = sge_getenv("SGE_DEBUG_FAKE_GID");
+      if (fake_gid != nullptr) {
+         gid = atoi(fake_gid);
+      }
+      const char *fake_username = sge_getenv("SGE_DEBUG_FAKE_USERNAME");
+      if (fake_username != nullptr) {
+         printf("===> faking user name %s\n", fake_username);
+         username = fake_username;
+      }
+      const char *fake_groupname = sge_getenv("SGE_DEBUG_FAKE_GROUPNAME");
+      if (fake_groupname != nullptr) {
+         groupname = fake_groupname;
+      }
+#endif
       constexpr char sep = static_cast<char>(0xff);
       sge_dstring_sprintf(&user->unencrypted_auth_info, uid_t_fmt "%c" gid_t_fmt "%c%s%c%s%c%d",
-                          user->uid, sep, user->gid, sep, user->username, sep, user->groupname, sep, user->amount);
+                          uid, sep, gid, sep, username, sep, groupname, sep, user->amount);
 
       for (int i = 0; i < user->amount; i++) {
          sge_dstring_sprintf_append(&user->unencrypted_auth_info, "%c" gid_t_fmt "%c%s",
@@ -917,7 +941,7 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
                }
                // verify that auth_info gid matches Munge gid
                if (use_munge && munge_gid != auth_gid) {
-                  sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_AUTH_UID_MISMATCH_II, munge_gid, auth_gid);
+                  sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_AUTH_GID_MISMATCH_II, munge_gid, auth_gid);
                   ret = false;
                }
             } else {
@@ -984,17 +1008,19 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
       pos++;
       next_token = sge_strtok_r(nullptr, separator, &context);
    }
+   sge_free_saved_vars(context);
 
-   // beginning with v9.0.0 authinfo has to contain at least 5 token (uid, uname, git, gname, #grps)
-   if (pos < 4) {
-      sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "old client tried to connect");
-      ret = false;
-   } else if (amount != nullptr && (pos < (4 + (*amount) * 2))) {
-      sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "unexpected amount of supplementary groups");
-      ret = false;
+   if (ret) {
+      // beginning with v9.0.0 authinfo has to contain at least 5 token (uid, uname, git, gname, #grps)
+      if (pos < 4) {
+         sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "old client tried to connect");
+         ret = false;
+      } else if (amount != nullptr && (pos < (4 + (*amount) * 2))) {
+         sge_dstring_sprintf(error_dstr, MSG_UTI_UNABLE_TO_EXTRACT_SUP_S, "unexpected amount of supplementary groups");
+         ret = false;
+      }
    }
 
-   sge_free_saved_vars(context);
    if (!ret) {
       // cleanup in case of errors
       sge_free(grp_array);

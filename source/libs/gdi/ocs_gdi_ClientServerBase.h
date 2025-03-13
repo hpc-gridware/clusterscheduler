@@ -87,5 +87,7 @@ namespace ocs::gdi {
 
       static int sge_gdi_send_any_request(int synchron, u_long32 *mid, const char *rhost, const char *commproc, int id,
                                           sge_pack_buffer *pb, ClientServerBaseTag tag, u_long32 response_id, lList **alpp);
+      static bool sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bool local_uid_gid, bool reresolve_user,
+                                               bool reresolve_supp_grp);
    };
 }
