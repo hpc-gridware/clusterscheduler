@@ -1059,10 +1059,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                      bookings += debit_host_consumable(jep, jatep, pe, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
                   }
                   if (bookings > 0) {
-                     DSTRING_STATIC(buffer, 32);
                      /* this info is not spooled */
-                     sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
-                     sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
+                     sge_add_event(0, sgeE_AR_MOD, ar_id, 0, nullptr, nullptr, nullptr, ar, gdi_session);
                   }
                }
             }
@@ -1633,10 +1631,8 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                }
 
                if (bookings > 0) {
-                  DSTRING_STATIC(buffer, 32);
                   /* this info is not spooled */
-                  sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
-                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
+                  sge_add_event(0, sgeE_AR_MOD, ar_id, 0, nullptr, nullptr, nullptr, ar, gdi_session);
                }
             }
          }

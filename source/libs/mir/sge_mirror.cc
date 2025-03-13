@@ -123,7 +123,7 @@ ar_update_master_list(sge_evc_class_t *evc, sge_object_type type,
 
 static
 sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
-                                                      int key_nm, const char *key,
+                                                      int key_nm, u_long32 key,
                                                       sge_event_action action, lListElem *event);
 
 /*
@@ -1768,7 +1768,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
    lList **list = ocs::DataStore::get_master_list_rw(type);
    const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
    int key_nm = object_type_get_key_nm(type);
-   const char *key = lGetString(event, ET_strkey);
+   u_long32 key = lGetUlong(event, ET_intkey);
 
    if (sge_mirror_update_master_list_ar_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
@@ -1805,19 +1805,21 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
 *     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK 
 *******************************************************************************/
 static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
-                                                        int key_nm, const char *key,
-                                                        sge_event_action action, lListElem *event)
+                                                             int key_nm, u_long32 key,
+                                                             sge_event_action action, lListElem *event)
 {
-   lListElem *ep = nullptr;
-   sge_mirror_error ret;
-
    DENTER(TOP_LAYER);
 
+   sge_mirror_error ret;
+
    if (list != nullptr) {
-      if (key != nullptr) {
-         ep = lGetElemUlongRW(*list, key_nm, atoi(key));
+      lListElem *ep = nullptr;
+      if (key > 0) {
+         ep = lGetElemUlongRW(*list, key_nm, key);
       }
-      ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
+      DSTRING_STATIC(dstr, 32);
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key),
+                                          action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
    }

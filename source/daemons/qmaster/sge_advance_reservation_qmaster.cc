@@ -405,7 +405,6 @@ int
 ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    te_event_t ev;
-   dstring buffer = DSTRING_INIT;
    u_long64 timestamp = sge_get_gmt64();
 
    /* with old_ep it is possible to identify if it is an add or modify request */
@@ -431,10 +430,8 @@ ar_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListE
    /*
    ** send sgeE_AR_MOD/sgeE_AR_ADD event
    */
-   sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ep, AR_id));
    sge_add_event(0, old_ep ? sgeE_AR_MOD : sgeE_AR_ADD, lGetUlong(ep, AR_id), 0,
-                 sge_dstring_get_string(&buffer), nullptr, nullptr, ep, packet->gdi_session);
-   sge_dstring_free(&buffer);
+                 nullptr, nullptr, nullptr, ep, packet->gdi_session);
 
    /*
    ** add the timer to trigger the state change
@@ -587,7 +584,6 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    nxt = lFirstRW(*master_ar_list);
    while ((ar = nxt)) {
       u_long32 ar_id = lGetUlong(ar, AR_id);
-      sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
       nxt = lNextRW(ar);
 
@@ -631,13 +627,13 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
          sge_event_spool(alpp, 0, sgeE_AR_DEL,
-                         ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
+                         ar_id, 0, nullptr, nullptr, nullptr,
                          nullptr, nullptr, nullptr, true, true, packet->gdi_session);
       } else {
          INFO(MSG_JOB_REGDELX_SSU, packet->user, SGE_OBJ_AR, ar_id);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          sge_event_spool(alpp, 0, sgeE_AR_MOD,
-                         ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
+                         ar_id, 0, nullptr, nullptr, nullptr,
                          ar, nullptr, nullptr, true, true, packet->gdi_session);
       }
 
@@ -899,13 +895,12 @@ guess_highest_ar_id() {
 *******************************************************************************/
 void
 sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *ar;
    u_long32 ar_id = te_get_first_numeric_key(anEvent);
    u_long32 state = te_get_second_numeric_key(anEvent);
    te_event_t ev;
-   dstring buffer = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
 
    /*
     To guarantee all jobs are removed from the cluster when AR end time is
@@ -923,8 +918,6 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
       DRETURN_VOID;
    }
-
-   sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
 
    if (state == AR_EXITED) {
       u_long64 timestamp = sge_get_gmt64();
@@ -948,10 +941,10 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* remove the AR itself */
-      DPRINTF("AR: exited, removing AR %s\n", sge_dstring_get_string(&buffer));
+      DPRINTF("AR: exited, removing AR " sge_uu32 "\n", ar_id);
       lRemoveElem(master_ar_list, &ar);
       sge_event_spool(nullptr, timestamp, sgeE_AR_DEL,
-                      ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
+                      ar_id, 0, nullptr, nullptr, nullptr,
                       nullptr, nullptr, nullptr, true, true, ocs::SessionManager::GDI_SESSION_NONE);
 
    } else {
@@ -966,7 +959,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       /* this info is not spooled */
       sge_add_event(0, sgeE_AR_MOD, ar_id, 0,
-                    sge_dstring_get_string(&buffer), nullptr, nullptr, ar, ocs::SessionManager::GDI_SESSION_NONE);
+                    nullptr, nullptr, nullptr, ar, ocs::SessionManager::GDI_SESSION_NONE);
 
       ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_STARTTIME_REACHED,
                                      "start time of AR reached",
@@ -976,7 +969,6 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-   sge_dstring_free(&buffer);
 
    DRETURN_VOID;
 }
@@ -2185,9 +2177,8 @@ sge_ar_list_set_error_state(lList *ar_list, const char *qname, u_long32 error_ty
                sge_ar_state_set_waiting(ar);
             }
             /* this info is not spooled */
-            sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ar, AR_id));
-            sge_add_event(0, sgeE_AR_MOD, 0, 0,
-                          sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
+            sge_add_event(0, sgeE_AR_MOD, lGetUlong(ar, AR_id), 0,
+                          nullptr, nullptr, nullptr, ar, gdi_session);
          }
       }
    }

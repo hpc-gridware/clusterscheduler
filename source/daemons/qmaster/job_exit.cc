@@ -178,10 +178,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
             }
             if (ar_queue == nullptr) {
                /* no jobs registered in advance reservation */
-               dstring buffer = DSTRING_INIT;
-
-               sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
-
                ar_do_reservation(ar, false, gdi_session);
 
                ocs::ReportingFileWriter::create_ar_log_records(nullptr, ar, ARL_DELETED, "AR deleted", timestamp);
@@ -189,9 +185,8 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
 
                lRemoveElem(master_ar_list, &ar);
 
-               sge_event_spool(nullptr, 0, sgeE_AR_DEL, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr,
+               sge_event_spool(nullptr, 0, sgeE_AR_DEL, ar_id, 0, nullptr, nullptr, nullptr,
                                nullptr, nullptr, nullptr, true, true, gdi_session);
-               sge_dstring_free(&buffer);
             }
          }
       }
