@@ -1376,10 +1376,6 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
        DRETURN(false);
    }
    for (int i = 0; i < num_group_ids; i++) {
-      // skip the primary group
-      if (grp_id_list[i] == gid) {
-         continue;
-      }
       // try to get the name
       array[i].id = grp_id_list[i];
       int lret = sge_gid2group(grp_id_list[i], array[i].name, MAX_STRING_SIZE, 1);
