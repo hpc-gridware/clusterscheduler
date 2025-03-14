@@ -1060,4 +1060,6 @@
 
 #define MSG_GDI_BUILT_WITHOUT_MUNGE       _MESSAGE(60724, _("product was built without Munge support"))
 
+#define MSG_CONTACT_HPC_GRIDWARE          _MESSAGE(60725, _("The functionality is available in the commercial version of the product.\nPlease contact HPC-Gridware GmbH (sales@hpc-gridware.com) for further information."))
+
 // clang-format on

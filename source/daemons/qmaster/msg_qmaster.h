@@ -683,5 +683,6 @@
 #define MSG_REQLIMIT_INVALIDCHAR_S                 _MESSAGE(33974, _("request limit contains invalid character" SFQ))
 #define MSG_REQLIMIT_INVALIDVALUE_S                _MESSAGE(33975, _("value " SFQ " for request limits are not allowed"))
 #define MSG_REQLIMIT_ADDVALUENOT_ALLOWED_S         _MESSAGE(33976, _("additional character " SFQ " after value in request limit is not allowed"))
+#define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33977, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
 
 // clang-format on

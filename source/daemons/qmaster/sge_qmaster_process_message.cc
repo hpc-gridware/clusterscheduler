@@ -428,7 +428,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
          }
       }
    }
-#endif   
+#endif
 
    // handle request specific requirements already here so that we save time potentially in the worker
    //    - manager/operator permissions
