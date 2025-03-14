@@ -669,4 +669,19 @@
 #define MSG_JOB_DEPTNOEXIST_S                      _MESSAGE(33962, _("Department " SFQ " does not exist"))
 #define MSG_JOB_USERNOTPARTDEPT_S                  _MESSAGE(33963, _("User " SFQ " is not part of a department"))
 
+#define MSG_REQLIMIT_EXCEEDED_S                    _MESSAGE(33964, _("request limit \"%s\" exceeded"))
+#define MSG_REQLIMIT_SRCPATTERNNOMATCH_S           _MESSAGE(33965, _("source filter " SFQ " of request limit will never match"))
+#define MSG_REQLIMIT_SRCFILTERINVALID_S            _MESSAGE(33966, _("source filter " SFQ " of request limit is invalid"))
+#define MSG_REQLIMIT_TYPEPATTERNNOMATCH_S          _MESSAGE(33967, _("type filter " SFQ " of request limit will never match"))
+#define MSG_REQLIMIT_TYPEFILTERINVALID_S           _MESSAGE(33968, _("type filter " SFQ " of request limit is invalid"))
+#define MSG_REQLIMIT_OBJPATTERNNOMATCH_S           _MESSAGE(33969, _("object filter " SFQ " of request limit will never match"))
+#define MSG_REQLIMIT_OBJFILTERINVALID_S            _MESSAGE(33970, _("object filter " SFQ " of request limit is invalid"))
+#define MSG_REQLIMIT_EMPTYUSRINVALID_S             _MESSAGE(33971, _("empty user filter of request limit is invalid"))
+#define MSG_REQLIMIT_HGRPFILTERNOEXIST_S           _MESSAGE(33971, _("host filter " SFQ " of request limit does not match a hgroup"))
+#define MSG_REQLIMIT_HOSTFILTERNOEXIST_S           _MESSAGE(33972, _("host filter " SFQ " of request is not resolvable"))
+#define MSG_REQLIMIT_FORMATINVALID_S               _MESSAGE(33973, _("format of request limit filter is invalid"))
+#define MSG_REQLIMIT_INVALIDCHAR_S                 _MESSAGE(33974, _("request limit contains invalid character" SFQ))
+#define MSG_REQLIMIT_INVALIDVALUE_S                _MESSAGE(33975, _("value " SFQ " for request limits are not allowed"))
+#define MSG_REQLIMIT_ADDVALUENOT_ALLOWED_S         _MESSAGE(33976, _("additional character " SFQ " after value in request limit is not allowed"))
+
 // clang-format on

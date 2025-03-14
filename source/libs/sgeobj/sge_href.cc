@@ -478,7 +478,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
 *                                   lList **used_groups) 
 *
 *  FUNCTION
-*     Finds all hosts and hostgroups which are directly and inderectly
+*     Finds all hosts and hostgroups which are directly and indirectly
 *     referenced by the hostgroups mentioned in 'this_list'. 
 *     'master_list' is the list of all existing hostgroups. Referenced 
 *     hosts and hostgroups will be added to 'used_hosts' and 'used_groups'.
@@ -571,7 +571,7 @@ href_list_find_all_references(const lList *this_list, lList **answer_list,
 *                                lList **occupant_groups) 
 *
 *  FUNCTION
-*     Finds hostgroup references which directy occupy at least one of the
+*     Finds hostgroup references which directly occupy at least one of the
 *     hostgroups mentioned in 'this_list'. 'master_list' is the list of 
 *     all existing hostgroups. Directly occupying hostgroups will be 
 *     added to 'occupant_groups'. In case of any errors 'answer_list' 

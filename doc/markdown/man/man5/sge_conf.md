@@ -1060,27 +1060,27 @@ Each section of the limit rule that is separated by a colon allows you to filter
 The following request characteristics can be used:
 
 - *source* : The source of the request. Possible values are names of command line tools names such as *qsub*, *qstat*, *qalter*. *qconf*, *qhost*, ... that send GDI requests.
-- *type* : The type of the request can be either *add*, *mod*, *del* or *get* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *mod* requests.
+- *type* : The type of the request can be either *ADD*, *MOD*, *DEL* or *GET* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *mod* requests.
 - *object* : The object of the request. Possible values are
-  - *job* : Job
-  - *cqueue* : Cluster Queue
-  - *ahost*, *ehost*, *shost* : Admin, Execution, Submission Host
-  - *sharetree* : Share Tree
-  - *eclient* : Event Clients
-  - *cplx* : Complex
-  - *conf* : Configuration
-  - *manager*, *operator* : Manager, Operator
-  - *pe* : Parallel Environment
-  - *sched_conf* : Scheduler Configuration
-  - *user* : User
-  - *user_set* : User Sets
-  - *prj* : Projects
-  - *stree* : Share Tree
-  - *ckpt* : Checkpointing Environment
-  - *cal* : Calendar
-  - *hgroup* : Host Group
-  - *rqs* : Resource Quota Set
-  - *ar* : Advance Reservation
+  - *JOB* : Job
+  - *CQUEUE* : Cluster Queue
+  - *AHOST*, *EHOST*, *SHOST* : Admin, Execution, Submission Host
+  - *SHARETREE* : Share Tree
+  - *ECLIENT* : Event Clients
+  - *CPLX* : Complex
+  - *CONF* : Configuration
+  - *MANAGER*, *OPERATOR* : Manager, Operator
+  - *PE* : Parallel Environment
+  - *SCHED_CONF* : Scheduler Configuration
+  - *USER* : User
+  - *USER_SET* : User Sets
+  - *PRJ* : Projects
+  - *STREE* : Share Tree
+  - *CKPT* : Checkpointing Environment
+  - *CAL* : Calendar
+  - *HGROUP* : Host Group
+  - *RQS* : Resource Quota Set
+  - *AR* : Advance Reservation
 - *host* : The name of the host (or host group) from which the request is being sent.
 - *user* : The username of the user sending the request or the name of a user list.
 

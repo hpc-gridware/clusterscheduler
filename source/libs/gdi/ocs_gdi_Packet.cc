@@ -675,7 +675,9 @@ ocs::gdi::Packet::unpack(lList **answer_list, sge_pack_buffer *pb) {
       append_task(task);
    } while (has_next);
 
+#if 0
    debug_print();
+#endif
 
    DRETURN(ret);
 error_with_mapping:
@@ -712,7 +714,9 @@ ocs::gdi::Packet::pack(lList **answer_list, sge_pack_buffer *pb) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
+#if 0
    debug_print();
+#endif
 
    ret = pack_header(answer_list, pb);
    if (!ret) {

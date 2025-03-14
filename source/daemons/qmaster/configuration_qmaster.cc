@@ -291,15 +291,13 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 *******************************************************************************/
 int
 sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, const char *aHost, u_long64 gdi_session) {
-   lListElem *old_conf;
+   DENTER(TOP_LAYER);
    const char *tmp_name = nullptr;
    char unique_name[CL_MAXHOSTNAMELEN];
    int ret = -1;
    const char *cell_root = bootstrap_get_cell_root();
    const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 progid = component_get_component_id();
-
-   DENTER(TOP_LAYER);
 
    if (!aConf || !aUser || !aHost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -324,19 +322,18 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       DRETURN(ret);
    }
 
-   if ((old_conf = sge_get_configuration_for_host(unique_name)) != nullptr) {
-      int ret = -1;
-
-      ret = do_mod_config(unique_name, old_conf, aConf, anAnswer, gdi_session);
-
+   lListElem *old_conf = sge_get_configuration_for_host(unique_name);
+   if (old_conf != nullptr) {
+      int lret = do_mod_config(unique_name, old_conf, aConf, anAnswer, gdi_session);
       lFreeElem(&old_conf);
 
-      if (ret == 0) {
+      if (lret == 0) {
          INFO(MSG_SGETEXT_MODIFIEDINLIST_SSSS, aUser, aHost, unique_name, MSG_OBJ_CONF);
          answer_list_add(anAnswer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       } else {
          DRETURN(STATUS_EUNKNOWN);
       }
+
    } else {
       do_add_config(unique_name, aConf, anAnswer, gdi_session);
 
@@ -379,6 +376,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       qmaster_params = mconf_get_qmaster_params();
       cl_com_update_parameter_list(qmaster_params);
       sge_free(&qmaster_params);
+
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();
@@ -810,24 +808,39 @@ sge_set_conf_reprioritize(lListElem *aConf, bool aFlag) {
  */
 static int
 do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session) {
-   const lList *old_entries = nullptr;
-   lList *new_entries = nullptr;
-   lListElem *reprio = nullptr;
-
    DENTER(TOP_LAYER);
+   const lList *old_entries = lGetList(anOldConf, CONF_entries);
+   lList *new_entries = lGetListRW(aNewConf, CONF_entries);
 
-   old_entries = lGetList(anOldConf, CONF_entries);
-   new_entries = lGetListRW(aNewConf, CONF_entries);
+   // VALIDATION AND ADJUSTMENTS
 
-   if ((reprio = is_reprioritize_missing(old_entries, new_entries)) != nullptr) {
+   // check if gdi_request_limits are correct
+   const lListElem *gdi_request_limits_cfg = lGetElemStr(new_entries, CF_name, "gdi_request_limits");
+   if (gdi_request_limits_cfg != nullptr) {
+      const char *gdi_request_limit_str = lGetString(gdi_request_limits_cfg, CF_value);
+      ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
+      if (!limits_instance.parse(gdi_request_limit_str, anAnswer)) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+   }
+
+   // add parameter if it is missing
+   lListElem *reprio = is_reprioritize_missing(old_entries, new_entries);
+   if (reprio != nullptr) {
       lAppendElem(new_entries, reprio);
    }
 
+   // log warning if static attributes are changed during runtime (like exec spool dir)
    if (check_static_conf_entries(old_entries, new_entries, anAnswer) != 0) {
       DRETURN(-1);
    }
 
+   // MODIFY CONFIGURATION
+
+   // replace the old config by the new one
    exchange_conf_by_name(aConfName, anOldConf, aNewConf, anAnswer, gdi_session);
+
+   // UPDATE AFTER HANGES HAVE BEEN APPLIED
 
    if (has_reschedule_unknown_change(old_entries, new_entries)) {
       update_reschedule_unknown_timout_values(aConfName);
