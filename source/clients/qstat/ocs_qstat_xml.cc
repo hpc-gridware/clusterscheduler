@@ -186,11 +186,10 @@ static int qstat_xml_job_requested_pe(job_handler_t *handler, const char* pe_nam
 
 static int qstat_xml_job_granted_pe(job_handler_t *handler, const char* pe_name, int pe_slots, lList **alpp);
 static int qstat_xml_job_request(job_handler_t* handler, const char* name, const char* value, lList **alpp);
-static int qstat_xml_job_report_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
-static int qstat_xml_job_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
-static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, const char* name, lList **alpp);
-static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, const char* name, lList **alpp);
-static int qstat_xml_job_master_hard_requested_queue(job_handler_t* handler, const char* name, lList **alpp);
+static int qstat_xml_job_report_hard_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
+static int qstat_xml_job_soft_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
+static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, int scope, const char* name, lList **alpp);
+static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, int scope, const char* name, lList **alpp);
 static int qstat_xml_job_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp);
 static int qstat_xml_job_predecessor(job_handler_t* handler, u_long32 jid, lList **alpp);
 static int qstat_xml_job_ad_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp);
@@ -219,6 +218,7 @@ static int qstat_xml_started(qstat_handler_t* handler, lList** alpp);
 static int qstat_xml_finished(qstat_handler_t* handler, lList** alpp);
 
 static int qstat_xml_dummy_started(job_handler_t* handler, lList** alpp);
+static int qstat_xml_dummy_with_int_started(job_handler_t* handler, int some_value, lList** alpp);
 static int qstat_xml_dummy_finished(job_handler_t* handler, lList** alpp);
 
 typedef struct {
@@ -273,25 +273,21 @@ int qstat_xml_handler_init(qstat_handler_t* handler, lList **alpp) {
 
    handler->job_handler.report_request = qstat_xml_job_request;
 
-   handler->job_handler.report_hard_resources_started = qstat_xml_dummy_started;
+   handler->job_handler.report_hard_resources_started = qstat_xml_dummy_with_int_started;
    handler->job_handler.report_hard_resource = qstat_xml_job_report_hard_resource;
    handler->job_handler.report_hard_resources_finished = qstat_xml_dummy_finished;
 
-   handler->job_handler.report_soft_resources_started = qstat_xml_dummy_started;
+   handler->job_handler.report_soft_resources_started = qstat_xml_dummy_with_int_started;
    handler->job_handler.report_soft_resource = qstat_xml_job_soft_resource;
    handler->job_handler.report_soft_resources_finished = qstat_xml_dummy_finished;
 
-   handler->job_handler.report_hard_requested_queues_started = qstat_xml_dummy_started;
+   handler->job_handler.report_hard_requested_queues_started = qstat_xml_dummy_with_int_started;
    handler->job_handler.report_hard_requested_queue = qstat_xml_job_hard_requested_queue;
    handler->job_handler.report_hard_requested_queues_finished = qstat_xml_dummy_finished;
 
-   handler->job_handler.report_soft_requested_queues_started = qstat_xml_dummy_started;
+   handler->job_handler.report_soft_requested_queues_started = qstat_xml_dummy_with_int_started;
    handler->job_handler.report_soft_requested_queue = qstat_xml_job_soft_requested_queue;
    handler->job_handler.report_soft_requested_queues_finished = qstat_xml_dummy_finished;
-
-   handler->job_handler.report_master_hard_requested_queues_started = qstat_xml_dummy_started;
-   handler->job_handler.report_master_hard_requested_queue = qstat_xml_job_master_hard_requested_queue;
-   handler->job_handler.report_master_hard_requested_queues_finished = qstat_xml_dummy_finished;
 
    handler->job_handler.report_predecessors_requested_started = qstat_xml_dummy_started;
    handler->job_handler.report_predecessor_requested = qstat_xml_job_predecessor_requested;
@@ -384,6 +380,10 @@ static int qstat_xml_finished(qstat_handler_t* handler, lList** alpp) {
 ** start and finished functions needed for clients/common/sge_qstat.c do work
 */
 static int qstat_xml_dummy_started(job_handler_t* handler, lList** alpp) {
+   return 0;
+}
+
+static int qstat_xml_dummy_with_int_started(job_handler_t* handler, int some_value, lList** alpp) {
    return 0;
 }
 
@@ -634,62 +634,105 @@ static int qstat_xml_job_request(job_handler_t* handler, const char* name, const
    DRETURN(0);
 }
 
-static int qstat_xml_job_report_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) {
+static int qstat_xml_job_report_hard_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   const char *attrib_name;
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         attrib_name = "master_hard_request";
+         break;
+      case JRS_SCOPE_SLAVE:
+         attrib_name = "slave_hard_request";
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         attrib_name = "hard_request";
+         break;
+   }
+
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
-   
-   DENTER(TOP_LAYER);
 
-   xml_elem = xml_append_Attr_S(attribute_list, "hard_request", value);
+   xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
    xml_addAttributeD(xml_elem, "resource_contribution", uc); 
    
    DRETURN(0);
 }
 
-static int qstat_xml_job_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) {
+static int qstat_xml_job_soft_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   const char *attrib_name;
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         attrib_name = "master_soft_request";
+         break;
+      case JRS_SCOPE_SLAVE:
+         attrib_name = "slave_soft_request";
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         attrib_name = "soft_request";
+         break;
+   }
+
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
    
-   DENTER(TOP_LAYER);
-
-   xml_elem = xml_append_Attr_S(attribute_list, "soft_request", value);
+   xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
    
    DRETURN(0);
 }
 
-static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, const char* name, lList **alpp) {
+static int qstat_xml_job_hard_requested_queue(job_handler_t *handler, int scope, const char* name, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
-   DENTER(TOP_LAYER);
-
-   xml_append_Attr_S(attribute_list, "hard_req_queue", name);
+   const char *attrib_name;
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         attrib_name = "master_hard_req_queue";
+         break;
+      case JRS_SCOPE_SLAVE:
+         attrib_name = "slave_hard_req_queue";
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         attrib_name = "hard_req_queue";
+         break;
+   }
+   xml_append_Attr_S(attribute_list, attrib_name, name);
    
    DRETURN(0);
 }
 
-static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, const char* name, lList **alpp) {
+static int qstat_xml_job_soft_requested_queue(job_handler_t *handler, int scope, const char* name, lList **alpp) {
+   DENTER(TOP_LAYER);
+
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
 
-   DENTER(TOP_LAYER);
-
-   xml_append_Attr_S(attribute_list, "soft_req_queue", name);
-   
-   DRETURN(0);
-}
-
-static int qstat_xml_job_master_hard_requested_queue(job_handler_t* handler, const char* name, lList **alpp) {
-   qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   lList *attribute_list = lGetListRW(ctx->job_elem, XMLE_List);
-
-   DENTER(TOP_LAYER);
-
-   xml_append_Attr_S(attribute_list, "master_hard_req_queue", name);
+   const char *attrib_name;
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         attrib_name = "master_soft_req_queue";
+         break;
+      case JRS_SCOPE_SLAVE:
+         attrib_name = "slave_soft_req_queue";
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         attrib_name = "soft_req_queue";
+         break;
+   }
+   xml_append_Attr_S(attribute_list, attrib_name, name);
    
    DRETURN(0);
 }

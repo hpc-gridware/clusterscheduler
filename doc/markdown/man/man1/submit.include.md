@@ -479,7 +479,7 @@ later stage of the scan, all resource requests following it once again become "e
 options in effect act as "toggles" during the scan.
 
 If this option is specified then the corresponding `-q` and `-l` resource requirements will be passed to
-defined JSV instances as parameter with the names *\<scope>_q_hard* and *\<scope>_l_hard*. \<scope> will be 
+defined JSV instances as parameter with the names *\<scope\>\_q\_hard* and *\<scope\>\_l\_hard*. \<scope\> will be 
 replaced by the scope of the resource request (e.g *global*, *master* or *slave*).
 
 Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more 

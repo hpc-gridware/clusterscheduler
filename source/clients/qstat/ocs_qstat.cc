@@ -102,7 +102,6 @@ struct qstat_stdout_ctx_str {
    int  soft_resource_count;
    int  hard_requested_queue_count;
    int  soft_requested_queue_count;
-   int  master_hard_requested_queue_count;
    int  predecessor_requested_count;
    int  predecessor_count;
    int  ad_predecessor_requested_count;
@@ -134,25 +133,21 @@ static int job_stdout_granted_pe(job_handler_t *handler, const char* pe_name, in
 static int job_stdout_additional_info(job_handler_t* handler, job_additional_info_t name, const char* value, lList **alpp);
 static int job_stdout_request(job_handler_t* handler, const char* name, const char* value, lList **alpp);
 
-static int job_stdout_hard_resources_started(job_handler_t* handler, lList **alpp);
-static int job_stdout_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
+static int job_stdout_hard_resources_started(job_handler_t* handler, int scope, lList **alpp);
+static int job_stdout_hard_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
 static int job_stdout_hard_resources_finished(job_handler_t* handler, lList **alpp);
 
-static int job_stdout_soft_resources_started(job_handler_t* handler, lList **alpp);
-static int job_stdout_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
+static int job_stdout_soft_resources_started(job_handler_t* handler, int scope, lList **alpp);
+static int job_stdout_soft_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
 static int job_stdout_soft_resources_finished(job_handler_t* handler, lList **alpp);
 
-static int job_stdout_hard_requested_queues_started(job_handler_t* handler, lList **alpp);
-static int job_stdout_hard_requested_queue(job_handler_t* handler, const char* qname, lList **alpp);
+static int job_stdout_hard_requested_queues_started(job_handler_t* handler, int scope, lList **alpp);
+static int job_stdout_hard_requested_queue(job_handler_t* handler, int scope, const char* qname, lList **alpp);
 static int job_stdout_hard_requested_queues_finished(job_handler_t* handler, lList **alpp);
 
-static int job_stdout_soft_requested_queues_started(job_handler_t* handler, lList **alpp);
-static int job_stdout_soft_requested_queue(job_handler_t* handler, const char* qname, lList **alpp);
+static int job_stdout_soft_requested_queues_started(job_handler_t* handler, int scope, lList **alpp);
+static int job_stdout_soft_requested_queue(job_handler_t* handler, int scope, const char* qname, lList **alpp);
 static int job_stdout_soft_requested_queues_finished(job_handler_t* handler, lList **alpp);
-
-static int job_stdout_master_hard_requested_queues_started(job_handler_t* handler, lList **alpp);
-static int job_stdout_master_hard_request_queue(job_handler_t* handler, const char* qname, lList **alpp);
-static int job_stdout_master_hard_requested_queues_finished(job_handler_t* handler, lList **alpp);
 
 static int job_stdout_predecessors_requested_started(job_handler_t* handler, lList **alpp);
 static int job_stdout_predecessor_requested(job_handler_t* handler, const char* name, lList **alpp);
@@ -763,10 +758,6 @@ static int job_stdout_init(job_handler_t *handler, lList** alpp)
    handler->report_soft_requested_queue = job_stdout_soft_requested_queue;
    handler->report_soft_requested_queues_finished = job_stdout_soft_requested_queues_finished;
    
-   handler->report_master_hard_requested_queues_started = job_stdout_master_hard_requested_queues_started;
-   handler->report_master_hard_requested_queue = job_stdout_master_hard_request_queue;
-   handler->report_master_hard_requested_queues_finished = job_stdout_master_hard_requested_queues_finished;
-   
    handler->report_predecessors_requested_started = job_stdout_predecessors_requested_started;
    handler->report_predecessor_requested = job_stdout_predecessor_requested;
    handler->report_predecessors_requested_finished = job_stdout_predecessors_requested_finished;
@@ -1230,10 +1221,9 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
 
 static int job_stdout_sub_tasks_started(job_handler_t* handler, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
 
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    ctx->sub_task_count = 0;
    
    DRETURN(0);
@@ -1242,9 +1232,10 @@ static int job_stdout_sub_tasks_started(job_handler_t* handler, lList **alpp)
 
 static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp)
 {
-   bool indent = false;
    DENTER(TOP_LAYER);
-   
+
+   bool indent = false;
+
    printf("   %s%-12s ", indent ? QSTAT_INDENT2: "", (summary->task_id == nullptr)? "" : summary->task_id );
    printf("%-5.5s ", summary->state); 
    
@@ -1286,78 +1277,77 @@ static int job_stdout_sub_tasks_finished(job_handler_t* handler, lList **alpp)
 
 static int job_stdout_requested_pe(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp) 
 {
-   const char* name = "Requested PE";
-   int len = MAX(1,17 - strlen(name));
    DENTER(TOP_LAYER);
-   printf("%s%s:%*s%s %s\n", QSTAT_INDENT, name, len, " ", pe_name, pe_range);
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s %s\n", "Requested PE:", pe_name, pe_range);
    DRETURN(0);
-   
 }
 
 static int job_stdout_granted_pe(job_handler_t *handler, const char* pe_name, int pe_slots, lList **alpp) 
 {
-   const char* name = "Granted PE";
-   int len = MAX(1,17 - strlen(name));   
    DENTER(TOP_LAYER);
-   printf("%s%s:%*s%s %d\n", QSTAT_INDENT, name, len, " ", pe_name, pe_slots);
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s %d\n", "Granted PE:", pe_name, pe_slots);
    DRETURN(0);
 }
 
 static int job_stdout_additional_info(job_handler_t* handler, job_additional_info_t name, const char* value, lList **alpp)
 {
-   dstring ds = DSTRING_INIT;
-   
    DENTER(TOP_LAYER);
 
-   switch(name) {
-      case CHECKPOINT_ENV: sge_dstring_copy_string(&ds, "Checkpoint Env."); break;
-      case MASTER_QUEUE:   sge_dstring_copy_string(&ds, "Master Queue"); break;
-      case FULL_JOB_NAME:  sge_dstring_copy_string(&ds, "Full jobname"); break;
+   const char *name_str;
+   switch (name) {
+      case CHECKPOINT_ENV: name_str = "Checkpoint Env.:"; break;
+      case MASTER_QUEUE:   name_str = "Master Queue:"; break;
+      case FULL_JOB_NAME:  name_str = "Full jobname:"; break;
       default:
            DPRINTF("Unknown additional info(%d)\n", name);
            abort();
    }
-   {
-      const char* name_str = sge_dstring_get_string(&ds);
-      int len = MAX(1,17 - strlen(name_str));
-      printf("%s%s:%*s%s\n", QSTAT_INDENT, name_str, len, " ",
-             value == nullptr ? "" : value);
-   }
-   sge_dstring_free(&ds);
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s\n", name_str, value == nullptr ? "" : value);
    DRETURN(0);
 }
 
 static int job_stdout_request(job_handler_t* handler, const char* name, const char* value, lList **alpp)
 {
    DENTER(TOP_LAYER);
-   printf("%s%s=%s (default)\n", QSTAT_INDENT, name, value);  
+   printf(QSTAT_INDENT "%s=%s (default)\n", name, value);
    DRETURN(0);
 }
 
-static int job_stdout_hard_requested_queues_started(job_handler_t* handler, lList **alpp) 
+static int job_stdout_hard_requested_queues_started(job_handler_t* handler, int scope, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
 
-   printf(QSTAT_INDENT "Hard requested queues: ");
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Master task hard requested queues:");
+         break;
+      case JRS_SCOPE_SLAVE:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Slave task hard requested queues:");
+         break;
+      case JRS_SCOPE_GLOBAL:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB , "Hard requested queues:");
+      default:
+         break;
+   }
+
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    ctx->hard_requested_queue_count = 0;
 
    DRETURN(0);
 }
 
-static int job_stdout_hard_requested_queue(job_handler_t* handler, const char* qname, lList **alpp)
+static int job_stdout_hard_requested_queue(job_handler_t* handler, int scope, const char* qname, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
 
-   if(ctx->hard_requested_queue_count > 0 ) {
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
+   if (ctx->hard_requested_queue_count > 0) {
       printf(", %s", qname);
    } else {
       printf("%s", qname);
    }
    ctx->hard_requested_queue_count++;
+
    DRETURN(0);
 }
 
@@ -1368,25 +1358,35 @@ static int job_stdout_hard_requested_queues_finished(job_handler_t* handler, lLi
    DRETURN(0);
 }
 
-static int job_stdout_soft_requested_queues_started(job_handler_t* handler, lList **alpp) 
+static int job_stdout_soft_requested_queues_started(job_handler_t* handler, int scope, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
-   
-   printf(QSTAT_INDENT "Soft requested queues: ");
+
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Master task soft requested queues:");
+         break;
+      case JRS_SCOPE_SLAVE:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Slave task soft requested queues:");
+         break;
+      case JRS_SCOPE_GLOBAL:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Soft requested queues:");
+      default:
+         break;
+   }
+
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    ctx->soft_requested_queue_count = 0;
 
    DRETURN(0);
 }
 
-static int job_stdout_soft_requested_queue(job_handler_t* handler, const char* qname, lList **alpp)
+static int job_stdout_soft_requested_queue(job_handler_t* handler, int scope, const char* qname, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
-   
-   if(ctx->soft_requested_queue_count > 0 ) {
+
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
+   if (ctx->soft_requested_queue_count > 0) {
       printf(", %s", qname);
    } else {
       printf("%s", qname);
@@ -1403,61 +1403,37 @@ static int job_stdout_soft_requested_queues_finished(job_handler_t* handler, lLi
    DRETURN(0);
 }
 
-static int job_stdout_master_hard_requested_queues_started(job_handler_t* handler, lList **alpp) 
+static int job_stdout_hard_resources_started(job_handler_t* handler, int scope, lList **alpp)
 {
+   DENTER(TOP_LAYER);
+
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
-   DENTER(TOP_LAYER);
-
-   printf(QSTAT_INDENT "Master task hard requested queues: ");
-   ctx->master_hard_requested_queue_count = 0;
-
-   DRETURN(0);
-}
-
-static int job_stdout_master_hard_request_queue(job_handler_t* handler, const char* qname, lList **alpp)
-{
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
-   DENTER(TOP_LAYER);
-
-   if(ctx->master_hard_requested_queue_count > 0 ) {
-      printf(", %s", qname);
-   } else {
-      printf("%s", qname);
-   }
-   ctx->master_hard_requested_queue_count++;
-   
-   DRETURN(0);
-}
-
-static int job_stdout_master_hard_requested_queues_finished(job_handler_t* handler, lList **alpp) 
-{
-   DENTER(TOP_LAYER);
-   putchar('\n');
-   DRETURN(0);
-}
-
-static int job_stdout_hard_resources_started(job_handler_t* handler, lList **alpp) 
-{
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
-   DENTER(TOP_LAYER);
-
    ctx->hard_resource_count = 0;
-   printf("       Hard Resources:   ");
+
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Master Hard Resources:");
+         break;
+      case JRS_SCOPE_SLAVE:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Slave Hard Resources:");
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Hard Resources:");
+         break;
+   }
 
    DRETURN(0);
 }
 
-static int job_stdout_hard_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) 
+static int job_stdout_hard_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
    DENTER(TOP_LAYER);
 
    if(ctx->hard_resource_count > 0 ) {
-      printf("                         ");
+      printf(QSTAT_INDENT QSTAT_R_ATTRIB, " ");
    }
    printf("%s=%s (%f)\n", name, value == nullptr ? "" : value, uc);
    ctx->hard_resource_count++;
@@ -1478,26 +1454,37 @@ static int job_stdout_hard_resources_finished(job_handler_t* handler, lList **al
    DRETURN(0);
 }
 
-static int job_stdout_soft_resources_started(job_handler_t* handler, lList **alpp) 
+static int job_stdout_soft_resources_started(job_handler_t* handler, int scope, lList **alpp)
 {
-   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-
    DENTER(TOP_LAYER);
 
+   qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    ctx->soft_resource_count = 0;
-   printf("       Soft Resources:   ");
+
+   switch(scope) {
+      case JRS_SCOPE_MASTER:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Master Soft Resources:");
+         break;
+      case JRS_SCOPE_SLAVE:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Slave Soft Resources:");
+         break;
+      case JRS_SCOPE_GLOBAL:
+      default:
+         printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Soft Resources:");
+         break;
+   }
 
    DRETURN(0);
 }
 
-static int job_stdout_soft_resource(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp) 
+static int job_stdout_soft_resource(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp)
 {
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
 
    DENTER(TOP_LAYER);
 
    if (ctx->soft_resource_count > 0 ) {
-      printf("                         ");
+      printf(QSTAT_INDENT QSTAT_R_ATTRIB, " ");
    }
    printf("%s=%s\n", name, value == nullptr ? "" : value);
    ctx->soft_resource_count++;
@@ -1525,7 +1512,7 @@ static int job_stdout_predecessors_requested_started(job_handler_t* handler, lLi
    DENTER(TOP_LAYER);
 
    ctx->predecessor_requested_count = 0;
-   printf("       Predecessor Jobs (request): ");
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Predecessor Jobs (request):");
 
    DRETURN(0);
 }
@@ -1560,7 +1547,7 @@ static int job_stdout_predecessors_started(job_handler_t* handler, lList **alpp)
    DENTER(TOP_LAYER);
 
    ctx->predecessor_count = 0;
-   printf("       Predecessor Jobs: ");
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Predecessor Jobs:");
 
    DRETURN(0);
 }
@@ -1595,7 +1582,7 @@ static int job_stdout_ad_predecessors_requested_started(job_handler_t* handler, 
    DENTER(TOP_LAYER);
 
    ctx->ad_predecessor_requested_count = 0;
-   printf("       Predecessor Array Jobs (request): ");
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Predecessor Array Jobs (request):");
 
    DRETURN(0);
 }
@@ -1630,7 +1617,7 @@ static int job_stdout_ad_predecessors_started(job_handler_t* handler, lList **al
    DENTER(TOP_LAYER);
 
    ctx->ad_predecessor_count = 0;
-   printf("       Predecessor Array Jobs: ");
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Predecessor Array Jobs:");
 
    DRETURN(0);
 }
@@ -1662,7 +1649,7 @@ static int job_stdout_binding_started(job_handler_t* handler, lList **alpp)
 {
    DENTER(TOP_LAYER);
 
-   printf("       Binding:          ");
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Binding:");
 
    DRETURN(0);
 }

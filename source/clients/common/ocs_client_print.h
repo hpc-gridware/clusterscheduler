@@ -35,6 +35,7 @@
 
 #define QSTAT_INDENT "       "
 #define QSTAT_INDENT2 "                         "
+#define QSTAT_R_ATTRIB "%-36.36s"
 
 /*
 ** used in qstat for specifying different display modes
