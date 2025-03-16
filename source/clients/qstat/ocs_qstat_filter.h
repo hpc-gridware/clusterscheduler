@@ -258,26 +258,22 @@ struct job_handler_str {
   
   int (*report_request)(job_handler_t* handler, const char* name, const char* value, lList **alpp);
   
-  int (*report_hard_resources_started)(job_handler_t* handler, lList **alpp);
-  int (*report_hard_resource)(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
+  int (*report_hard_resources_started)(job_handler_t* handler, int scope, lList **alpp);
+  int (*report_hard_resource)(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
   int (*report_hard_resources_finished)(job_handler_t* handler, lList **alpp);
 
-  int (*report_soft_resources_started)(job_handler_t* handler, lList **alpp);
+  int (*report_soft_resources_started)(job_handler_t* handler, int scope, lList **alpp);
   /* RH TODO: the soft resource/request has no contribution => remove the parameter uc */
-  int (*report_soft_resource)(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp);
+  int (*report_soft_resource)(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
   int (*report_soft_resources_finished)(job_handler_t* handler, lList **alpp);
   
-  int (*report_hard_requested_queues_started)(job_handler_t *handler, lList **alpp);
-  int (*report_hard_requested_queue)(job_handler_t *handler, const char* name, lList **alpp);
+  int (*report_hard_requested_queues_started)(job_handler_t *handler, int scope, lList **alpp);
+  int (*report_hard_requested_queue)(job_handler_t *handler, int scope, const char* name, lList **alpp);
   int (*report_hard_requested_queues_finished)(job_handler_t *handler, lList **alpp);
   
-  int (*report_soft_requested_queues_started)(job_handler_t *handler, lList **alpp);
-  int (*report_soft_requested_queue)(job_handler_t *handler, const char* name, lList **alpp);
+  int (*report_soft_requested_queues_started)(job_handler_t *handler, int scope, lList **alpp);
+  int (*report_soft_requested_queue)(job_handler_t *handler, int scope, const char* name, lList **alpp);
   int (*report_soft_requested_queues_finished)(job_handler_t *handler, lList **alpp);
-  
-  int (*report_master_hard_requested_queues_started)(job_handler_t* handler, lList **alpp);
-  int (*report_master_hard_requested_queue)(job_handler_t* handler, const char* name, lList **alpp);
-  int (*report_master_hard_requested_queues_finished)(job_handler_t* handler, lList **alpp);
   
   int (*report_predecessors_requested_started)(job_handler_t* handler, lList **alpp);
   int (*report_predecessor_requested)(job_handler_t* handler, const char* name, lList **alpp);

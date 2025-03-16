@@ -4078,10 +4078,10 @@ const lList *job_get_hard_queue_list(const lListElem *job, u_long32 scope) {
 }
 
 const lList *job_get_soft_queue_list(const lListElem *job) {
-   return job_get_queue_list(job, JRS_SCOPE_GLOBAL, true);
+   return job_get_queue_list(job, JRS_SCOPE_GLOBAL, false);
 }
 const lList *job_get_soft_queue_list(const lListElem *job, u_long32 scope) {
-   return job_get_queue_list(job, scope, true);
+   return job_get_queue_list(job, scope, false);
 }
 
 const lList *job_get_master_hard_queue_list(const lListElem *job) {

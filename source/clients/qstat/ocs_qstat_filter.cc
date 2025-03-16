@@ -147,11 +147,12 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                                     qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp);
                        
 static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
+                                int scope,
                                 job_handler_t *handler,
-                                int(*start_func)(job_handler_t* handler, lList **alpp),
-                                int(*resource_func)(job_handler_t *handler, const char* name, const char* value, double uc, lList **alpp),
-                                int(*finish_func)(job_handler_t* handler, lList **alpp),
-                                lList **alpp);                                    
+                                int(*start_func)(job_handler_t* handler, int scope, lList **alpp),
+                                int (*resource_func)(job_handler_t *handler, int scope, const char *name,
+                                                     const char *value, double uc, lList **alpp),
+                                int(*finish_func)(job_handler_t* handler, lList **alpp), lList **alpp);
 
 static void print_qstat_env_to(qstat_env_t *qstat_env, FILE* file);
 
@@ -2254,15 +2255,37 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
       }
 
-      /* Handle the Hard Resources */
-      ret = job_handle_resources(job_get_hard_resource_list(job), qstat_env->centry_list,
+      /* Handle the Hard Resources (global, master, slave) */
+      ret = job_handle_resources(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), qstat_env->centry_list,
                                  sge_job_slot_request(job, qstat_env->pe_list),
+                                 JRS_SCOPE_GLOBAL,
                                  handler,
                                  handler->report_hard_resources_started,
-                                 handler->report_hard_resource,
-                                 handler->report_hard_resources_finished, alpp);
+                                 handler->report_hard_resource, handler->report_hard_resources_finished, alpp);
       if (ret) {
-         DPRINTF("handle_resources for hard resources failed\n");
+         DPRINTF("handle_resources for global hard resources failed\n");
+         goto error;
+      }
+
+      ret = job_handle_resources(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), qstat_env->centry_list,
+                                 sge_job_slot_request(job, qstat_env->pe_list),
+                                 JRS_SCOPE_MASTER,
+                                 handler,
+                                 handler->report_hard_resources_started,
+                                 handler->report_hard_resource, handler->report_hard_resources_finished, alpp);
+      if (ret) {
+         DPRINTF("handle_resources for master_global hard resources failed\n");
+         goto error;
+      }
+
+      ret = job_handle_resources(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), qstat_env->centry_list,
+                                 sge_job_slot_request(job, qstat_env->pe_list),
+                                 JRS_SCOPE_SLAVE,
+                                 handler,
+                                 handler->report_hard_resources_started,
+                                 handler->report_hard_resource, handler->report_hard_resources_finished, alpp);
+      if (ret) {
+         DPRINTF("handle_resources for slave hard resources failed\n");
          goto error;
       }
 
@@ -2312,24 +2335,58 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       /* Handle the Soft Resources */
       ret = job_handle_resources(job_get_soft_resource_list(job), qstat_env->centry_list,
                                  sge_job_slot_request(job, qstat_env->pe_list),
+                                 JRS_SCOPE_GLOBAL,
                                  handler,
                                  handler->report_soft_resources_started,
-                                 handler->report_soft_resource,
-                                 handler->report_soft_resources_finished, alpp);
+                                 handler->report_soft_resource, handler->report_soft_resources_finished, alpp);
       if (ret) {
          DPRINTF("handle_resources for soft resources failed\n");
          goto error;
       }
       
       if (handler->report_hard_requested_queue) {
-         ql = job_get_hard_queue_list(job);
-         if (ql) {
-            if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, alpp))) {
+         ql = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, JRS_SCOPE_GLOBAL, alpp))) {
                DPRINTF("handler->report_hard_requested_queues_started failed\n");
                goto error;
             }
             for_each_ep(qrep, ql) {
-               if ((ret=handler->report_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
+               if ((ret=handler->report_hard_requested_queue(handler, JRS_SCOPE_GLOBAL, lGetString(qrep, QR_name), alpp))) {
+                  DPRINTF("handler->report_hard_requested_queue failed\n");
+                  goto error;
+               }
+            }
+            if (handler->report_hard_requested_queues_finished && (ret=handler->report_hard_requested_queues_finished(handler, alpp))) {
+               DPRINTF("handler->report_hard_requested_queues_finished failed\n");
+               goto error;
+            }
+         }
+         ql = job_get_hard_queue_list(job, JRS_SCOPE_MASTER);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, JRS_SCOPE_MASTER, alpp))) {
+               DPRINTF("handler->report_hard_requested_queues_started failed\n");
+               goto error;
+            }
+            for_each_ep(qrep, ql) {
+               if ((ret=handler->report_hard_requested_queue(handler, JRS_SCOPE_MASTER, lGetString(qrep, QR_name), alpp))) {
+                  DPRINTF("handler->report_hard_requested_queue failed\n");
+                  goto error;
+               }
+            }
+            if (handler->report_hard_requested_queues_finished && (ret=handler->report_hard_requested_queues_finished(handler, alpp))) {
+               DPRINTF("handler->report_hard_requested_queues_finished failed\n");
+               goto error;
+            }
+         }
+         ql = job_get_hard_queue_list(job, JRS_SCOPE_SLAVE);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_hard_requested_queues_started && (ret=handler->report_hard_requested_queues_started(handler, JRS_SCOPE_SLAVE, alpp))) {
+               DPRINTF("handler->report_hard_requested_queues_started failed\n");
+               goto error;
+            }
+            for_each_ep(qrep, ql) {
+               if ((ret=handler->report_hard_requested_queue(handler, JRS_SCOPE_SLAVE, lGetString(qrep, QR_name), alpp))) {
                   DPRINTF("handler->report_hard_requested_queue failed\n");
                   goto error;
                }
@@ -2342,14 +2399,48 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       }
       
       if (handler->report_soft_requested_queue) {
-         ql = job_get_soft_queue_list(job);
-         if (ql) {
-            if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, alpp))) {
+         ql = job_get_soft_queue_list(job, JRS_SCOPE_GLOBAL);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, JRS_SCOPE_GLOBAL, alpp))) {
                DPRINTF("handler->report_soft_requested_queue_started failed\n");
                goto error;
             }
             for_each_ep(qrep, ql) {
-               if ((ret=handler->report_soft_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
+               if ((ret=handler->report_soft_requested_queue(handler, JRS_SCOPE_GLOBAL, lGetString(qrep, QR_name), alpp))) {
+                  DPRINTF("handler->report_soft_requested_queue failed\n");
+                  goto error;
+               }
+            }
+            if (handler->report_soft_requested_queues_finished && (ret=handler->report_soft_requested_queues_finished(handler, alpp))) {
+               DPRINTF("handler->report_soft_requested_queues_finished failed\n");
+               goto error;
+            }
+         }
+         ql = job_get_soft_queue_list(job, JRS_SCOPE_MASTER);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, JRS_SCOPE_MASTER, alpp))) {
+               DPRINTF("handler->report_soft_requested_queue_started failed\n");
+               goto error;
+            }
+            for_each_ep(qrep, ql) {
+               if ((ret=handler->report_soft_requested_queue(handler, JRS_SCOPE_MASTER, lGetString(qrep, QR_name), alpp))) {
+                  DPRINTF("handler->report_soft_requested_queue failed\n");
+                  goto error;
+               }
+            }
+            if (handler->report_soft_requested_queues_finished && (ret=handler->report_soft_requested_queues_finished(handler, alpp))) {
+               DPRINTF("handler->report_soft_requested_queues_finished failed\n");
+               goto error;
+            }
+         }
+         ql = job_get_soft_queue_list(job, JRS_SCOPE_SLAVE);
+         if (ql != nullptr && lGetNumberOfElem(ql) != 0) {
+            if (handler->report_soft_requested_queues_started && (ret=handler->report_soft_requested_queues_started(handler, JRS_SCOPE_SLAVE, alpp))) {
+               DPRINTF("handler->report_soft_requested_queue_started failed\n");
+               goto error;
+            }
+            for_each_ep(qrep, ql) {
+               if ((ret=handler->report_soft_requested_queue(handler, JRS_SCOPE_SLAVE, lGetString(qrep, QR_name), alpp))) {
                   DPRINTF("handler->report_soft_requested_queue failed\n");
                   goto error;
                }
@@ -2361,26 +2452,6 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
       }
       
-      if (handler->report_master_hard_requested_queue) {
-         ql = job_get_master_hard_queue_list(job);
-         if (ql){
-            if (handler->report_master_hard_requested_queues_started && (ret=handler->report_master_hard_requested_queues_started(handler, alpp))) {
-               DPRINTF("handler->report_master_hard_requested_queues_started failed\n");
-               goto error;
-            }
-            for_each_ep(qrep, ql) {
-               if ((ret=handler->report_master_hard_requested_queue(handler, lGetString(qrep, QR_name), alpp))) {
-                  DPRINTF("handler->report_master_hard_requested_queue failed\n");
-                  goto error;
-               }
-            }
-            if (handler->report_master_hard_requested_queues_finished && (ret=handler->report_master_hard_requested_queues_finished(handler, alpp))) {
-               DPRINTF("handler->report_master_hard_requested_queues_finished failed\n");
-               goto error;
-            }
-         }
-      }
-
       if (handler->report_predecessor_requested) {
          ql = lGetList(job, JB_jid_request_list );
          if (ql) {
@@ -2513,19 +2584,25 @@ error:
 
 
 static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
+                                int scope,
                                 job_handler_t *handler,
-                                int(*start_func)(job_handler_t* handler, lList **alpp),
-                                int(*resource_func)(job_handler_t* handler, const char* name, const char* value, double uc, lList **alpp),
-                                int(*finish_func)(job_handler_t* handler, lList **alpp),
-                                lList **alpp) {                                  
+                                int(*start_func)(job_handler_t* handler, int scope, lList **alpp),
+                                int (*resource_func)(job_handler_t *handler, int scope, const char *name,
+                                                     const char *value, double uc, lList **alpp),
+                                int(*finish_func)(job_handler_t* handler, lList **alpp), lList **alpp) {
                                                
    int ret = 0;
    const lListElem *ce, *centry;
    const char *s, *name;
    double uc;
    DENTER(TOP_LAYER);
-   
-   if (start_func && (ret=start_func(handler, alpp))) {
+
+   if (cel == nullptr || lGetNumberOfElem(cel) == 0) {
+      DPRINTF("nullptr or empty list passed to job_handle_resources\n");
+      DRETURN(0);
+   }
+
+   if (start_func && (ret=start_func(handler, scope, alpp))) {
       DPRINTF("start_func failed\n");
       DRETURN(ret);
    }
@@ -2539,7 +2616,7 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
       }
 
       s = lGetString(ce, CE_stringval);
-      if ((ret=resource_func(handler, name, s, uc, alpp))) {
+      if ((ret=resource_func(handler, scope, name, s, uc, alpp))) {
          DPRINTF("resource_func failed\n");
          break;
       }
