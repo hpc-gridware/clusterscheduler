@@ -52,7 +52,9 @@ The following list of access list parameters specifies the access list content:
 
 ## *name*
 
-The name of the access list as defined for *userset_name* in xxqs_name_sxx_types(1).
+The name of the access list as defined for *userset_name* in xxqs_name_sxx_types(1). 
+
+Usernames and names of user sets can share the same namespace. In order to avoid collisions, user sets should be prefixed or suffixed with an unique character sequence that will not appear in usernames (for example, 'department' or 'users' as suffix). If there are collisions then usernames will be preferred over user sets.
 
 ## *type*
 

@@ -81,6 +81,7 @@ u_long32 mconf_get_loglevel();
 char* mconf_get_enforce_project();
 char* mconf_get_enforce_user();
 char* mconf_get_administrator_mail();
+char* mconf_get_mail_tag();
 lList* mconf_get_user_lists();
 lList* mconf_get_xuser_lists();
 lList* mconf_get_projects();

@@ -125,7 +125,6 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
    dstring dstr_sge_mail_body_total = DSTRING_INIT;
    dstring ds;
    char buffer[256];
-   char* administrator_mail = nullptr;
    char *shepherd_file_buf = nullptr;
 
    DENTER(TOP_LAYER);
@@ -138,12 +137,10 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       first = 0;
    }
 
-   administrator_mail = mconf_get_administrator_mail();
-
+   char* administrator_mail = mconf_get_administrator_mail();
    if (administrator_mail == nullptr) {
       DRETURN_VOID;
    }
-
    if (!strcasecmp(administrator_mail, "none")) {
       sge_free(&administrator_mail);
       DRETURN_VOID;
@@ -243,12 +240,22 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
           snprintf(str_general, sizeof(str_general), MSG_GFSTATE_PEJOB_U, jobid);
       }
 
-      if (is_array) {
-         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SUU, 
-                 feature_get_product_name(FS_SHORT_VERSION, &ds), jobid, jataskid);
+      // find the mail tag to be used
+      const char *mail_tag_str = mconf_get_mail_tag();
+      std::string mail_tag;
+      if (mail_tag_str == nullptr || strcmp(mail_tag_str, "none") == 0) {
+         mail_tag = "";
       } else {
-         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SU, 
-                 feature_get_product_name(FS_SHORT_VERSION, &ds), jobid);
+         mail_tag = mail_tag_str;
+      }
+      sge_free(&mail_tag_str);
+
+      if (is_array) {
+         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SSUU, mail_tag.c_str(),
+                  feature_get_product_name(FS_SHORT_VERSION, &ds), jobid, jataskid);
+      } else {
+         snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SSU, mail_tag.c_str(),
+                  feature_get_product_name(FS_SHORT_VERSION, &ds), jobid);
       }
 
       snprintf(sge_mail_body, sizeof(sge_mail_body),

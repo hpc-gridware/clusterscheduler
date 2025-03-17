@@ -89,6 +89,7 @@ struct confel {                       /* cluster configuration parameters */
     char        *enforce_project;     /* SGEEE attribute: "true" or "false" */
     char        *enforce_user;        /* SGEEE attribute: "true" or "false" */
     char        *administrator_mail;  /* list of mail addresses */
+    char        *mail_tag;            /* mail tag */
     lList       *user_lists;          /* allowed user lists */
     lList       *xuser_lists;         /* forbidden users lists */
     lList       *projects;            /* allowed project list */
@@ -131,7 +132,7 @@ typedef struct confel sge_conf_type;
 
 static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
    0, 0, nullptr, 0, nullptr, nullptr, nullptr
@@ -356,6 +357,7 @@ static tConfEntry conf_entries[] = {
  { "enforce_project",            0, "false",                   1, nullptr},
  { "enforce_user",               0, "false",                   1, nullptr},
  { "administrator_mail",         0, "none",                    1, nullptr},
+ { "mail_tag",                   0, "none",                    1, nullptr},
  { "set_token_cmd",              1, "none",                    1, nullptr},
  { "pag_cmd",                    1, "none",                    1, nullptr},
  { "token_extend_time",          1, "24:0:0",                  1, nullptr},
@@ -539,6 +541,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "max_unheard", nullptr, &Master_Config.max_unheard, TYPE_TIM);
    chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, TYPE_LOG);
    chg_conf_val(lpCfg, "administrator_mail", &Master_Config.administrator_mail, nullptr, 0);
+   chg_conf_val(lpCfg, "mail_tag", &Master_Config.mail_tag, nullptr, 0);
    chg_conf_val(lpCfg, "set_token_cmd", &Master_Config.set_token_cmd, nullptr, 0);
    chg_conf_val(lpCfg, "pag_cmd", &Master_Config.pag_cmd, nullptr, 0);
    chg_conf_val(lpCfg, "token_extend_time", nullptr, &Master_Config.token_extend_time, TYPE_TIM);
@@ -1198,6 +1201,7 @@ void sge_show_conf()
    DPRINTF("conf.shell_start_mode       >%s<\n", Master_Config.shell_start_mode);
    DPRINTF("conf.login_shells           >%s<\n", Master_Config.login_shells);
    DPRINTF("conf.administrator_mail     >%s<\n", Master_Config.administrator_mail?Master_Config.administrator_mail:"none");
+   DPRINTF("conf.mail_tag               >%s<\n", Master_Config.mail_tag?Master_Config.mail_tag:"none");
    DPRINTF("conf.min_gid                >%u<\n", (unsigned) Master_Config.min_gid);
    DPRINTF("conf.min_uid                >%u<\n", (unsigned) Master_Config.min_uid);
    DPRINTF("conf.load_report_time       >%u<\n", (unsigned) Master_Config.load_report_time);
@@ -1289,6 +1293,7 @@ static void clean_conf() {
    sge_free(&Master_Config.enforce_project);
    sge_free(&Master_Config.enforce_user);
    sge_free(&Master_Config.administrator_mail);
+   sge_free(&Master_Config.mail_tag);
    lFreeList(&Master_Config.user_lists);
    lFreeList(&Master_Config.xuser_lists);
    lFreeList(&Master_Config.projects);
@@ -1563,6 +1568,19 @@ char* mconf_get_administrator_mail() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(administrator_mail);
+}
+
+/* returned pointer needs to be freed */
+char* mconf_get_mail_tag() {
+   char* mail_tag = nullptr;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   mail_tag = sge_strdup(mail_tag, Master_Config.mail_tag);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(mail_tag);
 }
 
 /* returned pointer needs to be freed */

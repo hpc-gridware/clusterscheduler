@@ -710,6 +710,7 @@ PrintConf()
    $ECHO "reschedule_unknown     00:00:00"
    $ECHO "loglevel               log_warning"
    $ECHO "administrator_mail     $CFG_MAIL_ADDR"
+   $ECHO "mail_tag               none"
    if [ "$AFS" = true ]; then
       $ECHO "set_token_cmd          /path_to_token_cmd/set_token_cmd"
       $ECHO "pag_cmd                /usr/afsws/bin/pagsh"
@@ -750,6 +751,7 @@ PrintConf()
    $ECHO "delegated_file_staging false"
    $ECHO "reprioritize           0"
    $ECHO "jsv_url                none"
+   $ECHO "gdi_request_limits     none"
 }
 
 

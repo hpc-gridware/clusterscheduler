@@ -44,8 +44,8 @@
 #define MSG_MAIL_SUBJECT_JOB_SUSP_US            "Job " sge_uu32 " (" SFN ") Suspended"
 #define MSG_MAIL_SUBJECT_JA_TASK_CONT_UUS       "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") Continued"
 #define MSG_MAIL_SUBJECT_JOB_CONT_US            "Job " sge_uu32 " (" SFN ") Continued"
-#define MSG_MAIL_SUBJECT_SUU                    SFN ": Job-array task " sge_uu32 "." sge_uu32 " failed"
-#define MSG_MAIL_SUBJECT_SU                     SFN ": Job " sge_uu32 " failed"
+#define MSG_MAIL_SUBJECT_SSUU                   SFN " " SFN ": Job-array task " sge_uu32 "." sge_uu32 " failed"
+#define MSG_MAIL_SUBJECT_SSU                    SFN " " SFN ": Job " sge_uu32 " failed"
 #define MSG_MAIL_SUBJECT_JA_TASK_COMP_UUS       "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") Complete"
 #define MSG_MAIL_SUBJECT_JOB_COMP_US            "Job " sge_uu32 " (" SFN ") Complete"
 #define MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS     "Job-array task " sge_uu32 "." sge_uu32 " (" SFN ") " SFN
