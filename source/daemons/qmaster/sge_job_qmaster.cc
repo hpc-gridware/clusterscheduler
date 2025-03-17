@@ -3179,6 +3179,7 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
       sge_assignment_t a = SGE_ASSIGNMENT_INIT;
 
       assignment_init(&a, jep, nullptr, nullptr);
+      assignment_init_ar(&a, master_ar_list);
 
       DPRINTF("verify schedulability = %c\n", OPTION_VERIFY_STR[verify_mode]);
 
@@ -3189,13 +3190,11 @@ int verify_suitable_queues(lList **alpp, lListElem *jep, int *trigger, bool is_m
 
       /* parallel */
       if (try_it) {
-         u_long32 ar_id = lGetUlong(jep, JB_ar);
          const lList *ar_granted_slots = nullptr;
 
-         if (ar_id != 0) {
-            const lListElem *ar = ar_list_locate(master_ar_list, ar_id);
-            if (ar != nullptr) {
-               ar_granted_slots = lGetList(ar, AR_granted_slots);
+         if (a.ar_id != 0) {
+            if (a.ar != nullptr) {
+               ar_granted_slots = lGetList(a.ar, AR_granted_slots);
             }
          }
 

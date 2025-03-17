@@ -112,10 +112,12 @@ typedef struct {
    /* ------ this section determines the assignment ------------------------------- */
    u_long32    job_id;            /* job id (convenience reasons)                   */
    u_long32    ja_task_id;        /* job array task id (convenience reasons)        */
+   u_long32    ar_id;             /* ar id if the job requested to run in an AR, else 0 */
    lListElem  *job;               /* the job (JB_Type)                              */
    lListElem  *ja_task;           /* the task (JAT_Type) (if nullptr only reschedule   */
                                   /* unknown verification is missing)               */
-   const char* user;              /* user name (JB_owner)                           */
+   lListElem *ar;                 /* the advance reservation if requested (AR_Type) */
+   const char* user;              /* username (JB_owner)                           */
    const char* group;             /* group name (JB_group)                          */
    const lList *grp_list;         /* supplementary grp list (JB_grp_list)           */
    const char* project;           /* project name (JB_project)                      */
@@ -154,10 +156,11 @@ typedef struct {
    sched_prof_t *pi;
 } sge_assignment_t;
 
-#define SGE_ASSIGNMENT_INIT {0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
+#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
+void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);

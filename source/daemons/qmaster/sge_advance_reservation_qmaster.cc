@@ -1904,6 +1904,10 @@ sge_ar_remove_all_jobs(u_long32 ar_id, int forced, monitoring_t *monitor, u_long
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
                } else {
                   if (!ISSET(lGetUlong(tmp_task, JAT_state), JDELETED)) {
+                     // @todo CS-1093 we simply mark the job as deleted. When the next job report comes in for it
+                     //       this will trigger a "... reports running job ... that was not supposed to be there..."
+                     //       message (MSG_JOB_REPORTRUNFALSE_SUUSS) and the job will be signalled then.
+                     //       Shouldn't we better signal the job here?
                      job_mark_job_as_deleted(jep, tmp_task);
                   }
                   ret = false;

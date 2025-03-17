@@ -73,7 +73,7 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
                    const lList *centry_list, const lList *acl_list, const lList *hgrp_list);
 
 static int
-debit_job_from_ar(lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list);
+debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list);
 
 /* -------------------------------------------------------------
 
@@ -163,7 +163,7 @@ debit_scheduled_job(const sge_assignment_t *a, int *sort_hostlist,
       debit_job_from_hosts(a->job, a->ja_task, a->pe, a->gdil, a->host_list, a->centry_list, a->load_adjustments, sort_hostlist);
       debit_job_from_queues(a->job, a->pe, a->gdil, a->queue_list, a->centry_list, orders);
       debit_job_from_rqs(a->job, a->gdil, a->rqs_list, a->pe, a->centry_list, a->acl_list, a->hgrp_list);
-      debit_job_from_ar(a->job, a->ja_task, a->pe, a->gdil, a->ar_list, a->centry_list);
+      debit_job_from_ar(a->ar, a->job, a->ja_task, a->pe, a->gdil, a->ar_list, a->centry_list);
    }
 
    add_job_utilization(a, type, for_job_scheduling);
@@ -410,11 +410,10 @@ debit_job_from_rqs(lListElem *job, lList *granted, lList *rqs_list, lListElem *p
 }
 
 static int
-debit_job_from_ar(lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list) {
+debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lListElem *pe, lList *granted, lList *ar_list, const lList *centry_list) {
 
    DENTER(TOP_LAYER);
 
-   const lListElem *ar = lGetElemUlong(ar_list, AR_id, lGetUlong(job, JB_ar));
    if (ar != nullptr) {
       lListElem *ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
 

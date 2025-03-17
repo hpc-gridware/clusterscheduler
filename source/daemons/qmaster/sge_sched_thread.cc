@@ -1074,13 +1074,13 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
    DENTER(TOP_LAYER);
 
    assignment_init(&a, job, ja_task, load_adjustments);
+   assignment_init_ar(&a, ar_list);
    a.queue_list = *queue_list;
    a.host_list = host_list;
    a.centry_list = centry_list;
    a.acl_list = acl_list;
    a.hgrp_list = hgrp_list;
    a.rqs_list = rqs_list;
-   a.ar_list = ar_list;
    a.pi = pi;
    a.monitor_next_run = monitor_next_run;
    a.now = now;

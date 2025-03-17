@@ -203,8 +203,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
       DRETURN(nullptr);
    }
 
-   int ar_id = lGetUlong(a->job, JB_ar);
-   if (ar_id == 0) {
+   if (a->ar_id == 0) {
       // add "slot" resource utilization entry of parallel environment
       // when running within an AR, slots are limited on the queue level, no need to add them here
       if (sge_qeti_list_add(&iter->cr_refs_pe, SGE_ATTR_SLOTS,
