@@ -178,14 +178,14 @@ void schedd_mes_initialize()
 *     void schedd_mes_commit(lList *job_list, int ignore_category) 
 *
 *  FUNCTION
-*     Each message contained in "tmp_sme" containes only
+*     Each message contained in "tmp_sme" contains only
 *     one job id. We have to find other jobs in "job_list" and
 *     add the job ids to the list of ids contained in "tmp_sme"
 *     message elements. After that we have to move all messages 
 *     contained in "tmp_sme" into "sme".
 *
 *     If "ignore_category" is 1 than the job category will be ignored.
-*     This means thal all ids of "job_list" will be added to all 
+*     This means that all ids of "job_list" will be added to all
 *     messages contained in "tmp_sme". 
 *     
 *     If no category is passed in and ignore_category is false, the messages

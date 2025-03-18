@@ -168,12 +168,13 @@ void assignment_clear_cache(sge_assignment_t *a);
 /* -------------------------------------------------------------------------------- */
 
 typedef enum {
-   DISPATCH_NEVER = 4,  /* an error happend, no dispatch will ever work again */
-   DISPATCH_MISSING_ATTR = 2, /* attribute does not exist */
-   DISPATCH_NOT_AT_TIME = 1,  /* no assignment at the specified time */
-   DISPATCH_OK = 0,           /* ok got an assignment + set time for DISPATCH_TIME_QUEUE_END */
-   DISPATCH_NEVER_CAT = -1,   /* assignment will never be possible for all jobs of that category */
-   DISPATCH_NEVER_JOB = -2    /* assignment will never be possible for that particular job */
+   DISPATCH_NEVER = 4,        // an error happened, no dispatch will ever work again
+   DISPATCH_MISSING_ATTR = 2, // attribute does not exist
+   DISPATCH_NOT_AT_TIME = 1,  // no assignment at the specified time
+   DISPATCH_OK = 0,           // ok got an assignment + set time for DISPATCH_TIME_QUEUE_END
+   DISPATCH_NEVER_CAT = -1,   // assignment will never be possible for all jobs of that category
+   DISPATCH_NEVER_JOB = -2    // assignment will never be possible for that particular job, as it is listed in a host's
+                              // reschedule unknown list
 } dispatch_t;
 
 #define TAG4SCHED_NONE

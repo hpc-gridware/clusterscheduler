@@ -258,7 +258,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    // the actual scheduling
    dispatch_jobs(evc, lists, &orders, splitted_job_lists);
 
-   // post processing
+   // post-processing
    remove_immediate_jobs(*(splitted_job_lists[SPLIT_PENDING]),
                          *(splitted_job_lists[SPLIT_RUNNING]), &orders);
 
@@ -748,8 +748,8 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             is_reserve = false;
          }
 
-         /* Don't need to look for a 'now' assignment if the last job 
-            of this category got no 'now' assignement either */
+         // Don't need to look for a 'now' assignment if the last job
+         // of this category got no 'now' assignment either
          is_start = sge_is_job_category_rejected(orig_job) == 0;
 
          if (is_start || is_reserve) {
@@ -810,24 +810,27 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                        now);
             }
             lFreeElem(&job);
+         } else {
+            DPRINTF("SKIP JOB " sge_u32 " - it cannot be started now and we will not do a reservation\n", job_id);
          }
 
-         /* collect profiling data */
-         switch (sconf_get_last_dispatch_type()) {
-            case DISPATCH_TYPE_FAST :
-               fast_runs++;
+         // collect profiling data - only if we actually did some scheduling
+         if (is_start || is_reserve) {
+            switch (sconf_get_last_dispatch_type()) {
+               case DISPATCH_TYPE_FAST :
+                  fast_runs++;
                break;
-            case DISPATCH_TYPE_FAST_SOFT_REQ :
-               fast_soft_runs++;
+               case DISPATCH_TYPE_FAST_SOFT_REQ :
+                  fast_soft_runs++;
                break;
-            case DISPATCH_TYPE_PE :
-               pe_runs++;
+               case DISPATCH_TYPE_PE :
+                  pe_runs++;
                break;
-            case DISPATCH_TYPE_PE_SOFT_REQ:
-               pe_soft_runs++;
+               case DISPATCH_TYPE_PE_SOFT_REQ:
+                  pe_soft_runs++;
                break;
+            }
          }
-
 
          switch (result) {
             case DISPATCH_OK: /* now assignment */
@@ -926,25 +929,31 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                break;
 
             case DISPATCH_NEVER_CAT: /* never this category */
-               /* before deleting the element mark the category as rejected */
-               if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                  DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
-                          lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
-                  sge_reject_category(cat, is_reserve);
+               if (is_start || is_reserve) {
+                  // before deleting the element mark the category as rejected
+                  // do this only once, not when we skipped scheduling as the category was already rejected
+                  if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
+                     DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
+                             lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
+                     sge_reject_category(cat, is_reserve);
+                  }
                }
                /* fall through to DISPATCH_NEVER_JOB */
 
             case DISPATCH_NEVER_JOB: /* never this particular job */
-               DPRINTF("SKIP JOB (J)" sge_u32 "\n", job_id);
-               /* here no reservation was made for a job that couldn't be started now
-                  or the job is not dispatchable at all */
-               schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
+               if (is_start || is_reserve) {
+                  DPRINTF("SKIP JOB (J)" sge_u32 "\n", job_id);
+                  // here no reservation was made for a job that couldn't be started now
+                  // or the job cannot be dispatched at all
+                  // do this only once, not when we skipped scheduling as the category was already rejected
+                  schedd_mes_commit(*(splitted_job_lists[SPLIT_PENDING]), 0, cat);
+               }
 
                if (JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type))) { /* immediate job */
                   lCondition *where = nullptr;
                   lListElem *rjob;
                   /* remove job from pending list and generate remove immediate orders
-                     for all tasks including alreaedy assigned ones */
+                     for all tasks including already assigned ones */
                   where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, job_id);
                   remove_immediate_job(*(splitted_job_lists[SPLIT_PENDING]), orig_job, orders, 0);
                   if ((rjob = lFindFirstRW(*(splitted_job_lists[SPLIT_RUNNING]), where)) != nullptr)
@@ -1160,7 +1169,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
    } else {
       /*------------------------------------------------------------------
-       * SELECT POSSIBLE QUEUE(S) FOR THIS SEQUENTIAL JOB
+       *  POSSIBLE QUEUE(S)select FOR THIS SEQUENTIAL JOB
        *------------------------------------------------------------------*/
 
       a.slots = 1;
