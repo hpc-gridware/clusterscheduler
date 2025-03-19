@@ -116,15 +116,15 @@ Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs
 
 ## *listener_threads*
 
-The number of listener threads (allowed: 4-32, defaults set by installation). 
+The number of listener threads (allowed: 1-32, default of 4 set by installation).
 
 ## *worker_threads*
 
-The number of worker threads (allowed: 4-32, defaults set by installation). 
+The number of worker threads (allowed: 1-32, default of 4 set by installation).
 
 ## *reader_threads*
 
-The number of reader threads (allowed: 4-32, defaults set by installation). 
+The number of reader threads (allowed: 1-32, default of 4 set by installation).
 
 ## *scheduler_threads*
 
