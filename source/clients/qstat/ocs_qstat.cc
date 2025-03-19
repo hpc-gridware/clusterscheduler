@@ -59,6 +59,7 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/sge_conf.h"
 
 #include "sched/sge_schedd_text.h"
 
@@ -324,6 +325,21 @@ int main(int argc, char *argv[]) {
       lFreeList(&ref_list);
       lFreeList(&jid_list);
       qstat_env_destroy(&qstat_env);
+      sge_exit(1);
+   }
+
+   // get configuration from qmaster - now it is possible to use the mconf_get-functions
+   lListElem *global = nullptr;
+   lListElem *local = nullptr;
+   lList *conf_list = nullptr;
+   const char *qualified_hostname = component_get_qualified_hostname();
+   u_long32 progid = component_get_component_id();
+   if (ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||
+      merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
+      ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
+      lFreeList(&conf_list);
+      lFreeElem(&global);
+      lFreeElem(&local);
       sge_exit(1);
    }
 

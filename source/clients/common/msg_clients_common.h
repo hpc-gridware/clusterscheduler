@@ -79,5 +79,6 @@
 #define MSG_QSTAT_PRT_PEDINGJOBS             _MESSAGE(1041, _(" - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS"))
 #define MSG_PARSE_NOOPTIONARGUMENT           _MESSAGE(1042, _("ERROR! no option argument"))
 #define MSG_NORQSFOUND                       _MESSAGE(1043, _("No resource quota set found"))
+#define MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER _MESSAGE(1044, _("\nCannot get configuration from qmaster."))
 
 // clang-format on

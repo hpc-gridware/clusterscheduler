@@ -43,7 +43,6 @@
 #define MSG_QSH_REQUESTCANTBESCHEDULEDTRYLATER_S            _MESSAGE(17002, _("Your " SFQ " request could not be scheduled, try again later."))
 #define MSG_QSH_INTERACTIVEJOBHASBEENSCHEDULED_S            _MESSAGE(17003, _("Your interactive job " SFN " has been successfully scheduled."))
 #define MSG_QSH_ESTABLISHINGREMOTESESSIONTO_SS              _MESSAGE(17004, _("Establishing " SFN " session to host " SFN " ..."))
-#define MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER          _MESSAGE(17005, _("\nCannot get configuration from qmaster."))
 
 #define MSG_EXEC_CANTEXECXYZ_SS                             _MESSAGE(17007, _("Could not exec " SFN ": " SFN))
 #define MSG_QSH_CANTSTARTINTERACTIVEJOB                     _MESSAGE(17008, _("\nCould not start interactive job."))
