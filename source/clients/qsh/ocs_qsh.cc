@@ -2052,7 +2052,7 @@ int main(int argc, const char **argv)
 
                if (comm_handle == nullptr) {
                   /* If we get here we already had a connection that was closed
-                   * and the loop was done again accidentially.
+                   * and the loop was done again accidentally.
                    * However, we can just exit the loop here.
                    */
                   do_exit = 1;
@@ -2064,8 +2064,7 @@ int main(int argc, const char **argv)
                 */
                DPRINTF("waiting for connection\n");
                sge_dstring_sprintf(&err_msg, "<null>");
-               ret = comm_wait_for_connection(comm_handle, COMM_CLIENT, 
-                                              random_poll, &host, &err_msg);
+               ret = comm_wait_for_connection(comm_handle, COMM_CLIENT, random_poll, &host, &err_msg);
 
                if (ret != COMM_RETVAL_OK) {
                   if (ret == COMM_GOT_TIMEOUT) {
