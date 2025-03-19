@@ -190,8 +190,8 @@ set_security_mode(const char *security_mode) {
    sge_bootstrap_tl1.security_mode = sge_strdup(sge_bootstrap_tl1.security_mode, security_mode);
 }
 
-// FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 64 threads
-#define MAX_THREADS_PER_POOL (128)
+// FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 32 threads
+#define MAX_THREADS_PER_POOL (32)
 
 static void
 set_listener_thread_count(int thread_count) {
