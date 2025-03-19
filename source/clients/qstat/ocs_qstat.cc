@@ -2138,38 +2138,54 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       DRETURN(1);
    }
 
-   /* does jlp contain all information we requested? */
+   /* does jop contain all information we requested? */
    if (lGetNumberOfElem(jlp) == 0) {
       lListElem *elem1, *elem2;
-      int first_time = 1;
 
-      for_each_rw(elem1, jlp) {
-         char buffer[256];
- 
-         snprintf(buffer, sizeof(buffer), sge_uu32, lGetUlong(elem1, JB_job_number));
-         elem2 = lGetElemStrRW(jid_list, ST_name, buffer);     
-         
-         if (elem2) {
-            lDechainElem(jid_list, elem2);
-            lFreeElem(&elem2);
-         }    
-      }
-      fprintf(stderr, "%s\n", MSG_QSTAT_FOLLOWINGDONOTEXIST);
-      for_each_rw(elem1, jid_list) {
-         if (!first_time) {
-            fprintf(stderr, ", "); 
+      // remove all pattern
+      bool removed_pattern = false;
+      elem2 = lFirstRW(jid_list);
+      while ((elem1 = elem2) != nullptr) {
+         elem2 = lNextRW(elem1);
+
+         if (sge_is_pattern(lGetString(elem1, ST_name))) {
+            lDechainElem(jid_list, elem1);
+            removed_pattern = true;
          }
-         first_time = 0;
-         fprintf(stderr, "%s", lGetString(elem1, ST_name));
       }
-      fprintf(stderr, "\n");
-      sge_exit(1);
+
+      // if there is still something missing then report an error
+      int first_time = 1;
+      if (lGetNumberOfElem(jid_list) > 0) {
+         fprintf(stderr, "%s\n", MSG_QSTAT_FOLLOWINGDONOTEXIST);
+         for_each_rw(elem1, jid_list) {
+            if (!first_time) {
+               fprintf(stderr, ", ");
+            }
+            first_time = 0;
+            fprintf(stderr, "%s", lGetString(elem1, ST_name));
+         }
+         fprintf(stderr, "\n");
+         sge_exit(1);
+      } else {
+         if (removed_pattern) {
+            fprintf(stderr, "%s\n", MSG_QSTAT_FOUNDNOMATCHING);
+         }
+         sge_exit(0);
+      }
    }
 
    /* print scheduler job information and global scheduler info */
    for_each_ep(j_elem, jlp) {
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
       const lListElem *sme;
+
+      // if -sdv is set then we will not show the job
+      const char *owner = lGetString(j_elem, JB_owner);
+      bool show_job = job_is_visible(owner,  qstat_env->is_manager, qstat_env->show_department_view, qstat_env->user_list);
+      if (!show_job) {
+         continue;
+      }
 
       printf("==============================================================\n");
       /* print job information */

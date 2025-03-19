@@ -75,15 +75,15 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
                               bool display_resource_contribution, const lList *centry_list, int slots);
 
 void cull_show_job(const lListElem *job, int flags, bool show_binding) {
-   const char *delis[] = {nullptr, ",", "\n"};
-   u_long64 ultime;
-   DSTRING_STATIC(dstr, 128);
-
    DENTER(TOP_LAYER);
 
    if (!job) {
       DRETURN_VOID;
    }
+
+   const char *delis[] = {nullptr, ",", "\n"};
+   u_long64 ultime;
+   DSTRING_STATIC(dstr, 128);
 
    if (!(flags & FLG_QALTER)) {
       if (lGetUlong(job, JB_job_number))

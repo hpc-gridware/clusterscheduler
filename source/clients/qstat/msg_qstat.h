@@ -71,7 +71,7 @@
 #define MSG_QSTAT_USAGE_DISPLAYCQUEUESUMMARY                _MESSAGE(19043, _("display cluster queue summary"))
 #define MSG_QSTAT_URGENCYINFO                               _MESSAGE(19044, _("display job urgency information"))
 #define MSG_QSTAT_PRIORITYINFO                              _MESSAGE(19045, _("display job priority information"))
-
+#define MSG_QSTAT_FOUNDNOMATCHING                           _MESSAGE(19046, _("Found no matching jobs"))
 #define MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING              _MESSAGE(19047, _(" -----   JOBS WAITING FOR ACCOUNTING  -  JOBS WAITING FOR ACCOUNTING   ----- "))
 #define MSG_QSTAT_PRT_ERRORJOBS                             _MESSAGE(19048, _("  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -  ERROR JOBS  -"))
 

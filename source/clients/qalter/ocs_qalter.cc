@@ -153,13 +153,16 @@ int main(int argc, const char **argv) {
 
    DPRINTF("all_jobs = %d, all_user = %d\n", all_jobs, all_users);
 
+   // qalter -verify should enable following section
+   //
+   // @todo This does not work for all switches, e.g. -w p -verify prints job_name without a job name
    if (request_list && verify) {
-      /* 
-         got a request list containing one element 
-         for each job to be modified 
+      /*
+         got a request list containing one element
+         for each job to be modified
          save jobid all fields contain the same fields
          so we may use show_job() with the first job
-         in our list 
+         in our list
          The jobid's in our request list get printed before
          show_job()
       */
