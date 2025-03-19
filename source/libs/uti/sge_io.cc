@@ -128,13 +128,11 @@ int sge_readnbytes(int sfd, char *ptr, int n) {
 *  NOTES
 *     MT-NOTE: sge_writenbytes() is MT safe
 ******************************************************************************/
-int sge_writenbytes(int sfd, const char *ptr,
-                    int n) {
+int sge_writenbytes(int sfd, const char *ptr, int n) {
+   DENTER(BASIS_LAYER);
 
    int i;                       /* number of bytes written */
    int nleft = n;               /* number of bytes still to write */
-
-   DENTER(BASIS_LAYER);
 
    /* Write n bytes */
    while (nleft > 0) {

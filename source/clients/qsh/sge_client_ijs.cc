@@ -525,10 +525,12 @@ void* commlib_to_tty(void *t_conf)
          switch (recv_mess.type) {
             case STDOUT_DATA_MSG:
                /* copy recv_mess.data to buf to append '\0' */
-               memcpy(buf, recv_mess.data, MIN(99, recv_mess.cl_message->message_length - 1));
-               buf[MIN(99, recv_mess.cl_message->message_length - 1)] = 0;
-               DPRINTF("commlib_to_tty: received stdout message, writing to tty.\n");
-               DPRINTF("commlib_to_tty: message is: %s\n", buf);
+               if (DPRINTF_IS_ACTIVE) {
+                  memcpy(buf, recv_mess.data, MIN(99, recv_mess.cl_message->message_length - 1));
+                  buf[MIN(99, recv_mess.cl_message->message_length - 1)] = 0;
+                  DPRINTF("commlib_to_tty: received stdout message, writing to tty.\n");
+                  DPRINTF("commlib_to_tty: message is: %s\n", buf);
+               }
 /* TODO: If it's not possible to write all data to the tty, retry blocking
  *       until all data was written. The commlib must block then, too.
  */
@@ -718,7 +720,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
     */
    thread_init_lib(&thread_lib_handle);
    /*
-    * From here on, we have to cleanup the list in case of errors, this is
+    * From here on, we have to clean up the list in case of errors, this is
     * why we "goto cleanup" in case of error.
     */
 
