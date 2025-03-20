@@ -26,8 +26,8 @@ a list of jobs with no queue status information.
 
 The administrator and the user may define files (see xxqs_name_sxx_qstat(5)), which can contain any of the options 
 described below. A cluster-wide xxqs_name_sxx_qstat file may be placed under 
-$xxQS_NAME_Sxx_ROOT/$xxQS_NAME_Sxx_CELL/common/xxqs_name_sxx_qstat The user private file is searched at the location 
-$HOME/.sge_qstat. The home directory request file has the highest precedence over the cluster global file. Command 
+*\$xxQS_NAME_Sxx_ROOT/\$xxQS_NAME_Sxx_CELL/common/xxqs_name_sxx_qstat* The user private file is searched at the location 
+*\$HOME/.sge_qstat*. The home directory request file has the highest precedence over the cluster global file. Command 
 line can be used to override the flags contained in the files.
 
 # OPTIONS
@@ -166,6 +166,9 @@ situation where the job owner cannot see the jobs anymore in case the department
 
 The department specific view can be enforced by adding the `-sdv` switch to the $HOME/.sge_qstat file.
 Administrators can enforce this behavior by adding this switch to the default sge_qstat files
+
+The `-sdv` option is also available in the `qselect` command where it has the same effect to suppress information about
+queues where the user has no access rights.
 
 ## -t  
 Prints extended information about the controlled sub-tasks of the displayed parallel jobs. Please refer to the 
@@ -561,7 +564,7 @@ user qstat default options
 # SEE ALSO
 
 xxqs_name_sxx_intro(1), qalter(1), qconf(1), qhold(1), qhost(1), qmod(1), qsub(1), xxqs_name_sxx_queue_conf(5),
-xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_shepherd(8).
+xxqs_name_sxx_execd(8), xxqs_name_sxx_qmaster(8), xxqs_name_sxx_qstat(5), xxqs_name_sxx_shepherd(8).
 
 # COPYRIGHT
 

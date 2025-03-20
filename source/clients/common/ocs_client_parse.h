@@ -41,6 +41,8 @@
 #define SGE_HOME_DEF_REQ_FILE ".sge_request"
 #define SGE_COMMON_DEF_QSTAT_FILE "common/sge_qstat"
 #define SGE_HOME_DEF_QSTAT_FILE ".sge_qstat"
+#define SGE_COMMON_DEF_QSELECT_FILE "common/sge_qselect"
+#define SGE_HOME_DEF_QSELECT_FILE ".sge_qselect"
 #define SGE_COMMON_DEF_QHOST_FILE "common/sge_qhost"
 #define SGE_HOME_DEF_QHOST_FILE ".sge_qhost"
 #define SGE_COMMON_DEF_QQUOTA_FILE "common/sge_qquota"

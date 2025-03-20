@@ -229,33 +229,28 @@ int main(int argc, char *argv[]) {
    }
 
    {
+      // get name of files that contain default options
       dstring file = DSTRING_INIT;
-      if (qstat_env.qselect_mode == 0) { /* the .sge_qstat file should only be used in the qstat mode */
-         get_root_file_path(&file, cell_root, SGE_COMMON_DEF_QSTAT_FILE);
-         /*
-          * Support of local/global profile for qstat command: we
-          * parse command options from both global and local qstat
-          * profile. Each command option is represented by an
-          * object of type SPA hanging off list 'pfile'.
-          *
-          * Next, parse command line options. Options from here are
-          * put in a separate list 'pcmdline' to allow checking for
-          * conflicting/duplicate options. This is required to
-          * obey the override semantic defined for the command line.
-          */
-         switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, 
-                                           sge_dstring_get_string(&file));
-         if (get_user_home_file_path(&file, SGE_HOME_DEF_QSTAT_FILE, username,
-                                              &alp)) {
-            switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, 
-                                           sge_dstring_get_string(&file));
-         }
-      }                                  
+      const char *common_file = SGE_COMMON_DEF_QSTAT_FILE;
+      const char *home_file = SGE_HOME_DEF_QSTAT_FILE;
+      if (qstat_env.qselect_mode == 1) {
+         common_file = SGE_COMMON_DEF_QSELECT_FILE;
+         home_file = SGE_HOME_DEF_QSELECT_FILE;
+      }
+
+      // get options from the global and user specific files
+      if (get_root_file_path(&file, cell_root, common_file)) {
+         switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, sge_dstring_get_string(&file));
+      }
+      if (get_user_home_file_path(&file, home_file, username, &alp)) {
+         switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, sge_dstring_get_string(&file));
+      }
+      sge_dstring_free(&file);
+
+      // get options from the command line
       switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, qstat_env.qselect_mode, argv);
-      /*
-       * Walk option list given by command line and check
-       * for matching options from file.
-       */
+
+      // remove duplicate options
       for_each_ep(ep_1, pcmdline) {
          do {
             /*
@@ -266,26 +261,16 @@ int main(int argc, char *argv[]) {
             for_each_rw(ep_2, pfile) {
                if (strcmp(lGetString(ep_1, SPA_switch_val),
                        lGetString(ep_2, SPA_switch_val)) == 0) {
-                  /*
-                   * Bingo: remove dup.
-                   */
+                  // remove duplicate options
                   lRemoveElem(pfile, &ep_2);
-                  /*
-                   * Start over again. We assume that the list
-                   * is not that huge. The next iteration we
-                   * may encounter another entry for the option
-                   * just removed.
-                   */
                   more = true;
                   break;
                }
             }
          } while(more);
       }
-      /*
-       * With dups removed we can now safely merge both lists.
-       * Note that we can only append to a non-empty list.
-       */
+
+      // merge the options from the files and the command line
       if (lGetNumberOfElem(pcmdline) > 0) {
          lAppendList(pcmdline, pfile);
          lFreeList(&pfile);
@@ -294,13 +279,10 @@ int main(int argc, char *argv[]) {
          lFreeList(&pcmdline);
          pcmdline = pfile;
       }
-      sge_dstring_free(&file);
    }
- 
-   if (alp) {
-      /*
-      ** high level parsing error! show answer list
-      */
+
+   // parsing error => show error and exit
+   if (alp != nullptr) {
       for_each_ep(aep, alp) {
          fprintf(stderr, "%s\n", lGetString(aep, AN_text));
       }
@@ -310,10 +292,9 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   alp = sge_parse_qstat(&pcmdline, &qstat_env, &hostname,
-                         &jid_list, &isXML);
-
-   if (alp) {
+   // handle all switches
+   alp = sge_parse_qstat(&pcmdline, &qstat_env, &hostname, &jid_list, &isXML);
+   if (alp != nullptr) {
       /*
       ** low level parsing error! show answer list
       */
@@ -328,7 +309,7 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   // get configuration from qmaster - now it is possible to use the mconf_get-functions
+   // get configuration from qmaster - from now on it is possible to use the mconf_get-functions
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    lList *conf_list = nullptr;
@@ -343,7 +324,7 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   /* if -j, then only print job info and leave */
+   // if -j, then only print job info and leave */
    if (qstat_env.job_info) {
       int ret = 0;
 
@@ -358,70 +339,66 @@ int main(int argc, char *argv[]) {
       sge_exit(ret);
    }
 
-   {
-      lList *answer_list = nullptr;
-      int ret = 0;
-
-      str_list_transform_user_list(&(qstat_env.user_list), &answer_list, username);
-      
-      if (qstat_env.qselect_mode) {
-         qselect_handler_t handler;
-         if (isXML) {
-            if(qselect_xml_init(&handler, &answer_list)) {
-               for_each_ep(aep, answer_list) {
-                  fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               }
-               lFreeList(&answer_list);
-               qstat_env_destroy(&qstat_env);
-               sge_exit(1);
-               return 1;
+   int ret = 0;
+   lList *answer_list = nullptr;
+   str_list_transform_user_list(&(qstat_env.user_list), &answer_list, username);
+   if (qstat_env.qselect_mode) {
+      qselect_handler_t handler;
+      if (isXML) {
+         if(qselect_xml_init(&handler, &answer_list)) {
+            for_each_ep(aep, answer_list) {
+               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
             }
-         } else {
-            qselect_stdout_init(&handler, &answer_list);
-         }
-         ret = qselect(&qstat_env, &handler, &answer_list);
-         if (handler.destroy != nullptr) {
-            handler.destroy(&handler, &answer_list);
-         }
-      } else if (qstat_env.group_opt & GROUP_CQ_SUMMARY) {
-         cqueue_summary_handler_t handler;
-         if (isXML) {
-            ret = cqueue_summary_xml_handler_init(&handler);
-         } else {
-            ret = cqueue_summary_stdout_init(&handler, &answer_list);
-         }
-         if (ret == 0) {
-            ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list);
-         }
-         if (handler.destroy != nullptr) {
-            handler.destroy(&handler);
+            lFreeList(&answer_list);
+            qstat_env_destroy(&qstat_env);
+            sge_exit(1);
+            return 1;
          }
       } else {
-         qstat_handler_t handler;
-         
-         if (isXML) {
-            ret = qstat_xml_handler_init(&handler, &answer_list);
-         } else {
-            ret = qstat_stdout_init(&handler, &answer_list);
-         }
-         
-         if (ret == 0) {
-            ret = qstat_no_group(&qstat_env, &handler, &answer_list);
-         }
-         
-         if (handler.destroy != nullptr ) {
-            DPRINTF("Destroy handler\n");
-            handler.destroy(&handler);
-         }
+         qselect_stdout_init(&handler, &answer_list);
+      }
+      ret = qselect(&qstat_env, &handler, &answer_list);
+      if (handler.destroy != nullptr) {
+         handler.destroy(&handler, &answer_list);
+      }
+   } else if (qstat_env.group_opt & GROUP_CQ_SUMMARY) {
+      cqueue_summary_handler_t handler;
+      if (isXML) {
+         ret = cqueue_summary_xml_handler_init(&handler);
+      } else {
+         ret = cqueue_summary_stdout_init(&handler, &answer_list);
+      }
+      if (ret == 0) {
+         ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list);
+      }
+      if (handler.destroy != nullptr) {
+         handler.destroy(&handler);
+      }
+   } else {
+      qstat_handler_t handler;
+
+      if (isXML) {
+         ret = qstat_xml_handler_init(&handler, &answer_list);
+      } else {
+         ret = qstat_stdout_init(&handler, &answer_list);
       }
 
-      answer_list_output(&answer_list);
-
-      if (ret != 0) {
-         qstat_env_destroy(&qstat_env);
-         sge_exit(1);
-         return 1;
+      if (ret == 0) {
+         ret = qstat_no_group(&qstat_env, &handler, &answer_list);
       }
+
+      if (handler.destroy != nullptr ) {
+         DPRINTF("Destroy handler\n");
+         handler.destroy(&handler);
+      }
+   }
+
+   answer_list_output(&answer_list);
+
+   if (ret != 0) {
+      qstat_env_destroy(&qstat_env);
+      sge_exit(1);
+      return 1;
    }
    sge_exit(0);
    return 0;

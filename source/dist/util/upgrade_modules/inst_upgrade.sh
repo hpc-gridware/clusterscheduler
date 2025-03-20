@@ -138,6 +138,7 @@ sge_ar_request
 sge_request
 sge_qquota
 sge_qstat
+sge_qselect
 shadow_masters
 accounting
 dbwriter.conf"

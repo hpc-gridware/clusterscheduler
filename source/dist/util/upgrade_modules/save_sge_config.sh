@@ -181,6 +181,10 @@ BackupSgeCell()
    if [ -f $SGE_ROOT/$SGE_CELL/common/sge_qstat ]; then
       cp $SGE_ROOT/$SGE_CELL/common/sge_qstat "${DEST_DIR}/cell"
    fi
+   #sge_qselect
+   if [ -f $SGE_ROOT/$SGE_CELL/common/sge_qselect ]; then
+      cp $SGE_ROOT/$SGE_CELL/common/sge_qselect "${DEST_DIR}/cell"
+   fi
    #sge_qquota
    if [ -f $SGE_ROOT/$SGE_CELL/common/sge_qquota ]; then
       cp $SGE_ROOT/$SGE_CELL/common/sge_qquota "${DEST_DIR}/cell"
@@ -189,7 +193,10 @@ BackupSgeCell()
    if [ -f $SGE_ROOT/$SGE_CELL/common/sge_qstat ]; then
       cp $SGE_ROOT/$SGE_CELL/common/sge_qstat "${DEST_DIR}/cell"
    fi
-   
+   #sge_qselect
+   if [ -f $SGE_ROOT/$SGE_CELL/common/sge_qselect ]; then
+      cp $SGE_ROOT/$SGE_CELL/common/sge_qselect "${DEST_DIR}/cell"
+   fi
    #shadow_masters
    if [ -f $SGE_ROOT/$SGE_CELL/common/shadow_masters ]; then
       cp $SGE_ROOT/$SGE_CELL/common/shadow_masters "${DEST_DIR}/cell"

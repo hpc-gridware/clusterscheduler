@@ -47,6 +47,7 @@ add_custom_target(troffman5 ALL DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/sge_project.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_qhost.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_qstat.5
+      ${CMAKE_CURRENT_BINARY_DIR}/sge_qselect.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_qtask.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_queue_conf.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_reporting.5

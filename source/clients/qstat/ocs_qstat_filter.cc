@@ -176,13 +176,34 @@ int qselect(qstat_env_t* qstat_env, qselect_handler_t* handler, lList **alpp) {
    for_each_ep(cqueue, qstat_env->queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
+      // does the executing qstat user have access to this queue?
+      const char *username = component_get_username();
+      const char *groupname = component_get_groupname();
+      int amount;
+      ocs_grp_elem_t *grp_array;
+      component_get_supplementray_groups(&amount, &grp_array);
+      lList *grp_list = grp_list_array2list(amount, grp_array);
       for_each_ep(qep, qinstance_list) {
+         bool has_access = sge_has_access(username, groupname, grp_list, qep, qstat_env->acl_list);
+
+         // show everything for managers but for normal users hide data if user has no access to the queue
+         bool hide_data = false;
+         if (qstat_env->is_manager) {
+            hide_data = false;
+         } else if (qstat_env->show_department_view) {
+            hide_data = !has_access;
+         }
+         if (hide_data) {
+            continue;
+         }
+
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
             if (handler->report_queue != nullptr) {
                handler->report_queue(handler, lGetString(qep, QU_full_name), alpp);
             }   
          }
       }
+      lFreeList(&grp_list);
    }
    if (handler->report_finished != nullptr) {
       handler->report_finished(handler, alpp);
