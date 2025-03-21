@@ -907,6 +907,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       var_list_set_string(&environmentList, VAR_PREFIX "TASK_STEPSIZE", udef);
    }
 
+   if (pe_task_id != nullptr) {
+      var_list_set_string(&environmentList, VAR_PREFIX "PE_TASK_ID", pe_task_id);
+   }
+
    var_list_set_string(&environmentList, "ENVIRONMENT", "BATCH");
    var_list_set_string(&environmentList, "ARC", arch);
 
