@@ -589,8 +589,8 @@ lList *cull_parse_cmdline(
 /*----------------------------------------------------------------------------*/
 
       /* "-dept name" */
-
       if (!strcmp("-dept", *sp)) {
+         DTRACE;
 
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);

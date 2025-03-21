@@ -235,6 +235,11 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lRemoveElem(cmdline, &ep);
    }
 
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dept"))) {
+      lSetString(*pjob, JB_department, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(cmdline, &ep);
+   }
+
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-e"))) {
       lSetList(*pjob, JB_stderr_path_list, lCopyList("stderr_path_list", lGetList(ep, SPA_argval_lListT)));
       lRemoveElem(cmdline, &ep);

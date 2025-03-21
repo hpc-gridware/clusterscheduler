@@ -320,6 +320,11 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lRemoveElem(cmdline, &ep);
    }
 
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dept"))) {
+      lSetString(*pjob, JB_department, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(cmdline, &ep);
+   }
+
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-jsv"))) {
       const lList *list = lGetList(ep, SPA_argval_lListT);
       const char *file = lGetString(lFirst(list), PN_path);
@@ -486,11 +491,6 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
 
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-P"))) {
       lSetString(*pjob, JB_project, lGetString(ep, SPA_argval_lStringT));
-      lRemoveElem(cmdline, &ep);
-   }
-
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-dept"))) {
-      lSetString(*pjob, JB_department, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(cmdline, &ep);
    }
 

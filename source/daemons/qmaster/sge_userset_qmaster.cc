@@ -320,7 +320,7 @@ job_is_valid_department(lListElem *job, lList **alpp, const char *dept_name, con
 
    // User is not part of the department
    if (alpp) {
-      ERROR(MSG_JOB_USERNOTPARTDEPT_S, owner);
+      ERROR(MSG_JOB_USERNOTPARTDEPT_SS, owner, dept_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
    DRETURN(false);

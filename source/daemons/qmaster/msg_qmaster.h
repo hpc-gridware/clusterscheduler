@@ -667,7 +667,7 @@
 
 #define MSG_JOB_NODEPTFOUND                        _MESSAGE(33961, _("No department found for the job"))
 #define MSG_JOB_DEPTNOEXIST_S                      _MESSAGE(33962, _("Department " SFQ " does not exist"))
-#define MSG_JOB_USERNOTPARTDEPT_S                  _MESSAGE(33963, _("User " SFQ " is not part of a department"))
+#define MSG_JOB_USERNOTPARTDEPT_SS                 _MESSAGE(33963, _("User " SFQ " is not part of department " SFQ))
 
 #define MSG_REQLIMIT_EXCEEDED_S                    _MESSAGE(33964, _("request limit \"%s\" exceeded"))
 #define MSG_REQLIMIT_SRCPATTERNNOMATCH_S           _MESSAGE(33965, _("source filter " SFQ " of request limit will never match"))

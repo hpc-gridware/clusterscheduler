@@ -2323,7 +2323,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
          if (strcmp(cp, "jobarg") && strcmp(cp, "script") && strcmp(cp, "-ar") &&
             strcmp(cp, "-binding") &&
             strcmp(cp, "-A") && strcmp(cp, "-cell") && strcmp(cp, "-clear") && 
-            strcmp(cp, "-cwd") && strcmp(cp, "-hard") && strcmp(cp, "-help") &&
+            strcmp(cp, "-cwd") && strcmp(cp, "-dept") && strcmp(cp, "-hard") && strcmp(cp, "-help") &&
             strcmp(cp, "-hold_jid") && strcmp(cp, "-hold_jid_ad") && strcmp(cp, "-h") && 
             strcmp(cp, "-l") && strcmp(cp, "-m") && strcmp(cp, "-masterq") &&
             strcmp(cp, "-N") && strcmp(cp, "-noshell") && strcmp(cp, "-now") &&
@@ -2341,6 +2341,7 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
                sge_prof_cleanup();
                sge_exit(EXIT_FAILURE);
             } else {
+               DPRINTF("removing option %s\n", cp);
                lRemoveElem(lp, &ep);
                continue;
             }
