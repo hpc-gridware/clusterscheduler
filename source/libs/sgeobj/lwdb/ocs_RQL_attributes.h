@@ -33,7 +33,6 @@ enum {
    RQL_result,
    RQL_time,
    RQL_slots,
-   RQL_slots_qend,
    RQL_tagged4schedule
 };
 
@@ -42,7 +41,6 @@ constexpr const int RQL_Type[] = {
    RQL_result,
    RQL_time,
    RQL_slots,
-   RQL_slots_qend,
    RQL_tagged4schedule,
    AttributeStatic::END_OF_ATTRIBUTES
 };
@@ -52,7 +50,6 @@ constexpr const int RQL_Type[] = {
    {RQL_result, "RQL_result", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RQL_time, "RQL_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RQL_slots, "RQL_slots", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {RQL_slots_qend, "RQL_slots_qend", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RQL_tagged4schedule, "RQL_tagged4schedule", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace

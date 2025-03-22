@@ -44,14 +44,6 @@
 			"type":	"lIntT",
 			"flags":	[]
 		}, {
-			"name":	"slots_qend",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lIntT",
-			"flags":	[]
-		}, {
 			"name":	"tagged4schedule",
 			"summary":	"@todo add summary",
 			"description":	[{

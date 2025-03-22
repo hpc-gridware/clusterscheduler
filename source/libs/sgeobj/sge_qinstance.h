@@ -53,10 +53,6 @@ enum {
    GDI_DO_LATER = 0x01
 };
 
-/* sequential scheduling uses: QU_available_at 
- * parallel scheduling uses: QU_tag_qend */
-#define QU_tag_qend QU_available_at
-
 bool
 qinstance_validate(lListElem *this_elem, lList **answer_list, const lList *master_exechost_list,
                    const lList *centry_master_list);

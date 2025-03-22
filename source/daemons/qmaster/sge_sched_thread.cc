@@ -1075,7 +1075,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
                     bool is_schedule_based, lList **load_list, const lList *hgrp_list, lList *rqs_list, lList *ar_list,
                     sched_prof_t *pi, bool monitor_next_run, u_long64 now) {
    lListElem *granted_el;
-   dispatch_t result = DISPATCH_NOT_AT_TIME;
+   dispatch_t result = DISPATCH_NEVER_CAT;
    const char *pe_name, *ckpt_name;
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
    bool is_computed_reservation = false;
@@ -1102,7 +1102,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          *queue_list = lCreateList("temp queue", lGetListDescr(*dis_queue_list));
          a.queue_list = *queue_list;
       }
-      a.care_reservation = is_computed_reservation = true;
+      is_computed_reservation = true;
       lAppendList(*queue_list, *dis_queue_list);
    }
 
@@ -1145,9 +1145,20 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          a.start = DISPATCH_TIME_NOW;
          a.is_reservation = false;
          result = sge_select_parallel_environment(&a, pe_list);
+#if ENABLE_DEBUG_CHECKS
+         if (result == DISPATCH_NOT_AT_TIME) {
+            // CS-1108: once all cleanup has been done, sge_select_parallel_environment
+            // will no longer return DISPATCH_NOT_AT_TIME but DISPATCH_NEVER_CAT
+            CRITICAL("===> we should no longer get DISPATCH_NOT_AT_TIME (parallel)");
+            abort();
+         }
+#endif
       }
 
-      if (result == DISPATCH_NOT_AT_TIME) {
+
+      // when DISPATCH_NEVER_JOB is returned this means that the job is not scheduled as it is in reschedule_unknown
+      // lists - shall we then do a reservation? So far (before CS-1108) this has not been done.
+      if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
             DPRINTF("looking for parallel reservation for job "
                             sge_uu32"." sge_uu32 " requesting pe \"%s\" duration " sge_uu32 "\n",
@@ -1184,10 +1195,18 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
          result = sge_sequential_assignment(&a);
 
          DPRINTF("sge_sequential_assignment(immediate) returned %d\n", result);
+#if ENABLE_DEBUG_CHECKS
+         if (result == DISPATCH_NOT_AT_TIME) {
+            // CS-1108: once all cleanup has been done, sge_select_parallel_environment
+            // will no longer return DISPATCH_NOT_AT_TIME but DISPATCH_NEVER_CAT
+            CRITICAL("===> we should no longer get DISPATCH_NOT_AT_TIME (sequential)");
+            abort();
+         }
+#endif
       }
 
       /* try to reserve for jobs that can be dispatched with the current configuration */
-      if (result == DISPATCH_NOT_AT_TIME) {
+      if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
             DPRINTF("looking for sequential reservation for job "
                             sge_uu32"." sge_uu32 " duration " sge_u64 "\n",
