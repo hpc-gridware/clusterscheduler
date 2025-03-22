@@ -44,9 +44,6 @@
 *    SGE_INT(RQL_slots) - @todo add summary
 *    @todo add description
 *
-*    SGE_INT(RQL_slots_qend) - @todo add summary
-*    @todo add description
-*
 *    SGE_ULONG(RQL_tagged4schedule) - @todo add summary
 *    @todo add description
 *
@@ -57,7 +54,6 @@ enum {
    RQL_result,
    RQL_time,
    RQL_slots,
-   RQL_slots_qend,
    RQL_tagged4schedule
 };
 
@@ -66,7 +62,6 @@ LISTDEF(RQL_Type)
    SGE_INT(RQL_result, CULL_DEFAULT)
    SGE_ULONG64(RQL_time, CULL_DEFAULT)
    SGE_INT(RQL_slots, CULL_DEFAULT)
-   SGE_INT(RQL_slots_qend, CULL_DEFAULT)
    SGE_ULONG(RQL_tagged4schedule, CULL_DEFAULT)
 LISTEND
 
@@ -75,7 +70,6 @@ NAMEDEF(RQLN)
    NAME("RQL_result")
    NAME("RQL_time")
    NAME("RQL_slots")
-   NAME("RQL_slots_qend")
    NAME("RQL_tagged4schedule")
 NAMEEND
 

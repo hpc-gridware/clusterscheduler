@@ -38,9 +38,7 @@ QU_tagged4schedule
 |------------------------|-----------------------------------------------------------------|
 | TAG4SCHED_NONE         | can not be used                                                 |
 | TAG4SCHED_MASTER       | can be used now for the master task of a parallel job           |
-| TAG4SCHED_MASTER_LATER | can be used in the future for the master task of a parallel job |
 | TAG4SCHED_SLAVE        | can be used now as slave queue                                  |
-| TAG4SCHED_SLAVE_LATER  | can be used in the future as slave queue                        |
 | TAG4SCHED_ALL          | can be used in general                                          |
 
 Also used when after dispatching a job queue instances which is in load alarm by a consumable as load threshold.

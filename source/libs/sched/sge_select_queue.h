@@ -133,7 +133,6 @@ typedef struct {
    lList      *rqs_list;          /* the resource quota set list (RQS_Type)         */ 
    lList      *ar_list;           /* the advance reservation list (AR_Type)         */ 
    bool       is_reservation;     /* true, if a reservation for this job should be done */
-   bool       care_reservation;   /* false, if reservation is not of interest       */
    bool       is_advance_reservation; /* true for advance reservation scheduling    */
    bool       is_job_verify;      /* true, if job verification (-w ev) (in qmaster) */
    bool       is_schedule_based;  /* true, if resource reservation is enabled       */
@@ -157,7 +156,7 @@ typedef struct {
 } sge_assignment_t;
 
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
@@ -180,9 +179,7 @@ typedef enum {
 #define TAG4SCHED_NONE
 #define TAG4SCHED_SLAVE          0b0001
 #define TAG4SCHED_MASTER         0b0010
-#define TAG4SCHED_SLAVE_LATER    0b0001 << 16
-#define TAG4SCHED_MASTER_LATER   0b0010 << 16
-#define TAG4SCHED_ALL TAG4SCHED_SLAVE|TAG4SCHED_MASTER|TAG4SCHED_SLAVE_LATER|TAG4SCHED_MASTER_LATER
+#define TAG4SCHED_ALL TAG4SCHED_SLAVE|TAG4SCHED_MASTER
 
 dispatch_t
 sge_sequential_assignment(sge_assignment_t *a);
@@ -212,7 +209,7 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
 int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
 
 dispatch_t
-parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, const lList *total_list,
+parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, const lList *total_list,
                           const lList *rue_list, const lList *load_attr, bool force_slots, lListElem *queue,
                           u_long32 layer, double lc_factor, u_long32 tag, bool need_master,
                           bool is_master_host, bool allow_non_requestable, const char *object_name,
