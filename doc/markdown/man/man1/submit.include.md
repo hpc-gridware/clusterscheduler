@@ -1426,9 +1426,7 @@ The user's home directory.
 The hostname of the node on which the job is running.
 
 ## JOB_ID  
-A unique identifier assigned by the xxqs_name_sxx_qmaster(8) when the job was submitted. The job ID is a decimal 
-integer in the range 1 to
-99999.
+A unique identifier assigned by the xxqs_name_sxx_qmaster(8) when the job was submitted. The job ID is a decimal integer in the range 1 to 2147483647 (INT32_MAX).
 
 ## JOB_NAME  
 The job name. For batch jobs or jobs submitted by `qrsh` with a command, the job name is built as basename of 
@@ -1468,6 +1466,10 @@ The parallel environment under which the job executes (for parallel jobs only).
 The path of a file containing the definition of the virtual parallel machine assigned to a parallel job by 
 xxQS_NAMExx. See the description of the *$pe_hostfile* parameter in xxqs_name_sxx_pe(5) for details on the format 
 of this file. The environment variable is only available for parallel jobs.
+
+## SGE_PE_TASK_ID
+A task of a tightly integrated parallel job is uniquely identified by the JOB_ID, the SGE_TASK_ID and the SGE_PE_TASK_ID.  
+The SGE_PE_TASK_ID consists of a running number, a dot (`.`) and the host name, e.g. `4.host-123`.
 
 ## QUEUE  
 The name of the cluster queue in which the job is running.
