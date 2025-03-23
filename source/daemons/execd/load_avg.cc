@@ -1332,6 +1332,7 @@ void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lL
             slots_total = 1;
             build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem);
          }
+         // @todo CS-1132 maxrss is missing in reserved usage
 
          /* cpu is wallclock time * total number of job slots */
          *cpu = *wallclock * slots_total;

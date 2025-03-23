@@ -369,7 +369,7 @@ update_wallclock_usage(u_long64 now, const lListElem *job, const lListElem *ja_t
       wallclock = now - lGetUlong64(pe_task, PET_start_time);
       const char *pe_task_id = lGetString(pe_task, PET_id);
       jr = get_job_report(job_id, ja_task_id, pe_task_id);
-      if (jr == nullptr) {
+      if (jr != nullptr) {
          add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, sge_gmt64_to_gmt32_double(wallclock));
       }
    }

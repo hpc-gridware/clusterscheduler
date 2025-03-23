@@ -1714,6 +1714,10 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    /* build reserved usage if required */ 
    r_cpu = r_mem = r_maxvmem = 0.0;
    if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+      if (pe_task_id != nullptr) {
+         pe_task = lGetSubStr(ja_task, PET_id, pe_task_id, JAT_task_list);
+      }
+
       double wallclock;
       if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
          // reserved usage
@@ -1723,14 +1727,16 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
             accounting_summary = true;
          }
 
-         if (pe_task_id != nullptr) {
-            pe_task = lGetSubStr(ja_task, PET_id, pe_task_id, JAT_task_list);
-         }
-
          build_reserved_usage(end_time, ja_task, pe_task, &wallclock, &r_cpu, &r_mem, &r_maxvmem);
       } else {
          // non reserved usage, need to calculate wallclock
-         wallclock = sge_gmt64_to_gmt32_double(sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time));
+         u_long64 start_time;
+         if (pe_task == nullptr) {
+            start_time = lGetUlong64(ja_task, JAT_start_time);
+         } else {
+            start_time = lGetUlong64(pe_task, PET_start_time);
+         }
+         wallclock = sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time);
       }
       add_usage(jr, USAGE_ATTR_WALLCLOCK, nullptr, wallclock);
    }
