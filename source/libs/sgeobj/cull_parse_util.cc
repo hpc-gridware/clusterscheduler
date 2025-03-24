@@ -697,15 +697,8 @@ int *interpretation_rule
 **   prints certain fields of a list to a given stream or buffer, separated by 
 **   delimiters, be careful: sublists are NOT yet implemented
 */
-int uni_print_list(
-FILE *fp,
-char *buff,
-u_long32 buff_size,
-const lList *lp,
-int *which_elements_rule,
-const char *pdelis[],
-unsigned long flags 
-) {
+int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, int *which_elements_rule, const char *pdelis[], unsigned long flags) {
+   DENTER(BASIS_LAYER);
    lListElem *ep;
    int *rule;
    int type;
@@ -716,7 +709,6 @@ unsigned long flags
    char str[256];
    const char *cp;
 
-   DENTER(BASIS_LAYER);
 
    /*
    ** problem: one might allow nullptr deli as no deli
@@ -836,14 +828,22 @@ unsigned long flags
          case lStringT:
             cp = lGetString(ep, *rule);
             if (!cp) {
-               cp = "NONE";
+               if (flags & FLG_NO_VALUE_AS_EMPTY) {
+                  cp = "";
+               } else {
+                  cp = "NONE";
+               }
             }
             break;
 
          case lHostT:
             cp = lGetHost(ep, *rule);
             if (!cp) {
-               cp = "NONE";
+               if (flags & FLG_NO_VALUE_AS_EMPTY) {
+                  cp = "";
+               } else {
+                  cp = "NONE";
+               }
             }
             break;
 
@@ -869,10 +869,9 @@ unsigned long flags
          ** but if there are more than one optional field and delimiters are
          ** left out, then unique interpretation is lost, so be careful
          */
-         if (pdelis[0] && *pdelis[0] && (rule != which_elements_rule) &&
-             (!(flags & FLG_NO_DELIS_STRINGS) || (*cp && cb))  &&
-             (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) 
-               || strcmp(cp, "0"))) {
+         if (pdelis[0] && *pdelis[0] && (rule != which_elements_rule)
+             && (!(flags & FLG_NO_DELIS_STRINGS) || (*cp && cb) || (flags & FLG_NO_VALUE_AS_EMPTY))
+             && (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) || strcmp(cp, "0"))) {
             if (buff_size && (cb_sum + strlen(pdelis[0]) > buff_size)) {
                DPRINTF("max_len too small\n");
                DRETURN(-1);
