@@ -30,6 +30,7 @@ if (INSTALL_SGE_COMMON)
          hadoop
          mpi
          util
+         containerruntimes
          DESTINATION .
          USE_SOURCE_PERMISSIONS)
 endif ()
