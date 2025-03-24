@@ -2383,7 +2383,7 @@ sge_load_alarm(char *reason, size_t reason_size, const lListElem *qep, const lLi
 
    if(!hep) {
       if (reason)
-         snprintf(reason, sizeof(reason_size), MSG_SCHEDD_WHYEXCEEDNOHOST_S, lGetHost(qep, QU_qhostname));
+         snprintf(reason, reason_size, MSG_SCHEDD_WHYEXCEEDNOHOST_S, lGetHost(qep, QU_qhostname));
       /* no host for queue -> ERROR */
       DRETURN(1);
    }

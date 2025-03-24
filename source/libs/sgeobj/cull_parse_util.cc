@@ -882,7 +882,7 @@ int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, in
             }
             else {
                cb = strlen(pdelis[0]);
-               snprintf(buff, sizeof(buff_size), "%s", pdelis[0]);
+               snprintf(buff, buff_size, "%s", pdelis[0]);
             }
             if (cb <= 0) {
                DPRINTF("uni_print_list: error writing delimiter\n");
