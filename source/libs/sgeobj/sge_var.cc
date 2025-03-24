@@ -615,7 +615,7 @@ void var_list_remove_prefix_vars(lList **varl, const char *prefix)
 *                                     const char *prefix) 
 *
 *  FUNCTION
-*     Move all variable elements form "varl" to "pefix_vars" which 
+*     Move all variable elements from "varl" to "pefix_vars" which
 *     begin with "prefix". *pefix_vars will be created if is does not
 *     exist.
 *

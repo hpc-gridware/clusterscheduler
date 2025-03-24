@@ -43,6 +43,7 @@
 */
 #define FLG_NO_DELIS_STRINGS 1
 #define FLG_NO_DELIS_NUMBERS 2
+#define FLG_NO_VALUE_AS_EMPTY 4
 
 /*
 ** flags for parse_list_simple
