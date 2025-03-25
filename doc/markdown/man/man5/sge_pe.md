@@ -68,6 +68,12 @@ being the job's identification number. Likewise, the standard error output is re
 The following special variables being expanded at runtime can be used (besides any other strings which have to 
 be interpreted by the start and stop procedures) to constitute a command line:
 
+* $sge_root
+  The product root directory.
+
+* $sge_cell
+  The name of the cell directory.
+
 * $pe_hostfile  
   The pathname of a file containing a detailed description of the layout of the parallel environment to be setup by 
   the start-up procedure. Each line of the file refers to a host on which parallel processes are to be run. The first 

@@ -111,6 +111,12 @@ The default for *prolog* is the special value NONE, which prevents from executio
 The following special variables expanded at runtime can be used (besides any other strings which have to be 
 interpreted by the procedure) to constitute a command line:
 
+* \$sge_root
+  The product root directory.
+
+* \$sge_cell
+  The name of the cell directory.
+
 * \$host  
   The name of the host on which the prolog or epilog procedures are started.
 

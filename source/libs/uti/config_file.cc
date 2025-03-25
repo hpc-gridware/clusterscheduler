@@ -70,6 +70,8 @@ static config_entry *config_list = nullptr;
 
 /* these variables may get used to replace variables in pe_start */
 const char *pe_variables[] = {
+        "sge_root",
+        "sge_cell",
         "pe_hostfile",
         "host",
         "job_owner",
@@ -100,6 +102,8 @@ const char *pe_variables[] = {
 
 /* these variables may get used to replace variables in prolog/epilog */
 const char *prolog_epilog_variables[] = {
+        "sge_root",
+        "sge_cell",
         "host",
         "job_owner",
         "job_id",
@@ -136,6 +140,8 @@ const char *pe_alloc_rule_variables[] = {
 };
 
 const char *ckpt_variables[] = {
+        "sge_root",
+        "sge_cell",
         "host",
         "job_owner",
         "job_id",
@@ -148,6 +154,8 @@ const char *ckpt_variables[] = {
 };
 
 const char *ctrl_method_variables[] = {
+        "sge_root",
+        "sge_cell",
         "host",
         "job_owner",
         "job_id",

@@ -325,6 +325,12 @@ with its arguments is started by xxQS_NAMExx to perform the appropriate action. 
 are expanded at runtime and can be used (besides any other strings which have to be interpreted by the procedures) 
 to constitute a command line:
 
+* $sge_root
+  The product root directory.
+
+* $sge_cell
+  The name of the cell directory.
+
 * $host  
   The name of the host on which the procedure is started.
 

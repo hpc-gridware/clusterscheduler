@@ -1021,6 +1021,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       DRETURN(-2);
    }
 
+   // add sge_root and sge_cell to the config file
+   // they can be used as special variables in prolog/epilog/pe/ckpt configuration
+   fprintf(fp, "sge_root=%s\n", sge_root);
+   fprintf(fp, "sge_cell=%s\n", default_cell);
+
 #ifdef COMPILE_DC
 
 #  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
