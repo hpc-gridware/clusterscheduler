@@ -41,7 +41,9 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_job.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -68,8 +70,8 @@
 #define SGE_EXECD_ALIVE_CHECK_DELAY 30
 #define DELAYED_FINISHED_JOB_REPORTING_INTERVAL 600
 
-int sge_execd_process_messages()
-{
+int sge_execd_process_messages() {
+   DENTER(TOP_LAYER);
    monitoring_t monitor;
    bool terminate = false;
    bool do_reconnect = false;
@@ -79,7 +81,6 @@ int sge_execd_process_messages()
    u_long64 load_report_time = 0;
    u_long64 alive_check_interval = 0;
 
-   DENTER(TOP_LAYER);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
 
@@ -162,7 +163,7 @@ int sge_execd_process_messages()
                         is_apb_used = true;
                         atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
                      }
-                  break;
+                     break;
                   case ocs::gdi::ClientServerBase::TAG_KILL_EXECD:
                      do_kill_execd(&msg);
 #if defined(SOLARIS)
@@ -171,34 +172,33 @@ int sge_execd_process_messages()
                      sge_smf_temporary_disable_instance();
                   }
 #endif
-                  break;
+                     break;
                   case ocs::gdi::ClientServerBase::TAG_GET_NEW_CONF:
                      do_get_new_conf(&msg);
-                  /* calculate alive check interval based on load report time POS 2/2
-                   * If modified, please also change POS 1/2
-                   */
-                  load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
-                  alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
-                  if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
-                     alive_check_interval += load_report_time;
-                  } else {
-                     alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
-                  }
-                  break;
+
+                     /* calculate alive check interval based on load report time POS 2/2
+                      * If modified, please also change POS 1/2
+                      */
+                     load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
+                     alive_check_interval    = sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_DELAY);
+                     if (load_report_time > sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL)) {
+                        alive_check_interval += load_report_time;
+                     } else {
+                        alive_check_interval += sge_gmt32_to_gmt64(SGE_EXECD_ALIVE_CHECK_MIN_INTERVAL);
+                     }
+                     break;
                   case ocs::gdi::ClientServerBase::TAG_FULL_LOAD_REPORT:
                      execd_trash_load_report();
-                  sge_set_flush_lr_flag(true);
-                  break;
+                     sge_set_flush_lr_flag(true);
+                     break;
                   default:
                      DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
-                  break;
                }
                last_heard = now;
                clear_packbuffer(&(msg.buf));
                if (is_apb_used) {
                   if (pb_filled(&apb)) {
-                     ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host,
-                                                                 atag, &apb, nullptr);
+                     ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host, atag, &apb, nullptr);
                   }
                   clear_packbuffer(&apb);
                }
@@ -260,16 +260,25 @@ int sge_execd_process_messages()
                   ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_WAS_COMMUNICATION_ERROR, true);
                   ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, true);
 
-                 /* this is to record whether we recovered from a qmaster
-                   * fail over or our own comm failure.
-                   * We reset this back after the completion of the
-                   * DELAYED_FINISHED_JOB_REPORTING_INTERVAL i.e
-                   * now - qmaster_reconnect_time >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL
-                   * @todo CS-662 isn't the delayed reporting only necessary if there are running qsub -sync jobs?
-                   */ 
-                  sge_set_qmrestart_time(now);
-                  sge_set_delay_job_reports_flag(true);
-                  INFO(SFNMAX, MSG_EXECD_ENABLEDELEAYDJOBREPORTING);
+                  // Check if we have to delay job reporting. This is the case if there are running qsub -sync jobs
+                  bool delay_job_reporting = false;
+                  const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+                  const lListElem *job;
+                  for_each_ep(job, master_job_list) {
+                     u_long32 sync_options = lGetUlong(job, JB_sync_options);
+                     if (sync_options != SYNC_NO) {
+                        delay_job_reporting = true;
+                        break;
+                     }
+                  }
+
+                  // Delay the job reporting
+                  // This will be reset after the completion of the DELAYED_FINISHED_JOB_REPORTING_INTERVAL elapsed
+                  if (delay_job_reporting) {
+                     sge_set_qmrestart_time(now);
+                     sge_set_delay_job_reports_flag(delay_job_reporting);
+                     INFO(SFNMAX, MSG_EXECD_ENABLEDELEAYDJOBREPORTING);
+                  }
 
                   /* after a reconnect, we want to send a full load report - immediately */
                   execd_trash_load_report();
