@@ -12,15 +12,38 @@ xxqs_name_sxx_queue_conf - xxQS_NAMExx queue configuration file format
 
 # DESCRIPTION
 
-This manual page describes the format of the template file for the cluster queue configuration. Via the `-aq` 
-and `-mq` options of the qconf(1) command, you can add cluster queues and modify the configuration of any queue 
-in the cluster. Any of these change operations can be rejected, as a result of a failed integrity verification.
+This manual page describes the format of the template file for the cluster queue configuration. Via the `-aq` and `-mq` options of the qconf(1) command, you can add cluster queues and modify the configuration of any queue in the cluster. Any of these change operations can be rejected, as a result of a failed integrity verification.
 
-The queue configuration parameters take as values strings, integer decimal numbers or boolean, time and memory 
-specifiers (see *time_specifier* and *memory_specifier* in xxqs_name_sxx_types(5)) as well as comma separated lists.
+The queue configuration parameters take as values strings, integer decimal numbers or boolean, time and memory specifiers (see *time_specifier* and *memory_specifier* in xxqs_name_sxx_types(5)) as well as comma separated lists.
 
-Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline (\\newline) characters. The backslash and the 
-newline are replaced with a space (" ") character before any interpretation.
+Note, xxQS_NAMExx allows backslashes (\\) be used to escape newline (\\newline) characters. The backslash and the newline are replaced with a space (" ") character before any interpretation.
+
+Queues can span multiple hosts. If more than one host is specified with the *hostlist* attribute then it can be desirable to specify divergences for other parameter settings for certain hosts or groups of hosts.
+
+```
+<queue_attribute> := <value> 
+                  [ "," "[" hostgroup_name "=" <value> "]" ]* 
+                  [ "," "[" hostname "=" <value> "]" ]* .
+```
+
+Each queue attribute specification consists of three parts. The first part specifies the default value for the attribute. This value must be specified and applies to all queue instances in the cluster queue for which no divergences are specified.
+
+The second part specifies divergences for host groups. This part is optional. The host group name and the value to be used for hosts in that group are separated by a '=' character. The host group name is prefixed with an "@" character and the entire expression is enclosed in parentheses. The specified value automatically overrides the default value for all hosts that are members of the host group.
+
+The third part can be used to specify deviations for individual hosts. This part is optional. The hostname and the value to be used for that host are separated by a '=' character. The whole expression is also enclosed in brackets. The specified value automatically overrides the default value and also values specified for host groups for the specified host (if the host is a member of a host group).
+
+Example for a queue configuration with divergences for host groups and individual hosts:
+
+```
+hostlist        @lx_hosts @bsd_hosts
+...
+slots           16,[@lx_hosts=8],[@bsd_hosts=32],[lx-host4711=256]
+...
+```
+
+In this example, the queue configuration specifies a default value of *16* slots for all hosts. For hosts that are members of the *@lx_hosts* host group, the value is *8* slots. For hosts that are members of the *@bsd_hosts* host group, the value is *32* slots. For host *lx-host4711*, the value is *256* slots, even if it is also a member of host group *@lx_hosts*.
+
+Ambiguous queue configurations with more than one attribute setting for a given host are rejected. Configurations containing override values for hosts not listed in hostlist are accepted, but are indicated by qconf(1) `-sds`. The cluster queue should contain an unambiguous specification for each configuration attribute of each queue instance specified in the queue configuration under hostname. Ambiguous configurations with more than one attribute setting, resulting from overlapping host groups, are indicated by `-explain c` in qstat(1), and cause the queue instance with the ambiguous configuration to enter the c(onfiguration ambiguous) state, making the corresponding queue instances unavailable for job dispatching.
 
 # FORMAT
 
@@ -38,26 +61,6 @@ maintains a queue instance for running jobs on that particular host. Large amoun
 by using host groups rather than by single host names. As list separators white-spaces and "," can be used. 
 (template default: NONE).
 
-If more than one host is specified it can be desirable to specify divergences with the further below parameter 
-settings for certain hosts. These divergences can be expressed using the enhanced queue configuration specifier 
-syntax. This syntax builds upon the regular parameter specifier syntax separately for each parameter:
-
-    "[" host_identifier = <parameters_specifier_syntax> "]"
-        [ "," "[" host_identifier = <parameters_specifier_syntax> "]" ]
-
-note, even in the enhanced queue configuration specifier syntax an entry without brackets denoting the default 
-setting is required and used for all queue instances where no divergences are specified. Tuples with a host group 
-*host_identifier* override the default setting. Tuples with a host name host_identifier override both the default 
-and the host group setting.
-
-Note that also with the enhanced queue configuration specifier syntax a default setting is always needed for 
-each configuration attribute; otherwise the queue configuration gets rejected. Ambiguous queue configurations 
-with more than one attribute setting for a particular host are rejected. Configurations containing override 
-values for hosts not enlisted under 'hostname' are accepted but are indicated by `-sds` of qconf(1). The cluster 
-queue should contain an unambiguous specification for each configuration attribute of each queue instance
-specified under hostname in the queue configuration. Ambiguous configurations with more than one attribute setting 
-resulting from overlapping host groups are indicated by `-explain c` of qstat(1) and cause the queue instance with 
-ambiguous configurations to enter the c(onfiguration ambiguous) state.
 
 ## seq_no
 
