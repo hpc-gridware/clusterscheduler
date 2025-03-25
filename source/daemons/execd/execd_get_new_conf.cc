@@ -66,14 +66,12 @@
 **   executed on startup. This function is triggered by the execd
 **   dispatcher table when the tag TAG_GET_NEW_CONF is received.
 */
-int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
-{
+int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
+   DENTER(TOP_LAYER);
    int ret;
    bool use_qidle = mconf_get_use_qidle();
    u_long32 dummy; /* always 0 */ 
    u_long32 old_reprioritization_enabled = mconf_get_reprioritize();
-
-   DENTER(TOP_LAYER);
 
    unpackint(&(aMsg->buf), &dummy);
 

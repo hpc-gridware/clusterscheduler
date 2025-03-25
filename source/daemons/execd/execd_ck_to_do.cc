@@ -394,7 +394,8 @@ update_wallclock_usage(u_long64 now, const lListElem *job, const lListElem *ja_t
 #define OLD_JOB_INTERVAL 60
 
 int do_ck_to_do(bool is_qmaster_down) {
-   u_long64 now;
+   DENTER(TOP_LAYER);
+   u_long64 now = sge_get_gmt64();
    static u_long64 next_pdc = 0;
    static u_long64 next_signal = 0;
    static u_long64 next_old_job = 0;
@@ -404,13 +405,7 @@ int do_ck_to_do(bool is_qmaster_down) {
    int return_value = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
 
-   DENTER(TOP_LAYER);
 
-   /*
-    *  get current time (now)
-    *  ( don't update the now time inside this function )
-    */
-   now = sge_get_gmt64();
 
 #ifdef KERBEROS
    krb_renew_tgts(Master_Job_List);
@@ -566,8 +561,8 @@ int do_ck_to_do(bool is_qmaster_down) {
       if (next_report <= now) {
          next_report = now + sge_gmt32_to_gmt64(mconf_get_load_report_time());
 
-         /* if pdc_interval is equals load_report time syncronize both calls to
-            make the online usage acurate as possible */
+         /* if pdc_interval is equals load_report time synchronize both calls to
+            make the online usage accurate as possible */
          if (sge_gmt32_to_gmt64(mconf_get_load_report_time()) == mconf_get_pdc_interval()) {
             next_pdc = next_report;
          }

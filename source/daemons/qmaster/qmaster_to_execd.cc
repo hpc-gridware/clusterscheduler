@@ -91,13 +91,10 @@ host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::Cli
 *******************************************************************************/
 static int
 host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id) {
-   const char *hostname = nullptr;
-   sge_pack_buffer pb;
+   DENTER(TOP_LAYER);
    int ret = -1;
 
-   DENTER(TOP_LAYER);
-
-   hostname = lGetHost(host, EH_name);
+   const char *hostname = lGetHost(host, EH_name);
    if (progname_id == EXECD) {
       unsigned long last_heard_from;
       u_short id = 1;
@@ -111,6 +108,7 @@ host_notify_about_X(lListElem *host, u_long32 x, ocs::gdi::ClientServerBase::Cli
       }
    }
 
+   sge_pack_buffer pb;
    if (init_packbuffer(&pb, 256) == PACK_SUCCESS) {
       u_long32 dummy = 0;
 

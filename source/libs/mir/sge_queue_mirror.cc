@@ -51,6 +51,7 @@ sge_callback_result
 cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                           sge_event_action action, lListElem *event, void *clientdata)
 {
+   DENTER(TOP_LAYER);
    sge_callback_result ret = SGE_EMA_OK;
    const char *name = nullptr;
    lList *qinstance_list = nullptr;
@@ -58,7 +59,6 @@ cqueue_update_master_list(sge_evc_class_t *evc, sge_object_type type,
    lList **list = nullptr;
    const lDescr *list_descr = nullptr;
 
-   DENTER(TOP_LAYER);
    name = lGetString(event, ET_strkey);
    list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    list_descr = lGetListDescr(lGetList(event, ET_new_version));

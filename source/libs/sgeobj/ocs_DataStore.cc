@@ -27,7 +27,7 @@
 #include "sge_object.h"
 #include "ocs_DataStore.h"
 
-#define DATA_STORE_LAYER TOP_LAYER
+#define DATA_STORE_LAYER BASIS_LAYER
 
 namespace ocs {
    // the key to get thread local memory
