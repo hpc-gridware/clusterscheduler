@@ -41,6 +41,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
+
 #include "gdi/sge_gdi.h"
 
 #include "comm/commlib.h"
@@ -234,16 +236,20 @@ int sge_execd_process_messages()
                   sge_get_com_error_flag(EXECD, SGE_COM_WAS_COMMUNICATION_ERROR, true);
                   sge_get_com_error_flag(EXECD, SGE_COM_ACCESS_DENIED, true);
 
-                 /* this is to record whether we recovered from a qmaster
-                   * fail over or our own comm failure.
-                   * We reset this back after the completion of the
-                   * DELAYED_FINISHED_JOB_REPORTING_INTERVAL i.e
-                   * now - qmaster_reconnect_time >= DELAYED_FINISHED_JOB_REPORTING_INTERVAL
-                   * @todo CS-662 isn't the delayed reporting only necessary if there are running qsub -sync jobs?
-                   */ 
-                  sge_set_qmrestart_time(now);
-                  sge_set_delay_job_reports_flag(true);
-                  INFO(SFNMAX, MSG_EXECD_ENABLEDELEAYDJOBREPORTING);
+                  // Check if we have to delay job reporting. This is the case if there are running qsub -sync jobs
+                  // before 9.1.0 we can not detect this therefore we enable the delay job reporting as soon as we
+                  // have a job in the master job list
+                  bool delay_job_reporting = false;
+                  const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+                  if (lGetNumberOfElem(master_job_list) > 0) {
+                     delay_job_reporting = true;
+                  }
+
+                  if (delay_job_reporting) {
+                     sge_set_qmrestart_time(now);
+                     sge_set_delay_job_reports_flag(true);
+                     INFO(SFNMAX, MSG_EXECD_ENABLEDELEAYDJOBREPORTING);
+                  }
 
                   /* after a reconnect, we want to send a full load report - immediately */
                   execd_trash_load_report();
