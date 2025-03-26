@@ -142,24 +142,24 @@ static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, c
    if (summary->is_load_available) {
       xml_append_Attr_D(attributeList, "load", summary->load);
    }
-   xml_append_Attr_I(attributeList, "used", (int)summary->used);
-   xml_append_Attr_I(attributeList, "resv", (int)summary->resv);
-   xml_append_Attr_I(attributeList, "available", (int)summary->available);
-   xml_append_Attr_I(attributeList, "total", (int)summary->total);
-   xml_append_Attr_I(attributeList, "temp_disabled", (int)summary->temp_disabled);
-   xml_append_Attr_I(attributeList, "manual_intervention", (int)summary->manual_intervention);
+   xml_append_Attr_U(attributeList, "used", summary->used);
+   xml_append_Attr_U(attributeList, "resv", summary->resv);
+   xml_append_Attr_U(attributeList, "available", summary->available);
+   xml_append_Attr_U(attributeList, "total", summary->total);
+   xml_append_Attr_U(attributeList, "temp_disabled", summary->temp_disabled);
+   xml_append_Attr_U(attributeList, "manual_intervention", summary->manual_intervention);
    if (show_states) {
-      xml_append_Attr_I(attributeList, "suspend_manual", (int)summary->suspend_manual);
-      xml_append_Attr_I(attributeList, "suspend_threshold", (int)summary->suspend_threshold);
-      xml_append_Attr_I(attributeList, "suspend_on_subordinate", (int)summary->suspend_on_subordinate);
-      xml_append_Attr_I(attributeList, "suspend_calendar", (int)summary->suspend_calendar);
-      xml_append_Attr_I(attributeList, "unknown", (int)summary->unknown);
-      xml_append_Attr_I(attributeList, "load_alarm", (int)summary->load_alarm);
-      xml_append_Attr_I(attributeList, "disabled_manual", (int)summary->disabled_manual);
-      xml_append_Attr_I(attributeList, "disabled_calendar", (int)summary->disabled_calendar);
-      xml_append_Attr_I(attributeList, "ambiguous", (int)summary->ambiguous);
-      xml_append_Attr_I(attributeList, "orphaned", (int)summary->orphaned);
-      xml_append_Attr_I(attributeList, "error", (int)summary->error);
+      xml_append_Attr_U(attributeList, "suspend_manual", summary->suspend_manual);
+      xml_append_Attr_U(attributeList, "suspend_threshold", summary->suspend_threshold);
+      xml_append_Attr_U(attributeList, "suspend_on_subordinate", summary->suspend_on_subordinate);
+      xml_append_Attr_U(attributeList, "suspend_calendar", summary->suspend_calendar);
+      xml_append_Attr_U(attributeList, "unknown", summary->unknown);
+      xml_append_Attr_U(attributeList, "load_alarm", summary->load_alarm);
+      xml_append_Attr_U(attributeList, "disabled_manual", summary->disabled_manual);
+      xml_append_Attr_U(attributeList, "disabled_calendar", summary->disabled_calendar);
+      xml_append_Attr_U(attributeList, "ambiguous", summary->ambiguous);
+      xml_append_Attr_U(attributeList, "orphaned", summary->orphaned);
+      xml_append_Attr_U(attributeList, "error", summary->error);
    }
    if (elem) {
       if (handler->ctx == nullptr){
@@ -481,13 +481,12 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
 
       if (!summary->is_zombie) {
          if (sge_ext ||summary->is_queue_assigned) {
-            xml_append_Attr_I(attribute_list, "tickets", (int)summary->tickets);
-            xml_append_Attr_I(attribute_list, "JB_override_tickets", (int)summary->override_tickets);
-            xml_append_Attr_I(attribute_list, "JB_jobshare", (int)summary->share);
-            xml_append_Attr_I(attribute_list, "otickets", (int)summary->otickets);
-            xml_append_Attr_I(attribute_list, "ftickets", (int)summary->ftickets);
-            xml_append_Attr_I(attribute_list, "stickets", (int)summary->stickets);
-            /* RH TODO: asked Stefan want is the difference between JAT_share and JB_jobshare */
+            xml_append_Attr_U(attribute_list, "tickets", summary->tickets);
+            xml_append_Attr_U(attribute_list, "JB_override_tickets", summary->override_tickets);
+            xml_append_Attr_U(attribute_list, "JB_jobshare", summary->share);
+            xml_append_Attr_U(attribute_list, "otickets", summary->otickets);
+            xml_append_Attr_U(attribute_list, "ftickets", summary->ftickets);
+            xml_append_Attr_U(attribute_list, "stickets", summary->stickets);
             xml_append_Attr_D(attribute_list, "JAT_share", summary->share);
          }
       }
@@ -503,7 +502,7 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
       xml_append_Attr_S(attribute_list, "master", summary->master);
    }
 
-   xml_append_Attr_I(attribute_list, "slots", (int)summary->slots);
+   xml_append_Attr_U(attribute_list, "slots", summary->slots);
 
    if (summary->task_id && summary->is_array) {
       xml_append_Attr_S(attribute_list, "tasks", summary->task_id);
@@ -554,10 +553,10 @@ static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, l
    }   
 
    if (summary->has_exit_status) {
-      xml_append_Attr_I(attribute_list, "stat", summary->exit_status);
+      xml_append_Attr_U(attribute_list, "stat", summary->exit_status);
    }   
    
-   /* add the sub task to the current job element */
+   /* add the sub-task to the current job element */
    attribute_list = lGetListRW(ctx->job_elem, XMLE_Attribute);
    lAppendElem(attribute_list, xml_elem);
    
@@ -754,7 +753,7 @@ static int qstat_xml_job_predecessor(job_handler_t* handler, u_long32 jid, lList
 
    DENTER(TOP_LAYER);
 
-   xml_append_Attr_I(attribute_list, "predecessor_jobs", (int)jid);
+   xml_append_Attr_U(attribute_list, "predecessor_jobs", jid);
    
    DRETURN(0);
 }
@@ -776,7 +775,7 @@ static int qstat_xml_job_ad_predecessor(job_handler_t* handler, u_long32 jid, lL
 
    DENTER(TOP_LAYER);
 
-   xml_append_Attr_I(attribute_list, "ad_predecessor_jobs", (int)jid);
+   xml_append_Attr_U(attribute_list, "ad_predecessor_jobs", jid);
    
    DRETURN(0);
 }
@@ -1054,9 +1053,9 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
    xml_append_Attr_S(attribute_list, "qtype", summary->queue_type); 
 
    /* number of used/free slots */
-   xml_append_Attr_I(attribute_list, "slots_used", summary->used_slots); 
-   xml_append_Attr_I(attribute_list, "slots_resv", summary->resv_slots); 
-   xml_append_Attr_I(attribute_list, "slots_total", summary->total_slots);
+   xml_append_Attr_U(attribute_list, "slots_used", summary->used_slots);
+   xml_append_Attr_U(attribute_list, "slots_resv", summary->resv_slots);
+   xml_append_Attr_U(attribute_list, "slots_total", summary->total_slots);
 
    /* load avg */
    if (summary->has_load_value && summary->has_load_value_from_object) {

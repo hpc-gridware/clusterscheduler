@@ -1980,7 +1980,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
       summary.dlcontr = lGetDouble(job, JB_dlcontr);
    }
    if (sge_pri) {
-      summary.priority = lGetUlong(job, JB_priority)-BASE_PRIORITY;
+      summary.priority = static_cast<int>(lGetUlong(job, JB_priority)) - BASE_PRIORITY;
    }
    summary.name = lGetString(job, JB_job_name);
    summary.user = lGetString(job, JB_owner);
@@ -2710,7 +2710,7 @@ static int job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_
       ep=lGetElemStr(usage_list, UA_name, "exit_status");
       if (ep) {
          summary.has_exit_status = true;
-         summary.exit_status = (int)lGetDouble(ep, UA_value);
+         summary.exit_status = lGetDouble(ep, UA_value);
       } else {
          summary.has_exit_status = false;
       }

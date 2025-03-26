@@ -172,7 +172,7 @@ typedef struct job_summary_str job_summary_t;
 
 struct job_summary_str {
    bool print_jobid;
-   u_long32 priority;
+   int priority;
    double nurg;
    double urg;
    double nppri;
