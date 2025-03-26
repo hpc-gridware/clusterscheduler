@@ -41,6 +41,7 @@
 
 #include "uti/sge_uidgid.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -1354,7 +1355,12 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
    }
 
    // fetch group IDs
+#ifdef DARWIN
+   static_assert(sizeof(gid_t) == sizeof(int), "Size of gid_t does not match that of type int!");
+   int num_group_ids = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list), &max_groups);
+#else
    int num_group_ids = getgrouplist(user, gid, grp_id_list, &max_groups);
+#endif
    if (num_group_ids == -1) {
       sge_dstring_sprintf(error_dstr, "getgrouplist() failed.");
       sge_free(&grp_id_list);
