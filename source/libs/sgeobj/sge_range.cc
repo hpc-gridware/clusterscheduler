@@ -1489,16 +1489,16 @@ void range_to_dstring(u_long32 start, u_long32 end, int step,
    }
 
    if (start == end && !print_always_as_range) {
-      snprintf(tail, sizeof(tail), sge_u32, start);
+      snprintf(tail, sizeof(tail), sge_uu32, start);
    } else if (start == end && print_always_as_range) {
-      snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32, start, to_char, end);
+      snprintf(tail, sizeof(tail), sge_uu32 "%c" sge_uu32, start, to_char, end);
    } else if (start + step == end) {
-      snprintf(tail, sizeof(tail), sge_u32 "," sge_u32, start, end);
+      snprintf(tail, sizeof(tail), sge_uu32 "," sge_uu32, start, end);
    } else {
       if (ignore_step) {
-         snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32, start, to_char, end);
+         snprintf(tail, sizeof(tail), sge_uu32 "%c" sge_uu32, start, to_char, end);
       } else {
-         snprintf(tail, sizeof(tail), sge_u32 "%c" sge_u32 "%c%d", start, to_char, end, step_char, step);
+         snprintf(tail, sizeof(tail), sge_uu32 "%c" sge_uu32 "%c%d", start, to_char, end, step_char, step);
       }
    }
    sge_dstring_append(dyn_taskrange_str, tail);

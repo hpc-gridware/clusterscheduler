@@ -770,7 +770,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
       if (fp == nullptr) {
          ERROR(MSG_NOSEQFILECREATE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
       } else {
-         FPRINTF((fp, sge_u32"\n", ar_id));
+         FPRINTF((fp, sge_uu32 "\n", ar_id));
          FCLOSE(fp);
       }
    }
@@ -949,7 +949,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    } else {
       /* AR_RUNNING */
-      DPRINTF("AR: started, changing state of AR " sge_u32"\n", ar_id);
+      DPRINTF("AR: started, changing state of AR " sge_uu32 "\n", ar_id);
 
       sge_ar_state_set_running(ar);
 

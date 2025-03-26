@@ -363,7 +363,7 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
       lListElem *os_job;
 
       if (lGetUlong(job_elem, JL_job_ID) == job_id) {
-         DPRINTF("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID));
+         DPRINTF("\tjob id: " sge_uu32 "\n", lGetUlong(job_elem, JL_job_ID));
          os_job_list = lGetList(job_elem, JL_OS_job_list);
          for_each_rw(os_job, os_job_list) {
             if (lGetUlong(os_job, JO_ja_task_ID) == ja_task_id &&
@@ -372,15 +372,10 @@ void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_id,
                      !strcmp(pe_task_id_str,
                              lGetString(os_job, JO_task_id_str))))) {
 
-               DPRINTF("\t\tChanging priority for osjobid: " sge_u32 " jatask "
-                       sge_u32 " petask %s\n",
-                       lGetUlong(os_job, JO_OS_job_ID),
-                       lGetUlong(os_job, JO_ja_task_ID),
-                       pe_task_id_str ? pe_task_id_str : "");
+               DPRINTF("\t\tChanging priority for osjobid: " sge_uu32 " jatask " sge_uu32 " petask %s\n",
+                       lGetUlong(os_job, JO_OS_job_ID), lGetUlong(os_job, JO_ja_task_ID), pe_task_id_str ? pe_task_id_str : "");
 
-               ptf_set_native_job_priority(job_elem, os_job,
-                                           PTF_PRIORITY_TO_NATIVE_PRIORITY
-                                           (priority));
+               ptf_set_native_job_priority(job_elem, os_job, PTF_PRIORITY_TO_NATIVE_PRIORITY (priority));
             }
          }
       }
@@ -804,7 +799,7 @@ static void ptf_get_usage_from_data_collector()
             }
 
             tid = lGetString(osjob, JO_task_id_str);
-            DPRINTF("JOB " sge_u32 "." sge_u32 ": %s: (cpu = %8.3lf / mem = "
+            DPRINTF("JOB " sge_uu32 "." sge_uu32 ": %s: (cpu = %8.3lf / mem = "
                     UINT64_FMT " / io = " UINT64_FMT " / vmem = "
                     UINT64_FMT " / himem = " UINT64_FMT ")\n",
                     lGetUlong(job, JL_job_ID),
@@ -1290,7 +1285,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
     * Remove job/task from job/task list
     */
 
-   DPRINTF("PTF: Removing job " sge_u32 "." sge_u32 ", petask %s\n",
+   DPRINTF("PTF: Removing job " sge_uu32 "." sge_uu32 ", petask %s\n",
            job_id, ja_task_id, pe_task_id == nullptr ? "none" : pe_task_id);
    lRemoveElem(osjobs, &osjob);
 
@@ -1639,7 +1634,7 @@ void ptf_show_registered_jobs()
       const lList *os_job_list;
       const lListElem *os_job;
 
-      DPRINTF("\tjob id: " sge_u32 "\n", lGetUlong(job_elem, JL_job_ID));
+      DPRINTF("\tjob id: " sge_uu32 "\n", lGetUlong(job_elem, JL_job_ID));
       os_job_list = lGetList(job_elem, JL_OS_job_list);
       for_each_ep(os_job, os_job_list) {
          const lList *process_list;
@@ -1651,14 +1646,12 @@ void ptf_show_registered_jobs()
          pe_task_id_str = pe_task_id_str ? pe_task_id_str : "<null>";
          ja_task_id = lGetUlong(os_job, JO_ja_task_ID);
 
-         DPRINTF("\t\tosjobid: " sge_u32" ja_task_id: " sge_u32" petaskid: %s\n",
+         DPRINTF("\t\tosjobid: " sge_uu32 " ja_task_id: " sge_uu32 " petaskid: %s\n",
                  lGetUlong(os_job, JO_OS_job_ID), ja_task_id, pe_task_id_str);
          process_list = lGetList(os_job, JO_pid_list);
          for_each_ep(process, process_list) {
-            u_long32 pid;
-
-            pid = lGetUlong(process, JP_pid);
-            DPRINTF("\t\t\tpid: " sge_u32 "\n", pid);
+            u_long32 pid = lGetUlong(process, JP_pid);
+            DPRINTF("\t\t\tpid: " sge_uu32 "\n", pid);
          }
       }
    }
@@ -1688,14 +1681,14 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id ) {
             if (lGetUlong(os_job, JO_ja_task_ID ) == ja_task_id) {
                DPRINTF("PTF: found job task id " sge_uu32 "\n", ja_task_id);
                psIgnoreJob(ptf_get_osjobid(os_job));
-               DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", lGetUlong(os_job, JO_OS_job_ID));
+               DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_uu32 "\n", lGetUlong(os_job, JO_OS_job_ID));
                lRemoveElem(os_job_list, &os_job);
             }
          }
 
          if (lFirst(os_job_list) == nullptr) {
             DPRINTF("PTF: No more os_job_list entries, removing job\n");
-            DPRINTF("PTF: Removing job " sge_u32 "\n", lGetUlong(job, JL_job_ID));
+            DPRINTF("PTF: Removing job " sge_uu32 "\n", lGetUlong(job, JL_job_ID));
             lRemoveElem(ptf_jobs, &job);
          }
       }
@@ -1713,7 +1706,7 @@ void ptf_unregister_registered_jobs()
       lListElem *os_job;
       for_each_rw(os_job, lGetList(job, JL_OS_job_list)) {
          psIgnoreJob(ptf_get_osjobid(os_job));
-         DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_u32 "\n", lGetUlong(os_job, JO_OS_job_ID));
+         DPRINTF("PTF: Notify PDC to remove data for osjobid " sge_uu32 "\n", lGetUlong(os_job, JO_OS_job_ID));
       }
    }
 

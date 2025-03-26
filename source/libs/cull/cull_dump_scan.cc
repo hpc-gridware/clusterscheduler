@@ -311,12 +311,10 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
                           space, lNm2Str(ep->descr[i].nm), lGetPosInt(ep, i));
             break;
          case lUlongT:
-            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_uu32 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
             break;
          case lUlong64T:
-            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n",
-                          space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
             break;
          case lStringT:
             str = lGetPosString(ep, i);

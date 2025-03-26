@@ -328,7 +328,7 @@ sge_setup_job_resend() {
             te_add_event(ev);
             te_free_event(&ev);
 
-            DPRINTF("Did add job resend for " sge_u32 "/" sge_u32 " at " sge_u64 "\n", job_num, task_num, when);
+            DPRINTF("Did add job resend for " sge_uu32 "/" sge_uu32 " at " sge_u64 "\n", job_num, task_num, when);
          }
 
          task = lNext(task);
@@ -606,7 +606,7 @@ communication_setup() {
    cl_com_handle_t *com_handle = cl_com_get_handle(prognames[QMASTER], 1);
 
    if (com_handle == nullptr) {
-      ERROR("port " sge_u32" already bound\n", qmaster_port);
+      ERROR("port " sge_uu32 " already bound\n", qmaster_port);
 
       if (is_qmaster_already_running(qmaster_spool_dir)) {
          char *host = nullptr;
@@ -1099,8 +1099,8 @@ setup_qmaster() {
 
       for_each_rw(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
 
-         DPRINTF("JOB " sge_u32 " PRIORITY %d\n", lGetUlong(jep, JB_job_number),
-                 (int) lGetUlong(jep, JB_priority) - BASE_PRIORITY);
+         DPRINTF("JOB " sge_uu32 " PRIORITY" sge_uu32 "\n", lGetUlong(jep, JB_job_number),
+                 lGetUlong(jep, JB_priority) - BASE_PRIORITY);
 
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);
@@ -1246,7 +1246,7 @@ remove_invalid_job_references(int user) {
          jobid = lGetUlong(upu, UPU_job_number);
          if (!lGetElemUlong(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid)) {
             lRemoveElem(lGetListRW(up, debited_job_usage_key), &upu);
-            WARNING("removing reference to no longer existing job " sge_u32" of %s " SFQ "\n", jobid, object_name, lGetString(up, object_key));
+            WARNING("removing reference to no longer existing job " sge_uu32 " of %s " SFQ "\n", jobid, object_name, lGetString(up, object_key));
             spool_me = 1;
          }
       }

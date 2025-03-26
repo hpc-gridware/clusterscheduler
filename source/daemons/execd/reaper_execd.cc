@@ -265,7 +265,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
           *  if not it should be a job kept with SGE_KEEP_ACTIVE (without
           *  keeping job object itself)
           */
-         DPRINTF("Job: " sge_u32", JA-Task: " sge_u32", PE-Task: %s\n", jobid, jataskid,
+         DPRINTF("Job: " sge_uu32 ", JA-Task: " sge_uu32 ", PE-Task: %s\n", jobid, jataskid,
             petep != nullptr ? lGetString(petep, PET_id) : "");
          if (!(jr=get_job_report(jobid, jataskid, petep != nullptr ? lGetString(petep, PET_id) : nullptr))) {
             ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
@@ -279,7 +279,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          /* when restarting execd it happens that cleanup_old_jobs()
             has already cleaned up this job */
          if (lGetUlong(jr, JR_state) == JEXITING) {
-            DPRINTF("State of job " sge_u32" already changed to JEXITING\n", jobid);
+            DPRINTF("State of job " sge_uu32 " already changed to JEXITING\n", jobid);
             continue;
          }
 
@@ -1486,7 +1486,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    /* if the state is already JEXITING work is done  
       for this job and we wait for ACK from qmaster */
    if (lGetUlong(jr, JR_state)==JEXITING) {
-      DPRINTF("State of job " sge_u32"." sge_u32" already changed to JEXITING\n", jobid, jataskid);
+      DPRINTF("State of job " sge_uu32 "." sge_uu32" already changed to JEXITING\n", jobid, jataskid);
       DRETURN_VOID;
    }
 
@@ -2236,7 +2236,7 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
       jep = lGetElemUlongNext(lp, JB_job_number, job_id, &iterator);
    }
 
-   DPRINTF("Found %d master jobs for " sge_u32, master_jobs, job_id);
+   DPRINTF("Found %d master jobs for " sge_uu32, master_jobs, job_id);
 
    DRETURN(master_jobs);
 }
@@ -2249,9 +2249,9 @@ void simulated_job_exit(const lListElem *jep, lListElem *jatep, u_long32 sig) {
 
    u_long32 state = lGetUlong(jatep, JAT_status);
    if (state == JEXITING) {
-      DPRINTF("Simulated job " sge_u32"." sge_u32" is already in state JEXITING\n", jobid, jataskid);
+      DPRINTF("Simulated job " sge_uu32"." sge_uu32" is already in state JEXITING\n", jobid, jataskid);
    } else {
-      DPRINTF("Simulated job " sge_u32"." sge_u32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
+      DPRINTF("Simulated job " sge_uu32"." sge_uu32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
 
       lListElem *jr = get_job_report(jobid, jataskid, nullptr);
       if (jr == nullptr) {

@@ -777,9 +777,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             }
 
             if (job_get_next_task(job, &ja_task, &ja_task_id) != 0) {
-               DPRINTF("Found job " sge_u32" with no job array tasks\n", job_id);
+               DPRINTF("Found job " sge_uu32 " with no job array tasks\n", job_id);
             } else {
-               DPRINTF("Found pending job " sge_u32"." sge_u32". Try %sto start and %sto reserve\n",
+               DPRINTF("Found pending job " sge_uu32 "." sge_uu32 ". Try %sto start and %sto reserve\n",
                        job_id, ja_task_id, is_start ? "" : "not ", is_reserve ? "" : "not ");
                DPRINTF("-----------------------------------------\n");
 
@@ -811,7 +811,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             }
             lFreeElem(&job);
          } else {
-            DPRINTF("SKIP JOB " sge_u32 " - it cannot be started now and we will not do a reservation\n", job_id);
+            DPRINTF("SKIP JOB " sge_uu32 " - it cannot be started now and we will not do a reservation\n", job_id);
          }
 
          // collect profiling data - only if we actually did some scheduling
@@ -902,7 +902,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
                /* mark the category as rejected */
                if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                  DPRINTF("SKIP JOB (R)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
+                  DPRINTF("SKIP JOB (R)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
                   sge_reject_category(cat, false);
                }
@@ -933,7 +933,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                   // before deleting the element mark the category as rejected
                   // do this only once, not when we skipped scheduling as the category was already rejected
                   if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                     DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
+                     DPRINTF("SKIP JOB (N)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
                              lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
                      sge_reject_category(cat, is_reserve);
                   }
@@ -942,7 +942,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
             case DISPATCH_NEVER_JOB: /* never this particular job */
                if (is_start || is_reserve) {
-                  DPRINTF("SKIP JOB (J)" sge_u32 "\n", job_id);
+                  DPRINTF("SKIP JOB (J)" sge_uu32 "\n", job_id);
                   // here no reservation was made for a job that couldn't be started now
                   // or the job cannot be dispatched at all
                   // do this only once, not when we skipped scheduling as the category was already rejected

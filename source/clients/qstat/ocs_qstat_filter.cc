@@ -698,12 +698,9 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                            print_it = false;
                         }       
                         if (print_it) {
-                           sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
-                           ret = sge_handle_job(jlep, jatep, qep, gdilep, print_jobid,
-                                                (master && different && (i==0))?"MASTER":"SLAVE",
-                                                &dyn_task_str,
-                                                slots_in_queue+slot_adjust, i, slots_per_line,
-                                                qstat_env, &(handler->job_handler), alpp );
+                           sge_dstring_sprintf(&dyn_task_str, sge_uu32, jataskid);
+                           ret = sge_handle_job(jlep, jatep, qep, gdilep, print_jobid, (master && different && (i==0))?"MASTER":"SLAVE",
+                                                &dyn_task_str, slots_in_queue+slot_adjust, i, slots_per_line, qstat_env, &(handler->job_handler), alpp );
                            if (ret) {
                               goto error;
                            }
@@ -813,9 +810,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
 
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
             if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
-               DPRINTF("show task " sge_u32"." sge_u32"\n",
-                       lGetUlong(jep, JB_job_number),
-                       lGetUlong(jatep, JAT_task_number));
+               DPRINTF("show task " sge_uu32"." sge_uu32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
                lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
             }
          }
@@ -1226,11 +1221,11 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
          for_each_ep(elem, *job_l) {
             lListElem *task = lFirst(lGetList(elem, JB_ja_tasks));
 
-            fprintf(stderr, "jid=" sge_u32" ", lGetUlong(elem, JB_job_number));
+            fprintf(stderr, "jid=" sge_uu32" ", lGetUlong(elem, JB_job_number));
             if (task) {
                dstring string = DSTRING_INIT;
 
-               fprintf(stderr, "state=%s status=%s job_restarted=" sge_u32"\n", sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_state)), sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_status)), lGetUlong(task, JAT_job_restarted));
+               fprintf(stderr, "state=%s status=%s job_restarted=" sge_uu32"\n", sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_state)), sge_dstring_ulong_to_binstring(&string, lGetUlong(task, JAT_status)), lGetUlong(task, JAT_job_restarted));
                sge_dstring_free(&string);
             } else {
                fprintf(stderr, "\n");
@@ -1606,8 +1601,7 @@ static int handle_pending_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler,
                if ((qstat_env->full_listing & QSTAT_DISPLAY_PENDING) && 
                    (qstat_env->group_opt & GROUP_NO_TASK_GROUPS) > 0) {
 
-                  sge_dstring_sprintf(&dyn_task_str, sge_u32, 
-                                    lGetUlong(jatep, JAT_task_number));
+                  sge_dstring_sprintf(&dyn_task_str, sge_uu32, lGetUlong(jatep, JAT_task_number));
 
                   if (count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
                      DPRINTF("report_pending_jobs_started failed\n");
@@ -1708,12 +1702,10 @@ static int handle_finished_jobs(qstat_env_t *qstat_env, qstat_handler_t *handler
                      break;
                   }
                }
-               sge_dstring_sprintf(&dyn_task_str, sge_u32, 
-                                 lGetUlong(jatep, JAT_task_number));
+               sge_dstring_sprintf(&dyn_task_str, sge_uu32, lGetUlong(jatep, JAT_task_number));
                                  
                ret = sge_handle_job(jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str,
-                                    0, 0, 0,
-                                    qstat_env, &(handler->job_handler), alpp);
+                                    0, 0, 0, qstat_env, &(handler->job_handler), alpp);
 
                if (ret) {
                   break;
@@ -1751,7 +1743,7 @@ static int handle_error_jobs(qstat_env_t *qstat_env, qstat_handler_t* handler, l
 
             if (!lGetNumberOfElem(qstat_env->user_list) || (lGetNumberOfElem(qstat_env->user_list) && 
                   (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
-               sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
+               sge_dstring_sprintf(&dyn_task_str, sge_uu32, lGetUlong(jatep, JAT_task_number));
                
                if (count == 0) {
                    if (handler->report_error_jobs_started && (ret=handler->report_error_jobs_started(handler, alpp))) {
@@ -1906,7 +1898,7 @@ static int handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *mast
                for (; start <= end; start += step) { 
                   lListElem *ja_task = job_get_ja_task_template_hold(job,
                                                           start, hold_state[i]);
-                  sge_dstring_sprintf(&ja_task_id_string, sge_u32, start);
+                  sge_dstring_sprintf(&ja_task_id_string, sge_uu32, start);
                   
                   if (*count == 0 && handler->report_pending_jobs_started && (ret=handler->report_pending_jobs_started(handler, alpp))) {
                      DPRINTF("report_pending_jobs_started failed\n");

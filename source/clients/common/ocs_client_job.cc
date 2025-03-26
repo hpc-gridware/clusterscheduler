@@ -385,7 +385,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
       printf("jobshare:                   ");
-      printf(sge_u32 "\n", lGetUlong(job, JB_jobshare));
+      printf(sge_uu32 "\n", lGetUlong(job, JB_jobshare));
    }
 
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
@@ -579,7 +579,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
       job_get_submit_task_ids(job, &start, &end, &step);
       if (job_is_array(job))
-         printf("job-array tasks:            " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
+         printf("job-array tasks:            " sge_uu32 "-" sge_uu32 ":" sge_uu32 "\n", start, end, step);
    }
 
    if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0)

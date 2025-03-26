@@ -791,7 +791,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          u_long64 ar_start_time, ar_end_time, job_duration;
          u_long64 now_time, job_execution_time;
 
-         DPRINTF("job -ar " sge_u32"\n", ar_id);
+         DPRINTF("job -ar " sge_uu32"\n", ar_id);
 
          ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == nullptr) {

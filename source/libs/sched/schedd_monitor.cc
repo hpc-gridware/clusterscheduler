@@ -134,7 +134,7 @@ job_descr(u_long32 jobid) {
    static char descr[20];
 
    if (jobid) {
-      snprintf(descr, sizeof(descr), "Job " sge_u32, jobid);
+      snprintf(descr, sizeof(descr), "Job " sge_uu32, jobid);
       return descr;
    }
 

@@ -1270,7 +1270,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    // JSV JOB_ID <jid> (optional; read-only)
    if (u_long32 jid = lGetUlong(old_job, JB_job_number); jid > 0) {
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s JOB_ID " sge_u32, prefix, jid);
+      sge_dstring_sprintf(&buffer, "%s JOB_ID " sge_uu32, prefix, jid);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
@@ -1293,7 +1293,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
       int i = 0;
 
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s CMDARGS " sge_u32, prefix, lGetNumberOfElem(list));
+      sge_dstring_sprintf(&buffer, "%s CMDARGS " sge_uu32, prefix, lGetNumberOfElem(list));
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
       for_each_ep(elem, list) {
@@ -1351,7 +1351,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    // -ar (optional)
    if (u_long32 ar_id = lGetUlong(old_job, JB_ar); ar_id > 0) {
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s ar " sge_u32, prefix, ar_id);
+      sge_dstring_sprintf(&buffer, "%s ar " sge_uu32, prefix, ar_id);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 

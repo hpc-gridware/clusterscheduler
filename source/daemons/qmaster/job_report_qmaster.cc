@@ -285,7 +285,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                       * minute - better send a kill signal immediately.
                       */
                      if (ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
-                        DPRINTF("Received report from " sge_u32"." sge_u32
+                        DPRINTF("Received report from " sge_uu32"." sge_uu32
                                 " which is already in \"deleted\" state. "
                                 "==> send kill signal\n", jobid, jataskid);
 

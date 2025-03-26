@@ -100,7 +100,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
       DRETURN(1);    
    }
 
-   DPRINTF("===>DELIVER_SIGNAL: %s >%s< Job(s) " sge_u32"." sge_u32" \n", sge_sig2str(signal), qname? qname: "<nullptr>", jobid, jataskid);
+   DPRINTF("===>DELIVER_SIGNAL: %s >%s< Job(s) " sge_uu32"." sge_uu32" \n", sge_sig2str(signal), qname? qname: "<nullptr>", jobid, jataskid);
 
    if (aMsg->tag == ocs::gdi::ClientServerBase::TAG_SIGJOB) { /* signal a job / task */
       pack_ack(apb, ACK_SIGJOB, jobid, jataskid, nullptr);
@@ -539,7 +539,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
 
    master_q = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), JG_queue);
 
-   DPRINTF("sending %s to job " sge_u32"." sge_u32"\n", sge_sig2str(signal), jobid, jataskid);
+   DPRINTF("sending %s to job " sge_uu32 "." sge_uu32 "\n", sge_sig2str(signal), jobid, jataskid);
    if (signal == SGE_SIGCONT) {
       state = lGetUlong(jatep, JAT_state);
       if (ISSET(state, JSUSPENDED)) {
@@ -599,7 +599,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
             state = lGetUlong(jatep, JAT_state);
             SETBIT(JDELETED, state);
             lSetUlong(jatep, JAT_state, state); 
-            DPRINTF("SIGKILL of job " sge_u32"\n", jobid);
+            DPRINTF("SIGKILL of job " sge_uu32 "\n", jobid);
          }
          getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
       }
@@ -620,7 +620,7 @@ int signal_job(u_long32 jobid, u_long32 jataskid, u_long32 signal)
       }
 
    } else {
-      DPRINTF("Job  " sge_u32"." sge_u32" is no longer running\n", jobid, jataskid);
+      DPRINTF("Job  " sge_uu32 "." sge_uu32" is no longer running\n", jobid, jataskid);
    }
    DRETURN(getridofjob);
 }

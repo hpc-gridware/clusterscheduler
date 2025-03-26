@@ -401,7 +401,7 @@ void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id
                if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
                   if (!range_list_is_id_within(sconf_get_schedd_job_info_range(),
                                                job_id)) {
-                     DPRINTF("Job " sge_u32" not in scheddconf.schedd_job_info_list\n", job_id);
+                     DPRINTF("Job " sge_uu32 " not in scheddconf.schedd_job_info_list\n", job_id);
                      DRETURN_VOID;
                   }
                }
@@ -486,7 +486,7 @@ void schedd_mes_add_join(bool monitor_next_run, u_long32 job_number, u_long32 me
 
             if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
                if (!sconf_is_id_in_schedd_job_info_range(job_number)) {
-                  DPRINTF("Job " sge_u32" not in scheddconf.schedd_job_info_list\n", job_number);
+                  DPRINTF("Job " sge_uu32 " not in scheddconf.schedd_job_info_list\n", job_number);
                   DRETURN_VOID;
                }
             }

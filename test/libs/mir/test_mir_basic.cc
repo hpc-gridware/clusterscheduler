@@ -109,7 +109,7 @@ int main()
       events_size = 0;
       printf("---------------------\n");
       sge_mirror_process_events(evc);
-      printf("received " sge_u32" kbytes in with %d events\n", events_size/1024, events);
+      printf("received " sge_uu32 " kbytes in with %d events\n", events_size/1024, events);
    }
 
    sge_mirror_shutdown(evc);

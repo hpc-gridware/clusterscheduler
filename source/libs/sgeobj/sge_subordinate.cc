@@ -75,10 +75,9 @@ Return value: true if queue C is to be suspended,
 bool
 tst_sos(int used, int total, const lListElem *so)
 {
+   DENTER(TOP_LAYER);
    u_long32 threshold;
    bool     ret = false;
-
-   DENTER(TOP_LAYER);
 
    /*
     * then check if B's usage meets the threshold
@@ -91,8 +90,7 @@ tst_sos(int used, int total, const lListElem *so)
       ret = (bool)(used >= total);
    } else {
       /* used slots greater or equal threshold */
-      DPRINTF("TSTSOS: " sge_u32" slots used (limit " sge_u32") -> %ssuspended\n",
-            used, threshold, ((u_long32)(used) >= threshold)?"":"not ");
+      DPRINTF("TSTSOS: %d slots used (limit " sge_uu32") -> %ssuspended\n", used, threshold, ((u_long32)(used) >= threshold)?"":"not ");
       ret = (bool)((u_long32)used >= threshold);
    }
    DRETURN(ret);
@@ -117,7 +115,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
             /*
              * slot-wise suspend on subordinate
              */
-            sge_dstring_sprintf_append(string, "slots=" sge_u32"(", slots_sum);
+            sge_dstring_sprintf_append(string, "slots=" sge_uu32"(", slots_sum);
 
             for_each_ep(elem, this_list) {
                const char *action_str = "sr";
@@ -126,7 +124,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
                   action_str = "lr";
                }
 
-               sge_dstring_sprintf_append(string, "%s:" sge_u32":%s%s",
+               sge_dstring_sprintf_append(string, "%s:" sge_uu32":%s%s",
                   lGetString(elem, SO_name),
                   lGetUlong(elem, SO_seq_no),
                   action_str,
@@ -145,7 +143,7 @@ so_list_append_to_dstring(const lList *this_list, dstring *string)
                
                sge_dstring_append(string, lGetString(elem, SO_name));
                if (lGetUlong(elem, SO_threshold)) {
-                  sge_dstring_sprintf_append(string, "=" sge_u32"%s",
+                  sge_dstring_sprintf_append(string, "=" sge_uu32"%s",
                                              lGetUlong(elem, SO_threshold),
                                              lNext(elem) ? "," : "");
                }

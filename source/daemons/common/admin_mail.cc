@@ -273,10 +273,8 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
       }
       for (i=0; i<num_files; i++) {
          /* JG: TODO (254): use function creating path */
-         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_u32"." sge_u32"/%s", ACTIVE_DIR,
-                     jobid, jataskid, shepherd_filenames[i]);
-         if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) 
-             && (shepherd_files[i].statbuf.st_size > 0)) {
+         snprintf(shepherd_files[i].filepath, SGE_PATH_MAX, "%s/" sge_uu32 "." sge_uu32 "/%s", ACTIVE_DIR, jobid, jataskid, shepherd_filenames[i]);
+         if (!SGE_STAT(shepherd_files[i].filepath, &shepherd_files[i].statbuf) && (shepherd_files[i].statbuf.st_size > 0)) {
             shepherd_files[i].exists = 1;
             max_shepherd_files_size = MAX(max_shepherd_files_size, shepherd_files[i].statbuf.st_size);
          }

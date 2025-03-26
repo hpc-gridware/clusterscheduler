@@ -237,7 +237,7 @@
 
 #define MSG_OBJECT_STRUCTURE_ERROR        _MESSAGE(64321, _("corrupted cull structure or reduced element"))
 #define MSG_OBJECT_ULONG_NOT_NULL_S       _MESSAGE(64322, _("object attribute " SFQ " may not be 0"))
-#define MSG_OBJECT_ULONG_NULL_SU          _MESSAGE(64323, _("object attribute " SFQ " may only be 0 but is " sge_u32))
+#define MSG_OBJECT_ULONG_NULL_SU          _MESSAGE(64323, _("object attribute " SFQ " may only be 0 but is " sge_uu32))
 #define MSG_OBJECT_ULONG64_NULL_SU        _MESSAGE(64324, _("object attribute " SFQ " may only be 0 but is " sge_u64))
 #define MSG_OBJECT_DOUBLE_NULL_SD         _MESSAGE(64325, _("object attribute " SFQ " may only be 0.0 but is %f"))
 #define MSG_OBJECT_STRING_NOT_NULL_S      _MESSAGE(64326, _("object attribute " SFQ " may not be nullptr"))
@@ -338,7 +338,7 @@
 #define MSG_JSV_TIME_S           _MESSAGE(64535, _("JSV modification time in " SFQ " has changed"))
 #define MSG_JSV_REJECTED         _MESSAGE(64536, _("JSV rejected job"))
 #define MSG_JSV_REJECTED_S       _MESSAGE(64537, _("JSV " SFQ " rejected job"))
-#define MSG_JSV_REJECTED_SU      _MESSAGE(64538, _("JSV " SFQ " rejected job " sge_u32))
+#define MSG_JSV_REJECTED_SU      _MESSAGE(64538, _("JSV " SFQ " rejected job " sge_uu32))
 #define MSG_JSV_RESTART_S        _MESSAGE(64539, _("JSV " SFQ " will be restarted."))
 #define MSG_JSV_PARSE_READ_S     _MESSAGE(64540, _("JSV tries to modify read-only parameter " SFQ))
 #define MSG_JSV_PARSE_BOOL_S     _MESSAGE(64541, _("JSV tries to delete boolean parameter " SFQ))

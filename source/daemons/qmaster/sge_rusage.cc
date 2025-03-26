@@ -57,9 +57,9 @@
 #include "msg_qmaster.h"
 
 #define ACTFILE_FPRINTF_FORMAT \
-"%s%c%s%c%s%c%s%c%s%c" sge_u32"%c%s%c" sge_u32"%c" sge_u64"%c" sge_u64"%c" sge_u64"%c" sge_u32"%c" sge_u32"%c" \
-sge_u32"%c%f%c%f%c%f%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%f%c" \
-sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s%c%d%c" sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32"%c" sge_u64"" \
+"%s%c%s%c%s%c%s%c%s%c" sge_uu32 "%c%s%c" sge_uu32 "%c" sge_u64 "%c" sge_u64 "%c" sge_u64 "%c" sge_uu32 "%c" sge_uu32 "%c" \
+sge_uu32 "%c%f%c%f%c%f%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c%f%c" \
+sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c" sge_uu32 "%c%s%c%s%c%s%c%d%c" sge_uu32 "%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_uu32 "%c" sge_u64 "" \
 "\n"
 
 #define SET_STR_DEFAULT(jr, nm, s) if (lGetString(jr, nm) == nullptr) \
@@ -601,7 +601,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                             : USAGE_ATTR_MAXVMEM_ACCT,
                                                                USAGE_ATTR_MAXVMEM, 0), delimiter,
                                 lGetUlong(job, JB_ar), delimiter,
-                                (ar != nullptr) ? (u_long64)sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time)) : 0
+                                (ar != nullptr) ? static_cast<u_long64>(sge_gmt64_to_time_t(lGetUlong64(ar, AR_submission_time))) : 0
       );
    } else {
       writer->StartObject();

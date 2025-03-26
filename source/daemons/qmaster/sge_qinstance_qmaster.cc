@@ -165,7 +165,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                         matching_group, is_ambiguous, master_hgroup_list);
             if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-               DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
+               DPRINTF(("Changed " SFQ " from " sge_uu32" to " sge_uu32"\n",
                         lNm2Str(attribute_name), old_value, new_value));
 #endif
                lSetUlong(this_elem, attribute_name, new_value);
@@ -342,9 +342,8 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   ret &= false;
                } else {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
-                           lNm2Str(attribute_name),
-                           old_value, new_value));
+                  DPRINTF("Changed " SFQ " from " sge_uu32" to " sge_uu32"\n",
+                          lNm2Str(attribute_name), old_value, new_value);
 #endif
                   lSetUlong(this_elem, attribute_name, new_value);
                   *has_changed_conf_attr = true;
@@ -375,7 +374,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
 
                   ulng_attr_list_find_value(cq_slots_attr, answer_list, hostname, &slots_value, matching_host_or_group,
                                             matching_group, is_ambiguous, master_hgroup_list);
-                  sge_dstring_sprintf(&buffer, sge_u32, slots_value);
+                  sge_dstring_sprintf(&buffer, sge_uu32, slots_value);
 
                   if (new_value == nullptr) {
                      created_new_value = true;
@@ -600,9 +599,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                                          matching_group, is_ambiguous, master_hgroup_list);
                if (old_value != new_value) {
 #ifdef QINSTANCE_MODIFY_DEBUG
-                  DPRINTF(("Changed " SFQ " from " sge_u32" to " sge_u32"\n",
-                           lNm2Str(attribute_name),
-                           old_value, new_value));
+                  DPRINTF(("Changed " SFQ " from " sge_uu32" to " sge_uu32"\n", lNm2Str(attribute_name), old_value, new_value));
 #endif
                   lSetUlong(this_elem, attribute_name, new_value);
                   *has_changed_conf_attr = true;

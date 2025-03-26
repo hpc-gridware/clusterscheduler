@@ -101,7 +101,6 @@
 #if defined(TARGET_64BIT) || defined(FREEBSD) || defined(NETBSD)
 #  define sge_uu32_letter  "u"
 #  define sge_u64          "%lu"
-#  define sge_u32          "%d"
 #  define sge_uu32         "%u"
 #  define sge_x32          "%x"
 #  define sge_fu32         "d"
@@ -109,7 +108,6 @@
 #else
 #  define sge_uu32_letter  "lu"
 #  define sge_u64          "%llu"
-#  define sge_u32          "%ld"
 #  define sge_uu32         "%lu"
 #  define sge_x32          "%lx"
 #  define sge_fu32         "ld"

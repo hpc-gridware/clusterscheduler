@@ -229,7 +229,7 @@ lList *cull_unparse_job_parameter(lList **pcmdline, lListElem *job, int flags)
    ** -js
    */
    if ((ul = lGetUlong(job, JB_jobshare)) != 0)  {
-      snprintf(str, sizeof(str), sge_u32, ul);
+      snprintf(str, sizeof(str), sge_uu32, ul);
       ep_opt = sge_add_arg(pcmdline, js_OPT, lUlongT, "-js", str);
       lSetUlong(ep_opt, SPA_argval_lUlongT, ul);
    }

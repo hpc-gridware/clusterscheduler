@@ -1611,7 +1611,7 @@ sge_gdi_add_mod_generic(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **
    dataType = lGetPosType(lGetElemDescr(instructions), pos);
    if (dataType == lUlongT) {
       u_long32 id = lGetUlong(instructions, object->key_nm);
-      sge_dstring_sprintf(&buffer, sge_u32, id);
+      sge_dstring_sprintf(&buffer, sge_uu32, id);
       name = sge_dstring_get_string(&buffer);
 
       old_obj = lGetElemUlongRW(*ocs::DataStore::get_master_list(object->list_type), object->key_nm, id);

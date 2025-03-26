@@ -629,7 +629,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             sge_add_event(0, sgeE_PE_MOD, 0, 0, lGetString(jatp, JAT_granted_pe), nullptr, nullptr, pe, gdi_session);
          }
 
-         DPRINTF("successfully handed off job \"" sge_u32 "\" to queue \"%s\"\n",
+         DPRINTF("successfully handed off job \"" sge_uu32 "\" to queue \"%s\"\n",
                  lGetUlong(jep, JB_job_number), lGetString(jatp, JAT_master_queue));
 
          /* now after successfully (we hope) sent the job to execd
@@ -660,8 +660,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
 
             task_number = lGetUlong(ep, OR_ja_task_number);
-
-            DPRINTF("ORDER : job(" sge_u32 ")->pri/tickets reset");
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
@@ -764,7 +762,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-2);
             }
 
-            DPRINTF("ORDER : job(" sge_u32 ")->ticket = " sge_u32 "\n", job_number, (u_long32) lGetDouble(ep, OR_ticket));
+            DPRINTF("ORDER : job(" sge_uu32 ")->ticket = %f\n", job_number, lGetDouble(ep, OR_ticket));
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
@@ -846,7 +844,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             sge_add_event(0, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
 
 #if 0
-            DPRINTF(("PRIORITY: " sge_u32"." sge_u32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
+            DPRINTF(("PRIORITY: " sge_uu32 "." sge_uu32" %f/%f tix/ntix %f npri %f/%f urg/nurg %f prio\n",
                lGetUlong(jep, JB_job_number),
                lGetUlong(jatp, JAT_task_number),
                lGetDouble(jatp, JAT_tix),
@@ -883,8 +881,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-2);
             }
 
-            DPRINTF("ORDER: job(" sge_u32 ")->ticket = " sge_u32 "\n",
-                    job_number, (u_long32) lGetDouble(ep, OR_ticket));
+            DPRINTF("ORDER: job(" sge_uu32 ")->ticket = %f\n",
+                    job_number, lGetDouble(ep, OR_ticket));
 
             jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
             if (jep == nullptr) {
@@ -916,8 +914,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                bool distribute_tickets = false;
                /* modify jobs ticket amount and spool job */
                lSetDouble(jatp, JAT_tix, lGetDouble(ep, OR_ticket));
-               DPRINTF("TICKETS: " sge_u32 "." sge_u32 " " sge_u32 " tickets\n", lGetUlong(jep, JB_job_number), lGetUlong(
-                       jatp, JAT_task_number), (u_long32) lGetDouble(jatp, JAT_tix));
+               DPRINTF("TICKETS: " sge_uu32 "." sge_uu32 " %f tickets\n",
+                       lGetUlong(jep, JB_job_number), lGetUlong(jatp, JAT_task_number), lGetDouble(jatp, JAT_tix));
 
                /* check several fields to be updated */
                if ((joker = lFirst(lGetList(ep, OR_joker)))) {
@@ -1080,9 +1078,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             ERROR(MSG_JOB_NOORDERTASK_US, job_number, (or_type == ORT_remove_immediate_job) ? "ORT_remove_immediate_job" : "ORT_remove_job");
             DRETURN(-2);
          }
-         DPRINTF("ORDER: remove %sjob " sge_u32 "." sge_u32 "\n",
-                 or_type == ORT_remove_immediate_job ? "immediate " : "",
-                 job_number, task_number);
+         DPRINTF("ORDER: remove %sjob " sge_uu32 "." sge_uu32 "\n", or_type == ORT_remove_immediate_job ? "immediate " : "", job_number, task_number);
          jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if (jep == nullptr) {
             if (or_type == ORT_remove_job) {
@@ -1251,13 +1247,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                         lRemoveElem(lGetListRW(up, PR_debited_job_usage), &up_ju);
                      } else {
                         /* still exists - replace old usage with new one */
-                        DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
+                        DPRINTF("updating debited usage for job " sge_uu32 "\n", job_number);
                         lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
                      }
 
                   } else {
                      /* unchain ju element and chain it into our user/prj object */
-                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
+                     DPRINTF("adding debited usage for job " sge_uu32 "\n", job_number);
                      lDechainElem(lGetListRW(up_order, PR_debited_job_usage), ju);
 
                      if (lGetList(ju, UPU_old_usage_list) != nullptr) {
@@ -1389,13 +1385,13 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                      } else {
 
                         /* still exists - replace old usage with new one */
-                        DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
+                        DPRINTF("updating debited usage for job " sge_uu32 "\n", job_number);
                         lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
                      }
 
                   } else {
                      /* unchain ju element and chain it into our user/prj object */
-                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
+                     DPRINTF("adding debited usage for job " sge_uu32 "\n", job_number);
                      lDechainElem(lGetListRW(up_order, UU_debited_job_usage), ju);
 
                      if (lGetList(ju, UPU_old_usage_list) != nullptr) {

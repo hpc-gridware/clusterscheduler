@@ -371,8 +371,8 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
       *next_event = temp_next_event;
    }   
   
-   DPRINTF("got state %d from %s calendar. Now: " sge_u32" Next event: " sge_u32"\n",
-         state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
+   DPRINTF("got state %d from %s calendar. Now: " sge_uu32 " Next event: " sge_uu32"\n",
+           state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
 
    lFreeElem(&tm);
 
@@ -685,44 +685,6 @@ u_long32 calender_state_changes(const lListElem *cep, lList **state_changes_list
       lSetUlong64(state_change,  CQU_till, sge_time_t_to_gmt64(when1));
       lAppendElem(*state_changes_list, state_change);
    }
-   
-#if 0
-   {
-         struct tm *tm_limit;
-         struct tm res; 
-                  /* convert time_t format into struct tm format */
-         tm_limit= localtime_r(when, &res);
-
-         DPRINTF(("first change: state %d, time " sge_u32", sec:%d min:%d hour:%d mday:%d mon:%d year:%d wday:%d yday:%d isdst:%d\n",
-            state0,
-            (u_long32) when,
-            tm_limit->tm_sec,
-            tm_limit->tm_min,
-            tm_limit->tm_hour,
-            tm_limit->tm_mday,
-            tm_limit->tm_mon,
-            tm_limit->tm_year,
-            tm_limit->tm_wday,
-            tm_limit->tm_yday,
-            tm_limit->tm_isdst));
-
-         tm_limit= localtime_r(&when1, &res);
-
-         DPRINTF(("second change: state %d, time " sge_u32", sec:%d min:%d hour:%d mday:%d mon:%d year:%d wday:%d yday:%d isdst:%d\n",
-            state1,
-            (u_long32) when1,
-            tm_limit->tm_sec,
-            tm_limit->tm_min,
-            tm_limit->tm_hour,
-            tm_limit->tm_mday,
-            tm_limit->tm_mon,
-            tm_limit->tm_year,
-            tm_limit->tm_wday,
-            tm_limit->tm_yday,
-            tm_limit->tm_isdst));
-           
-   }
-#endif
 
    return state0;
 }
@@ -1035,7 +997,7 @@ static time_t compute_limit(bool today, bool active, const lList *year_time, con
 #endif
       limit = mktime(&tm_limit);
 
-      DPRINTF("limit: " sge_u32"\n", (u_long32) limit);
+      DPRINTF("limit: " sge_u64 "\n", static_cast<u_long64>(limit));
       if (end_of_day) {
          limit += 1;
       }

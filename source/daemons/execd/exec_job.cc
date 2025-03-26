@@ -263,7 +263,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
                      double dbl;
                      parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
                      limit += dbl * slots;
-                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_u32 ", sum %f\n",
+                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_uu32 ", sum %f\n",
                              lGetString(gdil_ep, JG_qname), limit_str, slots, dbl * slots);
                   }
                }
@@ -838,7 +838,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    var_list_set_string(&environmentList, "HOSTNAME", lGetHost(master_q, QU_qhostname));
    var_list_set_string(&environmentList, "QUEUE", lGetString(master_q, QU_qname));
    /* JB: TODO (ENV): shouldn't we better have a SGE_JOB_ID? */
-   var_list_set_sge_u32(&environmentList, "JOB_ID", job_id);
+   var_list_set_uint32t(&environmentList, "JOB_ID", job_id);
 
    /* JG: TODO (ENV): shouldn't we better use SGE_JATASK_ID and have an additional SGE_PETASK_ID? */
    if (job_is_array(jep)) {
@@ -846,10 +846,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       job_get_submit_task_ids(jep, &start, &end, &step);
 
-      var_list_set_sge_u32(&environmentList, VAR_PREFIX "TASK_ID", ja_task_id);
-      var_list_set_sge_u32(&environmentList, VAR_PREFIX "TASK_FIRST", start);
-      var_list_set_sge_u32(&environmentList, VAR_PREFIX "TASK_LAST", end);
-      var_list_set_sge_u32(&environmentList, VAR_PREFIX "TASK_STEPSIZE", step);
+      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_ID", ja_task_id);
+      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_FIRST", start);
+      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_LAST", end);
+      var_list_set_uint32t(&environmentList, VAR_PREFIX "TASK_STEPSIZE", step);
    } else {
       const char *udef = "undefined";
 
@@ -1323,8 +1323,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "shell_path=%s\n", shell_path);
    fprintf(fp, "script_file=%s\n", str_script_file);
    fprintf(fp, "job_owner=%s\n", lGetString(jep, JB_owner));
-   fprintf(fp, "min_gid=" sge_u32 "\n", mconf_get_min_gid());
-   fprintf(fp, "min_uid=" sge_u32 "\n", mconf_get_min_uid());
+   fprintf(fp, "min_gid=" sge_uu32 "\n", mconf_get_min_gid());
+   fprintf(fp, "min_uid=" sge_uu32 "\n", mconf_get_min_uid());
 
    /* do path substitutions also for cwd */
    {
@@ -1423,9 +1423,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       ERROR(MSG_MAIL_MAILLISTTOOLONG_U, job_id);
    }
    fprintf(fp, "mail_list=%s\n", mail_str);
-   fprintf(fp, "mail_options=" sge_u32 "\n", lGetUlong(jep, JB_mail_options));
-   fprintf(fp, "forbid_reschedule=%d\n", mconf_get_forbid_reschedule());
-   fprintf(fp, "forbid_apperror=%d\n", mconf_get_forbid_apperror());
+   fprintf(fp, "mail_options=" sge_uu32 "\n", lGetUlong(jep, JB_mail_options));
+   fprintf(fp, "forbid_reschedule=%d\n", mconf_get_forbid_reschedule() ? 1 : 0);
+   fprintf(fp, "forbid_apperror=%d\n", mconf_get_forbid_apperror() ? 1 : 0);
    fprintf(fp, "queue=%s\n", lGetString(master_q, QU_qname));
    fprintf(fp, "host=%s\n", lGetHost(master_q, QU_qhostname));
    {
@@ -1450,7 +1450,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fprintf(fp, "job_name=%s\n", lGetString(jep, JB_job_name));
    }
    fprintf(fp, "job_id=" sge_uu32 "\n", job_id);
-   fprintf(fp, "ja_task_id=" sge_u32 "\n", job_is_array(jep) ? ja_task_id : 0);
+   fprintf(fp, "ja_task_id=" sge_uu32 "\n", job_is_array(jep) ? ja_task_id : 0);
    if (petep != nullptr) {
       fprintf(fp, "pe_task_id=%s\n", pe_task_id);
    }
@@ -1463,9 +1463,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    {
       u_long32 notify = 0;
-      if (lGetBool(jep, JB_notify))
+      if (lGetBool(jep, JB_notify)) {
          parse_ulong_val(nullptr, &notify, TYPE_TIM, lGetString(master_q, QU_notify), nullptr, 0);
-      fprintf(fp, "notify=" sge_u32 "\n", notify);
+      }
+      fprintf(fp, "notify=" sge_uu32 "\n", notify);
    }
 
    /*
@@ -1604,7 +1605,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "notify_susp=%s\n", notify_susp ? notify_susp : "default");
    sge_free(&notify_susp);
    if (mconf_get_use_qsub_gid()) {
-      fprintf(fp, "qsub_gid=" sge_u32 "\n", lGetUlong(jep, JB_gid));
+      fprintf(fp, "qsub_gid=" sge_uu32 "\n", lGetUlong(jep, JB_gid));
    } else {
       fprintf(fp, "qsub_gid=%s\n", "no");
    }

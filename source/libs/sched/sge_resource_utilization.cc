@@ -832,12 +832,12 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
    DENTER(TOP_LAYER);
 
    if (ep == nullptr) {
-      ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization nullptr object " "(job " sge_uu32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
    if (slots == 0) {
-      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32" obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_uu32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 

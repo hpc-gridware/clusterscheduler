@@ -327,12 +327,12 @@ bool test_lReduceDescr() {
    lReduceDescr(&dst_descriptor3, TEST_Type, what3);
 
 #if 0
-   fprintf(stderr, sge_u32"\n", lCountDescr(dst_descriptor1));
-   fprintf(stderr, sge_u32"\n", lCountDescr(dst_descriptor2));
-   fprintf(stderr, sge_u32"\n", lCountDescr(dst_descriptor3));
-   fprintf(stderr, sge_u32"\n", lCountWhat(what1, TEST_Type));
-   fprintf(stderr, sge_u32"\n", lCountWhat(what2, TEST_Type));
-   fprintf(stderr, sge_u32"\n", lCountWhat(what3, TEST_Type));
+   fprintf(stderr, "%d\n", lCountDescr(dst_descriptor1));
+   fprintf(stderr, "%d\n", lCountDescr(dst_descriptor2));
+   fprintf(stderr, "%d\n", lCountDescr(dst_descriptor3));
+   fprintf(stderr, "%d\n", lCountWhat(what1, TEST_Type));
+   fprintf(stderr, "%d\n", lCountWhat(what2, TEST_Type));
+   fprintf(stderr, "%d\n", lCountWhat(what3, TEST_Type));
 #endif
 
    ret &= (lCountDescr(dst_descriptor1) == 13);

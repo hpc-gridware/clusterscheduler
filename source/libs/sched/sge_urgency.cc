@@ -159,12 +159,11 @@ static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
          } else {
             dtc = weight_deadline;
          }
-/*           DPRINTF("free: %d now: " sge_u32" deadline: " sge_u32"\n", time_left, now, deadline); */
-          /* might be too late for this job anyways we're optimistic and treat it high prior */
+/*           DPRINTF("free: %d now: " sge_uu32 " deadline: " sge_uu32 "\n", time_left, now, deadline); */
+          /* might be too late for this job anyway we're optimistic and treat it high prior */
       }
 
-      /* we do category based caching when determining the resource request 
-         dependent contribution */
+      /* we do category based caching when determining the resource request dependent contribution */
       if ((cat = (lListElem *)lGetRef(jep, JB_category)) && lGetBool(cat, CT_rc_valid)) {
          rrc = lGetDouble(cat, CT_resource_contribution);
 /*         DPRINTF("  resource contribution from category cache ---> %7f\n", rrc); */
@@ -254,7 +253,7 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
       double asu = lGetDouble(jep, JB_urg);
       nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       lSetDouble(jep, JB_nurg, nsu);
-/*    DPRINTF("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
+/*    DPRINTF("NSU(job " sge_uu32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
    }
    DRETURN_VOID;
 }

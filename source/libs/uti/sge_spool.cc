@@ -221,7 +221,7 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
       } else {
          if (id == JOB_SPOOL_DIR_AS_FILE && insert_dot) {
             if (in_execd) {
-               job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/.%s." sge_u32, job_dir_first,
+               job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/.%s." sge_uu32, job_dir_first,
                                              job_dir_second, job_dir_third, ulong_val2);
             } else {
                job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/.%s", job_dir_first,
@@ -229,7 +229,7 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
             }
          } else {
             if (in_execd) {
-               job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/%s." sge_u32, job_dir_first,
+               job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/%s." sge_uu32, job_dir_first,
                                              job_dir_second, job_dir_third, ulong_val2);
             } else {
                job_dir = sge_dstring_sprintf(&dstr_job_dir, "%s/%s/%s", job_dir_first,
@@ -246,7 +246,7 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
           id == PE_TASK_SPOOL_FILE) {
          u_long32 start, end;
          get_spool_dir_range(ulong_val2, &start, &end);
-         snprintf(id_range, sizeof(id_range), sge_u32"-" sge_u32, start, end);
+         snprintf(id_range, sizeof(id_range), sge_uu32"-" sge_uu32, start, end);
       }
       if (id == JOB_SPOOL_DIR || id == JOB_SPOOL_DIR_AS_FILE) {
          snprintf(buffer, buffer_size, "%s/%s", spool_dir, job_dir);
@@ -255,19 +255,19 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
       } else if (id == TASKS_SPOOL_DIR) {
          snprintf(buffer, buffer_size, "%s/%s/%s", spool_dir, job_dir, id_range);
       } else if (id == TASK_SPOOL_DIR_AS_FILE || id == TASK_SPOOL_DIR) {
-         snprintf(buffer, buffer_size, "%s/%s/%s/%s" sge_u32, spool_dir, job_dir, id_range, file_prefix, ulong_val2);
+         snprintf(buffer, buffer_size, "%s/%s/%s/%s" sge_uu32, spool_dir, job_dir, id_range, file_prefix, ulong_val2);
       } else if (id == TASK_SPOOL_FILE) {
-         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, "common");
+         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_uu32 "/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, "common");
       } else if (id == PE_TASK_SPOOL_FILE) {
-         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_u32"/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, string_val1);
+         snprintf(buffer, buffer_size, "%s/%s/%s/" sge_uu32 "/%s%s", spool_dir, job_dir, id_range, ulong_val2, file_prefix, string_val1);
       }
       sge_dstring_free(&dstr_job_dir);
    } else if (id == JOB_SCRIPT_DIR) {
       snprintf(buffer, buffer_size, "%s", EXEC_DIR);
    } else if (id == JOB_SCRIPT_FILE) {
-      snprintf(buffer, buffer_size, "%s/" sge_u32, EXEC_DIR, ulong_val1);
+      snprintf(buffer, buffer_size, "%s/" sge_uu32, EXEC_DIR, ulong_val1);
    } else if (id == JOB_ACTIVE_DIR && in_execd) {
-      snprintf(buffer, buffer_size, ACTIVE_DIR"/" sge_u32"." sge_u32, ulong_val1, ulong_val2);
+      snprintf(buffer, buffer_size, ACTIVE_DIR "/" sge_uu32 "." sge_uu32, ulong_val1, ulong_val2);
    } else {
       buffer[0] = '\0';
    }
