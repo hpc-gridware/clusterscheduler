@@ -110,7 +110,7 @@ void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<u_int64_t>(time(nullptr)), te_get_when(anEvent));
+   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* calendar_event_handler() */
@@ -119,7 +119,7 @@ void signal_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<u_int64_t>(time(nullptr)), te_get_when(anEvent));
+   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* signal_resend_event_handler() */
@@ -128,7 +128,7 @@ void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<u_int64_t>(time(nullptr)), te_get_when(anEvent));
+   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
 
    DRETURN_VOID;
 } /* job_resend_event_handler() */
