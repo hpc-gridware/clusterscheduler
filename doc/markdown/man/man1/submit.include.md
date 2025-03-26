@@ -391,10 +391,10 @@ department, then the user can specify the department name with the `-dept` switc
 otherwise the job will be automatically assigned to the first found department where the user belongs to.
 
 The assignment of a job to a department is used for scheduling purposes, accounting, and it can define 
-visibility of the job. Find more information about departments in xxqs_name_sxx_access_list(1).
+visibility of the job. Find more information about departments in xxqs_name_sxx_access\_list(1).
 
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
-*dept*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1)).
+*dept*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx\_jsv(1)).
 
 ## -display *display_specifier*
 

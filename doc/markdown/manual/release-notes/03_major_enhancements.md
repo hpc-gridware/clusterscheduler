@@ -2,6 +2,20 @@
 
 ## v9.1.0
 
+### Departments, Users and Jobs - Department View
+
+The Department View, a feature first introduced in the Gridware Cluster Scheduler v9.0.2 patch, has been further enhanced and is now fully supported in Gridware Cluster Scheduler v9.1.0.
+
+Cluster administrators can now define whether a user can see the Classic View, where all hosts, queues or jobs... are visible to everyone, or the Department View, where users can see only those cluster objects to which their department(s) have access.
+Even if cluster administrators choose not to enforce the Department View, users can still use the functionality to reduce the number of visible objects, which can be useful in large clusters.
+
+The following is a brief list of Department View features and the underlying changes to the user interface:
+
+- Users are assigned to Departments. If a user is not assigned to at least one department, they are automatically assigned to the default department. Users can belong to more than one department, but this requires that such users specify one of the assigned departments when submitting jobs, so that for each job in the system it is known which department the jobs should be charged to (see `qsub -dept`).
+- Departments/ACLs can be assigned to cluster objects such as the global configuration, hosts, queues, projects, ... or resource quota sets to allow or deny access to these objects. This restricts the access rights for user jobs (see *users_lists* in sge_conf(5), sge_host_conf(5), sge_queue_conf(5), sge_pe(5) or sge_resource_quota(5)) and the visibility of cluster objects in the user interface if the department view is enabled.
+- The department view is enabled when a certain command line switch is used (`qhost/qstat/qselect, ... -sdv`).
+- Various default files allow managers to force a user to view the department view. (`sge_qstat`, `sge_select`, ...). This will automatically hide all details about objects that do not belong to the department.
+
 ### Prevent Denial of Service Attacks
 
 The Gridware Cluster Scheduler now includes a feature to prevent Denial of Service (DoS) attacks by limiting the number of requests accepted by the xxqs_name_sxx_qmaster(8) daemon per second. This limit is controlled by the `gdi_request_limits` parameter, which can be set in the global cluster configuration.
