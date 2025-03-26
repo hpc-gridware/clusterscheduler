@@ -41,6 +41,7 @@
 
 #include "uti/sge_uidgid.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -1306,6 +1307,87 @@ ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_s
    *amount = grp_ids;
    *grp_array = array;
    DRETURN(true);
+}
+
+/**
+ * @brief returns supplementary group ids for a specific user
+ *
+ * @param user user name
+ * @param gid gid of the user
+ * @param amount used to return the number of group ids
+ * @param grp_array used to return the array of group ids
+ * @param error_dstr dstring to return error messages
+ * @return true if the supplementary group information could be retrieved, else false (and error_dstr contains the reason)
+ */
+bool
+ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_array, dstring *error_dstr) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   if (amount == nullptr) {
+      sge_dstring_sprintf(error_dstr, "invalid input parameter (amount).");
+      DRETURN(false);
+   }
+   if (grp_array == nullptr) {
+      sge_dstring_sprintf(error_dstr, "invalid input parameter (grp_array).");
+      DRETURN(false);
+   }
+
+   // get maximum amount of supplementary group IDs
+   int max_groups = static_cast<int>(sge_sysconf(SGE_SYSCONF_NGROUPS_MAX));
+   if (max_groups == -1) {
+      sge_dstring_sprintf(error_dstr, "sge_sysconf(SGE_SYSCONF_NGROUPS_MAX) failed.");
+      DRETURN(false);
+   }
+
+   // allocate buffer for group IDs
+   auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
+   if (grp_id_list == nullptr) {
+      sge_dstring_sprintf(error_dstr, "Unable to allocate buffer that should hold group IDs");
+      DRETURN(false);
+   }
+
+   // fetch group IDs
+#ifdef DARWIN
+   static_assert(sizeof(gid_t) == sizeof(int), "Size of gid_t does not match that of type int!");
+   int num_group_ids = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list), &max_groups);
+#else
+   int num_group_ids = getgrouplist(user, gid, grp_id_list, &max_groups);
+#endif
+   if (num_group_ids == -1) {
+      sge_dstring_sprintf(error_dstr, "getgrouplist() failed.");
+      sge_free(&grp_id_list);
+      DRETURN(false);
+   }
+   if (num_group_ids == 0) {
+      // success case: user has no supplementary groups (this case probably does not exist)
+      *amount = 0;
+      *grp_array = nullptr;
+      sge_free(&grp_id_list);
+      DRETURN(true);
+   }
+
+   // fetch group names and store them with corresponding IDs in the array to be returned
+   auto array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(num_group_ids * sizeof(ocs_grp_elem_t)));
+   if (array == nullptr) {
+       sge_dstring_sprintf(error_dstr, "Unable to allocate buffer that should hold group information");
+       sge_free(&grp_id_list);
+       DRETURN(false);
+   }
+   for (int i = 0; i < num_group_ids; i++) {
+      // try to get the name
+      array[i].id = grp_id_list[i];
+      int lret = sge_gid2group(grp_id_list[i], array[i].name, MAX_STRING_SIZE, 1);
+
+      // non-resolvable groups are no error. also OCS uses GIDs without name for job tracing
+      if (lret != 0) {
+          snprintf(array[i].name, MAX_STRING_SIZE, gid_t_fmt, grp_id_list[i]);
+      }
+   }
+   sge_free(&grp_id_list);
+   *amount = num_group_ids;
+   *grp_array = array;
+   DRETURN(ret);
 }
 
 /**
