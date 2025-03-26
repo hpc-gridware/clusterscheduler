@@ -32,6 +32,7 @@
 #  All Rights Reserved.
 #
 #  Portions of this software are Copyright (c) 2011 Univa Corporation
+#  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
 #
 ##########################################################################
 #___INFO__MARK_END__
@@ -54,6 +55,12 @@ OLD_PATH=$PATH
 PATH=$SAFE_PATH
 
 ARCH=UNKNOWN
+
+strings_path=`which strings`
+if [ ! -x $strings_path ]; then
+   echo "ERROR: \"strings\" command does not exist. (On Linux this is usually part of the \"binutils\" package)"
+   exit 1
+fi
 
 if [ -x /bin/uname ]; then
    UNAME=/bin/uname
