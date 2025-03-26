@@ -40,7 +40,7 @@ gdi_request_limits=*:add:job:john:*=500,
 In this example:
 - The first rule allows user `john` to submit 500 jobs per second.
 - The second rule allows all other users to submit 50 jobs per second.
-- The third rule allows 50,000 `qstat` requests per second.
+- The third rule allows 60,000 `qstat` requests per second.
 - All rules apply on all hosts independent where the client command is executed.
 
 These rules are independent of the submit client used (e.g., `qsub`, `qrsh`, DRMAA client, or GUI). If a user exceeds the limit, the submit client will display an error message indicating the violated limit rule.

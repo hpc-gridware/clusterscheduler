@@ -103,10 +103,25 @@ pkg install hs-pandoc texlive-full tex-xetex
 pkg install openjdk8-8.402.06.1_1 maven
 ```
 
-### macOS 14 (default for darwin-arm64)
+### maxOS 14/15 (default for darwin-amd64)
+
+MacPorts is required to install the packages.
 
 ```
-XCodeUpdate 01_prepare_dev_env.md
+XCodeUpdate
+XQuartz (for some testsuite tests)
+port install cmake git autoconf automake gettext munge
+port install expect tcl-tk gnuplot perl
+port install pandoc texlive
+port install doxygen graphviz
+```
+
+### macOS 14 
+
+Homebrew is required to install the packages but munge is not available in Homebrew.
+
+```
+XCodeUpdate 
 XQuartz (for some testsuite tests)
 brew install cmake git autoconf automake gettext
 brew install expect tcl-tk gnuplot perl
