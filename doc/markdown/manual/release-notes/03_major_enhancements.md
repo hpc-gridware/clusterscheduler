@@ -15,6 +15,7 @@ The following is a brief list of Department View features and the underlying cha
 - Departments/ACLs can be assigned to cluster objects such as the global configuration, hosts, queues, projects, ... or resource quota sets to allow or deny access to these objects. This restricts the access rights for user jobs (see *users_lists* in sge_conf(5), sge_host_conf(5), sge_queue_conf(5), sge_pe(5) or sge_resource_quota(5)) and the visibility of cluster objects in the user interface if the department view is enabled.
 - The department view is enabled when a certain command line switch is used (`qhost/qstat/qselect, ... -sdv`).
 - Various default files allow managers to force a user to view the department view. (`sge_qstat`, `sge_select`, ...). This will automatically hide all details about objects that do not belong to the department.
+- Cluster managers will always see all objects, regardless of the department view setting.
 
 ### Prevent Denial of Service Attacks
 
@@ -33,17 +34,18 @@ Example:
 
 ```
 gdi_request_limits=*:add:job:john:*=500,
+                   *:add:job:eng-users:@eng-hosts=100,
                    *:add:job:*:*=50,
                    qstat:get:*:*:*=60000
 ```
 
 In this example:
 - The first rule allows user `john` to submit 500 jobs per second.
-- The second rule allows all other users to submit 50 jobs per second.
-- The third rule allows 60,000 `qstat` requests per second.
-- All rules apply on all hosts independent where the client command is executed.
+- The second rule allows all users in the `eng-users` user list to submit 100 jobs per second on hosts in the `@eng-hosts` host group.
+- The third rule allows all other users to submit 50 jobs per second.
+- The fourth rule allows 60,000 `qstat` requests per second.
 
-These rules are independent of the submit client used (e.g., `qsub`, `qrsh`, DRMAA client, or GUI). If a user exceeds the limit, the submit client will display an error message indicating the violated limit rule.
+If a user exceeds the limit, the used command line application will display an error message indicating the violated limit rule.
 
 Note that one `qstat` command can trigger multiple GDI requests depending on the switches used. For example, `qstat -f` can query up to 15 different objects (job, queue, execution host, etc.) with one command. Therefore, the limit should be set high enough to allow users to get all necessary information in one command. For instance, a limit of 60,000 `get` requests allows about 5,000 `qstat -f` commands or 60,000 `qstat -j` commands per second.
 
