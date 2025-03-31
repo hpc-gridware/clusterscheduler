@@ -81,6 +81,7 @@ Use it for testing purposes but not in a productive environment.
 - [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
+- [Unleashing the Full Power of NVIDIA GPUs with Gridware Cluster Scheduler: Transforming HPC and AI Workflows](https://www.hpc-gridware.com/unleashing-the-full-power-of-nvidia-gpus-with-gridware-cluster-scheduler-transforming-hpc-and-ai-workflows/)
 - [Improving Scalability: First Architectural Changes to the Gridware Cluster Scheduler](https://www.hpc-gridware.com/first-architectural-changes/)
 - [Announcing Gridware Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-gridware-cluster-scheduler-9-0-0-release/)
 - [Announcing Open Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-open-cluster-scheduler-9-0-0-release/)
