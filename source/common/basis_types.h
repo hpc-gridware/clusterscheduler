@@ -92,7 +92,7 @@
 #  define u_long64 unsigned long long
 #endif
 
-#define U_LONG32_MAX 4294967295UL
+#define U_LONG32_MAX std::numeric_limits<u_long32>::max()
 #define U_LONG64_MAX std::numeric_limits<u_long64>::max()
 #define LONG32_MAX   2147483647
 
