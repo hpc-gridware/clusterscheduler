@@ -102,20 +102,22 @@ attr_mod_procedure(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, cons
          char *script = (char *) s;
 
          /* skip user name */
-         if ((t = strpbrk(script, "@ ")) && *t == '@')
+         if ((t = strpbrk(script, "@ ")) && *t == '@') {
             script = &t[1];
-
-         /* force use of absolut pathes */
-         if (script[0] != '/') {
-            ERROR(MSG_GDI_APATH_S, attr_name);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DRETURN(STATUS_EEXIST);
          }
 
          /* ensure that variables are valid */
          if (replace_params(script, nullptr, 0, variables)) {
             ERROR(MSG_GDI_VARS_SS, attr_name, err_msg);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
+
+         // force use of absolut path's
+         // we might also see a $ sign from a special variable, whose validity has been checked above
+         if (script[0] != '/' && script[0] != '$') {
+            ERROR(MSG_GDI_APATH_S, attr_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       }
