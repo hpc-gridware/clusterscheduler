@@ -28,4 +28,4 @@ fi
 PATH=$MPIR_HOME/bin:$PATH
 export PATH
 
-exec mpirun ./testmpi $*
+exec mpirun ./testmpi "$@"
