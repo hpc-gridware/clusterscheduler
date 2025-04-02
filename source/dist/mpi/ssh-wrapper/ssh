@@ -1,6 +1,4 @@
 #!/bin/sh
-#
-#
 #___INFO__MARK_BEGIN__
 ##########################################################################
 #
@@ -30,25 +28,33 @@
 #
 #  All Rights Reserved.
 #
+#  Portions of this software are Copyright (c) 2025 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
-# could be rsh or remsh
+# should be ssh
 me=`basename $0`
-# just_wrap=1
 
-# remove path to wrapping rsh from path list
+# in case we cannot run as OCS qrsh -inherit task we just call ssh
+just_wrap=0
+
+# remove path to wrapping ssh from path list
 if [ "x$TMPDIR" != "x" ]; then
    PATH=`echo $PATH|tr : "\012"|grep -v $TMPDIR| tr "\012" :`
    export PATH
 fi
 
-# rehash 
+# rehash PATH to make sure that the new PATH is used
 hash -r
 
-if [ "x$JOB_ID" = "x" ]; then
-   exec $me $*
-   echo command $me not found in PATH=$PATH 
+# when running outside of a OCS job just call ssh with the given arguments
+if [ -z $JOB_ID ]; then
+   echo "$me: not running in a OCS job (JOB_ID not set)"
+   just_wrap=1
+elif [ -z $SGE_TASK_ID ]; then
+   echo "$me: not running in a OCS job (SGE_TASK_ID not set)"
+   just_wrap=1
 fi
 
 # extract target hostname
@@ -66,26 +72,31 @@ if [ $? -ne 0 ]; then
    shift
 fi
 
-ruser=
 minus_n=0
+verbose=0
 
-# parse other rsh options
+# parse other ssh options
 while [ "$1" != "" ]; do
    case "$1" in
       -l)
+         # we ignore the user name given with -l
          shift
          if [ $# -lt 1 ]; then 
             echo $me: option -l needs user name as argument
             exit 1
-         fi  
-         ruser=$1
+         fi
          ;;
       -n)
          minus_n=1
          ;;
+      -q)
+         verbose=0
+         ;;
+      -v)
+         verbose=1
+         ;;
       -*)
-         echo $me: Unsupported option - $1
-         exit 1
+         echo "$me: ignoring unsupported option $1"
          ;;
       *)
          break;
@@ -117,20 +128,32 @@ if [ "x$TASK_ID" = x ]; then
    unset TASK_ID
 fi
 
-if [ x$just_wrap = x ]; then 
+if [ $just_wrap -eq 0 ]; then
+   QRSH_OPTIONS="-inherit"
    if [ $minus_n -eq 1 ]; then
-      echo $SGE_ROOT/bin/$ARC/qrsh -inherit -nostdin $rhost $cmd
-      exec $SGE_ROOT/bin/$ARC/qrsh -inherit -nostdin $rhost $cmd
-   else
-      echo $SGE_ROOT/bin/$ARC/qrsh -inherit $rhost $cmd
-      exec $SGE_ROOT/bin/$ARC/qrsh -inherit $rhost $cmd
+      QRSH_OPTIONS="$QRSH_OPTIONS -nostdin"
    fi
+   if [ $verbose -eq 1 ]; then
+      QRSH_OPTIONS="$QRSH_OPTIONS -verbose"
+   fi
+
+
+   if [ $verbose -eq 1 ]; then
+      echo $SGE_ROOT/bin/$ARC/qrsh $QRSH_OPTIONS $rhost $cmd
+   fi
+   exec $SGE_ROOT/bin/$ARC/qrsh $QRSH_OPTIONS $rhost $cmd
 else
-   echo $me $rhost $*
-   if [ $minus_n = 1 ]; then
-      exec $me -n $rhost $cmd
-   else
-      exec $me $rhost $cmd
+   SSH_OPTIONS=""
+   if [ $minus_n -eq 1 ]; then
+      SSH_OPTIONS="$SSH_OPTIONS -n"
    fi
+   if [ $verbose -eq 1 ]; then
+      SSH_OPTIONS="$SSH_OPTIONS -v"
+   fi
+
+   if [ $verbose -eq 1 ]; then
+      echo $me $SSH_OPTIONS $rhost $cmd
+   fi
+   exec $me $SSH_OPTIONS $rhost $cmd
    echo $me not found in PATH=$PATH
 fi
