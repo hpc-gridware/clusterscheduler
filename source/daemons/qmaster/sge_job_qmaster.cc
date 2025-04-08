@@ -51,6 +51,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Category.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
@@ -95,6 +96,7 @@
 
 #include "spool/sge_spooling.h"
 
+#include "ocs_CategoryQmaster.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_task_depend.h"
 #include "sge_persistence_qmaster.h"
@@ -220,26 +222,23 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
 
    DENTER(TOP_LAYER);
 
+   // JSV verification if enabled
    if (jsv_is_enabled(tc->thread_name)) {
-      struct timeval start_time{};
-      struct timeval end_time{};
-      int jsv_threshold = mconf_get_jsv_threshold();
-      /*
-       * first verify before JSV is executed
-       */
+
+      // job verification so that data that is passed to JSV is correct
       ret = sge_job_verify_adjust(*jep, alpp, lpp, packet, task, monitor);
       if (ret != STATUS_OK) {
          DRETURN(ret);
       }
 
-      /*
-       * JSV verification
-       */
+      // JSV verification with threshold handling
+      struct timeval start_time{};
+      struct timeval end_time{};
       gettimeofday(&start_time, nullptr);
       lret = jsv_do_verify(tc->thread_name, jep, alpp, true);
       gettimeofday(&end_time, nullptr);
-      if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000)
-          > jsv_threshold || jsv_threshold == 0) {
+      int jsv_threshold = mconf_get_jsv_threshold();
+      if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000) > jsv_threshold || jsv_threshold == 0) {
          INFO(MSG_JSV_THRESHOLD_UU, lGetUlong(*jep, JB_job_number), static_cast<u_long32>((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000));
       }
       if (!lret) {
@@ -247,18 +246,17 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       }
    }
 
-   /*
-    * second try to find something strange
-    */
+   // final job verification
    ret = sge_job_verify_adjust(*jep, alpp, lpp, packet, task, monitor);
    if (ret != STATUS_OK) {
       DRETURN(ret);
    }
 
-   /* write script to file */
+   // open a spooling transaction
    spool_transaction(alpp, spool_get_default_context(), STC_begin);
-   if (lGetString(*jep, JB_script_file) &&
-       !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
+
+   // write script to file separately,  we do not want to hold it in memory
+   if (lGetString(*jep, JB_script_file) && !JOB_TYPE_IS_BINARY(lGetUlong(*jep, JB_type))) {
       if (!spool_write_script(alpp, lGetUlong(*jep, JB_job_number), *jep)) {
          spool_transaction(alpp, spool_get_default_context(), STC_rollback);
          ERROR(MSG_JOB_NOWRITE_US, lGetUlong(*jep, JB_job_number), strerror(errno));
@@ -266,11 +264,20 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
          DRETURN(STATUS_EDISK);
       }
    }
-
-   /* clean file out of memory */
    lSetString(*jep, JB_script_ptr, nullptr);
    lSetUlong(*jep, JB_script_size, 0);
 
+   // create or assign a category
+   lList** master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+   lListElem* category = nullptr;
+   lret = ocs::CategoryQmaster::attach_job(master_category_list, &category, *jep,
+                                                 master_userset_list, master_project_list, master_rqs_list,
+                                                 true, packet->gdi_session);
+
+   // Handle job spooling and event
    if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
                         lGetUlong(*jep, JB_job_number), 0, nullptr, nullptr, nullptr,
                         *jep, nullptr, nullptr, true, true, packet->gdi_session)) {
@@ -283,14 +290,15 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       }
       DRETURN(STATUS_EDISK);
    }
+
+   // close the spooling transaction
    spool_transaction(alpp, spool_get_default_context(), STC_commit);
 
    if (!job_is_array(*jep)) {
       DPRINTF("Added Job " sge_uu32"\n", lGetUlong(*jep, JB_job_number));
    } else {
       job_get_submit_task_ids(*jep, &start, &end, &step);
-      DPRINTF("Added JobArray " sge_uu32"." sge_uu32"-" sge_uu32":" sge_uu32"\n",
-              lGetUlong(*jep, JB_job_number), start, end, step);
+      DPRINTF("Added JobArray " sge_uu32"." sge_uu32"-" sge_uu32":" sge_uu32"\n", lGetUlong(*jep, JB_job_number), start, end, step);
    }
 
    /* add into job list */
@@ -1255,7 +1263,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 
       /* operate on a cull copy of the job */
       new_job = lCopyElem(jobep);
-
       if (mod_job_attributes(packet, new_job, jep, &tmp_alp, &trigger)) {
          if (*alpp == nullptr) {
             *alpp = lCreateList("answer", AN_Type);
@@ -1268,22 +1275,59 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
       }
 
       if (!(trigger & VERIFY_EVENT)) {
-         dstring buffer = DSTRING_INIT;
          bool dbret;
          lList *answer_list = nullptr;
 
+         // @todo CS-1156: Why not also for PRIO_EVENT, RECHAIN_JID_HOLD and RECHAIN_JA_AD_HOLD
          if (trigger & MOD_EVENT) {
             lSetUlong(new_job, JB_version, lGetUlong(new_job, JB_version) + 1);
          }
 
-         /* all job modifications to be saved on disk must be made in new_job */
-         dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
-                                    job_get_key(jobid, 0, nullptr, &buffer),
-                                    SGE_TYPE_JOB, true);
-         answer_list_output(&answer_list);
+         // @todo CS-1155: add a transaction?
+         // open a spooling transaction
+         spool_transaction(alpp, spool_get_default_context(), STC_begin);
 
+
+         // if the job changed then check if also the category changed and triggere required events
+         if ((trigger & (PRIO_EVENT | MOD_EVENT)) > 0) {
+            // build the category string
+            const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+            dstring category_str = DSTRING_INIT;
+            ocs::Category::build_string(&category_str, new_job, master_userset_list, master_project_list, master_rqs_list);
+            const char *cat_str = sge_dstring_get_string(&category_str);
+
+            // check if the category string changed
+            lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
+            u_long32 old_category_id = lGetUlong(new_job, JB_category_id);
+            const lListElem *old_category = lGetElemUlong(*master_category_list, CT_id, old_category_id);
+            const char *old_cat_str = lGetString(old_category, CT_str);
+
+            // check if the category string changed and trigger corresponding events
+            if (strcmp(old_cat_str, cat_str) != 0) {
+               // remove the job from the category
+               ocs::CategoryQmaster::detach_job(master_category_list, new_job, true, packet->gdi_session);
+
+               // add the job to the new category
+               lListElem *category;
+               ocs::CategoryQmaster::attach_job(master_category_list, &category,  new_job,
+                                                      master_userset_list, master_project_list, master_rqs_list,
+                                                      true, packet->gdi_session);
+            }
+         }
+
+         /* all job modifications to be saved on disk must be made in new_job */
+         dstring buffer = DSTRING_INIT;
+         dbret = spool_write_object(&answer_list, spool_get_default_context(), new_job,
+                                    job_get_key(jobid, 0, nullptr, &buffer), SGE_TYPE_JOB, true);
+         answer_list_output(&answer_list);
          if (!dbret) {
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
+
+            // @todo CS-1155: add a transaction?
+            spool_transaction(alpp, spool_get_default_context(), STC_rollback);
+
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             lFreeList(&tmp_alp);
@@ -1292,7 +1336,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             sge_free(&job_mod_name);
             DRETURN(STATUS_EDISK);
          }
-
          sge_dstring_free(&buffer);
 
          /* all elems in tmp_alp need to be appended to alpp */
@@ -1323,8 +1366,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
                DPRINTF(" JOB #" sge_uu32": P: " sge_uu32"\n", jobid, pre_ident);
 
                if ((suc_jobep = lGetElemUlongRW(*master_job_list, JB_job_number, pre_ident))) {
-                  lListElem *temp_job = lGetElemUlongRW(lGetList(suc_jobep, JB_jid_successor_list), JRE_job_number,
-                                                        jobid);
+                  lListElem *temp_job = lGetElemUlongRW(lGetList(suc_jobep, JB_jid_successor_list), JRE_job_number, jobid);
                   DPRINTF("  JOB " sge_uu32 " removed from trigger list of job " sge_uu32 "\n", jobid, pre_ident);
                   lRemoveElem(lGetListRW(suc_jobep, JB_jid_successor_list), &temp_job);
                }
@@ -1355,10 +1397,16 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             lInsertElem(*master_job_list, prev, new_job);
          }
          /* no need to spool these mods */
-         if (trigger & RECHAIN_JID_HOLD)
+         if (trigger & RECHAIN_JID_HOLD) {
             job_suc_pre(new_job);
-         if (trigger & RECHAIN_JA_AD_HOLD)
+         }
+         if (trigger & RECHAIN_JA_AD_HOLD) {
             job_suc_pre_ad(new_job);
+         }
+
+         // @todo CS-1155: add a transaction?
+         // close the spooling transaction
+         spool_transaction(alpp, spool_get_default_context(), STC_commit);
 
          INFO(MSG_SGETEXT_MODIFIEDINLIST_SSUS, packet->user, packet->host, jobid, MSG_JOB_JOB);
       }
@@ -3739,7 +3787,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
       }
 
       if (deleted_unenrolled_tasks) {
-
          if (existing_tasks > *deleted_tasks) {
             dstring buffer = DSTRING_INIT;
             /* write only the common part - pass only the jobid, no jatask or petask id */
@@ -3749,14 +3796,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                                SGE_TYPE_JOB, true);
             answer_list_output(&answer_list);
             sge_dstring_free(&buffer);
-         } else {
-            /* JG: TODO: this joblog seems to have an invalid job object! */
-/*                ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt(), JL_DELETED, ruser, rhost, nullptr, job, nullptr, nullptr, MSG_LOG_DELETED); */
-
-#if 0 /* EB: TODO: this should not be necessary because events have been sent in sge_commit_job() above */
-            sge_add_event(start_time, sgeE_JOB_DEL, job_number, 0, 
-                          nullptr, nullptr, dupped_session, nullptr);
-#endif
          }
       }
 

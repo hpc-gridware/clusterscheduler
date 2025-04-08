@@ -26,6 +26,7 @@ set(QMASTER_SOURCES
         job_report_qmaster.cc
         ocs_BaseAccountingFileWriter.cc
         ocs_BaseReportingFileWriter.cc
+        ocs_CategoryQmaster.cc
         ocs_JsonAccountingFileWriter.cc
         ocs_JsonReportingFileWriter.cc
         ocs_MirrorReaderDataStore.cc
@@ -65,7 +66,6 @@ set(QMASTER_SOURCES
         sge_reporting_qmaster.cc
         sge_resource_quota_qmaster.cc
         sge_rusage.cc
-        sge_sched_job_category.cc
         sge_sched_order.cc
         sge_sched_prepare_data.cc
         sge_sched_process_events.cc

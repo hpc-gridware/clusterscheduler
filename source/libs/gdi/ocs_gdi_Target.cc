@@ -48,6 +48,7 @@ std::string ocs::gdi::Target::targetToString(const TargetValue target) {
       case SGE_RQS_LIST: return "SGE_RQS_LIST";
       case SGE_AR_LIST: return "SGE_AR_LIST";
       case SGE_DUMMY_LIST: return "SGE_DUMMY_LIST";
+      case SGE_CAT_LIST: return "SGE_CAT_LIST";
       default: return "UNKNOWN_TARGET";
    }
 }

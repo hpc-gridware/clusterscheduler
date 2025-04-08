@@ -53,7 +53,8 @@ namespace ocs::gdi {
          SGE_HGRP_LIST,
          SGE_RQS_LIST,
          SGE_AR_LIST,
-         SGE_DUMMY_LIST
+         SGE_DUMMY_LIST,
+         SGE_CAT_LIST,
       };
 
       static std::string targetToString(TargetValue target);

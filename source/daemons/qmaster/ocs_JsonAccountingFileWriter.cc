@@ -18,8 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "category.h"
-
+#include "sgeobj/ocs_Category.h"
 #include "sgeobj/ocs_DataStore.h"
 
 #include "uti/sge_log.h"
@@ -44,8 +43,7 @@ namespace ocs {
          DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
 
          // get category string
-         sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list, nullptr,
-                                        master_rqs_list);
+         Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
          const char *category_string = sge_dstring_get_string(&category_dstring);
 
          // get accounting data

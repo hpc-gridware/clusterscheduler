@@ -462,7 +462,6 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
          element = object;
          object_type = SGE_TYPE_AR;
          break;
-
       default:
          /* nothing to spool */
          object_type = SGE_TYPE_ALL;

@@ -297,6 +297,46 @@ const spool_flatfile_instr qconf_ce_list_sfi =
    { NoName, NoName, NoName }
 };
 
+const spool_flatfile_instr qconf_cat_sfi =
+{
+   nullptr,
+   true,
+   false,
+   false,
+   true,
+   false,
+   false,
+   true,
+   false,
+   ' ',
+   '\n',
+   '\0',
+   '\0',
+   '\0',
+   &qconf_sub_name_value_space_sfi,
+   { NoName, NoName, NoName }
+};
+
+const spool_flatfile_instr qconf_cat_list_sfi =
+{
+   nullptr,
+   false,
+   true,
+   true,
+   false,
+   true,
+   false,
+   true,
+   false,
+   '\0',
+   ' ',
+   '\0',
+   '\0',
+   '\n',
+   nullptr,
+   { NoName, NoName, NoName }
+};
+
 const spool_flatfile_instr qconf_sub_rqs_sfi = 
 {
    nullptr,
@@ -823,8 +863,7 @@ spool_flatfile_write_list(lList **answer_list,
       DRETURN(nullptr);
    }
 
-   result = spool_flatfile_write_data(answer_list, data, data_len, destination, 
-                                      filepath);
+   result = spool_flatfile_write_data(answer_list, data, data_len, destination, filepath);
 
    /* cleanup */
    sge_dstring_free(&char_buffer);

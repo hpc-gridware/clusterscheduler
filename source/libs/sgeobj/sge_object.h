@@ -150,6 +150,7 @@ typedef enum {
    SGE_TYPE_RQS,              /*28*/
    SGE_TYPE_AR,               /*29*/
    SGE_TYPE_JOBSCRIPT,        /*30*/
+   SGE_TYPE_CATEGORY,         /*31*/
 
 
    /*

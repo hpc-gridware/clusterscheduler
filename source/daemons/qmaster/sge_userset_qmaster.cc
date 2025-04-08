@@ -49,8 +49,10 @@
 
 #include "sched/valid_queue_user.h"
 
-#include "sge.h"
 #include "evm/sge_event_master.h"
+
+#include "ocs_CategoryQmaster.h"
+#include "sge.h"
 #include "sge_userset_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_utility_qmaster.h"
@@ -530,12 +532,12 @@ static bool userset_still_used(const char *u) {
 *     MT-NOTE: userset_update_categories() is not MT safe
 *******************************************************************************/
 void userset_update_categories(const lList *added, const lList *removed, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
    const lListElem *ep;
    const char *u;
    lListElem *acl;
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-
-   DENTER(TOP_LAYER);
+   bool reattach_categories = false;
 
    for_each_ep(ep, added) {
       u = lGetString(ep, US_name);
@@ -543,6 +545,7 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
       acl = lGetElemStrRW(master_userset_list, US_name, u);
       if (acl && !lGetBool(acl, US_consider_with_categories)) {
          lSetBool(acl, US_consider_with_categories, true);
+         reattach_categories = true;
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
    }
@@ -554,8 +557,18 @@ void userset_update_categories(const lList *added, const lList *removed, u_long6
 
       if (acl && !userset_still_used(u)) {
          lSetBool(acl, US_consider_with_categories, false);
+         reattach_categories = true;
          sge_add_event(0, sgeE_USERSET_MOD, 0, 0, u, nullptr, nullptr, acl, gdi_session);
       }
+   }
+
+   // reattach all jobs to categories and consider the new project attributes
+   if (reattach_categories) {
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, gdi_session);
    }
 
    DRETURN_VOID;
@@ -788,20 +801,19 @@ int userset_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, 
 *******************************************************************************/
 int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object, lList **ppList,
                     monitoring_t *monitor) {
-   const char *userset_name;
+   DENTER(TOP_LAYER);
    dstring ds = DSTRING_INIT;
    const lListElem *rqs;
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-
-   DENTER(TOP_LAYER);
-
-   userset_name = lGetString(ep, US_name);
+   const char *userset_name = lGetString(ep, US_name);
 
    /* set consider with categories */
+   bool reattach_categories = false;
    sge_dstring_sprintf(&ds, "@%s", userset_name);
    for_each_ep(rqs, master_rqs_list) {
       if (scope_is_referenced_rqs(rqs, RQR_filter_users, sge_dstring_get_string(&ds))) {
          lSetBool(ep, US_consider_with_categories, true);
+         reattach_categories = true;
          break;
       }
    }
@@ -809,6 +821,13 @@ int userset_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *e
    if (old_ep != nullptr) {
       /* change queue versions if userset was modified */
       sge_change_queue_version_acl(packet, task, userset_name);
+   }
+
+   if (reattach_categories) {
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, packet->gdi_session);
    }
 
    sge_add_event(0, old_ep ? sgeE_USERSET_MOD : sgeE_USERSET_ADD, 0, 0,

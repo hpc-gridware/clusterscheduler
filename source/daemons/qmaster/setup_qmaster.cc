@@ -79,6 +79,7 @@
 
 #include "sched/debit.h"
 
+#include "ocs_CategoryQmaster.h"
 #include "sge_resource_quota_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_qinstance_qmaster.h"
@@ -1086,6 +1087,7 @@ setup_qmaster() {
    time_end = time(nullptr);
    answer_list_output(&answer_list);
 
+
    {
       u_long32 saved_logginglevel = log_state_get_log_level();
       log_state_set_log_level(LOG_INFO);
@@ -1113,7 +1115,8 @@ setup_qmaster() {
          sge_task_depend_init(jep, &answer_list, ocs::SessionManager::GDI_SESSION_NONE);
 
          centry_list_fill_request(job_get_hard_resource_listRW(jep),
-                                  nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY), false, true, false);
+                                  nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY),
+                                  false, true, false);
 
          /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 
             triggered upon queue un/-suspension */
@@ -1185,6 +1188,14 @@ setup_qmaster() {
 
 
    init_categories();
+
+   // Create all categories
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   ocs::CategoryQmaster::attach_all_jobs(master_job_list, master_userset_list,
+                                    master_project_list, master_rqs_list, false, ocs::SessionManager::GDI_SESSION_NONE);
 
    DRETURN(0);
 }
@@ -1422,13 +1433,17 @@ static void init_categories() {
    /*
     * now set categories flag with usersets/projects used as ACL
     */
-   for_each_ep(ep, p_list)
-      if ((prj = prj_list_locate(master_project_list, lGetString(ep, PR_name))))
+   for_each_ep(ep, p_list) {
+      if ((prj = prj_list_locate(master_project_list, lGetString(ep, PR_name)))) {
          lSetBool(prj, PR_consider_with_categories, true);
+      }
+   }
 
-   for_each_ep(ep, u_list)
-      if ((acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name))))
+   for_each_ep(ep, u_list) {
+      if ((acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name)))) {
          lSetBool(acl, US_consider_with_categories, true);
+      }
+   }
 
    lFreeList(&p_list);
    lFreeList(&u_list);

@@ -103,6 +103,9 @@
 #define MSG_EVENT_MODOBJECTX_USS                   _MESSAGE(64092, _(sge_uu32". EVENT MOD " SFN " " SFN))
 #define MSG_EVENT_OBJECTLISTXELEMENTS_USI          _MESSAGE(64093, _(sge_uu32". EVENT " SFN " LIST %d Elements"))
 #define MSG_EVENT_MESSAGE_US                       _MESSAGE(64094, _(sge_uu32". EVENT " SFN))
+#define MSG_EVENT_ADDOBJECTX_USU                   _MESSAGE(64095, _(sge_uu32". EVENT ADD " SFN " " sge_uu32))
+#define MSG_EVENT_DELOBJECTX_USU                   _MESSAGE(64096, _(sge_uu32". EVENT DEL " SFN " " sge_uu32))
+#define MSG_EVENT_MODOBJECTX_USU                   _MESSAGE(64097, _(sge_uu32". EVENT MOD " SFN " " sge_uu32))
 
 #define MSG_EVENT_MODSCHEDDPRIOOFJOBXTOY_USI       _MESSAGE(64100, _(sge_uu32". EVENT MODIFY SCHEDULING PRIORITY OF JOB " SFN " TO %d"))
 #define MSG_EVENT_JOBXUSAGE_US                     _MESSAGE(64101, _(sge_uu32". EVENT JOB " SFN " USAGE"))

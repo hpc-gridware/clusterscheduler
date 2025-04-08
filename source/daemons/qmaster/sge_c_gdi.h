@@ -98,8 +98,7 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                               lList **answer_list, monitoring_t *monitor, bool has_next);
 
 bool
-sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                                     monitoring_t *monitor);
+sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 void
 sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list,

@@ -38,6 +38,7 @@
 #define MAX_NUM_FIELDS 60
    
 extern spooling_field CAL_fields[];
+extern spooling_field CAT_fields[];
 extern spooling_field CK_fields[];
 extern spooling_field CE_fields[];
 extern spooling_field HGRP_fields[];

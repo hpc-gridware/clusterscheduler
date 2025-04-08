@@ -163,6 +163,7 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
    { nullptr, nullptr,                                   nullptr, nullptr }, /*jobscripts*/
+   { nullptr, generic_update_master_list,             nullptr, nullptr }, // sgeE_CATEGORY_LIST
 };
 
 /*-------------------------*/
@@ -719,6 +720,18 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
       case SGE_TYPE_JOBSCRIPT:
          ret = SGE_EM_NOT_INITIALIZED;
          break;
+      case SGE_TYPE_CATEGORY:
+         evc->ec_subscribe(evc, sgeE_CATEGORY_LIST);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_ADD);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_DEL);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_MOD);
+         if (what_el && where_el) {
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_LIST, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_ADD, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_DEL, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_MOD, what_el, where_el);
+         }
+         break;
       default:
          ret = SGE_EM_BAD_ARG;
          break;
@@ -954,6 +967,12 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          break;
       case SGE_TYPE_JOBSCRIPT:
             DRETURN(SGE_EM_NOT_INITIALIZED);
+      case SGE_TYPE_CATEGORY:
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_LIST);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_ADD);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_DEL);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_MOD);
+         break;
      default:
          ERROR("received invalid event group %d", type);
          DRETURN(SGE_EM_BAD_ARG);
@@ -1403,6 +1422,19 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             break;
          case sgeE_AR_MOD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_AR, SGE_EMA_MOD, event);
+            break;
+
+         case sgeE_CATEGORY_LIST:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_LIST, event);
+            break;
+         case sgeE_CATEGORY_ADD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_ADD, event);
+            break;
+         case sgeE_CATEGORY_DEL:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_DEL, event);
+            break;
+         case sgeE_CATEGORY_MOD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_MOD, event);
             break;
 
          default:

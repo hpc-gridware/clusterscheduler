@@ -22,7 +22,6 @@
 set(LIBRARY_NAME daemonscommon)
 set(LIBRARY_SOURCES
       admin_mail.cc
-      category.cc
       err_trace.cc
       lock.cc
       mail.cc
