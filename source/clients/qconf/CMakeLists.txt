@@ -21,6 +21,7 @@
 # source/clients/qconf
 add_executable(
       qconf
+        ocs_qconf_Category.cc
         ocs_qconf_cqueue.cc
         ocs_qconf_centry.cc
       sge_qconf_hgroup.cc
@@ -31,6 +32,7 @@ add_executable(
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc)
+
 target_include_directories(qconf PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
       qconf

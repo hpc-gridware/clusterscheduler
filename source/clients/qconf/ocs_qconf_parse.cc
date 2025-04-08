@@ -78,6 +78,7 @@
 #include "sge.h"
 #include "sge_options.h"
 #include "usage.h"
+#include "ocs_qconf_Category.h"
 #include "ocs_qconf_acl.h"
 #include "ocs_qconf_parse.h"
 #include "sge_qconf_hgroup.h"
@@ -3833,7 +3834,7 @@ int sge_parse_qconf(char *argv[])
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-sc complex_name_list" */
+      /* "-sc" */
 
       if (strcmp("-sc", *spp) == 0) {
          lList *answer_list = nullptr;
@@ -3842,6 +3843,21 @@ int sge_parse_qconf(char *argv[])
             show_answer(answer_list);
             sge_parse_return = 1;
          }   
+         lFreeList(&answer_list);
+         spp++;
+         continue;
+      }
+
+/*-----------------------------------------------------------------------------*/
+      /* "-scatl complex_name_list" */
+
+      if (strcmp("-scatl", *spp) == 0) {
+         lList *answer_list = nullptr;
+
+         if (!ocs::CategoryQconf::show_list(&answer_list)) {
+            show_answer(answer_list);
+            sge_parse_return = 1;
+         }
          lFreeList(&answer_list);
          spp++;
          continue;
@@ -4641,6 +4657,21 @@ int sge_parse_qconf(char *argv[])
          }
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+
+      // -scat id
+      if (strcmp("-scat", *spp) == 0) {
+         lList *answer_list = nullptr;
+
+         spp = sge_parser_get_next(spp);
+         u_long64 id = strtoull(*spp, nullptr, 10);
+         if (!ocs::CategoryQconf::show(&answer_list, id)) {
+            show_answer(answer_list);
+            sge_parse_return = 1;
+         }
+         lFreeList(&answer_list);
          spp++;
          continue;
       }
