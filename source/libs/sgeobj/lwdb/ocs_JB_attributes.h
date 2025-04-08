@@ -113,7 +113,8 @@ enum {
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
-   JB_sync_options
+   JB_sync_options,
+   JB_category_id
 };
 
 constexpr const int JB_Type[] = {
@@ -202,6 +203,7 @@ constexpr const int JB_Type[] = {
    JB_grp_list,
    JB_joker,
    JB_sync_options,
+   JB_category_id,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -290,7 +292,8 @@ constexpr const int JB_Type[] = {
    {JB_submission_command_line, "JB_submission_command_line", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_sync_options, "JB_sync_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {JB_sync_options, "JB_sync_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_category_id, "JB_category_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

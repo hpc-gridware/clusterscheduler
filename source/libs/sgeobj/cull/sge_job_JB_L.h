@@ -381,6 +381,9 @@
 *    SGE_ULONG(JB_sync_options) - sync options
 *    Bits that have been specified to the -sync switch.
 *
+*    SGE_ULONG(JB_category_id) - Category ID (CAT_id)
+*    Category ID (CAT_id). Within the scheduler the field category refers to the category object.
+*
 */
 
 enum {
@@ -468,7 +471,8 @@ enum {
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
-   JB_sync_options
+   JB_sync_options,
+   JB_category_id
 };
 
 LISTDEF(JB_Type)
@@ -557,6 +561,7 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_grp_list, ST_Type, CULL_SPOOL)
    SGE_LIST(JB_joker, VA_Type, CULL_SPOOL)
    SGE_ULONG(JB_sync_options, CULL_SPOOL)
+   SGE_ULONG(JB_category_id, CULL_HASH)
 LISTEND
 
 NAMEDEF(JBN)
@@ -645,6 +650,7 @@ NAMEDEF(JBN)
    NAME("JB_grp_list")
    NAME("JB_joker")
    NAME("JB_sync_options")
+   NAME("JB_category_id")
 NAMEEND
 
 #define JB_SIZE sizeof(JBN)/sizeof(char *)

@@ -1061,5 +1061,15 @@
 			"flags":	[{
 				"name":	"SPOOL"
 			}]
+		}, {
+			"name":	"category_id",
+			"summary":	"Category ID (CAT_id)",
+			"description":	[{
+				"line":	"Category ID (CAT_id). Within the scheduler the field category refers to the category object."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"HASH"
+			}]
 		}]
 }
