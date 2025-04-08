@@ -23,6 +23,7 @@ set(LIBRARY_NAME sched)
 set(LIBRARY_SOURCES
       debit.cc
       load_correction.cc
+      ocs_CategorySchedd.cc
       schedd_message.cc
       schedd_monitor.cc
       sge_complex_schedd.cc
@@ -31,10 +32,10 @@ set(LIBRARY_SOURCES
       sge_orders.cc
       sge_pe_schedd.cc
       sge_qeti.cc
-      sge_resource_quota_schedd.cc
       sge_resource_utilization.cc
       sge_schedd_text.cc
       sge_select_queue.cc
+      sge_select_queue_rqs.cc
       sge_serf.cc
       sge_sharetree_printing.cc
       sge_support.cc

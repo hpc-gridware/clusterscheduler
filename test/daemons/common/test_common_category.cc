@@ -43,10 +43,9 @@
 #include "cull/cull_multitype.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_Category.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
-
-#include "category.h"
 
 typedef struct {
    int        test_nr;        //< test number
@@ -526,7 +525,7 @@ static double test_performance(lListElem *job_elem, const int max, const lList* 
 
    gettimeofday(&before, nullptr);
    for (int i = 0; i < max; i++) {
-      sge_build_job_category_dstring(&category_str, job_elem, access_list, nullptr, nullptr, rqs_list);
+      ocs::Category::build_string(&category_str, job_elem, access_list, nullptr, rqs_list);
       sge_dstring_clear(&category_str);
    }
 
@@ -585,7 +584,7 @@ static int test(const data_entry_t *test, const char *result, const int count) {
    if (job_elem != nullptr) {
       dstring category_str = DSTRING_INIT;
 
-      sge_build_job_category_dstring(&category_str, job_elem, access_list, project_list, nullptr, rqs_list);
+      ocs::Category::build_string(&category_str, job_elem, access_list, project_list, rqs_list);
 
       printf("got     : <%s>\n", sge_dstring_get_string(&category_str)!=nullptr?sge_dstring_get_string(&category_str):"<nullptr>");
 
