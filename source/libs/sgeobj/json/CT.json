@@ -5,7 +5,20 @@
 			"line":	"An object of this type describes a category of jobs."
 		}],
 	"cullPrefix":	"CT",
-	"attributes":	[{
+	"attributes":	[
+		{
+			"name":	"id",
+			"summary":	"Category ID",
+			"description":	[{
+				"line":	"Unique ID of a category"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"UNIQUE"
+			}, {
+				"name":	"HASH"
+			}]
+		}, {
 			"name":	"str",
 			"summary":	"Category String",
 			"description":	[{
@@ -24,16 +37,6 @@
 					"line":	"Number of jobs referencing this category."
 				}],
 			"type":	"lUlongT",
-			"flags":	[]
-		}, {
-			"name":	"count",
-			"summary":	"Count",
-			"description":	[{
-					"line":	"Number of jobs of this category used in this schuling run"
-               }, {
-					"line":	"If -1, then CT_refcount is used"
-				}],
-			"type":	"lIntT",
 			"flags":	[]
 		}, {
 			"name":	"rejected",

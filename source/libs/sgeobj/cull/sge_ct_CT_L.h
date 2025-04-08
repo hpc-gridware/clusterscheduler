@@ -32,15 +32,14 @@
 *
 * An object of this type describes a category of jobs.
 *
+*    SGE_ULONG(CT_id) - Category ID
+*    Unique ID of a category
+*
 *    SGE_STRING(CT_str) - Category String
 *    String holding all elements of a category (requests, user, project, ...).
 *
 *    SGE_ULONG(CT_refcount) - Reference Count
 *    Number of jobs referencing this category.
-*
-*    SGE_INT(CT_count) - Count
-*    Number of jobs of this category used in this schuling run
-*    If -1, then CT_refcount is used
 *
 *    SGE_BOOL(CT_rejected) - Rejected
 *    Has this category been rejected as it can not be dispatched now?
@@ -64,9 +63,9 @@
 */
 
 enum {
-   CT_str = CT_LOWERBOUND,
+   CT_id = CT_LOWERBOUND,
+   CT_str,
    CT_refcount,
-   CT_count,
    CT_rejected,
    CT_cache,
    CT_messages_added,
@@ -76,9 +75,9 @@ enum {
 };
 
 LISTDEF(CT_Type)
+   SGE_ULONG(CT_id, CULL_UNIQUE | CULL_HASH)
    SGE_STRING(CT_str, CULL_UNIQUE | CULL_HASH)
    SGE_ULONG(CT_refcount, CULL_DEFAULT)
-   SGE_INT(CT_count, CULL_DEFAULT)
    SGE_BOOL(CT_rejected, CULL_DEFAULT)
    SGE_LIST(CT_cache, CCT_Type, CULL_DEFAULT)
    SGE_BOOL(CT_messages_added, CULL_DEFAULT)
@@ -88,9 +87,9 @@ LISTDEF(CT_Type)
 LISTEND
 
 NAMEDEF(CTN)
+   NAME("CT_id")
    NAME("CT_str")
    NAME("CT_refcount")
-   NAME("CT_count")
    NAME("CT_rejected")
    NAME("CT_cache")
    NAME("CT_messages_added")
