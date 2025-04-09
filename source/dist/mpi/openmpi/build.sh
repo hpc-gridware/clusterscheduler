@@ -36,8 +36,6 @@ CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --with-sge"
 CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --without-slurm --without-pbs --without-lsf"
 # if Fortran is not required
 CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --enable-mpi-fortran=no"
-# just for testing without having a high speed network
-#CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --with-device=ch3"
 
 VERSION=$1
 MMVERSION=$(echo $VERSION | cut -d. -f1,2)
@@ -57,7 +55,7 @@ if [ $? -ne 0 ]; then
     echo "configure failed"
     exit 1
 fi
-make -j 2>&1 | tee make.log
+make -j 4 2>&1 | tee make.log
 if [ $? -ne 0 ]; then
     echo "make failed"
     exit 1

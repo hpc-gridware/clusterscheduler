@@ -481,5 +481,8 @@ int main(int argc, char** argv) {
    }
 
    MPI_Finalize();
+   if (world_rank == 0) {
+      printf("testmpi finished successfully\n");
+   }
    return 0;
 }
