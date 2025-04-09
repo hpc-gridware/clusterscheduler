@@ -29,8 +29,11 @@ fi
 
 CONFIGURE_OPTIONS=""
 # if Fortran is not required
-#CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --disable-fortran --disable-f77 --disable-f90 --disable-f08"
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --disable-fortran --disable-f77 --disable-f90 --disable-f08"
+# if C++ is not required - comment out if you need it
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --disable-cxx"
 # just for testing without having a high speed network
+# @todo or ch4:ofi??
 CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --with-device=ch3"
 
 VERSION=$1
@@ -45,9 +48,21 @@ tar -xzf mvapich-$VERSION.tar.gz
 cd mvapich-$VERSION
 
 # configure and build
-./configure $CONFIGURE_OPTIONS --prefix=$INSTALL_DIR
-make -j
-make install
+./configure $CONFIGURE_OPTIONS --prefix=$INSTALL_DIR 2>&1 | tee configure.log
+if [ $? -ne 0 ]; then
+    echo "configure failed"
+    exit 1
+fi
+make -j 4 2>&1 | tee make.log
+if [ $? -ne 0 ]; then
+    echo "make failed"
+    exit 1
+fi
+make install 2>&1 | tee make-install.log
+if [ $? -ne 0 ]; then
+    echo "make install failed"
+    exit 1
+fi
 
 # cleanup
 cd $BUILD_DIR

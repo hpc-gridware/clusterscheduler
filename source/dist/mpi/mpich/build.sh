@@ -27,6 +27,14 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
+CONFIGURE_OPTIONS=""
+# if Fortran is not required - comment out if you need it
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --disable-fortran --disable-f77 --disable-f90 --disable-f08"
+# if C++ is not required - comment out if you need it
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --disable-cxx"
+# just for testing without having a high speed network
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --with-device=ch4:ofi"
+
 VERSION=$1
 INSTALL_DIR=$2
 
@@ -39,12 +47,12 @@ tar -xzf mpich-$VERSION.tar.gz
 cd mpich-$VERSION
 
 # configure and build
-./configure --prefix=$INSTALL_DIR 2>&1 | tee configure.log
+./configure $CONFIGURE_OPTIONS --prefix=$INSTALL_DIR 2>&1 | tee configure.log
 if [ $? -ne 0 ]; then
     echo "configure failed"
     exit 1
 fi
-make -j 2>&1 | tee make.log
+make -j 4 2>&1 | tee make.log
 if [ $? -ne 0 ]; then
     echo "make failed"
     exit 1
