@@ -64,7 +64,7 @@ xxqs_name_sxx_shepherd(8) prior to executing the job script. Its purpose is to s
 correspondingly to its needs. An optional prefix "user@" specifies the user under which this procedure is to be 
 started. The standard output of the start-up procedure is redirected to the file \<REQUEST>.po\<JID> in the job's
 working directory (see qsub(1)), with \<REQUEST> being the name of the job as displayed by qstat(1) and \<JID> 
-being the job's identification number. Likewise, the standard error output is redirected to \<REQUEST>.pe\<JID.  
+being the job's identification number. Likewise, the standard error output is redirected to \<REQUEST>.pe\<JID>.  
 The following special variables being expanded at runtime can be used (besides any other strings which have to 
 be interpreted by the start and stop procedures) to constitute a command line:
 
@@ -79,7 +79,25 @@ be interpreted by the start and stop procedures) to constitute a command line:
   the start-up procedure. Each line of the file refers to a host on which parallel processes are to be run. The first 
   entry of each line denotes the hostname, the second entry the number of parallel processes to be run on the host, 
   the third entry the name of the queue, and the fourth entry a processor range to be used in case of a multiprocessor 
-  machine.
+  machine. The first line in the PE hostfile always refers to the master task host.
+  
+  Example PE hostfile contents:
+  
+  ```text
+  execution-3.us-central1-a.c.internal 32 all.q@execution-3.us-central1-a.c.internal UNDEFINED
+  execution-1.us-central1-a.c.internal 32 all.q@execution-1.us-central1-a.c.internal UNDEFINED
+  execution-0.us-central1-a.c.internal 32 all.q@execution-0.us-central1-a.c.internal UNDEFINED
+  execution-2.us-central1-a.c.internal 32 all.q@execution-2.us-central1-a.c.internal UNDEFINED
+  ```
+  
+  Or with 1 slot per host:
+  
+  ```text
+  execution-3.us-central1-a.c.internal 1 all.q@execution-3.us-central1-a.c.internal UNDEFINED
+  execution-1.us-central1-a.c.internal 1 all.q@execution-1.us-central1-a.c.internal UNDEFINED
+  execution-2.us-central1-a.c.internal 1 all.q@execution-2.us-central1-a.c.internal UNDEFINED
+  execution-0.us-central1-a.c.internal 1 all.q@execution-0.us-central1-a.c.internal UNDEFINED
+  ```
 
 * $host  
   The name of the host on which the start-up or stop procedures are started.
@@ -184,7 +202,7 @@ The following methods are supported:
   assumed.
 
 * max:  
-  The of the slot range maximum is used as prospective slot amount. If no upper bound is specified with the range 
+  The slot range maximum is used as prospective slot amount. If no upper bound is specified with the range 
   the absolute maximum possible due to the PE's *slots* setting is assumed.
 
 * avg:  
