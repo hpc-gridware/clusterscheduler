@@ -91,7 +91,7 @@
 #define MSG_SCHEDD_INFO_INSUFFICIENTSLOTS_            _MESSAGE(47082, _("parallel job requires more slots than available"))
 #define MSG_SCHEDD_INFO_PEALLOCRULE_S                 _MESSAGE(47083, _("pe " SFQ " dropped because allocation rule is not suitable"))
 #define MSG_SCHEDD_INFO_NOPEMATCH_                    _MESSAGE(47084, _("no matching pe found"))
-#define MSG_SCHEDD_INFO_CLEANUPNECESSARY_S            _MESSAGE(47085, _("cannot run on host " SFQ " until clean up of an previous run has finished"))
+#define MSG_SCHEDD_INFO_CLEANUPNECESSARY_S            _MESSAGE(47085, _("cannot run on host " SFQ " until clean up of a previous run has finished"))
 #define MSG_SCHEDD_INFO_MAX_AJ_INSTANCES_             _MESSAGE(47086, _("not all array task may be started due to \'max_aj_instances\'"))
 
 
