@@ -1006,7 +1006,7 @@ spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
    sge_dstring_init(&dbkey_dstring, 
                     dbkey_buffer, sizeof(dbkey_buffer));
 
-   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%8d.%8d %s", 
+   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 " %s",
                                object_type_get_name(SGE_TYPE_PETASK),
                                job_id, ja_task_id, pe_task_id);
 
@@ -1030,7 +1030,7 @@ spool_berkeleydb_write_ja_task(lList **answer_list, bdb_info info,
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
 
-   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%8d.%8d", 
+   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32,
                                object_type_get_name(SGE_TYPE_JATASK),
                                job_id, ja_task_id);
 
@@ -1056,7 +1056,7 @@ spool_berkeleydb_write_job(lList **answer_list, bdb_info info,
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
 
-   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%8d", 
+   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%10" sge_fuu32,
                                object_type_get_name(SGE_TYPE_JOB), 
                                job_id);
 
@@ -1280,7 +1280,7 @@ spool_berkeleydb_delete_object(lList **answer_list, bdb_info info,
 *     Deletes one or multiple pe_tasks specified by key.
 *  
 *     The key has the form "<job_id>.<ja_task_id> <pe_task_id>" formatted as 
-*     "%8d.%8d %s".
+*     "%10d.%10d %s".
 *     If sub_objects = true, it can be used as pattern, typically used to 
 *     delete all pe_tasks of a certain ja_task by setting key to 
 *     "<job_id>.<ja_task_id>" or just "<job_id>" to delete all pe_tasks
@@ -1334,7 +1334,7 @@ spool_berkeleydb_delete_pe_task(lList **answer_list, bdb_info info,
 *     Deletes one or multiple ja_tasks specified by key.
 *     The ja_task(s) and all dependent pe_tasks are deleted.
 *  
-*     The key has the form "<job_id>.<ja_task_id>" formatted as "%8d.%8d".
+*     The key has the form "<job_id>.<ja_task_id>" formatted as "%10d.%10d".
 *     If sub_objects = true, it can be used as pattern, typically used to 
 *     delete all ja_tasks of a certain job by setting key to "<job_id>.".
 *
@@ -1389,7 +1389,7 @@ spool_berkeleydb_delete_ja_task(lList **answer_list, bdb_info info,
 *
 *  FUNCTION
 *     Deletes the given job and all its ja_tasks.
-*     Key usually will be the unique job id formatted with %8d, but the function
+*     Key usually will be the unique job id formatted with %10d, but the function
 *     allows for some sort of pattern matching by specifying only parts of the
 *     jobid, e.g. the key "00001" will delete all jobs from 1000 to 1999, 
 *     an empty string will mean "delete all jobs", if sub_objects = true.

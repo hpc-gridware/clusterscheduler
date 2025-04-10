@@ -621,7 +621,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                      lList *task_list = nullptr;
                      u_long32 job_id = lGetUlong(job, JB_job_number);
 
-                     key = sge_dstring_sprintf(&key_dstring, "%s:%8d.", ja_task_table, job_id);
+                     key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".", ja_task_table, job_id);
                      ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &task_list, JAT_Type, key);
                      /* reading ja_tasks succeeded */
                      if (ret) {
@@ -636,7 +636,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                            for_each_rw(ja_task, task_list) {
                               lList *pe_task_list = nullptr;
                               u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
-                              key = sge_dstring_sprintf(&key_dstring, "%s:%8d.%8d.", pe_task_table, job_id, ja_task_id);
+                              key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".", pe_task_table, job_id, ja_task_id);
                               
                               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
                               if (ret) {
@@ -1127,17 +1127,17 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
                   job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
                   if (pe_task_id != nullptr) {
-                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%8d.%8d %s",
+                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32 ".%10" sge_fuu32 " %s",
                                                  job_id, ja_task_id, pe_task_id);
                      ret = spool_berkeleydb_delete_pe_task(answer_list, info, 
                                                            dbkey, false);
                   } else if (ja_task_id != 0) {
-                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%8d.%8d",
+                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32 ".%10" sge_fuu32,
                                                  job_id, ja_task_id);
                      ret = spool_berkeleydb_delete_ja_task(answer_list, info, 
                                                            dbkey, false);
                   } else {
-                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%8d",
+                     dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32,
                                                  job_id);
                      ret = spool_berkeleydb_delete_job(answer_list, info, 
                                                        dbkey, false);
