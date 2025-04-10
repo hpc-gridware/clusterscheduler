@@ -1479,7 +1479,7 @@ spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
 
    if (ret) {
       table_name = object_type_get_name(SGE_TYPE_QINSTANCE);
-      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s@", table_name, key);
+      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s/", table_name, key);
       ret = spool_berkeleydb_delete_object(answer_list, info, BDB_CONFIG_DB,
                                            dbkey, true);
    }
