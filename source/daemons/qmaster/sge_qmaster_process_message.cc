@@ -704,8 +704,11 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
 
          lSetUlong(qinstance, QU_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, lGetString(qinstance, QU_full_name));
+         DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+         const char *key = sge_dstring_sprintf(&dstr, "%s/%s", lGetString(qinstance, QU_qname),
+                                               lGetHost(qinstance, QU_qhostname));
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
-                            lGetString(qinstance, QU_full_name), SGE_TYPE_QINSTANCE, true);
+                            key, SGE_TYPE_QINSTANCE, true);
          answer_list_output(&answer_list);
          break;
       }
