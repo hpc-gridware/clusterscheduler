@@ -178,7 +178,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
 
    path   = bdb_get_path(info);
 
-   /* check database directory (only in case of local spooling) */
+   /* check database directory */
    if (!sge_is_directory(path)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
@@ -210,10 +210,11 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
          ret = false;
       }
 
-      /* do deadlock detection internally (only in case of local spooling) */
+      /* do deadlock detection internally */
       if (ret) {
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-         dbret = env->set_lk_detect(env, DB_LOCK_DEFAULT);
+         // When a deadlock is detected then reject the lock request for the locker ID with the fewest write locks.
+         dbret = env->set_lk_detect(env, DB_LOCK_MINWRITE);
          PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          if (dbret != 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -227,11 +228,11 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
           * performance tuning 
           * Switch off flushing of transaction log for every single transaction.
           * This tuning option has huge impact on performance, but only a slight impact 
-          * on database durability: In case of a filesystem crash, we might loose
+          * on database durability: In case of a filesystem crash, we might lose
           * the last transactions committed before the crash. Still all transactions will
           * be atomic, isolated and the database will be consistent at any time.
           */
-         if (ret) {
+         if (0 && ret) {
             // @todo reason why shadowd_migrate fails for me on nfsv4?
             dbret = env->set_flags(env, DB_TXN_WRITE_NOSYNC, 1);
             if (dbret != 0) {
@@ -246,6 +247,7 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
          /* 
           * performance tuning 
           * increase the cache size
+          * @todo verify with spooling on NFSv4, possible reason for CS-1020?
           */
          if (ret) {
             dbret = env->set_cachesize(env, 0, 4 * 1024 * 1024, 1);
@@ -260,8 +262,10 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
          }
       }
 
+// @todo we don't have the RPC server any longer, can we enable this now? Is it useful?
+//       do performance tests with and without the settings
 #if 0
-      /* the lock parameters only can be set, if we have local spooling. */
+      /* the lock parameters only can be set, if we have file based spooling. */
       {
          /* worst case scenario: n lockers, all changing m objects in 
           * parallel 
@@ -314,23 +318,36 @@ bool spool_berkeleydb_create_environment(lList **answer_list,
 
       /* open the environment */
       if (ret) {
-         int flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_LOG | DB_INIT_MPOOL | 
-                     DB_INIT_TXN;
+         int flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_LOG | DB_INIT_MPOOL |
+                     DB_INIT_TXN | DB_THREAD;
 
-         flags |= DB_THREAD;
+         // @todo Some Grid Engine has spooling_params "private"
+         //       and sets the flag DB_PRIVATE here.
+         //       can only be used if no file locking is needed = only a single process (sge_qmaster) may use the DB
+         //       We might also consider using DB_SYSTEM_MEM: In this case locking is done in shared memory, meaning
+         //       that multiple processes (e.g. sge_qmaster and inst_sge -bup) can access the DB at the same time.
 
          if (bdb_get_recover(info)) {
+            // @todo also need DB_REGISTER? -> No
+            // @todo there would also be DB_RECOVER_FATAL
+            // @todo always specify it? "Because it is not an error to specify DB_RECOVER for an environment for which
+            //                           no recovery is required, it is reasonable programming practice for the thread
+            //                           of control responsible for performing recovery and creating the environment to
+            //                           always specify the DB_CREATE and DB_RECOVER flags during startup."
             flags |= DB_RECOVER;
          }
 
          PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
          dbret = env->open(env, path, flags, S_IRUSR | S_IWUSR);
          PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-         if (dbret != 0){
+         if (dbret != 0) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_BERKELEY_COULDNTOPENENVIRONMENT_SIS,
                                     path, dbret, db_strerror(dbret));
+            // @todo don't we need to handle certain error cases:
+            //       - DB_RUNRECOVERY
+            //       - EAGAIN
             ret = false;
             env = nullptr;
          }
@@ -397,16 +414,26 @@ spool_berkeleydb_open_database(lList **answer_list, bdb_info info,
                                        MSG_BERKELEY_COULDNTCREATEDBHANDLE_IS,
                                        dbret, db_strerror(dbret));
                ret = false;
+            }
+         }
+
+         // @todo set the byte order to a defined value
+         if (ret) {
+            dbret = db->set_lorder(db, 1234);
+            if (dbret != 0) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                       ANSWER_QUALITY_ERROR,
+                                       MSG_BERKELEY_COULDNTSETBYTEORDER_IS,
+                                       dbret, db_strerror(dbret));
+               ret = false;
                db = nullptr;
             }
          }
 
          /* open database handle */
          if (ret) {
-            int flags = 0;
+            int flags = DB_THREAD;
             int mode  = 0;
-
-            flags |= DB_THREAD;
 
             /* the config db will only be created, if explicitly requested
              * (in spoolinit). DB already existing will be handled as error.
@@ -690,11 +717,7 @@ spool_berkeleydb_trigger(lList **answer_list, bdb_info info,
    DENTER(BDB_LAYER);
 
    if (bdb_get_next_clear(info) <= trigger) {
-      /* 
-       * in the clear interval, we 
-       * - clear unused transaction logs for local spooling
-       * - do a dummy request in case of RPC spooling to avoid timeouts
-       */
+       // in the clear interval, we clear unused transaction logs
       ret = spool_berkeleydb_clear_log(answer_list, info);
       bdb_set_next_clear(info, trigger + sge_gmt32_to_gmt64(BERKELEYDB_CLEAR_INTERVAL));
    }
@@ -1000,14 +1023,14 @@ spool_berkeleydb_write_pe_task(lList **answer_list, bdb_info info,
                                const char *pe_task_id)
 {
    bool ret = true;
+   // @todo use DSTRING_STATIC
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
 
-   sge_dstring_init(&dbkey_dstring, 
-                    dbkey_buffer, sizeof(dbkey_buffer));
+   sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
 
-   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%8d.%8d %s", 
+   dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%8d.%8d %s",
                                object_type_get_name(SGE_TYPE_PETASK),
                                job_id, ja_task_id, pe_task_id);
 
@@ -1472,6 +1495,7 @@ spool_berkeleydb_delete_cqueue(lList **answer_list, bdb_info info,
    const char *dbkey;
    const char *table_name;
 
+   // @todo use DSTRING_STATIC wherever sge_dstring_init is used
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    table_name = object_type_get_name(SGE_TYPE_CQUEUE);
    dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s", table_name, key);
@@ -1810,7 +1834,7 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
    if (ret) {
       int dbret;
       char **list = nullptr;
-
+INFO(SFNMAX, "database trigger: log_archive");
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
       dbret = env->log_archive(env, &list, DB_ARCH_ABS);
       PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
@@ -1827,6 +1851,8 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
          char **file;
 
          for (file = list; *file != nullptr; file++) {
+            // @todo remove() or unlink()? remove() would also handle directories
+            //       should all be files and we use unlink in other places
             if (remove(*file) != 0) {
                dstring error_dstring = DSTRING_INIT;
 
@@ -1851,42 +1877,45 @@ spool_berkeleydb_clear_log(lList **answer_list, bdb_info info)
 static bool
 spool_berkeleydb_checkpoint(lList **answer_list, bdb_info info)
 {
-   bool ret = true;
-
    DENTER(BDB_LAYER);
 
-   /* only necessary for local spooling */
-   {
-      DB_ENV *env;
+   bool ret = true;
 
-      env = bdb_get_env(info);
-      if (env == nullptr) {
+   DB_ENV *env = bdb_get_env(info);
+   if (env == nullptr) {
       dstring dbname_dstring = DSTRING_INIT;
       const char *dbname;
-      
-         dbname = bdb_get_dbname(info, &dbname_dstring);
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                 ANSWER_QUALITY_ERROR, 
-                                 MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                                 dbname);
-         sge_dstring_free(&dbname_dstring);
+
+      dbname = bdb_get_dbname(info, &dbname_dstring);
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
+                              MSG_BERKELEY_NOCONNECTIONOPEN_S,
+                              dbname);
+      sge_dstring_free(&dbname_dstring);
+      ret = false;
+   }
+
+   if (ret) {
+      int dbret;
+
+INFO(SFNMAX, "database trigger: txn_checkpoint");
+      PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
+      // we call it once a minute
+      // parameters:
+      //    env,
+      //    kbyte: amount of kb of data that must have been written since last checkpoint,
+      //        @todo shouldn't we pass at least 1 to avoid checkpointing without any changes happened?
+      //    min: minutes that must have passed since last checkpoint,
+      //    flags: DB_FORCE if we wanted to force writing
+      dbret = env->txn_checkpoint(env, 1, 0, 0);
+      PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
+      if (dbret != 0) {
+         spool_berkeleydb_handle_bdb_error(answer_list, info, dbret);
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
+                                 MSG_BERKELEY_CANNOTCHECKPOINT_IS,
+                                 dbret, db_strerror(dbret));
          ret = false;
-      }
-
-      if (ret) {
-         int dbret;
-
-         PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-         dbret = env->txn_checkpoint(env, 0, 0, 0);
-         PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
-         if (dbret != 0) {
-            spool_berkeleydb_handle_bdb_error(answer_list, info, dbret);
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
-                                    MSG_BERKELEY_CANNOTCHECKPOINT_IS,
-                                    dbret, db_strerror(dbret));
-            ret = false;
-         } 
       }
    }
 

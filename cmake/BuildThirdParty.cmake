@@ -48,6 +48,9 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 set_target_properties(berkeleydb PROPERTIES IMPORTED_LOCATION
                         ${berkeleydb_path})
             else ()
+                # @todo further configure options
+                #       --enable-posixmutexes   Force use of POSIX standard mutexes.
+                #
                 if(SGE_ARCH STREQUAL "lx-riscv64")
                   set(CUSTOM_CFLAGS CFLAGS=-Wno-implicit-int)
                 endif()

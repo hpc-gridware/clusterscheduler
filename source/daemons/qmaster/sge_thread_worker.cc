@@ -166,7 +166,10 @@ sge_worker_terminate() {
       DPRINTF("final job and user/project spooling has been triggered\n");
    }
 
-   sge_shutdown_persistence(nullptr);
+   // shutdown the persistence layer
+   // in case there is a second qmaster already running, do not do
+   // the database triggers(checkpointing and clearing the transaction log)
+   sge_shutdown_persistence(do_final_spooling);
    DPRINTF("persistence module has been shutdown\n");
 
    INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[WORKER_THREAD]);

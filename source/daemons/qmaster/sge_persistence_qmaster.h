@@ -42,8 +42,8 @@
 bool
 sge_initialize_persistence(lList **answer_list);
 
-bool
-sge_shutdown_persistence(lList **answer_list);
+void
+sge_shutdown_persistence(bool execute_triggers);
 
 void
 sge_initialize_persistance_timer();

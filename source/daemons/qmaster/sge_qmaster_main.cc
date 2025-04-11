@@ -281,9 +281,9 @@ int main(int argc, char *argv[]) {
 
    /*
     * We do increment the heartbeat manually here. This is the 'startup heartbeat'.
-    * The first time the hearbeat will be incremented through the heartbeat event
-    * handler is after about HEARTBEAT_INTERVAL seconds. The hardbeat event handler
-    * is setup during the initialisazion of the timer thread.
+    * The first time the heartbeat will be incremented through the heartbeat event
+    * handler is after about HEARTBEAT_INTERVAL seconds. The hartbeat event handler
+    * is set up during the initialization of the timer thread.
     */
    inc_qmaster_heartbeat(QMASTER_HEARTBEAT_FILE, HEARTBEAT_INTERVAL, nullptr);
 
@@ -294,7 +294,7 @@ int main(int argc, char *argv[]) {
     *
     * Corresponding shutdown is done in sge_event_master_terminate();
     *
-    * EB: In my opinion the init function should called in
+    * EB: In my opinion the init function should be called in
     * sge_event_master_initialize(). Is it possible to move that call?
     */
    sge_event_master_init();

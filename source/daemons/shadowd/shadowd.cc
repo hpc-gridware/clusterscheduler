@@ -108,9 +108,6 @@ static int
 parse_cmdline_shadowd(int argc, char **argv);
 
 static int
-shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, char *oldqmaster);
-
-static int
 shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, char *oldqmaster) {
    cl_com_handle_t *handle = nullptr;
    cl_com_SIRM_t *status = nullptr;

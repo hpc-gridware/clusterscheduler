@@ -437,9 +437,9 @@ main(int argc, char *argv[])
 
    if (spool_get_default_context() != nullptr) {
 #if 0
+      u_long64 trigger = sge_get_gmt64();
       u_long64 next_trigger = 0;
-      if (!spool_trigger_context(&answer_list, spool_get_default_context(), 
-                                 0, &next_trigger)) {
+      if (!spool_trigger_context(&answer_list, spool_get_default_context(), trigger, &next_trigger)) {
          ret = EXIT_FAILURE;
       }
 #endif

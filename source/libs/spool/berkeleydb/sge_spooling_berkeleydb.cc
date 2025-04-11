@@ -378,17 +378,34 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
 
    DENTER(BDB_LAYER);
 
-   info = (bdb_info)lGetRef(rule, SPR_clientdata);
-   if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
-                              MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
+   // First call after startup? Do nothing but set next trigger.
+   // @todo is it called from spooledit/spooldefaults/spoolinit?
+   //       have seen an error when it returns false here during qmaster installation.
+   if (trigger == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_INFO,
+                              SFNMAX,
+                              MSG_BERKELEY_SKIP_TRIGGER_AFTER_STARTUP);
       ret = false;
 
-      /* nothing can be done - but set new trigger!! */
-      *next_trigger = trigger + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
-   } 
+      // set new trigger
+      *next_trigger = sge_get_gmt64() + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
+   }
+
+   // Database not yet initialized? Retry after a while.
+   if (ret) {
+      info = (bdb_info)lGetRef(rule, SPR_clientdata);
+      if (info == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_WARNING,
+                                 MSG_BERKELEY_NOCONNECTIONOPEN_S,
+                                 lGetString(rule, SPR_url));
+         ret = false;
+
+         // nothing can be done - but set new trigger
+         *next_trigger = trigger + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
+      }
+   }
 
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
@@ -449,7 +466,7 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
    }
 
    if (ret) {
-      spool_berkeleydb_check_reopen_database(answer_list, info);
+      ret = spool_berkeleydb_check_reopen_database(answer_list, info);
    }
 
    if (ret) {

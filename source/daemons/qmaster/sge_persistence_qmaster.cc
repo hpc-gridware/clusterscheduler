@@ -32,9 +32,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_rmon_macros.h"
-#include "uti/sge_component.h"
 #include "uti/sge_bootstrap.h"
+#include "uti/sge_component.h"
+#include "uti/sge_lock.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -107,39 +108,36 @@ sge_initialize_persistance_timer() {
    DRETURN_VOID;
 }
 
-bool
-sge_shutdown_persistence(lList **answer_list) {
-   bool ret = true;
-   u_long64 time = 0;
-   lList *alp = nullptr;
-   lListElem *context;
-
+void
+sge_shutdown_persistence(bool execute_triggers) {
    DENTER(TOP_LAYER);
 
-   /* trigger spooling actions (flush data) */
-   if (!spool_trigger_context(&alp, spool_get_default_context(), 0, &time)) {
-      answer_list_output(&alp);
-   }
-
    /* shutdown spooling */
-   context = spool_get_default_context();
+   lListElem *context = spool_get_default_context();
    if (context != nullptr) {
-      lList *local_answer = nullptr;
+      lList *answer_list = nullptr;
 
-      if (answer_list != nullptr) {
-         local_answer = *answer_list;
+      // trigger spooling actions (flush data, delete no longer used transaction logs, ...)
+      if (execute_triggers) {
+         u_long64 time = sge_get_gmt64();
+         if (!spool_trigger_context(&answer_list, spool_get_default_context(), 0, &time)) {
+            answer_list_output(&answer_list);
+         }
       }
 
-      spool_shutdown_context(&local_answer, context);
-      if (answer_list == nullptr) {
-         answer_list_output(&local_answer);
+      // rules can have a shutdown function, e.g. to close database connections
+      if (!spool_shutdown_context(&answer_list, context)) {
+         answer_list_output(&answer_list);
       }
 
       lFreeElem(&context);
       spool_set_default_context(context);
+
+      // we only output in case of errors - answer_list might contain INFO messages
+      lFreeList(&answer_list);
    }
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 void
@@ -150,11 +148,16 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    DENTER(TOP_LAYER);
 
+   // @todo is it allowed to spool while we are running the triggers?
+   //       better get the global lock here?
+
    /* trigger spooling regular actions */
+   SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE);
    if (!spool_trigger_context(&answer_list, spool_get_default_context(),
                               te_get_when(anEvent), &next_trigger)) {
       answer_list_output(&answer_list);
    }
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
    /* validate next_trigger. If it is invalid, set it to one minute after now */
    u_long64 now = sge_get_gmt64();

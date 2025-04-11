@@ -122,14 +122,14 @@ FCLOSE_ERROR:
  * Notice:   if return != 0 then beat_value is not written !
  *-------------------------------------------------------------*/
 int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_value) {
+   DENTER(TOP_LAYER);
 
    FILE *fp = nullptr;
    int hb   = 1;
    struct timeval start_time;
    struct timeval end_time;
    time_t write_time;
-
-   DENTER(TOP_LAYER);
+   static time_t sge_testmode_pause_until = 0;
 
    if (file == nullptr) {
       ERROR(SFNMAX, MSG_HEART_NO_FILENAME);
@@ -137,6 +137,11 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    }
 
    gettimeofday(&start_time,nullptr);
+   if (sge_testmode_pause_until > 0 && sge_testmode_pause_until > start_time.tv_sec) {
+      // avoid re-read of the act_qmaster file while we are pausing heartbeat
+      *beat_value = 99;
+      DRETURN(0);
+   }
 
    /* Try to open heartbeat file */
    fp = fopen(file, "r+");
@@ -165,12 +170,12 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    }
 
    /* seek to beginning of file */
-   if ( fseek(fp, 0, 0) != 0 ) {
+   if (fseek(fp, 0, 0) != 0) {
       ERROR(MSG_HEART_CANNOT_FSEEK_SS, file, strerror(errno));
       DRETURN(-2);   
    }
 
-   /* write in curent data (always write 5 characters) */
+   /* write in current data (always write 5 characters) */
    if (fprintf(fp, "%05d\n", hb) == EOF) {
       FCLOSE(fp);
       ERROR(MSG_HEART_WRITE_ERROR_SS, file, strerror(errno));
@@ -180,9 +185,9 @@ int inc_qmaster_heartbeat(const char *file, time_t write_timeout , int* beat_val
    
    /* This is only for testsuite testing */
    if (sge_testmode_timeout_value > 0 && hb == sge_testmode_timeout_at_heartbeat ) {
-      sleep(sge_testmode_timeout_value);
+      sge_testmode_pause_until = start_time.tv_sec + sge_testmode_timeout_value;
+      INFO("SGE_TEST_HEARTBEAT: pausing heartbeat handling until %s", ctime(&sge_testmode_pause_until));
    }
-
 
    gettimeofday(&end_time,nullptr);
    write_time = end_time.tv_sec - start_time.tv_sec;
