@@ -1,6 +1,90 @@
 # Full List of Fixes
 
-# Release notes - Cluster Scheduler 
+# Release notes - Cluster Scheduler
+
+## v9.0.5
+
+### Improvement
+
+[CS-342](https://hpc-gridware.atlassian.net/browse/CS-342) provide an openmpi integration
+
+[CS-343](https://hpc-gridware.atlassian.net/browse/CS-343) provide an example and test program using MPI
+
+[CS-791](https://hpc-gridware.atlassian.net/browse/CS-791) sge\_root should be available as special variable in the configuration of prolog, epilog, queue, pe, ckpt
+
+[CS-914](https://hpc-gridware.atlassian.net/browse/CS-914) Make ARCH script more robust
+
+[CS-1090](https://hpc-gridware.atlassian.net/browse/CS-1090) qstat -r shall report resource requests by scope
+
+[CS-1094](https://hpc-gridware.atlassian.net/browse/CS-1094) Update sge\_pe.md to better explain PE\_HOSTFILE
+
+[CS-1114](https://hpc-gridware.atlassian.net/browse/CS-1114) Add GPU monitoring examples to qtelemetry Grafana dashboard
+
+[CS-1115](https://hpc-gridware.atlassian.net/browse/CS-1115) Build qtelemetry in containers for lx-amd64 and lx-arm64
+
+[CS-1126](https://hpc-gridware.atlassian.net/browse/CS-1126) in the environment of tasks of tightly integrated parallel jobs set the pe\_task\_id
+
+[CS-1128](https://hpc-gridware.atlassian.net/browse/CS-1128) Add enroot to worker GPU VM image for GCP
+
+[CS-1143](https://hpc-gridware.atlassian.net/browse/CS-1143) provide a MPICH integration
+
+[CS-1144](https://hpc-gridware.atlassian.net/browse/CS-1144) provide a MVAPICH integration
+
+[CS-1145](https://hpc-gridware.atlassian.net/browse/CS-1145) provide an Intel MPI integration
+
+[CS-1146](https://hpc-gridware.atlassian.net/browse/CS-1146) cleanup and document the ssh wrapper MPI template and scripts
+
+[CS-1152](https://hpc-gridware.atlassian.net/browse/CS-1152) add a checktree\_mpi to testsuite with configuration and tests making use of the various MPI integrations
+
+[CS-1158](https://hpc-gridware.atlassian.net/browse/CS-1158) Add qtelemetry Grafana dashboard to public Grafana Cloud Dashboards
+
+### New Feature
+
+[CS-1091](https://hpc-gridware.atlassian.net/browse/CS-1091) Clearly document the slots syntax in man5 sge\_queue\_conf.md
+
+### Sub-task
+
+[CS-697](https://hpc-gridware.atlassian.net/browse/CS-697) Jenkins: enable issue\_3013
+
+[CS-698](https://hpc-gridware.atlassian.net/browse/CS-698) Jenkins: enable issue\_3179
+
+### Task
+
+[CS-662](https://hpc-gridware.atlassian.net/browse/CS-662) verify delayed job reporting of sge\_execd after reconnecting to sge\_qmaster
+
+[CS-1117](https://hpc-gridware.atlassian.net/browse/CS-1117) Add qtelemetry as developer preview to GCS distribution
+
+[CS-1118](https://hpc-gridware.atlassian.net/browse/CS-1118) Create a packer file which builds a GPU enabled VM with and without GCS for fast deployment on GCP
+
+[CS-1125](https://hpc-gridware.atlassian.net/browse/CS-1125) Provide a basic examples of how enroot can be used with the GPU integration
+
+[CS-1134](https://hpc-gridware.atlassian.net/browse/CS-1134) message cutoff after 8 characters
+
+[CS-1136](https://hpc-gridware.atlassian.net/browse/CS-1136) add checktree\_qtelemetry to all build environments \+ Jenkins setup
+
+### Bug
+
+[CS-430](https://hpc-gridware.atlassian.net/browse/CS-430) booking of resources into advance reservations needs to distinguish between host and queue resources
+
+[CS-722](https://hpc-gridware.atlassian.net/browse/CS-722) env\_list in qstat should show NONE if not set
+
+[CS-1028](https://hpc-gridware.atlassian.net/browse/CS-1028) qtelemetry should support NVIDIA loadsensor values for hosts
+
+[CS-1085](https://hpc-gridware.atlassian.net/browse/CS-1085) BDB build error on lx-riscv64 after OS update.
+
+[CS-1096](https://hpc-gridware.atlassian.net/browse/CS-1096) USE\_QSUB\_GID functionality fails on FreeBSD 14
+
+[CS-1111](https://hpc-gridware.atlassian.net/browse/CS-1111) minimum and maximum thread counts in the bootstrap.5 man page are incorrect
+
+[CS-1131](https://hpc-gridware.atlassian.net/browse/CS-1131) wallclock time reported for tasks of a tightly integrated parallel job is incorrect
+
+[CS-1139](https://hpc-gridware.atlassian.net/browse/CS-1139) job deletion via JAPI/DRMAA fails if job ID exceeds INT\_MAX
+
+[CS-1140](https://hpc-gridware.atlassian.net/browse/CS-1140) termination of event client via JAPI fails if event client ID exceeds INT\_MAX
+
+[CS-1141](https://hpc-gridware.atlassian.net/browse/CS-1141) MacOS build broken due to unavailability of getgrouplist\(\)
+
+[CS-1163](https://hpc-gridware.atlassian.net/browse/CS-1163) when a queue is signalled then additional invalid entries are created in the berkeleydb spooling database
 
 ## v9.0.4
 

@@ -157,18 +157,7 @@ A list of all special variables is given in the sge_conf.5 man page in the `prol
 
 ### Enhanced NVIDIA GPU Support with qgpu
 
-* With the release of patch 9.0.2, the `qgpu` command has been added to simplify
-workload management for GPU resources. The `qgpu` command allows administrators
-to manage GPU resources more efficiently. It is available for Linux _amd64_ and
-Linux _arm64_. `qgpu` is a multi-purpose command which can act as a `load sensor`
-reporting the characteristics and metrics of of NVIDIA GPU devices. For that it
-depends on NVIDIA DCGM to be installed on the GPU nodes. It also works as a
-`prolog` and `epilog` for jobs to setup NVIDIA runtime and environment variables.
-Further it sets up per job GPU accounting so that the GPU usage and power
-consumption is automatically reported in the accounting being visible in the
-standard `qacct -j` output. It supports all NVIDIA GPUs which are supported by
-Nvidias DCGM including NVIDIA's latest Grace Hopper superchips. For more
-information about `qgpu` please refer to the `Admin Guide`.
+* With the release of patch 9.0.2, the `qgpu` command has been added to simplify workload management for GPU resources. The `qgpu` command allows administrators to manage GPU resources more efficiently. It is available for Linux _amd64_ and Linux _arm64_. `qgpu` is a multi-purpose command which can act as a `load sensor` reporting the characteristics and metrics of of NVIDIA GPU devices. For that it depends on NVIDIA DCGM to be installed on the GPU nodes. It also works as a `prolog` and `epilog` for jobs to setup NVIDIA runtime and environment variables. Further it sets up per job GPU accounting so that the GPU usage and power consumption is automatically reported in the accounting being visible in the standard `qacct -j` output. It supports all NVIDIA GPUs which are supported by Nvidias DCGM including NVIDIA's latest Grace Hopper superchips. For more information about `qgpu` please refer to the `Admin Guide`.
 
 (Available in Gridware Cluster Scheduler only)
 
