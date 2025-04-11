@@ -2,6 +2,112 @@
 
 ## v9.0.5
 
+### qtelemetry (Developer Preview)
+
+This release introduces **qtelemetry**, a new metrics exporter for Gridware Cluster Scheduler (GCS). It allows administrators to easily collect and expose cluster metrics for monitoring and observability purposes.
+
+**Features:**
+
+- Simple integration with Prometheus and Grafana
+
+- Export cluster metrics, including:
+
+- Host metrics (CPU load, GPU availability, memory usage, and many more)
+
+- Job metrics (queued, running, errored, waiting time, and many more)
+
+- qmaster statistics (CPU/memory usage of `sge_qmaster`, spooling filesystem information)
+
+- Optional per-job metric export for detailed insights (recommended only for very small workloads)
+
+- Built-in support for pre-configured Grafana dashboard:
+
+- [Grafana dashboard example](https://grafana.com/grafana/dashboards/23208-gridware-cluster-scheduler-org/).
+
+**Quick Start:**
+
+By default, `qtelemetry` exports metrics on port `9464` from the `/metrics` endpoint:
+
+```shell
+
+./qtelemetry start
+
+```
+
+Enable additional metrics sources using command-line flags:
+
+```shell
+
+# Export exec host and qmaster metrics
+
+./qtelemetry start --enableExecd --enableMaster
+
+# Export individual job-level metrics (for smaller systems)
+
+./qtelemetry start --singleJobs
+
+```
+
+#### Advanced Configuration (Environment Variables):
+
+- **Change default binding address or port:**
+
+Set `OTEL_EXPORTER_PROMETHEUS_ENDPOINT`.
+
+Example:
+
+```shell
+
+export OTEL_EXPORTER_PROMETHEUS_ENDPOINT=":9000" # port only
+
+export OTEL_EXPORTER_PROMETHEUS_ENDPOINT="1.2.3.4:9000" # IP and port
+
+```
+
+- **Enable Basic Authentication:**
+
+Set `QTELEMETRY_USERNAME` and `QTELEMETRY_PASSWORD`.
+
+```shell
+
+export QTELEMETRY_USERNAME="your-user"
+
+export QTELEMETRY_PASSWORD="your-password"
+
+```
+
+- **Enable TLS:**
+
+Set paths to TLS certificate and key with `QTELEMETRY_TLS_CERT` and `QTELEMETRY_TLS_KEY`.
+
+```shell
+
+export QTELEMETRY_TLS_CERT="/path/to/cert.pem"
+
+export QTELEMETRY_TLS_KEY="/path/to/key.pem"
+
+```
+
+#### Recommended Monitoring Stack Setup:
+
+1. Start `qtelemetry` with the endpoint exposed (as above).
+
+2. Configure Prometheus to scrape metrics from `qtelemetry`.
+
+3. Set up Grafana and connect it to your Prometheus database.
+
+4. Import the provided Grafana dashboard from [here](https://grafana.com/grafana/dashboards/23208-gridware-cluster-scheduler-org/) for immediate insights.
+
+**Supported Platforms:**
+
+- Linux (`lx-amd64` and `lx-arm64`)
+
+**Important Note:**
+
+This release of qtelemetry is currently a Developer Preview. Metric structure, naming, and availability are subject to change in future releases based on development progress and user feedback. We strongly encourage feedback and suggestions to shape this tool’s evolution.
+
+
+
 ### Out of the Box Support of various MPI Distributions
 
 The `$SGE_ROOT/mpi` directory contains templates of the PE configuration for the following MPI distributions:
