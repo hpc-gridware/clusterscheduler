@@ -1,5 +1,39 @@
 # Major Enhancements
 
+## v9.0.5
+
+### Out of the Box Support of various MPI Distributions
+
+The `$SGE_ROOT/mpi` directory contains templates of the PE configuration for the following MPI distributions:
+* Intel MPI
+* mpich
+* mvapich
+* openmpi
+
+They can be added by simply calling `qconf -Ap <path to template>` and will add the PE configuration for running jobs using the given MPI in tight integration.
+
+In addition build scripts for mpich, mvapich, and openmpi give an example on how the MPI distribution can be built and installed. The build scripts are located in `$SGE_ROOT/mpi/<mpi name>/build.sh`.
+
+`$SGE_ROOT/mpi/examples` contains a MPI example written in the C language.
+It can be run as tightly integrated parallel job in any of the MPI distributions mentioned above
+and supports checkpointing and restart.
+
+It comes with documentation, build script, job script and a template of a ckeckpointing enviroment.
+
+### Easier Creation of Configuration Templates
+
+Configuration objects can now contain the additional special variables `$sge_root` and `$sge_cell` for
+paths to scripts, e.g. for
+* `prolog` and `epilog` in the global config and queue configurations
+* `starter_method`, `suspend_method`, `resume_method`, and `terminate_method` in the queue configuration
+* `start_proc_args` and `stop_proc_args` in the parallel environment configuration
+* `ckpt_command`, `migr_command`, `restart_command`, and `clean_command` in the checkpointing environment
+
+This allows to have configuration templates that can be used in different environments without
+the need to modify the paths before applying the configuration.
+
+A list of all special variables is given in the sge_conf.5 man page in the `prolog` section.
+
 ## v9.0.3 and v9.0.4 (IT IS STRONGLY RECOMMENDED TO UPGRADE TO PATCH 9.0.4)
 
 ### Critical bug fixes
