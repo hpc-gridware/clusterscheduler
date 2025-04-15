@@ -69,6 +69,7 @@ function(architecture_specific_settings)
 
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
+      add_compile_options(-pthread)
       add_link_options(-pthread -rdynamic)
 
       set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
@@ -107,6 +108,7 @@ function(architecture_specific_settings)
       endif ()
       add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8
             HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
+      add_compile_options(-pthread)
       add_link_options(-pthread -rdynamic)
 
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
@@ -169,6 +171,7 @@ function(architecture_specific_settings)
       # can't build jemalloc on CentOS 6 - autoconf is too old
       if (SGE_ARCH STREQUAL "xlx-amd64")
          set(WITH_JEMALLOC OFF PARENT_SCOPE)
+         add_compile_definitions(XLINUXAMD64)
          # we need to use a self-compiled gcc/g++/libstdc++ on this platform
          # as the OS packages (CentOS-6) are too old
          # link statically to make sure that the correct libstdc++ is used

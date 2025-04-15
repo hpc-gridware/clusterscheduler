@@ -599,55 +599,45 @@ int cl_thread_trigger_event(cl_thread_settings_t *thread_config) {
 }
 
 int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
-   int ret_val = 0;
-   int execute_pop = 0;
-
    if (thread_config == nullptr) {
       return CL_RETVAL_THREAD_CANCELSTATE_ERROR;
    }
 
-   /* pthread_cleanup_push() and pthread_cleanup_pop() must be used in the
-      same { ... } context */
-
 #ifdef CL_DO_COMMLIB_DEBUG
-   gettimeofday(&(thread_config->thread_last_cancel_test_time),nullptr);
+   gettimeofday(&(thread_config->thread_last_cancel_test_time), nullptr);
 #endif
 
+   // pthread_cleanup_push() and pthread_cleanup_pop() must be used in the same { ... } context
+
+   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
    if (thread_config->thread_cleanup_func != nullptr) {
-      /* push user cleanup function */
-      pthread_cleanup_push((void (*)(void *)) thread_config->thread_cleanup_func, thread_config) ;
-
-            /* push default cleanup function */
-            pthread_cleanup_push((void (*)(void *)) cl_thread_default_cleanup_function, thread_config) ;
-
-                  ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-
-                  if (ret_val == 0) {
-                     pthread_testcancel();
-                     ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
-                  }
-                  /* remove cleanup function from stack without execution */
-            pthread_cleanup_pop(execute_pop);  /* client_thread_cleanup */
-
-            /* remove user function from stack without execution */
+#if not defined(XLINUXAMD64)
+      constexpr int execute_pop = 0;
+      // push user cleanup function
+      pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(thread_config->thread_cleanup_func), thread_config) ;
+      // push default cleanup function
+      pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(cl_thread_default_cleanup_function), thread_config) ;
+#endif
+      // check if the thread was cancelled - if yes, pthread_testcancel() will not return
+      pthread_testcancel();
+#if not defined(XLINUXAMD64)
       pthread_cleanup_pop(execute_pop);
+      pthread_cleanup_pop(execute_pop);
+#endif
    } else {
-      /* push default cleanup function */
-      pthread_cleanup_push((void (*)(void *)) cl_thread_default_cleanup_function, thread_config) ;
-            ret_val = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-
-            if (ret_val == 0) {
-               pthread_testcancel();
-               ret_val = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
-            }
-            /* remove cleanup function from stack without execution */
-      pthread_cleanup_pop(execute_pop);  /* client_thread_cleanup */
+#if not defined(XLINUXAMD64)
+      constexpr int execute_pop = 0;
+      // push default cleanup function
+      pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(cl_thread_default_cleanup_function), thread_config) ;
+#endif
+      // check if the thread was cancelled - if yes, pthread_testcancel() will not return
+      pthread_testcancel();
+#if not defined(XLINUXAMD64)
+      pthread_cleanup_pop(execute_pop);
+#endif
    }
+   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
 
-
-   if (ret_val != 0) {
-      return CL_RETVAL_THREAD_CANCELSTATE_ERROR;
-   }
    return CL_RETVAL_OK;
 }
 

@@ -26,7 +26,7 @@ xxQS_NAMExx components on the other axis.
 |                  |         |              |                       |                   |                      |
 | Alma Linux       | 8       | x86-64       |           x           |         x         |          x           |
 | Alma Linux       | 9       | x86-64       |           x           |         x         |          x           |
-| CentOS Linux     | 6       | x86-64       |           a           |         a         |          a           |
+| CentOS Linux     | 6       | x86-64       |                       |         d         |          d           |
 | CentOS Linux     | 7       | x86-64       |           a           |         x         |          x           |
 | CentOS Linux     | 8       | x86-64       |           x           |         x         |          x           |
 | CentOS Linux     | 9       | x86-64       |           x           |         x         |          x           |
@@ -48,6 +48,7 @@ xxQS_NAMExx components on the other axis.
   -: Unsupported  
   a: Available but not covered by support contract. Contact our sales and support team if you need this configuration.
   b: Still in beta testing. Contact our sales and support team if you need this configuration.
+  d: Deprecated. Will be removed in the next minor release (9.1.0).
   x: Supported  
 
 > **Note**
