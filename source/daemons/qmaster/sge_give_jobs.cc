@@ -1677,9 +1677,13 @@ reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *j
    DENTER(BASIS_LAYER);
    const char *s;
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   // @todo CS-612 we also need to look at master or slave requests
+   //       might be tricky for the first gdil entry (qep) as it can contain both master and slave tasks
    const lListElem *res = lGetElemStr(job_get_hard_resource_list(jep), CE_name, rlimit_name);
 
    if ((res != nullptr) && (s = lGetString(res, CE_stringval))) {
+      // we know: if the job was scheduled, the job request must have been <= the queue limit
+      // therefore we can just set the queue limit to the job request
       DPRINTF("job reduces queue limit: %s = %s (was %s)\n", rlimit_name, s, lGetString(qep, nm));
       lSetString(qep, nm, s);
    } else { /* enforce default request if set, but only if the consumable is */
