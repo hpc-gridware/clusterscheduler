@@ -40,6 +40,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sched/sort_hosts.h"
 #include "sched/sge_select_queue.h"
@@ -246,9 +247,16 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                              }
                                           }
                                        } else {
-                                          if ((strcmp(user, "-") != 0) && (strcmp(qquota_filter.user, "*") != 0)
-                                               && (fnmatch(qquota_filter.user, user, 0) != 0)) {
-                                             continue;
+                                          if (strcmp(user, "-") != 0 && strcmp(qquota_filter.user, "*") != 0) {
+                                             if (sge_is_pattern(qquota_filter.user)) {
+                                                if (fnmatch(qquota_filter.user, user, 0) != 0) {
+                                                   continue;
+                                                }
+                                             } else {
+                                                if (strcmp(qquota_filter.user, user) != 0) {
+                                                   continue;
+                                                }
+                                             }
                                           }
                                        }
 

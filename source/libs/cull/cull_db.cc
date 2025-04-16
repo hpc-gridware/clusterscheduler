@@ -827,7 +827,7 @@ lList *lSelectDPack(const char *name, const lList *slp, const lCondition *cp,
                     const lDescr *dp, const lEnumeration *enp, bool isHash, sge_pack_buffer *pb) {
 
    lListElem *ep, *new_ep;
-   lList *dlp = (lList *) nullptr;
+   lList *dlp = nullptr;
    const lDescr *descr = nullptr;
 
    DENTER(CULL_LAYER);

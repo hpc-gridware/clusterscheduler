@@ -504,7 +504,10 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
       const lListElem *user;
 
       for_each_ep(user, user_list) {
-         if (sge_is_pattern(lGetString(user, ST_name)) && !manop_is_manager(packet, master_manager_list)) {
+         const char *user_name = lGetString(user, ST_name);
+         bool is_pattern = sge_is_pattern(user_name);
+
+         if (is_pattern && !manop_is_manager(packet, master_manager_list)) {
             ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, "modify all advance reservations");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
@@ -512,7 +515,12 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
             DRETURN(STATUS_EUNKNOWN);
          }
 
-         lCondition *new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, lGetString(user, ST_name));
+         lCondition *new_where;
+         if (is_pattern) {
+            new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, user_name);
+         } else {
+            new_where = lWhere("%T(%I == %s)", AR_Type, AR_owner, user_name);
+         }
          if (ar_where == nullptr) {
             ar_where = new_where;
          } else {
@@ -522,7 +530,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    } else if (sge_is_pattern(id_str)) {
       /* if no userlist and wildcard jobs was requested only delete the own ars */
       lCondition *new_where = nullptr;
-      new_where = lWhere("%T(%I p= %s)", AR_Type, AR_owner, packet->user);
+      new_where = lWhere("%T(%I == %s)", AR_Type, AR_owner, packet->user);
       if (ar_where == nullptr) {
          ar_where = new_where;
       } else {

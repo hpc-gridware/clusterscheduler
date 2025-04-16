@@ -34,6 +34,7 @@
 
 #include <cstdio>
 #include <math.h>
+#include <sge_string.h>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
@@ -213,7 +214,12 @@ static int showq_show_job_tacc(lList * user_list, int full, const bool binding,
    /* if the user_list is empty, display all users' jobs */
    if (lGetNumberOfElem(user_list) != 0) {
       for_each_ep(j_elem, user_list) {
-         newcp = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(j_elem, ST_name));
+         const char *user_name = lGetString(j_elem, ST_name);
+         if (sge_is_pattern(user_name)) {
+            newcp = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+         } else {
+            newcp = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
+         }
          if (newcp != nullptr) {
             if (where == nullptr) {
                where = newcp;

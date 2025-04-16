@@ -1153,7 +1153,7 @@ void lFreeWhere(lCondition **cp) {
 *
 *  RESULT
 *     int - result
-*         0 - flase
+*         0 - false
 *         1 - true 
 ******************************************************************************/
 int lCompare(const lListElem *ep, const lCondition *cp) {

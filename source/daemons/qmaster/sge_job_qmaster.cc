@@ -817,9 +817,12 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
 
       DPRINTF("Add all users given in userlist to filter\n");
       for_each_ep(user, user_list) {
-
-         new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner,
-                            lGetString(user, ST_name));
+         const char *user_name = lGetString(user, ST_name);
+         if (sge_is_pattern(user_name)) {
+            new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+         } else {
+            new_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
+         }
          if (!*job_filter) {
             *job_filter = new_where;
          } else {

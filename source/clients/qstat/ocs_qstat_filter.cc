@@ -43,6 +43,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull_sort.h"
@@ -518,11 +519,11 @@ static int qstat_handle_running_jobs(qstat_env_t *qstat_env, qstat_handler_t *ha
    for_each_rw(qep, qstat_env->queue_list) {
 
       const char* queue_name = lGetString(qep, QU_full_name);
-      
+
       /* here we have the queue */
       if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
-         
-         
+
+
          if ((qstat_env->full_listing & QSTAT_DISPLAY_NOEMPTYQ) && 
              !qinstance_slots_used(qep)) {
             continue;
@@ -670,7 +671,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                      }
                   }
 
-                  if (!lGetNumberOfElem(qstat_env->user_list) || 
+                  if (!lGetNumberOfElem(qstat_env->user_list) ||
                      (lGetNumberOfElem(qstat_env->user_list) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
                      if (print_jobs_of_queue && (job_tag & TAG_SHOW_IT)) {
                         if ((qstat_env->full_listing & QSTAT_DISPLAY_RUNNING) &&
@@ -696,7 +697,7 @@ static int handle_jobs_queue(lListElem *qep, qstat_env_t* qstat_env, int print_j
                            print_it = true;
                         } else {
                            print_it = false;
-                        }       
+                        }
                         if (print_it) {
                            sge_dstring_sprintf(&dyn_task_str, sge_uu32, jataskid);
                            ret = sge_handle_job(jlep, jatep, qep, gdilep, print_jobid, (master && different && (i==0))?"MASTER":"SLAVE",
@@ -733,7 +734,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
    
    DENTER(TOP_LAYER);
 
-   /* 
+   /*
    ** all jobs are selected 
    */
    for_each_rw (jep, qstat_env->job_list) {
@@ -750,17 +751,26 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
       DPRINTF("------- selecting jobs -----------\n");
 
       /* ok, now we untag the jobs if the user_list was specified */ 
-      for_each_rw(up, qstat_env->user_list)
-         for_each_rw (jep, qstat_env->job_list) {
-            if (up && lGetString(up, ST_name) && 
-                  !fnmatch(lGetString(up, ST_name), 
-                              lGetString(jep, JB_owner), 0)) {
-               for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-                  lSetUlong(jatep, JAT_suitable, 
-                     lGetUlong(jatep, JAT_suitable)|TAG_SHOW_IT|TAG_SELECT_IT);
+      for_each_rw(up, qstat_env->user_list) {
+         const char *user = lGetString(up, ST_name);
+         if (user != nullptr) {
+            bool is_pattern = sge_is_pattern(user);
+            for_each_rw (jep, qstat_env->job_list) {
+               int match;
+               if (is_pattern) {
+                  match = fnmatch(user, lGetString(jep, JB_owner), 0);
+               } else {
+                  match = sge_strnullcmp(user, lGetString(jep, JB_owner));
+               }
+               if (match == 0) {
+                  for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
+                     lSetUlong(jatep, JAT_suitable,
+                        lGetUlong(jatep, JAT_suitable)|TAG_SHOW_IT|TAG_SELECT_IT);
+                  }
                }
             }
          }
+      }
    }
 
 
@@ -1067,11 +1077,17 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    */
    if (zombie_l && show_zombies) {
       for_each_ep(ep, user_list) {
-         nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
-         if (!zw)
+         const char *user_name = lGetString(ep, ST_name);
+         if (sge_is_pattern(user_name)) {
+            nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+         } else {
+            nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
+         }
+         if (!zw) {
             zw = nw;
-         else
+         } else {
             zw = lOrWhere(zw, nw);
+         }
       }
 
       z_id = gdi_multi.request(alpp, ocs::Mode::RECORD, ocs::gdi::Target::SGE_ZOMBIE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, zw, qstat_get_JB_Type_filter(qstat_env), true);
@@ -2731,7 +2747,12 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
       lCondition *tmp_nw = nullptr;
 
       for_each_ep(ep, user_list) {
-         tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
+         const char *user = lGetString(ep, ST_name);
+         if (sge_is_pattern(user)) {
+            tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
+         } else {
+            tmp_nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);
+         }
          if (jw == nullptr) {
             jw = tmp_nw;
          } else {

@@ -80,7 +80,7 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
             const char *rhost, gdi_object_t *object,
             ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command,
             monitoring_t *monitor) {
-   int user_flag = (object->target == ocs::gdi::Target::TargetValue::SGE_UU_LIST) ? 1 : 0;
+   bool user_flag = (object->target == ocs::gdi::Target::TargetValue::SGE_UU_LIST);
    int pos;
    const char *userprj;
    u_long32 uval;
@@ -97,17 +97,7 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
 
    DENTER(TOP_LAYER);
 
-   if (user_flag == 0) {
-      // project
-      obj_name = MSG_OBJ_PRJ;
-      obj_key = PR_name;
-      obj_oticket = PR_oticket;
-      obj_fshare = PR_fshare;
-      obj_usage = PR_usage;
-      obj_version = PR_version;
-      obj_project = PR_project;
-      obj_master_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   } else {
+   if (user_flag) {
       // user
       obj_name = MSG_OBJ_USER;
       obj_key = UU_name;
@@ -117,6 +107,16 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
       obj_version = UU_version;
       obj_project = UU_project;
       obj_master_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+   } else {
+      // project
+      obj_name = MSG_OBJ_PRJ;
+      obj_key = PR_name;
+      obj_oticket = PR_oticket;
+      obj_fshare = PR_fshare;
+      obj_usage = PR_usage;
+      obj_version = PR_version;
+      obj_project = PR_project;
+      obj_master_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
    }
 
    /* ---- UP_name */
@@ -133,7 +133,8 @@ userprj_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListE
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          goto Error;
       }
-      if (verify_str_key(alpp, userprj, MAX_VERIFY_STRING, obj_name, KEY_TABLE) != STATUS_OK) {
+      if (verify_str_key(alpp, userprj, MAX_VERIFY_STRING, obj_name, KEY_TABLE,
+         user_flag ? "\\" : nullptr) != STATUS_OK) {
          goto Error;
       }
       lSetString(modp, obj_key, userprj);

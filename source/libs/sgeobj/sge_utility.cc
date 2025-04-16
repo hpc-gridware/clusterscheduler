@@ -109,9 +109,9 @@
 *  SEE ALSO
 *     There is a module test (test_sge_utility) for verify_str_key().
 *******************************************************************************/
-an_status_t verify_str_key(
-   lList **alpp, const char *str, size_t str_length, const char *name, int table) 
-{
+an_status_t
+verify_str_key(lList **alpp, const char *str, size_t str_length, const char *name, int table,
+               const char *exceptions) {
    static const char *begin_strings[2][3];
    static const char *mid_strings[2][20];
 
@@ -208,6 +208,9 @@ an_status_t verify_str_key(
    /* check all characters in str */
    i = -1;
    while ((forbidden_char = mid_characters[table][++i])) {
+      if (exceptions != nullptr && strchr(exceptions, forbidden_char) != nullptr) {
+         continue;
+      }
       if (strchr(str, forbidden_char)) {
          if (isprint((int) forbidden_char)) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_KEYSTR_MIDCHAR_SC, mid_strings[table][i], mid_characters[table][i]);

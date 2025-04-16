@@ -1004,11 +1004,17 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
 /* lWriteListTo(user_list, stdout); */
 
       for_each_rw(ep, user_list) {
-         nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, lGetString(ep, ST_name));
-         if (!jw)
+         const char *user_name = lGetString(ep, ST_name);
+         if (sge_is_pattern(user_name)) {
+            nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+         } else {
+            nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
+         }
+         if (!jw) {
             jw = nw;
-         else
+         } else {
             jw = lOrWhere(jw, nw);
+         }
       }
 /* printf("-------------------------------------\n"); */
 /* lWriteWhereTo(jw, stdout); */
