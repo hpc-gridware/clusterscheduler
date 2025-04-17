@@ -564,8 +564,8 @@ lListElem* pe_create_template(char *pe_name)
    }
 
    lSetString(pep, PE_allocation_rule, "$pe_slots");
-   lSetString(pep, PE_start_proc_args, "/bin/true");
-   lSetString(pep, PE_stop_proc_args, "/bin/true");
+   lSetString(pep, PE_start_proc_args, "NONE");
+   lSetString(pep, PE_stop_proc_args, "NONE");
 
    /* PE_control_slaves initialized implicitly to false */
    lSetBool(pep, PE_job_is_first_task, TRUE);

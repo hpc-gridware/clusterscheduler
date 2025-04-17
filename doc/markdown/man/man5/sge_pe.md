@@ -59,8 +59,9 @@ to the parallel environment.
 
 ## start_proc_args
 
-The invocation command line of a start-up procedure for the parallel environment. The start-up procedure is invoked by
-xxqs_name_sxx_shepherd(8) prior to executing the job script. Its purpose is to setup the parallel environment 
+The invocation command line of a start-up procedure for the parallel environment, or `NONE` if no start-up procedure
+is required. The start-up procedure is invoked by
+xxqs_name_sxx_shepherd(8) prior to executing the job script. Its purpose is to set up the parallel environment 
 correspondingly to its needs. An optional prefix "user@" specifies the user under which this procedure is to be 
 started. The standard output of the start-up procedure is redirected to the file \<REQUEST>.po\<JID> in the job's
 working directory (see qsub(1)), with \<REQUEST> being the name of the job as displayed by qstat(1) and \<JID> 
@@ -103,7 +104,7 @@ be interpreted by the start and stop procedures) to constitute a command line:
   The name of the host on which the start-up or stop procedures are started.
 
 * $job_owner  
-  The user name of the job owner.
+  The username of the job owner.
 
 * $job_id  
   xxQS_NAMExx's unique job identification number.
@@ -126,7 +127,8 @@ be interpreted by the start and stop procedures) to constitute a command line:
 
 ## stop_proc_args
 
-The invocation command line of a shutdown procedure for the parallel environment. The shutdown procedure is invoked 
+The invocation command line of a shutdown procedure for the parallel environment, or `NONE` if no start-up procedure
+is required. The shutdown procedure is invoked 
 by xxqs_name_sxx_shepherd(8) after the job script has finished. Its purpose is to stop the parallel environment and 
 to remove it from all participating systems. An optional prefix "user@" specifies the user under which this procedure 
 is to be started. The standard output of the stop procedure is also redirected to the file \<REQUEST>.po\<JID> in the
