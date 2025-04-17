@@ -28,8 +28,14 @@ namespace ocs {
       static u_long32 next_id;
 
    public:
-      static u_long32 get_next_id() {
-         return next_id++;
+      static u_long32 get_next_id(lList *master_category_list) {
+         u_long32 id;
+
+         // do not use 0 as ID or IDs that already have been used
+         do {
+            id = next_id++;
+         } while (id == 0 || lGetElemUlong(master_category_list, CT_id, id) != nullptr);
+         return id;
       }
       static void build_string(dstring *category_str, lListElem *job, const lList *acl_list, const lList *prj_list, const lList *rqs_list);
       static lListElem *create_new(lListElem *job);

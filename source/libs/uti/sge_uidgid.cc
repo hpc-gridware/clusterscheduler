@@ -1347,6 +1347,8 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
       DRETURN(false);
    }
 
+   DPRINTF("max_groups=%d\n", max_groups);
+
    // allocate buffer for group IDs
    auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
    if (grp_id_list == nullptr) {
@@ -1366,6 +1368,9 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
       sge_free(&grp_id_list);
       DRETURN(false);
    }
+
+   DPRINTF("num_group_ids=%d\n", num_group_ids);
+
    if (num_group_ids == 0) {
       // success case: user has no supplementary groups (this case probably does not exist)
       *amount = 0;

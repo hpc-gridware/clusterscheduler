@@ -131,10 +131,3 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
 
    DRETURN_VOID;
 }
-
-lListElem *
-ocs::Category::create_new(lListElem *job) {
-   lListElem *category = lCreateElem(CT_Type);
-   lSetUlong64(category, CT_id, get_next_id());
-   return category;
-}

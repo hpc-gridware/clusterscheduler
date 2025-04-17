@@ -143,9 +143,6 @@ remove_invalid_job_references(int user);
 static void
 debit_all_jobs_from_qs();
 
-static void
-init_categories();
-
 
 /****** qmaster/setup_qmaster/sge_setup_qmaster() ******************************
 *  NAME
@@ -1186,16 +1183,18 @@ setup_qmaster() {
       lFreeList(&alp);
    }
 
-
-   init_categories();
-
-   // Create all categories
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+   DPRINTF("post init of prj/uset and create of categories--------------------\n");
+   lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   ocs::CategoryQmaster::attach_all_jobs(master_job_list, master_userset_list,
-                                    master_project_list, master_rqs_list, false, ocs::SessionManager::GDI_SESSION_NONE);
+   lList *master_userset_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+   lList *master_project_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
+   lList *master_rqs_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS);
+   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+   const lList *master_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+
+   ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(master_category_list, master_job_list,
+                                                                   master_project_list, master_userset_list, master_rqs_list,
+                                                                   master_cqueue_list, master_pe_list, master_host_list);
 
    DRETURN(0);
 }
@@ -1373,79 +1372,4 @@ static void debit_all_jobs_from_qs() {
    DRETURN_VOID;
 }
 
-/****** setup_qmaster/init_categories() ****************************************
-*  NAME
-*     init_categories() -- Initialize usersets/projects wrts categories
-*
-*  SYNOPSIS
-*     static void init_categories()
-*
-*  FUNCTION
-*     Initialize usersets/projects wrts categories.
-*
-*  NOTES
-*     MT-NOTE: init_categories() is not MT safe
-*******************************************************************************/
-static void init_categories() {
-   const lListElem *cq, *pe, *hep, *ep;
-   lListElem *acl, *prj;
-   const lListElem *rqs;
-   lList *u_list = nullptr, *p_list = nullptr;
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   bool all_projects = false;
-   bool all_usersets = false;
-
-   /*
-    * collect a list of references to usersets/projects used in
-    * the resource quota sets
-    */
-   for_each_ep(rqs, *ocs::DataStore::get_master_list(SGE_TYPE_RQS)) {
-      if (!all_projects && !rqs_diff_projects(rqs, nullptr, &p_list, nullptr, master_project_list)) {
-         all_projects = true;
-      }
-      if (!all_usersets && !rqs_diff_usersets(rqs, nullptr, &u_list, nullptr, master_userset_list)) {
-         all_usersets = true;
-      }
-      if (all_usersets && all_projects) {
-         break;
-      }
-   }
-
-   /*
-    * collect list of references to usersets/projects used as ACL
-    * with queue_conf(5), host_conf(5) and sge_pe(5)
-    */
-   for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      cqueue_diff_projects(cq, nullptr, &p_list, nullptr);
-      cqueue_diff_usersets(cq, nullptr, &u_list, nullptr);
-   }
-
-   for_each_ep(pe, *ocs::DataStore::get_master_list(SGE_TYPE_PE)) {
-      pe_diff_usersets(pe, nullptr, &u_list, nullptr);
-   }
-
-   for_each_ep(hep, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
-      host_diff_projects(hep, nullptr, &p_list, nullptr);
-      host_diff_usersets(hep, nullptr, &u_list, nullptr);
-   }
-
-   /*
-    * now set categories flag with usersets/projects used as ACL
-    */
-   for_each_ep(ep, p_list) {
-      if ((prj = prj_list_locate(master_project_list, lGetString(ep, PR_name)))) {
-         lSetBool(prj, PR_consider_with_categories, true);
-      }
-   }
-
-   for_each_ep(ep, u_list) {
-      if ((acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name)))) {
-         lSetBool(acl, US_consider_with_categories, true);
-      }
-   }
-
-   lFreeList(&p_list);
-   lFreeList(&u_list);
-}
 

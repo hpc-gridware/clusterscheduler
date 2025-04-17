@@ -118,7 +118,7 @@ static data_entry_t tests[] = {
  * result strings
  **/
 static const char *result_category[] = {
-   nullptr, // 1
+   "-", // 1
    "-P my_pr",
    "-ckpt my_check",
    "-ckpt my_check -P my_pr",

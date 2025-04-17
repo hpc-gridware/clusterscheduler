@@ -272,8 +272,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
    const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-   lListElem* category = nullptr;
-   lret = ocs::CategoryQmaster::attach_job(master_category_list, &category, *jep,
+   lret = ocs::CategoryQmaster::attach_job(master_category_list, *jep,
                                                  master_userset_list, master_project_list, master_rqs_list,
                                                  true, packet->gdi_session);
 
@@ -1310,10 +1309,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
                ocs::CategoryQmaster::detach_job(master_category_list, new_job, true, packet->gdi_session);
 
                // add the job to the new category
-               lListElem *category;
-               ocs::CategoryQmaster::attach_job(master_category_list, &category,  new_job,
-                                                      master_userset_list, master_project_list, master_rqs_list,
-                                                      true, packet->gdi_session);
+               ocs::CategoryQmaster::attach_job(master_category_list, new_job,
+                                                master_userset_list, master_project_list, master_rqs_list,
+                                                true, packet->gdi_session);
             }
          }
 

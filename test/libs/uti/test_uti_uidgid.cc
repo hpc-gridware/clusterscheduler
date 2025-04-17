@@ -37,6 +37,8 @@
 
 #include "uti/sge_uidgid.h"
 
+#include <sge_rmon_macros.h>
+
 int check_get_buffer_size() {
    int ret = EXIT_SUCCESS;
    int size;
@@ -98,6 +100,7 @@ int check_supplementary_groups() {
 }
 
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_uti_uidgid");
    int ret = check_get_buffer_size();
    if (ret == EXIT_SUCCESS) {
       ret = check_supplementary_groups();

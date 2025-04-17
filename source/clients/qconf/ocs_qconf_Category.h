@@ -30,7 +30,7 @@ namespace ocs {
       show_list(lList **answer_list);
 
       static bool
-      show(lList **answer_list, u_long64 id);
+      show(lList **answer_list, u_long32 id);
 
       static lList *
       get_via_gdi(lList **answer_list);

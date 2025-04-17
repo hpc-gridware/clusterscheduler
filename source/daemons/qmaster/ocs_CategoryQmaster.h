@@ -28,9 +28,21 @@
 
 namespace ocs {
    class CategoryQmaster {
+      static void
+      initialize_prj_and_uset_for_categories(lList *master_project_list, lList *master_userset_list,
+                                             const lList *master_rqs_list, const lList *master_cqueue_list,
+                                             const lList *master_pe_list, const lList *master_host_list);
+
    public:
+      static void
+      initialize_prj_uset_and_create_categories(lList **master_category_list, lList *master_job_list,
+                                                lList *master_project_list, lList *master_userset_list,
+                                                const lList *master_rqs_list, const lList *master_cqueue_list,
+                                                const lList *master_pe_list, const lList *master_host_list);
+
+
       static bool
-      attach_job(lList **master_category_list, lListElem **category, lListElem *job,
+      attach_job(lList **master_category_list, lListElem *job,
                  const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
                  bool send_events, u_long32 gdi_session);
 
@@ -46,7 +58,7 @@ namespace ocs {
       refresh_cat_data_in_job(lList *master_category_list, lListElem *job);
 
       static void
-      attach_all_jobs(lList *master_job_list,
+      attach_all_jobs(lList *master_job_list, lList **master_category_list,
                       const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
                       bool send_events, u_long32 gdi_session);
 
@@ -56,7 +68,7 @@ namespace ocs {
                         bool send_events, u_long32 gdi_session);
 
       static void
-      reset_tmp_data();
+      reset_tmp_data(lList *master_category_list);
 
       static void
       refresh_cat_data_all_jobs(lList *master_category_list, lList *master_job_list);

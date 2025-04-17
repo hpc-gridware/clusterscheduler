@@ -33,6 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cassert>
 #include <cstdio>
 #include <syslog.h>
 
@@ -330,6 +331,6 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 #  define SGE_ASSERT(x) \
    if (!(x)) { \
       sge_log(LOG_CRIT, MSG_UNREC_ERROR,__FILE__,__LINE__); \
-      abort(); \
+      assert(x); \
    } \
    void()

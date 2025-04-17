@@ -567,85 +567,6 @@ sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
 }
 
 sge_callback_result
-sge_process_category_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
-   DENTER(TOP_LAYER);
-
-   // we handle only mod and del events
-   if (action != SGE_EMA_DEL && action != SGE_EMA_MOD) {
-      DRETURN(SGE_EMA_OK);
-   }
-
-   // find the category
-   u_long32 category_id = lGetUlong(event, ET_intkey);
-   lList *master_category_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-   lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
-
-   // should not be possible
-   if (category == nullptr) {
-      ERROR(MSG_CANTFINDCATINMASTERLIST_U, category_id);
-      DRETURN(SGE_EMA_FAILURE);
-   }
-
-   // remove tmp data
-   const lList *cache_list = lGetList(category, CT_cache);
-   const lListElem *cache = nullptr;
-   for_each_ep(cache, cache_list) {
-      auto range = static_cast<int *>(lGetRef(cache, CCT_pe_job_slots));
-      sge_free(&range);
-   }
-
-   DRETURN(SGE_EMA_OK);
-}
-
-sge_callback_result
-sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
-                             sge_event_action action, lListElem *event, void *clientdata) {
-   u_long32 job_id = 0;
-   lListElem *job = nullptr;
-
-   DENTER(GDI_LAYER);
-   DPRINTF("callback processing job event before default rule\n");
-
-   if (action == SGE_EMA_DEL || action == SGE_EMA_MOD) {
-      job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
-      if (job == nullptr) {
-         dstring id_dstring = DSTRING_INIT;
-         ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
-         sge_dstring_free(&id_dstring);
-         DRETURN(SGE_EMA_FAILURE);
-      }
-   } else {
-      DRETURN(SGE_EMA_OK);
-   }
-
-#if 0
-   switch (action) {
-      case SGE_EMA_DEL:
-         /* delete job category if necessary */
-         sge_delete_job_category(job);
-         break;
-
-      case SGE_EMA_MOD:
-         switch (lGetUlong(event, ET_type)) {
-            case sgeE_JOB_MOD:
-               sge_delete_job_category(job);
-               break;
-
-            default:
-               break;
-         }
-         break;
-
-      default:
-         break;
-   }
-#endif
-
-   DRETURN(SGE_EMA_OK);
-}
-
-sge_callback_result
 sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
@@ -663,22 +584,15 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
       }
    }
 
-   lList *master_category_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    switch (action) {
       case SGE_EMA_LIST: {
          lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
-         // refresh category references in all job objects
-         ocs::CategoryQmaster::refresh_cat_data_all_jobs(master_category_list, master_job_list);
 
          // recompute the priorities for all jobs
          sge_do_priority(master_job_list, nullptr);
          break;
       }
       case SGE_EMA_ADD:
-         // refresh category reference
-         ocs::CategoryQmaster::refresh_cat_data_in_job(master_category_list, job);
-
          // recompute the priorities for the job
          sge_do_priority_job(job);
          break;
@@ -712,36 +626,6 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
 
       default:
          break;
-   }
-
-   DRETURN(SGE_EMA_OK);
-}
-
-/* If the last ja task of a job is deleted, 
- * remove the job category.
- * Do we really need it?
- * Isn't a job delete event sent after the last array task exited?
- */
-sge_callback_result
-sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
-                                sge_event_action action, lListElem *event, void *clientdata) {
-   DENTER(GDI_LAYER);
-
-   if (action == SGE_EMA_DEL) {
-      const lListElem *job;
-      u_long32 job_id;
-      DPRINTF("callback processing ja_task event after default rule SGE_EMA_DEL\n");
-
-      job_id = lGetUlong(event, ET_intkey);
-      job = lGetElemUlong(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
-      if (job == nullptr) {
-         dstring id_dstring = DSTRING_INIT;
-         ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));
-         sge_dstring_free(&id_dstring);
-         DRETURN(SGE_EMA_FAILURE);
-      }
-   } else {
-      DPRINTF("callback processing ja_task event after default rule\n");
    }
 
    DRETURN(SGE_EMA_OK);

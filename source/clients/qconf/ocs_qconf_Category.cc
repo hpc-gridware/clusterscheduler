@@ -55,7 +55,7 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
    DRETURN(true);
 }
 
-bool ocs::CategoryQconf::show(lList **answer_list, u_long64 id) {
+bool ocs::CategoryQconf::show(lList **answer_list, u_long32 id) {
    DENTER(TOP_LAYER);
 
    lListElem *centry = get_via_gdi(answer_list, id);
@@ -68,7 +68,7 @@ bool ocs::CategoryQconf::show(lList **answer_list, u_long64 id) {
          DRETURN(false);
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CAT_DOESNOTEXIST_U64, id);
+      answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR, MSG_CAT_DOESNOTEXIST_U, id);
       DRETURN(false);
    }
 

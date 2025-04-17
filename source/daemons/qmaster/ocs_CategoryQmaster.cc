@@ -23,11 +23,16 @@
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/ocs_Category.h"
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_job.h"
 
 #include "ocs_CategoryQmaster.h"
 #include "ocs_DataStore.h"
 #include "sge_event_master.h"
+#include "sge_resource_quota_qmaster.h"
+#include "sge_cqueue_qmaster.h"
+#include "sge_pe_qmaster.h"
+#include "sge_host_qmaster.h"
 
 /******************************************************
  *
@@ -62,14 +67,94 @@
  *
  ******************************************************/
 
+void
+ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(lList *master_project_list, lList *master_userset_list,
+                                                             const lList *master_rqs_list, const lList *master_cqueue_list,
+                                                             const lList *master_pe_list, const lList *master_host_list) {
+   const lListElem *cq, *pe, *hep, *ep;
+   const lListElem *rqs;
+   lList *u_list = nullptr, *p_list = nullptr;
+   bool all_projects = false;
+   bool all_usersets = false;
+
+   /*
+    * collect a list of references to usersets/projects used in
+    * the resource quota sets
+    */
+   for_each_ep(rqs, master_rqs_list) {
+      if (!all_projects && !rqs_diff_projects(rqs, nullptr, &p_list, nullptr, master_project_list)) {
+         all_projects = true;
+      }
+      if (!all_usersets && !rqs_diff_usersets(rqs, nullptr, &u_list, nullptr, master_userset_list)) {
+         all_usersets = true;
+      }
+      if (all_usersets && all_projects) {
+         break;
+      }
+   }
+
+   /*
+    * collect list of references to usersets/projects used as ACL
+    * with queue_conf(5), host_conf(5) and sge_pe(5)
+    */
+   for_each_ep(cq, master_cqueue_list) {
+      cqueue_diff_projects(cq, nullptr, &p_list, nullptr);
+      cqueue_diff_usersets(cq, nullptr, &u_list, nullptr);
+   }
+
+   for_each_ep(pe, master_pe_list) {
+      pe_diff_usersets(pe, nullptr, &u_list, nullptr);
+   }
+
+   for_each_ep(hep, master_host_list) {
+      host_diff_projects(hep, nullptr, &p_list, nullptr);
+      host_diff_usersets(hep, nullptr, &u_list, nullptr);
+   }
+
+   /*
+    * now set categories flag with usersets/projects used as ACL
+    */
+   for_each_ep(ep, p_list) {
+      lListElem *prj = lGetElemStrRW(master_project_list, PR_name, lGetString(ep, PR_name));
+      if (prj != nullptr) {
+         lSetBool(prj, PR_consider_with_categories, true);
+      }
+   }
+
+   for_each_ep(ep, u_list) {
+      lListElem *acl = lGetElemStrRW(master_userset_list, US_name, lGetString(ep, US_name));
+      if (acl != nullptr) {
+         lSetBool(acl, US_consider_with_categories, true);
+      }
+   }
+
+   lFreeList(&p_list);
+   lFreeList(&u_list);
+}
+
+void
+ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(lList **master_category_list, lList *master_job_list,
+                                                                lList *master_project_list, lList *master_userset_list,
+                                                                const lList *master_rqs_list, const lList *master_cqueue_list,
+                                                                const lList *master_pe_list, const lList *master_host_list) {
+   // Initialize projects and usersets for the used is categories
+   // names will be part of the category string if they are used in cqueue, PEs, hosts or RQS
+   initialize_prj_and_uset_for_categories(master_project_list, master_userset_list, master_rqs_list,
+                                          master_cqueue_list, master_pe_list, master_host_list);
+
+   // Create all categories
+   attach_all_jobs(master_job_list, master_category_list, master_userset_list, master_project_list,
+                   master_rqs_list, false, SessionManager::GDI_SESSION_NONE);
+}
+
 bool
-ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem **category, lListElem *job,
-                                       const lList *master_userset_list, const lList *master_project_list,
-                                       const lList *master_rqs_list, bool send_events, u_long32 gdi_session) {
+ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem *job,
+                                 const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
+                                 bool send_events, u_long32 gdi_session) {
    DENTER(TOP_LAYER);
 
    // check if the input parameters are valid
-   if (master_category_list == nullptr || category == nullptr || job == nullptr) {
+   if (master_category_list == nullptr || job == nullptr) {
       DRETURN(false);
    }
 
@@ -87,26 +172,26 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, lListElem **categ
 
    // get the category or create a new one
    bool is_new = false;
-   *category = lGetElemStrRW(*master_category_list, CT_str, cat_str);
-   if (*category == nullptr) {
-      *category = lAddElemStr(master_category_list, CT_str, cat_str, CT_Type);
-      lSetUlong(*category, CT_id, Category::get_next_id());
+   lListElem *category = lGetElemStrRW(*master_category_list, CT_str, cat_str);
+   if (category == nullptr) {
+      category = lAddElemStr(master_category_list, CT_str, cat_str, CT_Type);
+      lSetUlong(category, CT_id, Category::get_next_id(*master_category_list));
       is_new = true;
    }
    sge_dstring_free(&category_str);
 
    // Increase the reference count
-   lSetUlong(*category, CT_refcount, lGetUlong(*category, CT_refcount) + 1);
+   lSetUlong(category, CT_refcount, lGetUlong(category, CT_refcount) + 1);
 
    // Point to the category in the job
-   u_long32 category_id = lGetUlong(*category, CT_id);
+   u_long32 category_id = lGetUlong(category, CT_id);
    lSetUlong(job, JB_category_id, category_id);
 
    // Send events if required
    if (send_events) {
       ev_event category_event_type = is_new ? sgeE_CATEGORY_ADD : sgeE_CATEGORY_MOD;
       sge_add_event(0, category_event_type, category_id, 0, nullptr,
-                    nullptr, nullptr, *category, gdi_session);
+                    nullptr, nullptr, category, gdi_session);
    }
 
    DRETURN(true);
@@ -121,9 +206,9 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, b
       DRETURN(false);
    }
    lListElem *category = lGetElemUlongRW(*master_category_list, CT_id, lGetUlong(job, JB_category_id));
-   if (category == nullptr) {
-      DRETURN(false);
-   }
+
+   // each category that is referenced in a job should also exist
+   SGE_ASSERT(category != nullptr);
 
    // decrease the reference count or remove the category
    bool is_del = false;
@@ -154,23 +239,20 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, lListElem *job,
    detach_job(master_category_list, job, send_events, gdi_session);
 
    // add the job to the new category
-   lListElem *category;
-   attach_job(master_category_list, &category, job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
+   attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
    DRETURN_VOID;
 }
 
 void
-ocs::CategoryQmaster::attach_all_jobs(lList *master_job_list,
+ocs::CategoryQmaster::attach_all_jobs(lList *master_job_list, lList **master_category_list,
                                       const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
                                       bool send_events, u_long32 gdi_session) {
    DENTER(TOP_LAYER);
-   lList **master_category_list = DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
 
    // add all jobs to the category list, create categories if they do not exist
    lListElem *job;
    for_each_rw(job, master_job_list) {
-      lListElem *category = nullptr;
-      attach_job(master_category_list, &category, job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
+      attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
    }
    DRETURN_VOID;
 }
@@ -213,10 +295,9 @@ ocs::CategoryQmaster::reattach_all_jobs(lList *master_job_list,
 *
 *******************************************************************************/
 void
-ocs::CategoryQmaster::reset_tmp_data() {
+ocs::CategoryQmaster::reset_tmp_data(lList *master_category_list) {
    DENTER(TOP_LAYER);
 
-   lList *master_category_list = *DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    lListElem *cat;
    for_each_rw (cat, master_category_list) {
 
