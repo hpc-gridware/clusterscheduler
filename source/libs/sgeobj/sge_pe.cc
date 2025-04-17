@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -67,46 +67,46 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard)
 
 /****** sgeobj/pe/pe_is_matching() ********************************************
 *  NAME
-*     pe_is_matching() -- Does Pe name match the wildcard? 
+*     pe_is_matching() -- Does Pe name match the wildcard?
 *
 *  SYNOPSIS
-*     bool pe_is_matching(const lListElem *pe, const char *wildcard) 
+*     bool pe_is_matching(const lListElem *pe, const char *wildcard)
 *
 *  FUNCTION
 *     The function returns true (1) if the name of the given
-*     "pe" matches the "wildcard". 
+*     "pe" matches the "wildcard".
 *
 *  INPUTS
-*     const lListElem *pe  - PE_Type element 
-*     const char *wildcard - wildcard 
+*     const lListElem *pe  - PE_Type element
+*     const char *wildcard - wildcard
 *
 *  RESULT
-*     bool - true or false 
+*     bool - true or false
 ******************************************************************************/
-bool pe_is_matching(const lListElem *pe, const char *wildcard) 
+bool pe_is_matching(const lListElem *pe, const char *wildcard)
 {
    return pe_name_is_matching(lGetString(pe, PE_name), wildcard);
 }
 
 /****** sgeobj/pe/pe_list_find_matching() *************************************
 *  NAME
-*     pe_list_find_matching() -- Find a PE matching  wildcard expr 
+*     pe_list_find_matching() -- Find a PE matching  wildcard expr
 *
 *  SYNOPSIS
-*     const lListElem* pe_list_find_matching(lList *pe_list, 
-*                                      const char *wildcard) 
+*     const lListElem* pe_list_find_matching(lList *pe_list,
+*                                      const char *wildcard)
 *
 *  FUNCTION
 *     Try to find a PE that matches the given "wildcard" expression.
 *
 *  INPUTS
 *     const lList *pe_list       - PE_Type list
-*     const char *wildcard - Wildcard expression 
+*     const char *wildcard - Wildcard expression
 *
 *  RESULT
 *     lListElem* - PE_Type object or nullptr
 *******************************************************************************/
-lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard) 
+lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
 {
    lListElem *ret = nullptr;
 
@@ -120,37 +120,37 @@ lListElem *pe_list_find_matching(const lList *pe_list, const char *wildcard)
 
 /****** sgeobj/pe/pe_list_locate() ********************************************
 *  NAME
-*     pe_list_locate() -- Locate a certain PE 
+*     pe_list_locate() -- Locate a certain PE
 *
 *  SYNOPSIS
-*     lListElem* pe_list_locate(lList *pe_list, const char *pe_name) 
+*     lListElem* pe_list_locate(lList *pe_list, const char *pe_name)
 *
 *  FUNCTION
-*     Locate the PE with the name "pe_name". 
+*     Locate the PE with the name "pe_name".
 *
 *  INPUTS
 *     lList *pe_list      - PE_Type list
-*     const char *pe_name - PE name 
+*     const char *pe_name - PE name
 *
 *  RESULT
 *     lListElem* - PE_Type object or nullptr
-* 
+*
 *  NOTES
 *     MT-NOTE: pe_list_locate() is MT safe
 ******************************************************************************/
-lListElem *pe_list_locate(const lList *pe_list, const char *pe_name) 
+lListElem *pe_list_locate(const lList *pe_list, const char *pe_name)
 {
    return lGetElemStrRW(pe_list, PE_name, pe_name);
 }
 
 /****** sgeobj/pe/pe_is_referenced() ******************************************
 *  NAME
-*     pe_is_referenced() -- Is a given PE referenced in other objects? 
+*     pe_is_referenced() -- Is a given PE referenced in other objects?
 *
 *  SYNOPSIS
-*     bool pe_is_referenced(const lListElem *pe, lList **answer_list, 
+*     bool pe_is_referenced(const lListElem *pe, lList **answer_list,
 *                           const lList *master_job_list,
-*                           const lList *master_cqueue_list) 
+*                           const lList *master_cqueue_list)
 *
 *  FUNCTION
 *     This function returns true (1) if the given "pe" is referenced
@@ -159,13 +159,13 @@ lListElem *pe_list_locate(const lList *pe_list, const char *pe_name)
 *     a corresponding message will be added to the "answer_list".
 *
 *  INPUTS
-*     const lListElem *pe             - PE_Type object 
-*     lList **answer_list             - AN_Type list 
-*     const lList *master_job_list    - JB_Type list 
+*     const lListElem *pe             - PE_Type object
+*     lList **answer_list             - AN_Type list
+*     const lList *master_job_list    - JB_Type list
 *     const lList *master_cqueue_list - CQ_Type list
 *
 *  RESULT
-*     bool - true or false  
+*     bool - true or false
 ******************************************************************************/
 bool pe_is_referenced(const lListElem *pe, lList **answer_list,
                       const lList *master_job_list,
@@ -187,7 +187,7 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
             ret = true;
             break;
          }
-      } 
+      }
    }
    if (!ret) {
       const lListElem *cqueue = nullptr, *cpl = nullptr;
@@ -201,8 +201,8 @@ bool pe_is_referenced(const lListElem *pe, lList **answer_list,
          for_each_ep(cpl, lGetList(cqueue, CQ_pe_list)){
             if (lGetSubStr(cpl, ST_name, pe_name, ASTRLIST_value))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                                       ANSWER_QUALITY_INFO, 
-                                       MSG_PEREFINQUEUE_SS, 
+                                       ANSWER_QUALITY_INFO,
+                                       MSG_PEREFINQUEUE_SS,
                                        pe_name, lGetString(cqueue, CQ_name));
                ret = true;
                break;
@@ -284,7 +284,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
          ERROR(MSG_PE_STOPPROCARGS_SS, pe_name, err_msg);
       } else {
          answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_PE_STOPPROCARGS_SS, pe_name, err_msg); 
+                                 MSG_PE_STOPPROCARGS_SS, pe_name, err_msg);
       }
       DRETURN(STATUS_EEXIST);
    }
@@ -343,7 +343,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 *     pe_validate_slots() -- Ensure urgency slot setting is valid.
 *
 *  SYNOPSIS
-*     int pe_validate_slots(lList **alpp, u_long32 slots) 
+*     int pe_validate_slots(lList **alpp, u_long32 slots)
 *
 *  FUNCTION
 *     Validates slot setting.
@@ -353,7 +353,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 *     u_long32 slots - The slots value.
 *
 *  RESULT
-*     int - values other than STATUS_OK indicate error condition 
+*     int - values other than STATUS_OK indicate error condition
 *
 *  NOTES
 *     MT-NOTE: pe_validate_slots() is MT safe
@@ -380,7 +380,7 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
 *     pe_validate_urgency_slots() -- Ensure urgency slot setting is valid.
 *
 *  SYNOPSIS
-*     int pe_validate_urgency_slots(lList **alpp, const char *s) 
+*     int pe_validate_urgency_slots(lList **alpp, const char *s)
 *
 *  FUNCTION
 *     Validates urgency slot setting.
@@ -390,7 +390,7 @@ int pe_validate_slots(lList **alpp, u_long32 slots)
 *     const char *s - The urgency slot string to be validated.
 *
 *  RESULT
-*     int - values other than STATUS_OK indicate error condition 
+*     int - values other than STATUS_OK indicate error condition
 *
 *  NOTES
 *     MT-NOTE: pe_validate_urgency_slots() is MT safe
@@ -406,7 +406,7 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s)
       if (answer_list == nullptr) {
          ERROR("rejecting invalid urgency_slots setting \"%s\"\n", s);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_REJECTINGURGENCYSLOTS_S, s); 
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_REJECTINGURGENCYSLOTS_S, s);
       }
       DRETURN(STATUS_ESEMANTIC);
    }
@@ -416,28 +416,28 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s)
 
 /****** sgeobj/pe/pe_list_do_all_exist() **************************************
 *  NAME
-*     pe_list_do_all_exist() -- Check if a list of PE's really exists 
+*     pe_list_do_all_exist() -- Check if a list of PE's really exists
 *
 *  SYNOPSIS
-*     bool 
-*     pe_list_do_all_exist(const lList *pe_list, 
-*                          lList **answer_list, 
-*                          const lList *pe_ref_list, 
-*                          bool ignore_make_pe) 
+*     bool
+*     pe_list_do_all_exist(const lList *pe_list,
+*                          lList **answer_list,
+*                          const lList *pe_ref_list,
+*                          bool ignore_make_pe)
 *
 *  FUNCTION
 *     Check if all PE's in "pe_ref_list" really exist in "pe_list".
-*     If "ignore_make_pe" is 'true' than the test for the PE with the 
+*     If "ignore_make_pe" is 'true' than the test for the PE with the
 *     name "make" will not be done.
 *
 *  INPUTS
-*     const lList *pe_list     - PE_Type list 
-*     lList **answer_list      - AN_Type list 
-*     const lList *pe_ref_list - ST_Type list of PE names 
-*     bool ignore_make_pe      - bool 
+*     const lList *pe_list     - PE_Type list
+*     lList **answer_list      - AN_Type list
+*     const lList *pe_ref_list - ST_Type list of PE names
+*     bool ignore_make_pe      - bool
 *
 *  RESULT
-*     bool 
+*     bool
 *        true  - if all PE's exist
 *        false - if at least one PE does not exist
 *
@@ -454,14 +454,14 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
    for_each_ep(pe_ref_elem, pe_ref_list) {
       const char *pe_ref_string = lGetString(pe_ref_elem, ST_name);
 
-      if (ignore_make_pe && !strcmp(pe_ref_string, "make")) { 
+      if (ignore_make_pe && !strcmp(pe_ref_string, "make")) {
          continue;
       }
       if (pe_list_locate(pe_list, pe_ref_string) == nullptr) {
-         answer_list_add_sprintf(answer_list, STATUS_EEXIST, 
-                                 ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST,
+                                 ANSWER_QUALITY_ERROR,
                                  MSG_PEREFDOESNOTEXIST_S, pe_ref_string);
-         ret = false; 
+         ret = false;
          break;
       }
    }
@@ -473,9 +473,9 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
 *     pe_urgency_slots() -- Compute PEs urgency slot amount for a slot range
 *
 *  SYNOPSIS
-*     int pe_urgency_slots(const lListElem *pe, 
-*                          const char *urgency_slot_setting, 
-*                          const lList* range_list) 
+*     int pe_urgency_slots(const lListElem *pe,
+*                          const char *urgency_slot_setting,
+*                          const lList* range_list)
 *
 *  FUNCTION
 *     Compute PEs urgency slot amount for a slot range. The urgency slot
@@ -493,8 +493,8 @@ bool pe_list_do_all_exist(const lList *pe_list, lList **answer_list,
 *  NOTES
 *     MT-NOTE: pe_urgency_slots() is MT safe
 *******************************************************************************/
-int 
-pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting, 
+int
+pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
                  const lList* range_list)
 {
    int n;
@@ -504,18 +504,18 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
    if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MIN)) {
       n = range_list_get_first_id(range_list, nullptr);
    } else if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_MAX)) {
-      /* 
-       * in case of an infinity slot range we use the 
-       * maximum PE slot number instead 
+      /*
+       * in case of an infinity slot range we use the
+       * maximum PE slot number instead
        */
       n = range_list_get_last_id(range_list, nullptr);
       if (n == RANGE_INFINITY) {
          n = lGetUlong(pe, PE_slots);
       }
    } else if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_AVG)) {
-      /* 
-       * to handle infinity slot ranges we use the maximum PE 
-       * slot number as upper bound when determining the average 
+      /*
+       * to handle infinity slot ranges we use the maximum PE
+       * slot number as upper bound when determining the average
        */
       n = range_list_get_average(range_list, lGetUlong(pe, PE_slots));
    } else if (isdigit(urgency_slot_setting[0])) {
@@ -530,7 +530,7 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
 /****** sgeobj/pe/pe_create_template() ****************************************
 *
 *  NAME
-*     pe_create_template -- build up a generic pe object 
+*     pe_create_template -- build up a generic pe object
 *
 *  SYNOPSIS
 *     lListElem *pe_create_template(char *pe_name);
@@ -547,7 +547,7 @@ pe_urgency_slots(const lListElem *pe, const char *urgency_slot_setting,
 *     nullptr - Error
 *
 *  NOTES
-*     MT-NOTE: pe_set_slots_used() is MT safe 
+*     MT-NOTE: pe_set_slots_used() is MT safe
 *******************************************************************************/
 lListElem* pe_create_template(char *pe_name)
 {
@@ -564,8 +564,8 @@ lListElem* pe_create_template(char *pe_name)
    }
 
    lSetString(pep, PE_allocation_rule, "$pe_slots");
-   lSetString(pep, PE_start_proc_args, "/usr/bin/true");
-   lSetString(pep, PE_stop_proc_args, "/usr/bin/true");
+   lSetString(pep, PE_start_proc_args, "NONE");
+   lSetString(pep, PE_stop_proc_args, "NONE");
 
    /* PE_control_slaves initialized implicitly to false */
    lSetBool(pep, PE_job_is_first_task, TRUE);
@@ -580,7 +580,7 @@ lListElem* pe_create_template(char *pe_name)
 *     pe_get_slots_used() -- Returns used PE slots
 *
 *  SYNOPSIS
-*     int pe_get_slots_used(const lListElem *pe) 
+*     int pe_get_slots_used(const lListElem *pe)
 *
 *  FUNCTION
 *     Returns the number of currently used PE slots.
@@ -592,18 +592,18 @@ lListElem* pe_create_template(char *pe_name)
 *     int - number of currently used PE slots or -1 on error
 *
 *  NOTES
-*     MT-NOTE: pe_get_slots_used() is MT safe 
+*     MT-NOTE: pe_get_slots_used() is MT safe
 *******************************************************************************/
 int pe_get_slots_used(const lListElem *pe)
 {
    int ret = -1;
-   const lListElem *actual = lGetSubStr(pe, RUE_name, SGE_ATTR_SLOTS, 
+   const lListElem *actual = lGetSubStr(pe, RUE_name, SGE_ATTR_SLOTS,
                                         PE_resource_utilization);
 
    if (actual) {
       ret = lGetDouble(actual, RUE_utilized_now);
    }
-   return ret; 
+   return ret;
 }
 
 /****** sgeobj/pe/pe_set_slots_used() *****************************************
@@ -611,27 +611,27 @@ int pe_get_slots_used(const lListElem *pe)
 *     pe_set_slots_used() -- Set number of used PE slots
 *
 *  SYNOPSIS
-*     int pe_set_slots_used(lListElem *pe, int slots) 
+*     int pe_set_slots_used(lListElem *pe, int slots)
 *
 *  FUNCTION
 *     Sets the number of used PE slots.
 *
 *  INPUTS
-*     lListElem *pe - The pe object (PE_Type) 
+*     lListElem *pe - The pe object (PE_Type)
 *     int slots     - Number of slots.
 *
 *  RESULT
 *     int - 0 on success -1 on error
 *
 *  NOTES
-*     MT-NOTE: pe_set_slots_used() is MT safe 
+*     MT-NOTE: pe_set_slots_used() is MT safe
 *******************************************************************************/
 int pe_set_slots_used(lListElem *pe, int slots)
 {
    lListElem *actual = lGetSubStrRW(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization);
    if (!actual && (!(actual = lAddSubStr(pe, RUE_name, SGE_ATTR_SLOTS, PE_resource_utilization, RUE_Type))))
       return -1;
-   lSetDouble(actual, RUE_utilized_now, slots); 
+   lSetDouble(actual, RUE_utilized_now, slots);
    return 0;
 }
 
@@ -641,7 +641,7 @@ int pe_set_slots_used(lListElem *pe, int slots)
 *     pe_debit_slots() -- Debit pos/neg amount of slots from PE
 *
 *  SYNOPSIS
-*     void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id) 
+*     void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
 *
 *  FUNCTION
 *     Increases or decreses the number of slots used with a PE.
@@ -652,9 +652,9 @@ int pe_set_slots_used(lListElem *pe, int slots)
 *     u_long32 job_id - Job id for monitoring purposes.
 *
 *  NOTES
-*     MT-NOTE: pe_debit_slots() is MT safe 
+*     MT-NOTE: pe_debit_slots() is MT safe
 *******************************************************************************/
-void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id) 
+void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
 {
    int n;
 
@@ -676,7 +676,7 @@ void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
 *     pe_do_accounting_summary() -- do accounting summary?
 *
 *  SYNOPSIS
-*     bool 
+*     bool
 *     pe_do_accounting_summary(const lListElem *pe)
 *
 *  FUNCTION
@@ -692,7 +692,7 @@ void pe_debit_slots(lListElem *pep, int slots, u_long32 job_id)
 *     bool - true (do summary), or false (many records)
 *
 *  NOTES
-*     MT-NOTE: pe_do_accounting_summary() is MT safe 
+*     MT-NOTE: pe_do_accounting_summary() is MT safe
 *******************************************************************************/
 bool
 pe_do_accounting_summary(const lListElem *pe)
