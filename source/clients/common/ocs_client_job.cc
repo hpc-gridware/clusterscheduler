@@ -92,6 +92,9 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("job_number:                 %s\n", MSG_JOB_UNASSIGNED);
    }
 
+   if (lGetPosViaElem(job, JB_category_id, SGE_NO_ABORT) >= 0)
+      printf("category_id:                " sge_uu32 "\n", lGetUlong(job, JB_category_id));
+
    if (lGetPosViaElem(job, JB_exec_file, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_exec_file))
          printf("exec_file:                  %s\n", lGetString(job, JB_exec_file));

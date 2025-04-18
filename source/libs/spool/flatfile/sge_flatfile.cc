@@ -322,7 +322,7 @@ const spool_flatfile_instr qconf_cat_list_sfi =
    nullptr,
    false,
    true,
-   true,
+   false,
    false,
    true,
    false,
