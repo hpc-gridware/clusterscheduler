@@ -510,8 +510,12 @@ unsigned short sge_options[][ALL_OPT + 1] =
 /* stl_OPT show thread list */
  {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 /* dept_OPT set department of job */
- {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1}
-  /*
+ {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* scatl_OPT show category list */
+{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* scat_OPT show category */
+{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+   /*
      n  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
      o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L
      n  l  o  e  o  a  o  e  l  e  h  s  o  t  u  e  v  s  d  s  n  L

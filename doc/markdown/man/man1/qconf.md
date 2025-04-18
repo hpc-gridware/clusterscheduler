@@ -566,6 +566,12 @@ Display the configuration of the specified calendar.
 ## -scall 
 Show a list of all calendars currently defined.
 
+## -scat *cat_id*
+Display characteristics of the given category ID *cat_id*. IDs of existing categories can be obtained from the output of `-scatl`.
+
+## -scatl
+Show a list of all categories currently defined. (see xxqs_name_sxx_category(5))
+
 ## -sckpt *ckpt_name*
 Display the configuration of the specified checkpointing environment.
 

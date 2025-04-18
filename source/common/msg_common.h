@@ -50,6 +50,7 @@
 #define MSG_TABLE_EV_POOL                          "POOL"
 #define MSG_TABLE_SIZE                             "SIZE"
 
+#define MSG_GDI_ARGUMENTSYNTAX_QA_CATEGORY_ID          "cat_id                  category ID"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING       "account_string          account_name"
 #define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_EXP "exp                     explicit:<socket>,<core>[:...]"
 #define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_LIN "lin                     linear:<amount>[:<socket>,<core>]"
@@ -1062,5 +1063,11 @@
 #define MSG_GDI_BUILT_WITHOUT_MUNGE       _MESSAGE(60724, _("product was built without Munge support"))
 
 #define MSG_CONTACT_HPC_GRIDWARE          _MESSAGE(60725, _("The functionality is available in the commercial version of the product.\nPlease contact HPC-Gridware GmbH (sales@hpc-gridware.com) for further information."))
+
+#define MSG_GDI_USAGE_scatl_OPT_CATEGORY_NAME "[-scatl]"
+#define MSG_GDI_UTEXT_scatl_OPT_CATEGORY_NAME _MESSAGE(60726, _("show list of all categories" ))
+
+#define MSG_GDI_USAGE_scat_OPT_CATEGORY_NAME  "[-scat cat_id]"
+#define MSG_GDI_UTEXT_scat_OPT_CATEGORY_NAME  _MESSAGE(60727, _("show category" ))
 
 // clang-format on

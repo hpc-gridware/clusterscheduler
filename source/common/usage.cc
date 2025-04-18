@@ -207,6 +207,8 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
          return MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_LIN;
      case OA_BINDING_STRIDING:
          return MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_STR;
+     case OA_CATEGORY_ID:
+         return MSG_GDI_ARGUMENTSYNTAX_QA_CATEGORY_ID;
      default:
          break; 
    }
@@ -1058,12 +1060,20 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(scal_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_scal_OPT_CALENDAR_NAME, 
-         MSG_GDI_UTEXT_scal_OPT_CALENDAR_NAME);
+      PRINTITD(MSG_GDI_USAGE_scal_OPT_CALENDAR_NAME, MSG_GDI_UTEXT_scal_OPT_CALENDAR_NAME);
    }
 
    if (VALID_OPT(scall_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_scall_OPT, MSG_GDI_UTEXT_scall_OPT);
+   }
+
+   if (VALID_OPT(scat_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_scatl_OPT_CATEGORY_NAME, MSG_GDI_UTEXT_scatl_OPT_CATEGORY_NAME);
+   }
+
+   if (VALID_OPT(scatl_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_scat_OPT_CATEGORY_NAME, MSG_GDI_UTEXT_scat_OPT_CATEGORY_NAME);
+      MARK(OA_CATEGORY_ID);
    }
 
    if (VALID_OPT(sckpt_OPT, prog_number)) {
