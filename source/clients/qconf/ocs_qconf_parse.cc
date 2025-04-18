@@ -6626,7 +6626,7 @@ qconf_is_adminhost(const char *host) {
 
    // if host has no permission then exit
    if (!is_admin_host) {
-      fprintf(stderr, MSG_ANSWER_DENIEDHOSTXISNOADMINHOST_S, host);
+      fprintf(stderr,MSG_SGETEXT_NOADMINHOST_S, host);
       fprintf(stderr, "\n");
       sge_exit(1);
    }
@@ -6663,7 +6663,7 @@ qconf_is_manager_on_admin_host(const char *user, const char *host) {
    }
    // if host has no permission then exit
    if (!is_admin_host) {
-      fprintf(stderr, MSG_ANSWER_DENIEDHOSTXISNOADMINHOST_S, host);
+      fprintf(stderr, MSG_SGETEXT_NOADMINHOST_S, host);
       fprintf(stderr, "\n");
       sge_exit(1);
    }

@@ -283,9 +283,10 @@
 #define MSG_ANSWER_CONFIGUNCHANGED                 _MESSAGE(23204, _("configuration unchanged"))
 #define MSG_ANSWER_ERRORREADINGTEMPFILE            _MESSAGE(23205, _("error reading temp file"))
 #define MSG_ANSWER_ERRORREADINGCONFIGFROMFILEX_S   _MESSAGE(23206, _("error reading configuration from file " SFN))
-#define MSG_ANSWER_DENIEDHOSTXISNOADMINHOST_S      _MESSAGE(23207, _("denied: host " SFQ " is no admin host"))
-#define MSG_TREE_UNABLETOLACATEXINSHARETREE_S      _MESSAGE(23208, _("Unable to locate " SFN " in sharetree"))
-#define MSG_OBJ_NOSTREEELEM                        _MESSAGE(23209, _("no sharetree element"))
+#define MSG_SGETEXT_NOADMINHOST_S                  _MESSAGE(23207, _("denied: host " SFQ " is no admin host"))
+#define MSG_SGETEXT_NOSUBMITHOST_S                 _MESSAGE(23208, _("denied: host " SFQ " is no submit host"))
+#define MSG_TREE_UNABLETOLACATEXINSHARETREE_S      _MESSAGE(23209, _("Unable to locate " SFN " in sharetree"))
+#define MSG_OBJ_NOSTREEELEM                        _MESSAGE(23210, _("no sharetree element"))
 
 #define MSG_STREE_NOVALIDNODEREF_U                 _MESSAGE(23222, _("found reference to node " sge_uu32 " but no specification"))
 

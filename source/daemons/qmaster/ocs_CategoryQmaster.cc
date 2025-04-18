@@ -213,6 +213,7 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, b
    // decrease the reference count or remove the category
    bool is_del = false;
    u_long32 refcount = lGetUlong(category, CT_refcount);
+   u_long32 category_id = lGetUlong(category, CT_id);
    if (refcount > 1) {
       lSetUlong(category, CT_refcount, refcount - 1);
    } else {
@@ -222,7 +223,7 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, lListElem *job, b
 
    if (send_events) {
       ev_event category_event = is_del ? sgeE_CATEGORY_DEL : sgeE_CATEGORY_MOD;
-      sge_add_event(0, category_event, lGetUlong(job, JB_category_id), 0,
+      sge_add_event(0, category_event, category_id, 0,
                     nullptr, nullptr, nullptr, category, gdi_session);
    }
 
@@ -331,7 +332,7 @@ ocs::CategoryQmaster::refresh_cat_data_in_job(lList *master_category_list, lList
    u_long32 category_id = lGetUlong(job, JB_category_id);
    lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
 
-   DPRINTF("###### category id: %lu (%p)\n", category_id, category);
+   DPRINTF("###### job / cat_id / ptr: " sge_uu32 " /  " sge_uu32 "/ %p\n", lGetUlong(job, JB_job_number), category_id, category);
 
    lSetRef(job, JB_category, category);
    DRETURN_VOID;

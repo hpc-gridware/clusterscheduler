@@ -118,13 +118,19 @@ generic_update_master_list(sge_evc_class_t *evc,
                            void *client_data);
 
 static sge_callback_result
-ar_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                       sge_event_action action, lListElem *event, void *client_data);
+ar_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *client_data);
 
 static
-sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
-                                                      int key_nm, u_long32 key,
-                                                      sge_event_action action, lListElem *event);
+sge_mirror_error
+sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
+                                     int key_nm, u_long32 key, sge_event_action action, lListElem *event);
+
+static sge_callback_result
+cat_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *client_data);
+
+static sge_mirror_error
+sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
+                                      int key_nm, u_long32 key, sge_event_action action, lListElem *event);
 
 /*
  * One entry per event type, this is the basic definition.
@@ -162,8 +168,8 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
-   { nullptr, nullptr,                                   nullptr, nullptr }, /*jobscripts*/
-   { nullptr, generic_update_master_list,             nullptr, nullptr }, // sgeE_CATEGORY_LIST
+   { nullptr, nullptr,                                nullptr, nullptr }, /*jobscripts*/
+   { nullptr, cat_update_master_list,                 nullptr, nullptr }, // sgeE_CATEGORY_LIST
 };
 
 /*-------------------------*/
@@ -1765,7 +1771,6 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
    DRETURN(SGE_EM_OK);
 }
 
-static sge_callback_result
 /****** sge_mirror/ar_update_master_list() *************************************
 *  NAME
 *     ar_update_master_list() -- update the master advance reservation list
@@ -1793,6 +1798,7 @@ static sge_callback_result
 *  NOTES
 *     MT-NOTE: ar_update_master_list() is not MT safe
 *******************************************************************************/
+static sge_callback_result
 ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
@@ -1807,6 +1813,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
    }
    DRETURN(SGE_EMA_OK);
 }
+
 
 /****** sge_mirror/sge_mirror_update_master_list_ar_key() **********************
 *  NAME
@@ -1852,6 +1859,44 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
       DSTRING_STATIC(dstr, 32);
       ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key),
                                           action, event);
+   } else {
+      ret = SGE_EM_NOT_INITIALIZED;
+   }
+
+   DRETURN(ret);
+}
+
+static sge_callback_result
+cat_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
+{
+   DENTER(TOP_LAYER);
+   lList **list = ocs::DataStore::get_master_list_rw(type);
+   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   int key_nm = object_type_get_key_nm(type);
+   u_long32 key = lGetUlong(event, ET_intkey);
+
+   if (sge_mirror_update_master_list_cat_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
+      DRETURN(SGE_EMA_FAILURE);
+   }
+   DRETURN(SGE_EMA_OK);
+}
+
+static sge_mirror_error
+sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
+                                     int key_nm, u_long32 key, sge_event_action action, lListElem *event)
+{
+   DENTER(TOP_LAYER);
+
+   sge_mirror_error ret;
+   if (list != nullptr) {
+      lListElem *ep = nullptr;
+      if (key > 0) {
+         ep = lGetElemUlongRW(*list, key_nm, key);
+      }
+
+      DSTRING_STATIC(dstr, 32);
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key), action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
    }
