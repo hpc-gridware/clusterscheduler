@@ -104,9 +104,24 @@ definitions. Some dependencies may be optional for a platform that can be enable
 6. Specify the product parts that need to get installed as part of the `cmake` installation process. Following
    parts are available:
 
-    * *INSTALL_SGE_BIN* 
+    * *INSTALL_SGE_BIN*  
    
-      All binaries and libraries
+      All binaries and libraries. Will overwrite *INSTALL_SGE_BIN_CLIENT*, *INSTALL_SGE_BIN_EXEC* and *INSTALL_SGE_BIN_MASTER*.
+   
+    * *INSTALL_SGE_BIN_CLIENT*
+  
+      All client binaries (e.g. `qconf`, `qstat`, `qsub`, etc.) and required libraries.
+      Might be overwritten by the *INSTALL_SGE_BIN* option.
+    
+    * *INSTALL_SGE_BIN_EXEC*
+   
+      All server binaries required to run the execution daemon (e.g. `sge_execd`, `shepherd`, etc.) and required libraries
+      Might be overwritten by the *INSTALL_SGE_BIN* option.
+
+    * *INSTALL_SGE_BIN_MASTER*
+   
+      All components to run the master daemon (e.g. `sge_qmaster`, `sge_shadowd`, etc.) and required libraries
+      Might be overwritten by the *INSTALL_SGE_BIN* option.
    
     * *INSTALL_SGE_COMMON* 
    

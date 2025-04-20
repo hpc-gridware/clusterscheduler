@@ -108,7 +108,9 @@ pkg install openjdk8-8.402.06.1_1 maven
 MacPorts is required to install the packages.
 
 ```
-XCodeUpdate
+XCode
+XCode command line tools
+set SDKROOT to the SDK path that should be used (usually do `export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)`)
 XQuartz (for some testsuite tests)
 port install cmake git autoconf automake gettext munge
 port install expect tcl-tk gnuplot perl
