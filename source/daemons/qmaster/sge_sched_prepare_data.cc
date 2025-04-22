@@ -552,6 +552,9 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
          break;
 
       case SGE_EMA_MOD:
+
+         // recompute the priorities for the job
+         sge_do_priority_job(job);
          switch (lGetUlong(event, ET_type)) {
             case sgeE_JOB_FINAL_USAGE: {
                const char *pe_task_id = lGetString(event, ET_strkey);
