@@ -242,7 +242,7 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
-#define total_update_eventsMAX 21
+#define total_update_eventsMAX 22
 
 const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST,
                                        sgeE_CALENDAR_LIST,
@@ -250,6 +250,7 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        sgeE_CENTRY_LIST,
                                        sgeE_CONFIG_LIST,
                                        sgeE_EXECHOST_LIST,
+                                       sgeE_CATEGORY_LIST,
                                        sgeE_JOB_LIST,
                                        sgeE_JOB_SCHEDD_INFO_LIST,
                                        sgeE_MANAGER_LIST,
@@ -274,6 +275,7 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_CENTRY_ADD,    sgeE_CENTRY_DEL,    sgeE_CENTRY_MOD,    -1, -1, -1, -1, -1, -1},
    {sgeE_CONFIG_ADD,    sgeE_CONFIG_DEL,    sgeE_CONFIG_MOD,    -1, -1, -1, -1, -1, -1},
    {sgeE_EXECHOST_ADD,  sgeE_EXECHOST_DEL,  sgeE_EXECHOST_MOD,  -1, -1, -1, -1, -1, -1},
+   {sgeE_CATEGORY_ADD,  sgeE_CATEGORY_DEL,  sgeE_CATEGORY_MOD,  -1, -1, -1, -1, -1, -1},
    {sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, sgeE_JOB_MOD_SCHED_PRIORITY, sgeE_JOB_USAGE, sgeE_JOB_FINAL_USAGE, sgeE_JOB_FINISH, -1, -1},
    {sgeE_JOB_SCHEDD_INFO_ADD, sgeE_JOB_SCHEDD_INFO_DEL, sgeE_JOB_SCHEDD_INFO_MOD, -1, -1, -1, -1, -1, -1},
    {sgeE_MANAGER_ADD,         sgeE_MANAGER_DEL,         sgeE_MANAGER_MOD,         -1, -1, -1, -1, -1, -1},
@@ -768,6 +770,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CENTRY_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CONFIG_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_EXECHOST_LIST);
+      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CATEGORY_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_JOB_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_JOB_SCHEDD_INFO_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_MANAGER_LIST);
@@ -1966,6 +1969,7 @@ init_send_events() {
    SEND_EVENTS[sgeE_CENTRY_LIST] = true;
    SEND_EVENTS[sgeE_CONFIG_LIST] = true;
    SEND_EVENTS[sgeE_EXECHOST_LIST] = true;
+   SEND_EVENTS[sgeE_CATEGORY_LIST] = true;
    SEND_EVENTS[sgeE_JOB_LIST] = true;
    SEND_EVENTS[sgeE_JOB_SCHEDD_INFO_LIST] = true;
    SEND_EVENTS[sgeE_MANAGER_LIST] = true;
@@ -2373,6 +2377,7 @@ total_update(lListElem *event_client, u_long64 gdi_session)
    total_update_event(event_client, sgeE_CENTRY_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CONFIG_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_EXECHOST_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_CATEGORY_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_JOB_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_JOB_SCHEDD_INFO_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_MANAGER_LIST, false, gdi_session);
@@ -2912,6 +2917,9 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
             break;
          case sgeE_AR_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+            break;
+         case sgeE_CATEGORY_LIST:
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
             break;
          default:
             WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);

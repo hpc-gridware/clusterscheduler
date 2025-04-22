@@ -420,13 +420,27 @@ const char *event_text(const lListElem *event, dstring *buffer)
       sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ADVANCE RESERVATION", n);
       break;
    case sgeE_AR_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "ADVANCE RESERVATION", intkey);
       break;
    case sgeE_AR_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "ADVANCE RESERVATION", intkey);
       break;
    case sgeE_AR_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "ADVANCE RESERVATION", strkey);
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "ADVANCE RESERVATION", intkey);
+      break;
+
+   /* -------------------- */
+   case sgeE_CATEGORY_LIST:
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CATEGORY", n);
+      break;
+   case sgeE_CATEGORY_ADD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "CATEGORY", intkey);
+      break;
+   case sgeE_CATEGORY_DEL:
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "CATEGORY", intkey);
+      break;
+   case sgeE_CATEGORY_MOD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "CATEGORY", intkey);
       break;
 
    /* -------------------- */

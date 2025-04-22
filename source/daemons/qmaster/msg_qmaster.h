@@ -148,9 +148,8 @@
 #define MSG_MEM_MALLOC           _MESSAGE(33121, _("malloc failure"))
 #define MSG_SGETEXT_UNKNOWNOP    _MESSAGE(33122, _("unknown operation"))
 
-#define MSG_SGETEXT_OPNOIMPFORTARGET             _MESSAGE(33125, _("operation not implemented for target"))
-#define MSG_SGETEXT_NOADMINHOST_S                _MESSAGE(33126, _("denied: host " SFQ " is no admin host"))
-#define MSG_SGETEXT_NOSUBMITHOST_S               _MESSAGE(33127, _("denied: host " SFQ " is no submit host"))
+#define MSG_SGETEXT_OPNOIMPFORTARGET_S           _MESSAGE(33125, _("operation not implemented for target in " SFN))
+
 #define MSG_SGETEXT_NOSUBMITORADMINHOST_S        _MESSAGE(33128, _("denied: host " SFQ " is neither submit nor admin host"))
 #define MSG_SGETEXT_ALREADYEXISTS_SS             _MESSAGE(33129, _("" SFN " " SFQ " already exists"))
 #define MSG_SGETEXT_JOBINFOMESSAGESOUTDATED      _MESSAGE(33130, _("Can not get job info messages, scheduler is not available"))

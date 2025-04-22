@@ -44,6 +44,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sched/sge_resource_utilization.h"
 
+#include "sgeobj/ocs_Category.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
@@ -62,9 +63,6 @@
 #include "sge_job_qmaster.h"
 #include "sge_reporting_qmaster.h"
 #include "sge_rusage.h"
-
-#include "msg_common.h"
-#include "category.h"
 
 /****** qmaster/reporting/--Introduction ***************************
 *  NAME
@@ -267,8 +265,7 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
    if (!intermediate) {
       DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
       const char *category_string;
-      sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list,
-                                     nullptr, master_rqs_list);
+      Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
       category_string = sge_dstring_get_string(&category_dstring);
 
       dstring job_dstring = DSTRING_INIT;
@@ -351,8 +348,7 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
 
    DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
    const char *category_string = nullptr;
-   sge_build_job_category_dstring(&category_dstring, job, master_userset_list, master_project_list, nullptr,
-                                  master_rqs_list);
+   Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
    category_string = sge_dstring_get_string(&category_dstring);
 
    // reporting records will be written both for intermediate and final job reports

@@ -64,14 +64,13 @@
 #include "sched/schedd_monitor.h"
 
 #include "basis_types.h"
+#include "ocs_CategoryQmaster.h"
 #include "ocs_ReportingFileWriter.h"
-#include "sge_sched_job_category.h"
 #include "sge_sched_order.h"
 #include "sge_thread_main.h"
 #include "sge_thread_scheduler.h"
 #include "setup_qmaster.h"
 #include "sge_sched_process_events.h"
-
 #include "sge.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -633,6 +632,7 @@ sge_scheduler_main(void *arg) {
          const lList *master_hgrp_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
          const lList *master_sharetree_list = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
          const lList *master_config_list = *ocs::DataStore::get_master_list(SGE_TYPE_CONFIG);
+         const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
 
          /* delay scheduling for test purposes, see issue GE-3306 */
          if (SGE_TEST_DELAY_SCHEDULING > 0) {
@@ -679,6 +679,7 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfLeafs(nullptr, master_sharetree_list, STN_children)
                  );
 
+#if 0
          /* rebuild all job categories
           * - when the scheduler config changed
           * - when the projects were added/modified/deleted
@@ -687,6 +688,7 @@ sge_scheduler_main(void *arg) {
           * */
          sge_rebuild_job_category(master_job_list, master_userset_list,
                                   master_project_list, master_rqs_list);
+#endif
 
          PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM7);
          double prof_init = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
@@ -713,7 +715,9 @@ sge_scheduler_main(void *arg) {
           *  - the resource request dependent urgency contribution is cached
           *    per job category
           */
+#if 0
          sge_reset_job_category();
+#endif
 
          // prepare data for the scheduler itself
          copy.host_list = lCopyList(nullptr, master_exechost_list);
@@ -769,7 +773,11 @@ sge_scheduler_main(void *arg) {
             }
          }
 
+         copy.category_list = lCopyList(nullptr, master_category_list);
          copy.job_list = lCopyList(nullptr, master_job_list);
+
+         // store category reference in each job
+         ocs::CategoryQmaster::refresh_cat_data_all_jobs(copy.category_list, copy.job_list);
 
          /* no need to copy these lists, they are read only used */
          copy.centry_list = master_centry_list;
@@ -843,6 +851,10 @@ sge_scheduler_main(void *arg) {
          double prof_run = prof_get_measurement_wallclock(SGE_PROF_CUSTOM7, true, nullptr);
          PROF_START_MEASUREMENT(SGE_PROF_CUSTOM7);
 
+         // free category cache within the category list
+         ocs::CategoryQmaster::reset_tmp_data(copy.category_list);
+         lFreeList(&(copy.category_list));
+
          /* ... which gets deleted after using */
          lFreeList(&(copy.host_list));
          lFreeList(&(copy.queue_list));
@@ -893,9 +905,9 @@ sge_scheduler_main(void *arg) {
 
          if (prof_is_active(SGE_PROF_CUSTOM6)) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
-                                  "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
-                    prof_total, prof_init, prof_copy, prof_run, prof_free,
-                    lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)), sge_category_count(), 0);
+                      "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
+                      prof_total, prof_init, prof_copy, prof_run, prof_free,
+                      lGetNumberOfElem(master_job_list), lGetNumberOfElem(master_category_list), 0);
          }
          if (getenv("SGE_ND") != nullptr) {
             printf("--------------STOP-SCHEDULER-RUN-------------\n");

@@ -435,7 +435,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    //    - admin/submit/exec host
    if (local_ret) {
       for (auto *task : packet->tasks) {
-         local_ret = sge_c_gdi_check_execution_permission(packet, task, monitor);
+         local_ret = sge_c_gdi_check_execution_permission(packet, task);
          if (!local_ret) {
             break;
          }

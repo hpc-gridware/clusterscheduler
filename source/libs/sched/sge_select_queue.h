@@ -224,3 +224,8 @@ dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);
 
 void
 sge_ar_swap_resource_lists(sge_assignment_t &a);
+
+dispatch_t
+parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, lListElem *centry,
+                             lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
+                             bool is_master_queue);

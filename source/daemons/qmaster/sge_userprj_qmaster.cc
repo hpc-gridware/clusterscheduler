@@ -58,6 +58,7 @@
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/ocs_DataStore.h"
 
+#include "ocs_CategoryQmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
@@ -254,11 +255,21 @@ userprj_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
       obj_mod_event = sgeE_USER_MOD;
    }
 
+   bool reattach_categories = false;
    for_each_ep(rqs, *(ocs::DataStore::get_master_list(SGE_TYPE_RQS))) {
       if (scope_is_referenced_rqs(rqs, obj_filter, lGetString(ep, obj_key))) {
          lSetBool(ep, obj_consider, true);
+         reattach_categories = true;
          break;
       }
+   }
+
+   if (reattach_categories) {
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, packet->gdi_session);
    }
 
    sge_add_event(0, old_ep ? obj_mod_event : obj_add_event, 0, 0, lGetString(ep, obj_key), nullptr, nullptr, ep, packet->gdi_session);
@@ -722,11 +733,11 @@ static bool project_still_used(const char *p) {
 *     MT-NOTE: project_update_categories() is not MT safe
 *******************************************************************************/
 void project_update_categories(const lList *added, const lList *removed, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
    const lListElem *ep;
    const char *p;
    lListElem *prj;
-
-   DENTER(TOP_LAYER);
+   bool reattach_categories = false;
 
    for_each_ep(ep, added) {
       p = lGetString(ep, PR_name);
@@ -734,6 +745,7 @@ void project_update_categories(const lList *added, const lList *removed, u_long6
       prj = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_PROJECT), PR_name, p);
       if (prj && !lGetBool(prj, PR_consider_with_categories)) {
          lSetBool(prj, PR_consider_with_categories, true);
+         reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }
    }
@@ -745,8 +757,18 @@ void project_update_categories(const lList *added, const lList *removed, u_long6
 
       if (prj && !project_still_used(p)) {
          lSetBool(prj, PR_consider_with_categories, false);
+         reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }
+   }
+
+   // reattach all jobs to categories and consider the new project attributes
+   if (reattach_categories) {
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+      ocs::CategoryQmaster::reattach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, true, gdi_session);
    }
 
    DRETURN_VOID;

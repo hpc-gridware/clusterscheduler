@@ -219,7 +219,24 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
          Global_jobs_registered--;
          fflush(stdout);  
       }
-
+      if (event_type == sgeE_CATEGORY_ADD) {
+         u_long category_id  = lGetUlong(event, ET_intkey);
+         fprintf(stdout,"CATEGORY_ADD (%ld:ECL_TIME=" sge_u64 ")\n", category_id, timestamp);
+         Global_jobs_registered--;
+         fflush(stdout);
+      }
+      if (event_type == sgeE_CATEGORY_MOD) {
+         u_long category_id  = lGetUlong(event, ET_intkey);
+         fprintf(stdout,"CATEGORY_MOD (%ld:ECL_TIME=" sge_u64 ")\n", category_id, timestamp);
+         Global_jobs_registered--;
+         fflush(stdout);
+      }
+      if (event_type == sgeE_CATEGORY_DEL) {
+         u_long category_id  = lGetUlong(event, ET_intkey);
+         fprintf(stdout,"CATEGORY_DEL (%ld:ECL_TIME=" sge_u64 ")\n", category_id, timestamp);
+         Global_jobs_registered--;
+         fflush(stdout);
+      }
    }
    DRETURN(SGE_EMA_OK);
 }
@@ -677,7 +694,13 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    sge_mirror_subscribe(evc, SGE_TYPE_JATASK, print_jatask_event, nullptr, nullptr, where, what);
    lFreeWhere(&where);
    lFreeWhat(&what);
- 
+
+   where = nullptr;
+   what =  lIntVector2What(JB_Type, job_nm);
+   sge_mirror_subscribe(evc, SGE_TYPE_CATEGORY, print_jatask_event, nullptr, nullptr, nullptr, nullptr);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
+
    /* we want a 5-second event delivery interval */
    evc->ec_set_edtime(evc, 5);
 
@@ -687,6 +710,10 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
    evc->ec_set_flush(evc, sgeE_JOB_FINISH, true, 1);
    evc->ec_set_flush(evc, sgeE_JOB_ADD, true, 1);
    evc->ec_set_flush(evc, sgeE_JOB_DEL, true, 1);
+
+   evc->ec_set_flush(evc, sgeE_CATEGORY_ADD, true, 1);
+   evc->ec_set_flush(evc, sgeE_CATEGORY_MOD, true, 1);
+   evc->ec_set_flush(evc, sgeE_CATEGORY_DEL, true, 1);
 
 #endif /* QEVENT_SHOW_ALL */
    

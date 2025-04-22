@@ -60,6 +60,7 @@
 #include "gdi/ocs_gdi_Task.h"
 #include "gdi/ocs_gdi_Command.h"
 
+#include "ocs_CategoryQmaster.h"
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_thread_scheduler.h"
@@ -143,7 +144,7 @@ static bool
 sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 target);
 
 static bool
-sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
+sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 static bool
 sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, u_long32 target);
@@ -191,7 +192,8 @@ static gdi_object_t gdi_object[] = {
         {ocs::gdi::Target::SGE_HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,          hgroup_mod,   hgroup_spool,   hgroup_success},
         {ocs::gdi::Target::SGE_AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success},
         {ocs::gdi::Target::SGE_DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::NO_TARGET,                0,         nullptr,   nullptr,                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr}
+        {ocs::gdi::Target::SGE_CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,        nullptr,      nullptr,        nullptr},
+        {ocs::gdi::Target::NO_TARGET,        0,         nullptr,   nullptr,                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr}
 };
 
 /* *INDENT-ON* */
@@ -255,13 +257,12 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 }
 
 bool
-sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                                     monitoring_t *monitor) {
+sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
    int operation = task->command;
    switch (operation) {
       case ocs::gdi::Command::SGE_GDI_GET:
-         DRETURN(sge_task_check_get_perm_host(packet, task, monitor));
+         DRETURN(sge_task_check_get_perm_host(packet, task));
       case ocs::gdi::Command::SGE_GDI_ADD:
       case ocs::gdi::Command::SGE_GDI_MOD:
       case ocs::gdi::Command::SGE_GDI_COPY:
@@ -450,7 +451,7 @@ sge_c_gdi_get_in_listener(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
    lFreeList(&(task->data_list));
 
    // check the permission
-   if (!sge_task_check_get_perm_host(packet, task, monitor)) {
+   if (!sge_task_check_get_perm_host(packet, task)) {
       DRETURN_VOID;
    }
 
@@ -489,11 +490,8 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_END);
          DRETURN_VOID;
       case ocs::gdi::Target::SGE_SC_LIST: /* TODO EB: move this into the scheduler configuration,
-                                    and pack the list right away */
-      {
-         lList *conf = nullptr;
-
-         conf = sconf_get_config_list();
+                                    and pack the list right away */ {
+         lList *conf = sconf_get_config_list();
          task->data_list = lSelectHashPack("", conf, task->condition, task->enumeration, false, nullptr);
          task->do_select_pack_simultaneous = false;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_GDI_OKNL);
@@ -508,15 +506,15 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
           * If the scheduler is not available the information in the job info
           * messages are outdated. In this case we have to reject the request.
           */
-         if (task->target == ocs::gdi::Target::SGE_SME_LIST &&
-             !sge_has_event_client(EV_ID_SCHEDD)) {
-            answer_list_add(&(task->answer_list), MSG_SGETEXT_JOBINFOMESSAGESOUTDATED,
-                            STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         if (task->target == ocs::gdi::Target::SGE_SME_LIST && !sge_has_event_client(EV_ID_SCHEDD)) {
+            answer_list_add(&(task->answer_list), MSG_SGETEXT_JOBINFOMESSAGESOUTDATED, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          } else if (ao == nullptr || ao->list_type == SGE_TYPE_NONE) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          } else {
             lList *data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
+
+            DPRINTF("Got list with " sge_uu32 " elements\n", lGetNumberOfElem(data_source));
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
@@ -662,7 +660,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
             default:
                if (!ao) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                   answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
                   break;
                }
@@ -740,7 +738,7 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command:
                               packet->user, packet->host);
             break;
          default:
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
             break;
       }
@@ -816,7 +814,7 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command:
                ar_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
                break;
             default:
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
                break;
          } /* switch target */
@@ -845,7 +843,7 @@ static void sge_c_gdi_copy(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi:
                              packet, task, monitor);
             break;
          default:
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
             break;
       }
@@ -907,7 +905,7 @@ sge_c_gdi_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t
          sge_gdi_do_permcheck(packet, task);
          break;
       default:
-         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         WARNING(MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
    }
    DRETURN_VOID;
@@ -942,7 +940,7 @@ void sge_c_gdi_replace(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Tas
       }
          break;
       default:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          break;
    }
@@ -984,7 +982,7 @@ sge_c_gdi_trigger_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task, mo
          DRETURN_VOID;
       default:
          // unknown operation for a listener thread
-         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         WARNING(MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          DRETURN_VOID;
    }
@@ -1009,7 +1007,7 @@ sge_c_gdi_trigger_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
          DRETURN_VOID;
       default:
          // unknown operation for a worker thread
-         WARNING(SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         WARNING(MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          DRETURN_VOID;
    }
@@ -1272,7 +1270,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
                break;
             default:
                if (ao == nullptr) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                   answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
                   break;
                }
@@ -1383,7 +1381,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 ta
          break;
       }
       default:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          DRETURN(false);
    }
@@ -1391,160 +1389,117 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 ta
    DRETURN(true);
 }
 
+/** @brief checks modify-permissions of host for a given target
+ *
+ * Qmaster internal requests are not checked for permissions
+ *
+ * @param packet - packet to check
+ * @param alpp - answer list pointer
+ * @param target - target to check
+ *
+ * @return true if permission is granted, false otherwise
+ */
 static bool
-sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, u_long32 target) {
+sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const u_long32 target) {
    DENTER(TOP_LAYER);
 
-   /* check permissions of host */
-   switch (target) {
+   if (!packet->is_intern_request) {
+      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
+      const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
+      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
 
-      case ocs::gdi::Target::SGE_ORDER_LIST:
-      case ocs::gdi::Target::SGE_AH_LIST:
-      case ocs::gdi::Target::SGE_UO_LIST:
-      case ocs::gdi::Target::SGE_UM_LIST:
-      case ocs::gdi::Target::SGE_SH_LIST:
-      case ocs::gdi::Target::SGE_CQ_LIST:
-      case ocs::gdi::Target::SGE_CE_LIST:
-      case ocs::gdi::Target::SGE_PE_LIST:
-      case ocs::gdi::Target::SGE_CONF_LIST:
-      case ocs::gdi::Target::SGE_SC_LIST:
-      case ocs::gdi::Target::SGE_UU_LIST:
-      case ocs::gdi::Target::SGE_US_LIST:
-      case ocs::gdi::Target::SGE_PR_LIST:
-      case ocs::gdi::Target::SGE_STN_LIST:
-      case ocs::gdi::Target::SGE_CK_LIST:
-      case ocs::gdi::Target::SGE_CAL_LIST:
-      case ocs::gdi::Target::SGE_USER_MAPPING_LIST:
-      case ocs::gdi::Target::SGE_HGRP_LIST:
-      case ocs::gdi::Target::SGE_RQS_LIST:
-      case ocs::gdi::Target::SGE_MASTER_EVENT:
-      case ocs::gdi::Target::SGE_DUMMY_LIST:
+      switch (target) {
+         case ocs::gdi::Target::SGE_EH_LIST: {
+            const lList *master_exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr ? true : false;
 
-         /* host must be SGE_AH_LIST */
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host)) {
-            ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            DRETURN(false);
+            // host must be either admin host
+            // or exec host and request has to come from execd
+            if (!(is_admin_host || (is_exec_host && !strcmp(packet->commproc, prognames[EXECD])))) {
+               ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+               DRETURN(false);
+            }
+            break;
          }
+         case ocs::gdi::Target::SGE_EV_LIST:
+            // host must be admin host or submit host
+               if (!is_submit_host && !is_admin_host) {
+                  ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+                  DRETURN(false);
+               }
          break;
-
-      case ocs::gdi::Target::SGE_EH_LIST:
-
-         /* host must be either admin host or exec host and execd */
-
-         if (!(host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host) ||
-               (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), packet->host) &&
-                !strcmp(packet->commproc, prognames[EXECD])))) {
-            ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            DRETURN(false);
-         }
+         case ocs::gdi::Target::SGE_JB_LIST:
+         case ocs::gdi::Target::SGE_AR_LIST:
+            // host must be a submit host
+            if (!is_submit_host) {
+               ERROR(MSG_SGETEXT_NOSUBMITHOST_S, packet->host);
+               answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+               DRETURN(false);
+            }
          break;
-
-      case ocs::gdi::Target::SGE_JB_LIST:
-         /* host must be SGE_SH_LIST */
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)) {
-            ERROR(MSG_SGETEXT_NOSUBMITHOST_S, packet->host);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            DRETURN(false);
-         }
+         default:
+            // for all other host must be an admin host
+               if (!is_admin_host) {
+                  ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+                  DRETURN(false);
+               }
          break;
-      case ocs::gdi::Target::SGE_EV_LIST:
-         /* to start an event client or if an event client
-            performs modify requests on itself
-            it must be on a submit or an admin host
-          */
-         if ((!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host))
-             && (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host))) {
-            ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            DRETURN(false);
-         }
-         break;
-      case ocs::gdi::Target::SGE_AR_LIST:
-         /* host must be SGE_SH_LIST */
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)) {
-            ERROR(MSG_SGETEXT_NOSUBMITHOST_S, packet->host);
-            answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            DRETURN(false);
-         }
-         break;
-      default:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
-         answer_list_add(alpp, SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-         DRETURN(false);
+      }
    }
 
    DRETURN(true);
 }
 
-
-/* EB: TODO: ST: skip execution of this function if it is internal GDI request */
-/* EB: TODO: ST: move usage of this code into listener in future */
+/** @brief checks get-permissions of host for a given target
+ *
+ * Qmaster internal requests are not checked for permissions
+ *
+ * @param packet - packet to check
+ * @param task - task to check
+ * @param monitor - monitoring structure
+ *
+ * @return true if permission is granted, false otherwise
+ */
 static bool
-sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
-   bool ret = true;
-   u_long32 target;
-   char *host = nullptr;
-
+sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
 
-   target = task->target;
-   host = packet->host;
+   // only external requests need to be checked
+   if (!packet->is_intern_request) {
+      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
+      const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
+      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
 
-   /* check permissions of host */
-   switch (target) {
-      case ocs::gdi::Target::SGE_ORDER_LIST:
-      case ocs::gdi::Target::SGE_EV_LIST:
-      case ocs::gdi::Target::SGE_AH_LIST:
-      case ocs::gdi::Target::SGE_UO_LIST:
-      case ocs::gdi::Target::SGE_UM_LIST:
-      case ocs::gdi::Target::SGE_SH_LIST:
-      case ocs::gdi::Target::SGE_CQ_LIST:
-      case ocs::gdi::Target::SGE_CE_LIST:
-      case ocs::gdi::Target::SGE_PE_LIST:
-      case ocs::gdi::Target::SGE_SC_LIST:
-      case ocs::gdi::Target::SGE_UU_LIST:
-      case ocs::gdi::Target::SGE_US_LIST:
-      case ocs::gdi::Target::SGE_PR_LIST:
-      case ocs::gdi::Target::SGE_STN_LIST:
-      case ocs::gdi::Target::SGE_CK_LIST:
-      case ocs::gdi::Target::SGE_CAL_LIST:
-      case ocs::gdi::Target::SGE_USER_MAPPING_LIST:
-      case ocs::gdi::Target::SGE_HGRP_LIST:
-      case ocs::gdi::Target::SGE_EH_LIST:
-      case ocs::gdi::Target::SGE_JB_LIST:
-      case ocs::gdi::Target::SGE_ZOMBIE_LIST:
-      case ocs::gdi::Target::SGE_SME_LIST:
-      case ocs::gdi::Target::SGE_RQS_LIST:
-      case ocs::gdi::Target::SGE_AR_LIST:
-      case ocs::gdi::Target::SGE_DUMMY_LIST:
-         /* host must be admin or submit host */
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
-             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host)) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
-            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            ret = false;
+      switch (task->target) {
+         case ocs::gdi::Target::SGE_CONF_LIST: {
+            const lList *master_exec_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+            bool is_exec_host = host_list_locate(master_exec_host_list, packet->host) != nullptr ? true : false;
+
+            // host must be either admin/submit or exec host
+            if (!is_admin_host && !is_submit_host && !is_exec_host) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
+               answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+               DRETURN(false);
+            }
+            break;
          }
+         default:
+            // for all other targets host must be an admin host or submit host
+               if (!is_admin_host && !is_submit_host) {
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
+                  answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+                  DRETURN(false);
+               }
          break;
-      case ocs::gdi::Target::SGE_CONF_LIST:
-         /* host must be admin or submit host or exec host */
-         if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), host) &&
-             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), host) &&
-             !host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), host)) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NOSUBMITORADMINHOST_S, host);
-            answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
-            ret = false;
-         }
-         break;
-      default:
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_SGETEXT_OPNOIMPFORTARGET);
-         answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
-         ret = false;
-         return ret;
+      }
    }
 
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 

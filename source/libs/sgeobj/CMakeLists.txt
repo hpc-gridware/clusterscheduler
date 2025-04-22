@@ -68,6 +68,7 @@ set(LIBRARY_SOURCES
       cull_parse_util.cc
       ocs_binding_io.cc
       ocs_BindingFinder.cc
+      ocs_Category.cc
       ocs_DataStore.cc
       ocs_HostTopology.cc
       ocs_Session.cc
@@ -118,6 +119,7 @@ set(LIBRARY_SOURCES
       sge_range.cc
       sge_report.cc
       sge_resource_quota.cc
+      sge_resource_quota_service.cc
       sge_schedd_conf.cc
       sge_sharetree.cc
       sge_str.cc

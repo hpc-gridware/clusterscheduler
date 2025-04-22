@@ -29,6 +29,7 @@ add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
+        ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
         ../../../source/daemons/qmaster/ocs_ReportingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_BaseAccountingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_BaseReportingFileWriter.cc
@@ -65,7 +66,6 @@ add_executable(test_qmaster_calendar
       ../../../source/daemons/qmaster/sge_hgroup_qmaster.cc
       ../../../source/daemons/qmaster/sge_thread_scheduler.cc
       ../../../source/daemons/qmaster/sge_qmaster_threads.cc
-      ../../../source/daemons/qmaster/sge_sched_job_category.cc
       ../../../source/daemons/qmaster/sge_sched_process_events.cc
       ../../../source/daemons/qmaster/sge_sched_prepare_data.cc
       ../../../source/daemons/qmaster/sge_sched_thread.cc

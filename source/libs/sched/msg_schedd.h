@@ -240,5 +240,6 @@
 #define MSG_INVALID_PARAM_SETTING_S                   _MESSAGE(47402, _("Invalid scheduler param setting: " SFQ))
 #define MSG_SCONF_NO_CONFIG                           _MESSAGE(47403, _("sconf_printf_config: no config to validate"))
 #define MSG_QINSTANCE_VALUEMISSINGMASTERDOWN_S        _MESSAGE(47404, _("error: no value for " SFQ " because execd is in unknown state"))
+#define MSG_CANTFINDCATINMASTERLIST_U                 _MESSAGE(47405, _("could not find category " sge_uu32 " in master list"))
 
 // clang-format on

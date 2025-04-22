@@ -37,6 +37,7 @@
 #include <cfloat>
 #include <climits>
 
+#include "uti/sge.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -67,6 +68,8 @@
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/sge_resource_quota.h"
+#include "sgeobj/sge_resource_quota_service.h"
 
 #include "basis_types.h"
 #include "schedd_message.h"
@@ -74,12 +77,10 @@
 #include "sge_complex_schedd.h"
 #include "sge_pe_schedd.h"
 #include "sge_qeti.h"
-#include "sge_resource_quota_schedd.h"
 #include "sge_resource_utilization.h"
 #include "sge_schedd_text.h"
 #include "sge_select_queue.h"
-#include "uti/sge.h"
-#include "valid_queue_user.h"
+#include "sge_select_queue_rqs.h"
 
 #include "sgeobj/cull/sge_select_queue_LDR_L.h"
 #include "sgeobj/cull/sge_select_queue_QRL_L.h"
@@ -6837,3 +6838,94 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
 
    DRETURN_VOID;
 }
+
+/****** sge_resource_quota_schedd/parallel_limit_slots_by_time() ********************
+*  NAME
+*     parallel_limit_slots_by_time() -- Determine number of slots avail. within
+*                                       time frame
+*
+*  SYNOPSIS
+*     static dispatch_t parallel_limit_slots_by_time(const sge_assignment_t *a,
+*     lList *requests, int *slots, lListElem *centry, lListElem
+*     *limit, dstring rue_name)
+*
+*  FUNCTION
+*     ???
+*
+*  INPUTS
+*     const sge_assignment_t *a - job info structure (in)
+*     lList *requests           - Job request list (CE_Type)
+*     int *slots                - out: free slots
+*     lListElem *centry         - Load information for the resource
+*     lListElem *limit          - limitation (RQRL_Type)
+*     dstring rue_name          - rue_name saved in limit sublist RQRL_usage
+*     lListElem *qep            - queue instance (QU_Type)
+*
+*  RESULT
+*     static dispatch_t - DISPATCH_OK        got an assignment
+*                       - DISPATCH_NEVER_CAT no assignment for all jobs af that category
+*
+*  NOTES
+*     MT-NOTE: parallel_limit_slots_by_time() is not MT safe
+*
+*  SEE ALSO
+*     parallel_rc_slots_by_time
+*******************************************************************************/
+dispatch_t
+parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, lListElem *centry,
+                             lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
+                             bool is_master_queue)
+{
+   lList *tmp_centry_list = lCreateList("", CE_Type);
+   lList *tmp_rue_list = lCreateList("", RUE_Type);
+   lListElem *tmp_centry_elem = nullptr;
+   lListElem *tmp_rue_elem = nullptr;
+   const lList *rue_list = lGetList(limit, RQRL_usage);
+   dispatch_t result = DISPATCH_NEVER_CAT;
+
+   DENTER(TOP_LAYER);
+
+   /* create tmp_centry_list */
+   tmp_centry_elem = lCopyElem(centry);
+   lSetDouble(tmp_centry_elem, CE_doubleval, lGetDouble(limit, RQRL_dvalue));
+   lAppendElem(tmp_centry_list, tmp_centry_elem);
+
+   /* create tmp_rue_list */
+   tmp_rue_elem = lCopyElem(lGetElemStr(rue_list, RUE_name, sge_dstring_get_string(rue_name)));
+   if (tmp_rue_elem == nullptr) {
+      DPRINTF("RD: 1\n");
+      tmp_rue_elem = lCreateElem(RUE_Type);
+   }
+#if 0
+{
+   const char *object_name = "bla";
+   const lListElem *rde;
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
+           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
+           lGetDouble(tmp_rue_elem, RUE_utilized_now));
+   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
+      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+   }
+   DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
+           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
+           lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive));
+   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
+      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+   }
+}
+#endif
+
+   lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
+   lAppendElem(tmp_rue_list, tmp_rue_elem);
+
+   result = parallel_rc_slots_by_time(a, slots,
+                                      tmp_centry_list, tmp_rue_list, nullptr,
+                                      false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master, is_master_queue,
+                                      false, SGE_RQS_NAME, true);
+
+   lFreeList(&tmp_centry_list);
+   lFreeList(&tmp_rue_list);
+
+   DRETURN(result);
+}
+

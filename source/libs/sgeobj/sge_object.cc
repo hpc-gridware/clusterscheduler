@@ -105,6 +105,7 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"RQS",               RQS_Type,  RQS_name},
         {"AR",                AR_Type,   AR_id},
         {"JOBSCRIPT",         STU_Type,  STU_name},
+        {"CATEGORY",          CT_Type,   CT_id},
 };
 
 

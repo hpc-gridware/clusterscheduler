@@ -340,6 +340,13 @@ spooling_field CE_fields[] = {
    {  NoName,             11, nullptr,            false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
+spooling_field CAT_fields[] = {
+   {  CT_id,           10, "id",                 false, nullptr, false, nullptr, nullptr, nullptr},
+   {  CT_refcount,     10, "rcount",             false, nullptr, false, nullptr, nullptr, nullptr},
+   {  CT_str,          10, "str",                false, nullptr, false, nullptr, nullptr, nullptr},
+   {  NoName,           10, nullptr,              false, nullptr, false, nullptr, nullptr, nullptr}
+};
+
 spooling_field CAL_fields[] = {
    {  CAL_name,           16, "calendar_name", false, nullptr, false, nullptr, nullptr, nullptr},
    {  CAL_year_calendar,  16, "year",          false, nullptr, false, nullptr, nullptr, nullptr},

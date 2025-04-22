@@ -278,6 +278,11 @@ typedef enum {
 
    sgeE_ACK_TIMEOUT,
 
+   sgeE_CATEGORY_LIST,              // events for job categories
+   sgeE_CATEGORY_ADD,
+   sgeE_CATEGORY_DEL,
+   sgeE_CATEGORY_MOD,
+
    sgeE_EVENTSIZE
 } ev_event;
 
@@ -299,6 +304,7 @@ typedef bool (*evm_ack_func_t)(
   ((x)==sgeE_CENTRY_LIST) || \
   ((x)==sgeE_CONFIG_LIST) || \
   ((x)==sgeE_EXECHOST_LIST) || \
+  ((x)==sgeE_CATEGORY_LIST) || \
   ((x)==sgeE_JOB_LIST) || \
   ((x)==sgeE_JOB_SCHEDD_INFO_LIST) || \
   ((x)==sgeE_MANAGER_LIST) || \

@@ -72,5 +72,7 @@
 
 #define MSG_RQS_NOTFOUNDINFILE_SS                     _MESSAGE(5251, _("resource quota set " SFQ " not found in file " SFQ))
 
+#define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_uu32 " does not exist"))
+
 // clang-format on
 

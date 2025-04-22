@@ -118,13 +118,19 @@ generic_update_master_list(sge_evc_class_t *evc,
                            void *client_data);
 
 static sge_callback_result
-ar_update_master_list(sge_evc_class_t *evc, sge_object_type type,
-                       sge_event_action action, lListElem *event, void *client_data);
+ar_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *client_data);
 
 static
-sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
-                                                      int key_nm, u_long32 key,
-                                                      sge_event_action action, lListElem *event);
+sge_mirror_error
+sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
+                                     int key_nm, u_long32 key, sge_event_action action, lListElem *event);
+
+static sge_callback_result
+cat_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *client_data);
+
+static sge_mirror_error
+sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
+                                      int key_nm, u_long32 key, sge_event_action action, lListElem *event);
 
 /*
  * One entry per event type, this is the basic definition.
@@ -162,7 +168,8 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
-   { nullptr, nullptr,                                   nullptr, nullptr }, /*jobscripts*/
+   { nullptr, nullptr,                                nullptr, nullptr }, /*jobscripts*/
+   { nullptr, cat_update_master_list,                 nullptr, nullptr }, // sgeE_CATEGORY_LIST
 };
 
 /*-------------------------*/
@@ -719,6 +726,18 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
       case SGE_TYPE_JOBSCRIPT:
          ret = SGE_EM_NOT_INITIALIZED;
          break;
+      case SGE_TYPE_CATEGORY:
+         evc->ec_subscribe(evc, sgeE_CATEGORY_LIST);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_ADD);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_DEL);
+         evc->ec_subscribe(evc, sgeE_CATEGORY_MOD);
+         if (what_el && where_el) {
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_LIST, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_ADD, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_DEL, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_MOD, what_el, where_el);
+         }
+         break;
       default:
          ret = SGE_EM_BAD_ARG;
          break;
@@ -954,6 +973,12 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          break;
       case SGE_TYPE_JOBSCRIPT:
             DRETURN(SGE_EM_NOT_INITIALIZED);
+      case SGE_TYPE_CATEGORY:
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_LIST);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_ADD);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_DEL);
+         evc->ec_unsubscribe(evc, sgeE_CATEGORY_MOD);
+         break;
      default:
          ERROR("received invalid event group %d", type);
          DRETURN(SGE_EM_BAD_ARG);
@@ -1405,6 +1430,19 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_AR, SGE_EMA_MOD, event);
             break;
 
+         case sgeE_CATEGORY_LIST:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_LIST, event);
+            break;
+         case sgeE_CATEGORY_ADD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_ADD, event);
+            break;
+         case sgeE_CATEGORY_DEL:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_DEL, event);
+            break;
+         case sgeE_CATEGORY_MOD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_MOD, event);
+            break;
+
          default:
             break;
       }
@@ -1733,7 +1771,6 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
    DRETURN(SGE_EM_OK);
 }
 
-static sge_callback_result
 /****** sge_mirror/ar_update_master_list() *************************************
 *  NAME
 *     ar_update_master_list() -- update the master advance reservation list
@@ -1761,6 +1798,7 @@ static sge_callback_result
 *  NOTES
 *     MT-NOTE: ar_update_master_list() is not MT safe
 *******************************************************************************/
+static sge_callback_result
 ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
                       sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
 {
@@ -1820,6 +1858,44 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
       DSTRING_STATIC(dstr, 32);
       ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key),
                                           action, event);
+   } else {
+      ret = SGE_EM_NOT_INITIALIZED;
+   }
+
+   DRETURN(ret);
+}
+
+static sge_callback_result
+cat_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
+{
+   DENTER(TOP_LAYER);
+   lList **list = ocs::DataStore::get_master_list_rw(type);
+   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   int key_nm = object_type_get_key_nm(type);
+   u_long32 key = lGetUlong(event, ET_intkey);
+
+   if (sge_mirror_update_master_list_cat_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
+      DRETURN(SGE_EMA_FAILURE);
+   }
+   DRETURN(SGE_EMA_OK);
+}
+
+static sge_mirror_error
+sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
+                                     int key_nm, u_long32 key, sge_event_action action, lListElem *event)
+{
+   DENTER(TOP_LAYER);
+
+   sge_mirror_error ret;
+   if (list != nullptr) {
+      lListElem *ep = nullptr;
+      if (key > 0) {
+         ep = lGetElemUlongRW(*list, key_nm, key);
+      }
+
+      DSTRING_STATIC(dstr, 32);
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key), action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
    }

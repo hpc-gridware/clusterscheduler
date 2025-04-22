@@ -40,24 +40,18 @@
 
 /* common/ */
 #include "basis_types.h" 
-#include "sge.h"
 
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 
-#include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_report.h"
 #include "sgeobj/sge_schedd_conf.h"
 
 #include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
 
-#include "gdi/ocs_gdi_Client.h"
-
 #include "sge_sched_process_events.h"
 #include "sge_sched_prepare_data.h"
-#include "sge_sched_job_category.h"
 
 /****** qmaster/sge_thread_scheduler/event_update_func() **************************
 *  NAME
@@ -141,24 +135,25 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
    sge_mirror_subscribe(evc, SGE_TYPE_EXECHOST,       nullptr, nullptr, nullptr, where_what->where_host, where_what->what_host);
    sge_mirror_subscribe(evc, SGE_TYPE_HGROUP,         nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_CONFIG,         nullptr, sge_process_global_config_event, nullptr, where_what->where_config, where_what->what_config);
-   sge_mirror_subscribe(evc, SGE_TYPE_JOB,            sge_process_job_event_before, sge_process_job_event_after, nullptr, where_what->where_job, where_what->what_job);
-   sge_mirror_subscribe(evc, SGE_TYPE_JATASK,         nullptr, sge_process_ja_task_event_after, nullptr, where_what->where_jat, where_what->what_jat);
+   sge_mirror_subscribe(evc, SGE_TYPE_JOB,            nullptr, sge_process_job_event_after, nullptr, where_what->where_job, where_what->what_job);
+   sge_mirror_subscribe(evc, SGE_TYPE_JATASK,         nullptr, nullptr, nullptr, where_what->where_jat, where_what->what_jat);
    sge_mirror_subscribe(evc, SGE_TYPE_PE,             nullptr, nullptr, nullptr, nullptr, where_what->what_pe);
-   
+   sge_mirror_subscribe(evc, SGE_TYPE_CATEGORY,       nullptr, nullptr, nullptr, nullptr, nullptr);
+
    /* we do *not* subscribe reduced elements for TYPE_PETASK:
     * event master currently cannot handle this, see IZ 3216
     * sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         nullptr, nullptr, nullptr, nullptr, where_what->what_pet);
     */
    sge_mirror_subscribe(evc, SGE_TYPE_PETASK,         nullptr, nullptr, nullptr, nullptr, nullptr);
 
-   sge_mirror_subscribe(evc, SGE_TYPE_PROJECT,        sge_process_project_event_before, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_PROJECT,        nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_QINSTANCE,      nullptr, nullptr, nullptr, where_what->where_all_queue, where_what->what_queue);
    sge_mirror_subscribe(evc, SGE_TYPE_RQS,            nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_CONF,    sge_process_schedd_conf_event_before, sge_process_schedd_conf_event_after, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_MONITOR, nullptr, sge_process_schedd_monitor_event, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHARETREE,      nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_USER,           nullptr, nullptr, nullptr, nullptr, nullptr);
-   sge_mirror_subscribe(evc, SGE_TYPE_USERSET,        sge_process_userset_event_before, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_USERSET,        nullptr, nullptr, nullptr, nullptr, nullptr);
 
    set_job_flushing(evc);
 

@@ -29,9 +29,9 @@
 namespace ocs {
 
 enum {
-   CT_str = 7050,
+   CT_id = 7050,
+   CT_str,
    CT_refcount,
-   CT_count,
    CT_rejected,
    CT_cache,
    CT_messages_added,
@@ -41,9 +41,9 @@ enum {
 };
 
 constexpr const int CT_Type[] = {
+   CT_id,
    CT_str,
    CT_refcount,
-   CT_count,
    CT_rejected,
    CT_cache,
    CT_messages_added,
@@ -54,9 +54,9 @@ constexpr const int CT_Type[] = {
 };
 
 #define CT_ATTRIBUTES \
+   {CT_id, "CT_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {CT_str, "CT_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
    {CT_refcount, "CT_refcount", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {CT_count, "CT_count", AttributeStatic::INT, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CT_rejected, "CT_rejected", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CT_cache, "CT_cache", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {CT_messages_added, "CT_messages_added", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

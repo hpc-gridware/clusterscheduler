@@ -2041,7 +2041,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       }
    }
    what = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I->%T%I%I%I%I->%T(%I%I%I%I%I%I%I)"
-            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I)",
+            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I)",
             JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time, JB_submission_command_line,
             JB_owner, JB_uid, JB_group, JB_gid, JB_account, JB_merge_stderr, 
             JB_mail_list, JB_project, JB_department, JB_notify, JB_job_name,
@@ -2071,7 +2071,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             JB_verify_suitable_queues, JB_soft_wallclock_gmt,
             JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
             JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
-            JB_grp_list, RN_Type, JB_sync_options);
+            JB_grp_list, RN_Type, JB_sync_options, JB_category_id);
    /* get job list */
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &jlp, where, what);
    lFreeWhere(&where);

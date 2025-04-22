@@ -45,7 +45,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_thread_ctrl.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -53,21 +52,13 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_ckpt.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_grantedres.h"
 
-#include "mir/sge_mirror.h"
 #include "evc/sge_event_client.h"
 #include "evm/sge_event_master.h"
 
@@ -87,17 +78,10 @@
 #include "sched/sort_hosts.h"
 #include "sched/debit.h"
 
-#include "sge_sched_prepare_data.h"
-#include "sge_sched_job_category.h"
+#include "ocs_CategorySchedd.h"
 #include "basis_types.h"
 #include "sge.h"
-#include "setup_qmaster.h"
-#include "sge_sched_process_events.h"
-#include "sge_qmaster_threads.h"
 #include "sge_follow.h"
-#include "sge_follow.h"
-#include "sge_qmaster_threads.h"
-#include "sge_sched_process_events.h"
 #include "sge_sched_thread.h"
 #include "sge_sched_order.h"
 #include "sge_sched_thread_rsmap.h"
@@ -742,7 +726,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
          if (nreservation < max_reserve &&
              lGetBool(orig_job, JB_reserve) &&
              !JOB_TYPE_IS_IMMEDIATE(lGetUlong(orig_job, JB_type)) &&
-             !sge_is_job_category_reservation_rejected(orig_job)) {
+             !ocs::CategorySchedd::job_is_category_reservation_rejected(orig_job)) {
             is_reserve = true;
          } else {
             is_reserve = false;
@@ -750,7 +734,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
          // Don't need to look for a 'now' assignment if the last job
          // of this category got no 'now' assignment either
-         is_start = sge_is_job_category_rejected(orig_job) == 0;
+         is_start =ocs::CategorySchedd:: job_is_category_rejected(orig_job) == 0;
 
          if (is_start || is_reserve) {
             lListElem *job = nullptr;
@@ -904,7 +888,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
                   DPRINTF("SKIP JOB (R)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
-                  sge_reject_category(cat, false);
+                  ocs::CategorySchedd::job_reject_category(orig_job, false);
                }
                /* here no reservation was made for a job that couldn't be started now
                   or the job is not dispatch-able at all */
@@ -935,7 +919,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                   if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
                      DPRINTF("SKIP JOB (N)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
                              lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
-                     sge_reject_category(cat, is_reserve);
+                     ocs::CategorySchedd::job_reject_category(orig_job, is_reserve);
                   }
                }
                /* fall through to DISPATCH_NEVER_JOB */

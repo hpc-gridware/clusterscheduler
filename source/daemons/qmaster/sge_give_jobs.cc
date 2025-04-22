@@ -51,6 +51,7 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
@@ -68,15 +69,15 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
-#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_resource_quota.h"
 
-#include "sched/sge_resource_quota_schedd.h"
 #include "sched/debit.h"
 
 #include "gdi/ocs_gdi_security.h"
 
 #include "spool/sge_spooling.h"
 
+#include "ocs_CategoryQmaster.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
 #include "basis_types.h"
@@ -1764,14 +1765,22 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_commit);
       }
-      /*
-       * remove the job
-       */
+
+      // remove the job
       suser_unregister_job(job, master_suser_list);
+
+      // update the category
+      lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
+      ocs::CategoryQmaster::detach_job(master_category_list, job, !no_events, gdi_session);
+
+      // send events
       if (!no_events) {
          sge_add_event(0, sgeE_JOB_DEL, job_id, ja_task_id,
                        nullptr, nullptr, lGetString(job, JB_session), nullptr, gdi_session);
+
       }
+
+      // final job removal
       lRemoveElem(master_job_list, &job);
    } else {
       int is_enrolled = job_is_enrolled(job, ja_task_id);

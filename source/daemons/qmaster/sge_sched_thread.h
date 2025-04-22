@@ -55,6 +55,7 @@ typedef struct {
    const lList *hgrp_list;        /* HGRP_Type */
    lList *rqs_list;         /* RQS_Type */
    lList *ar_list;          /* AR_Type */
+   lList *category_list;    /* CT_Type */
    bool monitor_next_run;
 } scheduler_all_data_t;
 

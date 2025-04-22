@@ -25,6 +25,13 @@ A calendar name is the name of a xxQS_NAMExx calendar described in xxqs_name_sxx
 
     calendar_name := object_name
 
+## *cat_id*
+
+A category id is a unique identifier for a xxQS_NAMExx category. The id is assigned by the system and identifies
+the category as long as it exists. Category ids of deleted categories may be reused later for other new categories.
+
+    cat_id := 32_bit_integer
+
 ## *ckpt_name*
 
 A *ckpt_name* is the name of a xxQS_NAMExx checkpointing interface described in xxqs_name_sxx_checkpoint(5).
