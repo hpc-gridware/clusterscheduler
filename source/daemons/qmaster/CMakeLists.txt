@@ -108,7 +108,7 @@ target_link_libraries(
          PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER}
 )
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_MASTER)
    install(TARGETS sge_qmaster
            DESTINATION bin/${SGE_ARCH})
 endif ()
@@ -135,7 +135,7 @@ if (WITH_PYTHON)
            PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER} ${PYTHON_ALL_LIBRARIES}
    )
 
-   if (INSTALL_SGE_BIN)
+   if (INSTALL_SGE_BIN_MASTER)
       install(TARGETS sge_qmaster.python
               DESTINATION bin/${SGE_ARCH})
    endif ()

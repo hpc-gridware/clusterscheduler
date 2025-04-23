@@ -41,7 +41,7 @@ target_link_libraries(
       uti
       ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qalter DESTINATION bin/${SGE_ARCH})
 
    install(

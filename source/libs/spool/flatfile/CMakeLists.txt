@@ -54,7 +54,7 @@ target_link_libraries(
       commlists
 )
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_MASTER)
    install(TARGETS spoolc DESTINATION lib/${SGE_ARCH})
 endif ()
 

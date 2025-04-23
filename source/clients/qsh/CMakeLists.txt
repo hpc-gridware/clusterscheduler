@@ -46,7 +46,7 @@ target_link_libraries(
       ijs
       ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qsh DESTINATION bin/${SGE_ARCH})
 
    install(

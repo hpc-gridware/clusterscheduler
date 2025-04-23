@@ -23,6 +23,6 @@ add_executable(qrsh_starter ocs_qrsh_starter.cc)
 target_include_directories(qrsh_starter PRIVATE ${SGE_INCLUDES})
 target_link_libraries(qrsh_starter PRIVATE uti commlists ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_EXEC)
    install(TARGETS qrsh_starter DESTINATION utilbin/${SGE_ARCH})
 endif ()

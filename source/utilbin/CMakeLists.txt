@@ -196,7 +196,7 @@ target_link_libraries(
       uti
       ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qping DESTINATION bin/${SGE_ARCH})
    install(
          TARGETS adminrun
@@ -214,11 +214,17 @@ if (INSTALL_SGE_BIN)
          now
          read_raw
          sge_share_mon
-         spooldefaults
-         spooledit
-         spoolinit
          testsuidroot
          uidgid
          DESTINATION utilbin/${SGE_ARCH})
+endif ()
+
+if (INSTALL_SGE_BIN_EXEC)
+   install(
+           TARGETS
+           spooldefaults
+           spooledit
+           spoolinit
+           DESTINATION utilbin/${SGE_ARCH})
    install(TARGETS work DESTINATION examples/jobsbin/${SGE_ARCH})
 endif ()
