@@ -249,8 +249,6 @@ RemoveExecd()
    qconf -de $exechost
    sleep 1
    qconf -dh $exechost
-
-
 }
 
 
@@ -264,9 +262,7 @@ RemoveReferences()
    for q in `qconf -sql`; do
       qconf -purge queue "*" "$q@$exechost" 
    done
-
 }
-
 
 RemoveSpoolDir()
 {

@@ -1,0 +1,24 @@
+[Unit]
+Description=GENPRODUCT sge_qmaster service
+Documentation=man:sge_qmaster(8)
+#Wants=network.target
+After=network-online.target remote-fs.target autofs.service
+#RequiresMountsFor=GENROOT
+
+[Service]
+Type=forking
+Slice=GENSLICE.slice
+ExecStart=GENROOT/GENCELL/common/sgemaster start
+ExecStop=GENROOT/GENCELL/common/sgemaster stop
+Restart=no
+#We can set (cgroups / systemd-run) options
+#MemoryAccounting=true
+#IOAccounting=true
+#CPUAccounting=true
+#MemorySwapMax=1
+#CPUShares=1000
+#CPUWeight=1000
+#...
+
+[Install]
+WantedBy=multi-user.target

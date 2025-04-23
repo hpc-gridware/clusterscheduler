@@ -81,7 +81,12 @@ case $ARCH in
  lx*|ulx*|xlx*)
    AWK=/usr/bin/gawk
    ECHO="/bin/echo -e"
-   if [ -x /usr/lib/lsb/install_initd ]; then
+   if [ `ps -p 1 -o comm=` = "systemd" ]; then
+      # nearly all newer Linux distributions use systemd
+      RC_FILE=systemd
+      RC_PREFIX=/etc/systemd/system
+      RC_DIR=unused
+   elif [ -x /usr/lib/lsb/install_initd ]; then
       # RedHat, CentOS etc.
       RC_FILE=lsb
       RC_PREFIX=/etc/init.d
@@ -180,11 +185,6 @@ CHOWN=chown
 CP=cp
 MV=mv
 
-# Some of the following shell function require this variable set to false or
-# true
-#
-autoinst=false
-
 #--------------------------------------------------------------------------
 # Translate
 # create localized version of arguments using "gettext" and "printf"
@@ -243,9 +243,8 @@ Translate()
 # WaitClear
 # Let user press the return key and print message
 #
-# USES: variables "$autoinst"
-#                 "$CLEAR"
-# $1 = clear  clear screen 
+# USES: variables "$AUTO"
+# $1 = clear  clear screen
 # $1 =
 # $2 = no string - print default messages
 # $4 = arg       - print argument
@@ -261,7 +260,7 @@ WaitClear()
       Translate 2 "Hit <RETURN> to continue >> "
    fi
 
-   if [ "$autoinst" = true ]; then
+   if [ "$AUTO" = true ]; then
       echo
    else
       read INP_WaitClear
@@ -275,11 +274,11 @@ WaitClear()
 #-------------------------------------------------------------------------
 # Enter: input is read and returned to stdout. If input is empty echo $1
 #
-# USES: variable "$autoinst" 
+# USES: variable "$AUTO"
 #
 Enter()
 {
-   if [ "$autoinst" = true ]; then
+   if [ "$AUTO" = true ]; then
       $ECHO $1
    else
       read INP
@@ -308,7 +307,7 @@ YesNo()
       text="$text $transout [$default] >> \c"
    fi
 
-   if [ "$autoinst" = true -a $default != x -a $default != X ]; then
+   if [ "$AUTO" = true -a $default != x -a $default != X ]; then
       $ECHO "$text"
       $ECHO $default
       if [ $default = y -o $default = Y ]; then

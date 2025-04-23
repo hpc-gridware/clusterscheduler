@@ -1,0 +1,24 @@
+[Unit]
+Description=GENPRODUCT sge_execd service
+Documentation=man:sge_execd(8)
+After=network-online.target remote-fs.target autofs.service
+#RequiresMountsFor=GENROOT
+
+[Service]
+Type=forking
+Slice=GENSLICE-execution.slice
+ExecStart=GENROOT/GENCELL/common/sgeexecd start
+ExecStop=GENROOT/GENCELL/common/sgeexecd softstop
+Restart=no
+KillMode=none
+#We can set (cgroups / systemd-run) options
+#MemoryAccounting=true
+#IOAccounting=true
+#CPUAccounting=true
+#MemorySwapMax=1
+#CPUShares=1000
+#CPUWeight=1000
+#...
+
+[Install]
+WantedBy=multi-user.target

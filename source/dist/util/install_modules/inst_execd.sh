@@ -455,6 +455,15 @@ StartExecd()
          fi
          exit 1
       fi
+   elif [ "$RC_FILE" = "systemd" -a `IsSystemdServiceInstalled "execd"` = "true" ]; then
+      SERVICE_NAME=`GetServiceName "execd"`
+      systemctl start "$SERVICE_NAME"
+      if [ $? -ne 0 ]; then
+         $INFOTEXT "sge_execd start problem"
+         $INFOTEXT -log "sge_execd start problem"
+         MoveLog
+         exit 1
+      fi
    else
       $SGE_STARTUP_FILE
    fi
