@@ -549,6 +549,8 @@ static void
 qmaster_init() {
    DENTER(TOP_LAYER);
 
+   starting_up(); /* write startup info message to message file */
+
    if (setup_qmaster()) {
       CRITICAL(SFNMAX, MSG_STARTUP_SETUPFAILED);
       sge_exit(1);
@@ -556,7 +558,6 @@ qmaster_init() {
 
    component_set_exit_func(qmaster_lock_and_shutdown);
    communication_setup();
-   starting_up(); /* write startup info message to message file */
 
    DRETURN_VOID;
 }
