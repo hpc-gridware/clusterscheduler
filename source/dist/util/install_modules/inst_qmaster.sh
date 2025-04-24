@@ -427,11 +427,11 @@ SetSpoolingOptionsDynamic()
 {
    suggested_method=$1
    if [ -z "$suggested_method" ]; then
-      suggested_method=berkeleydb
+      suggested_method=classic
    fi
    if [ "$AUTO" = "true" ]; then
       if [ "$SPOOLING_METHOD" != "berkeleydb" -a "$SPOOLING_METHOD" != "classic" ]; then
-         SPOOLING_METHOD="berkeleydb"
+         SPOOLING_METHOD="classic"
       fi
    else
       $INFOTEXT -n "Your SGE binaries are compiled to link the spooling libraries\n" \
