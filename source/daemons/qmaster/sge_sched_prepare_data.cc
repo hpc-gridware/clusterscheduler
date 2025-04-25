@@ -450,7 +450,6 @@ sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
                                 sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(GDI_LAYER);
    DPRINTF("notification about new global configuration\n");
-
    st_set_flag_new_global_conf(true);
    DRETURN(SGE_EMA_OK);
 }
@@ -508,74 +507,3 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
 
    DRETURN(SGE_EMA_OK);
 }
-
-#if 0
-/****** sge_process_events/sge_process_userset_event_before() ******************
-*  NAME
-*     sge_process_userset_event_before() -- ???
-*
-*  SYNOPSIS
-*     bool sge_process_userset_event_before(sge_object_type type,
-*     sge_event_action action, lListElem *event, void *clientdata)
-*
-*  FUNCTION
-*     Determine whether categories need to be rebuilt. Rebuilding
-*     categories is necessary, if a userset (a) gets used first
-*     time as ACL or (b) is no longer used as ACL. Also categories
-*     must be rebuild if entries change with a userset is used as ACL.
-*
-*  NOTES
-*     MT-NOTE: sge_process_userset_event_before() is not MT safe
-*******************************************************************************/
-sge_callback_result
-sge_process_userset_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event,
-                                 void *clientdata) {
-   const lListElem *new_ep, *old_ep;
-   const char *u;
-
-   DENTER(GDI_LAYER);
-
-   if (action != SGE_EMA_ADD &&
-       action != SGE_EMA_MOD &&
-       action != SGE_EMA_DEL) {
-      DRETURN(SGE_EMA_OK);
-   }
-
-   u = lGetString(event, ET_strkey);
-   new_ep = lFirst(lGetList(event, ET_new_version));
-   old_ep = lGetElemStrRW(*ocs::DataStore::get_master_list(SGE_TYPE_USERSET), US_name, u);
-
-   switch (action) {
-      case SGE_EMA_ADD:
-         if (lGetBool(new_ep, US_consider_with_categories)) {
-            set_rebuild_categories(true);
-            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_ADD(%s)\n", u);
-         }
-         break;
-      case SGE_EMA_MOD:
-         /* need to redo categories if certain changes occur:
-            --> it gets used or was used as ACL with queue_conf(5)/host_conf(5)/sge_pe(5)
-            --> it is in use as ACL with queue_conf(5)/host_conf(5)/sge_pe(5)
-                and a change with users/groups occurred */
-
-         if ((lGetBool(new_ep, US_consider_with_categories) != lGetBool(old_ep, US_consider_with_categories))
-             || (lGetBool(old_ep, US_consider_with_categories) &&
-                 object_list_has_differences(lGetList(old_ep, US_entries), nullptr, lGetList(new_ep, US_entries)))) {
-            set_rebuild_categories(true);
-            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_MOD(%s)\n", u);
-         }
-
-         break;
-      case SGE_EMA_DEL:
-         if (lGetBool(old_ep, US_consider_with_categories)) {
-            set_rebuild_categories(true);
-            DPRINTF("callback before userset event: rebuild categories due to SGE_EMA_DEL(%s)\n", u);
-         }
-         break;
-      default:
-         break;
-   }
-
-   DRETURN(SGE_EMA_OK);
-}
-#endif
