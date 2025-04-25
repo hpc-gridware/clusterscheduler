@@ -2320,6 +2320,9 @@ InstallSystemdUnitFile()
          CheckSliceName $SLICE_NAME
          if [ $? -eq 0 ]; then
             slice_name_is_ok="true"
+         elif [ "$AUTO" = "true" ]; then
+            # avoid endless loop when slice is incorrectly defined
+            return 1
          fi
       done
 
