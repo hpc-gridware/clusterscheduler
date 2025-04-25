@@ -557,10 +557,10 @@ u_long32 job_get_ja_tasks(const lListElem *job)
    DENTER(TOP_LAYER);
    n = job_get_not_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF("Not enrolled ja_tasks: " sge_uu32 "\n", n);
+   DPRINTF("Not enrolled ja_tasks: " sge_u32 "\n", n);
    n = job_get_enrolled_ja_tasks(job);
    ret += n;
-   DPRINTF("Enrolled ja_tasks: " sge_uu32 "\n", n);
+   DPRINTF("Enrolled ja_tasks: " sge_u32 "\n", n);
    DRETURN(ret);
 }
 
@@ -2506,7 +2506,7 @@ const char *jobscript_get_key(const lListElem *jep, dstring *buffer)
 
    DENTER(TOP_LAYER);
    if (buffer != nullptr) {
-      ret = sge_dstring_sprintf(buffer, "%s:" sge_uu32 ".%s",
+      ret = sge_dstring_sprintf(buffer, "%s:" sge_u32 ".%s",
                                 object_type_get_name(SGE_TYPE_JOBSCRIPT), 
                                 lGetUlong(jep, JB_job_number), lGetString(jep, JB_exec_file));
    }
@@ -3084,7 +3084,7 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
    if (const u_long32 ul = lGetPosUlong(job_elem, nm); ul != 0) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
-      sge_dstring_sprintf_append(category_str, sge_uu32, ul);
+      sge_dstring_sprintf_append(category_str, sge_u32, ul);
       sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
@@ -4491,7 +4491,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
             job_get_ckpt_attr(ckpt_attr, dstr);
          }
          if (ckpt_interval != 0) {
-            sge_dstring_sprintf_append(dstr, sge_uu32, ckpt_interval);
+            sge_dstring_sprintf_append(dstr, sge_u32, ckpt_interval);
          }
       }
    }
@@ -4572,7 +4572,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (job_is_array(job)) {
       u_long32 start, end, step;
       job_get_submit_task_ids(job, &start, &end, &step);
-      sge_dstring_sprintf_append(dstr, " -t " sge_uu32 "-" sge_uu32 ":" sge_uu32, start, end, step);
+      sge_dstring_sprintf_append(dstr, " -t " sge_u32 "-" sge_u32 ":" sge_u32, start, end, step);
    }
    job_add_ulong_opt_to_command_line(job, dstr, "-tc", JB_ja_task_concurrency, 0);
    job_add_name_value_list_opt_to_command_line(job, dstr, "-v", JB_env_list, VA_variable, VA_value, VAR_PREFIX);

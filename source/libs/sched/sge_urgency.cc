@@ -159,7 +159,7 @@ static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
          } else {
             dtc = weight_deadline;
          }
-/*           DPRINTF("free: %d now: " sge_uu32 " deadline: " sge_uu32 "\n", time_left, now, deadline); */
+/*           DPRINTF("free: %d now: " sge_u32 " deadline: " sge_u32 "\n", time_left, now, deadline); */
           /* might be too late for this job anyway we're optimistic and treat it high prior */
       }
 
@@ -204,7 +204,7 @@ static void sge_urgency(u_long64 now, double *min_urgency, double *max_urgency,
       lSetDouble(jep, JB_wtcontr, wtc);
       lSetDouble(jep, JB_urg, absolute_urgency);
 
-/*      DPRINTF("--- job " sge_uu32 " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
+/*      DPRINTF("--- job " sge_u32 " (dtc %7f + wtc %7f + rrc %7f) = asu %7f\n",
             lGetUlong(jep, JB_job_number), dtc, wtc, rrc, absolute_urgency);
 */            
       
@@ -253,7 +253,7 @@ static void sge_normalize_urgency(lList *job_list, double min_urgency,
       double asu = lGetDouble(jep, JB_urg);
       nsu = sge_normalize_value(asu, min_urgency, max_urgency);
       lSetDouble(jep, JB_nurg, nsu);
-/*    DPRINTF("NSU(job " sge_uu32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
+/*    DPRINTF("NSU(job " sge_u32 ") = %f from %f\n", lGetUlong(jep, JB_job_number), nsu, asu); */
    }
    DRETURN_VOID;
 }

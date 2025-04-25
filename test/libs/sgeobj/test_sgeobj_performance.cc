@@ -104,7 +104,7 @@ create_rand_file(const char *filename)
       ret = false;
    } else {
       for (int i = 0; i < num_jobs; i++) {
-         fprintf(fp, sge_uu32"\n", random_array[i]);
+         fprintf(fp, sge_u32"\n", random_array[i]);
       }
       fclose(fp);
    }
@@ -192,7 +192,7 @@ update_jobs()
       u_long32 job_id = random_array[i];
       lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
       if (job == nullptr) {
-         fprintf(stderr, "didn't find job " sge_uu32 " in job list\n", job_id);
+         fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
          break;
       } else {
@@ -221,7 +221,7 @@ delete_jobs()
       u_long32 job_id = random_array[i];
       lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
       if (job == nullptr) {
-         fprintf(stderr, "didn't find job " sge_uu32 " in job list\n", job_id);
+         fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
          break;
       } else {

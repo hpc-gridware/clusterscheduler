@@ -334,7 +334,7 @@ update_license_data(lListElem *hep, lList *lp_lic, u_long64 gdi_session) {
 
       lSetUlong(hep, EH_processors, processors);
 
-      DPRINTF("%s has " sge_uu32 " processors\n", lGetHost(hep, EH_name), processors);
+      DPRINTF("%s has " sge_u32 " processors\n", lGetHost(hep, EH_name), processors);
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name), nullptr, nullptr,
                       hep, nullptr, nullptr, true, true, gdi_session);
       answer_list_output(&answer_list);

@@ -534,7 +534,7 @@ static void simple_scheduler(sge_evc_class_t *evc)
          map[num_allocated_queues].procs = 0;
          map[num_allocated_queues].host_name = nullptr;
 
-         snprintf(id, sizeof(id), sge_uu32"." sge_uu32, lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+         snprintf(id, sizeof(id), sge_u32"." sge_u32, lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
 
          sge_ssi_job_start(evc_context, id, pe_name, map);
 
@@ -559,7 +559,7 @@ static void delete_some_jobs(sge_evc_class_t *evc)
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
          if((lGetUlong64(ja_task, JAT_start_time) + sge_gmt32_to_gmt64(120)) < now) {
             char id[100];
-            sprintf(id, sge_uu32"." sge_uu32, lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+            sprintf(id, sge_u32"." sge_u32, lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
             sge_ssi_job_cancel(evc_context, id, false);
          }
       }

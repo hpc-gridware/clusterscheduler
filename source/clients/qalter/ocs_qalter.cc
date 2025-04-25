@@ -774,7 +774,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
                   jobid != 0*/) { 
          all_or_jidlist = JOB;
          (*all_jobs) = 0; 
-         DPRINTF("got job " sge_uu32 " from parsing\n", jobid);
+         DPRINTF("got job " sge_u32 " from parsing\n", jobid);
       } else {
          if (!strcmp(lGetString(ep, ID_str), "all") || (all_or_jidlist == ALL)) {
             answer_list_add(&answer, MSG_ANSWER_ALLANDJOBIDSARENOTVALID, 

@@ -87,13 +87,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (!(flags & FLG_QALTER)) {
       if (lGetUlong(job, JB_job_number))
-         printf("job_number:                 " sge_uu32 "\n", lGetUlong(job, JB_job_number));
+         printf("job_number:                 " sge_u32 "\n", lGetUlong(job, JB_job_number));
       else
          printf("job_number:                 %s\n", MSG_JOB_UNASSIGNED);
    }
 
    if (lGetPosViaElem(job, JB_category_id, SGE_NO_ABORT) >= 0)
-      printf("category_id:                " sge_uu32 "\n", lGetUlong(job, JB_category_id));
+      printf("category_id:                " sge_u32 "\n", lGetUlong(job, JB_category_id));
 
    if (lGetPosViaElem(job, JB_exec_file, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_exec_file))
@@ -388,7 +388,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
       printf("jobshare:                   ");
-      printf(sge_uu32 "\n", lGetUlong(job, JB_jobshare));
+      printf(sge_u32 "\n", lGetUlong(job, JB_jobshare));
    }
 
    if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
@@ -458,7 +458,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
    if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_script_size))
-         printf("script_size:                " sge_uu32 "\n", lGetUlong(job, JB_script_size));
+         printf("script_size:                " sge_u32 "\n", lGetUlong(job, JB_script_size));
 
    if (lGetPosViaElem(job, JB_script_file, SGE_NO_ABORT) >= 0)
       if (lGetString(job, JB_script_file))
@@ -582,7 +582,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
       job_get_submit_task_ids(job, &start, &end, &step);
       if (job_is_array(job))
-         printf("job-array tasks:            " sge_uu32 "-" sge_uu32 ":" sge_uu32 "\n", start, end, step);
+         printf("job-array tasks:            " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
    }
 
    if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0)

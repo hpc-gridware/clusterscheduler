@@ -122,7 +122,7 @@ te_delete_all_or_one_time_event(te_type_t aType, u_long32 aKey1, u_long32 aKey2,
 
    DENTER(EVENT_LAYER);
 
-   DPRINTF("%s: (t:" sge_uu32" u1:" sge_uu32" u2:" sge_uu32" s:%s)\n", __func__,
+   DPRINTF("%s: (t:" sge_u32" u1:" sge_u32" u2:" sge_u32" s:%s)\n", __func__,
            static_cast<u_long32>(aType), aKey1, aKey2, strKey ? strKey : MSG_SMALLNULL);
 
    if (ignore_keys) {
@@ -471,7 +471,7 @@ te_add_event(te_event_t anEvent) {
    lSetUlong(le, TE_uval1, anEvent->ulong_key_2);
    lSetString(le, TE_sval, anEvent->str_key);
 
-   DPRINTF("%s: (t:" sge_uu32" w:" sge_u64" m:" sge_uu32" s:%s)\n", __func__, static_cast<u_long32>(anEvent->type),
+   DPRINTF("%s: (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", __func__, static_cast<u_long32>(anEvent->type),
            when, static_cast<u_long32>(anEvent->mode), anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
@@ -928,7 +928,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
 
    DENTER(EVENT_LAYER);
 
-   DPRINTF("%s: event (t:" sge_uu32 " w:" sge_u64 " m:" sge_uu32" s:%s)\n",
+   DPRINTF("%s: event (t:" sge_u32 " w:" sge_u64 " m:" sge_u32" s:%s)\n",
            __func__, static_cast<u_long32>(anEvent->type), anEvent->when, static_cast<u_long32>(anEvent->mode),
            anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
@@ -954,7 +954,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    if (RECURRING_EVENT == anEvent->mode) {
       anEvent->when = sge_get_gmt64() + anEvent->interval;
 
-      DPRINTF("%s: reccuring event (t:" sge_uu32 " w:" sge_u64" m:" sge_uu32" s:%s)\n",
+      DPRINTF("%s: reccuring event (t:" sge_u32 " w:" sge_u64" m:" sge_u32" s:%s)\n",
               __func__, static_cast<u_long32>(anEvent->type), anEvent->when, static_cast<u_long32>(anEvent->mode),
               anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 

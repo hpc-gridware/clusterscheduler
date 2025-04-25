@@ -266,7 +266,7 @@ int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, 
                      jid = lGetUlong(jlep, JB_job_number);
                      old_jataskid = jataskid;
                      jataskid = lGetUlong(jatep, JAT_task_number);
-                     sge_dstring_sprintf(&dyn_task_str, sge_uu32, jataskid);
+                     sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                      different = (jid != old_jid) || (jataskid != old_jataskid);
 
                      if (different) {
@@ -499,7 +499,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          sge_dstring_sprintf_append(&output, "           ");
       }
    } else {
-      snprintf(jobid, sizeof(jobid) - 1, sge_uu32, lGetUlong(job, JB_job_number));
+      snprintf(jobid, sizeof(jobid) - 1, sge_u32, lGetUlong(job, JB_job_number));
       ret = report_handler->report_job_begin(report_handler, cqname, jobid, alpp);
       if (ret != QHOST_SUCCESS) {
          DRETURN(ret);
@@ -984,7 +984,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
          for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
             pe_slots += lGetUlong(gdil_ep, JG_slots);
          }
-         printf(QSTAT_INDENT "Granted PE:       %s " sge_uu32 "\n", lGetString(jatep, JAT_granted_pe), pe_slots);
+         printf(QSTAT_INDENT "Granted PE:       %s " sge_u32 "\n", lGetString(jatep, JAT_granted_pe), pe_slots);
       }
       if (lGetString(job, JB_checkpoint_name))
          printf(QSTAT_INDENT "Checkpoint Env.:  %s\n", lGetString(job, JB_checkpoint_name));
@@ -1068,7 +1068,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Jobs: ");
          for_each_ep(qrep, ql) {
-            printf(sge_uu32, lGetUlong(qrep, JRE_job_number));
+            printf(sge_u32, lGetUlong(qrep, JRE_job_number));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
       }
@@ -1084,7 +1084,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
       if (ql) {
          printf(QSTAT_INDENT "Predecessor Array Jobs: ");
          for_each_ep(qrep, ql) {
-            printf(sge_uu32, lGetUlong(qrep, JRE_job_number));
+            printf(sge_u32, lGetUlong(qrep, JRE_job_number));
             printf("%s", lNext(qrep) ? ", " : "\n");
          }
       }

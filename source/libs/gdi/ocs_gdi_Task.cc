@@ -88,8 +88,8 @@ ocs::gdi::Task::~Task() {
 void
 ocs::gdi::Task::debug_print() {
    DENTER(TOP_LAYER);
-   DPRINTF("command = " sge_uu32 "\n", static_cast<u_long32>(command));
-   DPRINTF("target = " sge_uu32 "\n", static_cast<u_long32>(target));
+   DPRINTF("command = " sge_u32 "\n", static_cast<u_long32>(command));
+   DPRINTF("target = " sge_u32 "\n", static_cast<u_long32>(target));
    DPRINTF("data_list = %p\n", data_list);
    DPRINTF("answer_list = %p\n", answer_list);
    DPRINTF("condition = %p\n", condition);

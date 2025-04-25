@@ -103,7 +103,7 @@ static void *thread_function(void *anArg) {
 
    results[thread_id] = count;
 
-   printf("%s thread %d got " sge_uu32 " times the lock\n", read_thread ? "read" : "write", thread_id, count);
+   printf("%s thread %d got " sge_u32 " times the lock\n", read_thread ? "read" : "write", thread_id, count);
 
    DRETURN(nullptr);
 }
@@ -150,7 +150,7 @@ int validate(int count) {
       the run with just one thread */
    if (ret == 0) {
       if (count == 1) {
-         printf("set max locks to " sge_uu32 "\n", mean);
+         printf("set max locks to " sge_u32 "\n", mean);
          maxlocks = mean;
       } else {
          for (i = 0; i < count; i++) {

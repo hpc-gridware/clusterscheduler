@@ -384,7 +384,7 @@ bool get_queue_resource(lListElem *queue_elem, const lListElem *queue, const cha
    switch(type) {
    case TYPE_INT:
       dval = (double)lGetUlong(queue, field);
-      snprintf(as_str, 100, sge_uu32, lGetUlong(queue, field));
+      snprintf(as_str, 100, sge_u32, lGetUlong(queue, field));
       break;
 
    case TYPE_TIM:

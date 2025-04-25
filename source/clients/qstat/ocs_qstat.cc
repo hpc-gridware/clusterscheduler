@@ -1552,9 +1552,9 @@ static int job_stdout_predecessor(job_handler_t* handler, u_long32 jid, lList **
    DENTER(TOP_LAYER);
 
    if (ctx->predecessor_count > 0 ) {
-      printf(", " sge_uu32, jid);
+      printf(", " sge_u32, jid);
    } else {
-      printf(sge_uu32, jid);
+      printf(sge_u32, jid);
    }
    ctx->predecessor_count++;
 
@@ -1622,9 +1622,9 @@ static int job_stdout_ad_predecessor(job_handler_t* handler, u_long32 jid, lList
    DENTER(TOP_LAYER);
 
    if (ctx->ad_predecessor_count > 0) {
-      printf(", " sge_uu32, jid);
+      printf(", " sge_u32, jid);
    } else {
-      printf(sge_uu32, jid);
+      printf(sge_u32, jid);
    }
    ctx->ad_predecessor_count++;
 
@@ -2387,7 +2387,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
                         strcat(text, ",\n\t");
                   else
                      strcat(text, ",\t");
-                  snprintf(ltext, sizeof(ltext), sge_uu32, jid);
+                  snprintf(ltext, sizeof(ltext), sge_u32, jid);
                   strcat(text, ltext);
                   ids_per_line++;
                }

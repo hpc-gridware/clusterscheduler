@@ -927,7 +927,7 @@ load_report_interval(lListElem *hep) {
          lFreeElem(&conf_entry);
       }
 
-      DPRINTF("%s: load value timeout for host %s is " sge_uu32 "\n", __func__, host, timeout);
+      DPRINTF("%s: load value timeout for host %s is " sge_u32 "\n", __func__, host, timeout);
 
       lSetUlong(hep, EH_load_report_interval, timeout);
    }

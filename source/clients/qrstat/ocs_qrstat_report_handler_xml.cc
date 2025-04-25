@@ -331,7 +331,7 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "      <" SFN ">" sge_uu32 "</" SFN ">\n", name, value, name);
+   sge_dstring_sprintf_append(buffer, "      <" SFN ">" sge_u32 "</" SFN ">\n", name, value, name);
 
    DRETURN(ret); 
 }
@@ -501,7 +501,7 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
    DENTER(TOP_LAYER);
   
    sge_dstring_sprintf_append(buffer, "         <granted_slots  queue_instance=" SFQ
-                              " slots=\"" sge_uu32 "\"/>\n", name, value);
+                              " slots=\"" sge_u32 "\"/>\n", name, value);
 
    DRETURN(ret); 
 }

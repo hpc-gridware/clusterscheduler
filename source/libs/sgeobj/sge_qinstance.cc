@@ -1194,7 +1194,7 @@ qinstance_set_conf_slots_used(lListElem *this_elem) {
       u_long32 slots_value = lGetUlong(this_elem, QU_job_slots);
 
       lSetDouble(slots, CE_doubleval, slots_value);
-      lSetString(slots, CE_stringval, sge_dstring_sprintf(&buffer, sge_uu32, slots_value));
+      lSetString(slots, CE_stringval, sge_dstring_sprintf(&buffer, sge_u32, slots_value));
    }
    DRETURN_VOID;
 }

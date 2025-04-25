@@ -584,7 +584,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
                                  MSG_EVENT_INVALIDID);
          DTRACE;
          ret = false;
-         DPRINTF("EV_id false: " sge_uu32 "\n", id);
+         DPRINTF("EV_id false: " sge_u32 "\n", id);
       }
 #endif
    }

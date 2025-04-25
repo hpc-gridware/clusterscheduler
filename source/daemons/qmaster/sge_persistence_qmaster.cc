@@ -457,7 +457,7 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
       case sgeE_AR_ADD:
       case sgeE_AR_DEL:
       case sgeE_AR_MOD:
-         key = sge_dstring_sprintf(&buffer, sge_uu32, intkey1);
+         key = sge_dstring_sprintf(&buffer, sge_u32, intkey1);
          element = object;
          object_type = SGE_TYPE_AR;
          break;

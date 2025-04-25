@@ -347,7 +347,7 @@ FCLOSE_ERROR:
                if (shepherd_trace) {
                   char err_str[256];
 
-                  sprintf(err_str, MSG_SGE_KILLINGPIDXY_UI, static_cast<u_long32>(pid), groups);
+                  sprintf(err_str, MSG_SGE_KILLINGPIDXY_PI, pid, groups);
                   shepherd_trace(err_str);
                }
 
@@ -357,7 +357,7 @@ FCLOSE_ERROR:
                if (shepherd_trace) {
                   char err_str[256];
 
-                  sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_UI, static_cast<u_long32>(atol(dent->d_name)), groups);
+                  sprintf(err_str, MSG_SGE_DONOTKILLROOTPROCESSXY_PI, static_cast<pid_t>(atol(dent->d_name)), groups);
                   shepherd_trace(err_str);
                }
             }
@@ -740,7 +740,7 @@ time_t last_time
          utime = ((double)lGetPosUlong(pr, pos_utime))/HZ;
          stime = ((double)lGetPosUlong(pr, pos_stime))/HZ;
 
-         INFO("new process " sge_uu32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime);
+         INFO("new process " sge_u32" for job " pid_t_fmt " (utime = %f stime = %f)\n", lGetPosUlong(pr, pos_pid), job_elem->job.jd_jid, utime, stime);
 #else
          utime = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
          stime = pr.pr_stime.tv_sec + pr.pr_stime.tv_nsec*1E-9;

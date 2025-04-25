@@ -144,7 +144,7 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
    if (DPRINTF_IS_ACTIVE) {
       DSTRING_STATIC(dstr_s, 64);
       DSTRING_STATIC(dstr_e, 64);
-      DPRINTF("J=" sge_uu32 "." sge_uu32 " T=%s S=%s E=%s L=%c O=%s R=%s U=%f\n",
+      DPRINTF("J=" sge_u32 "." sge_u32 " T=%s S=%s E=%s L=%c O=%s R=%s U=%f\n",
               job_id, ja_taskid, type, sge_ctime64(start_time, &dstr_s), sge_ctime64(end_time, &dstr_e),
               level_char, object_name, name, utilization);
    }

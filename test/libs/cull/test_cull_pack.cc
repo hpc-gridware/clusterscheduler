@@ -125,7 +125,7 @@ static bool compare_objects(const lListElem *a, const lListElem *b) {
       ret = false;
    }
    if (lGetUlong(a, TEST_ulong) != lGetUlong(b, TEST_ulong)) {
-      fprintf(stderr, "TEST_ulong differs after unpacking: " sge_uu32 " vs. " sge_uu32 " \n",
+      fprintf(stderr, "TEST_ulong differs after unpacking: " sge_u32 " vs. " sge_u32 " \n",
               lGetUlong(a, TEST_ulong), lGetUlong(b, TEST_ulong));
       ret = false;
    }
@@ -263,11 +263,11 @@ int main(int argc, char *argv[]) {
 
    counted_size += strlen(pb.auth_info) + 1;
    if (counted_size != pb.bytes_used) {
-      printf("just_count does not work, reported " sge_uu32 ", expected " sge_uu32"\n",
+      printf("just_count does not work, reported " sge_u32 ", expected " sge_u32"\n",
              counted_size, static_cast<u_long32>(pb.bytes_used));
       return EXIT_FAILURE;
    }
-   printf("element uses " sge_uu32 " kb, mem_size is " sge_uu32" kb\n",
+   printf("element uses " sge_u32 " kb, mem_size is " sge_u32" kb\n",
           static_cast<u_long32>(pb.bytes_used / 1024), static_cast<u_long32>(pb.mem_size / 1024));
 
    buffer = sge_malloc(pb.bytes_used);

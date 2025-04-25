@@ -100,7 +100,7 @@ const char *indent
 
    for (i=0;i<level;i++)
       fprintf(fp, "%s", indent ? indent : "");
-   fprintf(fp, "%s=" sge_uu32 "\n", lGetString(ep, STN_name), lGetUlong(ep, STN_shares));
+   fprintf(fp, "%s=" sge_u32 "\n", lGetString(ep, STN_name), lGetUlong(ep, STN_shares));
    for_each_ep(cep, lGetList(ep, STN_children)) {
       level++;
       show_sharetree(cep, "   ");
@@ -144,9 +144,9 @@ const char *path
       for(i=0; i<ancestors.depth; i++)
          fprintf(fp, "/%s", lGetString(ancestors.nodes[i], STN_name));
       if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         fprintf(fp, "/=" sge_uu32 "\n", lGetUlong(node, STN_shares));
+         fprintf(fp, "/=" sge_u32 "\n", lGetUlong(node, STN_shares));
       else
-         fprintf(fp, "=" sge_uu32 "\n", lGetUlong(node, STN_shares));
+         fprintf(fp, "=" sge_u32 "\n", lGetUlong(node, STN_shares));
       free_ancestors(&ancestors);
       for_each_ep(cep, lGetList(node, STN_children)) {
 

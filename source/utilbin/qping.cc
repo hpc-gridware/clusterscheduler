@@ -527,7 +527,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         printf("host   : %s\n", packet->host);
                         printf("commproc   : %s\n", packet->commproc);
                         if (packet->version) {
-                           printf("version   : " sge_uu32 "\n", packet->version);
+                           printf("version   : " sge_u32 "\n", packet->version);
                         } else {
                            printf("version   : %s\n", "nullptr");
                         }
@@ -540,12 +540,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("         task:\n");
 
                            if (task->command) {
-                              printf("op     : " sge_uu32 "\n", task->command);
+                              printf("op     : " sge_u32 "\n", task->command);
                            } else {
                               printf("op     : %s\n", "nullptr");
                            }
                            if (task->target) {
-                              printf("target : " sge_uu32 "\n", task->target);
+                              printf("target : " sge_u32 "\n", task->target);
                            } else {
                               printf("target : %s\n", "nullptr");
                            }
@@ -614,7 +614,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      u_long32 client_id = 0;
                      if (unpackint(&buf, &client_id) == PACK_SUCCESS) {
                         printf("      unpacked event client exit (binary buffer length %lu):\n", buffer_length );
-                        printf("event client " sge_uu32 " exit\n", client_id);
+                        printf("event client " sge_u32 " exit\n", client_id);
                      }
                      clear_packbuffer(&buf);
                   }
@@ -655,7 +655,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         lListElem *job = nullptr;
                         if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
                            printf("      unpacked %s (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_uu32 "\n", feature_set);
+                           printf("feature_set: " sge_u32 "\n", feature_set);
                         }
                         if (cull_unpack_elem(&buf, &job, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(job, stdout); /* job */
@@ -668,7 +668,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         lListElem *petr = nullptr;
                         if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
                            printf("      unpacked %s - PE TASK REQUEST (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_uu32 "\n", feature_set);
+                           printf("feature_set: " sge_u32 "\n", feature_set);
                         }
                         if (cull_unpack_elem(&buf, &petr, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(petr, stdout);
@@ -694,10 +694,10 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      char *qname       = nullptr;
    
                      if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
-                        printf("jobid (JB_job_number):    " sge_uu32 "\n", jobid);
+                        printf("jobid (JB_job_number):    " sge_u32 "\n", jobid);
                      }
                      if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
-                        printf("jataskid (JAT_task_number): " sge_uu32 "\n", jataskid);
+                        printf("jataskid (JAT_task_number): " sge_u32 "\n", jataskid);
                      }
                      if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
@@ -708,7 +708,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      }
    
                      if (unpackint(&buf, &job_signal) == PACK_SUCCESS) {
-                        printf("signal:   " sge_uu32 " (%s)\n", job_signal, sge_sig2str(job_signal));
+                        printf("signal:   " sge_u32 " (%s)\n", job_signal, sge_sig2str(job_signal));
                      }
    
                      if (qname) {
@@ -734,10 +734,10 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      char *qname       = nullptr;
    
                      if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
-                        printf("jobid (0 - unused):    " sge_uu32 "\n", jobid);
+                        printf("jobid (0 - unused):    " sge_u32 "\n", jobid);
                      }
                      if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
-                        printf("jataskid (0 - unused): " sge_uu32 "\n", jataskid);
+                        printf("jataskid (0 - unused): " sge_u32 "\n", jataskid);
                      }
                      if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
@@ -747,7 +747,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                      }
                      if (unpackint(&buf, &queue_signal) == PACK_SUCCESS) {
-                        printf("signal:   " sge_uu32 " (%s)\n", queue_signal, sge_sig2str(queue_signal));
+                        printf("signal:   " sge_u32 " (%s)\n", queue_signal, sge_sig2str(queue_signal));
                      }
    
                      if (qname) {

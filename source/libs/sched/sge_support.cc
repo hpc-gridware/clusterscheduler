@@ -884,7 +884,7 @@ void sgeee_sort_jobs_by(lList **job_list , int by_SGEJ_field,
       }
       lSetRef(tmp_sge_job, SGEJ_job_reference, job);
 #if 0
-      DPRINTF("JOB: " sge_uu32 " SUBMISSION_TIME: " sge_u64 " PRIORITY: %f NAME: %s OWNER: %s QUEUE: %s STATUS: " sge_uu32 "\n",
+      DPRINTF("JOB: " sge_u32 " SUBMISSION_TIME: " sge_u64 " PRIORITY: %f NAME: %s OWNER: %s QUEUE: %s STATUS: " sge_u32 "\n",
          lGetUlong(tmp_sge_job, SGEJ_job_number), 
          lGetUlong64(tmp_sge_job, SGEJ_submission_time),
          lGetDouble(tmp_sge_job, SGEJ_priority),

@@ -121,7 +121,7 @@ gru_list_add_request(sge_assignment_t *a, lList **granted_resources_list, const 
          DRETURN(false);
       }
    }
-   DPRINTF("  ==> gru_list_add_request: booking %s: " sge_uu32 " * %f from host %s\n", name, slots, amount, host_name);
+   DPRINTF("  ==> gru_list_add_request: booking %s: " sge_u32 " * %f from host %s\n", name, slots, amount, host_name);
    lListElem *gru = gru_list_search(*granted_resources_list, name, host_name);
    if (gru == nullptr) {
       DPRINTF("   -> adding new GRU\n");

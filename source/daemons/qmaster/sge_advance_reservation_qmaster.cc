@@ -166,7 +166,7 @@ ar_initialize_timer(lList **answer_list, monitoring_t *monitor, u_long64 gdi_ses
                                         now);
          ocs::ReportingFileWriter::create_ar_acct_records(nullptr, ar, now);
 
-         sge_dstring_sprintf(&buffer, sge_uu32, ar_id);
+         sge_dstring_sprintf(&buffer, sge_u32, ar_id);
 
          lRemoveElem(ar_master_list, &ar);
 
@@ -356,7 +356,7 @@ int ar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_sprintf(&buffer, sge_uu32, lGetUlong(ep, AR_id));
+   sge_dstring_sprintf(&buffer, sge_u32, lGetUlong(ep, AR_id));
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
                                    sge_dstring_get_string(&buffer), SGE_TYPE_AR, true);
    answer_list_output(&answer_list);
@@ -778,7 +778,7 @@ sge_store_ar_id(te_event_t anEvent, monitoring_t *monitor) {
       if (fp == nullptr) {
          ERROR(MSG_NOSEQFILECREATE_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
       } else {
-         FPRINTF((fp, sge_uu32 "\n", ar_id));
+         FPRINTF((fp, sge_u32 "\n", ar_id));
          FCLOSE(fp);
       }
    }
@@ -812,7 +812,7 @@ sge_init_ar_id() {
    DENTER(TOP_LAYER);
 
    if ((fp = fopen(ARSEQ_NUM_FILE, "r"))) {
-      if (fscanf(fp, sge_uu32, &ar_id) != 1) {
+      if (fscanf(fp, sge_u32, &ar_id) != 1) {
          ERROR(MSG_NOSEQNRREAD_SSS, "ar", ARSEQ_NUM_FILE, strerror(errno));
       }
       FCLOSE(fp);
@@ -949,7 +949,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       gdil_del_all_orphaned(lGetList(ar, AR_granted_slots), nullptr, ocs::SessionManager::GDI_SESSION_NONE);
 
       /* remove the AR itself */
-      DPRINTF("AR: exited, removing AR " sge_uu32 "\n", ar_id);
+      DPRINTF("AR: exited, removing AR " sge_u32 "\n", ar_id);
       lRemoveElem(master_ar_list, &ar);
       sge_event_spool(nullptr, timestamp, sgeE_AR_DEL,
                       ar_id, 0, nullptr, nullptr, nullptr,
@@ -957,7 +957,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    } else {
       /* AR_RUNNING */
-      DPRINTF("AR: started, changing state of AR " sge_uu32 "\n", ar_id);
+      DPRINTF("AR: started, changing state of AR " sge_u32 "\n", ar_id);
 
       sge_ar_state_set_running(ar);
 

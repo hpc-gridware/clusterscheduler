@@ -1207,7 +1207,7 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      DPRINTF("EVC: change event client to " sge_uu32 "\n", static_cast<u_long32>(handling));
+      DPRINTF("EVC: change event client to " sge_u32 "\n", static_cast<u_long32>(handling));
 
       ret = (lGetUlong(sge_evc->ec, EV_busy_handling) != handling) ? true : false;
 
@@ -1388,7 +1388,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       } else {
          lSetBool(sge_evc->ec, EV_changed, false);
          sge_evc->need_register = false;
-         DPRINTF("registered local event client with id " sge_uu32 "\n", sge_evc->ec_reg_id);
+         DPRINTF("registered local event client with id " sge_u32 "\n", sge_evc->ec_reg_id);
       }
 
       lFreeList(&alp);
@@ -1508,7 +1508,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
 
          if (new_id != 0) {
             lSetUlong(sge_evc->ec, EV_id, new_id);
-            DPRINTF("REGISTERED with id " sge_uu32 "\n", new_id);
+            DPRINTF("REGISTERED with id " sge_u32 "\n", new_id);
             lSetBool(sge_evc->ec, EV_changed, false);
             sge_evc->need_register = false;
 
@@ -2799,7 +2799,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
                continue;
             }
 
-            DPRINTF("got %d events till " sge_uu32 "\n", lGetNumberOfElem(new_events), sge_evc->next_event - 1);
+            DPRINTF("got %d events till " sge_u32 "\n", lGetNumberOfElem(new_events), sge_evc->next_event - 1);
 
             if (*event_list != nullptr) {
                lAddList(*event_list, &new_events);
@@ -2947,7 +2947,7 @@ ck_event_number(lList *lp, u_long32 *waiting_for, u_long32 *wrong_number) {
       /* got a dummy event list for alive protocol */
       DPRINTF("received empty event list\n");
    } else {
-      DPRINTF("Checking %d events (" sge_uu32 "-" sge_uu32 ") while waiting for #" sge_uu32 "\n",
+      DPRINTF("Checking %d events (" sge_u32 "-" sge_u32 ") while waiting for #" sge_u32 "\n",
               lGetNumberOfElem(lp), lGetUlong(lFirst(lp), ET_number), lGetUlong(lLast(lp), ET_number), i);
 
       /* ensure number of last event is "waiting_for"-1 or higher */

@@ -620,7 +620,7 @@ bool is_manager
             */
             if (report_handler == nullptr) {
                char buf[80];
-               snprintf(buf, sizeof(buf), sge_uu32"/%d/" sge_uu32 " ", qinstance_slots_reserved(qep),
+               snprintf(buf, sizeof(buf), sge_u32"/%d/" sge_u32 " ", qinstance_slots_reserved(qep),
                         qinstance_slots_used(qep), lGetUlong(qep, QU_job_slots));
                if (hide_data) {
                   sge_dstring_sprintf_append(&buffer, "%-14s", "*/*/*");

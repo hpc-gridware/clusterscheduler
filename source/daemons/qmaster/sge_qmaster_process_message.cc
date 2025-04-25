@@ -624,7 +624,7 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
       DRETURN_VOID;
    }
 
-   DPRINTF("%s: remove client " sge_uu32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
+   DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
 
    sge_remove_event_client(client_id);
 
@@ -709,7 +709,7 @@ sge_c_job_ack(const char *host, const char *commproc, u_long32 ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF("JOB " sge_uu32 ": SIGNAL ACK\n", lGetUlong(jep, JB_job_number));
+         DPRINTF("JOB " sge_u32 ": SIGNAL ACK\n", lGetUlong(jep, JB_job_number));
          lSetUlong(jatep, JAT_pending_signal, 0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          {

@@ -871,7 +871,7 @@ void update_job_usage(const char* qualified_hostname)
          lListElem *jr;
          if (!(jr = get_job_report(job_id, ja_task_id, nullptr))) {
             /* should not happen in theory */
-            ERROR("removing unreferenced job " sge_uu32 "." sge_uu32 " without job report from ptf", job_id ,ja_task_id );
+            ERROR("removing unreferenced job " sge_u32 "." sge_u32 " without job report from ptf", job_id ,ja_task_id );
 #ifdef COMPILE_DC
             ptf_unregister_registered_job(job_id ,ja_task_id);
 #endif
@@ -913,7 +913,7 @@ void update_job_usage(const char* qualified_hostname)
             add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
          }
 
-         DPRINTF("---> updating job report usage for job " sge_uu32 "." sge_uu32 "\n", job_id, ja_task_id);
+         DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
 
          for_each_ep(pe_task, lGetList(ja_task, JAT_task_list)) {
             const char *pe_task_id = lGetString(pe_task, PET_id);
@@ -921,7 +921,7 @@ void update_job_usage(const char* qualified_hostname)
             /* search matching job report */
             if (!(jr = get_job_report(job_id, ja_task_id, pe_task_id))) {
                /* should not happen in theory */
-               ERROR("could not find job report for job " sge_uu32"." sge_uu32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
+               ERROR("could not find job report for job " sge_u32"." sge_u32" " "task " SFN " contained in job usage from ptf", job_id, ja_task_id, pe_task_id);
 #ifdef COMPILE_DC
 #ifdef DEBUG_DC
                ptf_show_registered_jobs();
@@ -964,7 +964,7 @@ void update_job_usage(const char* qualified_hostname)
                add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, lGetDouble(uep, UA_value));
             }
 
-            DPRINTF("---> updating job report usage for job " sge_uu32 "." sge_uu32" task \"%s\"\n",
+            DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32" task \"%s\"\n",
                 job_id, ja_task_id, pe_task_id);
 
          }

@@ -333,17 +333,17 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
          exit_status = status;
 
       if ( WEXITSTATUS(exit_status) == 0 ) {
-         INFO("exit status of script: " sge_uu32 "\n", WEXITSTATUS(exit_status));
+         INFO("exit status of script: " sge_u32 "\n", WEXITSTATUS(exit_status));
       } else {
-         ERROR("exit status of script: " sge_uu32 "\n", WEXITSTATUS(exit_status));
+         ERROR("exit status of script: " sge_u32 "\n", WEXITSTATUS(exit_status));
       }
       DRETURN_VOID;
    } else {
       const char *basename = sge_basename( script_file, '/' );
       /*      SETPGRP;  */
       /*      sge_close_all_fds(nullptr); */
-      snprintf(buffer, sizeof(buffer), sge_uu32, jobid);
-      snprintf(buffer2, sizeof(buffer2), sge_uu32, taskid);
+      snprintf(buffer, sizeof(buffer), sge_u32, jobid);
+      snprintf(buffer2, sizeof(buffer2), sge_u32, taskid);
       execlp(script_file, basename, event_name, buffer, buffer2, (char *) nullptr);
    }
    exit(1);

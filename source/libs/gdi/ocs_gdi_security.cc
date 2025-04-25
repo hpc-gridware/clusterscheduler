@@ -308,7 +308,7 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
       char *env[2];
 
       /* set up credentials cache for this job */
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_uu32, lGetUlong(jep, JB_job_number));
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32, lGetUlong(jep, JB_job_number));
       env[0] = ccname;
       env[1] = nullptr;
 
@@ -376,7 +376,7 @@ void delete_credentials(const char *sge_root, lListElem *jep)
       char tmpstr[1024];
 
       /* set up credentials cache for this job */
-      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_qmaster_" sge_uu32, lGetUlong(jep, JB_job_number));
+      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_qmaster_" sge_u32, lGetUlong(jep, JB_job_number));
       snprintf(ccenv, sizeof(ccenv), "FILE:%s", ccfile);
       snprintf(ccname, sizeof(ccname), "KRB5CCNAME=%s", ccenv);
       env[0] = ccname;
@@ -454,7 +454,7 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
       }
 
       /* set up credentials cache for this job */
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_uu32, lGetUlong(jep, JB_job_number));
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_qmaster_" sge_u32, lGetUlong(jep, JB_job_number));
       env[0] = ccname;
       env[1] = nullptr;
 
@@ -561,10 +561,10 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
       lListElem *vep;
 
       /* set up credentials cache for this job */
-      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_%s_" sge_uu32, "sge", lGetUlong(jelem, JB_job_number));
+      snprintf(ccfile, sizeof(ccfile), "/tmp/krb5cc_%s_" sge_u32, "sge", lGetUlong(jelem, JB_job_number));
       snprintf(ccenv, sizeof(ccenv), "FILE:%s", ccfile);
       snprintf(ccname, sizeof(ccname), "KRB5CCNAME=%s", ccenv);
-      snprintf(jobstr, sizeof(jobstr), "JOB_ID=" sge_uu32, lGetUlong(jelem, JB_job_number));
+      snprintf(jobstr, sizeof(jobstr), "JOB_ID=" sge_u32, lGetUlong(jelem, JB_job_number));
       env[0] = ccname;
       env[1] = jobstr;
       env[2] = nullptr;

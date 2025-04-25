@@ -148,7 +148,7 @@ static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
  ****************************************************************************/
 int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 {
-   int pid = 999;
+   pid_t pid = 999;
    int exit_status, child_signal, core_dumped, failed;
    u_long32 jobid, jataskid;
    const lListElem *jep;
@@ -167,7 +167,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
 
    while (pid > 0) {
       if (reap_count >= max_count) {
-         DPRINTF("max. reap count is reached - returning. reaped " sge_uu32 " childs.\n", reap_count);
+         DPRINTF("max. reap count is reached - returning. reaped " sge_u32 " childs.\n", reap_count);
          return 1;
       }
 
@@ -210,8 +210,8 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          if (exit_status)
             failed = ESSTATE_SHEPHERD_EXIT;
       } else {
-         /* not signaled and not exited - so what else happend with this guy? */
-         WARNING(MSG_WAITPIDNOSIGNOEXIT_UI, static_cast<u_long32>(pid), status);
+         /* not signaled and not exited - so what else happened with this guy? */
+         WARNING(MSG_WAITPIDNOSIGNOEXIT_PI, pid, status);
          continue;
       }
 
@@ -265,7 +265,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
           *  if not it should be a job kept with SGE_KEEP_ACTIVE (without
           *  keeping job object itself)
           */
-         DPRINTF("Job: " sge_uu32 ", JA-Task: " sge_uu32 ", PE-Task: %s\n", jobid, jataskid,
+         DPRINTF("Job: " sge_u32 ", JA-Task: " sge_u32 ", PE-Task: %s\n", jobid, jataskid,
             petep != nullptr ? lGetString(petep, PET_id) : "");
          if (!(jr=get_job_report(jobid, jataskid, petep != nullptr ? lGetString(petep, PET_id) : nullptr))) {
             ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
@@ -279,7 +279,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          /* when restarting execd it happens that cleanup_old_jobs()
             has already cleaned up this job */
          if (lGetUlong(jr, JR_state) == JEXITING) {
-            DPRINTF("State of job " sge_uu32 " already changed to JEXITING\n", jobid);
+            DPRINTF("State of job " sge_u32 " already changed to JEXITING\n", jobid);
             continue;
          }
 
@@ -324,7 +324,7 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down)
          }
       }
    }
-   DPRINTF("reaped " sge_uu32 " childs - no child remaining\n", reap_count);
+   DPRINTF("reaped " sge_u32 " childs - no child remaining\n", reap_count);
 
    DRETURN(0);
 }
@@ -651,7 +651,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
                                 "job_pid");
       if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
          if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
-            if (!fscanf(fp, sge_uu32 , &job_pid))
+            if (!fscanf(fp, sge_u32 , &job_pid))
                job_pid = 0;
             FCLOSE_IGNORE_ERROR(fp);
          }
@@ -1421,9 +1421,9 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
 
    /* report this information */
    if (shepherd_alive) {
-      snprintf(err_str, sizeof(err_str), MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISZALIVE_SU, dir, static_cast<u_long32>(pid));
+      snprintf(err_str, sizeof(err_str), MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISZALIVE_SP, dir, pid);
    } else {
-      snprintf(err_str, sizeof(err_str), MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISNOTALIVE_SU, dir, static_cast<u_long32>(pid));
+      snprintf(err_str, sizeof(err_str), MSG_SHEPHERD_SHEPHERDFORJOBXHASPIDYANDISNOTALIVE_SP, dir, pid);
    }
    if (startup) {
       INFO(SFNMAX, err_str);
@@ -1486,7 +1486,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    /* if the state is already JEXITING work is done  
       for this job and we wait for ACK from qmaster */
    if (lGetUlong(jr, JR_state)==JEXITING) {
-      DPRINTF("State of job " sge_uu32 "." sge_uu32" already changed to JEXITING\n", jobid, jataskid);
+      DPRINTF("State of job " sge_u32 "." sge_u32" already changed to JEXITING\n", jobid, jataskid);
       DRETURN_VOID;
    }
 
@@ -1575,7 +1575,7 @@ read_dusage(lListElem *jr, const char *jobdir, u_long32 jobid, u_long32 jataskid
    if (failed != ESSTATE_NO_PID) {
       fp = fopen(pid_file, "r");
       if (fp != nullptr) {
-         if (fscanf(fp, sge_uu32 , &pid) != 1) {
+         if (fscanf(fp, sge_u32 , &pid) != 1) {
             ERROR(MSG_EXECD_ERRORREADINGPIDOFJOB_UU, jobid, jataskid);
          }
          FCLOSE(fp);
@@ -1848,7 +1848,7 @@ u_long32 *valuep
 
    if (!(s = get_conf_value(nullptr, *cflpp, CF_name, CF_value, name)))
       return -1;
-   ret = sscanf(s, sge_uu32, valuep);
+   ret = sscanf(s, sge_u32, valuep);
    lDelElemStr(cflpp, CF_name, name);
    return (ret == 1)?0:-1;
 }
@@ -2236,7 +2236,7 @@ int count_master_tasks(const lList *lp, u_long32 job_id)
       jep = lGetElemUlongNext(lp, JB_job_number, job_id, &iterator);
    }
 
-   DPRINTF("Found %d master jobs for " sge_uu32, master_jobs, job_id);
+   DPRINTF("Found %d master jobs for " sge_u32, master_jobs, job_id);
 
    DRETURN(master_jobs);
 }
@@ -2249,9 +2249,9 @@ void simulated_job_exit(const lListElem *jep, lListElem *jatep, u_long32 sig) {
 
    u_long32 state = lGetUlong(jatep, JAT_status);
    if (state == JEXITING) {
-      DPRINTF("Simulated job " sge_uu32"." sge_uu32" is already in state JEXITING\n", jobid, jataskid);
+      DPRINTF("Simulated job " sge_u32"." sge_u32" is already in state JEXITING\n", jobid, jataskid);
    } else {
-      DPRINTF("Simulated job " sge_uu32"." sge_uu32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
+      DPRINTF("Simulated job " sge_u32"." sge_u32" is %s\n", jobid, jataskid, sig == 0 ? "exiting" : "killed");
 
       lListElem *jr = get_job_report(jobid, jataskid, nullptr);
       if (jr == nullptr) {

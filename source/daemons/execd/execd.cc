@@ -191,7 +191,7 @@ int main(int argc, char **argv)
       
    /* Initialize path for temporary logging until we chdir to spool */
    my_pid = getpid();
-   snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." sge_uu32 "", TMP_ERR_FILE_EXECD, my_pid);
+   snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." sge_u32 "", TMP_ERR_FILE_EXECD, my_pid);
    log_state_set_log_file(tmp_err_file_name);
 
    /* exit func for sge_exit() */
