@@ -446,9 +446,9 @@ StartExecd()
       fi
       $SVCADM enable -s "svc:/application/sge/execd:$SGE_CLUSTER_NAME"
       if [ $? -ne 0 ]; then
-         $INFOTEXT "\nFailed to start execution deamon over SMF.\n" \
+         $INFOTEXT "\nFailed to start execution daemon over SMF.\n" \
                    "Check service by issuing svcs -l svc:/application/sge/execd:%s" $SGE_CLUSTER_NAME
-         $INFOTEXT -log "\nFailed to start execution deamon over SMF.\n" \
+         $INFOTEXT -log "\nFailed to start execution daemon over SMF.\n" \
                         "Check service by issuing svcs -l svc:/application/sge/execd:%s" $SGE_CLUSTER_NAME
          if [ $AUTO = true ]; then
             MoveLog

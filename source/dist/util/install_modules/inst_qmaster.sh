@@ -1043,9 +1043,9 @@ StartQmaster()
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
       $SVCADM enable -s "svc:/application/sge/qmaster:$SGE_CLUSTER_NAME"
       if [ $? -ne 0 ]; then
-         $INFOTEXT "\nFailed to start qmaster deamon over SMF. Check service by issuing "\
+         $INFOTEXT "\nFailed to start qmaster daemon over SMF. Check service by issuing "\
                    "svcs -l svc:/application/sge/qmaster:%s" $SGE_CLUSTER_NAME
-         $INFOTEXT -log "\nFailed to start qmaster deamon over SMF. Check service by issuing "\
+         $INFOTEXT -log "\nFailed to start qmaster daemon over SMF. Check service by issuing "\
                         "svcs -l svc:/application/sge/qmaster:%s" $SGE_CLUSTER_NAME
          MoveLog
          exit 1
