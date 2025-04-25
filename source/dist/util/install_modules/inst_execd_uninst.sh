@@ -234,6 +234,50 @@ RemoveQueues()
 
 }
 
+#--------------------------------------------------------------------------------
+# RemoveExecdAdminHost: Remove the admin host property of a given execd host
+# BUT: only if the execd host is neither a shadow master nor a qmaster
+#
+# $1: execd host name
+#
+RemoveExecdAdminHost()
+{
+   admin_host=$1
+   do_delete="false"
+   # is it admin host at all?
+   for host in `qconf -sh`; do
+      if [ "$host" = "$admin_host" ]; then
+         do_delete="true"
+         break
+      fi
+   done
+
+   # is it the qmaster?
+   if [ $do_delete = "true" ]; then
+      if [ -f $SGE_ROOT/$SGE_CELL/common/act_qmaster ]; then
+         qmaster_host=`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster`
+         if [ "$admin_host" = "$qmaster_host" ]; then
+            do_delete="false"
+         fi
+      fi
+   fi
+
+   # is it a shadow master?
+   if [ $do_delete = "true" ]; then
+      if [ -f $SGE_ROOT/$SGE_CELL/common/shadow_masters ]; then
+         for host in `cat $SGE_ROOT/$SGE_CELL/common/shadow_masters`; do
+            if [ "$host" = "$admin_host" ]; then
+               do_delete="false"
+               break
+            fi
+         done
+      fi
+   fi
+
+   if [ $do_delete = "true" ]; then
+      qconf -dh $admin_host
+   fi
+}
 
 RemoveExecd()
 {
@@ -243,14 +287,10 @@ RemoveExecd()
    $INFOTEXT -log "Removing exec host %s now!" $exechost
 
    qconf -ds $exechost
-   sleep 1
    qconf -ke $exechost
    sleep 1
    qconf -de $exechost
-   sleep 1
-   qconf -dh $exechost
-
-
+   RemoveExecdAdminHost $exechost
 }
 
 
