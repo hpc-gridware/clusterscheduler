@@ -132,4 +132,6 @@ typedef enum {
    SGE_SYSCONF_NGROUPS_MAX
 } sge_sysconf_t;
 
-u_long32 sge_sysconf(sge_sysconf_t id); 
+u_long32 sge_sysconf(sge_sysconf_t id);
+
+double sge_normalize_value(double value, double range_min, double range_max);

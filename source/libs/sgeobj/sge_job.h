@@ -442,7 +442,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
                              const lList *acl_list, const char *option);
 
 bool job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify);
-bool job_verify_submitted_job(const lListElem *job, lList **answer_list);
+bool job_verify_submitted_job(lListElem *job, lList **answer_list);
 
 bool job_get_wallclock_limit(u_long64 *limit, const lListElem *jep);
 
@@ -556,4 +556,5 @@ job_get_sync_options_string(const lListElem *job);
 bool
 job_is_visible(const char *owner, bool is_manager, bool show_department_view, const lList *acl_list);
 
+void job_normalize_priority(lListElem *jep, u_long32 priority);
 

@@ -323,7 +323,6 @@ sge_event_spool(lList **answer_list, u_long64 timestamp, ev_event event, u_long3
       case sgeE_JOB_ADD:
       case sgeE_JOB_DEL:
       case sgeE_JOB_MOD:
-      case sgeE_JOB_MOD_SCHED_PRIORITY:
       case sgeE_JOB_USAGE:
       case sgeE_JOB_FINAL_USAGE:
       case sgeE_JOB_FINISH:

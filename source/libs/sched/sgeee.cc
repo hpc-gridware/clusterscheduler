@@ -2287,7 +2287,6 @@ void sge_clear_job( lListElem *job, bool is_clear_all) {
    lListElem *ja_task;
    
    if (is_clear_all) {
-      lSetDouble(job, JB_nppri,0.0);
       lSetDouble(job, JB_urg,0.0);
       lSetDouble(job, JB_nurg,0.0);
       lSetDouble(job, JB_dlcontr,0.0);
@@ -3971,39 +3970,6 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
    }
 
    DRETURN_VOID;
-}
-
-/*--------------------------------------------------------------------
- * sge_do_priority
- *--------------------------------------------------------------------*/
-
-void sge_do_priority(lList *running_jobs, lList *pending_jobs)
-{
-   lListElem *jep;
-   const double min_priority = 0;
-   const double max_priority = 2048;
-   double priority;
-
-   for_each_rw(jep, running_jobs) {
-      priority = (double)lGetUlong(jep, JB_priority);
-      lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
-   }
-
-   for_each_rw(jep, pending_jobs) {
-      priority = (double)lGetUlong(jep, JB_priority);
-      lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
-   }
-}
-
-void sge_do_priority_job(lListElem *jep)
-{
-   const double min_priority = 0;
-   const double max_priority = 2048;
-   double priority;
-
-   
-   priority = (double)lGetUlong(jep, JB_priority);
-   lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
 }
 
 /*--------------------------------------------------------------------

@@ -1102,6 +1102,9 @@ setup_qmaster() {
          DPRINTF("JOB " sge_uu32 " PRIORITY" sge_uu32 "\n", lGetUlong(jep, JB_job_number),
                  lGetUlong(jep, JB_priority) - BASE_PRIORITY);
 
+         // normalize the priority and store the normalized value
+         job_normalize_priority(jep, lGetUlong(jep, JB_priority));
+
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);
 

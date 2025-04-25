@@ -104,7 +104,6 @@ sge_create_cull_order_pos(order_pos_t **cull_order_pos, const lListElem *jep, co
 
    if (jep != nullptr) {
       job_pos->JB_version_pos = lGetPosViaElem(jep,JB_version, SGE_NO_ABORT);
-      job_pos->JB_nppri_pos = lGetPosViaElem(jep,JB_nppri, SGE_NO_ABORT);
       job_pos->JB_nurg_pos = lGetPosViaElem(jep,JB_nurg, SGE_NO_ABORT);
       job_pos->JB_urg_pos = lGetPosViaElem(jep,JB_urg, SGE_NO_ABORT);
       job_pos->JB_rrcontr_pos = lGetPosViaElem(jep,JB_rrcontr, SGE_NO_ABORT);
@@ -137,7 +136,6 @@ DPRINTF(("ja task prio pos: %d %d %d %d %d %d %d %d\n", ja_pos->JAT_status_pos, 
 
    if (joker != nullptr) {
       order_job_pos->JB_version_pos = -1;
-      order_job_pos->JB_nppri_pos = lGetPosViaElem(joker,JB_nppri, SGE_NO_ABORT);
       order_job_pos->JB_nurg_pos = lGetPosViaElem(joker,JB_nurg, SGE_NO_ABORT);
       order_job_pos->JB_urg_pos = lGetPosViaElem(joker,JB_urg, SGE_NO_ABORT);
       order_job_pos->JB_rrcontr_pos = lGetPosViaElem(joker,JB_rrcontr, SGE_NO_ABORT);

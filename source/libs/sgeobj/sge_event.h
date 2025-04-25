@@ -195,7 +195,6 @@ typedef enum {
    sgeE_JOB_ADD,                    /* event job add (new job) */
    sgeE_JOB_DEL,                    /* event job delete */
    sgeE_JOB_MOD,                    /* event job modify */
-   sgeE_JOB_MOD_SCHED_PRIORITY,     /* event job modify priority */
    sgeE_JOB_USAGE,                  /* event job online usage */
    sgeE_JOB_FINAL_USAGE,            /* event job final usage report after job end */
    sgeE_JOB_FINISH,                 /* job finally finished or aborted (user view) */

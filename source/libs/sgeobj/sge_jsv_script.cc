@@ -66,6 +66,7 @@
 #include "msg_common.h"
 
 #include <tuple>
+#include <sched/sgeee.h>
 
 /*
  * defines the timeout how long a client/qmaster would wait maximally for
@@ -668,7 +669,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
             ret = ulong_parse_priority(&local_answer_list, &priority, value);
          }
          if (ret) {
-            lSetUlong(new_job, JB_priority, BASE_PRIORITY + priority);
+            u_long32 pri = BASE_PRIORITY + priority;
+            job_normalize_priority(new_job, pri);
          }
       }
 

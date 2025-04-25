@@ -525,7 +525,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
    DENTER(TOP_LAYER);
 
    // Find job ID and job where we received an event (add, modify)
-   u_long32 job_id;
+   u_long32 job_id = 0;
    lListElem *job = nullptr;
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
       job_id = lGetUlong(event, ET_intkey);
@@ -539,22 +539,7 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
    }
 
    switch (action) {
-      case SGE_EMA_LIST: {
-         lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
-         // recompute the priorities for all jobs
-         sge_do_priority(master_job_list, nullptr);
-         break;
-      }
-      case SGE_EMA_ADD:
-         // recompute the priorities for the job
-         sge_do_priority_job(job);
-         break;
-
       case SGE_EMA_MOD:
-
-         // recompute the priorities for the job
-         sge_do_priority_job(job);
          switch (lGetUlong(event, ET_type)) {
             case sgeE_JOB_FINAL_USAGE: {
                const char *pe_task_id = lGetString(event, ET_strkey);
@@ -575,12 +560,13 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_even
             }
 
             case sgeE_JOB_MOD:
-            case sgeE_JOB_MOD_SCHED_PRIORITY:
             default:
                break;
          }
          break;
 
+      case SGE_EMA_ADD:
+      case SGE_EMA_LIST:
       default:
          break;
    }

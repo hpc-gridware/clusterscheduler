@@ -111,7 +111,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
-#include <ocs_gdi_ClientServerBase.h>
+#include "ocs_gdi_ClientServerBase.h"
 
 
 /****** qmaster/job/spooling ***************************************************
@@ -1352,7 +1352,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             }
          }
          if (trigger & PRIO_EVENT) {
-            sge_add_job_event(sgeE_JOB_MOD_SCHED_PRIORITY, new_job, nullptr, packet->gdi_session);
+            sge_add_job_event(sgeE_JOB_MOD, new_job, nullptr, packet->gdi_session);
          }
 
          /* remove all existing trigger links - 
@@ -2032,10 +2032,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          }
       }
       /* ok, do it */
-      if (uval != old_priority)
-         *trigger |= PRIO_EVENT;
+      if (uval != old_priority) {
+         *trigger |= MOD_EVENT;
+      }
 
-      lSetUlong(new_job, JB_priority, uval);
+      job_normalize_priority(new_job, uval);
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_PRIOSET_SSUI, packet->user, packet->host, jobid, ((int) (uval)) - BASE_PRIORITY);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
