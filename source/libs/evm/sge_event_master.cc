@@ -382,7 +382,7 @@ void sge_cleanup_event_master_control(void *arg) {
    // remove leftover event clients
    lListElem *event_client;
    while ((event_client = lFirstRW(Event_Master_Control.clients)) != nullptr) {
-      DEBUG("event client " sge_uu32 " (state: " sge_uu32 ") is still registered at event master shutdown",
+      DEBUG("event client " sge_u32 " (state: " sge_u32 ") is still registered at event master shutdown",
             lGetUlong(event_client, EV_id), lGetUlong(event_client, EV_state));
       remove_event_client(&event_client, false);
    }
@@ -820,7 +820,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    }
    /* busy_handling changed */
    if (busy_handling != lGetUlong(event_client, EV_busy_handling)) {
-      DPRINTF("EVM: event client %s changes to " sge_uu32 "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
+      DPRINTF("EVM: event client %s changes to " sge_u32 "\n", lGetString(event_client, EV_name), lGetUlong(event_client, EV_busy_handling));
       lSetUlong(event_client, EV_busy_handling, busy_handling);
    }
 
@@ -2433,7 +2433,7 @@ static void build_subscription(lListElem *event_el)
       DRETURN_VOID;
    }
 
-   DPRINTF("rebuild event mask for client(id): %s(" sge_uu32 ")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id));
+   DPRINTF("rebuild event mask for client(id): %s(" sge_u32 ")\n", lGetString(event_el, EV_name), lGetUlong(event_el, EV_id));
 
    sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
    SGE_ASSERT(sub_array != nullptr);

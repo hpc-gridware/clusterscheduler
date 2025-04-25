@@ -140,7 +140,7 @@ static bool spool_data()
 
    context = spool_get_default_context();
 
-   fprintf(stdout, "spooling " sge_uu32 " jobs\n", lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)));
+   fprintf(stdout, "spooling " sge_u32 " jobs\n", lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)));
 
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);
@@ -192,7 +192,7 @@ static bool delete_spooled_data()
 
    /* jobs */
    for_each_rw(job, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
-      snprintf(key, sizeof(key),  sge_uu32 ".0", lGetUlong(job, JB_job_number));
+      snprintf(key, sizeof(key),  sge_u32 ".0", lGetUlong(job, JB_job_number));
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key, true);
       answer_list_output(&answer_list);
       num_total++;

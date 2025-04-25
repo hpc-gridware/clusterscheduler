@@ -249,7 +249,7 @@ main(int argc, char **argv) {
 
       DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
-         DPRINTF("shadowd_pid: " sge_uu32 "\n", shadowd_pid);
+         DPRINTF("shadowd_pid: " sge_u32 "\n", shadowd_pid);
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
@@ -262,7 +262,7 @@ main(int argc, char **argv) {
       snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
       DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
-         DPRINTF("shadowd_pid: " sge_uu32 "\n", static_cast<u_long32>(shadowd_pid));
+         DPRINTF("shadowd_pid: " pid_t_fmt "\n", shadowd_pid);
          if (!sge_checkprog(shadowd_pid, shadowd_name, PSCMD)) {
             CRITICAL(MSG_SHADOWD_FOUNDRUNNINGSHADOWDWITHPIDXNOTSTARTING_I, (int) shadowd_pid);
             sge_exit(1);
@@ -353,7 +353,7 @@ main(int argc, char **argv) {
 
             delay = 0;
             if (last_heartbeat == heartbeat) {
-               DPRINTF("heartbeat not changed since seconds: " sge_uu32 "\n", static_cast<u_long32>(now - last));
+               DPRINTF("heartbeat not changed since seconds: " sge_u32 "\n", static_cast<u_long32>(now - last));
                delay = delay_time; /* set delay time */
 
                /*
@@ -426,7 +426,7 @@ main(int argc, char **argv) {
       } else {
          if (last_heartbeat < 0 || heartbeat < 0) {
             /* There was an error reading heartbeat or last_heartbeat */
-            DPRINTF("can't read heartbeat file. last_heartbeat=" sge_uu32 ", heartbeat=" sge_uu32 "\n",
+            DPRINTF("can't read heartbeat file. last_heartbeat=" sge_u32 ", heartbeat=" sge_u32 "\n",
                     last_heartbeat, heartbeat);
          } else {
             DPRINTF("have to read the heartbeat file twice to check time differences\n");

@@ -133,7 +133,7 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
        * the wait status is returned by japi_wait()
        * see sge_reportL.h for bitmask and makro definition
        */
-      FPRINTF((fp, "wait_status=" sge_uu32 "\n", wait_status));
+      FPRINTF((fp, "wait_status=" sge_u32 "\n", wait_status));
       FPRINTF((fp, "exit_status=%d\n", exit_status));
       FPRINTF((fp, "signal=%d\n", child_signal));
 
@@ -203,7 +203,7 @@ shepherd_write_sig_info_file(const char *filename, const char *task_id, u_long32
 
    fp = fopen(filename, "a");
    if (fp != nullptr) {
-      FPRINTF((fp, "%s " sge_uu32 "\n", task_id, exit_status));
+      FPRINTF((fp, "%s " sge_u32 "\n", task_id, exit_status));
       FCLOSE(fp);
    } else {
       shepherd_error(1, MSG_FILE_NOOPEN_SS, filename, strerror(errno));

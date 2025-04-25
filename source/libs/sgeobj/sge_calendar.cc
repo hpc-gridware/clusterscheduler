@@ -371,7 +371,7 @@ static int state_at(time_t now, const lList *ycal, const lList *wcal, time_t *ne
       *next_event = temp_next_event;
    }   
   
-   DPRINTF("got state %d from %s calendar. Now: " sge_uu32 " Next event: " sge_uu32"\n",
+   DPRINTF("got state %d from %s calendar. Now: " sge_u32 " Next event: " sge_u32"\n",
            state, have_week_cal ? "week" : "year", now, next_event?*next_event:0);
 
    lFreeElem(&tm);

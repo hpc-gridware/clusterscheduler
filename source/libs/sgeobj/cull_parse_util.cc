@@ -165,7 +165,7 @@ lList **pplist
             {
                lUlong ul;
 
-               if (sscanf(*pstrlist, sge_uu32, &ul) != 1) {
+               if (sscanf(*pstrlist, sge_u32, &ul) != 1) {
                   DPRINTF("cull_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
                   lFreeList(&list);
                   DRETURN(-8);
@@ -810,7 +810,7 @@ int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, in
             break;
        
          case lUlongT:
-            snprintf(str, sizeof(str), sge_uu32, lGetUlong(ep, *rule));
+            snprintf(str, sizeof(str), sge_u32, lGetUlong(ep, *rule));
             break;
 
          case lLongT:

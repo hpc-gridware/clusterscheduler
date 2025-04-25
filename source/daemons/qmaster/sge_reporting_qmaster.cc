@@ -401,7 +401,7 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
 
       sge_dstring_sprintf(&job_dstring,
                           sge_u64"%c"
-                          sge_uu32"%c"
+                          sge_u32"%c"
                           "%d%c"
                           "%s%c"
                           "%s%c"
@@ -410,7 +410,7 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
                           "%s%c"
                           "%s%c"
                           "%s%c"
-                          sge_uu32
+                          sge_u32
                           "\n",
                           submission_time, REPORTING_DELIMITER,
                           job_number, REPORTING_DELIMITER,
@@ -498,7 +498,7 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 ev
       account = lGetStringNotNull(job, JB_account);
 
       sge_dstring_sprintf(&job_dstring,
-                          sge_u64 "%c%s%c" sge_uu32 "%c%d%c%s%c%s%c%s%c%s%c" sge_uu32 "%c" sge_uu32 "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
+                          sge_u64 "%c%s%c" sge_u32 "%c%d%c%s%c%s%c%s%c%s%c" sge_u32 "%c" sge_u32 "%c" sge_u64 "%c%s%c%s%c%s%c%s%c%s%c%s%c%s\n",
                           (u_long64)sge_gmt64_to_time_t(event_time), REPORTING_DELIMITER,
                           event, REPORTING_DELIMITER,
                           job_id, REPORTING_DELIMITER,
@@ -1009,7 +1009,7 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                               sge_u64 "%c"
                               SFN "%c"
                               sge_u64 "%c"
-                              sge_uu32"%c"
+                              sge_u32"%c"
                               "%s\n",
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "new_ar", REPORTING_DELIMITER,
@@ -1075,7 +1075,7 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR_submission_time */
-                              sge_uu32"%c"   /* AR_id */
+                              sge_u32"%c"   /* AR_id */
                               "%s%c"               /* AR_name */
                               "%s%c"               /* AR_account */
                               sge_u64 "%c"   /* AR_start_time */
@@ -1153,7 +1153,7 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR submission time */
-                              sge_uu32"%c"   /* AR_id */
+                              sge_u32"%c"   /* AR_id */
                               "%s%c"               /* AR_state as string*/
                               "%s%c"               /* event as string*/
                               "%s\n",              /* message */
@@ -1281,10 +1281,10 @@ ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                               SFN "%c"
                               sge_u64 "%c"   /* report_time */
                               sge_u64 "%c"   /* AR_submission_time */
-                              sge_uu32"%c"   /* AR_id */
+                              sge_u32"%c"   /* AR_id */
                               "%s%c"               /* cqueue */
                               "%s%c"               /* execution hostname */
-                              sge_uu32"\n",  /* number of slots */
+                              sge_u32"\n",  /* number of slots */
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,
                               "ar_acct", REPORTING_DELIMITER,
                               (u_long64)sge_gmt64_to_time_t(report_time), REPORTING_DELIMITER,

@@ -117,7 +117,7 @@ schedd_serf_record_func(u_long32 job_id, u_long32 ja_taskid, const char *state, 
    }
 
    /* a new record */
-   fprintf(fp, sge_uu32":" sge_uu32 ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", job_id,
+   fprintf(fp, sge_u32":" sge_u32 ":%s:" sge_u64 ":" sge_u64 ":%c:%s:%s:%f\n", job_id,
            ja_taskid, state, start_time, end_time - start_time, level_char, object_name,
            name, utilization);
    FCLOSE(fp);
@@ -793,9 +793,9 @@ sge_scheduler_main(void *arg) {
          copy.ar_list = lCopyList(nullptr, master_ar_list);
 
          /* report number of reduced and raw (in brackets) lists */
-         DPRINTF("Q:" sge_uu32 ", AQ:" sge_uu32 ", DQ:" sge_uu32 ", J:" sge_uu32 "(" sge_uu32 "), H:" sge_uu32 "(" sge_uu32 "), C:" sge_uu32
-                  ", A:" sge_uu32 ", D:" sge_uu32 ", P:" sge_uu32 ", CKPT:" sge_uu32 ", US:" sge_uu32 ", PR:" sge_uu32
-                  ", RQS:" sge_uu32 ", AR:" sge_uu32 ", S:nd:%d/lf:%d\n",
+         DPRINTF("Q:" sge_u32 ", AQ:" sge_u32 ", DQ:" sge_u32 ", J:" sge_u32 "(" sge_u32 "), H:" sge_u32 "(" sge_u32 "), C:" sge_u32
+                  ", A:" sge_u32 ", D:" sge_u32 ", P:" sge_u32 ", CKPT:" sge_u32 ", US:" sge_u32 ", PR:" sge_u32
+                  ", RQS:" sge_u32 ", AR:" sge_u32 ", S:nd:%d/lf:%d\n",
                  lGetNumberOfElem(copy.queue_list),
                  lGetNumberOfElem(copy.all_queue_list),
                  lGetNumberOfElem(copy.dis_queue_list),
@@ -905,7 +905,7 @@ sge_scheduler_main(void *arg) {
 
          if (prof_is_active(SGE_PROF_CUSTOM6)) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
-                      "run:%.3f, free: %.3f s, jobs: " sge_uu32 ", categories: %d/%d)",
+                      "run:%.3f, free: %.3f s, jobs: " sge_u32 ", categories: %d/%d)",
                       prof_total, prof_init, prof_copy, prof_run, prof_free,
                       lGetNumberOfElem(master_job_list), lGetNumberOfElem(master_category_list), 0);
          }

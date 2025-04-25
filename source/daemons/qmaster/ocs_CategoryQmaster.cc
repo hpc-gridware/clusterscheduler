@@ -332,7 +332,7 @@ ocs::CategoryQmaster::refresh_cat_data_in_job(lList *master_category_list, lList
    u_long32 category_id = lGetUlong(job, JB_category_id);
    lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
 
-   DPRINTF("###### job / cat_id / ptr: " sge_uu32 " /  " sge_uu32 "/ %p\n", lGetUlong(job, JB_job_number), category_id, category);
+   DPRINTF("###### job / cat_id / ptr: " sge_u32 " /  " sge_u32 "/ %p\n", lGetUlong(job, JB_job_number), category_id, category);
 
    lSetRef(job, JB_category, category);
    DRETURN_VOID;

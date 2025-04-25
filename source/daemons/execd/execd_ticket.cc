@@ -70,7 +70,7 @@ int do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
          ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
       }
-      DPRINTF("got %lf new tickets for job " sge_uu32 "." sge_uu32 "\n", ticket, jobid, jataskid);
+      DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
       job_ticket = lAddElemUlong(&ticket_modifier, JB_job_number, jobid, JB_Type);   
       if (job_ticket) {
          task_ticket = lAddElemUlong(&jatasks, JAT_task_number, jataskid, JAT_Type);

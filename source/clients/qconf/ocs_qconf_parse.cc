@@ -5987,7 +5987,7 @@ show_thread_list() {
       printf("%-15s %s\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
       printf("--------------------\n");
       for_each_ep(ep, lp) {
-         printf("%-15s " sge_uu32 "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
+         printf("%-15s " sge_u32 "\n", lGetString(ep, ST_name), lGetUlong(ep, ST_id));
       }
    }
    lFreeList(&alp);

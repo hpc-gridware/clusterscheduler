@@ -147,7 +147,7 @@ static void *thread_function(void *anArg) {
 
    results[thread_id] = count;
 
-   printf("%s thread %d got " sge_uu32 " times the lock\n", read_thread ? "read" : "write", thread_id, count);
+   printf("%s thread %d got " sge_u32 " times the lock\n", read_thread ? "read" : "write", thread_id, count);
 
    DRETURN(nullptr);
 }

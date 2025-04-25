@@ -133,7 +133,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       DRETURN(nullptr);
    }
 
-   if (sscanf(s, sge_uu32, &jobid) != 1) {
+   if (sscanf(s, sge_u32, &jobid) != 1) {
       snprintf(lasterror, sizeof(lasterror), MSG_GDI_STRINGISINVALID_SS, s, "JOB_ID");
       DRETURN(nullptr);
    }
@@ -142,7 +142,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       if (strcmp(s, "undefined") == 0) {
          jataskid = 1;
       } else {
-         if (sscanf(s, sge_uu32, &jataskid) != 1) {
+         if (sscanf(s, sge_u32, &jataskid) != 1) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_STRINGISINVALID_SS, s, env_var_name);
             DRETURN(nullptr);
          }

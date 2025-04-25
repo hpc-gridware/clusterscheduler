@@ -491,7 +491,7 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    /* max retries that are made resolving user name */
    while (getpwuid_r(uid, &pw_entry, buffer, size, &pw) != 0 || !pw) {
       if (!retries--) {
-         ERROR(MSG_SYSTEM_GETPWUIDFAILED_US, static_cast<u_long32>(uid), strerror(errno));
+         ERROR(MSG_SYSTEM_GETPWUIDFAILED_uS, uid, strerror(errno));
          sge_free(&buffer);
          DRETURN(1);
       }
@@ -768,16 +768,16 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
        *  as root
        */
       if (pw->pw_gid < min_gid) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_GIDLESSTHANMINIMUM_SUI, user, static_cast<u_long32>(pw->pw_gid), min_gid);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_GIDLESSTHANMINIMUM_Sgg, user, pw->pw_gid, min_gid);
          return 1;
       }
       if (setgid(pw->pw_gid)) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_U, static_cast<u_long32>(pw->pw_gid));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
          return 1;
       }
    } else {
       if (setegid(pw->pw_gid)) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_SETEGIDFAILED_U, static_cast<u_long32>(pw->pw_gid));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_SETEGIDFAILED_g, pw->pw_gid);
          return 1;
       }
    }
@@ -812,30 +812,30 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
 
    if (!intermediate_user) {
       if (pw->pw_uid < min_uid) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_UIDLESSTHANMINIMUM_SUI, user, static_cast<u_long32>(pw->pw_uid), min_uid);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_UIDLESSTHANMINIMUM_Suu, user, pw->pw_uid, min_uid);
          return 1;
       }
 
       if (use_qsub_gid) {
          if (setgid(pw->pw_gid)) {
-            snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_U, static_cast<u_long32>(pw->pw_gid));
+            snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
             return 1;
          }
       }
       if (setuid(pw->pw_uid)) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_SETUIDFAILED_U, static_cast<u_long32>(pw->pw_uid));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_SETUIDFAILED_u, pw->pw_uid);
          return 1;
       }
    } else {
       if (use_qsub_gid) {
          if (setgid(pw->pw_gid)) {
-            snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_U, static_cast<u_long32>(pw->pw_gid));
+            snprintf(err_str, err_str_size, MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
             return 1;
          }
       }
 
       if (seteuid(pw->pw_uid)) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_SETEUIDFAILED_U, static_cast<u_long32>(pw->pw_uid));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_SETEUIDFAILED_u, pw->pw_uid);
          return 1;
       }
    }
@@ -902,8 +902,7 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
       if (err_str != nullptr) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, static_cast<u_long32>(getuid()),
-                  static_cast<u_long32>(geteuid()), MSG_SYSTEM_INVALID_NGROUPS_MAX);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), MSG_SYSTEM_INVALID_NGROUPS_MAX);
       }
       return -1;
    }
@@ -920,7 +919,7 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
    if (list == nullptr) {
       if (err_str != nullptr) {
          int error = errno;
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, static_cast<u_long32>(getuid()), static_cast<u_long32>(geteuid()), strerror(error));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
       }
       return -1;
    }
@@ -929,7 +928,7 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
    if (groups == -1) {
       if (err_str != nullptr) {
          int error = errno;
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, static_cast<u_long32>(getuid()), static_cast<u_long32>(geteuid()), strerror(error));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
       }
       sge_free(&list);
       return -1;
@@ -942,14 +941,14 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
       if (groups == -1) {
          if (err_str != nullptr) {
             int error = errno;
-            snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, static_cast<u_long32>(getuid()), static_cast<u_long32>(geteuid()), strerror(error));
+            snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
          }
          sge_free(&list);
          return -1;
       }
    } else if (!skip_silently) {
       if (err_str != nullptr) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_UUS, static_cast<u_long32>(getuid()), static_cast<u_long32>(geteuid()), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
       }
       sge_free(&list);
       return -1;

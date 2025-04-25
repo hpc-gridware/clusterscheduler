@@ -179,7 +179,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
       for_each_ep(host, lGetList(ep, AR_reserved_hosts)) {
          name = lGetHost(host, EH_name);
          DPRINTF("-------------------------------------------\n");
-         DPRINTF("AR " sge_uu32 " HOST \"%s\"\n", ar_id, name);
+         DPRINTF("AR " sge_u32 " HOST \"%s\"\n", ar_id, name);
          for_each_ep(cr, lGetList(host, EH_resource_utilization)) {
             utilization_print(cr, name);
          }
@@ -189,7 +189,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          name = lGetString(queue, QU_full_name);
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
             DPRINTF("-------------------------------------------\n");
-            DPRINTF("AR " sge_uu32 " QUEUE \"%s\"\n", ar_id, name);
+            DPRINTF("AR " sge_u32 " QUEUE \"%s\"\n", ar_id, name);
             for_each_ep(cr, lGetList(queue, QU_resource_utilization)) {
                utilization_print(cr, name);
             }
@@ -832,12 +832,12 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
    DENTER(TOP_LAYER);
 
    if (ep == nullptr) {
-      ERROR("rc_add_job_utilization nullptr object " "(job " sge_uu32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
    if (slots == 0) {
-      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_uu32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
+      ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n", lGetUlong(jep, JB_job_number), obj_name, type, slots, (void*)ep);
       DRETURN(0);
    }
 
@@ -1175,7 +1175,7 @@ add_job_list_to_schedule(const lList *job_list, bool suspended, lList *pe_list, 
 
          if (DPRINTF_IS_ACTIVE) {
             DSTRING_STATIC(dstr, 64);
-            DPRINTF("Adding job " sge_uu32 "." sge_uu32 " into schedule start %s duration %.0f\n",
+            DPRINTF("Adding job " sge_u32 "." sge_u32 " into schedule start %s duration %.0f\n",
                     lGetUlong(jep, JB_job_number), lGetUlong(ja_task, JAT_task_number),
                     sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
          }

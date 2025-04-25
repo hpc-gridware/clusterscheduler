@@ -303,7 +303,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    if (prof_is_active(SGE_PROF_CUSTOM0)) {
       prof_stop_measurement(SGE_PROF_CUSTOM0, nullptr);
 
-      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_uu32 " orders, " sge_uu32 " H, " sge_uu32 " Q, " sge_uu32 " QA, " sge_uu32 " J(qw), " sge_uu32 " J(r), " sge_uu32 " J(s), " sge_uu32 " J(h), " sge_uu32 " J(e), " sge_uu32 " J(x), %d J(all), " sge_uu32 " C, " sge_uu32 " ACL, " sge_uu32 " PE, " sge_uu32 " U, " sge_uu32 " D, " sge_uu32 " PRJ, " sge_uu32 " ST, " sge_uu32 " CKPT, " sge_uu32 " RU, %d gMes, %d jMes, " sge_uu32 "/" sge_uu32 " pre-send, %d/%d/%d pe-alg\n",
+      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_u32 " orders, " sge_u32 " H, " sge_u32 " Q, " sge_u32 " QA, " sge_u32 " J(qw), " sge_u32 " J(r), " sge_u32 " J(s), " sge_u32 " J(h), " sge_u32 " J(e), " sge_u32 " J(x), %d J(all), " sge_u32 " C, " sge_u32 " ACL, " sge_u32 " PE, " sge_u32 " U, " sge_u32 " D, " sge_u32 " PRJ, " sge_u32 " ST, " sge_u32 " CKPT, " sge_u32 " RU, %d gMes, %d jMes, " sge_u32 "/" sge_u32 " pre-send, %d/%d/%d pe-alg\n",
                       prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
@@ -567,7 +567,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     * FILTER JOBS
     *---------------------------------------------------------------------*/
 
-   DPRINTF("STARTING FILTERING JOBS WITH " sge_uu32 " PENDING JOBS\n",
+   DPRINTF("STARTING FILTERING JOBS WITH " sge_u32 " PENDING JOBS\n",
            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
 
    // update the running jobs per user (in JC_Type objects)
@@ -624,7 +624,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                                                  nullptr,
                                                  maxujobs);
 
-   DPRINTF("AFTER FILTERING WE HAVE " sge_uu32 " PENDING JOBS\n",
+   DPRINTF("AFTER FILTERING WE HAVE " sge_u32 " PENDING JOBS\n",
            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
 
    if (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) == 0) {
@@ -761,9 +761,9 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             }
 
             if (job_get_next_task(job, &ja_task, &ja_task_id) != 0) {
-               DPRINTF("Found job " sge_uu32 " with no job array tasks\n", job_id);
+               DPRINTF("Found job " sge_u32 " with no job array tasks\n", job_id);
             } else {
-               DPRINTF("Found pending job " sge_uu32 "." sge_uu32 ". Try %sto start and %sto reserve\n",
+               DPRINTF("Found pending job " sge_u32 "." sge_u32 ". Try %sto start and %sto reserve\n",
                        job_id, ja_task_id, is_start ? "" : "not ", is_reserve ? "" : "not ");
                DPRINTF("-----------------------------------------\n");
 
@@ -795,7 +795,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
             }
             lFreeElem(&job);
          } else {
-            DPRINTF("SKIP JOB " sge_uu32 " - it cannot be started now and we will not do a reservation\n", job_id);
+            DPRINTF("SKIP JOB " sge_u32 " - it cannot be started now and we will not do a reservation\n", job_id);
          }
 
          // collect profiling data - only if we actually did some scheduling
@@ -886,7 +886,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
                /* mark the category as rejected */
                if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                  DPRINTF("SKIP JOB (R)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
+                  DPRINTF("SKIP JOB (R)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                           lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
                   ocs::CategorySchedd::job_reject_category(orig_job, false);
                }
@@ -917,7 +917,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
                   // before deleting the element mark the category as rejected
                   // do this only once, not when we skipped scheduling as the category was already rejected
                   if ((cat = (lListElem *) lGetRef(orig_job, JB_category))) {
-                     DPRINTF("SKIP JOB (N)" sge_uu32 " of category '%s' (rc: " sge_uu32 ")\n", job_id,
+                     DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                              lGetString(cat, CT_str), lGetUlong(cat, CT_refcount));
                      ocs::CategorySchedd::job_reject_category(orig_job, is_reserve);
                   }
@@ -926,7 +926,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
 
             case DISPATCH_NEVER_JOB: /* never this particular job */
                if (is_start || is_reserve) {
-                  DPRINTF("SKIP JOB (J)" sge_uu32 "\n", job_id);
+                  DPRINTF("SKIP JOB (J)" sge_u32 "\n", job_id);
                   // here no reservation was made for a job that couldn't be started now
                   // or the job cannot be dispatched at all
                   // do this only once, not when we skipped scheduling as the category was already rejected
@@ -981,8 +981,8 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
       } /* end of while */
 
       if (do_prof) {
-         PROFILING("PROF: " sge_uu32" intermediate start orders were sent in " sge_uu32 " sends. Min: " sge_uu32
-                   ", Max: " sge_uu32 ", Avg: " sge_uu32,
+         PROFILING("PROF: " sge_u32" intermediate start orders were sent in " sge_u32 " sends. Min: " sge_u32
+                   ", Max: " sge_u32 ", Avg: " sge_u32,
                    num_intermediate_jobs, num_intermediate_sends,
                    num_intermediate_sends > 0 ? min_intermediate_jobs : 0,
                    max_intermediate_jobs, avg_intermediate_jobs);
@@ -992,7 +992,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    if (prof_is_active(SGE_PROF_CUSTOM4)) {
       static bool first_time = true;
       prof_stop_measurement(SGE_PROF_CUSTOM4, nullptr);
-      PROFILING("PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, " sge_uu32 " res)",
+      PROFILING("PROF: job dispatching took %.3f s (%d fast, %d fast_soft, %d pe, %d pe_soft, " sge_u32 " res)",
               prof_get_measurement_wallclock(SGE_PROF_CUSTOM4, false, nullptr),
               fast_runs,
               fast_soft_runs,
@@ -1123,7 +1123,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (is_start) {
 
          DPRINTF("looking for immediate parallel assignment for job "
-                         sge_uu32"." sge_uu32 " requesting pe \"%s\" duration " sge_u64 "\n",
+                         sge_u32"." sge_u32 " requesting pe \"%s\" duration " sge_u64 "\n",
                          a.job_id, a.ja_task_id, pe_name, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
@@ -1145,7 +1145,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
             DPRINTF("looking for parallel reservation for job "
-                            sge_uu32"." sge_uu32 " requesting pe \"%s\" duration " sge_uu32 "\n",
+                            sge_u32"." sge_u32 " requesting pe \"%s\" duration " sge_u32 "\n",
                             a.job_id, a.ja_task_id, pe_name, a.duration);
             is_computed_reservation = true;
             a.start = DISPATCH_TIME_QUEUE_END;
@@ -1171,7 +1171,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
       if (is_start) {
          DPRINTF("looking for immediate sequential assignment for job "
-                         sge_uu32"." sge_uu32 " duration " sge_u64 "\n", a.job_id,
+                         sge_u32"." sge_u32 " duration " sge_u64 "\n", a.job_id,
                          a.ja_task_id, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
@@ -1193,7 +1193,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
             DPRINTF("looking for sequential reservation for job "
-                            sge_uu32"." sge_uu32 " duration " sge_u64 "\n",
+                            sge_u32"." sge_u32 " duration " sge_u64 "\n",
                             a.job_id, a.ja_task_id, a.duration);
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;

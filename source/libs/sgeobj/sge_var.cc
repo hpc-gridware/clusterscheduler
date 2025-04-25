@@ -260,7 +260,7 @@ void var_list_set_uint32t(lList **varl, const char *name, u_long32 value)
 {
    DENTER(TOP_LAYER);
    char buffer[2048];
-   snprintf(buffer, sizeof(buffer), sge_uu32, value);
+   snprintf(buffer, sizeof(buffer), sge_u32, value);
    var_list_set_string(varl, name, buffer);
    DRETURN_VOID;
 }

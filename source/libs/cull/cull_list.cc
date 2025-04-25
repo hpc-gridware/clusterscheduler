@@ -695,7 +695,7 @@ static void lWriteElem_(const lListElem *ep, dstring *buffer, int nesting_level)
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", space, name, lGetPosInt(ep, i));
             break;
          case lUlongT:
-            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_uu32"\n", space, name, lGetPosUlong(ep, i));
+            sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32 "\n", space, name, lGetPosUlong(ep, i));
             break;
          case lUlong64T:
             sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64"\n", space, name, lGetPosUlong64(ep, i));

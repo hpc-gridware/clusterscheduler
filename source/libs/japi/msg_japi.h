@@ -50,7 +50,7 @@
 #define MSG_JAPI_CANNOT_CLOSE_COMMLIB_S  _MESSAGE(45514, _("Unable to shutdown commlib handle: " SFN))
 #define MSG_JAPI_BAD_GDI_ANSWER_LIST  _MESSAGE(45515, _("Error reading answer list from qmaster"))
 #define MSG_JAPI_JOB_ALREADY_EXISTS_S  _MESSAGE(45516, _("Job with given job id already exists: " SFQ))
-#define MSG_JAPI_TASK_REF_TWICE_UU  _MESSAGE(45517, _("Task " sge_uu32 " of jobid " sge_uu32 " referenced twice"))
+#define MSG_JAPI_TASK_REF_TWICE_UU  _MESSAGE(45517, _("Task " sge_u32 " of jobid " sge_u32 " referenced twice"))
 #define MSG_JAPI_BAD_JOB_ID_S  _MESSAGE(45518, _("Job id, " SFQ ", is not a valid job id"))
 #define MSG_JAPI_BAD_BULK_JOB_ID_S  _MESSAGE(45519, _("Job id, " SFQ ", is not a valid bulk job id"))
 #define MSG_JAPI_QMASTER_TIMEDOUT _MESSAGE(45520, _("Timed out at qmaster. Waiting to reconnect."))

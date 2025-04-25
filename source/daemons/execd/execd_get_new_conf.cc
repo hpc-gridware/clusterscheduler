@@ -110,7 +110,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             master_queue = responsible_queue(job, jatask, nullptr);
             priority = atoi(lGetString(master_queue, QU_priority));
 
-            DPRINTF("Set priority of job " sge_uu32 "." sge_uu32 " running in queue  %s to %d\n",
+            DPRINTF("Set priority of job " sge_u32 "." sge_u32 " running in queue  %s to %d\n",
             lGetUlong(job, JB_job_number), 
             lGetUlong(jatask, JAT_task_number),
             lGetString(master_queue, QU_full_name), priority);
@@ -121,7 +121,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             for_each_rw(petask, lGetList(jatask, JAT_task_list)) {
                master_queue = responsible_queue(job, jatask, petask);
                priority = atoi(lGetString(master_queue, QU_priority));
-               DPRINTF("Set priority of task " sge_uu32 "." sge_uu32 "-%s running in queue %s to %d\n",
+               DPRINTF("Set priority of task " sge_u32 "." sge_u32 "-%s running in queue %s to %d\n",
                lGetUlong(job, JB_job_number), lGetUlong(jatask, JAT_task_number),
                lGetString(petask, PET_id), lGetString(master_queue, QU_full_name), priority);
                ptf_reinit_queue_priority(lGetUlong(job, JB_job_number),

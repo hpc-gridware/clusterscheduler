@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
       goto error_exit;
    }
 
-   DPRINTF("force     = " sge_uu32"\n", force);
+   DPRINTF("force     = " sge_u32"\n", force);
    
    if (user_list) {
       lListElem *id;

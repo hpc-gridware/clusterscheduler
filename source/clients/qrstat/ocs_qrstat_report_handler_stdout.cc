@@ -331,9 +331,9 @@ qrstat_report_ar_node_ulong(qrstat_report_handler_t* handler, qrstat_env_t *qrst
 
    DENTER(TOP_LAYER);
    if (handler->show_summary) {
-      fprintf(out, "%7" sge_uu32_letter " ", value);
+      fprintf(out, "%7" sge_u32_letter " ", value);
    } else {
-      fprintf(out, SFN_FIRST_COLUMN" " sge_uu32 "\n", name, value);
+      fprintf(out, SFN_FIRST_COLUMN" " sge_u32 "\n", name, value);
    }
    DRETURN(ret); 
 }
@@ -351,7 +351,7 @@ qrstat_report_ar_node_ulong_unknown(qrstat_report_handler_t* handler, qrstat_env
    } else {
       qrstat_env->header_printed = true;
    }
-   fprintf(out, sge_uu32, value);
+   fprintf(out, sge_u32, value);
 
    DRETURN(ret); 
 }
@@ -546,7 +546,7 @@ qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
 
    DENTER(TOP_LAYER);
    if (!handler->show_summary) {
-      fprintf(out, SFN SFN "=" sge_uu32, (handler->first_granted_slot ? "" : ","), name, value);
+      fprintf(out, SFN SFN "=" sge_u32, (handler->first_granted_slot ? "" : ","), name, value);
       if (handler->first_granted_slot) {
          handler->first_granted_slot = false;
       } 

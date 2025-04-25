@@ -380,7 +380,7 @@ lList *order_list
 
    for_each_ep(job, finished_jobs) {
       for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
-         DPRINTF("DELETE JOB " sge_uu32 "." sge_uu32 "\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
+         DPRINTF("DELETE JOB " sge_u32 "." sge_u32 "\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
          order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, nullptr, true);
       }
    }

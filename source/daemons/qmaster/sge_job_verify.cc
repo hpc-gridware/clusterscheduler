@@ -576,7 +576,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     */
    if (lGetString(jep, JB_script_file)) {
       dstring string = DSTRING_INIT;
-      sge_dstring_sprintf(&string, "%s/" sge_uu32, EXEC_DIR, lGetUlong(jep, JB_job_number));
+      sge_dstring_sprintf(&string, "%s/" sge_u32, EXEC_DIR, lGetUlong(jep, JB_job_number));
       lSetString(jep, JB_exec_file, sge_dstring_get_string(&string));
       sge_dstring_free(&string);
    }
@@ -791,7 +791,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          u_long64 ar_start_time, ar_end_time, job_duration;
          u_long64 now_time, job_execution_time;
 
-         DPRINTF("job -ar " sge_uu32"\n", ar_id);
+         DPRINTF("job -ar " sge_u32"\n", ar_id);
 
          ar = ar_list_locate(master_ar_list, ar_id);
          if (ar == nullptr) {

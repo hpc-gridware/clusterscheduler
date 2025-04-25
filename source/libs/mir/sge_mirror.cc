@@ -1852,7 +1852,7 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
          ep = lGetElemUlongRW(*list, key_nm, key);
       }
       DSTRING_STATIC(dstr, 32);
-      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key),
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_u32, key),
                                           action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
@@ -1891,7 +1891,7 @@ sge_mirror_update_master_list_cat_key(lList **list, const lDescr *list_descr,
       }
 
       DSTRING_STATIC(dstr, 32);
-      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_uu32, key), action, event);
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_u32, key), action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
    }

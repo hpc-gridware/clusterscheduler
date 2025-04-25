@@ -97,18 +97,18 @@
 #define LONG32_MAX   2147483647
 
 /* set sge_u32 and sge_x32 for 64 or 32 bit machines */
-/* sge_uu32 for strictly unsigned, not nice, but did I use %d for an unsigned? */
+/* sge_u32 for strictly unsigned, not nice, but did I use %d for an unsigned? */
 #if defined(TARGET_64BIT) || defined(FREEBSD) || defined(NETBSD)
-#  define sge_uu32_letter  "u"
+#  define sge_u32_letter  "u"
 #  define sge_u64          "%lu"
-#  define sge_uu32         "%u"
+#  define sge_u32         "%u"
 #  define sge_x32          "%x"
 #  define sge_fu32         "d"
 #  define sge_fuu32        "u"
 #else
-#  define sge_uu32_letter  "lu"
+#  define sge_u32_letter  "lu"
 #  define sge_u64          "%llu"
-#  define sge_uu32         "%lu"
+#  define sge_u32         "%lu"
 #  define sge_x32          "%lx"
 #  define sge_fu32         "ld"
 #  define sge_fuu32        "lu"

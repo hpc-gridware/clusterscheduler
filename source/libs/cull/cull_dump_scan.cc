@@ -311,7 +311,7 @@ int lDumpElemFp(FILE *fp, const lListElem *ep, int indent) {
                           space, lNm2Str(ep->descr[i].nm), lGetPosInt(ep, i));
             break;
          case lUlongT:
-            ret = fprintf(fp, "%s/* %-20.20s */ " sge_uu32 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
+            ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong(ep, i));
             break;
          case lUlong64T:
             ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n", space, lNm2Str(ep->descr[i].nm), lGetPosUlong64(ep, i));
@@ -491,7 +491,7 @@ int lDumpList(FILE *fp, const lList *lp, int indent) {
 
    ret = fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space,
                  lGetListName(lp));
-   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ " sge_uu32 "\n", space,
+   ret = fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ " sge_u32 "\n", space,
                  lGetNumberOfElem(lp));
 
    ret = lDumpDescr(fp, lGetListDescr(lp), indent);
@@ -1051,7 +1051,7 @@ static int fGetUlong(FILE *fp, lUlong *up) {
       DRETURN(-1);
    }
 
-   if (sscanf(s, sge_uu32, up) != 1) {
+   if (sscanf(s, sge_u32, up) != 1) {
       LERROR(LESSCANF);
       DRETURN(-1);
    }

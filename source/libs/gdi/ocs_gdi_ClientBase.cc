@@ -714,7 +714,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          communication lib setup */
       DPRINTF("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n");
       while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
-         DPRINTF("timeout: " sge_uu32 "\n", static_cast<u_long32>(now.tv_sec - handle->start_time.tv_sec));
+         DPRINTF("timeout: " sge_u32 "\n", static_cast<u_long32>(now.tv_sec - handle->start_time.tv_sec));
          cl_commlib_trigger(handle, 1);
          gettimeofday(&now, nullptr);
       }

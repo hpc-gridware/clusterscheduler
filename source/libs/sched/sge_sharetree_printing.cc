@@ -158,7 +158,7 @@ print_field(dstring *out, rapidjson::Writer<rapidjson::StringBuffer> *writer, co
    switch (field->type) {
       case ULONG_T:
          if (out != nullptr) {
-            sge_dstring_sprintf_append(out, sge_uu32, *static_cast<u_long32 *>(field->val));
+            sge_dstring_sprintf_append(out, sge_u32, *static_cast<u_long32 *>(field->val));
          }
          if (writer != nullptr) {
             writer->Uint64(*(u_long32 *) field->val);

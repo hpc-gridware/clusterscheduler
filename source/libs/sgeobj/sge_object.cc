@@ -181,7 +181,7 @@ object_append_raw_field_to_dstring(const lListElem *object, lList **answer_list,
             result = sge_dstring_sprintf_append(buffer, "%lf", lGetPosDouble(object, pos));
             break;
          case lUlongT:
-            result = sge_dstring_sprintf_append(buffer, sge_uu32, lGetPosUlong(object, pos));
+            result = sge_dstring_sprintf_append(buffer, sge_u32, lGetPosUlong(object, pos));
             break;
          case lUlong64T:
             result = sge_dstring_sprintf_append(buffer, sge_u64, lGetPosUlong64(object, pos));

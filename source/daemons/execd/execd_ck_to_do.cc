@@ -217,7 +217,7 @@ static void force_job_rlimit(const char* qualified_hostname)
             vmem_val = lGetDouble(vmem_ep, UA_value);
          }
             
-         DPRINTF("JOB " sge_uu32 " %s %10.5f %s %10.5f\n", jobid,
+         DPRINTF("JOB " sge_u32 " %s %10.5f %s %10.5f\n", jobid,
             cpu_ep != nullptr ? USAGE_ATTR_CPU : "(" USAGE_ATTR_CPU ")", cpu_val,
             vmem_ep != nullptr ? USAGE_ATTR_VMEM : "(" USAGE_ATTR_VMEM ")", vmem_val);
 
@@ -701,7 +701,7 @@ static int sge_start_jobs()
          }
       }
    }
-   DPRINTF("execd_ck_to_do: started " sge_uu32 " jobs\n", jobs_started);
+   DPRINTF("execd_ck_to_do: started " sge_u32 " jobs\n", jobs_started);
 
    DRETURN(0);
 }
@@ -748,7 +748,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       const lList *job_args;
       u_long32 duration = 60;
 
-      DPRINTF("Simulating job " sge_uu32 "." sge_uu32 "\n", job_id, ja_task_id);
+      DPRINTF("Simulating job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
       lSetUlong64(jatep, JAT_start_time, now);
       lSetUlong(jatep, JAT_status, JRUNNING);
 
@@ -824,7 +824,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
       lSetUlong(jatep, JAT_pid, pid);
    }
 
-   DPRINTF("***EXECING " sge_uu32 "." sge_uu32 " on %s (tid = %s) (pid = %d)\n",
+   DPRINTF("***EXECING " sge_u32 "." sge_u32 " on %s (tid = %s) (pid = %d)\n",
             job_id, ja_task_id, qualified_hostname, pe_task_id != nullptr ? pe_task_id : "null", pid);
 
    /* when a ja_task or pe_task has been started, flush the job report */

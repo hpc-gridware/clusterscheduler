@@ -332,10 +332,10 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
       task_number = lGetUlong(this_jatep, JAT_task_number);
 
       if (job_is_array(jep)) {
-         snprintf(mail_ids, sizeof(mail_ids), sge_uu32"." sge_uu32, job_number, task_number);
+         snprintf(mail_ids, sizeof(mail_ids), sge_u32"." sge_u32, job_number, task_number);
          sge_strlcpy(mail_type, MSG_RU_TYPEJOBARRAY, sizeof(mail_type));
       } else {
-         snprintf(mail_ids, sizeof(mail_ids), sge_uu32, job_number);
+         snprintf(mail_ids, sizeof(mail_ids), sge_u32, job_number);
          sge_strlcpy(mail_type, MSG_RU_TYPEJOB, sizeof(mail_type));
       }
 
@@ -616,7 +616,7 @@ add_to_reschedule_unknown_list(lListElem *host, u_long32 job_number, u_long32 ta
    if (host) {
       ruep = lAddSubUlong(host, RU_job_number, job_number, EH_reschedule_unknown_list, RU_Type);
 
-      DPRINTF("RU: ADDED " sge_uu32"." sge_uu32" to EH_reschedule_unknown_list of host " SFN "\n",
+      DPRINTF("RU: ADDED " sge_u32"." sge_u32" to EH_reschedule_unknown_list of host " SFN "\n",
               job_number, task_number, lGetHost(host, EH_name));
 
       lSetUlong(ruep, RU_task_number, task_number);
@@ -701,7 +701,7 @@ delete_from_reschedule_unknown_list(lListElem *host, u_long64 gdi_session) {
          if (state == RESCHEDULE_SKIP_JR_REMOVE
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
 
-            DPRINTF("RU: REMOVED " sge_uu32"." sge_uu32" FROM RU LIST\n",
+            DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n",
                     lGetUlong(thiz, RU_job_number), lGetUlong(thiz, RU_task_number));
             lRemoveElem(rulp, &thiz);
             changed = true;
@@ -868,7 +868,7 @@ update_reschedule_unknown_list_for_job(lListElem *host, u_long32 job_number, u_l
             if (lGetUlong(ruep, RU_state) == RESCHEDULE_HANDLE_JR_WAIT) {
 
                lSetUlong(ruep, RU_state, RESCHEDULE_HANDLE_JR_REMOVE);
-               DPRINTF("RU: DECREMENTED PE-TAG OF " sge_uu32 "." sge_uu32"\n", job_number, task_number);
+               DPRINTF("RU: DECREMENTED PE-TAG OF " sge_u32 "." sge_u32"\n", job_number, task_number);
             }
             break;
          }
@@ -962,7 +962,7 @@ update_reschedule_unknown_timeout(lListElem *host) {
          timeout = 0;
       }
 
-      DPRINTF("%s: reschedule_unknown timeout for host " SFN " is " sge_uu32 "\n", __func__, hostname, timeout);
+      DPRINTF("%s: reschedule_unknown timeout for host " SFN " is " sge_u32 "\n", __func__, hostname, timeout);
 
       lSetUlong(host, EH_reschedule_unknown, timeout);
    } else {
@@ -1013,7 +1013,7 @@ reschedule_unknown_timeout(lListElem *hep) {
          lFreeElem(&conf_entry);
       }
 
-      DPRINTF("%s: reschedule_unknown timeout for host %s is " sge_uu32"\n", __func__, host, timeout);
+      DPRINTF("%s: reschedule_unknown timeout for host %s is " sge_u32"\n", __func__, host, timeout);
 
       lSetUlong(hep, EH_reschedule_unknown, timeout);
 

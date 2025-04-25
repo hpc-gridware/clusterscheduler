@@ -263,7 +263,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
                      double dbl;
                      parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
                      limit += dbl * slots;
-                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_uu32 ", sum %f\n",
+                     DPRINTF("sge_exec_job_get_limit: qinstance %s has limit %s, slots " sge_u32 ", sum %f\n",
                              lGetString(gdil_ep, JG_qname), limit_str, slots, dbl * slots);
                   }
                }
@@ -402,7 +402,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_task_id = lGetString(petep, PET_id);
    }
 
-   DPRINTF("job: " sge_uu32 " jatask: " sge_uu32 " petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
+   DPRINTF("job: " sge_u32 " jatask: " sge_u32 " petask: %s\n", job_id, ja_task_id, pe_task_id != nullptr ? pe_task_id : "none");
 
    master_q = responsible_queue(jep, jatep, petep);
    SGE_ASSERT((master_q));
@@ -757,7 +757,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       } else {
          if (lGetString(jep, JB_script_file) != nullptr) {
             /* JG: TODO: use some function to create path */
-            str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_uu32, execd_spool_dir, EXEC_DIR,
+            str_script_file = sge_dstring_sprintf(&dstr_script_file, "%s/%s/" sge_u32, execd_spool_dir, EXEC_DIR,
                                                   job_id);
          } else {
             /*
@@ -800,7 +800,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             token = sge_strtok(buffer, delim);
             while (token != nullptr) {
                if (is_first_token) {
-                  sge_dstring_sprintf(&new_qrsh_command, "%s/%s/" sge_uu32,
+                  sge_dstring_sprintf(&new_qrsh_command, "%s/%s/" sge_u32,
                                       execd_spool_dir, EXEC_DIR, job_id);
                   is_first_token = 0;
                } else {
@@ -1323,8 +1323,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "shell_path=%s\n", shell_path);
    fprintf(fp, "script_file=%s\n", str_script_file);
    fprintf(fp, "job_owner=%s\n", lGetString(jep, JB_owner));
-   fprintf(fp, "min_gid=" sge_uu32 "\n", mconf_get_min_gid());
-   fprintf(fp, "min_uid=" sge_uu32 "\n", mconf_get_min_uid());
+   fprintf(fp, "min_gid=" sge_u32 "\n", mconf_get_min_gid());
+   fprintf(fp, "min_uid=" sge_u32 "\n", mconf_get_min_uid());
 
    /* do path substitutions also for cwd */
    {
@@ -1365,7 +1365,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "resume_method=%s\n", (cp = lGetString(master_q, QU_resume_method)) ? cp : "none");
    fprintf(fp, "terminate_method=%s\n", (cp = lGetString(master_q, QU_terminate_method)) ? cp : "none");
 
-   fprintf(fp, "script_timeout=" sge_uu32 "\n", mconf_get_script_timeout());
+   fprintf(fp, "script_timeout=" sge_u32 "\n", mconf_get_script_timeout());
 
    fprintf(fp, "pe=%s\n", lGetString(jatep, JAT_granted_pe) ? lGetString(jatep, JAT_granted_pe) : "none");
    fprintf(fp, "pe_slots=%d\n", pe_slots);
@@ -1423,7 +1423,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       ERROR(MSG_MAIL_MAILLISTTOOLONG_U, job_id);
    }
    fprintf(fp, "mail_list=%s\n", mail_str);
-   fprintf(fp, "mail_options=" sge_uu32 "\n", lGetUlong(jep, JB_mail_options));
+   fprintf(fp, "mail_options=" sge_u32 "\n", lGetUlong(jep, JB_mail_options));
    fprintf(fp, "forbid_reschedule=%d\n", mconf_get_forbid_reschedule() ? 1 : 0);
    fprintf(fp, "forbid_apperror=%d\n", mconf_get_forbid_apperror() ? 1 : 0);
    fprintf(fp, "queue=%s\n", lGetString(master_q, QU_qname));
@@ -1449,8 +1449,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    } else {
       fprintf(fp, "job_name=%s\n", lGetString(jep, JB_job_name));
    }
-   fprintf(fp, "job_id=" sge_uu32 "\n", job_id);
-   fprintf(fp, "ja_task_id=" sge_uu32 "\n", job_is_array(jep) ? ja_task_id : 0);
+   fprintf(fp, "job_id=" sge_u32 "\n", job_id);
+   fprintf(fp, "ja_task_id=" sge_u32 "\n", job_is_array(jep) ? ja_task_id : 0);
    if (petep != nullptr) {
       fprintf(fp, "pe_task_id=%s\n", pe_task_id);
    }
@@ -1466,7 +1466,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       if (lGetBool(jep, JB_notify)) {
          parse_ulong_val(nullptr, &notify, TYPE_TIM, lGetString(master_q, QU_notify), nullptr, 0);
       }
-      fprintf(fp, "notify=" sge_uu32 "\n", notify);
+      fprintf(fp, "notify=" sge_u32 "\n", notify);
    }
 
    /*
@@ -1527,7 +1527,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          args = lGetList(jep, JB_job_args);
       }
 
-      fprintf(fp, "njob_args=" sge_uu32 "\n", lGetNumberOfElem(args));
+      fprintf(fp, "njob_args=" sge_u32 "\n", lGetNumberOfElem(args));
 
       for_each_ep(se, args) {
          const char *arg = lGetString(se, ST_name);
@@ -1605,7 +1605,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "notify_susp=%s\n", notify_susp ? notify_susp : "default");
    sge_free(&notify_susp);
    if (mconf_get_use_qsub_gid()) {
-      fprintf(fp, "qsub_gid=" sge_uu32 "\n", lGetUlong(jep, JB_gid));
+      fprintf(fp, "qsub_gid=" sge_u32 "\n", lGetUlong(jep, JB_gid));
    } else {
       fprintf(fp, "qsub_gid=%s\n", "no");
    }
@@ -1937,13 +1937,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
        lGetString(jep, JB_cred)) {
 
       char ccname[1024];
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_uu32, "sge", job_id);
+      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
       putenv(ccname);
    }
 
    DPRINTF("**********************CHILD*********************\n");
    shepherd_name = SGE_SHEPHERD;
-   snprintf(ps_name, sizeof(ps_name), "%s-" sge_uu32, shepherd_name, job_id);
+   snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
 
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();
@@ -1990,7 +1990,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    fp = fopen("error", "w");
    if (fp) {
-      fprintf(fp, "failed to exec shepherd for job" sge_uu32"\n", job_id);
+      fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
       FCLOSE(fp);
    }
 

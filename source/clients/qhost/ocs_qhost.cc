@@ -206,7 +206,7 @@ static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const ch
 
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);
-   printf("   <hostvalue name='%s'>" sge_uu32 "</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
+   printf("   <hostvalue name='%s'>" sge_u32 "</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
 
    DRETURN(QHOST_SUCCESS);
 }
@@ -279,7 +279,7 @@ static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const c
    
    sge_dstring_clear((dstring*)handler->ctx);
    escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>" sge_uu32 "</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
+   printf(" name='%s'>" sge_u32 "</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
    
    DRETURN(QHOST_SUCCESS);
 }
