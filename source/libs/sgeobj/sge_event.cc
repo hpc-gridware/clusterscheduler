@@ -178,12 +178,6 @@ const char *event_text(const lListElem *event, dstring *buffer)
    case sgeE_JOB_MOD:
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
-   case sgeE_JOB_MOD_SCHED_PRIORITY:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODSCHEDDPRIOOFJOBXTOY_USI, 
-            number,
-            job_get_id_string(intkey, intkey2, strkey, &id_dstring),
-            ((int)lGetUlong(lFirst(lp), JB_priority))-BASE_PRIORITY);
-      break;
    case sgeE_JOB_USAGE:
       sge_dstring_sprintf(buffer, MSG_EVENT_JOBXUSAGE_US, 
          number, job_get_id_string(intkey, intkey2, strkey, &id_dstring));

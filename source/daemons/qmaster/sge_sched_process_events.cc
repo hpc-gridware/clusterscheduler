@@ -149,7 +149,7 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
    sge_mirror_subscribe(evc, SGE_TYPE_PROJECT,        nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_QINSTANCE,      nullptr, nullptr, nullptr, where_what->where_all_queue, where_what->what_queue);
    sge_mirror_subscribe(evc, SGE_TYPE_RQS,            nullptr, nullptr, nullptr, nullptr, nullptr);
-   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_CONF,    sge_process_schedd_conf_event_before, sge_process_schedd_conf_event_after, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_CONF,    nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SCHEDD_MONITOR, nullptr, sge_process_schedd_monitor_event, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_SHARETREE,      nullptr, nullptr, nullptr, nullptr, nullptr);
    sge_mirror_subscribe(evc, SGE_TYPE_USER,           nullptr, nullptr, nullptr, nullptr, nullptr);

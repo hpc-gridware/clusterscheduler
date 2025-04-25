@@ -516,13 +516,11 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
          evc->ec_subscribe(evc, sgeE_JOB_ADD);
          evc->ec_subscribe(evc, sgeE_JOB_DEL);
          evc->ec_subscribe(evc, sgeE_JOB_MOD);
-         evc->ec_subscribe(evc, sgeE_JOB_MOD_SCHED_PRIORITY);
          if (what_el && where_el) {
             evc->ec_mod_subscription_where(evc, sgeE_JOB_LIST, what_el, where_el);
             evc->ec_mod_subscription_where(evc, sgeE_JOB_ADD, what_el, where_el);
             evc->ec_mod_subscription_where(evc, sgeE_JOB_DEL, what_el, where_el);
             evc->ec_mod_subscription_where(evc, sgeE_JOB_MOD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_JOB_MOD_SCHED_PRIORITY, what_el, where_el);
          }
          /* TODO: SG: what and where for usage */
          evc->ec_subscribe(evc, sgeE_JOB_USAGE);
@@ -868,7 +866,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_JOB_ADD);
          evc->ec_unsubscribe(evc, sgeE_JOB_DEL);
          evc->ec_unsubscribe(evc, sgeE_JOB_MOD);
-         evc->ec_unsubscribe(evc, sgeE_JOB_MOD_SCHED_PRIORITY);
          evc->ec_unsubscribe(evc, sgeE_JOB_USAGE);
          evc->ec_unsubscribe(evc, sgeE_JOB_FINAL_USAGE);
          evc->ec_unsubscribe(evc, sgeE_JOB_FINISH);
@@ -1234,7 +1231,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_JOB, SGE_EMA_DEL, event);
             break;
          case sgeE_JOB_MOD:
-         case sgeE_JOB_MOD_SCHED_PRIORITY:
          case sgeE_JOB_USAGE:
          case sgeE_JOB_FINAL_USAGE:
          case sgeE_JOB_FINISH:

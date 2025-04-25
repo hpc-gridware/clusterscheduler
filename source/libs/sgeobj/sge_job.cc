@@ -3246,7 +3246,7 @@ job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
 *     sge_job/job_verify()
 *******************************************************************************/
 bool 
-job_verify_submitted_job(const lListElem *job, lList **answer_list)
+job_verify_submitted_job(lListElem *job, lList **answer_list)
 {
    bool ret = true;
 
@@ -3382,6 +3382,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
                                  MSG_PARSE_INVALIDPRIORITYMUSTBEINNEG1023TO1024);
          ret = false;
       }
+      job_normalize_priority(job, priority);
    }
 
    /* JB_jobshare any ulong value */
@@ -3508,11 +3509,14 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    /* JB_nurg must be 0 */
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_nurg);
-    }
+   }
+// will be overwritten anyways
+#if 0
    /* JB_nppri must be 0 */
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_nppri);
     }
+#endif
    /* JB_rrcontr must be 0 */
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_rrcontr);
@@ -4693,3 +4697,13 @@ job_is_visible(const char *owner, const bool is_manager, const bool show_departm
    }
    DRETURN(false);
 }
+
+void job_normalize_priority(lListElem *jep, u_long32 priority)
+{
+   constexpr double min_priority = 0.0;
+   constexpr double max_priority = 2048.0;
+
+   lSetUlong(jep, JB_priority, priority);
+   lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
+}
+

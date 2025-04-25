@@ -1434,7 +1434,6 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
       while ((term = next_term) && ret) {
          const char *fact_delim = "*";
          const char *fact, *next_fact, *end;
-         const lListElem *cmplx_attr = nullptr;
          struct saved_vars_s *fact_context = nullptr;
 
          next_term = sge_strtok_r(nullptr, term_delim, &term_context);
@@ -1448,20 +1447,24 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
             if (strchr(fact, '$')) {
                fact++;
             }
-            cmplx_attr = centry_list_locate(centry_list, fact);
 
-            if (cmplx_attr != nullptr) {
-               int type = lGetUlong(cmplx_attr, CE_valtype);
+            // in case the master list is available we can check that it is a complex name
+            if (centry_list != nullptr) {
+               const lListElem *cmplx_attr = centry_list_locate(centry_list, fact);
 
-               if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
-                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
+               if (cmplx_attr != nullptr) {
+                  int type = lGetUlong(cmplx_attr, CE_valtype);
+
+                  if (type == TYPE_STR || type == TYPE_CSTR || type == TYPE_HOST || type == TYPE_RESTR) {
+                     snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_WRONGTYPE_ATTRIBUTE_SS, name, fact);
+                     answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+                     ret = false;
+                  }
+               } else if (!sge_str_is_number(fact)) {
+                  snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, name, fact);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                   ret = false;
                }
-            } else if (!sge_str_is_number(fact)) {
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NOTEXISTING_ATTRIBUTE_SS, name, fact);
-               answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-               ret = false;
             }
          }
          /* is weighting factor a number? */

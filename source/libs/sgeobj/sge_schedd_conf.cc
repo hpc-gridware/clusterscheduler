@@ -619,19 +619,14 @@ bool sconf_set_config(lList **config, lList **answer_list)
 *******************************************************************************/
 bool sconf_is_valid_load_formula(lList **answer_list, const lList *centry_list)
 {
-   bool is_valid = false;
-   const lListElem *schedd_conf = nullptr;
-   const char *load_formula = nullptr;
-
    DENTER(TOP_LAYER);
+
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   schedd_conf = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-   /* Modify input */
-   load_formula = lGetString(schedd_conf, SC_load_formula);
+   const lListElem *schedd_conf = lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+   const char *load_formula = lGetString(schedd_conf, SC_load_formula);
    sge_strip_blanks((char *)load_formula);
-
-   is_valid = validate_load_formula(load_formula, answer_list, centry_list, SGE_ATTR_LOAD_FORMULA);
+   bool is_valid = validate_load_formula(load_formula, answer_list, centry_list, SGE_ATTR_LOAD_FORMULA);
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    DRETURN(is_valid);

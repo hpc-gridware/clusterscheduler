@@ -169,13 +169,6 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
             }
          }
       }
-      if (event_type == sgeE_JOB_MOD_SCHED_PRIORITY) {
-         u_long job_id = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
-         fprintf(stdout,"JOB_MOD_SCHED_PRIORITY (%ld.%ld:ECL_TIME=" sge_u64 ")\n", job_id, task_id, timestamp);
-         Global_jobs_running--;
-         fflush(stdout);
-      }
       if (event_type == sgeE_JOB_USAGE) {
          u_long job_id = lGetUlong(event, ET_intkey);
          u_long task_id = lGetUlong(event, ET_intkey2);
@@ -580,7 +573,6 @@ int main(int argc, char *argv[])
                      thus we free the ones, we do not need */
                 /*  evc->ec_unsubscribe(evc, sgeE_JOB_LIST); */
                   evc->ec_unsubscribe(evc, sgeE_JOB_MOD);
-                  evc->ec_unsubscribe(evc, sgeE_JOB_MOD_SCHED_PRIORITY);
                   evc->ec_unsubscribe(evc, sgeE_JOB_USAGE);
                   evc->ec_unsubscribe(evc, sgeE_JOB_FINAL_USAGE);
                   evc->ec_unsubscribe(evc, sgeE_JOB_FINISH);

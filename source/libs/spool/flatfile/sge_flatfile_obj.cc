@@ -36,6 +36,7 @@
 #include <strings.h>
 #include <cctype>
 
+#include "uti/sge.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -45,28 +46,13 @@
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_resource_quota.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_subordinate.h"
-#include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_mailrec.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
@@ -129,6 +115,9 @@ static int read_RQR_obj(lListElem *ep, int nm, const char *buffer,
                                     lList **alp);
 static int write_RQR_obj(const lListElem *ep, int nm, dstring *buffer,
                        lList **alp);
+
+static int read_SC_load_formula(lListElem *ep, int nm,
+                                     const char *buffer, lList **alp);
 
 /* Field lists for context-independent spooling of sub-lists */
 static spooling_field AMEM_sub_fields[] = {
@@ -389,7 +378,7 @@ spooling_field SC_fields[] = {
    {  SC_queue_sort_method,               33, "queue_sort_method",               false, nullptr,          false, nullptr, read_SC_queue_sort_method, write_SC_queue_sort_method},
    {  SC_job_load_adjustments,            33, "job_load_adjustments",           false,  CE_sub_fields, false, nullptr, nullptr,                      nullptr},
    {  SC_load_adjustment_decay_time,      33, "load_adjustment_decay_time",      false, CE_sub_fields, false, nullptr, nullptr,                      nullptr},
-   {  SC_load_formula,                    33, "load_formula",                    false, nullptr,          false, nullptr, nullptr,                      nullptr},
+   {  SC_load_formula,                    33, "load_formula",                    false, nullptr,          false, nullptr, read_SC_load_formula,      nullptr},
    {  SC_schedd_job_info,                 33, "schedd_job_info",                 false, nullptr,          false, nullptr, nullptr,                      nullptr},
    {  SC_flush_submit_sec,                33, "flush_submit_sec",                false, nullptr,          false, nullptr, nullptr,                      nullptr},
    {  SC_flush_finish_sec,                33, "flush_finish_sec",                false, nullptr,         false,  nullptr, nullptr,                      nullptr},
@@ -725,6 +714,25 @@ static int read_SC_queue_sort_method(lListElem *ep, int nm,
    }
    
    return 1;
+}
+
+static int
+read_SC_load_formula(lListElem *ep, int nm, const char *load_formula, lList **alp) {
+   DENTER(TOP_LAYER);
+   if (load_formula != nullptr) {
+      int n = strlen(load_formula);
+      char *copy = sge_malloc(n + 1);
+      if (copy != nullptr) {
+         strcpy(copy, load_formula);
+         sge_strip_blanks(copy);
+         if (!validate_load_formula(load_formula, alp, nullptr, SGE_ATTR_LOAD_FORMULA)) {
+            DRETURN(0);
+         }
+         lSetString(ep, SC_load_formula, copy);
+         sge_free(&copy);
+      }
+   }
+   DRETURN(1);
 }
 
 static int write_SC_queue_sort_method(const lListElem *ep, int nm,

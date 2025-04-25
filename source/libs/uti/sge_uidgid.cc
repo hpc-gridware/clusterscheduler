@@ -1438,4 +1438,35 @@ ocs_id2dstring(dstring *dstr, uid_t uid, const char *username,
    DRETURN_VOID;
 }
 
+/****** sge_urgency/sge_normalize_value() *******************************
+*  NAME
+*     sge_normalize_value() -- Returns normalized value with passed value range
+*
+*  SYNOPSIS
+*     double sge_normalize_value(double value, double range_min, double
+*     range_max)
+*
+*  FUNCTION
+*     The value passed is normalized and resulting value (0.0-1.0) is returned
+*     The value range passed is assumed. In case there is no range because
+*     min/max are (nearly) equal 0.5 is returned.
+*
+*  INPUTS
+*     double value     - Value to be normalized.
+*     double range_min - Range minimum value.
+*     double range_max - Range maximum value.
+*
+*  RESULT
+*     double - Normalized value (0.0-1.0)
+*
+*  NOTES
+*     MT-NOTE: sge_normalize_value() is MT safe
+*******************************************************************************/
+double sge_normalize_value(double value, double range_min, double range_max)
+{
+   if (range_max - range_min < std::numeric_limits<double>::epsilon())
+      return 0.5;
+   return (value - range_min) / (range_max - range_min);
+}
+
 

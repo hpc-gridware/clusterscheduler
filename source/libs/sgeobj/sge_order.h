@@ -77,7 +77,6 @@ typedef struct {
 /* struct containing the cull pos for fields in the ticket order */
 typedef struct {
    int JB_version_pos;
-   int JB_nppri_pos;
    int JB_nurg_pos;
    int JB_urg_pos;
    int JB_rrcontr_pos;

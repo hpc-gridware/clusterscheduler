@@ -35,8 +35,6 @@
 
 #include "sge_sched_thread.h"
 
-double sge_normalize_value(double value, double range_min, double range_max);
-
 void sge_do_urgency(u_long64 now, lList *running_jobs, lList *pending_jobs,
                     scheduler_all_data_t *lists);
 

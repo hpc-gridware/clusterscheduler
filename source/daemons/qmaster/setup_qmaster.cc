@@ -549,6 +549,8 @@ static void
 qmaster_init() {
    DENTER(TOP_LAYER);
 
+   starting_up(); /* write startup info message to message file */
+
    if (setup_qmaster()) {
       CRITICAL(SFNMAX, MSG_STARTUP_SETUPFAILED);
       sge_exit(1);
@@ -556,7 +558,6 @@ qmaster_init() {
 
    component_set_exit_func(qmaster_lock_and_shutdown);
    communication_setup();
-   starting_up(); /* write startup info message to message file */
 
    DRETURN_VOID;
 }
@@ -1100,6 +1101,9 @@ setup_qmaster() {
 
          DPRINTF("JOB " sge_uu32 " PRIORITY" sge_uu32 "\n", lGetUlong(jep, JB_job_number),
                  lGetUlong(jep, JB_priority) - BASE_PRIORITY);
+
+         // normalize the priority and store the normalized value
+         job_normalize_priority(jep, lGetUlong(jep, JB_priority));
 
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);

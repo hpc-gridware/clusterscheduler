@@ -230,7 +230,6 @@ lList
                              {NoName, lEndT | CULL_IS_REDUCED, nullptr}
                             };
       const lDescr jobDesc[] = {
-                                 {JB_nppri, lDoubleT | CULL_IS_REDUCED, nullptr},
                                  {JB_nurg, lDoubleT | CULL_IS_REDUCED, nullptr},
                                  {JB_urg, lDoubleT | CULL_IS_REDUCED, nullptr},
                                  {JB_rrcontr, lDoubleT | CULL_IS_REDUCED, nullptr},
@@ -292,7 +291,6 @@ lList
       /* Create a reduced job list with only the required fields */
       lAppendElem(jlist, jep);
 
-      lSetPosDouble(jep, order_job_pos->JB_nppri_pos,   lGetPosDouble(job, job_pos->JB_nppri_pos));
       lSetPosDouble(jep, order_job_pos->JB_nurg_pos,    lGetPosDouble(job, job_pos->JB_nurg_pos));
       lSetPosDouble(jep, order_job_pos->JB_urg_pos,     lGetPosDouble(job, job_pos->JB_urg_pos));
       lSetPosDouble(jep, order_job_pos->JB_rrcontr_pos, lGetPosDouble(job, job_pos->JB_rrcontr_pos));

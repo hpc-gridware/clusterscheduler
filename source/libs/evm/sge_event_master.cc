@@ -205,7 +205,7 @@ typedef struct {
 #define LIST_MAX 3
 
 const int EVENT_LIST[LIST_MAX][6] = {
-   {sgeE_JOB_LIST, sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, sgeE_JOB_MOD_SCHED_PRIORITY, -1},
+   {sgeE_JOB_LIST, sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, -1},
    {sgeE_CQUEUE_LIST, sgeE_CQUEUE_ADD, sgeE_CQUEUE_DEL, sgeE_CQUEUE_MOD, -1, -1},
    {sgeE_JATASK_ADD, sgeE_JATASK_DEL, sgeE_JATASK_MOD, -1, -1, -1 }
 };
@@ -276,7 +276,7 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_CONFIG_ADD,    sgeE_CONFIG_DEL,    sgeE_CONFIG_MOD,    -1, -1, -1, -1, -1, -1},
    {sgeE_EXECHOST_ADD,  sgeE_EXECHOST_DEL,  sgeE_EXECHOST_MOD,  -1, -1, -1, -1, -1, -1},
    {sgeE_CATEGORY_ADD,  sgeE_CATEGORY_DEL,  sgeE_CATEGORY_MOD,  -1, -1, -1, -1, -1, -1},
-   {sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, sgeE_JOB_MOD_SCHED_PRIORITY, sgeE_JOB_USAGE, sgeE_JOB_FINAL_USAGE, sgeE_JOB_FINISH, -1, -1},
+   {sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, sgeE_JOB_USAGE, sgeE_JOB_FINAL_USAGE, sgeE_JOB_FINISH, -1, -1},
    {sgeE_JOB_SCHEDD_INFO_ADD, sgeE_JOB_SCHEDD_INFO_DEL, sgeE_JOB_SCHEDD_INFO_MOD, -1, -1, -1, -1, -1, -1},
    {sgeE_MANAGER_ADD,         sgeE_MANAGER_DEL,         sgeE_MANAGER_MOD,         -1, -1, -1, -1, -1, -1},
    {sgeE_OPERATOR_ADD,        sgeE_OPERATOR_DEL,        sgeE_OPERATOR_MOD,        -1, -1, -1, -1, -1, -1},

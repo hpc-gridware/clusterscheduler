@@ -699,7 +699,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   }
                }
 
-               lSetPosDouble(jep, job_pos->JB_nppri_pos, 0);
                lSetPosDouble(jep, job_pos->JB_nurg_pos, 0);
                lSetPosDouble(jep, job_pos->JB_urg_pos, 0);
                lSetPosDouble(jep, job_pos->JB_rrcontr_pos, 0);
@@ -723,7 +722,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   }
                }
 
-               lSetDouble(jep, JB_nppri, 0);
                lSetDouble(jep, JB_nurg, 0);
                lSetDouble(jep, JB_urg, 0);
                lSetDouble(jep, JB_rrcontr, 0);
@@ -829,7 +827,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_ntix_pos));
 
                // @todo do we really update the *job* values with every ja_task update?
-               lSetPosDouble(jep, job_pos->JB_nppri_pos, lGetPosDouble(joker, order_job_pos->JB_nppri_pos));
                lSetPosDouble(jep, job_pos->JB_nurg_pos, lGetPosDouble(joker, order_job_pos->JB_nurg_pos));
                lSetPosDouble(jep, job_pos->JB_urg_pos, lGetPosDouble(joker, order_job_pos->JB_urg_pos));
                lSetPosDouble(jep, job_pos->JB_rrcontr_pos, lGetPosDouble(joker, order_job_pos->JB_rrcontr_pos));
@@ -849,7 +846,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                lGetUlong(jatp, JAT_task_number),
                lGetDouble(jatp, JAT_tix),
                lGetDouble(jatp, JAT_ntix),
-               lGetDouble(jep, JB_nppri),
                lGetDouble(jep, JB_urg),
                lGetDouble(jep, JB_nurg),
                lGetDouble(jatp, JAT_prio)));
@@ -955,7 +951,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   lSetPosDouble(jatp, ja_pos->JAT_prio_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_prio_pos));
                   lSetPosDouble(jatp, ja_pos->JAT_ntix_pos, lGetPosDouble(joker_task, order_ja_pos->JAT_ntix_pos));
 
-                  lSetPosDouble(jep, job_pos->JB_nppri_pos, lGetPosDouble(joker, order_job_pos->JB_nppri_pos));
                   lSetPosDouble(jep, job_pos->JB_nurg_pos, lGetPosDouble(joker, order_job_pos->JB_nurg_pos));
                   lSetPosDouble(jep, job_pos->JB_urg_pos, lGetPosDouble(joker, order_job_pos->JB_urg_pos));
                   lSetPosDouble(jep, job_pos->JB_rrcontr_pos, lGetPosDouble(joker, order_job_pos->JB_rrcontr_pos));
