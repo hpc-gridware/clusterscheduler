@@ -150,8 +150,8 @@ case $ARCH in
  darwin*)
    AWK=/usr/bin/awk
    ECHO=/bin/echo
-   RC_FILE=SGE
-   RC_DIR=SGE
+   RC_FILE=darwin
+   RC_DIR=darwin
    RC_PREFIX=/Library/StartupItems
    if [ -x /sw/bin/Eterm ]; then
       XTERM=/sw/bin/Eterm
