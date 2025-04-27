@@ -98,32 +98,15 @@ BasicSettings()
       esac
    fi
 
-   # set spooldefaults binary path
    SPOOLDEFAULTS=$SGE_UTILBIN/spooldefaults
-   if [ ! -f $SPOOLDEFAULTS ]; then
-      $ECHO "can't find \"$SPOOLDEFAULTS\""
-      $ECHO "Installation failed."
-      exit 2
-   fi
-
    SPOOLINIT=$SGE_UTILBIN/spoolinit
-   if [ ! -f $SPOOLINIT ]; then
-      $ECHO "can't find \"$SPOOLINIT\""
-      $ECHO "Installation failed."
-      exit 2
-   fi
-
    HOST=`$SGE_UTILBIN/gethostname -name`
-   if [ "$HOST" = "" ]; then
-      echo "can't get hostname of this machine. Installation failed."
-      exit 2
-   fi
 
-  RM="rm -f"
-  TOUCH="touch"
-  MORE_CMD="more"
-  CHMOD="chmod"
-
+   RM="rm -f"
+   TOUCH="touch"
+   MORE_CMD="more"
+   CHMOD="chmod"
+   INFOTEXT="echo"
 }
 
 
@@ -369,95 +352,77 @@ CheckPath()
 #
 CheckBinaries()
 {
+   # check if all binaries are available that are needed for installation
+   BIN_FILES_CLIENT="$SGE_BIN/qalter $SGE_BIN/qconf $SGE_BIN/qdel $SGE_BIN/qhold \
+                     $SGE_BIN/qhost $SGE_BIN/qlogin $SGE_BIN/qmake $SGE_BIN/qmod \
+                     $SGE_BIN/qping $SGE_BIN/qquota $SGE_BIN/qrdel $SGE_BIN/qresub \
+                     $SGE_BIN/qrls $SGE_BIN/qrsh $SGE_BIN/qrstat $SGE_BIN/qrsub \
+                     $SGE_BIN/qselect $SGE_BIN/qsh $SGE_BIN/qstat $SGE_BIN/qsub \
+                     $SGE_UTILBIN/adminrun $SGE_UTILBIN/checkprog $SGE_UTILBIN/checkuser $SGE_UTILBIN/echo_raw \
+                     $SGE_UTILBIN/filestat $SGE_UTILBIN/gethostbyaddr $SGE_UTILBIN/gethostbyname \
+                     $SGE_UTILBIN/gethostname $SGE_UTILBIN/getservbyname $SGE_UTILBIN/infotext $SGE_UTILBIN/loadcheck \
+                     $SGE_UTILBIN/now $SGE_UTILBIN/read_raw $SGE_UTILBIN/sge_share_mon $SGE_UTILBIN/testsuidroot \
+                     $SGE_UTILBIN/uidgid"
 
-   BINFILES="sge_coshepherd \
-             sge_execd sge_qmaster  \
-             sge_shadowd \
-             sge_shepherd qacct qalter qconf qdel qhold \
-             qhost qlogin qmake qmod qresub qrls qrsh qselect qsh \
-             qstat qsub qping qquota"
-
-   WINBINFILES="sge_coshepherd sge_execd sge_shepherd  \
-                qacct qalter qconf qdel qhold qhost qlogin \
-                qmake qmod qresub qrls qrsh qselect qsh \
-                qstat qsub qping qquota qloadsensor.exe"
-
-   UTILFILES="adminrun checkprog checkuser filestat gethostbyaddr gethostbyname \
-              gethostname getservbyname loadcheck now qrsh_starter \
-              testsuidroot uidgid infotext"
-
-   WINUTILFILES="adminrun checkprog checkuser filestat \
-                 gethostbyaddr gethostbyname gethostname getservbyname loadcheck.exe \
-                 now qrsh_starter rlogin rsh rshd testsuidroot uidgid infotext"
-
-   #SUIDFILES="rsh rlogin testsuidroot"
-
-   THIRD_PARTY_FILES="openssl"
-
-   missing=false
-   for f in $BINFILES; do
-      if [ ! -f $SGE_BIN/$f ]; then
-         missing=true
-         $INFOTEXT "missing program >%s< in directory >%s<" $f $SGE_BIN
-         $INFOTEXT -log "missing program >%s< in directory >%s<" $f $SGE_BIN
+   missing_client=false
+   for f in $BIN_FILES_CLIENT; do
+      if [ ! -f "$f" ]; then
+         missing_client=true
+         MISSING_BIN_LIST="$MISSING_BIN_LIST      $f\n"
       fi
    done
 
+   # check if all binaries are available that are needed for the execution service
+   missing_exec=false
+   if [ "$EXECD" != "undef" ]; then
+      BIN_FILES_EXEC="$SGE_BIN/sge_coshepherd $SGE_BIN/sge_execd $SGE_BIN/sge_shepherd $SGE_UTILBIN/qrsh_starter"
 
-   for f in $THIRD_PARTY_FILES; do
-      if [ $f = openssl -a "$CSP" = true ]; then
-         if [ ! -f $SGE_UTILBIN/$f ]; then
-           missing=true
-           $INFOTEXT "missing program >%s< in directory >%s<" $f $SGE_BIN
-           $INFOTEXT -log "missing program >%s< in directory >%s<" $f $SGE_BIN
+      for f in $BIN_FILES_EXEC; do
+         if [ ! -f "$f" ]; then
+            missing_exec=true
+            MISSING_BIN_LIST="$MISSING_BIN_LIST      $f\n"
+         fi
+      done
+   fi
 
+   # check if all binaries are available that are needed for the qmaster/shadow service
+   missing_master=false
+   if [ "$QMASTER" != "undef" ] || [ "$SHADOW" != "undef" ]; then
+      BIN_FILES_MASTER="$SGE_BIN/sge_qmaster $SGE_BIN/sge_shadowd \
+                        $SGE_UTILBIN/spooldefaults $SGE_UTILBIN/spooledit $SGE_UTILBIN/spoolinit"
+
+      for f in $BIN_FILES_MASTER; do
+         if [ ! -f "$f" ]; then
+            missing_master=true
+            MISSING_BIN_LIST="$MISSING_BIN_LIST      $f\n"
+         fi
+      done
+   fi
+
+   # check if all binaries are available that are needed for the qmaster/shadow service
+   if [ $missing_client = true ] || [ $missing_master = true ] || [ $missing_exec = true ] ; then
+      $INFOTEXT "\nInstallation failed!\n\n" \
+      "The installation process was not able to find following binaries:\n\n" \
+      "$MISSING_BIN_LIST\n"
+
+      if [ "$missing_client" = true ]; then
+         $INFOTEXT "Either the binary package for this platform is not installed or not supported\n"
+      else
+         if [ "$missing_master" != true ]; then
+            $INFOTEXT "Master and shadow service are not supported\n"
+         fi
+
+         if [ "$missing_client" = true ]; then
+            $INFOTEXT "Execution service is not supported\n"
          fi
       fi
-   done
 
-   for f in $UTILFILES; do
-      if [ ! -f $SGE_UTILBIN/$f ]; then
-         missing=true
-         $INFOTEXT "missing program >%s< in directory >%s<" $f $SGE_UTILBIN
-         $INFOTEXT -log "missing program >%s< in directory >%s<" $f $SGE_UTILBIN
-      fi
-   done
-
-   if [ $missing = true ]; then
-      $INFOTEXT "\nMissing Cluster Scheduler binaries!\n\n" \
-      "A complete installation needs the following binaries in >%s<:\n\n" \
-      "qacct           qlogin          qrsh            sge_shepherd\n" \
-      "qalter          qmake           qselect         sge_coshepherd\n" \
-      "qconf           qmod            qsh             sge_execd\n" \
-      "qdel            qmon            qstat           sge_qmaster\n" \
-      "qhold           qresub          qsub            qhost\n" \
-      "qrls            sge_shadowd     qping\n" \
-      "qquota\n\n" \
-      "and the binaries in >%s< should be:\n\n" \
-      "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \
-      "testsuidroot   checkprog      gethostbyname  now            rsh\n" \
-      "infotext       checkuser      gethostname    openssl        rshd\n" \
-      "filestat       getservbyname  qrsh_starter   \n\n" \
-      "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
-
-      $INFOTEXT -log "\nMissing Cluster Scheduler binaries!\n\n" \
-      "A complete installation needs the following binaries in >%s<:\n\n" \
-      "qacct           qlogin          qrsh            sge_shepherd\n" \
-      "qalter          qmake           qselect         sge_coshepherd\n" \
-      "qconf           qmod            qsh             sge_execd\n" \
-      "qdel            qmon            qstat           sge_qmaster\n" \
-      "qhold           qresub          qsub            qhost\n" \
-      "qrls            sge_shadowd     qping\n" \
-      "qquota\n\n" \
-      "and the binaries in >%s< should be:\n\n" \
-      "adminrun       gethostbyaddr  loadcheck      rlogin         uidgid\n" \
-      "testsuidroot   checkprog      gethostbyname  now            rsh\n" \
-      "infotext       checkuser      gethostname    openssl        rshd\n" \
-      "filestat       getservbyname  qrsh_starter\n\n" \
-      "Installation failed. Exit.\n" $SGE_BIN $SGE_UTILBIN
+      $INFOTEXT "Please check the release note to see if your platform is supported.\n\n" \
+      "Contact support if you have question:\n\n" \
+      "      support@hpc-gridware.com\n"
 
       MoveLog
-      exit 2 # ToDo: documentation, do not change, exit code used for hedeby
+      exit 2
    fi
 }
 
@@ -3838,12 +3803,6 @@ GetAdminUser()
          ADMINUSER=`whoami`
       fi
    fi
-}
-
-
-PreInstallCheck()
-{
-   CheckBinaries
 }
 
 RemoveHostFromList()

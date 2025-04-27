@@ -118,8 +118,6 @@ qmaster_service="false"
 
 BasicSettings
 SetUpInfoText
-PreInstallCheck
-
 
 ARGC=$#
 
@@ -296,6 +294,8 @@ while [ $ARGC != 0 ]; do
    shift
    ARGC=`expr $ARGC - 1`
 done
+
+CheckBinaries
 
 #Set overlapping variables only
 if [ -z "$SHELL_NAME" ]; then

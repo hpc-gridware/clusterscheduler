@@ -219,7 +219,7 @@ if (INSTALL_SGE_BIN_CLIENT)
          DESTINATION utilbin/${SGE_ARCH})
 endif ()
 
-if (INSTALL_SGE_BIN_EXEC)
+if (INSTALL_SGE_BIN_MASTER)
    install(
            TARGETS
            spooldefaults
