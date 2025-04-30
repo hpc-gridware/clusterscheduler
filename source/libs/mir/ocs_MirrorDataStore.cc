@@ -133,7 +133,6 @@ ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] u_long32 ec_id, 
 }
 
 /** @brief Block executing thread till initial events are handled.
- * Recheck every 100ms.
  */
 void
 ocs::MirrorDataStore::block_till_initial_events_handled() {
@@ -141,13 +140,14 @@ ocs::MirrorDataStore::block_till_initial_events_handled() {
    volatile bool wait = true;
 
    do {
-      if (wait) {
-         sge_usleep(25000);
-      }
-      DPRINTF("still waiting for initial events to be handled\n");
       sge_mutex_lock(mutex_name.c_str(), __func__, __LINE__, &mutex);
       wait = !did_handle_initial_events;
       sge_mutex_unlock(mutex_name.c_str(), __func__, __LINE__, &mutex);
+
+      if (wait) {
+         DPRINTF("still waiting for initial events to be handled\n");
+         sge_usleep(25000);
+      }
    } while (wait);
    DRETURN_VOID;
 }
@@ -332,8 +332,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
       lList *event_list = nullptr;
 
       // wait for new events
-      MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor),
-                        mconf_get_monitoring_options());
+      MONITOR_IDLE_TIME(wait_for_event(&event_list), (&monitor), mconf_get_monitoring_options());
 
       // if we lost connection we have to register again
       if (evc->ec_need_new_registration(evc)) {
@@ -388,24 +387,23 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
                // process the events
                sge_mirror_error mirror_ret = sge_mirror_process_event_list(evc, event_list);
-#if 0
-               DPRINTF("processed events\n");
-#endif
-               lFreeList(&event_list);
                if (mirror_ret == SGE_EM_OK) {
-                  did_handle_initial_events = true;
+                  // the first handling of non-empty event_list (== the initial list events)
+                  // will cause the data store to be ready for other threads (listener, reader, scheduler, ...)
+                  if (event_list != nullptr) {
+                     did_handle_initial_events = true;
+                  }
+
                   did_handle_events = true;
 
                   // update the sessions about the last event that we processed so that waiting requests can continue
                   if (found_last_event) {
                      update_sessions_and_move_requests(last_unique_id);
-#if 0
-                     DPRINTF("updates sessions and moved requests\n");
-#endif
                   }
                } else {
                   DPRINTF("error during event processing\n");
                }
+               lFreeList(&event_list);
 
                // Unlock the data store
                unlock();
@@ -423,7 +421,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
          // actions if events where processed
          if (did_handle_events) {
-            thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
+            thread_output_profiling("thread profiling summary:\n", &next_prof_output);
             sge_monitor_output(&monitor);
          }
       }
