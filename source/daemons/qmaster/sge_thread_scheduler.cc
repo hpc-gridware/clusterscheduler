@@ -905,7 +905,7 @@ sge_scheduler_main(void *arg) {
 
          if (prof_is_active(SGE_PROF_CUSTOM6)) {
             PROFILING("PROF: schedd run took: %.3f s (init: %.3f s, copy: %.3f s, "
-                      "run:%.3f, free: %.3f s, jobs: " sge_u32 ", categories: %d/%d)",
+                      "run:%.3f, free: %.3f s, jobs: " sge_u32 ", categories: " sge_u32 "/%d)",
                       prof_total, prof_init, prof_copy, prof_run, prof_free,
                       lGetNumberOfElem(master_job_list), lGetNumberOfElem(master_category_list), 0);
          }

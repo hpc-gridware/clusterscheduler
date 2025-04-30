@@ -333,9 +333,9 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
          exit_status = status;
 
       if ( WEXITSTATUS(exit_status) == 0 ) {
-         INFO("exit status of script: " sge_u32 "\n", WEXITSTATUS(exit_status));
+         INFO("exit status of script: %d\n", WEXITSTATUS(exit_status));
       } else {
-         ERROR("exit status of script: " sge_u32 "\n", WEXITSTATUS(exit_status));
+         ERROR("exit status of script: %d\n", WEXITSTATUS(exit_status));
       }
       DRETURN_VOID;
    } else {
