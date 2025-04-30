@@ -1601,13 +1601,13 @@ user path aliases
 ## $HOME/.xxqs_name_sxx_request	
 user default request
     
-## <xxqs_name_sxx_root>/<cell>/common/xxqs_name_sxx_aliases
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/xxqs_name_sxx_aliases
 cluster path aliases
     
-## <xxqs_name_sxx_root>/<cell>/common/xxqs_name_sxx_request
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/xxqs_name_sxx_request
 cluster default request
     
-## <xxqs_name_sxx_root>/<cell>/common/act_qmaster
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/act_qmaster
 xxQS_NAMExx master host file
 
 # SEE ALSO

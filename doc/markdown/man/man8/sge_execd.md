@@ -71,16 +71,16 @@ submitted by that same user are handled correctly by the system.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## <xxqs_name_sxx_root>/<cell>/common/configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/configuration
 xxQS_NAMExx global configuration
 
-## <xxqs_name_sxx_root>/<cell>/common/local_conf/<host>
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/local_conf/<host>
 xxQS_NAMExx host specific configuration
 
-## <xxqs_name_sxx_root>/<cell>/spool/<host>
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/<host>
 Default execution host spool directory
     
-## <xxqs_name_sxx_root>/<cell>/common/act_qmaster
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/act_qmaster
 xxQS_NAMExx master host file
 
 # SEE ALSO
