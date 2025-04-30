@@ -80,6 +80,6 @@ target_include_directories(
 )
 target_link_libraries(qmake PRIVATE ${GEN_LIB} ${SGE_LIBS})
 
-if(INSTALL_SGE_BIN)
+if(INSTALL_SGE_BIN_CLIENT)
   install(TARGETS qmake DESTINATION bin/${SGE_ARCH})
 endif()

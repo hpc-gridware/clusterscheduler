@@ -134,48 +134,6 @@ else
          echo "Certificates directory could not be found, please copy certs first!"
          exit 1
       fi
-
-      if [ "$SGE_ARCH" = "win32-x86" ]; then
-         #ToDo: Set 500 perms to userkey dirs
-         echo "... set owner of $CA_DIR to $WIN_ADMINUSER"
-         chown -R $WIN_ADMINUSER $CA_DIR
-         echo
-
-         echo "... copy "$USERKEY_DIR/$UNIX_SU_NAME" to "$USERKEY_DIR/$WIN_HOST_NAME+$WIN_SU_NAME""
-         rm -rf "$USERKEY_DIR/$WIN_HOST_NAME+$WIN_SU_NAME"
-         cp -r "$USERKEY_DIR/$UNIX_SU_NAME" "$USERKEY_DIR/$WIN_HOST_NAME+$WIN_SU_NAME"
-         echo
-
-         echo "... copy "$USERKEY_DIR/$UNIX_SU_NAME" to "$USERKEY_DIR/$WIN_SU_NAME""
-         rm -rf "$USERKEY_DIR/$WIN_SU_NAME"
-         cp -r "$USERKEY_DIR/$UNIX_SU_NAME" "$USERKEY_DIR/$WIN_SU_NAME"
-         echo
-
-         echo "... copy "$USERKEY_DIR/$ADMINUSER" to "$USERKEY_DIR/$WIN_ADMINUSER""
-         rm -rf "$USERKEY_DIR/$WIN_ADMINUSER"
-         cp -r "$USERKEY_DIR/$ADMINUSER" "$USERKEY_DIR/$WIN_ADMINUSER"
-         echo
-
-         echo "... set owner of "$USERKEY_DIR/$WIN_SU_NAME" to "$WIN_SU_NAME""
-         chown -R "$WIN_SU_NAME" "$USERKEY_DIR/$WIN_SU_NAME"
-         echo
-
-         echo "... set owner of "$USERKEY_DIR/$WIN_HOST_NAME+$WIN_SU_NAME" to "$WIN_HOST_NAME+$WIN_SU_NAME""
-         chown -R "$WIN_HOST_NAME+$WIN_SU_NAME" "$USERKEY_DIR/$WIN_HOST_NAME+$WIN_SU_NAME"
-         echo
-
-         echo "... set owner of "$USERKEY_DIR/$ADMINUSER" to "$ADMINUSER""
-         chown -R "$ADMINUSER" "$USERKEY_DIR/$ADMINUSER"
-         echo
-
-         echo "... set owner of "$USERKEY_DIR/$WIN_ADMINUSER" to "$WIN_ADMINUSER""
-         chown -R "$WIN_ADMINUSER" "$USERKEY_DIR/$WIN_ADMINUSER"
-         echo
-
-         echo "WINDOWS certificates are copied and permissions are set!"
-      else
-         echo "Currently no need to do something! Only for WINDOWS."
-      fi
    else
       echo You must be superuser for this operation!
    fi

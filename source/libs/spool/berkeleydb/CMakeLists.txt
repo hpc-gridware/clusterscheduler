@@ -45,7 +45,7 @@ if (${WITH_SPOOL_BERKELEYDB})
             commlists
             berkeleydb)
 
-    if (INSTALL_SGE_BIN)
+    if (INSTALL_SGE_BIN_MASTER)
         install(TARGETS spoolb DESTINATION lib/${SGE_ARCH})
 
         if (NOT WITH_OS_3RDPARTY)

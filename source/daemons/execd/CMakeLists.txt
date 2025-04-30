@@ -61,6 +61,6 @@ target_link_libraries(
       ${SGE_TOPO_LIB}
       ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_EXEC)
    install(TARGETS sge_execd DESTINATION bin/${SGE_ARCH})
 endif ()

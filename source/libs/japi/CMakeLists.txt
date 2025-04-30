@@ -81,7 +81,7 @@ if (INSTALL_SGE_COMMON)
          DESTINATION examples/drmaa)
 endif ()
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS drmaa DESTINATION lib/${SGE_ARCH})
 endif ()
 

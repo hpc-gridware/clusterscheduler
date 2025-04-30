@@ -48,6 +48,6 @@ target_link_libraries(
       uti
       ${SGE_LIBS})
 
-if (INSTALL_SGE_BIN)
+if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qconf DESTINATION bin/${SGE_ARCH})
 endif ()

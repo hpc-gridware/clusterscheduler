@@ -48,7 +48,7 @@ if (${WITH_SPOOL_DYNAMIC})
    #add_compile_options(-fno-common -dynamic)
    #add_link_options(-dynamiclib -flat_namespace)
 
-   if (INSTALL_SGE_BIN)
+   if (INSTALL_SGE_BIN_MASTER)
       install(TARGETS spoold DESTINATION lib/${SGE_ARCH})
    endif ()
 endif ()

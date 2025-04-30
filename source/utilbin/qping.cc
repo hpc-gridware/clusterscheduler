@@ -540,12 +540,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("         task:\n");
 
                            if (task->command) {
-                              printf("op     : " sge_u32 "\n", task->command);
+                              printf("op     : %d\n", task->command);
                            } else {
                               printf("op     : %s\n", "nullptr");
                            }
                            if (task->target) {
-                              printf("target : " sge_u32 "\n", task->target);
+                              printf("target : %d\n", task->target);
                            } else {
                               printf("target : %s\n", "nullptr");
                            }

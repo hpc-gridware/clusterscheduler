@@ -80,6 +80,12 @@ function(architecture_specific_settings)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
       set(JNI_ARCH "linux" PARENT_SCOPE)
    elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*" OR SGE_ARCH MATCHES "xlx-.*")
+      # master is not supported on CentOS 6. Execd is deprecated and will be removed in the future.
+      if (SGE_ARCH STREQUAL "xlx-.*")
+         set(INSTALL_SGE_BIN_MASTER OFF CACHE BOOL "Install master daemon binaries" FORCE)
+         #set(INSTALL_SGE_BIN_EXEC OFF CACHE BOOL "Install execution daemon binaries" FORCE)
+      endif()
+
       # Disable Python for unsupported qmaster architectures
       if (WITH_PYTHON)
          if (SGE_ARCH MATCHES "lx-ppc64le" OR SGE_ARCH MATCHES "lx-s390x")
@@ -222,6 +228,9 @@ function(architecture_specific_settings)
          set(NSL_LIB socket nsl PARENT_SCOPE)
       endif()
    elseif (SGE_ARCH MATCHES "darwin-arm64")
+      set(INSTALL_SGE_BIN_EXEC OFF CACHE BOOL "Install execution daemon binaries" FORCE)
+      set(INSTALL_SGE_BIN_MASTER OFF CACHE BOOL "Install execution daemon binaries" FORCE)
+
       # Disable Python for unsupported qmaster architectures
       set(WITH_PYTHON OFF PARENT_SCOPE)
 

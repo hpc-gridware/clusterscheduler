@@ -94,10 +94,27 @@ set(PROJECT_FEATURES "clusterscheduler" CACHE STRING "clusterscheduler or gcs-ex
 
 # INSTALL OPTIONS
 option(INSTALL_SGE_BIN "Install binaries" ON)
+   option(INSTALL_SGE_BIN_CLIENT "Install client binaries" OFF)
+   option(INSTALL_SGE_BIN_EXEC "Install execution daemon binaries" OFF)
+   option(INSTALL_SGE_BIN_MASTER "Install master daemon binaries" OFF)
 option(INSTALL_SGE_COMMON "Install common files" ON)
 option(INSTALL_SGE_DOC "Build and install documentation" OFF)
 option(INSTALL_SGE_TEST "Install test binaries" ON)
 option(INSTALL_SGE_SRCDOC "Build and install source code documentation" OFF)
+
+# set derived install options if user did not set any of them
+# might be further refined in ArchitectureSpecificSettings.cmake
+if(NOT (INSTALL_SGE_BIN_CLIENT OR INSTALL_SGE_BIN_EXEC OR INSTALL_SGE_BIN_MASTER))
+   if(INSTALL_SGE_BIN)
+      set(INSTALL_SGE_BIN_CLIENT ON CACHE BOOL "Install client binaries" FORCE)
+      set(INSTALL_SGE_BIN_EXEC ON CACHE BOOL "Install execution daemon binaries" FORCE)
+      set(INSTALL_SGE_BIN_MASTER ON CACHE BOOL "Install master daemon binaries" FORCE)
+   else()
+      set(INSTALL_SGE_BIN_CLIENT OFF CACHE BOOL "Install client binaries" FORCE)
+      set(INSTALL_SGE_BIN_EXEC OFF CACHE BOOL "Install execution daemon binaries" FORCE)
+      set(INSTALL_SGE_BIN_MASTER OFF CACHE BOOL "Install master daemon binaries" FORCE)
+   endif()
+endif()
 
 # BUILD OPTIONS
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
@@ -292,7 +309,7 @@ if (INSTALL_SGE_DOC)
    add_subdirectory(doc)
 endif ()
 
-if (INSTALL_SGE_BIN OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
+if (INSTALL_SGE_BIN OR INSTALL_SGE_BIN_CLIENT OR INSTALL_SGE_BIN_EXEC OR INSTALL_SGE_BIN_MASTER OR INSTALL_SGE_COMMON OR INSTALL_SGE_TEST)
    add_subdirectory(source)
    add_subdirectory(test)
 endif ()
