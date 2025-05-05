@@ -90,7 +90,7 @@ typedef enum {
 
 typedef struct {
    pthread_mutex_t last_update_mutex; /* guards the last_update access */
-   u_long64 last_update;               /* used to store the last time, when the usage was stored */
+   u_long64 next_update;               /* used to store the last time, when the usage was stored */
    spool_type is_spooling;             /* identifies, if spooling should happen */
    u_long64 now;                       /* stores the time of the last spool computation */
    order_pos_t *cull_order_pos;        /* stores cull positions in the job, ja-task, and order structure */
@@ -110,36 +110,32 @@ static int ticket_orders_field[] = {OR_job_number,
                                     OR_ticket,
                                     NoName};
 
-/****** sge_follow/sge_set_next_spooling_time() ********************************
-*  NAME
-*     sge_set_next_spooling_time() -- sets the next spooling time
-*
-*  SYNOPSIS
-*     void sge_set_next_spooling_time()
-*
-*  FUNCTION
-*     works on the global sge_follow_t structure. It resets the values and
-*     computes the next spooling time.
-*
-*  NOTES
-*     MT-NOTE: sge_set_next_spooling_time() is MT safe
-*
-*  SEE ALSO
-*     sge_follow_order
-*******************************************************************************/
+/** @brief sets the next spooling time for stree/prj/user
+ *
+ *  This function sets the next spooling time. It is called by the scheduler
+ *  when it has finished its work and wants to spool the usage information.
+ *  The function checks if the last update time is in the future and sets
+ *  the next spooling time accordingly.
+ */
 void
-sge_set_next_spooling_time() {
+set_next_stree_spooling_time() {
    DENTER(TOP_LAYER);
-
    sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
    if (Follow_Control.is_spooling != NOT_DEFINED) {
-      u_long64 spool_interval = sge_gmt32_to_gmt64(mconf_get_spool_time());
-      if ((Follow_Control.now + spool_interval) < Follow_Control.last_update) {
-         Follow_Control.last_update = Follow_Control.now;
+      const u_long64 spool_interval = sge_gmt32_to_gmt64(mconf_get_spool_time());
+
+      if (Follow_Control.now + spool_interval < Follow_Control.next_update) {
+         Follow_Control.next_update = Follow_Control.now;
       } else if (Follow_Control.is_spooling == DO_SPOOL) {
-         Follow_Control.last_update = Follow_Control.now + spool_interval;
-         DPRINTF("next spooling now: " sge_u64 " next: " sge_u64 " interval: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update, spool_interval);
+         Follow_Control.next_update = Follow_Control.now + spool_interval;
+
+         DSTRING_STATIC(dstr_now, 100);
+         DSTRING_STATIC(dstr_next, 100);
+         DPRINTF("stree/prj/user spooling now: %s (" sge_u64 ") next: %s (" sge_u64 ") interval: " sge_u64 "\n",
++                 sge_ctime64(Follow_Control.now, &dstr_now), Follow_Control.now,
++                 sge_ctime64(Follow_Control.next_update, &dstr_next), Follow_Control.next_update,
++                 spool_interval);
       }
 
       Follow_Control.now = 0;
@@ -147,8 +143,39 @@ sge_set_next_spooling_time() {
    }
 
    sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-
    DRETURN_VOID;
+}
+
+/** @brief returns true if the scheduler should spool stree/prj/user objects
+ *
+ *  This function checks if the scheduler should spool.
+ */
+bool
+do_stree_spooling() {
+   DENTER(TOP_LAYER);
+   bool is_spool = false;
+
+   sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+   if (Follow_Control.is_spooling == NOT_DEFINED) {
+      Follow_Control.now = sge_get_gmt64();
+
+      DSTRING_STATIC(dstr_now, 100);
+      DSTRING_STATIC(dstr_next, 100);
+      DPRINTF("stree/prj/user spooling now: %s (" sge_u64 ") next: %s (" sge_u64 ")\n",
++             sge_ctime64(Follow_Control.now, &dstr_now), Follow_Control.now,
++             sge_ctime64(Follow_Control.next_update, &dstr_next), Follow_Control.next_update);
+
+      if (Follow_Control.now >= Follow_Control.next_update) {
+         DPRINTF("stree/prj/user spooling will be done.");
+         Follow_Control.is_spooling = DO_SPOOL;
+         is_spool = true;
+      } else {
+         DPRINTF("stree/prj/user spooling will not be done. Time not reached");
+         Follow_Control.is_spooling = DONOT_SPOOL;
+      }
+   }
+   sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
+   DRETURN(is_spool);
 }
 
 /**********************************************************************
@@ -169,6 +196,8 @@ lList **topp,   ticket orders ptr ptr
  **********************************************************************/
 int
 sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitoring_t *monitor, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
+
    u_long32 job_number, task_number;
    const char *or_pe, *q_name = nullptr;
    u_long32 or_type;
@@ -177,9 +206,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
    u_long32 state;
    u_long32 pe_slots = 0, q_slots = 0, q_version;
    lListElem *pe = nullptr;
-
-   DENTER(TOP_LAYER);
-
+   bool is_spool = do_stree_spooling();
+   
    or_type = lGetUlong(ep, OR_type);
    or_pe = lGetString(ep, OR_pe);
 
@@ -1160,29 +1188,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long64 now = 0;
-            bool is_spool = false;
             const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
-            sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-
-            if (Follow_Control.is_spooling == NOT_DEFINED) {
-
-               now = Follow_Control.now = sge_get_gmt64();
-
-               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
-
-               if (now >= Follow_Control.last_update) {
-                  Follow_Control.is_spooling = DO_SPOOL;
-                  is_spool = true;
-               } else {
-                  Follow_Control.is_spooling = DONOT_SPOOL;
-               }
-            } else {
-               now = Follow_Control.now;
-            }
-
-            sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
             DPRINTF("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
 
@@ -1269,8 +1275,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                {
                   lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, up_name, nullptr, nullptr,
-                                  up, nullptr, nullptr, true, is_spool, gdi_session);
+                  sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, up_name,
+                                  nullptr, nullptr, up, nullptr, nullptr,
+                                  true, is_spool, gdi_session);
                   answer_list_output(&answer_list);
                }
             }
@@ -1295,29 +1302,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             int pos;
             const char *up_name;
             lList *tlp;
-            u_long64 now = 0;
-            bool is_spool = false;
             const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-
-            sge_mutex_lock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
-
-            if (Follow_Control.is_spooling == NOT_DEFINED) {
-
-               now = Follow_Control.now = sge_get_gmt64();
-
-               DPRINTF(">>next spooling now: " sge_u64 " next: " sge_u64 "\n", Follow_Control.now, Follow_Control.last_update);
-
-               if (now >= Follow_Control.last_update) {
-                  Follow_Control.is_spooling = DO_SPOOL;
-                  is_spool = true;
-               } else {
-                  Follow_Control.is_spooling = DONOT_SPOOL;
-               }
-            } else {
-               now = Follow_Control.now;
-            }
-
-            sge_mutex_unlock("follow_last_update_mutex", __func__, __LINE__, &Follow_Control.last_update_mutex);
 
             DPRINTF("ORDER: update %d users\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
 
@@ -1407,8 +1392,9 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                {
                   lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, up_name, nullptr, nullptr,
-                                  up, nullptr, nullptr, true, is_spool, gdi_session);
+                  sge_event_spool(&answer_list, 0, sgeE_USER_MOD, 0, 0, up_name,
+                                  nullptr, nullptr, up, nullptr, nullptr,
+                                  true, is_spool, gdi_session);
                   answer_list_output(&answer_list);
                }
             }
