@@ -208,10 +208,10 @@ int main(int argc, char *argv[])
 
    /* parse commandline parameters */
    if (argc < 3) {
-      ERROR("usage: test_berkeleydb_mt <url> <threads> [<delay>]\n");
-      ERROR("       <url>     = path or host:database\n");
-      ERROR("       <threads> = number of threads\n");
-      ERROR("       <delay>   = delay after writing [ms]\n");
+      ERROR("usage: test_berkeleydb_mt <url> <threads> [<delay>]");
+      ERROR("       <url>     = path or host:database");
+      ERROR("       <threads> = number of threads");
+      ERROR("       <delay>   = delay after writing [ms]");
       sge_exit(1);
    }
 

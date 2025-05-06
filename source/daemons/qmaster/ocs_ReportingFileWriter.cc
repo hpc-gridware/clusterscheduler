@@ -443,7 +443,7 @@ namespace ocs {
       /* valid input data? */
       if (job == nullptr || ja_task == nullptr) {
          /* @todo I18N */
-         WARNING("reporting_is_intermediate_acct_required: invalid input data\n");
+         WARNING("reporting_is_intermediate_acct_required: invalid input data");
          DRETURN(false);
       }
 

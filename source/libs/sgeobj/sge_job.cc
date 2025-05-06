@@ -121,7 +121,7 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
    template_task = lFirstRW(lGetList(job, JB_ja_template));
 
    if (!template_task) {
-      ERROR("unable to retrieve template task\n");
+      ERROR("unable to retrieve template task");
    } else { 
       lSetUlong(template_task, JAT_state, JQUEUED | JWAITING);
       lSetUlong(template_task, JAT_task_number, ja_task_id);  
