@@ -1243,19 +1243,19 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : "none", "execd_params");
 
    userset_list_append_to_dstring(Master_Config.user_lists, &dstr);
-   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "user_lists");
+   INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "user_lists");
    sge_dstring_clear(&dstr);
 
    userset_list_append_to_dstring(Master_Config.xuser_lists, &dstr);
-   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "xuser_lists");
+   INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xuser_lists");
    sge_dstring_clear(&dstr);
 
    prj_list_append_to_dstring(Master_Config.projects, &dstr);
-   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "projects");
+   INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "projects");
    sge_dstring_clear(&dstr);
 
    prj_list_append_to_dstring(Master_Config.xprojects, &dstr);
-   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "xprojects");
+   INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xprojects");
    sge_dstring_clear(&dstr);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
