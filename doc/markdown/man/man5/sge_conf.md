@@ -1328,15 +1328,6 @@ currently implemented only via the DRMAA interface. When an error occurs while m
 error files, return error code 100 so that the error handling mechanism can handle the error correctly. (See 
 also *FORBID_APPERROR*).
 
-## reprioritize
-
-Note: Deprecated, may be removed in future release. This flag enables or disables the reprioritization of jobs based on
-their ticket amount. The *reprioritize_interval* in xxqs_name_sxx_sched_conf(5).
-Takes effect only if *reprioritize* is set to true. To turn off job reprioritization, the *reprioritize* flag must 
-be set to false ** and the *reprioritize_interval* to 0 which is the default.
-
-This value is a global configuration parameter only. It cannot be overridden by the execution host local configuration.
-
 ## jsv_url
 
 This setting defines a server JSV instance which will be started and triggered by the sge_qmaster(8) process. 

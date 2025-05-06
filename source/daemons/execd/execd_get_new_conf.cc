@@ -71,7 +71,6 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    int ret;
    bool use_qidle = mconf_get_use_qidle();
    u_long32 dummy; /* always 0 */ 
-   u_long32 old_reprioritization_enabled = mconf_get_reprioritize();
 
    unpackint(&(aMsg->buf), &dummy);
 
@@ -92,8 +91,15 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       set_enforce_cleanup_old_jobs();
    }
 
+// @todo CS-1232
+// In order to be able to enable this code we need information when the reprioritize_interval
+// in the scheduler configuration is changed (set to 0). This is not implemented. (CS-1232)
+//
+// Additionally the code would also reset the queue priorities of all running jobs to the priority
+// that was set during job start and not to the current queue priority in the queue configuration.
+#if 0
 #ifdef COMPILE_DC
-   if (old_reprioritization_enabled != mconf_get_reprioritize()) {
+   if (false) {
       /* Here we will make sure that each job which was started
          in SGEEE-Mode (reprioritization) will get its initial
          queue priority if this execd alternates to SGE-Mode */
@@ -133,6 +139,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       }
       sge_switch2admin_user();
    }
+#endif
 #endif
 
    /*

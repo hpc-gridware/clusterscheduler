@@ -45,7 +45,6 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_time.h"
 
 #include "sched/msg_schedd.h"
 
@@ -53,12 +52,10 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/cull_parse_util.h"
-#include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"
 #include "uti/sge.h"

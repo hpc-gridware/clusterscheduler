@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include "err_trace.h"
+#include "exec_ifm.h"
 
 /* The offsetof macro is part of ANSI C, but many compilers lack it, for
  * example "gcc -ansi"

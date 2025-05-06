@@ -60,7 +60,6 @@
 #include "gdi/ocs_gdi_Task.h"
 #include "gdi/ocs_gdi_Command.h"
 
-#include "ocs_CategoryQmaster.h"
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_thread_scheduler.h"
@@ -553,7 +552,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
               gdi_object_t *ao, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    lListElem *ep;
    lList *ticket_orders = nullptr;
-   bool reprioritize_tickets = (mconf_get_reprioritize() == 1) ? true : false;
+   bool reprioritize_tickets = sconf_get_reprioritize_interval() > 0;
 
    DENTER(TOP_LAYER);
 

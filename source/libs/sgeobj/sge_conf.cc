@@ -118,7 +118,6 @@ struct confel {                       /* cluster configuration parameters */
     u_long32    max_u_jobs;           /* max. number of jobs per user */
     u_long32    max_jobs;             /* max. number of jobs in the system */
     u_long32    max_advance_reservations; /* max. number of advance reservations in the system */
-    u_long32    reprioritize;         /* reprioritize jobs based on the tickets or not */
     u_long32    auto_user_fshare;     /* SGEEE automatic user fshare */
     u_long32    auto_user_oticket;    /* SGEEE automatic user oticket */
     char        *auto_user_default_project; /* SGEEE automatic user default project */
@@ -134,7 +133,7 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
-   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0,
+   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
    0, 0, nullptr, 0, nullptr, nullptr, nullptr
 };
 static bool is_new_config = false;
@@ -382,7 +381,6 @@ static tConfEntry conf_entries[] = {
  { "max_u_jobs",                 0, MAX_U_JOBS,                1, nullptr},
  { "max_jobs",                   0, MAX_JOBS,                  1, nullptr},
  { "max_advance_reservations",   0, MAX_ADVANCE_RESERVATIONS,  1, nullptr},
- { REPRIORITIZE,                 0, "1",                       1, nullptr},
  { "auto_user_oticket",          0, "0",                       1, nullptr},
  { "auto_user_fshare",           0, "0",                       1, nullptr},
  { "auto_user_default_project",  0, "none",                    1, nullptr},
@@ -453,6 +451,7 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, u_long32 *val, int typ
 
    if ((ep = lGetElemStr(lp_cfg, CF_name, name))) {
       s = lGetString(ep, CF_value);
+#if 0
       if (s) {
          int old_verbose = log_state_get_log_verbose();
   
@@ -463,6 +462,7 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, u_long32 *val, int typ
          INFO(MSG_CONF_USING_SS, s, name);
          log_state_set_log_verbose(old_verbose);
       }
+#endif
       if (cpp)
          *cpp = sge_strdup(*cpp, s);
       else
@@ -539,7 +539,6 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "enforce_project", &Master_Config.enforce_project, nullptr, 0);
    chg_conf_val(lpCfg, "enforce_user", &Master_Config.enforce_user, nullptr, 0);
    chg_conf_val(lpCfg, "max_unheard", nullptr, &Master_Config.max_unheard, TYPE_TIM);
-   chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, TYPE_LOG);
    chg_conf_val(lpCfg, "administrator_mail", &Master_Config.administrator_mail, nullptr, 0);
    chg_conf_val(lpCfg, "mail_tag", &Master_Config.mail_tag, nullptr, 0);
    chg_conf_val(lpCfg, "set_token_cmd", &Master_Config.set_token_cmd, nullptr, 0);
@@ -567,7 +566,6 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "max_u_jobs", nullptr, &Master_Config.max_u_jobs, TYPE_INT);
    chg_conf_val(lpCfg, "max_jobs", nullptr, &Master_Config.max_jobs, TYPE_INT);
    chg_conf_val(lpCfg, "max_advance_reservations", nullptr, &Master_Config.max_advance_reservations, TYPE_INT);
-   chg_conf_val(lpCfg, REPRIORITIZE, nullptr, &Master_Config.reprioritize, TYPE_BOO );
    chg_conf_val(lpCfg, "auto_user_oticket", nullptr, &Master_Config.auto_user_oticket, TYPE_INT);
    chg_conf_val(lpCfg, "auto_user_fshare", nullptr, &Master_Config.auto_user_fshare, TYPE_INT);
    chg_conf_val(lpCfg, "auto_user_default_project", &Master_Config.auto_user_default_project, nullptr, 0);
@@ -591,17 +589,13 @@ setConfFromCull(lList *lpCfg) {
  */
 static tConfEntry *
 getConfEntry(const char *name, tConfEntry conf[]) {
- int i;
-   
- DENTER(BASIS_LAYER);
-
- for (i = 0; conf[i].name; i++) {
-    if (!strcasecmp(conf[i].name,name)) {   
-       DRETURN(&conf[i]);
-    }
- }   
-     
- DRETURN(nullptr);
+   DENTER(BASIS_LAYER);
+   for (int i = 0; conf[i].name; i++) {
+      if (!strcasecmp(conf[i].name, name)) {
+         DRETURN(&conf[i]);
+      }
+   }
+   DRETURN(nullptr);
 }
 
 /**
@@ -1189,82 +1183,87 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
  */
 void sge_show_conf()
 {
-   const lListElem *ep;
-
    DENTER(BASIS_LAYER);
- 
+   dstring dstr = DSTRING_INIT;
+
+   // prevent logging function from writing to stderr but log into log file
+   int old_verbose = log_state_get_log_verbose();
+   log_state_set_log_verbose(0);
+
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DPRINTF("conf.execd_spool_dir        >%s<\n", Master_Config.execd_spool_dir);
-   DPRINTF("conf.mailer                 >%s<\n", Master_Config.mailer);
-   DPRINTF("conf.prolog                 >%s<\n", Master_Config.prolog);
-   DPRINTF("conf.epilog                 >%s<\n", Master_Config.epilog);
-   DPRINTF("conf.shell_start_mode       >%s<\n", Master_Config.shell_start_mode);
-   DPRINTF("conf.login_shells           >%s<\n", Master_Config.login_shells);
-   DPRINTF("conf.administrator_mail     >%s<\n", Master_Config.administrator_mail?Master_Config.administrator_mail:"none");
-   DPRINTF("conf.mail_tag               >%s<\n", Master_Config.mail_tag?Master_Config.mail_tag:"none");
-   DPRINTF("conf.min_gid                >%u<\n", (unsigned) Master_Config.min_gid);
-   DPRINTF("conf.min_uid                >%u<\n", (unsigned) Master_Config.min_uid);
-   DPRINTF("conf.load_report_time       >%u<\n", (unsigned) Master_Config.load_report_time);
-   DPRINTF("conf.max_unheard            >%u<\n", (unsigned) Master_Config.max_unheard);
-   DPRINTF("conf.loglevel               >%u<\n", (unsigned) Master_Config.loglevel);
-   DPRINTF("conf.xterm                  >%s<\n", Master_Config.xterm?Master_Config.xterm:"none");
-   DPRINTF("conf.load_sensor            >%s<\n", Master_Config.load_sensor?Master_Config.load_sensor:"none");
-   DPRINTF("conf.enforce_project        >%s<\n", Master_Config.enforce_project?Master_Config.enforce_project:"none");
-   DPRINTF("conf.enforce_user           >%s<\n", Master_Config.enforce_user?Master_Config.enforce_user:"none");
-   DPRINTF("conf.set_token_cmd          >%s<\n", Master_Config.set_token_cmd?Master_Config.set_token_cmd:"none");
-   DPRINTF("conf.pag_cmd                >%s<\n", Master_Config.pag_cmd?Master_Config.pag_cmd:"none");
-   DPRINTF("conf.token_extend_time      >%u<\n", (unsigned) Master_Config.token_extend_time);
-   DPRINTF("conf.shepherd_cmd           >%s<\n", Master_Config.shepherd_cmd?Master_Config.pag_cmd:"none");
-   DPRINTF("conf.qmaster_params         >%s<\n", Master_Config.qmaster_params?Master_Config.qmaster_params:"none");
-   DPRINTF("conf.execd_params           >%s<\n", Master_Config.execd_params?Master_Config.execd_params:"none");
-   DPRINTF("conf.gid_range              >%s<\n", Master_Config.gid_range?Master_Config.gid_range:"none");
-   DPRINTF("conf.zombie_jobs            >%u<\n", (unsigned) Master_Config.zombie_jobs);
-   DPRINTF("conf.qlogin_daemon          >%s<\n", Master_Config.qlogin_daemon?Master_Config.qlogin_daemon:"none");
-   DPRINTF("conf.qlogin_command         >%s<\n", Master_Config.qlogin_command?Master_Config.qlogin_command:"none");
-   DPRINTF("conf.rsh_daemon             >%s<\n", Master_Config.rsh_daemon?Master_Config.rsh_daemon:"none");
-   DPRINTF("conf.rsh_command            >%s<\n", Master_Config.rsh_command?Master_Config.rsh_command:"none");
-   DPRINTF("conf.jsv_url                >%s<\n", Master_Config.jsv_url?Master_Config.jsv_url:"none");
-   DPRINTF("conf.jsv_allowed_mod        >%s<\n", Master_Config.jsv_allowed_mod?Master_Config.jsv_allowed_mod:"none");
-   DPRINTF("conf.gdi_request_limits     >%s<\n", Master_Config.gdi_request_limits?Master_Config.gdi_request_limits:"none");
-   DPRINTF("conf.rlogin_daemon          >%s<\n", Master_Config.rlogin_daemon?Master_Config.rlogin_daemon:"none");
-   DPRINTF("conf.rlogin_command         >%s<\n", Master_Config.rlogin_command?Master_Config.rlogin_command:"none");
-   DPRINTF("conf.reschedule_unknown     >%u<\n", (unsigned) Master_Config.reschedule_unknown);
-   DPRINTF("conf.max_aj_instances       >%u<\n", (unsigned) Master_Config.max_aj_instances);
-   DPRINTF("conf.max_aj_tasks           >%u<\n", (unsigned) Master_Config.max_aj_tasks);
-   DPRINTF("conf.max_u_jobs             >%u<\n", (unsigned) Master_Config.max_u_jobs);
-   DPRINTF("conf.max_jobs               >%u<\n", (unsigned) Master_Config.max_jobs);
-   DPRINTF("conf.max_advance_reservations >%u<\n", (unsigned) Master_Config.max_advance_reservations);
-   DPRINTF("conf.reprioritize           >%u<\n", Master_Config.reprioritize);
-   DPRINTF("conf.auto_user_oticket      >%u<\n", Master_Config.auto_user_oticket);
-   DPRINTF("conf.auto_user_fshare       >%u<\n", Master_Config.auto_user_fshare);
-   DPRINTF("conf.auto_user_default_project >%s<\n", Master_Config.auto_user_default_project);
-   DPRINTF("conf.auto_user_delete_time  >" sge_u64 "<\n", Master_Config.auto_user_delete_time);
-   DPRINTF("conf.delegated_file_staging >%s<\n", Master_Config.delegated_file_staging);
-   DPRINTF("conf.libjvm_path >%s<\n", Master_Config.libjvm_path);
-   DPRINTF("conf.additional_jvm_args >%s<\n", Master_Config.additional_jvm_args);
 
-   for_each_ep(ep, Master_Config.user_lists) {
-      DPRINTF("%s             >%s<\n",
-              lPrev(ep)?"             ":"conf.user_lists", 
-              lGetString(ep, US_name));
-   }
-   for_each_ep(ep, Master_Config.xuser_lists) {
-      DPRINTF("%s            >%s<\n",
-              lPrev(ep)?"              ":"conf.xuser_lists", 
-              lGetString(ep, US_name));
-   }
+   INFO(MSG_CONF_USING_US, Master_Config.loglevel, "loglevel");
+   INFO(MSG_CONF_USING_SS, Master_Config.execd_spool_dir != nullptr ? Master_Config.execd_spool_dir : "none", "execd_spool_dir");
+   INFO(MSG_CONF_USING_SS, Master_Config.mailer != nullptr ? Master_Config.mailer : "none", "mailer");
+   INFO(MSG_CONF_USING_SS, Master_Config.xterm != nullptr ? Master_Config.xterm : "none", "xterm");
+   INFO(MSG_CONF_USING_SS, Master_Config.load_sensor != nullptr ? Master_Config.load_sensor : "none", "load_sensor");
+   INFO(MSG_CONF_USING_SS, Master_Config.prolog != nullptr ? Master_Config.prolog : "none", "prolog");
+   INFO(MSG_CONF_USING_SS, Master_Config.epilog != nullptr ? Master_Config.epilog : "none", "epilog");
+   INFO(MSG_CONF_USING_SS, Master_Config.shell_start_mode != nullptr ? Master_Config.shell_start_mode : "none", "shell_start_mode");
+   INFO(MSG_CONF_USING_SS, Master_Config.login_shells != nullptr ? Master_Config.login_shells : "none", "login_shells");
+   INFO(MSG_CONF_USING_US, Master_Config.min_gid, "min_gid");
+   INFO(MSG_CONF_USING_US, Master_Config.min_uid, "min_uid");
+   INFO(MSG_CONF_USING_SS, Master_Config.gid_range != nullptr ? Master_Config.gid_range : "none", "gid_range");
+   INFO(MSG_CONF_USING_US, Master_Config.load_report_time, "load_report_time");
+   INFO(MSG_CONF_USING_SS, Master_Config.enforce_project != nullptr ? Master_Config.enforce_project : "none", "enforce_project");
+   INFO(MSG_CONF_USING_SS, Master_Config.enforce_user != nullptr ? Master_Config.enforce_user : "none", "enforce_user");
+   INFO(MSG_CONF_USING_US, Master_Config.max_unheard, "max_unheard");
+   INFO(MSG_CONF_USING_SS, Master_Config.administrator_mail != nullptr ? Master_Config.administrator_mail : "none", "administrator_mail");
+   INFO(MSG_CONF_USING_SS, Master_Config.mail_tag != nullptr ? Master_Config.mail_tag : "none", "mail_tag");
+   INFO(MSG_CONF_USING_SS, Master_Config.set_token_cmd != nullptr ? Master_Config.set_token_cmd : "none", "set_token_cmd");
+   INFO(MSG_CONF_USING_SS, Master_Config.pag_cmd != nullptr ? Master_Config.pag_cmd : "none", "pag_cmd");
+   INFO(MSG_CONF_USING_US, Master_Config.token_extend_time, "token_extend_time");
+   INFO(MSG_CONF_USING_SS, Master_Config.shepherd_cmd != nullptr ? Master_Config.shepherd_cmd : "none", "shepherd_cmd");
+   INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : "none", "reporting_params");
+   INFO(MSG_CONF_USING_US, Master_Config.zombie_jobs, "finished_jobs");
+   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : "none", "qlogin_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : "none", "qlogin_command");
+   INFO(MSG_CONF_USING_SS, Master_Config.rsh_daemon != nullptr ? Master_Config.rsh_daemon : "none", "rsh_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.rsh_command != nullptr ? Master_Config.rsh_command : "none", "rsh_command");
+   INFO(MSG_CONF_USING_SS, Master_Config.jsv_url != nullptr ? Master_Config.jsv_url : "none", "jsv_url");
+   INFO(MSG_CONF_USING_SS, Master_Config.jsv_allowed_mod != nullptr ? Master_Config.jsv_allowed_mod : "none", "jsv_allowed_mod");
+   INFO(MSG_CONF_USING_SS, Master_Config.gdi_request_limits != nullptr ? Master_Config.gdi_request_limits : "none", "gdi_request_limits");
+   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_daemon != nullptr ? Master_Config.rlogin_daemon : "none", "rlogin_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_command != nullptr ? Master_Config.rlogin_command : "none", "rlogin_command");
+   INFO(MSG_CONF_USING_US, Master_Config.reschedule_unknown, "reschedule_unknown");
+   INFO(MSG_CONF_USING_US, Master_Config.max_aj_instances, "max_aj_instances");
+   INFO(MSG_CONF_USING_US, Master_Config.max_aj_tasks, "max_aj_tasks");
+   INFO(MSG_CONF_USING_US, Master_Config.max_u_jobs, "max_u_jobs");
+   INFO(MSG_CONF_USING_US, Master_Config.max_jobs, "max_jobs");
+   INFO(MSG_CONF_USING_US, Master_Config.max_advance_reservations, "max_advance_reservations");
+   INFO(MSG_CONF_USING_US, Master_Config.auto_user_oticket, "auto_user_oticket");
+   INFO(MSG_CONF_USING_US, Master_Config.auto_user_fshare, "auto_user_fshare");
+   INFO(MSG_CONF_USING_SS, Master_Config.auto_user_default_project != nullptr ? Master_Config.auto_user_default_project : "none", "auto_user_default_project");
+   INFO(MSG_CONF_USING_US, Master_Config.auto_user_delete_time, "auto_user_delete_time");
+   INFO(MSG_CONF_USING_SS, Master_Config.delegated_file_staging != nullptr ? Master_Config.delegated_file_staging : "none", "delegated_file_staging");
+   INFO(MSG_CONF_USING_SS, Master_Config.libjvm_path != nullptr ? Master_Config.libjvm_path : "none", "libjvm_path");
+   INFO(MSG_CONF_USING_SS, Master_Config.additional_jvm_args != nullptr ? Master_Config.additional_jvm_args : "none", "additional_jvm_args");
 
-   for_each_ep(ep, Master_Config.projects) {
-      DPRINTF("%s             >%s<\n",
-              lPrev(ep)?"             ":"conf.projects", 
-              lGetString(ep, PR_name));
-   }
-   for_each_ep(ep, Master_Config.xprojects) {
-      DPRINTF("%s            >%s<\n",
-              lPrev(ep)?"              ":"conf.xprojects", 
-              lGetString(ep, PR_name));
-   }
+   INFO(MSG_CONF_USING_SS, Master_Config.qmaster_params != nullptr ? Master_Config.qmaster_params : "none", "qmaster_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : "none", "execd_params");
+
+   userset_list_append_to_dstring(Master_Config.user_lists, &dstr);
+   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "user_lists");
+   sge_dstring_clear(&dstr);
+
+   userset_list_append_to_dstring(Master_Config.xuser_lists, &dstr);
+   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "xuser_lists");
+   sge_dstring_clear(&dstr);
+
+   prj_list_append_to_dstring(Master_Config.projects, &dstr);
+   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "projects");
+   sge_dstring_clear(&dstr);
+
+   prj_list_append_to_dstring(Master_Config.xprojects, &dstr);
+   INFO(MSG_CONF_USING_US, sge_dstring_get_string(&dstr), "xprojects");
+   sge_dstring_clear(&dstr);
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   // reset to original setting
+   log_state_set_log_verbose(old_verbose);
+
+   sge_dstring_free(&dstr);
 
    DRETURN_VOID;
 }
@@ -1960,18 +1959,6 @@ u_long32 mconf_get_max_advance_reservations() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(max_advance_reservations);
-}
-
-u_long32 mconf_get_reprioritize() {
-   u_long32 reprioritize;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   reprioritize = Master_Config.reprioritize;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(reprioritize);
 }
 
 u_long32 mconf_get_auto_user_fshare() {
