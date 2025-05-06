@@ -281,6 +281,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             if (enrolled_task) {
                job_unenroll(jep, nullptr, &jatp);
             }
+            // @todo add more info, e.g. in which state / status the job is
             ERROR(MSG_ORD_TWICE_UU, job_number, task_number);
             DRETURN(-1);
          }
@@ -614,7 +615,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             lSetObject(jatp, JAT_pe_object, lCopyElem(pe));
          }
 
-         // @todo: can this be summaized with the mod event that will set the job in t-state?
+         // @todo: can this be summarized with the mod event that will set the job in t-state?
          sge_add_event(now, sgeE_JATASK_ADD, job_number, task_number,
                       nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
 
@@ -1207,6 +1208,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                   continue;
                }
 
+               // @todo does the version have a meaning here?
                if ((pos = lGetPosViaElem(up_order, PR_version, SGE_NO_ABORT)) >= 0 &&
                    (lGetPosUlong(up_order, pos) != lGetUlong(up, PR_version))) {
                   /* order contains update for outdated user/project usage */

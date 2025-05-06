@@ -87,6 +87,8 @@ option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
 option(WITH_PYTHON "Enable Python external bindings" OFF)
 option(WITH_BOOST "Enable Boost framework" OFF)
 option(WITH_MUNGE "Enable Munge authentication" ON)
+option(WITH_SYSTEMD "Enable systemd support" OFF)
+option(WITH_CGROUPS "Enable cgroups support" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -184,6 +186,19 @@ endif ()
 
 if (WITH_MUNGE)
    add_compile_definitions("OCS_WITH_MUNGE")
+endif()
+
+if (WITH_SYSTEMD)
+   add_compile_definitions("OCS_WITH_SYSTEMD")
+endif()
+
+if (WITH_CGROUPS)
+   #add_compile_definitions("OCS_WITH_CGROUPS")
+   # link against the static cgroup library
+   #find_library(SGE_CGROUP_LIB NAMES libcgroup.a)
+   set(SGE_CGROUP_LIB "")
+else ()
+   set(SGE_CGROUP_LIB "")
 endif()
 
 #if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")

@@ -36,6 +36,7 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
@@ -104,11 +105,13 @@ static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
 
 static u_long64 last_qmaster_registration_time = 0;
-
-
 u_long64 get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
+
+#if defined (OCS_WITH_SYSTEMD)
+bool is_running_as_service = false;
+#endif
 
 /****** execd/sge_execd_application_status() ***********************************
 *  NAME
@@ -328,17 +331,39 @@ int main(int argc, char **argv)
    }
 
    /*
-    * We write pid file when we are connected to qmaster. Otherwise, an old
+    * We write a pid file when we are connected to qmaster. Otherwise, an old
     * execd might overwrite our pidfile.
     */
    sge_write_pid(EXECD_PID_FILE);
 
    /*
-    * At this point we are sure we are the only sge_execd and we are connected
-    * to the current qmaster. First we have to report any reaped children
+    * At this point, we are sure we are the only sge_execd, and we are connected
+    * to the current qmaster. First, we have to report any reaped children
     * that might exist.
     */
    starting_up();
+
+#if defined (OCS_WITH_SYSTEMD)
+   // try to initialize the Systemd integration,
+   // create an instance of Systemd and try to connect to the system bus,
+   // figure out if we are running as Systemd service
+   DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+   if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::execd_service_name, &error_dstr)) {
+      bool connected = false;
+      ocs::uti::Systemd systemd;
+      connected = systemd.connect(&error_dstr);
+      if (connected) {
+         is_running_as_service = systemd.is_running_as_service();
+      } else {
+         WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
+      }
+      // @todo force INFO output
+      INFO(MSG_SYSTEMD_INITIALIZED_SSSS, connected ? MSG_YES: MSG_NO, ocs::uti::Systemd::execd_service_name,
+           is_running_as_service ? MSG_YES : MSG_NO);
+   } else if (sge_dstring_strlen(&error_dstr) > 0) {
+      WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
+   }
+#endif
 
    /*
     * Log a warning message if execd hasn't been started by a superuser

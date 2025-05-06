@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <csignal>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_binding_hlp.h"
@@ -126,6 +127,8 @@ extern char execd_spool_dir[SGE_PATH_MAX];
 static int addgrpid_already_in_use(long);
 
 static long get_next_addgrpid(lList *, long);
+
+extern bool is_running_as_service;
 
 #endif
 #endif
@@ -1906,7 +1909,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
 
       if (chdir(execd_spool_dir))       /* go back */
-         /* if this happens (dont know how) we have a real problem */
+         /* if this happens (don't know how) we have a real problem */
          ERROR(MSG_FILE_CHDIR_SS, execd_spool_dir, strerror(errno));
       if (i == -1) {
          if (getenv("SGE_FAILURE_BEFORE_FORK")) {
@@ -1918,6 +1921,37 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       DRETURN(i);
    }
+
+   // If we are running under systemd control,
+   // we need to move the shepherd out of the execd scope.
+   // We create a new scope for the shepherd, e.g. "ocs-shepherd.scope".
+   // The shepherd process may *not* run within the scope of running a job - it might have limits which would lead
+   // to sge_shepherd being killed.
+   // Moving the shepherd pid to a new scope must be done here (in the child process), otherwise the shepherd
+   // might already have forked and have started job processes within the execd scope.
+   // The shepherd scope is automatically deleted again when the last shepherd process exits.
+   // Therefore, we need to create a new scope when the first shepherd process is started,
+   // and just attach the following shepherd processes to this scope.
+#if defined (OCS_WITH_SYSTEMD)
+   if (is_running_as_service) {
+      DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+      ocs::uti::Systemd systemd;
+      // connect as root, we want to have write access
+      sge_switch2start_user();
+      bool connected = systemd.connect(&err_dstr);
+      sge_switch2admin_user();
+      if (connected) {
+         pid_t pid = getpid();
+         bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
+         if (!success) {
+            WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
+         }
+      } else {
+         // connect failed
+         WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+      }
+   }
+#endif
 
    {  /* close all fd's except 0,1,2 */
       int keep_open[3];

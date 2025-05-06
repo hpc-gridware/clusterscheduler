@@ -212,4 +212,20 @@
 #define MSG_UTI_UNABLE_TO_EXTRACT_GID        _MESSAGE(59245, _("unable to extract gid from auth_info"))
 #define MSG_UTI_UNABLE_TO_EXTRACT_NSUP       _MESSAGE(59246, _("unable to extract number of supplementary groups from auth_info"))
 #define MSG_UTI_UNABLE_TO_EXTRACT_SUP_S      _MESSAGE(59247, _("unable to extract supplementary groups from auth_info: " SFN))
+
+/* ocs_Systemd.cc */
+#define MSG_SYSTEMD_ALREADY_INITIALIZED            _MESSAGE(59230, _("Systemd library already loaded"))
+#define MSG_SYSTEMD_OPEN_LIB_SS                    _MESSAGE(59231, _("can't open shared library " SFN ": " SFN))
+#define MSG_SYSTEMD_LOAD_FUNC_SS                   _MESSAGE(59232, _("can't load function " SFN ": " SFN))
+#define MSG_SYSTEMD_CANNOT_CONNECT_IS              _MESSAGE(59233, _("cannot connect to system bus: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_CALL_SIS                _MESSAGE(59234, _("systemd method %s failed: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_CALL_SSIS               _MESSAGE(59235, _("systemd method %s(%s) failed: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_READ_RESULT_SISS        _MESSAGE(59236, _("cannot read result from systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_EMPTY_RESULT_SISS       _MESSAGE(59237, _("empty result from systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS _MESSAGE(59238, _("cannot create message for systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS  _MESSAGE(59239, _("cannot append %s to message for systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS     _MESSAGE(59240, _("cannot open container %s for systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS    _MESSAGE(59241, _("cannot open container %s for systemd method %s: error %d: " SFN))
+#define MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS    _MESSAGE(59242, _("cannot append property %s to message for systemd method %s: error %d: " SFN))
+
 // clang-format on

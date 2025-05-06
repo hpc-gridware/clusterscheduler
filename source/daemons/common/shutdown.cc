@@ -36,6 +36,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"

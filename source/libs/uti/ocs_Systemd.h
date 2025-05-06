@@ -1,0 +1,101 @@
+#pragma once
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2025 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+#if defined(OCS_WITH_SYSTEMD)
+#include <string>
+
+#include <systemd/sd-bus.h>
+
+#include "sge_dstring.h"
+
+namespace ocs::uti {
+   // function types for the sdbus interface
+   using sd_bus_open_system_func_t = int (*)(sd_bus **bus);
+   using sd_bus_unref_func_t = sd_bus *(*)(sd_bus *bus);
+   using sd_bus_call_method_func_t = int (*)(sd_bus *bus, const char *destination, const char *path,
+      const char *interface, const char *member, sd_bus_error *ret_error, sd_bus_message **reply,
+      const char *types, ...);
+   using sd_bus_message_read_func_t = int (*)(sd_bus_message *m, const char *types, ...);
+   using sd_bus_message_new_method_call_func_t = int (*)(sd_bus *bus, sd_bus_message **m,
+      const char *destination, const char *path, const char *interface, const char *member);
+   using sd_bus_message_unref_func_t = int *(*)(sd_bus_message *m);
+   using sd_bus_message_append_func_t = int (*)(sd_bus_message *m, const char *types, ...);
+   using sd_bus_message_open_container_func_t = int (*)(sd_bus_message *m, int type, const char *types);
+   using sd_bus_message_close_container_func_t = int (*)(sd_bus_message *m);
+   using sd_bus_call_func_t = int (*)(sd_bus *bus, sd_bus_message *m, uint64_t usec, sd_bus_error *error, sd_bus_message **reply);
+
+   // @brief Systemd class
+   //
+   // This class provides an interface to interact with systemd using the sd-bus API.
+   // It allows for opening a system bus connection, making method calls, and handling messages.
+   // It has static methods for initialization and checking systemd availability.
+   // An instance of the class connects to the system bus and provides methods for
+   // interacting with systemd services.
+   class Systemd {
+      private:
+         // static data
+         // handle and function pointers of the libsystemd.so
+         static void *lib_handle;
+         static sd_bus_open_system_func_t sd_bus_open_system_func;
+         static sd_bus_unref_func_t sd_bus_unref_func;
+         static sd_bus_call_method_func_t sd_bus_call_method_func;
+         static sd_bus_message_read_func_t sd_bus_message_read_func;
+         static sd_bus_message_new_method_call_func_t sd_bus_message_new_method_call_func;
+         static sd_bus_message_unref_func_t sd_bus_message_unref_func;
+         static sd_bus_message_append_func_t sd_bus_message_append_func;
+         static sd_bus_message_open_container_func_t sd_bus_message_open_container_func;
+         static sd_bus_message_close_container_func_t sd_bus_message_close_container_func;
+         static sd_bus_call_func_t sd_bus_call_func;
+
+         // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
+         static std::string slice_name;
+         static std::string service_name;
+         static bool running_as_service;
+
+      public:
+         // constants
+         static constexpr std::string execd_service_name = "execd.service";
+
+         // static methods
+         static bool initialize(std::string service_name_in, dstring *error_dstr);
+         static bool is_systemd_available();
+         static bool is_running_as_service();
+
+      private:
+         // instance data
+         sd_bus *bus;
+
+         // instance methods
+         bool sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const;
+         bool sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const;
+         std::string get_unit_for_pid();
+         std::string get_unit_for_service(std::string &service);
+
+      public:
+         Systemd();
+         ~Systemd();
+
+         bool connect(dstring *error_dstr);
+         bool connected() const;
+         bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
+   };
+}
+#endif

@@ -61,6 +61,8 @@ function(architecture_specific_settings)
       message("Build with extensions is enabled")
    endif()
 
+   # @todo what is the differenct between lx-riscv64 and the other lx-archs?
+   #       can't be that much, handle it like the other lx-archs
    if (SGE_ARCH MATCHES "lx-riscv64")
       # Linux RiscV
       message(STATUS "We are on Linux: ${SGE_ARCH}")
@@ -161,6 +163,22 @@ function(architecture_specific_settings)
       else ()
          message(STATUS "no libtirpc or libntirpc found")
       endif ()
+
+      # build with systemd?
+      # @todo check api version, we need at least 221
+      if (EXISTS /usr/include/systemd/sd-bus.h)
+         set(WITH_SYSTEMD ON PARENT_SCOPE CACHE STRING "" FORCE)
+         message(STATUS "systemd development files found")
+      endif()
+
+#      # build with cgroup?
+#      @todo need to build libcgroup as 3rdparty tool
+#      if (EXISTS /usr/include/libcgroup.h)
+#         set(WITH_CGROUPS ON PARENT_SCOPE CACHE STRING "" FORCE)
+#         message(STATUS "libcgroup development files found")
+#      else()
+#         message(WARNING "libcgroups development files not found")
+#      endif()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
          # we need patchelf for setting the run path in the db_* tools

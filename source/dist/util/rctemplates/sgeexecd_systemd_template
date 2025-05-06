@@ -6,11 +6,10 @@ After=network-online.target remote-fs.target autofs.service
 
 [Service]
 Type=forking
-Slice=GENSLICE-execution.slice
+Slice=GENSLICE.slice
 ExecStart=GENROOT/GENCELL/common/sgeexecd start
 ExecStop=GENROOT/GENCELL/common/sgeexecd softstop
 Restart=no
-KillMode=none
 #We can set (cgroups / systemd-run) options
 #MemoryAccounting=true
 #IOAccounting=true
