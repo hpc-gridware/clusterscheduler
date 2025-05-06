@@ -684,7 +684,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 
       if (task->target == ocs::gdi::Target::SGE_ORDER_LIST) {
          sge_commit(packet->gdi_session);
-         sge_set_next_spooling_time();
+         set_next_stree_spooling_time();
          answer_list_add(&(task->answer_list), "OK\n", STATUS_OK, ANSWER_QUALITY_INFO);
       }
 

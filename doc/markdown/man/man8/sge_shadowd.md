@@ -52,16 +52,16 @@ file has not changed. The default is 240 seconds.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## <xxqs_name_sxx_root>/<cell>/common
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common
 Default configuration directory
     
-## <xxqs_name_sxx_root>/<cell>/common/shadow_masters
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/shadow_masters
 Shadow master hostname file.
     
-## <xxqs_name_sxx_root>/<cell>/spool/qmaster
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster
 Default master daemon spool directory
     
-## <xxqs_name_sxx_root>/<cell>/spool/qmaster/heartbeat
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/heartbeat
 The heartbeat file.
 
 # SEE ALSO

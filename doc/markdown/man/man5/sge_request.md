@@ -59,7 +59,7 @@ would have precisely the same effect as if the job was submitted with:
 
 For a complete list of common environment variables used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## <xxqs_name_sxx_root>/<cell>/common/xxqs_name_sxx_request
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/xxqs_name_sxx_request
 global defaults file
     
 ## $HOME/.xxqs_name_sxx_request	

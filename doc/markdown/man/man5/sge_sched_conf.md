@@ -349,7 +349,7 @@ as runtime for jobs that have neither `-l h_rt=...` nor `-l s_rt=...` specified.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## <xxqs_name_sxx_root>/<cell>/common/sched_configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/sched_configuration
 scheduler thread configuration
 
 # SEE ALSO
