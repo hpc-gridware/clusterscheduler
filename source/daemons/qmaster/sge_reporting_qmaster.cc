@@ -251,22 +251,18 @@ intermediate_usage_written(const lListElem *job_report, const lListElem *ja_task
 bool
 ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                                                 lListElem *ja_task, bool intermediate) {
-   bool ret = true;
-
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-
    DENTER(TOP_LAYER);
+   bool ret = true;
 
    /* accounting records will only be written at job end, not for intermediate
     * reports
     */
    if (!intermediate) {
-      DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
-      const char *category_string;
-      Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
-      category_string = sge_dstring_get_string(&category_dstring);
+      // get the job category string
+      const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+      u_long32 category_id = lGetUlong(job, JB_category_id);
+      lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+      const char *category_string = lGetString(category, CT_str);
 
       dstring job_dstring = DSTRING_INIT;
       ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
@@ -339,17 +335,13 @@ ocs::ClassicReportingFileWriter::create_record(const char *type, const char *dat
 bool
 ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                                                lListElem *ja_task, bool intermediate) {
-   bool ret = true;
-   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-
    DENTER(TOP_LAYER);
 
-   DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
-   const char *category_string = nullptr;
-   Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
-   category_string = sge_dstring_get_string(&category_dstring);
+   // get the job category string
+   const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+   u_long32 category_id = lGetUlong(job, JB_category_id);
+   lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+   const char *category_string = lGetString(category, CT_str);
 
    // reporting records will be written both for intermediate and final job reports
    /* job_dstring might have been filled with accounting record - this one
@@ -364,9 +356,9 @@ ocs::ClassicReportingFileWriter::create_acct_record(lList **answer_list, lListEl
    bool do_intermediate = (intermediate_written || intermediate);
 
    dstring job_dstring = DSTRING_INIT;
-   ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
-                          category_string, nullptr, REPORTING_DELIMITER,
-                          do_intermediate, false);
+   bool ret = sge_write_rusage(&job_dstring, nullptr, job_report, job, ja_task,
+                               category_string, nullptr, REPORTING_DELIMITER,
+                               do_intermediate, false);
    if (ret) {
       create_record("acct", sge_dstring_get_string(&job_dstring));
    }
