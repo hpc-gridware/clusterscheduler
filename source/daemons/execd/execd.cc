@@ -357,9 +357,11 @@ int main(int argc, char **argv)
       } else {
          WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
       }
-      // @todo force INFO output
-      INFO(MSG_SYSTEMD_INITIALIZED_SSSS, connected ? MSG_YES: MSG_NO, ocs::uti::Systemd::execd_service_name,
+      u_long32 old_ll = log_state_get_log_level();
+      log_state_set_log_level(LOG_INFO);
+      INFO(MSG_SYSTEMD_INITIALIZED_SSS, connected ? MSG_YES: MSG_NO, ocs::uti::Systemd::execd_service_name.c_str(),
            is_running_as_service ? MSG_YES : MSG_NO);
+      log_state_set_log_level(old_ll);
    } else if (sge_dstring_strlen(&error_dstr) > 0) {
       WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
    }

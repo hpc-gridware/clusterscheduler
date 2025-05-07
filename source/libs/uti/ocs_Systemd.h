@@ -41,6 +41,13 @@ namespace ocs::uti {
    using sd_bus_message_open_container_func_t = int (*)(sd_bus_message *m, int type, const char *types);
    using sd_bus_message_close_container_func_t = int (*)(sd_bus_message *m);
    using sd_bus_call_func_t = int (*)(sd_bus *bus, sd_bus_message *m, uint64_t usec, sd_bus_error *error, sd_bus_message **reply);
+   using sd_bus_add_match_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *match, sd_bus_message_handler_t callback, void *userdata);
+   using sd_bus_match_signal_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *path, const char *interface, const char *member, sd_bus_message_handler_t callback, void *userdata);
+   using sd_bus_slot_unref_func_t = int (*)(sd_bus_slot *slot);
+   using sd_bus_process_func_t = int (*)(sd_bus *bus, sd_bus_message **m);
+   using sd_bus_wait_func_t = int (*)(sd_bus *bus, int timeout_usec);
+   using sd_bus_message_get_sender_func_t = const char *(*)(sd_bus_message *m);
+   using sd_bus_message_get_member_func_t = const char *(*)(sd_bus_message *m);
 
    // @brief Systemd class
    //
@@ -64,6 +71,13 @@ namespace ocs::uti {
          static sd_bus_message_open_container_func_t sd_bus_message_open_container_func;
          static sd_bus_message_close_container_func_t sd_bus_message_close_container_func;
          static sd_bus_call_func_t sd_bus_call_func;
+         static sd_bus_add_match_func_t sd_bus_add_match_func;
+         static sd_bus_match_signal_func_t sd_bus_match_signal_func;
+         static sd_bus_slot_unref_func_t sd_bus_slot_unref_func;
+         static sd_bus_process_func_t sd_bus_process_func;
+         static sd_bus_wait_func_t sd_bus_wait_func;
+         static sd_bus_message_get_sender_func_t sd_bus_message_get_sender_func;
+         static sd_bus_message_get_member_func_t sd_bus_message_get_member_func;
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
          static std::string slice_name;
@@ -86,6 +100,7 @@ namespace ocs::uti {
          // instance methods
          bool sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const;
          bool sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const;
+         bool sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const;
          std::string get_unit_for_pid();
          std::string get_unit_for_service(std::string &service);
 

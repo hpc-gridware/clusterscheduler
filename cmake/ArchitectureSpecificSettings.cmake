@@ -165,7 +165,8 @@ function(architecture_specific_settings)
       endif ()
 
       # build with systemd?
-      # @todo check api version, we need at least 221
+      # @todo check api version, we need at least
+      #       - 231: here sd_bus_process() was added
       if (EXISTS /usr/include/systemd/sd-bus.h)
          set(WITH_SYSTEMD ON PARENT_SCOPE CACHE STRING "" FORCE)
          message(STATUS "systemd development files found")

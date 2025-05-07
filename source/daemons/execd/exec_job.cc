@@ -1932,6 +1932,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // The shepherd scope is automatically deleted again when the last shepherd process exits.
    // Therefore, we need to create a new scope when the first shepherd process is started,
    // and just attach the following shepherd processes to this scope.
+   // @todo CS-1241: add profiling info, want to know how long systemd operations take
+   //                and we should also profile the equivalents (e.g. in case of retrieving job usage)
 #if defined (OCS_WITH_SYSTEMD)
    if (is_running_as_service) {
       DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
@@ -1942,7 +1944,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_switch2admin_user();
       if (connected) {
          pid_t pid = getpid();
+         u_long64 start_time = sge_get_gmt64();
          bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
+         INFO("==> systemd move_shepherd_to_scope took " sge_u64 " µs", sge_get_gmt64() - start_time);
          if (!success) {
             WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
          }

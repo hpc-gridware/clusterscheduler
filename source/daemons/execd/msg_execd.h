@@ -241,7 +241,7 @@
 #define MSG_SGE_DONOTKILLROOTPROCESSXY_PI                _MESSAGE(29219, _("do not kill root process " pid_t_fmt "/%d"   ))
 #define MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED          _MESSAGE(29220, _("pt_dispatch_proc_to_job: malloc failed" ))
 
-#define MSG_SYSTEMD_INITIALIZED_SSSS                     _MESSAGE(29230, _("systemd integration initialized, connected to dbus: " SFN ", running as " SFN ": " SFN))
+#define MSG_SYSTEMD_INITIALIZED_SSS                      _MESSAGE(29230, _("systemd integration initialized, connected to dbus: " SFN ", running as " SFN ": " SFN))
 #define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29231, _("systemd: moving shepherd to scope failed: " SFN))
 
 // clang-format on
