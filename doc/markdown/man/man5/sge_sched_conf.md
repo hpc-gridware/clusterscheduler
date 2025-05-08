@@ -253,11 +253,14 @@ operation. If a custom setting is needed, the following values are available:
 ## reprioritize_interval
 
 Interval (HH:MM:SS) to reprioritize jobs on the execution hosts based on the current ticket amount for the running 
-jobs. If the interval is set to 00:00:00 the reprioritization is turned off. The default value is 00:00:00. The 
-reprioritization tickets are calculated by the scheduler and update events for running jobs are only sent after 
+jobs. If the interval is set to 00:00:00 the reprioritization is turned off (default). If dynamic priority adjustments are
+disabled then newly started jobs will get the queues *priority* applied. For already running jobs the last
+dynamic priority adjustment remains valid until the job finishes. 
+
+The reprioritization tickets are calculated by the scheduler and update events for running jobs are only sent after 
 the scheduler calculated new values. How often the schedule should calculate the tickets is defined by the 
-reprioritize_interval. Because the scheduler is only triggered in a specific interval (scheduler_interval) this means
-the reprioritize_interval has only a meaning if set greater than the scheduler_interval. For example, if the 
+*reprioritize_interval*. Because the scheduler is only triggered in a specific interval (scheduler_interval) this means
+the *reprioritize_interval* has only a meaning if set greater than the scheduler_interval. For example, if the 
 scheduler_interval is 2 minutes and reprioritize_interval is set to 10 seconds, this means the jobs get
 re-prioritized every 2 minutes.
 

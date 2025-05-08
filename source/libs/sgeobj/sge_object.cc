@@ -78,7 +78,6 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"CALENDAR",          CAL_Type,  CAL_name},
         {"CKPT",              CK_Type,   CK_name},
         {"CONFIG",            CONF_Type, CONF_name},
-        {"GLOBAL_CONFIG",     nullptr,   NoName},
         {"EXECHOST",          EH_Type,   EH_name},
         {"JATASK",            JAT_Type,  JAT_task_number},
         {"PETASK",            PET_Type,  PET_id},

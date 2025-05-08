@@ -232,6 +232,7 @@
 #define MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS   _MESSAGE(64310, _("can't create queue " SFQ ": host " SFQ " is not known"))
 #define MSG_PE_INVALIDCHARACTERINPE_S   _MESSAGE(64311, _("Invalid character in pe name of pe " SFQ))
 #define MSG_PE_UNKNOWN_URGENCY_SLOT_SS  _MESSAGE(64312, _("unknown urgency_slot_setting " SFQ " for PE " SFQ))
+#define MSG_CONF_USING_US               _MESSAGE(64313, _("using " sge_u32 " for " SFN))
 
 #define MSG_CQUEUE_CQUEUEISNULL_SSSII      _MESSAGE(64317, _("cqueue_list_locate_qinstance(" SFQ "): cqueue == nullptr(" SFQ ", " SFQ ", %d, %d"))
 #define MSG_CQUEUE_FULLNAMEISNULL        _MESSAGE(64318, _("cqueue_list_locate_qinstance(): full_name == nullptr"))

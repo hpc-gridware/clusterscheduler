@@ -117,7 +117,9 @@ higher scheduling priority, positive values (up to +20) correspond to a lower sc
 
 Note, the value of priority has no effect, if xxQS_NAMExx adjusts priorities dynamically to implement 
 ticket-based entitlement policy goals. Dynamic priority adjustment is switched off by default due to
-xxqs_name_sxx_conf(5) *reprioritize* being set to false.
+xxqs_name_sxx_sched_conf(5) *reprioritize_interval* being set to *0:0:0*.
+When dynamic priority adjustments are disabled later on, the *priority* value is used to set the nice value of new jobs 
+in the queue. The nice value of running jobs is not changed.
 
 ## min_cpu_interval
 

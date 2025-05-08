@@ -320,19 +320,14 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
 
    /* query configuration from sge_qmaster via gdi request */
    if (is_global_requested != 0) {
-      /*
-       * they might otherwise send global twice
-       */
       where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
       DPRINTF("requesting global\n");
    } else {
-      where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name,
-                     lGetHost(hep, EH_name));
+      where = lWhere("%T(%I c= %s || %I h= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME, CONF_name, lGetHost(hep, EH_name));
       DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_CONF_LIST, ocs::gdi::Command::SGE_GDI_GET,
-                 ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
+   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_CONF_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);

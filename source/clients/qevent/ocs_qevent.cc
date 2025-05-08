@@ -309,19 +309,19 @@ static void qevent_start_trigger_script(int qevent_event, const char* script_fil
 
    /* test if script is executable and valid file */
    if (!sge_is_file(script_file)) {
-      ERROR("no script file: " SFQ "\n", script_file);
+      ERROR("no script file: " SFQ, script_file);
       DRETURN_VOID;
    }
 
    /* is file executable ? */
    if (!sge_is_executable(script_file)) {  
-      ERROR("file not executable: " SFQ "\n", script_file);
+      ERROR("file not executable: " SFQ, script_file);
       DRETURN_VOID;
    } 
 
    pid = fork();
    if (pid < 0) {
-      ERROR("fork() error\n");
+      ERROR("fork() error");
       DRETURN_VOID;
    }
 

@@ -95,10 +95,12 @@ per job, per user, per project, and per department basis.
 
 ## JOB RUN-TIME PRIORITY
 
+As default jobs are started with the runtime *priority* defined in the queue instance where the job is started. This
+priority is applied at job start only and also not changed if the priority of the queue instance changes later.
+
 The run-time priority can be dynamically adjusted in order to meet the goals set with the ticket policy. 
 Dynamic run-time priority adjustment can be turned off (default) globally using *reprioritize_interval* in
-xxqs_name_sxx_sched_conf(5) If no dynamic run-time priority adjustment is done at a host level, the 
-*priority* specification in xxqs_name_sxx_queue_conf(5) is in effect.
+xxqs_name_sxx_sched_conf(5).
 
 Note that urgency and POSIX priorities do *NOT* affect runtime priority.
 

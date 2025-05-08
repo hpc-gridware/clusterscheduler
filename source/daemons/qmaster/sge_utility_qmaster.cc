@@ -634,12 +634,12 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
 
                if (ret) {
                   if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_REMOVE) {
-                     INFO(SFQ " does not exist in " SFQ " of " SFQ "\n", rstring, sub_list_name, object_name);
+                     INFO(SFQ " does not exist in " SFQ " of " SFQ, rstring, sub_list_name, object_name);
                      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                   } else {
                      if (!full_sublist) {
                         if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE) {
-                           INFO(SFQ " of " SFQ " is empty - Adding new element(s).\n", sub_list_name, object_name);
+                           INFO(SFQ " of " SFQ " is empty - Adding new element(s).", sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         lSetList(this_elem, this_elem_name, lCopyList("", lGetList(delta_elem, this_elem_name)));
@@ -649,7 +649,7 @@ attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int th
                         break;
                      } else {
                         if (!no_info && sub_cmd & ocs::gdi::SubCommand::SGE_GDI_CHANGE) {
-                           INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.\n", rstring, sub_list_name, object_name);
+                           INFO("Unable to find " SFQ " in " SFQ " of " SFQ " - Adding new element.", rstring, sub_list_name, object_name);
                            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
                         }
                         new_sub_elem = lDechainElem(reduced_sublist, reduced_element);

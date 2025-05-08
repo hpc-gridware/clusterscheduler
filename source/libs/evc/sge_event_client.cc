@@ -1475,13 +1475,13 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
          if (ngc_error == CL_RETVAL_OK) {
             DPRINTF("closed old connection to qmaster\n");
          } else {
-            INFO("error closing old connection to qmaster: " SFQ "\n", cl_get_error_text(ngc_error));
+            INFO("error closing old connection to qmaster: " SFQ, cl_get_error_text(ngc_error));
          }
          ngc_error = cl_commlib_open_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1);
          if (ngc_error == CL_RETVAL_OK) {
             DPRINTF("opened new connection to qmaster\n");
          } else {
-            ERROR("error opening new connection to qmaster: " SFQ "\n", cl_get_error_text(ngc_error));
+            ERROR("error opening new connection to qmaster: " SFQ, cl_get_error_text(ngc_error));
          }
       }
 #endif

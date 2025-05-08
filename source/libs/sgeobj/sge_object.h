@@ -120,37 +120,36 @@
 typedef enum {
    SGE_TYPE_FIRST = 0,
    SGE_TYPE_ADMINHOST = SGE_TYPE_FIRST,
-   SGE_TYPE_CALENDAR,         /*1*/
-   SGE_TYPE_CKPT,             /*2*/
-   SGE_TYPE_CONFIG,           /*3*/
-   SGE_TYPE_UNUSED,           /*4*/
-   SGE_TYPE_EXECHOST,         /*5*/
-   SGE_TYPE_JATASK,           /*6*/
-   SGE_TYPE_PETASK,           /*7*/
-   SGE_TYPE_JOB,              /*8*/
-   SGE_TYPE_JOB_SCHEDD_INFO,  /*9*/
-   SGE_TYPE_MANAGER,          /*10*/
-   SGE_TYPE_OPERATOR,         /*11*/
-   SGE_TYPE_SHARETREE,        /*12*/
-   SGE_TYPE_PE,               /*13*/
-   SGE_TYPE_PROJECT,          /*14*/
-   SGE_TYPE_CQUEUE,           /*15*/
-   SGE_TYPE_QINSTANCE,        /*16*/
-   SGE_TYPE_SCHEDD_CONF,      /*17*/
-   SGE_TYPE_SCHEDD_MONITOR,   /*18*/
-   SGE_TYPE_SHUTDOWN,         /*19*/
-   SGE_TYPE_MARK_4_REGISTRATION,/*20*/
-   SGE_TYPE_SUBMITHOST,       /*21*/
-   SGE_TYPE_USER,             /*22*/
-   SGE_TYPE_USERSET,          /*23*/
-   SGE_TYPE_HGROUP,           /*24*/
-   SGE_TYPE_CENTRY,           /*25*/   
-   SGE_TYPE_ZOMBIE,           /*26*/
-   SGE_TYPE_SUSER,            /*27*/
-   SGE_TYPE_RQS,              /*28*/
-   SGE_TYPE_AR,               /*29*/
-   SGE_TYPE_JOBSCRIPT,        /*30*/
-   SGE_TYPE_CATEGORY,         /*31*/
+   SGE_TYPE_CALENDAR, // 1
+   SGE_TYPE_CKPT,
+   SGE_TYPE_CONFIG,
+   SGE_TYPE_EXECHOST,
+   SGE_TYPE_JATASK, // 5
+   SGE_TYPE_PETASK,
+   SGE_TYPE_JOB,
+   SGE_TYPE_JOB_SCHEDD_INFO,
+   SGE_TYPE_MANAGER,
+   SGE_TYPE_OPERATOR, // 10
+   SGE_TYPE_SHARETREE,
+   SGE_TYPE_PE,
+   SGE_TYPE_PROJECT,
+   SGE_TYPE_CQUEUE,
+   SGE_TYPE_QINSTANCE, // 15
+   SGE_TYPE_SCHEDD_CONF,
+   SGE_TYPE_SCHEDD_MONITOR,
+   SGE_TYPE_SHUTDOWN,
+   SGE_TYPE_MARK_4_REGISTRATION,
+   SGE_TYPE_SUBMITHOST, // 20
+   SGE_TYPE_USER,
+   SGE_TYPE_USERSET,
+   SGE_TYPE_HGROUP,
+   SGE_TYPE_CENTRY,
+   SGE_TYPE_ZOMBIE, // 25
+   SGE_TYPE_SUSER,
+   SGE_TYPE_RQS,
+   SGE_TYPE_AR,
+   SGE_TYPE_JOBSCRIPT,
+   SGE_TYPE_CATEGORY, // 30
 
 
    /*

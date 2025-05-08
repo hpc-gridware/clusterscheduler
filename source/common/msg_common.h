@@ -159,8 +159,14 @@
 #define MSG_ANSWER_ERRORREADINGFROMSTDIN    _MESSAGE(23043, _("error reading from stdin"))
 #define MSG_ANSWER_NOINPUT                  _MESSAGE(23044, _("no input read from stdin"))
 
+#define MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS  _MESSAGE(23045, _("denied: " SFQ " must be manager to initiate operation for target " SFN))
+#define MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS _MESSAGE(23046, _("denied: " SFQ " must be operator to initiate operation for target " SFN))
+
 #define MSG_USER_INVALIDNAMEX_S             _MESSAGE(23048, _("invalid user name " SFQ))
 #define MSG_USER_NOHOMEDIRFORUSERX_S        _MESSAGE(23049, _("missing home directory for user " SFQ))
+
+#define MSG_SGETEXT_MUSTBEMANAGERFOROP_SS   _MESSAGE(23050, _("denied: " SFQ " must be manager to initiate " SFN " operation"))
+#define MSG_SGETEXT_MUSTBEOPERATORFOROP_SS  _MESSAGE(23051, _("denied: " SFQ " must be operator to initiate " SFN " operation"))
 
 #define MSG_OBJ_USER                        _MESSAGE(23052, _("user"))
 #define MSG_OBJ_GROUP                       _MESSAGE(23053, _("group"))

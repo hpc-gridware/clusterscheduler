@@ -60,7 +60,6 @@
 #include "gdi/ocs_gdi_Task.h"
 #include "gdi/ocs_gdi_Command.h"
 
-#include "ocs_CategoryQmaster.h"
 #include "sge_follow.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_thread_scheduler.h"
@@ -141,7 +140,7 @@ static void
 trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 static bool
-sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 target);
+sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 tar);
 
 static bool
 sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
@@ -259,8 +258,8 @@ sge_c_gdi_process_in_listener(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 bool
 sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
-   int operation = task->command;
-   switch (operation) {
+
+   switch (const ocs::gdi::Command::Cmd cmd = task->command) {
       case ocs::gdi::Command::SGE_GDI_GET:
          DRETURN(sge_task_check_get_perm_host(packet, task));
       case ocs::gdi::Command::SGE_GDI_ADD:
@@ -285,13 +284,13 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
          // other trigger requests must have been initiated by a manager
          if (task->target == ocs::gdi::Target::SGE_CQ_LIST) {
             if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
-               ERROR(MSG_SGETEXT_MUSTBEOPERATOR_S, packet->user);
+               ERROR(MSG_SGETEXT_MUSTBEOPERATORFOROP_SS, packet->user, ocs::gdi::Command::toString(cmd).c_str());
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                DRETURN(false);
             }
          } else {
             if (!manop_is_manager(packet, master_manager_list)) {
-               ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
+               ERROR(MSG_SGETEXT_MUSTBEMANAGERFOROP_SS, packet->user, ocs::gdi::Command::toString(cmd).c_str());
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                DRETURN(false);
             }
@@ -553,7 +552,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
               gdi_object_t *ao, ocs::gdi::Command::Cmd cmd, ocs::gdi::SubCommand::SubCmd sub_command, monitoring_t *monitor) {
    lListElem *ep;
    lList *ticket_orders = nullptr;
-   bool reprioritize_tickets = (mconf_get_reprioritize() == 1) ? true : false;
+   bool reprioritize_tickets = sconf_get_reprioritize_interval() > 0;
 
    DENTER(TOP_LAYER);
 
@@ -1303,14 +1302,13 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
 
 static bool
 sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 target) {
+   DENTER(TOP_LAYER);
+
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
-   DENTER(TOP_LAYER);
-
    /* check permissions of user */
-   switch (target) {
-
+   switch (const auto tar = static_cast<ocs::gdi::Target::TargetValue>(target)) {
       case ocs::gdi::Target::SGE_ORDER_LIST:
       case ocs::gdi::Target::SGE_AH_LIST:
       case ocs::gdi::Target::SGE_SH_LIST:
@@ -1333,7 +1331,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 ta
       case ocs::gdi::Target::SGE_MASTER_EVENT:
          /* user must be a manager */
          if (!manop_is_manager(packet, master_manager_list)) {
-            ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
+            ERROR(MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS, packet->user, ocs::gdi::Target::targetToString(tar).c_str());
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(false);
          }
@@ -1342,7 +1340,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, u_long32 ta
       case ocs::gdi::Target::SGE_US_LIST:
          /* user must be a operator */
          if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
-            ERROR(MSG_SGETEXT_MUSTBEOPERATOR_S, packet->user);
+            ERROR(MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS, packet->user, ocs::gdi::Target::targetToString(tar).c_str());
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
             DRETURN(false);
          }

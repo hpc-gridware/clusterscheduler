@@ -35,10 +35,8 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge.h"
 
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 
 #include "spool/sge_spooling.h"
@@ -46,12 +44,7 @@
 #include "sched_conf_qmaster.h"
 #include "configuration_qmaster.h"
 #include "sge_persistence_qmaster.h"
-#include "msg_qmaster.h"
 #include "msg_common.h"
-
-static void
-check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost, u_long64 gdi_session);
-
 
 int
 sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u_long64 gdi_session) {
@@ -76,8 +69,6 @@ sge_read_sched_configuration(const lListElem *aSpoolContext, lList **anAnswer, u
       lFreeList(&sched_conf);
       DRETURN(-1);
    }
-
-   check_reprioritize_interval(anAnswer, "local", "local", gdi_session);
 
    DRETURN(0);
 }
@@ -120,31 +111,8 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
       DRETURN(-1);
    }
 
-   check_reprioritize_interval(alpp, ruser, rhost, packet->gdi_session);
-
    INFO(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, "scheduler", "scheduler configuration");
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    DRETURN(STATUS_OK);
 } /* sge_mod_sched_configuration */
-
-
-static void
-check_reprioritize_interval(lList **alpp, const char *ruser, const char *rhost, u_long64 gdi_session) {
-   DENTER(TOP_LAYER);
-
-   if (((sconf_get_reprioritize_interval() == 0) && (mconf_get_reprioritize())) ||
-       ((sconf_get_reprioritize_interval() != 0) && (!mconf_get_reprioritize()))) {
-      bool flag = (sconf_get_reprioritize_interval() != 0) ? true : false;
-      lListElem *conf = sge_get_configuration_for_host(SGE_GLOBAL_NAME);
-
-      sge_set_conf_reprioritize(conf, flag);
-
-      sge_mod_configuration(conf, alpp, ruser, rhost, gdi_session);
-
-      lFreeElem(&conf);
-   }
-
-   DRETURN_VOID;
-} /* check_reprioritize_interval */
-

@@ -749,7 +749,6 @@ PrintConf()
    $ECHO "auto_user_default_project none"
    $ECHO "auto_user_delete_time  86400"
    $ECHO "delegated_file_staging false"
-   $ECHO "reprioritize           0"
    $ECHO "jsv_url                none"
    $ECHO "gdi_request_limits     none"
 }

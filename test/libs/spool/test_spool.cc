@@ -613,7 +613,7 @@ int main(int argc, char *argv[])
 
    /* parse commandline parameters */
    if(argc != 4) {
-      ERROR("usage: test_sge_spooling <method> <shared lib> <arguments>\n");
+      ERROR("usage: test_sge_spooling <method> <shared lib> <arguments>");
       sge_exit(1);
    }
 
@@ -672,7 +672,6 @@ int main(int argc, char *argv[])
       now = time(nullptr);
       if (now > next_prof_output) {
          prof_output_info(SGE_PROF_ALL, false, "test_sge_info:\n");
-/*          INFO("\n%s", prof_get_info_string(SGE_PROF_ALL, false, nullptr)); */
          next_prof_output = now + 60;
       }
    }

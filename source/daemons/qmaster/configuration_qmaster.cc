@@ -36,7 +36,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
-#include <climits>
 #include <pwd.h>
 
 #include "uti/config_file.h"
@@ -45,12 +44,10 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
-#include "uti/sge_mtutil.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_unistd.h"
 
 #include "cull/cull.h"
 
@@ -73,7 +70,6 @@
 #include "sge.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_userprj_qmaster.h"
-#include "evm/sge_event_master.h"
 #include "reschedule.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
@@ -87,9 +83,6 @@ check_config(lList **alpp, lListElem *conf);
 
 static int
 do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList **anAnswer, u_long64 gdi_session);
-
-static lListElem *
-is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries);
 
 static int
 check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewConfEntries, lList **anAnswer);
@@ -773,33 +766,7 @@ sge_get_configuration_for_host(const char *aName) {
    DRETURN(conf);
 }
 
-
-void
-sge_set_conf_reprioritize(lListElem *aConf, bool aFlag) {
-   lList *entries = nullptr;
-   lListElem *ep = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   SGE_ASSERT((nullptr != aConf));
-
-   entries = lGetListRW(aConf, CONF_entries);
-
-   ep = lGetElemStrRW(entries, CF_name, REPRIORITIZE);
-
-   if (nullptr == ep) {
-      ep = lCreateElem(CF_Type);
-      lSetString(ep, CF_name, REPRIORITIZE);
-      lAppendElem(entries, ep);
-   }
-
-   lSetString(ep, CF_value, ((true == aFlag) ? "1" : "0"));
-   lSetUlong(ep, CF_local, 0);
-
-   DRETURN_VOID;
-} /* sge_set_conf_reprioritize */
-
-/* 
+/*
  * Modify configuration with name 'aConfName'. 'anOldConf' is a *COPY* of this
  * configuration. 'aNewConf' is the new configuration.
  *
@@ -822,12 +789,6 @@ do_mod_config(char *aConfName, lListElem *anOldConf, lListElem *aNewConf, lList 
       if (!limits_instance.parse(gdi_request_limit_str, anAnswer)) {
          DRETURN(STATUS_EUNKNOWN);
       }
-   }
-
-   // add parameter if it is missing
-   lListElem *reprio = is_reprioritize_missing(old_entries, new_entries);
-   if (reprio != nullptr) {
-      lAppendElem(new_entries, reprio);
    }
 
    // log warning if static attributes are changed during runtime (like exec spool dir)
@@ -887,28 +848,6 @@ check_static_conf_entries(const lList *theOldConfEntries, const lList *theNewCon
    }
 
    DRETURN(0);
-}
-
-/*
- * If 'theOldConfEntries' do contain a reprioritize element and 'theNewConfEntries'
- * do not, return a *COPY* of 'theNewConfEntries' reprioritize element.
- */
-static lListElem *
-is_reprioritize_missing(const lList *theOldConfEntries, const lList *theNewConfEntries) {
-   const lListElem *old_reprio = nullptr;
-   const lListElem *new_reprio = nullptr;
-   lListElem *res = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   old_reprio = lGetElemStr(theOldConfEntries, CF_name, REPRIORITIZE);
-   new_reprio = lGetElemStr(theNewConfEntries, CF_name, REPRIORITIZE);
-
-   if ((nullptr == new_reprio) && (nullptr != old_reprio)) {
-      res = lCopyElem(old_reprio);
-   }
-
-   DRETURN(res);
 }
 
 /*

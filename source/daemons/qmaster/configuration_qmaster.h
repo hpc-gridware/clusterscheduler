@@ -57,6 +57,3 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
 int
 sge_compare_configuration(const lListElem *aHost, const lList *aConf);
-
-void
-sge_set_conf_reprioritize(lListElem *aConf, bool aFlag);

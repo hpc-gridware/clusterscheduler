@@ -1290,7 +1290,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          spool_transaction(alpp, spool_get_default_context(), STC_begin);
 
 
-         // if the job changed then check if also the category changed and triggere required events
+         // if the job changed then check if also the category changed and trigger required events
          if ((trigger & (PRIO_EVENT | MOD_EVENT)) > 0) {
             // build the category string
             const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);

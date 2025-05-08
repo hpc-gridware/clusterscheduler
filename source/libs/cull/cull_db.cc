@@ -1165,34 +1165,6 @@ int lString2List(const char *s, lList **lpp, const lDescr *dp, int nm,
    DRETURN(0);
 }
 
-/****** cull/db/lString2ListNone() ********************************************
-*  NAME
-*     lString2ListNone() -- 
-*
-*  SYNOPSIS
-*     int lString2ListNone(const char *s, lList **lpp, const lDescr *dp, 
-*                          int nm, const char *dlmt) 
-*
-*  FUNCTION
-*
-*  INPUTS
-*     const char *s    - ??? 
-*     lList **lpp      - ??? 
-*     const lDescr *dp - ??? 
-*     int nm           - ??? 
-*     const char *dlmt - ??? 
-*
-*  RESULT
-*     int - error state 
-*         0 - OK
-*  EXAMPLE
-*
-*  NOTES
-*
-*  BUGS
-*
-*  SEE ALSO
-******************************************************************************/
 int lString2ListNone(const char *s, lList **lpp, const lDescr *dp,
                      int nm, const char *dlmt) {
    int pos;

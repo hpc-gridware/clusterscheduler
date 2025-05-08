@@ -415,7 +415,7 @@ int main(int argc, char **argv)
    /* log if we received SIGPIPE signal */
    if (sge_sig_handler_sigpipe_received) {
        sge_sig_handler_sigpipe_received = 0;
-       INFO("SIGPIPE received\n");
+       INFO("SIGPIPE received");
    }
 
 #if defined(LINUX)

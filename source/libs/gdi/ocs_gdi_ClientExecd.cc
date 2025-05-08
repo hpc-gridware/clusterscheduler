@@ -102,6 +102,8 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
       DPRINTF("Error %d merging configuration \"%s\"\n", ret, qualified_hostname);
    }
 
+   sge_show_conf();
+
    /*
     * we don't keep all information, just the name and the version
     * the entries are freed
@@ -150,6 +152,9 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(lList **conf_list) {
       lFreeElem(&local);
       DRETURN(-2);
    }
+
+   sge_show_conf();
+
    /*
     * we don't keep all information, just the name and the version
     * the entries are freed

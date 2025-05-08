@@ -37,21 +37,18 @@ namespace ocs {
       DENTER(TOP_LAYER);
 
       if (!intermediate) {
-         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-         const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
-         DSTRING_STATIC(category_dstring, MAX_STRING_SIZE);
-
-         // @todo read cat string from category instead of rebuilding it
-         // get category string
-         Category::build_string(&category_dstring, job, master_userset_list, master_project_list, master_rqs_list);
-         const char *category_string = sge_dstring_get_string(&category_dstring);
+         // get the job category string
+         const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+         u_long32 category_id = lGetUlong(job, JB_category_id);
+         lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+         const char *category_string = lGetString(category, CT_str);
 
          // get accounting data
          rapidjson::StringBuffer json_buffer;
          rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
-         ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, &usage_pattern_list, 0,
-                                false, false);
+         ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string,
+                                &usage_pattern_list, 0, false, false);
+
          if (ret) {
             // append data to buffer
             json_buffer.Put('\n');

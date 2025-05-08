@@ -2438,8 +2438,16 @@ InstallRcScript()
    # and make a link in $RC_PREFIX/rc2.d to $RC_PREFIX/init.d
    elif [ "$RC_FILE" = "sysv_rc" ]; then
       $INFOTEXT "Installing startup script %s and %s" "$RC_PREFIX/$RC_DIR/$S95NAME" "$RC_PREFIX/$RC_DIR/$K03NAME"
-      Execute rm -f $RC_PREFIX/$RC_DIR/$S95NAME
-      Execute rm -f $RC_PREFIX/$RC_DIR/$K03NAME
+      # On newer Linux distributions with systemd the RC_DIR does not exist.
+      # Need to create it, the mechanism as such still works and
+      # the service is started at boot time.
+      # See also issue CS-1227.
+      if [ ! -d $RC_PREFIX/$RC_DIR ]; then
+         mkdir -p $RC_PREFIX/$RC_DIR
+      else
+         Execute rm -f $RC_PREFIX/$RC_DIR/$S95NAME
+         Execute rm -f $RC_PREFIX/$RC_DIR/$K03NAME
+      fi
       Execute cp $SGE_STARTUP_FILE $RC_PREFIX/init.d/$STARTUP_FILE_NAME
       Execute chmod a+x $RC_PREFIX/init.d/$STARTUP_FILE_NAME
       Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/$RC_DIR/$S95NAME

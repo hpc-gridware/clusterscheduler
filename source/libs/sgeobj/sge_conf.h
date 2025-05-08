@@ -41,10 +41,6 @@
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
 
-/* The scheduler configuration changes this configuration element only. It is
-   not spooled and is not shown in qconf -mconf */
-#define REPRIORITIZE "reprioritize"
-
 #define GID_RANGE_NOT_ALLOWED_ID 100
 #define RLIMIT_UNDEFINED -9999
 
@@ -110,7 +106,6 @@ u_long32 mconf_get_max_aj_tasks();
 u_long32 mconf_get_max_u_jobs();
 u_long32 mconf_get_max_jobs();
 u_long32 mconf_get_max_advance_reservations();
-u_long32 mconf_get_reprioritize();
 u_long32 mconf_get_auto_user_fshare();
 u_long32 mconf_get_auto_user_oticket();
 char* mconf_get_auto_user_default_project();

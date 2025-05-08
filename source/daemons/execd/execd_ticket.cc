@@ -53,24 +53,25 @@
  get a list of jobid/tickets tuples and pass them to the PTF
  *************************************************************************/
 
-int do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
-{
+int
+do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
+   DENTER(TOP_LAYER);
    u_long32 jobid, jataskid;
    double ticket;
    lListElem *job_ticket, *task_ticket;
    lList *ticket_modifier = nullptr;
 
-   DENTER(TOP_LAYER);
 
    while (pb_unused(&(aMsg->buf))>0) {
       lList *jatasks = nullptr;
 
-      if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid)
-          || unpackdouble(&(aMsg->buf), &ticket)) {
+      if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid) || unpackdouble(&(aMsg->buf), &ticket)) {
          ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
       }
+
       DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
+
       job_ticket = lAddElemUlong(&ticket_modifier, JB_job_number, jobid, JB_Type);   
       if (job_ticket) {
          task_ticket = lAddElemUlong(&jatasks, JAT_task_number, jataskid, JAT_Type);
