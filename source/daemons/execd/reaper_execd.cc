@@ -1693,7 +1693,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    double ru_cpu, pdc_cpu;
    double cpu, r_cpu,
           mem, r_mem,
-          io, iow, r_io, r_iow, maxvmem, r_maxvmem;
+          io, iow, r_io, r_iow, maxvmem, r_maxvmem, maxrss, r_maxrss;
 
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
@@ -1712,7 +1712,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    cpu = MAX(ru_cpu, pdc_cpu);
 
    /* build reserved usage if required */ 
-   r_cpu = r_mem = r_maxvmem = 0.0;
+   r_cpu = r_mem = r_maxvmem = r_maxrss = 0.0;
    if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
       if (pe_task_id != nullptr) {
          pe_task = lGetSubStr(ja_task, PET_id, pe_task_id, JAT_task_list);
@@ -1727,9 +1727,9 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
             accounting_summary = true;
          }
 
-         build_reserved_usage(end_time, ja_task, pe_task, &wallclock, &r_cpu, &r_mem, &r_maxvmem);
+         build_reserved_usage(end_time, ja_task, pe_task, &wallclock, &r_cpu, &r_mem, &r_maxvmem, &r_maxrss);
       } else {
-         // non reserved usage, need to calculate wallclock
+         // non-reserved usage, need to calculate wallclock
          u_long64 start_time;
          if (pe_task == nullptr) {
             start_time = lGetUlong64(ja_task, JAT_start_time);
@@ -1756,8 +1756,9 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    /* r_iow  = 0 */
    r_iow = iow;
 
-   /* maxvmem */
+   /* maxvmem and maxrss*/
    maxvmem = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXVMEM, 0);
+   maxrss = usage_list_get_double_usage(usage_list, USAGE_ATTR_MAXRSS, 0);
 
    DPRINTF("CPU/MEM/IO: M(%f/%f/%f) R(%f/%f/%f) acct: %s stree: %s\n", cpu, mem, io, r_cpu, r_mem, r_io,
            mconf_get_acct_reserved_usage()?"R":"M", mconf_get_sharetree_reserved_usage()?"R":"M");
@@ -1775,6 +1776,9 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          if (r_maxvmem != DBL_MAX) {
             add_usage(jr, USAGE_ATTR_MAXVMEM_ACCT, nullptr, r_maxvmem);
          }
+         if (r_maxrss != DBL_MAX) {
+            add_usage(jr, USAGE_ATTR_MAXRSS_ACCT, nullptr, r_maxrss);
+         }
       }
    } else {
       add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, cpu);
@@ -1783,6 +1787,9 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
       add_usage(jr, USAGE_ATTR_IOW_ACCT, nullptr, iow);
       if (maxvmem != DBL_MAX) {
          add_usage(jr, USAGE_ATTR_MAXVMEM_ACCT, nullptr, maxvmem);
+      }
+      if (maxrss != DBL_MAX) {
+         add_usage(jr, USAGE_ATTR_MAXRSS_ACCT, nullptr, maxrss);
       }
 
       /* We might have switched off sending of pe task job reports
@@ -1806,6 +1813,9 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          add_usage(jr, USAGE_ATTR_IOW, nullptr, r_iow);
          if (r_maxvmem != DBL_MAX) {
             add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, r_maxvmem);
+         }
+         if (r_maxrss != DBL_MAX) {
+            add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, r_maxrss);
          }
       }
    } else {
