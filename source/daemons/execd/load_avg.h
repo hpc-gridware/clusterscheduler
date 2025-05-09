@@ -56,4 +56,4 @@ u_long64 sge_get_qmrestart_time();
 void sge_set_qmrestart_time(u_long64 qmr);
 
 void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lListElem *pe_task,
-                          double *wallclock, double *cpu, double *mem, double *maxvmem);
+                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss);

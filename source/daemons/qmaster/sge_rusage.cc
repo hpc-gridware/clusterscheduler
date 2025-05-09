@@ -706,7 +706,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, USAGE_ATTR_MAXVMEM, reporting_get_double_usage_sum(usage_list, nullptr, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0));
       write_json(*writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                                              USAGE_ATTR_MAXRSS, USAGE_ATTR_MAXRSS, 0));
+                                     intermediate ? USAGE_ATTR_MAXRSS : USAGE_ATTR_MAXRSS_ACCT, USAGE_ATTR_MAXRSS, 0));
       writer->EndObject();
 
       // based on usage_patterns

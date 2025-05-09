@@ -976,35 +976,43 @@ void update_job_usage(const char* qualified_hostname)
    DRETURN_VOID;
 }
 
+// @brief calculate the reserved memory
+//
+// @param queue the queue element
+// @param nslots the number of slots
+// @param h_nm the name of the hard resource queue limit
+// @param s_nm the name of the soft resource queue limit
+//
+// @return the reserved memory
 static double
-calculate_reserved_vmem(lListElem *queue, int nslots) 
+calculate_reserved_memory(lListElem *queue, int nslots, int h_nm, int s_nm)
 {
-   double vmem = 0.0;
+   double mem = 0.0;
 
 
    if (queue != nullptr) {
-      double lim, h_vmem_lim, s_vmem_lim;
+      double lim, h_mem_lim, s_mem_lim;
       char err_str[128];
 
-      parse_ulong_val(&h_vmem_lim, nullptr, TYPE_MEM,
-                      lGetString(queue, QU_h_vmem),
+      parse_ulong_val(&h_mem_lim, nullptr, TYPE_MEM,
+                      lGetString(queue, h_nm),
                       err_str, sizeof(err_str)-1);
 
-      parse_ulong_val(&s_vmem_lim, nullptr, TYPE_MEM,
-                      lGetString(queue, QU_s_vmem),
+      parse_ulong_val(&s_mem_lim, nullptr, TYPE_MEM,
+                      lGetString(queue, s_nm),
                       err_str, sizeof(err_str)-1);
 
-      lim = MIN(h_vmem_lim, s_vmem_lim);
+      lim = MIN(h_mem_lim, s_mem_lim);
 
       /* INFINITY is mapped to DBL_MAX -> use 0; we cannot account INFINITY! */
       if (lim == DBL_MAX) {
          lim = 0.0;
       }
 
-      vmem = lim * nslots;
+      mem = lim * nslots;
    }
 
-   return vmem;
+   return mem;
 }
 
 static lList *
@@ -1022,10 +1030,10 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
     */
    jr = get_job_report(job_id, ja_task_id, pe_task_id);
    if (lGetSubStr(jr, UA_name, USAGE_ATTR_CPU_ACCT, JR_usage) == nullptr) {
-      double cpu = 0, mem = 0, io = 0, iow = 0, maxvmem = 0;
+      double cpu = 0, mem = 0, io = 0, iow = 0, maxvmem = 0, maxrss = 0;
       double wall_clock_time;
 
-      build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem);
+      build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem, &maxrss);
 
       io = iow = 0.0;
 
@@ -1058,6 +1066,10 @@ calculate_reserved_usage(const char* qualified_hostname, const lListElem *ja_tas
       if (maxvmem != 0) {
          usage_list_set_double_usage(ul, USAGE_ATTR_VMEM, maxvmem);
          usage_list_set_double_usage(ul, USAGE_ATTR_MAXVMEM, maxvmem);
+      }
+      if (maxrss != 0) {
+         usage_list_set_double_usage(ul, USAGE_ATTR_RSS, maxrss);
+         usage_list_set_double_usage(ul, USAGE_ATTR_MAXRSS, maxrss);
       }
    }
 
@@ -1203,15 +1215,18 @@ static void get_reserved_usage(const char *qualified_hostname, lList **job_usage
    DRETURN_VOID;
 }
 
-static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double wallclock, double *mem, double *maxvmem)
+static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double wallclock, double *mem, double *maxvmem,
+                                      double *maxrss)
 {
    /* 
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   double vmem = calculate_reserved_vmem(lGetObject(gdil_ep, JG_queue), slots);
+   lListElem *queue = lGetObject(gdil_ep, JG_queue);
+   double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;
+   *maxrss += calculate_reserved_memory(queue, slots, QU_h_rss, QU_s_rss);
 }
 
 /****** load_avg/build_reserved_usage() ****************************************
@@ -1243,12 +1258,13 @@ static void build_reserved_mem_usage(const lListElem *gdil_ep, int slots, double
 *     double *cpu              - returns the reserved cpu usage
 *     double *mem              - returns the reserved memory (integral vmem * wallclock)
 *     double *maxvmem          - returns the maximum virtual memory used
+*     double *maxrss           - returns the maximum resident memory used
 *
 *  NOTES
 *     MT-NOTE: build_reserved_usage() is MT safe 
 *******************************************************************************/
 void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lListElem *pe_task,
-                          double *wallclock, double *cpu, double *mem, double *maxvmem)
+                          double *wallclock, double *cpu, double *mem, double *maxvmem, double *maxrss)
 {
    u_long64 start_time;
 
@@ -1274,6 +1290,7 @@ void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lL
    *cpu = 0.0;
    *mem = 0.0;
    *maxvmem = 0.0;
+   *maxrss = 0.0;
    if (*wallclock != 0) {
       /* 
        * compute cpu, mem and maxvmem 
@@ -1304,7 +1321,7 @@ void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lL
          *cpu = *wallclock;
          queue_name = lGetString(lFirst(lGetList(pe_task, PET_granted_destin_identifier_list)), JG_qname);
          gdil_ep = lGetElemStr(lGetList(ja_task, JAT_granted_destin_identifier_list), JG_qname, queue_name);
-         build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem);
+         build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
       } else {
          /* compute cpu */
          int slots = 0;
@@ -1325,15 +1342,14 @@ void build_reserved_usage(const u_long64 now, const lListElem *ja_task, const lL
                   slots++;
                }
                slots_total += slots;
-               build_reserved_mem_usage(gdil_ep, slots, *wallclock, mem, maxvmem);
+               build_reserved_mem_usage(gdil_ep, slots, *wallclock, mem, maxvmem, maxrss);
             }
          } else {
             /* tightly integrated without accounting_summary, this is the master task only */
             gdil_ep = lFirst(gdil);
             slots_total = 1;
-            build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem);
+            build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
          }
-         // @todo CS-1132 maxrss is missing in reserved usage
 
          /* cpu is wallclock time * total number of job slots */
          *cpu = *wallclock * slots_total;
