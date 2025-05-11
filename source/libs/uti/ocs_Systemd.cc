@@ -54,6 +54,7 @@ namespace ocs::uti {
 
    std::string Systemd::slice_name;
    std::string Systemd::service_name;
+   const std::string Systemd::execd_service_name{"execd.service"};
    bool Systemd::running_as_service = false;
 
    // @todo move somewhere else

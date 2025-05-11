@@ -79,10 +79,13 @@ case $ARCH in
    LOADSENSOR_COMMAND=undef
    ;;
  lx*|ulx*|xlx*)
+   first_two=`echo $ARCH | cut -c 1-2`
    AWK=/usr/bin/gawk
    ECHO="/bin/echo -e"
-   if [ `ps -p 1 -o comm=` = "systemd" ]; then
+   if [ `ps -p 1 -o comm=` = "systemd" -a "$first_two" = "lx" ]; then
       # nearly all newer Linux distributions use systemd
+      # but we support it only on lx-*
+      # ulx-* (CentOS 7) is too old
       RC_FILE=systemd
       RC_PREFIX=/etc/systemd/system
       RC_DIR=unused

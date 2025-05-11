@@ -61,27 +61,7 @@ function(architecture_specific_settings)
       message("Build with extensions is enabled")
    endif()
 
-   # @todo what is the differenct between lx-riscv64 and the other lx-archs?
-   #       can't be that much, handle it like the other lx-archs
-   if (SGE_ARCH MATCHES "lx-riscv64")
-      # Linux RiscV
-      message(STATUS "We are on Linux: ${SGE_ARCH}")
-      set(CMAKE_C_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-      set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic" CACHE STRING "" FORCE)
-
-      add_compile_definitions(LINUX _GNU_SOURCE GETHOSTBYNAME_R6 GETHOSTBYADDR_R8 HAS_IN_PORT_T SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
-      add_compile_options(-fPIC)
-      add_compile_options(-pthread)
-      add_link_options(-pthread -rdynamic)
-
-      set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-      set(TIRPC_LIB tirpc PARENT_SCOPE)
-      message(STATUS "using libtirpc")
-
-      set(WITH_JEMALLOC OFF PARENT_SCOPE)
-      set(WITH_MTMALLOC OFF PARENT_SCOPE)
-      set(JNI_ARCH "linux" PARENT_SCOPE)
-   elseif (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*" OR SGE_ARCH MATCHES "xlx-.*")
+   if (SGE_ARCH MATCHES "lx-.*" OR SGE_ARCH MATCHES "ulx-.*" OR SGE_ARCH MATCHES "xlx-.*")
       # master is not supported on CentOS 6. Execd is deprecated and will be removed in the future.
       if (SGE_ARCH STREQUAL "xlx-.*")
          set(INSTALL_SGE_BIN_MASTER OFF CACHE BOOL "Install master daemon binaries" FORCE)
@@ -181,6 +161,13 @@ function(architecture_specific_settings)
 #         message(WARNING "libcgroups development files not found")
 #      endif()
 
+      if (SGE_ARCH MATCHES "lx-riscv64")
+         # Linux RiscV
+         # @todo why?
+         add_compile_options(-fPIC)
+         # @todo why?
+         set(WITH_JEMALLOC OFF PARENT_SCOPE)
+      endif()
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
          # we need patchelf for setting the run path in the db_* tools
          # but patchelf is not available on CentOS 7 x86

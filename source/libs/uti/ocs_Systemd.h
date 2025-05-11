@@ -81,12 +81,12 @@ namespace ocs::uti {
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
          static std::string slice_name;
-         static std::string service_name;
+         static std::string service_name; // @todo it is e.g. "execd.service" but should be the full service name
          static bool running_as_service;
 
       public:
          // constants
-         static constexpr std::string execd_service_name = "execd.service";
+         static const std::string execd_service_name;
 
          // static methods
          static bool initialize(std::string service_name_in, dstring *error_dstr);
