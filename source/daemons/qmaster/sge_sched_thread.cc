@@ -207,7 +207,6 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
    // initializations
-   serf_new_interval(sge_get_gmt64());
    orders.pendingOrderList = *order;
    *order = nullptr;
 
@@ -357,6 +356,9 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
       PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
    }
+
+   // print separator line in the schedule file *after* the scheduling run
+   serf_new_interval();
 
    DRETURN_VOID;
 }
