@@ -46,6 +46,7 @@
 #include "uti/sge_signal.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
@@ -64,7 +65,6 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_DataStore.h"
 
-#include "sched/sge_support.h"
 #include "sched/debit.h"
 
 #include "sge.h"
@@ -1410,7 +1410,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          lList *master_stree_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
 
          DPRINTF("ORDER: ORT_share_tree\n");
-         sge_init_node_fields(lFirstRW(master_stree_list));
+         ocs::ShareTree::zero_fields(lFirstRW(master_stree_list));
          if (update_sharetree(master_stree_list, lGetListRW(ep, OR_joker)) != 0) {
             DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);

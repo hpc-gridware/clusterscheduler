@@ -41,11 +41,11 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_ShareTree.h"
 #include "sgeobj/sge_sharetree.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_usage.h"
 
-#include "sge_support.h"
 #include "sge_sharetree_printing.h"
 
 typedef enum {
@@ -512,7 +512,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
    sharetree = lCopyList("copy of sharetree", sharetree_in);
    
    /* Resolve the default users */
-   sge_add_default_user_nodes(lFirstRW(sharetree), users, projects, usersets);
+   ocs::ShareTree::add_all_auto_users(lFirstRW(sharetree), users, projects, usersets);
 
    /* 
     * The sharetree calculation and output uses lots of global variables
@@ -528,7 +528,7 @@ sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lLi
       curr_time = sge_get_gmt64();
    }
 
-   _sge_calc_share_tree_proportions(sharetree, users, projects, nullptr, curr_time);
+   ocs::ShareTree::calc_proportions(sharetree, users, projects, nullptr, curr_time);
 
    print_nodes(out, jsonBuffer, root, nullptr, nullptr, users, projects, group_nodes, names, format, "");
 

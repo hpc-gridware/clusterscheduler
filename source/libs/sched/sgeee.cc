@@ -53,6 +53,9 @@
 
 #include "comm/commlib.h"
 
+#include "sgeobj/ocs_ShareTree.h"
+#include "sgeobj/ocs_Usage.h"
+#include "sgeobj/ocs_UserProject.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_ja_task.h"
@@ -70,7 +73,6 @@
 
 #include "msg_schedd.h"
 #include "sge_job_schedd.h"
-#include "sge_support.h"
 #include "sge_urgency.h"
 #include "sgeee.h"
 #include "sgeobj/cull/sge_eejob_FCAT_L.h"
@@ -776,10 +778,10 @@ sge_set_job_refs( lListElem *job,
       ref->share_tree_type = lGetUlong(root, STN_type);
 
       if (ref->user || ref->project) {
-         ref->node = search_userprj_node(root,
+         ref->node = ocs::ShareTree::search_user_project_node(root,
                ref->user ? lGetString(ref->user, UU_name) : nullptr,
                ref->project ? lGetString(ref->project, PR_name) : nullptr,
-               &pnode);
+               &pnode, root);
 
          /*
           * if the found node is a "default" node, then create a
@@ -1020,8 +1022,7 @@ sge_init_share_tree_node_fields( lListElem *node,
 static int
 sge_init_share_tree_nodes( lListElem *root )
 {
-   return sge_for_each_share_tree_node(root,
-         sge_init_share_tree_node_fields, nullptr);
+   return ocs::ShareTree::foreach_call_func(root, sge_init_share_tree_node_fields, nullptr);
 }
 
 
@@ -1030,8 +1031,7 @@ sge_init_share_tree_nodes( lListElem *root )
  *--------------------------------------------------------------------*/
 
 static lListElem *
-get_usage( lList *usage_list,
-           const char *name )
+get_usage(lList *usage_list, const char *name)
 {
    return lGetElemStrRW(usage_list, UA_name, name);
 }
@@ -1263,11 +1263,11 @@ decay_and_sum_usage( sge_ref_t *ref,
     *-------------------------------------------------------------*/
     
    if (user) {
-      decay_userprj_usage(user, true, decay_list, seqno, curr_time);
+      ocs::UserProject::decay_userprj_usage(user, true, decay_list, seqno, curr_time);
    }
 
    if (project) {
-      decay_userprj_usage(project, false, decay_list, seqno, curr_time);
+      ocs::UserProject::decay_userprj_usage(project, false, decay_list, seqno, curr_time);
    }
 
    /*-------------------------------------------------------------
@@ -2538,8 +2538,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          double decay_rate, decay_constant;
          
          for_each_rw(ep, halflife_decay_list) {
-            calculate_decay_constant(lGetDouble(ep, UA_value),
-                                    &decay_rate, &decay_constant);
+            ocs::Usage::calculate_decay_constant(lGetDouble(ep, UA_value), &decay_rate, &decay_constant);
             u = lAddElemStr(&decay_list, UA_name, lGetString(ep, UA_name),
                            UA_Type); 
             lSetDouble(u, UA_value, decay_constant);
@@ -2549,7 +2548,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          lListElem *u = nullptr;
          double decay_rate, decay_constant;
 
-         calculate_decay_constant(-1, &decay_rate, &decay_constant);
+         ocs::Usage::calculate_decay_constant(-1, &decay_rate, &decay_constant);
          u = lAddElemStr(&decay_list, UA_name, "finished_jobs", UA_Type); 
          lSetDouble(u, UA_value, decay_constant);
       }
@@ -2567,20 +2566,18 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       /* decay up till now based on old half life (unless it's zero),
          all future decay will be based on new halflife */
       if (oldhalflife == 0) {
-         calculate_default_decay_constant(halflife);
-      }   
-      else {
-         calculate_default_decay_constant(oldhalflife);
+         ocs::Usage::calculate_default_decay_constant(halflife);
+      } else {
+         ocs::Usage::calculate_default_decay_constant(oldhalflife);
       }   
       for_each_rw(userprj, lists->user_list) {
-         decay_userprj_usage(userprj, true, decay_list, sge_scheduling_run, curr_time);
+         ocs::UserProject::decay_userprj_usage(userprj, true, decay_list, sge_scheduling_run, curr_time);
       }
       for_each_rw(userprj, lists->project_list) {
-         decay_userprj_usage(userprj, false, decay_list, sge_scheduling_run, curr_time);
+         ocs::UserProject::decay_userprj_usage(userprj, false, decay_list, sge_scheduling_run, curr_time);
       }
-   } 
-   else {
-      calculate_default_decay_constant(sconf_get_halftime());
+   } else {
+      ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
    }
 
    /*-------------------------------------------------------------
@@ -2590,7 +2587,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    if ((lists->share_tree)) {
       if ((root = lFirstRW(lists->share_tree))) {
          sge_init_share_tree_nodes(root);
-         set_share_tree_project_flags(lists->project_list, root);
+         ocs::ShareTree::set_node_project_flag(root, lists->project_list);
       }
    }
 
@@ -3282,7 +3279,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
             sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
             if (jref.node) {
                if (sge_scheduling_run != lGetUlong(jref.node, STN_pass2_seqno)) {
-                  sge_zero_node_fields(jref.node, nullptr);
+                  ocs::ShareTree::zero_node_fields(jref.node, nullptr);
                   lSetUlong(jref.node, STN_pass2_seqno, sge_scheduling_run);
                }
             }
@@ -3435,7 +3432,7 @@ sge_calc_sharetree_targets( lListElem *root,
 
    /* decay and store user and project usage into sharetree nodes */
 
-   sge_calc_node_usage(root,
+   ocs::ShareTree::calc_node_usage(root,
                        lists->user_list,
                        lists->project_list,
                        decay_list,
@@ -4595,7 +4592,7 @@ main(int argc, char **argv)
    sge_calc_share_tree_proportions( lists->share_tree,
                                     lists->user_list,
                                     lists->project_list,
-                                    lists->config_list);
+                                    lists->config_list, sge_get_gmt64());
 
 /*   lWriteListTo(lists->share_tree, stdout);*/
 

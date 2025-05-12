@@ -49,6 +49,7 @@
 #include "cull/cull_sort.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_range.h"
@@ -69,7 +70,6 @@
 #include "sgeobj/sge_userset.h"
 
 #include "sched/sge_urgency.h"
-#include "sched/sge_support.h"
 #include "sched/load_correction.h"
 #include "sched/sge_job_schedd.h"
 #include "sched/sge_select_queue.h"
@@ -340,7 +340,7 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
  
    /* sort pending jobs */
    if (lGetNumberOfElem(qstat_env->job_list)>0 ) {
-      sgeee_sort_jobs(&(qstat_env->job_list));
+      ocs::Job::sgeee_sort_jobs(&(qstat_env->job_list));
    }
 
    /* 
