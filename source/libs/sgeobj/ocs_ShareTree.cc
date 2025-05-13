@@ -190,7 +190,7 @@ ocs::ShareTree::calc_node_usage(lListElem *node, const lList *user_list, const l
 
       // Decay usage
       if (now && userprj) {
-         UserProject::decay_userprj_usage(userprj, is_user, decay_list, seqno, now);
+         UserProject::decay_usage(userprj, is_user, decay_list, seqno, now);
       }  
 
       // Sum usage weighting factors
@@ -489,4 +489,50 @@ ocs::ShareTree::search_user_project_node(lListElem *node, const char *username, 
    }
 
    return nullptr;
+}
+
+/** @brief Returns a share tree containing only touched non-temp nodes
+ *
+ * This function traverses the share tree and returns a new tree
+ * containing only the nodes that have been modified since the last
+ * scheduling run. Only non-temp nodes are copied to the new tree which means
+ * that auto created user nodes (due to a default entry) are not copied.
+ *
+ * @param node The current node in the share tree.
+ * @param last_seqno The sequence number of the last scheduling run.
+ * @return A new share tree containing only modified non-temp nodes.
+ */
+lListElem *
+ocs::ShareTree::duplicate_modified_nodes(lListElem *node, int last_seqno) {
+   lListElem *new_node = nullptr;
+
+   const lList *children = lGetList(node, STN_children);
+   if (children != nullptr && lGetNumberOfElem(children) > 0) {
+      // copy all children that are not temp nodes and that have been changed
+      lList *child_list = nullptr;
+      lListElem *child;
+      for_each_rw(child, children) {
+         lListElem *child_node = duplicate_modified_nodes(child, last_seqno);
+         if (child_node != nullptr) {
+            if (child_list == nullptr) {
+               child_list = lCreateList("", STN_Type);
+            }
+            lAppendElem(child_list, child_node);
+         }
+      }
+
+      // copy the nide itself if it had children that where touched
+      if (child_list != nullptr) {
+         new_node = lCopyElem(node);
+         lSetList(new_node, STN_children, child_list);
+      }
+   } else {
+      // make a copy of the node if it was touched since last time and
+      // if it is not for a temp node (= user node created due to a default entry)
+      if (lGetUlong(node, STN_pass2_seqno) > (u_long32)last_seqno && lGetUlong(node, STN_temp) == 0) {
+         new_node = lCopyElem(node);
+      }
+   }
+
+   return new_node;
 }

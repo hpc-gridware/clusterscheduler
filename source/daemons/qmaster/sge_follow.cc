@@ -1181,109 +1181,111 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * Using this order schedd can debit usage on users/projects
           * both orders are handled identically except target list
           * ----------------------------------------------------------------------- */
-      case ORT_update_project_usage:
-      DPRINTF("ORDER: ORT_update_project_usage\n");
-         {
-            lListElem *up_order;
-            lListElem *up, *ju, *up_ju, *next;
-            int pos;
-            const char *up_name;
-            lList *tlp;
+      case ORT_update_project_usage: {
+         DPRINTF("ORDER: ORT_update_project_usage\n");
+         DPRINTF("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
+
+         lListElem *project_order;
+         for_each_rw (project_order, lGetList(ep, OR_joker)) {
+
+            // joker did not contain project object
+            int pos = lGetPosViaElem(project_order, PR_name, SGE_NO_ABORT);
+            if (pos < 0) {
+               continue;
+            }
+            // project name is not set
+            const char *project_name = lGetString(project_order, PR_name);
+            if (project_name == nullptr) {
+               continue;
+            }
+            // project cannot be found in master list
             const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+            lListElem *project_master = lGetElemStrRW(master_project_list, PR_name, project_name);
+            if (project_master == nullptr) {
+               continue;
+            }
 
-            DPRINTF("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
+            // order contains update for outdated user/project usage
+            // @todo: Should we apply the debited job usage in this case?
+            pos = lGetPosViaElem(project_order, PR_version, SGE_NO_ABORT);
+            if (pos >= 0 && lGetPosUlong(project_order, pos) != lGetUlong(project_master, PR_version)) {
+               WARNING(MSG_ORD_USRPRJVERSION_SUU, project_name, lGetPosUlong(project_order, pos), lGetUlong(project_master, PR_version));
+               continue;
+            }
 
-            for_each_rw (up_order, lGetList(ep, OR_joker)) {
-               if ((pos = lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT)) < 0 ||
-                   !(up_name = lGetString(up_order, PR_name))) {
-                  continue;
-               }
+            DPRINTF("%s %s usage updating with %d jobs\n", MSG_OBJ_PRJ,
+                    project_name, lGetNumberOfElem(lGetList(project_order, PR_debited_job_usage)));
 
-               DPRINTF("%s %s usage updating with %d jobs\n", MSG_OBJ_PRJ,
-                       up_name, lGetNumberOfElem(lGetList(up_order, PR_debited_job_usage)));
+            lAddUlong(project_master, PR_version, 1);
 
-               if (!(up = prj_list_locate(master_project_list, up_name))) {
-                  /* order contains reference to unknown user/prj object */
-                  continue;
-               }
+            // update usage time stamp
+            pos = lGetPosViaElem(project_order, PR_usage_time_stamp, SGE_NO_ABORT);
+            if (pos >= 0) {
+               lSetUlong64(project_master, PR_usage_time_stamp, lGetPosUlong64(project_order, pos));
+            }
 
-               if ((pos = lGetPosViaElem(up_order, PR_version, SGE_NO_ABORT)) >= 0 &&
-                   (lGetPosUlong(up_order, pos) != lGetUlong(up, PR_version))) {
-                  /* order contains update for outdated user/project usage */
-                  WARNING(MSG_ORD_USRPRJVERSION_SUU, up_name, lGetPosUlong(up_order, pos), lGetUlong(up, PR_version));
-                  /* Note: Should we apply the debited job usage in this case? */
-                  continue;
-               }
+            // switch all sublists that contain usage information
+            pos = lGetPosViaElem(project_order, PR_project, SGE_NO_ABORT);
+            if (pos >= 0) {
+               lSwapList(project_order, PR_project, project_master, PR_project);
+            }
+            pos = lGetPosViaElem(project_order, PR_usage, SGE_NO_ABORT);
+            if (pos >= 0) {
+               lSwapList(project_order, PR_usage, project_master, PR_usage);
+            }
+            pos = lGetPosViaElem(project_order, PR_long_term_usage, SGE_NO_ABORT);
+            if (pos >= 0) {
+               lSwapList(project_order, PR_long_term_usage, project_master, PR_long_term_usage);
+            }
 
-               lAddUlong(up, PR_version, 1);
+            // Mod/Add/Delete the debited job usage in the project_master
+            // for each job in debited_job_usage of project_order
+            lListElem *job_usage_order;
+            lListElem *next_job_usage_order = lFirstRW(lGetList(project_order, PR_debited_job_usage));
+            while ((job_usage_order = next_job_usage_order) != nullptr) {
+               next_job_usage_order = lNextRW(job_usage_order);
 
-               if ((pos = lGetPosViaElem(up_order, PR_project, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_project, up, PR_project);
-               }
+               job_number = lGetUlong(job_usage_order, UPU_job_number);
 
-               if ((pos = lGetPosViaElem(up_order, PR_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong64(up, PR_usage_time_stamp, lGetPosUlong64(up_order, pos));
+               // try to find existing debited usage of this job
+               lListElem *job_usage_project = lGetSubUlongRW(project_master, UPU_job_number, job_number, PR_debited_job_usage);
+               if (job_usage_project != nullptr) {
 
-               if ((pos = lGetPosViaElem(up_order, PR_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_usage, up, PR_usage);
-               }
-
-               if ((pos = lGetPosViaElem(up_order, PR_long_term_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_long_term_usage, up, PR_long_term_usage);
-               }
-
-               /* update old usage in up for each job appearing in
-                  PR_debited_job_usage of 'up_order' */
-               next = lFirstRW(lGetList(up_order, PR_debited_job_usage));
-               while ((ju = next)) {
-                  next = lNextRW(ju);
-
-                  job_number = lGetUlong(ju, UPU_job_number);
-
-                  /* seek for existing debited usage of this job */
-                  if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, PR_debited_job_usage))) {
-
-                     /* if passed old usage list is nullptr, delete existing usage */
-                     if (lGetList(ju, UPU_old_usage_list) == nullptr) {
-                        lRemoveElem(lGetListRW(up_order, PR_debited_job_usage), &ju);
-                        lRemoveElem(lGetListRW(up, PR_debited_job_usage), &up_ju);
-                     } else {
-                        /* still exists - replace old usage with new one */
-                        DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
-                        lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
-                     }
-
+                  // Delete usage list if new usage list for job is empty
+                  // or update by swapping the usage lists
+                  if (lGetList(job_usage_order, UPU_old_usage_list) == nullptr) {
+                     lRemoveElem(lGetListRW(project_order, PR_debited_job_usage), &job_usage_order);
+                     lRemoveElem(lGetListRW(project_master, PR_debited_job_usage), &job_usage_project);
                   } else {
-                     /* unchain ju element and chain it into our user/prj object */
-                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
-                     lDechainElem(lGetListRW(up_order, PR_debited_job_usage), ju);
+                     DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
+                     lSwapList(job_usage_order, UPU_old_usage_list, job_usage_project, UPU_old_usage_list);
+                  }
 
-                     if (lGetList(ju, UPU_old_usage_list) != nullptr) {
-                        /* unchain ju element and chain it into our user/prj object */
-                        if (!(tlp = lGetListRW(up, PR_debited_job_usage))) {
-                           tlp = lCreateList(up_name, UPU_Type);
-                           lSetList(up, PR_debited_job_usage, tlp);
-                        }
-                        lInsertElem(tlp, nullptr, ju);
-                     } else {
-                        /* do not chain in empty empty usage records */
-                        lFreeElem(&ju);
+               } else {
+                  // Add new usage list for job (unchain and add in other list)
+                  lDechainElem(lGetListRW(project_order, PR_debited_job_usage), job_usage_order);
+                  if (lGetList(job_usage_order, UPU_old_usage_list) != nullptr) {
+                     lList *job_usage_list = lGetListRW(project_master, PR_debited_job_usage);
+                     if (job_usage_list == nullptr) {
+                        job_usage_list = lCreateList(project_name, UPU_Type);
+                        lSetList(project_master, PR_debited_job_usage, job_usage_list);
                      }
+                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
+                     lInsertElem(job_usage_list, nullptr, job_usage_order);
+                  } else {
+                     lFreeElem(&job_usage_order);
                   }
                }
-
-               /* spool and send event */
-
-               {
-                  lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, up_name,
-                                  nullptr, nullptr, up, nullptr, nullptr,
-                                  true, is_spool, gdi_session);
-                  answer_list_output(&answer_list);
-               }
             }
+
+            lList *answer_list = nullptr;
+            sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, project_name,
+                            nullptr, nullptr, project_master, nullptr, nullptr,
+                            true, is_spool, gdi_session);
+            answer_list_output(&answer_list);
          }
          break;
+      }
 
          /* -----------------------------------------------------------------------
           * REPLACE A USER

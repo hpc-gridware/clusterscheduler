@@ -47,8 +47,6 @@
 #include "sge_schedd_conf.h"
 #include "sge_usage.h"
 
-#include "cull/sge_eejob_SGEJ_L.h"
-
 /** @brief Calculate decay rate and constant based on half-life
  *
  * This function calculates the decay rate and decay constant based on
@@ -119,4 +117,65 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
          lSetPosDouble(usage, UA_value_POS, lGetPosDouble(usage, UA_value_POS) * decay);
       }
    }
+}
+
+/** @brief Create a decay list based on half-life values
+ *
+ * This function creates a decay list based on the half-life values
+ * defined in the scheduler configuration. If no half-life values are
+ * defined, it creates a default decay list for finished jobs.
+ *
+ * @return A pointer to the created decay list.
+ */
+lList *
+ocs::Usage::create_decay_list() {
+   lList *decay_list = nullptr;
+   lList *halflife_decay_list = sconf_get_halflife_decay_list();
+
+   if (halflife_decay_list != nullptr) {
+      double decay_rate, decay_constant;
+      const lListElem *ep = nullptr;
+
+      for_each_ep(ep, halflife_decay_list) {
+         calculate_decay_constant(lGetDouble(ep, UA_value), &decay_rate, &decay_constant);
+         lListElem *u = lAddElemStr(&decay_list, UA_name, lGetString(ep, UA_name), UA_Type);
+         lSetDouble(u, UA_value, decay_constant);
+      }
+   } else {
+      double decay_rate, decay_constant;
+
+      // @todo: For what is this required?
+      calculate_decay_constant(-1, &decay_rate, &decay_constant);
+      lListElem *u = lAddElemStr(&decay_list, UA_name, "finished_jobs", UA_Type);
+      lSetDouble(u, UA_value, decay_constant);
+   }
+   lFreeList(&halflife_decay_list);
+   return decay_list;
+}
+
+lListElem *
+ocs::Usage::get_by_name(const lList *usage_list, const char *name) {
+   return lGetElemStrRW(usage_list, UA_name, name);
+}
+
+lListElem *
+ocs::Usage::create_with_name(const char *name) {
+   lListElem *usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, name);
+   lSetDouble(usage, UA_value, 0);
+   return usage;
+}
+
+lListElem *
+ocs::Usage::get_or_create_by_name(lList *usage_list, const char *name) {
+   if (usage_list == nullptr) {
+      return nullptr;
+   }
+
+   lListElem *usage = get_by_name(usage_list, name);
+   if (usage == nullptr) {
+      usage = create_with_name(name);
+      lAppendElem(usage_list, usage);
+   }
+   return usage;
 }
