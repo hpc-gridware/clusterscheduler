@@ -2516,8 +2516,6 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    bool share_functional_shares = sconf_get_share_functional_shares();
    u_long32 max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
-   lList *decay_list = nullptr;
-
    u_long32 free_qslots = 0;
 
    DENTER(TOP_LAYER);
@@ -2529,36 +2527,12 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    u_long64 curr_time = sge_get_gmt64();
 
    sge_scheduling_run++;
-   { 
-      lList *halflife_decay_list = sconf_get_halflife_decay_list();
 
-      if (halflife_decay_list != nullptr) {
-         lListElem *ep = nullptr;
-         lListElem *u = nullptr;
-         double decay_rate, decay_constant;
-         
-         for_each_rw(ep, halflife_decay_list) {
-            ocs::Usage::calculate_decay_constant(lGetDouble(ep, UA_value), &decay_rate, &decay_constant);
-            u = lAddElemStr(&decay_list, UA_name, lGetString(ep, UA_name),
-                           UA_Type); 
-            lSetDouble(u, UA_value, decay_constant);
-         }
-      } 
-      else {
-         lListElem *u = nullptr;
-         double decay_rate, decay_constant;
+   lList *decay_list = ocs::Usage::get_decay_list();
 
-         ocs::Usage::calculate_decay_constant(-1, &decay_rate, &decay_constant);
-         u = lAddElemStr(&decay_list, UA_name, "finished_jobs", UA_Type); 
-         lSetDouble(u, UA_value, decay_constant);
-      }
-       lFreeList(&halflife_decay_list);
-   }
-
-   /*-------------------------------------------------------------
-    * Decay usage for all users and projects if halflife changes
-    *-------------------------------------------------------------*/
-
+   // @todo CS-272: move this to sconf-MOD in worker
+#if 1
+   // Decay usage for all users and projects if halflife changes
    if (do_usage && sconf_is() && halflife != sconf_get_halftime()) {
       lListElem *userprj;
       int oldhalflife = halflife;
@@ -2579,6 +2553,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    } else {
       ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
    }
+#endif
 
    /*-------------------------------------------------------------
     * Init job_ref_count in each share tree node to zero
@@ -2741,6 +2716,8 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       calculate_m_shares(root);
    }
 
+   // @todo CS-272: move this to final usage reporting in report handling
+#if 1
    /*-----------------------------------------------------------------
     * Handle finished jobs. We add the finished job usage to the
     * user and project objects and then we delete the debited job
@@ -2780,7 +2757,8 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       DPRINTF("no DDJU: do_usage: %d finished_jobs %d\n",
          do_usage, (finished_jobs!=nullptr));
       DPRINTF("\n");
-   }     
+   }
+#endif
    
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
    prof_init = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr);
@@ -2800,8 +2778,12 @@ sge_calc_tickets( scheduler_all_data_t *lists,
        * Handle usage
        *-------------------------------------------------------------*/
 
-      if (do_usage)
+   // @todo CS-272: move this to online usage reporting in report handling
+#if 0
+      if (do_usage) {
          decay_and_sum_usage(&job_ref[job_ndx], decay_list, sge_scheduling_run, curr_time);
+      }
+#endif
 
       combine_usage(&job_ref[job_ndx]);
    }
@@ -3265,10 +3247,11 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
    }
 
+   // @todo CS-272: should not be required as soon as deletion of job specific
+   // usage can be moved from sge_follow_order to report handling
+#if 0
    /* update share tree node for finished jobs */
-
    /* NOTE: what purpose does this serve? */
-
    if (do_usage && finished_jobs) {
       for_each_rw(job, finished_jobs) {
          sge_ref_t jref;
@@ -3286,6 +3269,7 @@ sge_calc_tickets( scheduler_all_data_t *lists,
          }
       }
    }
+#endif
 
    /* 
     * copy tickets 

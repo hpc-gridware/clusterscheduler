@@ -92,6 +92,39 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
    sconf_set_decay_constant(sge_decay_constant);
 }
 
+void ocs::Usage::add_decay_element(lList *decay_list, double value, const char *name) {
+   double decay_rate, decay_constant;
+   calculate_decay_constant(value, &decay_rate, &decay_constant);
+   lListElem *u = lAddElemStr(&decay_list, UA_name, name, UA_Type);
+   lSetDouble(u, UA_value, decay_constant);
+}
+
+/** @brief Calculate decay constants for half-life decay list
+ *
+ * This function calculates the decay list based on the half-life
+ * and decay constants provided in the configuration.
+ *
+ * @return A list of decay elements with their corresponding decay constants.
+ */
+lList *
+ocs::Usage::get_decay_list() {
+   lList *decay_list = nullptr;
+   lList *halflife_decay_list = sconf_get_halflife_decay_list();
+
+   if (halflife_decay_list != nullptr) {
+      const lListElem *ep = nullptr;
+
+      for_each_rw(ep, halflife_decay_list) {
+         add_decay_element(decay_list, lGetDouble(ep, UA_value), lGetString(ep, UA_name));
+      }
+   } else {
+      // @todo: what is the purpose of this?
+      add_decay_element(decay_list, -1, "finished_jobs");
+   }
+   lFreeList(&halflife_decay_list);
+   return decay_list;
+}
+
 /** @brief Decay usage for the passed usage list
  *
  * This function decays the usage values in the given usage list based on

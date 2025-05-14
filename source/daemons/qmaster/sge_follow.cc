@@ -1170,6 +1170,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          break;
       }
 
+// @todo CS-272: should not be required as soon as deletion of job specific
+#if 1
          /* -----------------------------------------------------------------------
           * REPLACE A PROJECT'S
           *
@@ -1401,6 +1403,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             }
          }
          break;
+#endif
 
          /* -----------------------------------------------------------------------
           * FILL IN SEVERAL SCHEDULING VALUES INTO QMASTER'S SHARE TREE
@@ -1415,32 +1418,32 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);
          }
-         // @todo CS-911 don't we have to send an event here?
-         // sge_add_event(now, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, lFirstRW(master_stree_list), gdi_session);
+         // no need to spool but other data stores need to be updated
+         sge_add_event(now, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
+                       nullptr, lFirstRW(master_stree_list), gdi_session);
       }
          break;
 
          /* -----------------------------------------------------------------------
           * UPDATE FIELDS IN SCHEDULING CONFIGURATION
           * ----------------------------------------------------------------------- */
-      case ORT_sched_conf:
+      case ORT_sched_conf: {
+         DPRINTF("ORDER: ORT_sched_conf\n");
+
          if (sconf_is()) {
-            int pos;
-            const lListElem *joker = lFirst(lGetList(ep, OR_joker));;
-
-            DPRINTF("ORDER: ORT_sched_conf\n");
-
-            if (joker != nullptr) {
-               if ((pos = lGetPosViaElem(joker, SC_weight_tickets_override, SGE_NO_ABORT)) > -1) {
+            if (const lListElem *joker = lFirst(lGetList(ep, OR_joker)); joker != nullptr) {
+               if (int pos = lGetPosViaElem(joker, SC_weight_tickets_override, SGE_NO_ABORT); pos > -1) {
                   sconf_set_weight_tickets_override(lGetPosUlong(joker, pos));
+
+                  // no need to spool but other data stores need to be updated
+                  lListElem *sconfig = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+                  sge_add_event(now, sgeE_SCHED_CONF, 0, 0,
+                                "schedd_conf", nullptr, nullptr, sconfig, gdi_session);
                }
             }
-            /* no need to spool sched conf */
-            // @todo CS-912 don't we have to send an event here?
          }
-
          break;
-
+      }
       case ORT_suspend_on_threshold: {
          lListElem *queueep;
          u_long32 jobid;
