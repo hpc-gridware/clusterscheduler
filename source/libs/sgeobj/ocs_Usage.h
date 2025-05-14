@@ -35,33 +35,16 @@
 
 #include "cull/cull.h"
 
-#include "cull/sge_usage_UA_L.h"
-
 // usage interval in seconds (as double to avoid integer division)
 constexpr double sge_usage_interval = 60.0;
 
 namespace ocs {
    class Usage {
    public:
-      static void
-      calculate_default_decay_constant(int halftime);
+      static void calculate_default_decay_constant(int halftime);
 
-      static void
-      calculate_decay_constant(double halftime, double *decay_rate, double *decay_constant);
+      static void calculate_decay_constant(double halftime, double *decay_rate, double *decay_constant);
 
-      static void
-      decay_usage(const lList *usage_list, const lList *decay_list, double interval);
-
-      static lList *
-      create_decay_list();
-
-      static lListElem *
-      get_by_name(const lList *usage_list, const char *name);
-
-      static lListElem *
-      create_with_name(const char *name);
-
-      static lListElem *
-      get_or_create_by_name(lList *usage_list, const char *name);
+      static void decay_usage(const lList *usage_list, const lList *decay_list, double interval);
    };
 }

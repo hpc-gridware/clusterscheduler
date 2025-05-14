@@ -73,8 +73,5 @@ namespace ocs {
 
       static lListElem *
       search_user_project_node(lListElem *node, const char *username, const char *project_name, lListElem **parent, const lListElem *root);
-
-      static lListElem *
-      duplicate_modified_nodes(lListElem *node, int last_seqno);
    };
 }
