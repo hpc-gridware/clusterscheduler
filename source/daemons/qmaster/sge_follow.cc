@@ -1418,6 +1418,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);
          }
+
          // no need to spool but other data stores need to be updated
          sge_add_event(now, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
                        nullptr, lFirstRW(master_stree_list), gdi_session);
@@ -1433,12 +1434,17 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          if (sconf_is()) {
             if (const lListElem *joker = lFirst(lGetList(ep, OR_joker)); joker != nullptr) {
                if (int pos = lGetPosViaElem(joker, SC_weight_tickets_override, SGE_NO_ABORT); pos > -1) {
-                  sconf_set_weight_tickets_override(lGetPosUlong(joker, pos));
+                  u_long32 old_wto = sconf_get_weight_tickets_override();
+                  u_long32 new_wto = lGetPosUlong(joker, pos);
 
-                  // no need to spool but other data stores need to be updated
-                  lListElem *sconfig = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
-                  sge_add_event(now, sgeE_SCHED_CONF, 0, 0,
-                                "schedd_conf", nullptr, nullptr, sconfig, gdi_session);
+                  if (old_wto != new_wto) {
+                     sconf_set_weight_tickets_override(new_wto);
+
+                     // no need to spool but other data stores need to be updated
+                     lListElem *sconfig = lFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF));
+                     sge_add_event(now, sgeE_SCHED_CONF, 0, 0,
+                                   "schedd_conf", nullptr, nullptr, sconfig, gdi_session);
+                  }
                }
             }
          }
