@@ -417,7 +417,7 @@ CheckBinaries()
          fi
       fi
 
-      $INFOTEXT "Please check the release note to see if your platform is supported.\n\n" \
+      $INFOTEXT "Please check the release notes to see if your platform is supported.\n\n" \
       "Contact support if you have question:\n\n" \
       "      support@hpc-gridware.com\n"
 
