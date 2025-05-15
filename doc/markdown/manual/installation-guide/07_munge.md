@@ -125,6 +125,17 @@ For a compile host:
 yum -y install munge-devel
 ```
 
+
+### macOS 13/14
+
+```bash
+port install munge
+cp /shared/munge.key /opt/local/etc/munge
+chmod 400 /opt/local/etc/munge/munge.key
+chown munge:munge /opt/local/etc/munge/munge.key
+port load munge
+```
+
 ### FreeBSD
 
 * installs to /usr/local
