@@ -2,33 +2,33 @@
 #define __MSG_EXECD_H
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -241,11 +241,11 @@
 #define MSG_SGE_DONOTKILLROOTPROCESSXY_PI                _MESSAGE(29219, _("do not kill root process " pid_t_fmt "/%d"   ))
 #define MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED          _MESSAGE(29220, _("pt_dispatch_proc_to_job: malloc failed" ))
 
-#define MSG_REJECT_TASK_MASTER_FORKS_UU                  _MESSAGE(29221, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": on master host and master_forks_slaves=TRUE"))
-#define MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII            _MESSAGE(29222, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": we only allow %d slots due to daemon_forks_slaves=TRUE and %d slots are already in use"))
-#define MSG_REJECT_TASK_OUT_OF_MEMORY_UU                 _MESSAGE(29223, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": out of memory"))
-#define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": %d out of " sge_uu32 " slots in queue " SFN " are in use"))
-#define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": no free slot found"))
+#define MSG_REJECT_TASK_MASTER_FORKS_UU                  _MESSAGE(29221, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": on master host and master_forks_slaves=TRUE"))
+#define MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII            _MESSAGE(29222, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": we only allow %d slots due to daemon_forks_slaves=TRUE and %d slots are already in use"))
+#define MSG_REJECT_TASK_OUT_OF_MEMORY_UU                 _MESSAGE(29223, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": out of memory"))
+#define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": %d out of " sge_u32 " slots in queue " SFN " are in use"))
+#define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": no free slot found"))
 
 // clang-format on
 
