@@ -523,7 +523,9 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
 *     job_get_queue_for_task() -- find a queue suited for task execution
 *
 *  SYNOPSIS
-*     static lList *job_get_queue_for_task(lListElem  *jatep,
+*     static lList *job_get_queue_for_task(u_long32   job_id,
+*                                          u_long32   ja_task_id,
+*                                          lListElem  *jatep,
 *                                          lListElem  *jatask,
 *                                          const char *queuename);
 *
@@ -535,6 +537,8 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
 *     If a suited queue is found, it is set to be used by the new task.
 *
 *  INPUTS
+*     job_id
+*     ja_task_id
 *     jatep     - the actual job (substructure job array task)
 *     petep     - the new pe task
 *     qualified_hostname - qualfied hostname
@@ -548,9 +552,8 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
 *     execd/job/job_set_queue_info_in_task()
 ******************************************************************************/
 static lList *
-job_get_queue_for_task(lListElem *jatep, lListElem *petep, 
-                       const char *qualified_hostname, const char *queuename) 
-{
+job_get_queue_for_task(u_long32 job_id, u_long32 ja_task_id, lListElem *jatep, lListElem *petep,
+                       const char *qualified_hostname, const char *queuename) {
    DENTER(TOP_LAYER);
 
    bool on_master_host = lGetUlong(jatep, JAT_status) == JSLAVE ? false : true;
@@ -562,6 +565,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 
    // if we are on the master host and master_forks_slaves is set, not a single qrsh -inherit is allowed
    if (on_master_host && lGetBool(pe, PE_master_forks_slaves)) {
+      WARNING(MSG_REJECT_TASK_MASTER_FORKS_UU, job_id, ja_task_id);
       DRETURN(nullptr);
    }
 
@@ -569,7 +573,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 
    // in case of daemon_forks_slaves we have to check if we may start more tasks
    if (lGetBool(pe, PE_daemon_forks_slaves)) {
-      int max_slots = INT_MAX;
+      int max_slots;
       if (on_master_host) {
          // on the master host we can have the job script itself + one daemon starting slave tasks
          max_slots = 2;
@@ -593,6 +597,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
             total_slots_used += qinstance_slots_used(queue);
             if (total_slots_used >= max_slots) {
                // all possible tasks are already running
+               WARNING(MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII, job_id, ja_task_id, max_slots, total_slots_used);
                DRETURN(nullptr);
             }
          }
@@ -617,12 +622,19 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
          /* Queue must have free slots */
          if (qinstance_slots_used(queue) < (int)lGetUlong(queue, QU_job_slots)) {
             lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname), petep);
+            if (jat_gdil == nullptr) {
+               WARNING(MSG_REJECT_TASK_OUT_OF_MEMORY_UU, job_id, ja_task_id);
+            }
             DRETURN(jat_gdil); 
-         } 
+         } else {
+            WARNING(MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS, job_id, ja_task_id, qinstance_slots_used(queue),
+                    lGetUlong(queue, QU_job_slots), lGetString(queue, QU_qname));
+         }
       }
    }
 
    // if we get here we didn't find a queue instance with free slots
+   WARNING(MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU, job_id, ja_task_id);
    DRETURN(nullptr);
 }
 
@@ -718,11 +730,11 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    requested_queue = lGetString(petrep, PETR_queuename);
 
    DPRINTF("got task (" sge_u32"/%s) from (%s/%s/%d) %s queue selection\n",
-           lGetUlong(jep, JB_job_number), new_task_id,
+           jobid, new_task_id,
            commproc, host, id,
            requested_queue != nullptr ? "with" : "without");
 
-   gdil = job_get_queue_for_task(jatep, petep, qualified_hostname, requested_queue);
+   gdil = job_get_queue_for_task(jobid, jataskid, jatep, petep, qualified_hostname, requested_queue);
          
    if (gdil == nullptr) { /* ran through list without finding matching queue */
       gdil = job_get_queue_with_task_about_to_exit(jep, jatep, petep, qualified_hostname, requested_queue);

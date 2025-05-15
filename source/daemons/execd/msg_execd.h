@@ -241,6 +241,12 @@
 #define MSG_SGE_DONOTKILLROOTPROCESSXY_UI                _MESSAGE(29219, _("do not kill root process " sge_U32CFormat "/%d"   ))
 #define MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED          _MESSAGE(29220, _("pt_dispatch_proc_to_job: malloc failed" ))
 
+#define MSG_REJECT_TASK_MASTER_FORKS_UU                  _MESSAGE(29221, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": on master host and master_forks_slaves=TRUE"))
+#define MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII            _MESSAGE(29222, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": we only allow %d slots due to daemon_forks_slaves=TRUE and %d slots are already in use"))
+#define MSG_REJECT_TASK_OUT_OF_MEMORY_UU                 _MESSAGE(29223, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": out of memory"))
+#define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": %d out of " sge_uu32 " slots in queue " SFN " are in use"))
+#define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_uu32 "." sge_uu32 ": no free slot found"))
+
 // clang-format on
 
 #endif /* __MSG_EXECD_H */
