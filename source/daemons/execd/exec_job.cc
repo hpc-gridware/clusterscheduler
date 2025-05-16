@@ -964,7 +964,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          str_buffer = sge_dstring_sprintf(&dstr_buffer, "%s/%s/%s", execd_spool_dir, active_dir_buffer, PE_HOSTFILE);
          var_list_set_string(&environmentList, "PE_HOSTFILE", str_buffer);
       }
-      /* for tightly integrated jobs, also set the rsh_command SGE_RSH_COMMAND */
+      // for tightly integrated parallel jobs, also set the rsh_command SGE_RSH_COMMAND
+      // it will be read by qrsh -inherit in the job script
       pe = lGetObject(jatep, JAT_pe_object);
       if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
          const char *mconf_string = mconf_get_rsh_command();
@@ -974,6 +975,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             char default_buffer[SGE_PATH_MAX];
             dstring default_dstring;
 
+            // @todo CS-1262 there is no utilbin/arch/rsh any more
             sge_dstring_init(&default_dstring, default_buffer, SGE_PATH_MAX);
             sge_dstring_sprintf(&default_dstring, "%s/utilbin/%s/rsh", sge_root, arch);
             var_list_set_string(&environmentList, "SGE_RSH_COMMAND", sge_dstring_get_string(&default_dstring));

@@ -961,6 +961,8 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
       client_name = getenv("SGE_RSH_COMMAND");
       if (client_name != nullptr && strlen(client_name) > 0) {
          DPRINTF("rsh client name: %s\n", client_name);
+         VERBOSE_LOG((stderr, MSG_QSH_RSH_CLIENT_FROM_ENVIRONMENT_S, client_name));
+         VERBOSE_LOG((stderr, "\n"))
          if (strcasecmp(client_name, "builtin") == 0) {
             g_new_interactive_job_support = true;
          }
@@ -1012,6 +1014,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
          char default_buffer[SGE_PATH_MAX];
          dstring default_dstring;
 
+         // @todo 1262 there is no utilbin/arch/rsh any more
          sge_dstring_init(&default_dstring, default_buffer, SGE_PATH_MAX);
          sge_dstring_sprintf(&default_dstring, "%s/utilbin/%s/%s", 
                              sge_root, sge_get_arch(), 
@@ -1021,8 +1024,12 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
          /* try to find telnet in PATH */
          client_name = strdup(session_type);
       }
+      VERBOSE_LOG((stderr, MSG_QSH_RSH_NO_CONFIG_USING_DEFAULT_SS, session_type, client_name));
+      VERBOSE_LOG((stderr, "\n"))
    } else {
       client_name = strdup(client_name);
+      VERBOSE_LOG((stderr, MSG_QSH_RSH_CLIENT_FROM_QMASTER_SS, session_type, client_name));
+      VERBOSE_LOG((stderr, "\n"))
    }
 
    if (strcasecmp(client_name, "builtin") == 0) {
