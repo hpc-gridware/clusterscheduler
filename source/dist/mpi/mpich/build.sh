@@ -46,19 +46,32 @@ wget $SOURCE_TGZ
 tar -xzf mpich-$VERSION.tar.gz
 cd mpich-$VERSION
 
+# create the install directory
+mkdir -p $INSTALL_DIR
+if [ $? -ne 0 ]; then
+   exit 1
+fi
+
 # configure and build
 ./configure $CONFIGURE_OPTIONS --prefix=$INSTALL_DIR 2>&1 | tee configure.log
-if [ $? -ne 0 ]; then
+exit_code=$?
+cp configure.log $INSTALL_DIR
+if [ $exit_code -ne 0 ]; then
     echo "configure failed"
     exit 1
 fi
+
 make -j 4 2>&1 | tee make.log
-if [ $? -ne 0 ]; then
+exit_code=$?
+cp make.log $INSTALL_DIR
+if [ $exit_code -ne 0 ]; then
     echo "make failed"
     exit 1
 fi
 make install 2>&1 | tee make-install.log
-if [ $? -ne 0 ]; then
+exit_code=$?
+cp make-install.log $INSTALL_DIR
+if [ $exit_code -ne 0 ]; then
     echo "make install failed"
     exit 1
 fi
