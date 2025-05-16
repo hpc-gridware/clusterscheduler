@@ -29,5 +29,8 @@ job_is_first_task    TRUE
 urgency_slots        min
 accounting_summary   FALSE
 ign_sreq_on_mhost    FALSE
-master_forks_slaves  TRUE
+# depending on OS or network setup the master tasks forks slave tasks
+# or it starts a daemon forking the slave tasks - allow one slave task
+# to be started via qrsh -inherit on the master task
+master_forks_slaves  FALSE
 daemon_forks_slaves  TRUE
