@@ -232,9 +232,6 @@ pid_t child_pid = 0;
 *     QSH_POLLING_MAX             - final polling interval between two polls
 *     QSH_SOCKET_FINAL_TIMEOUT    - timeout in second (and final) wait for
 *                                   qlogin_starter to connect to our socket
-*     QRSH_CLIENT_CACHE           - name of file to cache client name for use
-*                                   in qrsh - qrexec mode
-*
 ****************************************************************************
 *
 */
