@@ -336,6 +336,7 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
          pack_ret = init_packbuffer(&pb, size);
          if (pack_ret != PACK_SUCCESS) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, "unable to prepare packbuffer for sending request");
+            answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
             ret = false;
          } else {
             pb_initialized = true;
