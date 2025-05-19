@@ -204,6 +204,7 @@ function(architecture_specific_settings)
 
       # Solaris
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
+      add_compile_definitions(__EXTENSIONS__)
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
