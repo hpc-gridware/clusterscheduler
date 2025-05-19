@@ -43,9 +43,13 @@
 #include "uti/sge_time.h"
 
 #include "ocs_Usage.h"
+#include "ocs_UserProject.h"
+#include "sge_ja_task.h"
 #include "sge_job.h"
+#include "sge_pe_task.h"
 #include "sge_schedd_conf.h"
 #include "sge_usage.h"
+#include "sge_userprj.h"
 
 #include "cull/sge_eejob_SGEJ_L.h"
 
@@ -153,3 +157,346 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
       }
    }
 }
+
+
+/*--------------------------------------------------------------------
+ * decay_and_sum_usage - accumulates and decays usage in the correct
+ * user and project objects for the specified job
+ *--------------------------------------------------------------------*/
+
+void
+ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
+                    lList *decay_list, u_long seqno, u_long64 curr_time) {
+   lList *job_usage_list=nullptr,
+         *old_usage_list=nullptr,
+         *user_usage_list=nullptr,
+         *project_usage_list=nullptr,
+         *user_long_term_usage_list=nullptr,
+         *project_long_term_usage_list=nullptr;
+   lListElem *userprj = nullptr,
+             *petask;
+   int obj_debited_job_usage = PR_debited_job_usage;
+
+   if (!node && !user && !project) {
+      return;
+   }
+
+   if (user) {
+      userprj = user;
+      obj_debited_job_usage = UU_debited_job_usage;
+   } else if (project) {
+      userprj = project;
+      obj_debited_job_usage = PR_debited_job_usage;
+   }
+
+   /*-------------------------------------------------------------
+    * Decay the usage for the associated user and project
+    *-------------------------------------------------------------*/
+
+   if (user) {
+      ocs::UserProject::decay_userprj_usage(user, true, decay_list, seqno, curr_time);
+   }
+
+   if (project) {
+      ocs::UserProject::decay_userprj_usage(project, false, decay_list, seqno, curr_time);
+   }
+
+   /*-------------------------------------------------------------
+    * Note: Since SGE will update job.usage directly, we
+    * maintain the job usage the last time we collected it from
+    * the job.  The difference between the new usage and the old
+    * usage is what needs to be added to the user or project node.
+    * This old usage is maintained in the user or project node
+    * depending on the type of share tree.
+    *-------------------------------------------------------------*/
+
+   if (ja_task != nullptr) {
+      job_usage_list = lCopyList("", lGetList(ja_task, JAT_scaled_usage_list));
+
+      /* sum sub-task usage into job_usage_list */
+      if (job_usage_list) {
+         for_each_rw(petask, lGetList(ja_task, JAT_task_list)) {
+            lListElem *dst, *src;
+            for_each_rw(src, lGetList(petask, PET_scaled_usage)) {
+               if ((dst=lGetElemStrRW(job_usage_list, UA_name, lGetString(src, UA_name)))) {
+                  lSetDouble(dst, UA_value, lGetDouble(dst, UA_value) + lGetDouble(src, UA_value));
+               } else {
+                  lAppendElem(job_usage_list, lCopyElem(src));
+               }
+            }
+         }
+      }
+   }
+
+   if (userprj) {
+      const lListElem *upu;
+      const lList *upu_list = lGetList(userprj, obj_debited_job_usage);
+      if (upu_list) {
+         if ((upu = lGetElemUlong(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
+            if ((old_usage_list = lGetListRW(upu, UPU_old_usage_list))) {
+               old_usage_list = lCopyList("", old_usage_list);
+            }
+         }
+      }
+   }
+
+   if (!old_usage_list) {
+      old_usage_list = build_usage_list("old_usage_list", nullptr);
+   }
+
+   if (user) {
+
+      /* if there is a user & project, usage is kept in the project sub-list */
+
+      if (project) {
+         lList *upp_list = lGetListRW(user, UU_project);
+         lListElem *upp;
+         const char *project_name = lGetString(project, PR_name);
+
+         if (!upp_list) {
+            upp_list = lCreateList("", UPP_Type);
+            lSetList(user, UU_project, upp_list);
+         }
+         if (!((upp = lGetElemStrRW(upp_list, UPP_name, project_name))))
+            upp = lAddElemStr(&upp_list, UPP_name, project_name, UPP_Type);
+         user_long_term_usage_list = lGetListRW(upp, UPP_long_term_usage);
+         if (!user_long_term_usage_list) {
+            user_long_term_usage_list = build_usage_list("upp_long_term_usage_list", nullptr);
+            lSetList(upp, UPP_long_term_usage, user_long_term_usage_list);
+         }
+         user_usage_list = lGetListRW(upp, UPP_usage);
+         if (!user_usage_list) {
+            user_usage_list = build_usage_list("upp_usage_list", nullptr);
+            lSetList(upp, UPP_usage, user_usage_list);
+         }
+
+      } else {
+         user_long_term_usage_list = lGetListRW(user, UU_long_term_usage);
+         if (!user_long_term_usage_list) {
+            user_long_term_usage_list = build_usage_list("user_long_term_usage_list", nullptr);
+            lSetList(user, UU_long_term_usage, user_long_term_usage_list);
+         }
+         user_usage_list = lGetListRW(user, UU_usage);
+         if (!user_usage_list) {
+            user_usage_list = build_usage_list("user_usage_list", nullptr);
+            lSetList(user, UU_usage, user_usage_list);
+         }
+      }
+   }
+
+   if (project) {
+      project_long_term_usage_list = lGetListRW(project, PR_long_term_usage);
+      if (!project_long_term_usage_list) {
+         project_long_term_usage_list = build_usage_list("project_long_term_usage_list", nullptr);
+         lSetList(project, PR_long_term_usage, project_long_term_usage_list);
+      }
+      project_usage_list = lGetListRW(project, PR_usage);
+      if (!project_usage_list) {
+         project_usage_list = build_usage_list("project_usage_list", nullptr);
+         lSetList(project, PR_usage, project_usage_list);
+      }
+   }
+
+   if (job_usage_list) {
+      lListElem *job_usage;
+
+      /*-------------------------------------------------------------
+       * Add to node usage for each usage type
+       *-------------------------------------------------------------*/
+
+      for_each_rw(job_usage, job_usage_list) {
+
+         lListElem *old_usage=nullptr,
+                   *user_usage=nullptr, *project_usage=nullptr,
+                   *user_long_term_usage=nullptr,
+                   *project_long_term_usage=nullptr;
+         const char *usage_name = lGetString(job_usage, UA_name);
+
+         /*---------------------------------------------------------
+          * Locate the corresponding usage element for the job
+          * usage type in the node usage, old job usage, user usage,
+          * and project usage.  If it does not exist, create a new
+          * corresponding usage element.
+          *---------------------------------------------------------*/
+
+         if (old_usage_list) {
+            old_usage = get_usage(old_usage_list, usage_name);
+            if (!old_usage) {
+               old_usage = create_usage_elem(usage_name);
+               lAppendElem(old_usage_list, old_usage);
+            }
+         }
+
+         if (user_usage_list) {
+            user_usage = get_usage(user_usage_list, usage_name);
+            if (!user_usage) {
+               user_usage = create_usage_elem(usage_name);
+               lAppendElem(user_usage_list, user_usage);
+            }
+         }
+
+         if (user_long_term_usage_list) {
+            user_long_term_usage = get_usage(user_long_term_usage_list,
+                                                       usage_name);
+            if (!user_long_term_usage) {
+               user_long_term_usage = create_usage_elem(usage_name);
+               lAppendElem(user_long_term_usage_list, user_long_term_usage);
+            }
+         }
+
+         if (project_usage_list) {
+            project_usage = get_usage(project_usage_list, usage_name);
+            if (!project_usage) {
+               project_usage = create_usage_elem(usage_name);
+               lAppendElem(project_usage_list, project_usage);
+            }
+         }
+
+         if (project_long_term_usage_list) {
+            project_long_term_usage =
+                  get_usage(project_long_term_usage_list, usage_name);
+            if (!project_long_term_usage) {
+               project_long_term_usage = create_usage_elem(usage_name);
+               lAppendElem(project_long_term_usage_list,
+			   project_long_term_usage);
+            }
+         }
+
+         if (job_usage && old_usage) {
+
+            double usage_value;
+
+            usage_value = MAX(lGetDouble(job_usage, UA_value) -
+                              lGetDouble(old_usage, UA_value), 0);
+
+            /*---------------------------------------------------
+             * Add usage to decayed user usage
+             *---------------------------------------------------*/
+
+            if (user_usage)
+                lSetDouble(user_usage, UA_value,
+                      lGetDouble(user_usage, UA_value) +
+                      usage_value);
+
+            /*---------------------------------------------------
+             * Add usage to long term user usage
+             *---------------------------------------------------*/
+
+            if (user_long_term_usage)
+                lSetDouble(user_long_term_usage, UA_value,
+                      lGetDouble(user_long_term_usage, UA_value) +
+                      usage_value);
+
+            /*---------------------------------------------------
+             * Add usage to decayed project usage
+             *---------------------------------------------------*/
+
+            if (project_usage)
+                lSetDouble(project_usage, UA_value,
+                      lGetDouble(project_usage, UA_value) +
+                      usage_value);
+
+            /*---------------------------------------------------
+             * Add usage to long term project usage
+             *---------------------------------------------------*/
+
+            if (project_long_term_usage)
+                lSetDouble(project_long_term_usage, UA_value,
+                      lGetDouble(project_long_term_usage, UA_value) +
+                      usage_value);
+
+
+         }
+
+      }
+
+   }
+
+   /*-------------------------------------------------------------
+    * save off current job usage in debitted job usage list
+    *-------------------------------------------------------------*/
+
+   lFreeList(&old_usage_list);
+
+   if (job_usage_list) {
+      if (userprj) {
+         lListElem *upu;
+         u_long jobnum = lGetUlong(job, JB_job_number);
+         lList *upu_list = lGetListRW(userprj, obj_debited_job_usage);
+         if (!upu_list) {
+            upu_list = lCreateList("", UPU_Type);
+            lSetList(userprj, obj_debited_job_usage, upu_list);
+         }
+         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, jobnum))) {
+            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
+         } else {
+            upu = lCreateElem(UPU_Type);
+            lSetUlong(upu, UPU_job_number, jobnum);
+            lSetList(upu, UPU_old_usage_list, lCopyList(lGetListName(job_usage_list), job_usage_list));
+            lAppendElem(upu_list, upu);
+         }
+      }
+      lFreeList(&job_usage_list);
+   }
+
+}
+
+
+/*--------------------------------------------------------------------
+ * build_usage_list - create a new usage list from an existing list
+ *--------------------------------------------------------------------*/
+
+lList *
+ocs::Usage::build_usage_list(const char *name, lList *old_usage_list)
+{
+   lList *usage_list = nullptr;
+   lListElem *usage;
+
+   if (old_usage_list) {
+
+      /*-------------------------------------------------------------
+       * Copy the old list and zero out the usage values
+       *-------------------------------------------------------------*/
+
+      usage_list = lCopyList(name, old_usage_list);
+      for_each_rw(usage, usage_list)
+         lSetDouble(usage, UA_value, 0);
+
+   } else {
+
+      /*
+       * the UA_value fields are implicitly set to 0 at creation
+       * time of a new element with lCreateElem or lAddElemStr
+       */
+
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_CPU, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MEM, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IO, UA_Type);
+   }
+
+   return usage_list;
+}
+
+/*--------------------------------------------------------------------
+ * get_usage - return usage entry based on name
+ *--------------------------------------------------------------------*/
+lListElem *
+ocs::Usage::get_usage(lList *usage_list, const char *name) {
+   return lGetElemStrRW(usage_list, UA_name, name);
+}
+
+
+/*--------------------------------------------------------------------
+ * create_usage_elem - create a new usage element
+ *--------------------------------------------------------------------*/
+lListElem *
+ocs::Usage::create_usage_elem( const char *name ) {
+   lListElem *usage = lCreateElem(UA_Type);
+   lSetString(usage, UA_name, name);
+   lSetDouble(usage, UA_value, 0);
+   return usage;
+}
+
+
+
+
