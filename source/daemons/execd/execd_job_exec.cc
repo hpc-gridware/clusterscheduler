@@ -240,6 +240,9 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    while (jep != nullptr) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
          DPRINTF("Job " sge_u32 "." sge_u32 " is already running - skip the new one\n", jobid, jataskid);
+         // This also happens when a tightly integrated job is delivered to the master host.
+         // We get the SLAVE container first, which is stored in the job list
+         // then the job start order, in which case we get here.
          goto Ignore;   /* don't set queue in error state */
       }
 
