@@ -156,7 +156,8 @@ dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel maven
 ```
 pkg install pkg:/developer/build/automake
 pkg install pkg:/developer/build/autoconf 
-pkg install pkg:/developer/gcc-11
+pkg install pkg:/developer/build/cmake 
+pkg install pkg:/developer/gcc                  ;# installs default gcc, currently version 14.2.0
 pkg install pkg:/developer/versioning/git
 pkg install pkg:/developer/debug/gdb
 pkg install pkg:/terminal/xterm
