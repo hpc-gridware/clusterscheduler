@@ -106,7 +106,6 @@ static void parse_cmdline_execd(char **argv);
 static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline);
 static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, u_long32 *help);
 
-int main(int argc, char *argv[]);
 static u_long64 last_qmaster_registration_time = 0;
 
 

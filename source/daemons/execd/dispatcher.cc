@@ -119,12 +119,16 @@ int sge_execd_process_messages()
          switch (msg.tag) {
             case TAG_JOB_EXECUTION:
                if (init_packbuffer(&apb, 1024, 0) == PACK_SUCCESS) {
+                  // Here we just store the job in the master job list or add a pe task to the job->ja_task->task_list.
+                  // It will be executed later in do_ck_to_do() -> sge_start_jobs().
                   do_job_exec(&msg, &apb);
                   is_apb_used = true;
                   atag = msg.tag;
                }
                break;
             case TAG_SLAVE_ALLOW:
+               // Here we store the job in the master job list.
+               // This allows us to start tasks of tightly integrated jobs later (being submitted via qrsh -inherit).
                do_job_slave(&msg);
                break;
             case TAG_CHANGE_TICKET:

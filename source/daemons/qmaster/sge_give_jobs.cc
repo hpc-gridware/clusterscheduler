@@ -109,7 +109,11 @@ sge_clear_granted_resources(lListElem *jep, lListElem *ja_task, int incslots,
                             monitoring_t *monitor, u_long64 gdi_session);
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name);
+reduce_queue_limits(const lList *master_centry_list, const lListElem *gdil_ep, lListElem *qep,
+                    const lListElem *job, const lListElem *ja_task, bool is_pe_job, bool is_first_gdil_entry);
+static void
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, const lListElem *job,
+                   bool is_pe_job, bool is_first_gdil_entry, bool master_only, int nm, const char *rlimit_name);
 
 static void
 release_successor_jobs(const lListElem *jep, u_long64 gdi_session);
@@ -204,17 +208,26 @@ sge_give_job(lListElem *jep, lListElem *jatep, const lListElem *master_qep, lLis
    DPRINTF("execd host: %s\n", rhost);
 
    switch (send_slave_jobs(jep, jatep, monitor, gdi_session)) {
-      case -1 :
+      case -1:
          ret = -1;
-      case 0 :
          sent_slaves = 1;
          break;
-      case 1 :
+      case 0:
+         sent_slaves = 1;
+         break;
+      case 1:
+         // Either it is a sequential/array job or a loosely integrated parallel job:
+         // We may send the master task immediately.
+         // Or it is a tightly integrated parallel job and all slave hosts have acknowledged the job start.
+         // Then we may send the master task.
          sent_slaves = 0;
          break;
-      default :
-      DPRINTF("send_slave_jobs returned an unknown error code\n");
+      default:
+         DPRINTF("send_slave_jobs returned an unknown error code\n");
+         // @todo sent_slaves is initialized to 0, so we will send the job!
+         //       Can not really happen as send_slave_jobs() only returns -1, 0, or 1.
          ret = -1;
+         break;
    }
 
    if (!sent_slaves) {
@@ -267,7 +280,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
 
    DENTER(TOP_LAYER);
 
-   /* do we have pe slave tasks* */
+   // do we still have pe slave tasks to be delivered?
    for_each_rw(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
       if (lGetUlong(gdil_ep, JG_tag_slave_job)) {
          lSetUlong(jatep, JAT_next_pe_task_id, 1);
@@ -279,7 +292,7 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
       DRETURN(1);
    }
 
-   /* prepare the data to be send.... */
+   /* prepare the data to be sent ... */
 
    /* create a copy of the job */
    if ((tmpjep = copyJob(jep, jatep)) == nullptr) {
@@ -305,6 +318,8 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
    lReduceDescr(&rdp, QU_Type, what);
 
    tmpjatep = lFirstRW(lGetList(tmpjep, JB_ja_tasks));
+   bool is_pe_job = lGetObject(tmpjatep, JAT_pe_object) != nullptr;
+   bool is_first_gdil_entry = true;
    for_each_rw (gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
       const char *src_qname = lGetString(gdil_ep, JG_qname);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
@@ -318,27 +333,14 @@ send_slave_jobs(lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long6
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
+      // copy the referenced queue instance
       qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
-
-      /* build minimum of job request and queue resource limit */
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_cpu, "h_cpu");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_core, "s_core");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_core, "h_core");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_data, "s_data");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_data, "h_data");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_stack, "s_stack");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_stack, "h_stack");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_rss, "s_rss");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_rss, "h_rss");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_fsize, "s_fsize");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_fsize, "h_fsize");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_vmem, "s_vmem");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_vmem, "h_vmem");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_rt, "s_rt");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_rt, "h_rt");
-
       lSetObject(gdil_ep, JG_queue, qep);
+
+      // build minimum of job request and queue resource limit
+      reduce_queue_limits(master_centry_list, gdil_ep, qep, tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);
+
+      is_first_gdil_entry = false;
    }
 
    lFreeWhat(&what);
@@ -403,15 +405,17 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
 
       next_gdil_ep = lNextRW(gdil_ep);
 
-      if (!lGetUlong(gdil_ep, JG_tag_slave_job)) {
+      // when we are re-sending: skip the already acknowledged ones
+      if (lGetUlong(gdil_ep, JG_tag_slave_job) == 0) {
          continue;
       }
 
-      if (!(hep = host_list_locate(master_ehost_list, lGetHost(gdil_ep, JG_qhostname)))) {
+      hostname = lGetHost(gdil_ep, JG_qhostname);
+      hep = host_list_locate(master_ehost_list, hostname);
+      if (hep == nullptr) {
          ret = -1;
          break;
       }
-      hostname = lGetHost(gdil_ep, JG_qhostname);
 
       if (!simulate_execd) {
          /* do ask_commproc() only if we are missing load reports */
@@ -461,7 +465,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
       tgtcclr(jep, hostname);
 
       if (failed != CL_RETVAL_OK) {
-         /* we failed sending the job to the execd */
+         /* we failed to send the job to the execd */
          ERROR(MSG_COM_SENDJOBTOHOST_US, sge_u32c(lGetUlong(jep, JB_job_number)), hostname);
          ERROR("commlib error: %s\n", cl_get_error_text(failed));
          sge_mark_unheard(hep, gdi_session);
@@ -547,6 +551,14 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    what = lIntVector2What(QU_Type, queue_field);
    lReduceDescr(&rdp, QU_Type, what);
 
+   // @todo CS-1273 YES: We need to deliver the whole GDIL to the master execd (e.g. for building the PE_HOSTFILE)
+   //               BUT: Do we need to do the reduce_job_limit for all queues? Wouldn't only the master queue be enough?
+   // @todo CS-1273 What happens on the master host of a tightly integrated job?
+   //               We first get the SLAVE container, then the master task.
+   //               So it already has the job, what does it do with the job sent with the master task?
+   //               ==> The data we send here for the master task is simply thrown away, so no need to build it.
+   bool is_pe_job = lGetObject(tmpjatep, JAT_pe_object) != nullptr;
+   bool is_first_gdil_entry = true;
    for_each_rw(gdil_ep, lGetList(tmpjatep, JAT_granted_destin_identifier_list)) {
       const char *src_qname = lGetString(gdil_ep, JG_qname);
       const lListElem *src_qep = cqueue_list_locate_qinstance(master_cqueue_list, src_qname);
@@ -560,27 +572,14 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
        */
       lSetString(gdil_ep, JG_processors, lGetString(src_qep, QU_processors));
 
+      // copy the referenced queue instance
       qep = lSelectElemDPack(src_qep, nullptr, rdp, what, false, nullptr, nullptr);
-
-      /* build minimum of job request and queue resource limit */
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_cpu, "s_cpu");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_cpu, "h_cpu");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_core, "s_core");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_core, "h_core");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_data, "s_data");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_data, "h_data");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_stack, "s_stack");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_stack, "h_stack");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_rss, "s_rss");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_rss, "h_rss");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_fsize, "s_fsize");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_fsize, "h_fsize");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_vmem, "s_vmem");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_vmem, "h_vmem");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_s_rt, "s_rt");
-      reduce_queue_limit(master_centry_list, qep, tmpjep, QU_h_rt, "h_rt");
-
       lSetObject(gdil_ep, JG_queue, qep);
+
+      // build minimum of job request and queue resource limit
+      reduce_queue_limits(master_centry_list, gdil_ep, qep, tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);
+
+      is_first_gdil_entry = false;
    }
 
    lFreeWhat(&what);
@@ -1677,6 +1676,64 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
    DRETURN_VOID;
 }
 
+static const char *
+get_requested_limit(const lListElem *job, const char *limit_name,
+                    bool is_pe_job, bool is_first_gdil_entry, bool master_only) {
+   const char *ret = nullptr;
+
+   // if we have requested the limit globally, then use this value
+   const lListElem *res = lGetElemStr(job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), CE_name, limit_name);
+   if (res != nullptr) {
+      ret = lGetString(res, CE_stringval);
+   } else {
+      if (is_pe_job) {
+         // it is a tightly integrated pe job, we might have master or slave requests
+         if (is_first_gdil_entry) {
+            // if this is the first gdil entry (master task)
+            // we might have only a master task in this gdil (1 slot, job_is_first_task true) => use only master request
+            // or a master task and slave tasks => use maximum of master and slave request
+            if (master_only) {
+               res = lGetElemStr(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), CE_name, limit_name);
+               if (res != nullptr) {
+                  ret = lGetString(res, CE_stringval);
+               }
+            } else {
+               // we need to compare the possibly existing master and slave request as double in order to compare them
+               double master_request = std::numeric_limits<double>::max();
+               double slave_request = std::numeric_limits<double>::max();
+               const lListElem *master_res = lGetElemStr(job_get_hard_resource_list(job, JRS_SCOPE_MASTER), CE_name, limit_name);
+               if (master_res != nullptr) {
+                  master_request = lGetDouble(master_res, CE_doubleval);
+               }
+               const lListElem *slave_res = lGetElemStr(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), CE_name, limit_name);
+               if (slave_res != nullptr) {
+                  slave_request = lGetDouble(slave_res, CE_doubleval);
+               }
+
+               // pick the maximum
+               if (master_request >= slave_request) {
+                  if (master_res != nullptr) {
+                     ret = lGetString(master_res, CE_stringval);
+                  }
+               } else {
+                  if (slave_res != nullptr) {
+                     ret = lGetString(slave_res, CE_stringval);
+                  }
+               }
+            }
+         } else {
+            // this is a slave host/queue, we might have a slave request
+            res = lGetElemStr(job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), CE_name, limit_name);
+            if (res != nullptr) {
+               ret = lGetString(res, CE_stringval);
+            }
+         }
+      }
+   }
+
+   return ret;
+}
+
 /* what we do is:
       if there is a hard request for this rlimit then we replace
       the queue's value by the job request 
@@ -1685,36 +1742,68 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
 */
 
 static void
-reduce_queue_limit(const lList *master_centry_list, lListElem *qep, lListElem *jep, int nm, const char *rlimit_name) {
+reduce_queue_limit(const lList *master_centry_list, lListElem *qep, const lListElem *job,
+                   bool is_pe_job, bool is_first_gdil_entry, bool master_only, int nm, const char *rlimit_name) {
    DENTER(BASIS_LAYER);
-   const char *s;
-   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   // @todo CS-612 we also need to look at master or slave requests
-   //       might be tricky for the first gdil entry (qep) as it can contain both master and slave tasks
-   const lListElem *res = lGetElemStr(job_get_hard_resource_list(jep), CE_name, rlimit_name);
 
-   if ((res != nullptr) && (s = lGetString(res, CE_stringval))) {
-      // we know: if the job was scheduled, the job request must have been <= the queue limit
-      // therefore we can just set the queue limit to the job request
-      DPRINTF("job reduces queue limit: %s = %s (was %s)\n", rlimit_name, s, lGetString(qep, nm));
-      lSetString(qep, nm, s);
+   const char *request = get_requested_limit(job, rlimit_name, is_pe_job, is_first_gdil_entry, master_only);
+   if (request != nullptr) {
+      // we know: if the job was scheduled, the job request must have been <= the queue limit,
+      // therefore, we can just set the queue limit to the job request
+      DPRINTF("job reduces queue limit: %s = %s (was %s)\n", rlimit_name, request, lGetString(qep, nm));
+      lSetString(qep, nm, request);
    } else { /* enforce default request if set, but only if the consumable is */
       lListElem *dcep; /*really used to manage resources of this queue, host or globally */
-      if ((dcep = centry_list_locate(master_centry_list, rlimit_name))
-          && lGetUlong(dcep, CE_consumable))
+      if ((dcep = centry_list_locate(master_centry_list, rlimit_name)) && lGetUlong(dcep, CE_consumable)) {
+         const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
          if (lGetSubStr(qep, CE_name, rlimit_name, QU_consumable_config_list) ||
              lGetSubStr(host_list_locate(master_ehost_list, lGetHost(qep, QU_qhostname)), CE_name, rlimit_name,
                         EH_consumable_config_list) ||
              lGetSubStr(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME), CE_name, rlimit_name,
-                        EH_consumable_config_list))
-
+                        EH_consumable_config_list)) {
             /* managed at queue level, managed at host level or managed at global level */
             lSetString(qep, nm, lGetString(dcep, CE_defaultval));
+         }
+      }
    }
 
    DRETURN_VOID;
 }
 
+static void
+reduce_queue_limits(const lList *master_centry_list, const lListElem *gdil_ep, lListElem *qep, const lListElem *job, const lListElem *ja_task,
+                    bool is_pe_job, bool is_first_gdil_entry) {
+   bool only_master_task = true;
+   if (is_pe_job && is_first_gdil_entry) {
+      // if it is a tightly integrated pe job and we are looking at the first gdil_ep
+      // we have the master task and optionally slave tasks
+      // we want to know if we have only the master task in this gdil_ep
+      // this is not the case when
+      //    - we have more than one slot in the queue
+      //    - pe setting job_is_first_task is false
+      const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+      if (lGetUlong(gdil_ep, JG_slots) > 1 ||
+         (pe != nullptr && !lGetBool(pe, PE_job_is_first_task))) {
+         only_master_task = false;
+      }
+   }
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_cpu, "s_cpu");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_cpu, "h_cpu");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_core, "s_core");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_core, "h_core");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_data, "s_data");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_data, "h_data");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_stack, "s_stack");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_stack, "h_stack");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_rss, "s_rss");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_rss, "h_rss");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_fsize, "s_fsize");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_fsize, "h_fsize");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_vmem, "s_vmem");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_vmem, "h_vmem");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_s_rt, "s_rt");
+   reduce_queue_limit(master_centry_list, qep, job, is_pe_job, is_first_gdil_entry, only_master_task, QU_h_rt, "h_rt");
+}
 
 /*-------------------------------------------------------------------------*/
 /* unlink/rename the job specific files on disk, send event to scheduler   */
