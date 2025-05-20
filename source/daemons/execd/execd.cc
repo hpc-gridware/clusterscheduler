@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -115,7 +115,7 @@ u_long64 get_last_qmaster_register_time() {
 *     sge_execd_application_status() -- commlib status callback function
 *
 *  SYNOPSIS
-*     unsigned long sge_execd_application_status(char** info_message) 
+*     unsigned long sge_execd_application_status(char** info_message)
 *
 *  FUNCTION
 *      This is the implementation of the commlib application status callback
@@ -138,14 +138,14 @@ u_long64 get_last_qmaster_register_time() {
 *  INPUTS
 *     char** info_message - pointer to an char* inside commlib.
 *                           info message must be malloced, commlib will
-*                           free this memory. 
+*                           free this memory.
 *  RESULT
 *     unsigned long status - status of application
 *
 *  NOTES
 *     This function is MT save
 *******************************************************************************/
-unsigned long sge_execd_application_status(char** info_message) 
+unsigned long sge_execd_application_status(char** info_message)
 {
    return sge_monitor_status(info_message, 0);
 }
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
    prof_set_level_name(SGE_PROF_CUSTOM1, "Execd Thread", nullptr);
    prof_set_level_name(SGE_PROF_CUSTOM2, "Execd Dispatch", nullptr);
 
-#ifdef __SGE_COMPILE_WITH_GETTEXT__  
+#ifdef __SGE_COMPILE_WITH_GETTEXT__
    /* init language output for gettext() , it will use the right language */
    sge_init_language_func((gettext_func_type)        gettext,
                          (setlocale_func_type)      setlocale,
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 
    /* This needs a better solution */
    umask(022);
-      
+
    /* Initialize path for temporary logging until we chdir to spool */
    my_pid = getpid();
    snprintf(tmp_err_file_name, sizeof(tmp_err_file_name), "%s." pid_t_fmt, TMP_ERR_FILE_EXECD, my_pid);
@@ -230,7 +230,7 @@ int main(int argc, char **argv)
    }
 
    parse_cmdline_execd(argv);
-   
+
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
@@ -261,8 +261,8 @@ int main(int argc, char **argv)
    }
 
    /*
-    * now the commlib up and running. Set execd application status function 
-    * ( commlib callback function for qping status information response 
+    * now the commlib up and running. Set execd application status function
+    * ( commlib callback function for qping status information response
     *   messages (SIRM) )
     */
    ret_val = cl_com_set_status_func(sge_execd_application_status);
@@ -282,19 +282,19 @@ int main(int argc, char **argv)
       }
       cl_com_free_sirm_message(&status);
    }
-   
+
    /* finalize daemonize */
    if (!getenv("SGE_ND")) {
       sge_daemonize_finalize();
    }
 
-   /* daemonizes if qmaster is unreachable */   
+   /* daemonizes if qmaster is unreachable */
    sge_setup_sge_execd(tmp_err_file_name);
 
    /* are we using qidle or not */
    sge_ls_qidle(mconf_get_use_qidle());
    sge_ls_gnu_ls(1);
-   
+
    DPRINTF("use_qidle: %d\n", mconf_get_use_qidle());
 
    /* test load sensor (internal or external) */
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
       lList *report_list = sge_build_load_report(component_get_qualified_hostname(), bootstrap_get_binary_path());
       lFreeList(&report_list);
    }
-   
+
    /* here we have to wait for qmaster registration */
    while (sge_execd_register_at_qmaster(false) != 0) {
       if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, true)) {
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
       sleep(30);
    }
 
-   /* 
+   /*
     * Terminate on SIGTERM or hard communication error
     */
    if (execd_exit_state != 0 || shut_me_down != 0) {
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
     */
    if (!sge_is_start_user_superuser()) {
       WARNING(SFNMAX, MSG_SWITCH_USER_NOT_ROOT);
-   }   
+   }
 
 #ifdef COMPILE_DC
    if (ptf_init()) {
@@ -429,12 +429,12 @@ static void execd_exit_func(int i)
 #ifdef COMPILE_DC
    ptf_stop();
 #endif
-   
+
 #if defined(SOLARIS)
    if (sge_smf_used() == 1) {
       /* We don't do disable on svcadm restart */
       if (sge_strnullcmp(sge_smf_get_instance_state(), SCF_STATE_STRING_ONLINE) == 0 &&
-          sge_strnullcmp(sge_smf_get_instance_next_state(), SCF_STATE_STRING_NONE) == 0) {      
+          sge_strnullcmp(sge_smf_get_instance_next_state(), SCF_STATE_STRING_NONE) == 0) {
          sge_smf_temporary_disable_instance();
       }
    }
@@ -449,7 +449,7 @@ static void execd_exit_func(int i)
 *     sge_execd_register_at_qmaster() -- modify execd list at qmaster site
 *
 *  SYNOPSIS
-*     int sge_execd_register_at_qmaster() 
+*     int sge_execd_register_at_qmaster()
 *
 *  FUNCTION
 *     add local execd name to SGE_EH_LIST in order to register at
@@ -462,7 +462,7 @@ static void execd_exit_func(int i)
 *     int - 0 = success / 1 = error
 *
 *  NOTES
-*     MT-NOTE: sge_execd_register_at_qmaster() is not MT safe 
+*     MT-NOTE: sge_execd_register_at_qmaster() is not MT safe
 *
 *******************************************************************************/
 int sge_execd_register_at_qmaster(bool is_restart) {
@@ -470,9 +470,9 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    static int sge_last_register_error_flag = 0;
    lList *alp = nullptr;
 
-   /* 
+   /*
     * If it is a reconnect (is_restart is true) the act_qmaster file must be
-    * re-read in order to update ctx qmaster cache when master migrates. 
+    * re-read in order to update ctx qmaster cache when master migrates.
     */
    const char *master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(is_restart);
 
@@ -524,7 +524,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
          return_value = 1;
       }
    }
- 
+
    if (return_value == 0) {
       sge_last_register_error_flag = 0;
       INFO(MSG_EXECD_REGISTERED_AT_QMASTER_S, master_host?master_host:"");
@@ -545,10 +545,10 @@ static void parse_cmdline_execd(char **argv)
    u_long32 help = 0;
 
    DENTER(TOP_LAYER);
-            
+
    alp = sge_parse_cmdline_execd(argv+1, &pcmdline);
    if(alp) {
-      /* 
+      /*
       ** high level parsing error! show answer list
       */
       for_each_ep(aep, alp) {
@@ -591,7 +591,7 @@ static void parse_cmdline_execd(char **argv)
 /*-------------------------------------------------------------
  * sge_parse_cmdline_execd
  *
- *-------------------------------------------------------------*/ 
+ *-------------------------------------------------------------*/
 static lList *sge_parse_cmdline_execd(char **argv, lList **ppcmdline)
 {
 char **sp;
@@ -629,8 +629,8 @@ lList *alp = nullptr;
  * sge_parse_execd
  *
  *-------------------------------------------------------------*/
-static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist, 
-                              u_long32 *help) 
+static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
+                              u_long32 *help)
 {
    lList *alp = nullptr;
    int usageshowed = 0;
@@ -648,7 +648,7 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
          break;
       }
    }
-   
+
    if(lGetNumberOfElem(*ppcmdline)) {
       if(!usageshowed) {
          sge_usage(EXECD, stderr);
@@ -668,7 +668,7 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 *  SYNOPSIS
 *     bool
 *     execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id,
-*                           lListElem **job, lListElem **ja_task) 
+*                           lListElem **job, lListElem **ja_task)
 *
 *  FUNCTION
 *     Searches the execd master lists for job and ja_task
@@ -684,7 +684,7 @@ static lList *sge_parse_execd(lList **ppcmdline, lList **ppreflist,
 *     bool - true if both job and ja_task are found, else false
 *
 *  NOTES
-*     MT-NOTE: execd_get_job_ja_task() is MT safe 
+*     MT-NOTE: execd_get_job_ja_task() is MT safe
 *******************************************************************************/
 bool execd_get_job_ja_task(u_long32 job_id, u_long32 ja_task_id, lListElem **job, lListElem **ja_task, bool ignore_missing_job_task)
 {
