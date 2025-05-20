@@ -2271,7 +2271,8 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                d->ru_nsignals = read_json(json_usage, "ru_nsignals", (u_long32) 0);
                d->ru_nvcsw = read_json(json_usage, "ru_nvcsw", (u_long32) 0);
                d->ru_nivcsw = read_json(json_usage, "ru_nivcsw", (u_long32) 0);
-            } else if (sge_strnullcmp(itr->name.GetString(), "usage") == 0) {
+            } else if (sge_strnullcmp(itr->name.GetString(), "eusage") == 0 ||
+                       sge_strnullcmp(itr->name.GetString(), "usage") == 0) { // for backward compatibility
                const rapidjson::Value &json_usage = itr->value;
                d->wallclock = read_json(json_usage, "wallclock", 0.0);
                d->cpu = read_json(json_usage, "cpu", 0.0);
