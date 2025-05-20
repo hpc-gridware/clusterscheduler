@@ -2,6 +2,56 @@
 
 # Release notes - Cluster Scheduler
 
+## v9.0.6
+
+### Improvement
+
+[CS-760](https://hpc-gridware.atlassian.net/browse/CS-760) JSONL output shows nested element \("usage"\) with the same name which can confuse and lead to parsing issues
+
+[CS-1165](https://hpc-gridware.atlassian.net/browse/CS-1165) add a testsuite test for the ssh wrapper \(MPI\) template
+
+[CS-1186](https://hpc-gridware.atlassian.net/browse/CS-1186) default PE settings trigger unnecessary calls to /bin/true
+
+[CS-1195](https://hpc-gridware.atlassian.net/browse/CS-1195) make classic spooling the default
+
+[CS-1196](https://hpc-gridware.atlassian.net/browse/CS-1196) the "starting up" info message should be the first message to print to the messages file at daemon startup
+
+[CS-1256](https://hpc-gridware.atlassian.net/browse/CS-1256) allow one slave task to be started on the master host with the pe templates for mpich and mvapich
+
+[CS-1257](https://hpc-gridware.atlassian.net/browse/CS-1257) in the MPI build scripts save the configure/make/make install log files into the installation directory
+
+[CS-1258](https://hpc-gridware.atlassian.net/browse/CS-1258) log to execd messages file when and why sge\_execd rejects pe task requests \(qrsh -inherit\)
+
+[CS-1261](https://hpc-gridware.atlassian.net/browse/CS-1261) qrsh -verbose shall log which transport client it uses and where the information comes from
+
+[CS-1271](https://hpc-gridware.atlassian.net/browse/CS-1271) One line installer script should check if /etc/hosts is configured correctly to prevent installation issues
+
+### Task
+
+[CS-1059](https://hpc-gridware.atlassian.net/browse/CS-1059) verify sorting of JAT\_granted\_destin\_identifier\_list
+
+[CS-1110](https://hpc-gridware.atlassian.net/browse/CS-1110) verify caching mechanism in qrsh -inherit
+
+### Sub-task
+
+[CS-645](https://hpc-gridware.atlassian.net/browse/CS-645) in schedule file print separator \*after\* writing the schedule records
+
+[CS-1264](https://hpc-gridware.atlassian.net/browse/CS-1264) Clone and update Solaris 11 VM
+
+### Bug
+
+[CS-619](https://hpc-gridware.atlassian.net/browse/CS-619) queue limits which are overwritten on the submission command line have only effect if they are overwritten in the global scope
+
+[CS-1132](https://hpc-gridware.atlassian.net/browse/CS-1132) reserved usage is not calculated for rss
+
+[CS-1193](https://hpc-gridware.atlassian.net/browse/CS-1193) uninstalling a sge\_execd on the master host fails with "denied: can't delete master host "ubuntu-24-amd64-1" from admin host list"
+
+[CS-1227](https://hpc-gridware.atlassian.net/browse/CS-1227) \(Auto\)installer fails to install OCS 9.0.5 packages on Rocky Linux 9
+
+[CS-1231](https://hpc-gridware.atlassian.net/browse/CS-1231) Auto install fails on openSUSE Leap 15.6 during copying rc template
+
+[CS-1267](https://hpc-gridware.atlassian.net/browse/CS-1267) broken build on Solaris 11 after update
+
 ## v9.0.5
 
 ### Improvement
