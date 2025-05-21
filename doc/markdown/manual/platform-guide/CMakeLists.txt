@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,8 +18,17 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# clusterscheduler/doc/markdown/manual
-add_subdirectory(development-guide)
-add_subdirectory(installation-guide)
-add_subdirectory(release-notes)
-add_subdirectory(platform-guide)
+# clusterscheduler/doc/markdown/manual/platform-guide
+
+# build platform guide
+build_markdown_manual("platform-guide" "Platform Guide" "0")
+
+# target for building platform guide
+add_custom_target(platformguide ALL DEPENDS
+      ${CMAKE_CURRENT_BINARY_DIR}/platform-guide.pdf
+)
+
+# installation
+if (INSTALL_SGE_DOC)
+   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/platform-guide.pdf DESTINATION doc/pdf)
+endif ()
