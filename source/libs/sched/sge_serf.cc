@@ -159,18 +159,15 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
 
 /****** sge_resource_utilization/serf_new_interval() ***************************
 *  NAME
-*     serf_new_interval() -- Indicate a new scheduling run
+*     serf_new_interval() -- Indicate the end of a  scheduling run
 *
 *  SYNOPSIS
 *     void serf_new_interval(u_long32 time) 
 *
 *  FUNCTION
-*     When a new scheduling run is started serf_new_interval() shall be 
+*     When a new scheduling run ended serf_new_interval() shall be
 *     called to indicate this. This allows assigning of schedule entry
 *     records to different schedule runs.
-*
-*  INPUTS
-*     u_long64 time - The time when the schedule run was started.
 *
 *  NOTES
 *     MT-NOTE: (1) serf_new_interval() is MT safe if no recording function
@@ -178,11 +175,11 @@ void serf_record_entry(u_long32 job_id, u_long32 ja_taskid,
 *     MT-NOTE: (2) Otherwise MT safety of serf_new_interval() depends on 
 *     MT-NOTE:     MT safety of registered recording function
 *******************************************************************************/
-void serf_new_interval(u_long64 time)
+void serf_new_interval()
 {
    DENTER(TOP_LAYER);
 
-   DPRINTF("================[SCHEDULING-EPOCH]==================\n");
+   DPRINTF("================[SCHEDULING-DONE]==================\n");
 
    if (current_serf.new_schedule && serf_get_active()) {
       (current_serf.new_schedule)();

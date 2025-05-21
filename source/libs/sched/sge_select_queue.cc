@@ -3758,6 +3758,42 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
    return violations;
 }
 
+static void
+parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *eh_name, const lListElem *qep, u_long32 slots, bool is_master_queue) {
+   if (a->gdil == nullptr) {
+      a->gdil = lCreateList("", JG_Type);
+   }
+   lListElem *gdil_ep = lCreateElem(JG_Type);
+   if (a->gdil != nullptr && gdil_ep != nullptr) {
+      lSetString(gdil_ep, JG_qname, qname);
+      lSetUlong(gdil_ep, JG_qversion, lGetUlong(qep, QU_version));
+      lSetHost(gdil_ep, JG_qhostname, eh_name);
+      lSetUlong(gdil_ep, JG_slots, slots);
+
+      if (is_master_queue) {
+         // the gdil element for the master queue must be the first one in the list
+         lInsertElem(a->gdil, nullptr, gdil_ep);
+      } else {
+         // if we already have a gdil element for this host,
+         // make sure all gdil elements for a host are grouped together
+         lListElem *insert_host = nullptr;
+         const void *iterator = nullptr;
+         lListElem *next_host = lGetElemHostFirstRW(a->gdil, JG_qhostname, eh_name, &iterator);
+         // find the last host with the same name
+         while (next_host != nullptr) {
+            insert_host = next_host;
+            next_host = lGetElemHostNextRW(a->gdil, JG_qhostname, eh_name, &iterator);
+         }
+
+         // insert the new host after the last host with the same name
+         if (insert_host != nullptr) {
+            lInsertElem(a->gdil, insert_host, gdil_ep);
+         } else {
+            lAppendElem(a->gdil, gdil_ep);
+         }
+      }
+   }
+}
 
 /****** sge_select_queue/parallel_tag_queues_suitable4job() *********
 *  NAME
@@ -4088,35 +4124,35 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                      }
 
                      if (slots > 0) {
-                        /* add gdil element for this queue */
+                        // need a gdil element for the queue
                         lListElem *gdil_ep;
-                        if (!(gdil_ep=lGetElemStrRW(a->gdil, JG_qname, qname))) {
-                           gdil_ep = lAddElemStr(&(a->gdil), JG_qname, qname, JG_Type);
-                           lSetUlong(gdil_ep, JG_qversion, lGetUlong(qep, QU_version));
-                           lSetHost(gdil_ep, JG_qhostname, eh_name);
-                           lSetUlong(gdil_ep, JG_slots, slots);
-
-                           /* master queue must be at first position */
+                        gdil_ep = lGetElemStrRW(a->gdil, JG_qname, qname);
+                        if (gdil_ep == nullptr) {
+                           // new gdil element
+                           bool adding_master_queue = false;
                            if (!have_master_host && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
-                              lDechainElem(a->gdil, gdil_ep);
-                              lInsertElem(a->gdil, nullptr, gdil_ep);
                               got_master_queue = true;
+                              adding_master_queue = true;
                            }
+                           parallel_add_queue_to_gdil(a, qname, eh_name, qep, slots, adding_master_queue);
                         } else {
+                           // existing gdil element, just add the slots
                            lAddUlong(gdil_ep, JG_slots, slots);
                         }
 
                         // @todo CS-731 copy task specific binding decision into the JG-element
 
-                        if (a->is_soft)
+                        if (a->is_soft) {
                            a->soft_violations += slots * lGetUlong(qep, QU_soft_violation);
+                        }
                      }
                      lSetUlong(qep, QU_tag, slots);
 
                      rqs_hslots += slots;
 
-                     if (rqs_hslots == maxslots)
+                     if (rqs_hslots == maxslots) {
                         break;
+                     }
                   }
 
                   if (rqs_hslots < minslots) {

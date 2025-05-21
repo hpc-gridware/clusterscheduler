@@ -63,6 +63,7 @@ enum {
 #define USAGE_ATTR_IO_ACCT "acct_io"
 #define USAGE_ATTR_IOW_ACCT "acct_iow"
 #define USAGE_ATTR_MAXVMEM_ACCT "acct_maxvmem"
+#define USAGE_ATTR_MAXRSS_ACCT "acct_maxrss"
 
 /* current amount and maximum of used memory */
 #define USAGE_ATTR_VMEM "vmem"

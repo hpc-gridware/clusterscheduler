@@ -826,7 +826,7 @@ useful messages. The default value is false (off) (e.g cl_ping=false)
 ***SCHEDULER_TIMEOUT***
 
 Setting this parameter allows the scheduler GDI event acknowledge timeout to be manually configured to a specific 
-value. Currently the default value is 10 minutes with the default scheduler configuration and limited between 600 
+value. Currently, the default value is 10 minutes with the default scheduler configuration and limited between 600 
 and 1200 seconds. Value is limited only in case of default value. The default value depends on the current scheduler
 configuration. The *SCHEDULER_TIMEOUT* value is specified in seconds.
 

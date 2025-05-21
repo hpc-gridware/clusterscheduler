@@ -423,7 +423,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
             // answer was written by will_exceed_limit()
             local_ret = false;
 
-            // we can stop here. one gdi task is enough to exceed the limit in order to reject a multi request.
+            // we can stop here. one gdi task is enough to exceed the limit to reject a multi request.
             break;
          }
       }
@@ -447,8 +447,8 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       init_packbuffer(&packet->pb, 0);
 
       if (packet != nullptr) {
-         lList *tmp_anser_list = nullptr;
-         packet->pack_header(&tmp_anser_list, &packet->pb);
+         lList *tmp_answer_list = nullptr;
+         packet->pack_header(&tmp_answer_list, &packet->pb);
       }
       for (size_t i = 0; i < packet->tasks.size(); ++i) {
          bool has_next = (i < packet->tasks.size() - 1);

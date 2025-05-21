@@ -417,7 +417,7 @@ CheckBinaries()
          fi
       fi
 
-      $INFOTEXT "Please check the release note to see if your platform is supported.\n\n" \
+      $INFOTEXT "Please check the release notes to see if your platform is supported.\n\n" \
       "Contact support if you have question:\n\n" \
       "      support@hpc-gridware.com\n"
 
@@ -2439,40 +2439,49 @@ InstallRcScript()
    elif [ "$RC_FILE" = "sysv_rc" ]; then
       $INFOTEXT "Installing startup script %s and %s" "$RC_PREFIX/$RC_DIR/$S95NAME" "$RC_PREFIX/$RC_DIR/$K03NAME"
       # On newer Linux distributions with systemd the RC_DIR does not exist.
-      # Need to create it, the mechanism as such still works and
-      # the service is started at boot time.
+      # If RC_PREFIX still exists, e.g. on Rocky-9, we can just create the RC_DIR
+      # and create the links to init.d - the mechanism still works.
       # See also issue CS-1227.
-      if [ ! -d $RC_PREFIX/$RC_DIR ]; then
-         mkdir -p $RC_PREFIX/$RC_DIR
+      # On openSUSE Leap 15.6 the sysv init has been completely removed.
+      # RC_PREFIX does not exist. Even /etc/rc.local does no longer exist.
+      # Nothing we can do there for now, CS 9.1.0 will come with systemd support.
+      # See also issue CS-1231.
+      if [ ! -d $RC_PREFIX ]; then
+         $INFOTEXT "Cannot install SYSV rc scripts, %s does not exist" $RC_PREFIX
+         $INFOTEXT -log "Cannot install SYSV rc scripts, %s does not exist" $RC_PREFIX
+         $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
       else
-         Execute rm -f $RC_PREFIX/$RC_DIR/$S95NAME
-         Execute rm -f $RC_PREFIX/$RC_DIR/$K03NAME
-      fi
-      Execute cp $SGE_STARTUP_FILE $RC_PREFIX/init.d/$STARTUP_FILE_NAME
-      Execute chmod a+x $RC_PREFIX/init.d/$STARTUP_FILE_NAME
-      Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/$RC_DIR/$S95NAME
-      Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/$RC_DIR/$K03NAME
-
-      # runlevel management in Linux is different -
-      # each runlevel contains full set of links
-      # RedHat uses runlevel 5 and SUSE runlevel 3 for xdm
-      # RedHat uses runlevel 3 for full networked mode
-      # Suse uses runlevel 2 for full networked mode
-      # we already installed the script in level 3
-      SGE_ARCH=`$SGE_UTIL/arch`
-      case $SGE_ARCH in
-      lx-*)
-         runlevel=`grep "^id:.:initdefault:"  /etc/inittab | cut -f2 -d:`
-         if [ "$runlevel" = 2 -o  "$runlevel" = 5 ]; then
-            $INFOTEXT "Installing startup script also in %s and %s" "$RC_PREFIX/rc${runlevel}.d/$S95NAME" "$RC_PREFIX/rc${runlevel}.d/$K03NAME"
-            Execute rm -f $RC_PREFIX/rc${runlevel}.d/$S95NAME
-            Execute rm -f $RC_PREFIX/rc${runlevel}.d/$K03NAME
-            Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/rc${runlevel}.d/$S95NAME
-            Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/rc${runlevel}.d/$K03NAME
+         if [ ! -d $RC_PREFIX/$RC_DIR ]; then
+            mkdir -p $RC_PREFIX/$RC_DIR
+         else
+            Execute rm -f $RC_PREFIX/$RC_DIR/$S95NAME
+            Execute rm -f $RC_PREFIX/$RC_DIR/$K03NAME
          fi
-         ;;
-       esac
+         Execute cp $SGE_STARTUP_FILE $RC_PREFIX/init.d/$STARTUP_FILE_NAME
+         Execute chmod a+x $RC_PREFIX/init.d/$STARTUP_FILE_NAME
+         Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/$RC_DIR/$S95NAME
+         Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/$RC_DIR/$K03NAME
 
+         # runlevel management in Linux is different -
+         # each runlevel contains full set of links
+         # RedHat uses runlevel 5 and SUSE runlevel 3 for xdm
+         # RedHat uses runlevel 3 for full networked mode
+         # Suse uses runlevel 2 for full networked mode
+         # we already installed the script in level 3
+         SGE_ARCH=`$SGE_UTIL/arch`
+         case $SGE_ARCH in
+         lx-*)
+            runlevel=`grep "^id:.:initdefault:"  /etc/inittab | cut -f2 -d:`
+            if [ "$runlevel" = 2 -o  "$runlevel" = 5 ]; then
+               $INFOTEXT "Installing startup script also in %s and %s" "$RC_PREFIX/rc${runlevel}.d/$S95NAME" "$RC_PREFIX/rc${runlevel}.d/$K03NAME"
+               Execute rm -f $RC_PREFIX/rc${runlevel}.d/$S95NAME
+               Execute rm -f $RC_PREFIX/rc${runlevel}.d/$K03NAME
+               Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/rc${runlevel}.d/$S95NAME
+               Execute ln -s $RC_PREFIX/init.d/$STARTUP_FILE_NAME $RC_PREFIX/rc${runlevel}.d/$K03NAME
+            fi
+            ;;
+          esac
+      fi
    elif [ "$RC_FILE" = "insserv-linux" ]; then
       echo  cp $SGE_STARTUP_FILE $RC_PREFIX/$STARTUP_FILE_NAME
       echo /sbin/insserv $RC_PREFIX/$STARTUP_FILE_NAME

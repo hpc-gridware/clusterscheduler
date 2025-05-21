@@ -71,7 +71,11 @@ set(LIBRARY_SOURCES
       ocs_Category.cc
       ocs_DataStore.cc
       ocs_HostTopology.cc
+      ocs_Job.cc
       ocs_Session.cc
+      ocs_ShareTree.cc
+      ocs_Usage.cc
+      ocs_UserProject.cc
       ocs_Version.cc
       parse.cc
       sge_ack.cc

@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -88,7 +88,7 @@ int sge_execd_process_messages() {
    last_alive_check = sge_get_gmt64();
    last_heard = last_alive_check;
 
-   /* calculate alive check interval based on load report time POS 1/2 
+   /* calculate alive check interval based on load report time POS 1/2
     * If modified, please also change POS 2/2
     */
    load_report_time = sge_gmt32_to_gmt64(mconf_get_load_report_time());
@@ -141,6 +141,8 @@ int sge_execd_process_messages() {
 
                switch (msg.tag) {
                   case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
+                     // Here we just store the job in the master job list or add a pe task to the job->ja_task->task_list.
+                     // It will be executed later in do_ck_to_do() -> sge_start_jobs().
                      if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
                         do_job_exec(&msg, &apb, from_qmaster);
                         is_apb_used = true;
@@ -148,6 +150,8 @@ int sge_execd_process_messages() {
                      }
                   break;
                   case ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW:
+                     // Here we store the job in the master job list.
+                     // This allows us to start tasks of tightly integrated jobs later (being submitted via qrsh -inherit).
                      do_job_slave(&msg);
                   break;
                   case ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET:
@@ -216,7 +220,7 @@ int sge_execd_process_messages() {
             default:
                do_reconnect = true;
                break;
-         }  
+         }
          cl_commlib_trigger(cl_com_get_handle(component_get_component_name(), 0), 1);
       }
 
@@ -226,7 +230,7 @@ int sge_execd_process_messages() {
 
       if (do_reconnect) {
          /*
-          * we are not connected, reconnect and register at qmaster ... 
+          * we are not connected, reconnect and register at qmaster ...
           */
          if (cl_com_get_handle(prognames[EXECD], 1) == nullptr) {
             terminate = true; /* if we don't have a handle, we must leave
@@ -237,12 +241,12 @@ int sge_execd_process_messages() {
             ret = CL_RETVAL_HANDLE_NOT_FOUND;
          }
 
-         /* 
-          * trigger re-read of act_qmaster_file 
+         /*
+          * trigger re-read of act_qmaster_file
           */
          if (!terminate) {
             static u_long64 last_qmaster_file_read = 0;
-            
+
             /* fix system clock moved back situation */
             if (last_qmaster_file_read > now) {
                last_qmaster_file_read = 0;
@@ -295,7 +299,7 @@ int sge_execd_process_messages() {
             /* fix system clock moved back situation and do test in any case */
             if (last_alive_check > now) {
                last_alive_check = 0;
-            } 
+            }
             if (last_heard > now) {
                last_heard = 0;
             }
@@ -321,7 +325,7 @@ int sge_execd_process_messages() {
                DPRINTF("now - last_heard = " sge_u64 "\n", now - last_heard);
                DPRINTF("alive_check_interval= " sge_u64 "\n", alive_check_interval);
 #endif
-               
+
                /*
                 * last message was send before alive_check_interval seconds
                 */
@@ -331,7 +335,7 @@ int sge_execd_process_messages() {
                   cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
                   cl_com_SIRM_t* ep_status = nullptr;
 
-                  /* 
+                  /*
                    * qmaster file has not changed, check the endpoint status
                    */
                   ret_val = cl_commlib_get_endpoint_status(handle,

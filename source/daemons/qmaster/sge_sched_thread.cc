@@ -46,6 +46,7 @@
 #include "uti/sge_thread_ctrl.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
@@ -74,7 +75,6 @@
 #include "sched/load_correction.h"
 #include "sched/sge_resource_utilization.h"
 #include "sched/suspend_thresholds.h"
-#include "sched/sge_support.h"
 #include "sched/sort_hosts.h"
 #include "sched/debit.h"
 
@@ -207,7 +207,6 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
    // initializations
-   serf_new_interval(sge_get_gmt64());
    orders.pendingOrderList = *order;
    *order = nullptr;
 
@@ -357,6 +356,9 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
 
       PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
    }
+
+   // print separator line in the schedule file *after* the scheduling run
+   serf_new_interval();
 
    DRETURN_VOID;
 }
@@ -642,7 +644,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     */
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
 
-   sgeee_sort_jobs(splitted_job_lists[SPLIT_PENDING]);
+   ocs::Job::sgeee_sort_jobs(splitted_job_lists[SPLIT_PENDING]);
 
    if (prof_is_active(SGE_PROF_CUSTOM3)) {
       prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);

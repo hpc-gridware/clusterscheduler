@@ -38,7 +38,6 @@ set(LIBRARY_SOURCES
       sge_select_queue_rqs.cc
       sge_serf.cc
       sge_sharetree_printing.cc
-      sge_support.cc
       sge_urgency.cc
       sgeee.cc
       sort_hosts.cc

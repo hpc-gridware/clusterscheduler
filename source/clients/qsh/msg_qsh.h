@@ -77,5 +77,9 @@
 #define MSG_QSH_UNMATCHED_C                                 _MESSAGE(17037, _("unmatched quote %c."))
 #define MSG_QSH_ERRORRUNNINGIJSSERVER_S                     _MESSAGE(17038, _("error running IJS server: " SFQ))
 #define MSG_QSH_ERRORWHILEWAITINGFORBUILTINIJSCONNECTION_S  _MESSAGE(17039, _("error while waiting for builtin IJS connection: " SFQ)) \
+
+#define MSG_QSH_RSH_CLIENT_FROM_ENVIRONMENT_S               _MESSAGE(17040, _("Got rsh client name from environment: " SFN))
+#define MSG_QSH_RSH_CLIENT_FROM_QMASTER_SS                  _MESSAGE(17041, _("Got " SFN " client name from global/local config: " SFN))
+#define MSG_QSH_RSH_NO_CONFIG_USING_DEFAULT_SS              _MESSAGE(17042, _("No " SFN " client configured in global/local config, using default: " SFN))
                                                                                                                                      \
 // clang-format on

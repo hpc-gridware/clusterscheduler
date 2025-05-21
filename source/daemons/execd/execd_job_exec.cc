@@ -1,30 +1,30 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
  *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
@@ -110,7 +110,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
          DRETURN(0);
       }
 #endif
-       
+
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &job, JB_Type)) {
          answer_list_output(&answer_list);
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
@@ -163,7 +163,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
 
       lFreeElem(&petrep);
    }
-   
+
    if (ret == 0) {
       jobs_to_start = 1;
    }
@@ -207,13 +207,13 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 
    if (ret)  {
       lFreeElem(&jelem);
-   } 
+   }
 
    DRETURN(0);
 }
 
 static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
-   lListElem *jep; 
+   lListElem *jep;
    dstring err_str = DSTRING_INIT;
    u_long32 jobid, jataskid;
    int general = GFSTATE_QUEUE;
@@ -229,17 +229,20 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
    jobid = lGetUlong(jelem, JB_job_number);
    jataskid = lGetUlong(jatep, JAT_task_number);
 
-   /* 
-    * Sometimes the rescheduled job from qmaster which is 
-    * sent synchronuously arrives earlier than the ack 
-    * reporting that qmaster got job exit message from run before 
-    * 
+   /*
+    * Sometimes the rescheduled job from qmaster which is
+    * sent synchronuously arrives earlier than the ack
+    * reporting that qmaster got job exit message from run before
+    *
     * We can ignore this job because job is resend by qmaster.
     */
    jep = lGetElemUlongFirstRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, jobid, &iterator);
    while (jep != nullptr) {
       if (job_search_task(jep, nullptr, jataskid) != nullptr) {
          DPRINTF("Job " sge_u32 "." sge_u32 " is already running - skip the new one\n", jobid, jataskid);
+         // This also happens when a tightly integrated job is delivered to the master host.
+         // We get the SLAVE container first, which is stored in the job list
+         // then the job start order, in which case we get here.
          goto Ignore;   /* don't set queue in error state */
       }
 
@@ -263,7 +266,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
          goto Error;
       }
 
-      /* 
+      /*
        * Verify the queue list sent with the job start order.
        * If it is incorrect, we reject the job start.
        * We do not send a job report for this job - this would trigger
@@ -291,7 +294,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
       if (pelem != nullptr && lGetBool(pelem, PE_control_slaves) && !lGetBool(pelem, PE_job_is_first_task)) {
          int slots;
-         lListElem *mq = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)), 
+         lListElem *mq = lGetObject(lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)),
                                     JG_queue);
          slots = lGetUlong(mq, QU_job_slots) + 1;
          DPRINTF("Increasing job slots in master queue \"%s\" to %d because job is not first task\n",
@@ -326,8 +329,8 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
                   so shepherd can open (execute) it after changing to the user. */
                fd = SGE_OPEN3(lGetString(jelem, JB_exec_file), O_CREAT | O_WRONLY, 0755);
                if (fd < 0) {
-                  sge_dstring_sprintf(&err_str, MSG_ERRORWRITINGFILE_SS, 
-                                      lGetString(jelem, JB_exec_file), 
+                  sge_dstring_sprintf(&err_str, MSG_ERRORWRITINGFILE_SS,
+                                      lGetString(jelem, JB_exec_file),
                                       strerror(errno));
                   goto Error;
                }
@@ -335,21 +338,21 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
                nwritten = sge_writenbytes(fd, lGetString(jelem, JB_script_ptr), lGetUlong(jelem, JB_script_size));
                if (nwritten != (int)lGetUlong(jelem, JB_script_size)) {
                   DPRINTF("errno: %d\n", errno);
-                  sge_dstring_sprintf(&err_str, MSG_EXECD_NOWRITESCRIPT_SIUS, 
-                                      lGetString(jelem, JB_exec_file), nwritten, 
+                  sge_dstring_sprintf(&err_str, MSG_EXECD_NOWRITESCRIPT_SIUS,
+                                      lGetString(jelem, JB_exec_file), nwritten,
                                       lGetUlong(jelem, JB_script_size),
                                       strerror(errno));
                   close(fd);
                   goto Error;
-               }      
+               }
                close(fd);
             }
             lSetString(jelem, JB_script_ptr, nullptr);
          }
       }
    }
-      
-   /* 
+
+   /*
    ** security hook
    **
    ** Execute command to store the client's DCE or Kerberos credentials.
@@ -361,7 +364,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
       if (store_sec_cred2(sge_root, unqualified_hostname, jelem, mconf_get_do_authentication(), &general, &err_str) != 0) {
          goto Error;
-      }   
+      }
    }
 
 #ifdef KERBEROS
@@ -377,11 +380,11 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
       }
    }
 
-   { 
+   {
       lListElem *report = add_job_report(jobid, jataskid, nullptr, jelem);
 
       flush_job_report(report);
-   }   
+   }
 
    /* check if job has queue limits and increase global flag if necessary */
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
@@ -398,8 +401,8 @@ Error:
 
    sge_dstring_free(&err_str);
 
-Ignore:   
-   DRETURN(-1);  
+Ignore:
+   DRETURN(-1);
 }
 
 /****** execd/job/job_set_queue_info_in_task() ********************************
@@ -410,8 +413,8 @@ Ignore:
 *     static lList *job_set_queue_info_in_task(char *qname, lListElem *pe_task);
 *
 *  FUNCTION
-*     Extend the task structure of task <jatask> by a 
-*     JAT_granted_destin_identifier list, which contains 
+*     Extend the task structure of task <jatask> by a
+*     JAT_granted_destin_identifier list, which contains
 *     the queue <qname> and uses one slot.
 *
 *  INPUTS
@@ -428,7 +431,7 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
 
    DENTER(TOP_LAYER);
 
-   jge = lAddSubStr(petep, JG_qname, qname, 
+   jge = lAddSubStr(petep, JG_qname, qname,
                     PET_granted_destin_identifier_list, JG_Type);
    lSetHost(jge, JG_qhostname, qualified_hostname);
    lSetUlong(jge, JG_slots, 1);
@@ -442,7 +445,7 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
 *     job_get_queue_with_task_about_to_exit -- find Q with already exited task
 *
 *  SYNOPSIS
-*     static lList *job_get_queue_with_task_about_to_exit(lListElem *jatep, 
+*     static lList *job_get_queue_with_task_about_to_exit(lListElem *jatep,
 *                                                         lListElem *jatask,
 *                                                         u_long32 jobid,
 *                                                         u_long32 jataskid);
@@ -451,12 +454,12 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
 *     tries to find a pe task in the job (array task) <jatep> that has
 *     already exited, but which is not yet cleaned up by the execd.
 *
-*     On exit of a qrsh pe task, the shepherd creates a file 
+*     On exit of a qrsh pe task, the shepherd creates a file
 *     "shepherd_about_to_exit" in the active_jobs directory of the pe task.
-*     This function tries to find this file, if it exists, the slot of 
+*     This function tries to find this file, if it exists, the slot of
 *     the exited task can be reused before being freed by the execd.
 *
-*     The check is done for all running tasks of the job, if one is found, 
+*     The check is done for all running tasks of the job, if one is found,
 *     the corresponding queue is set to be used by the new task.
 *
 *  INPUTS
@@ -473,15 +476,15 @@ static lList *job_set_queue_info_in_task(const char *qualified_hostname, const c
 *     execd/job/job_set_queue_info_in_task()
 ******************************************************************************/
 static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
-                                                    lListElem *jatep, 
+                                                    lListElem *jatep,
                                                     lListElem *petep,
                                                     const char *qualified_hostname,
                                                     const char *queuename)
 {
    const lListElem *petask;
-   
+
    DENTER(TOP_LAYER);
-   
+
    for_each_ep(petask, lGetList(jatep, JAT_task_list)) {
       const lListElem *pe_task_queue = lFirst(lGetList(petask, PET_granted_destin_identifier_list));
       if (pe_task_queue != nullptr) {
@@ -494,26 +497,26 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
             u_long32 jobid;
             u_long32 jataskid;
             const char *petaskid = nullptr;
-           
+
             jobid = lGetUlong(jep, JB_job_number);
             jataskid = lGetUlong(jatep, JAT_task_number);
             petaskid = lGetString(petask, PET_id);
-            
+
             sge_get_active_job_file_path(&shepherd_about_to_exit,
                                          jobid, jataskid, petaskid,
                                          "shepherd_about_to_exit");
             DPRINTF("checking for file %s\n", sge_dstring_get_string(&shepherd_about_to_exit));
 
             if (SGE_STAT(sge_dstring_get_string(&shepherd_about_to_exit), &stat_buffer) == 0) {
-               lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, 
+               lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname,
                                        lGetString(pe_task_queue, JG_qname), petep);
                DPRINTF("task %s of job %d.%d already exited, using its slot for new task\n", petaskid, jobid, jataskid);
-               sge_dstring_free(&shepherd_about_to_exit);         
-               DRETURN(jat_gdil); 
+               sge_dstring_free(&shepherd_about_to_exit);
+               DRETURN(jat_gdil);
             }
-            sge_dstring_free(&shepherd_about_to_exit);         
+            sge_dstring_free(&shepherd_about_to_exit);
          }
-      }   
+      }
    }
 
    DRETURN(nullptr);
@@ -524,18 +527,22 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
 *     job_get_queue_for_task() -- find a queue suited for task execution
 *
 *  SYNOPSIS
-*     static lList *job_get_queue_for_task(lListElem  *jatep,
+*     static lList *job_get_queue_for_task(u_long32   job_id,
+*                                          u_long32   ja_task_id,
+*                                          lListElem  *jatep,
 *                                          lListElem  *jatask,
 *                                          const char *queuename);
 *
 *  FUNCTION
-*     Search for a queue, that 
+*     Search for a queue, that
 *        - may be used by job in which new task shall be started
 *        - resides on the host of this execd
 *        - has free slots for the job in which new task shall be started
 *     If a suited queue is found, it is set to be used by the new task.
 *
 *  INPUTS
+*     job_id
+*     ja_task_id
 *     jatep     - the actual job (substructure job array task)
 *     petep     - the new pe task
 *     qualified_hostname - qualfied hostname
@@ -549,9 +556,8 @@ static lList *job_get_queue_with_task_about_to_exit(lListElem *jep,
 *     execd/job/job_set_queue_info_in_task()
 ******************************************************************************/
 static lList *
-job_get_queue_for_task(lListElem *jatep, lListElem *petep, 
-                       const char *qualified_hostname, const char *queuename) 
-{
+job_get_queue_for_task(u_long32 job_id, u_long32 ja_task_id, lListElem *jatep, lListElem *petep,
+                       const char *qualified_hostname, const char *queuename) {
    DENTER(TOP_LAYER);
 
    bool on_master_host = lGetUlong(jatep, JAT_status) == JSLAVE ? false : true;
@@ -563,6 +569,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 
    // if we are on the master host and master_forks_slaves is set, not a single qrsh -inherit is allowed
    if (on_master_host && lGetBool(pe, PE_master_forks_slaves)) {
+      WARNING(MSG_REJECT_TASK_MASTER_FORKS_UU, job_id, ja_task_id);
       DRETURN(nullptr);
    }
 
@@ -570,7 +577,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
 
    // in case of daemon_forks_slaves we have to check if we may start more tasks
    if (lGetBool(pe, PE_daemon_forks_slaves)) {
-      int max_slots = INT_MAX;
+      int max_slots;
       if (on_master_host) {
          // on the master host we can have the job script itself + one daemon starting slave tasks
          max_slots = 2;
@@ -594,6 +601,7 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
             total_slots_used += qinstance_slots_used(queue);
             if (total_slots_used >= max_slots) {
                // all possible tasks are already running
+               WARNING(MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII, job_id, ja_task_id, max_slots, total_slots_used);
                DRETURN(nullptr);
             }
          }
@@ -611,19 +619,26 @@ job_get_queue_for_task(lListElem *jatep, lListElem *petep,
       // if a specific queue is requested, skip non matching queues
       if (queuename != nullptr && sge_strnullcmp(queuename, lGetString(gdil_ep, JG_qname)) != 0) {
          continue;
-      } 
+      }
 
       const lListElem *queue = lGetObject(gdil_ep, JG_queue);
       if (queue != nullptr) {
          /* Queue must have free slots */
          if (qinstance_slots_used(queue) < (int)lGetUlong(queue, QU_job_slots)) {
             lList *jat_gdil = job_set_queue_info_in_task(qualified_hostname, lGetString(gdil_ep, JG_qname), petep);
-            DRETURN(jat_gdil); 
-         } 
+            if (jat_gdil == nullptr) {
+               WARNING(MSG_REJECT_TASK_OUT_OF_MEMORY_UU, job_id, ja_task_id);
+            }
+            DRETURN(jat_gdil);
+         } else {
+            WARNING(MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS, job_id, ja_task_id, qinstance_slots_used(queue),
+                    lGetUlong(queue, QU_job_slots), lGetString(queue, QU_qname));
+         }
       }
    }
 
    // if we get here we didn't find a queue instance with free slots
+   WARNING(MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU, job_id, ja_task_id);
    DRETURN(nullptr);
 }
 
@@ -665,7 +680,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
  * - in CSP mode, we can check against the user certificate
  * - in general we can compare the pe task request owner against the job owner
  */
-   if (!sge_security_verify_unique_identifier(false, 
+   if (!sge_security_verify_unique_identifier(false,
                                          lGetString(jep, JB_owner), progname, 0,
                                          host, commproc, id)) {
       /* Error message is generated in sge_security_verify_unique_identifier */
@@ -711,19 +726,19 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    lSetString(petep, PET_name, "petask");
    lSetUlong64(petep, PET_submission_time, lGetUlong64(petrep, PETR_submission_time));
    lSetString(petep, PET_cwd, lGetString(petrep, PETR_cwd));
-   lSetList(petep, PET_environment, 
+   lSetList(petep, PET_environment,
             lCopyList("petask environment", lGetList(petrep, PETR_environment)));
-   lSetList(petep, PET_path_aliases, 
+   lSetList(petep, PET_path_aliases,
             lCopyList("petask path_aliases", lGetList(petrep, PETR_path_aliases)));
 
    requested_queue = lGetString(petrep, PETR_queuename);
 
    DPRINTF("got task (" sge_u32 "/%s) from (%s/%s/%d) %s queue selection\n",
-           lGetUlong(jep, JB_job_number), new_task_id,
+           jobid, new_task_id,
            commproc, host, id, requested_queue != nullptr ? "with" : "without");
 
-   gdil = job_get_queue_for_task(jatep, petep, qualified_hostname, requested_queue);
-         
+   gdil = job_get_queue_for_task(jobid, jataskid, jatep, petep, qualified_hostname, requested_queue);
+
    if (gdil == nullptr) { /* ran through list without finding matching queue */
       gdil = job_get_queue_with_task_about_to_exit(jep, jatep, petep, qualified_hostname, requested_queue);
 
@@ -733,12 +748,12 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
          goto Error;
       }
    }
-         
-   /* put task into task_list of slave/master job */ 
+
+   /* put task into task_list of slave/master job */
    if (lGetList(jatep, JAT_task_list) == nullptr) {
       lSetList(jatep, JAT_task_list, lCreateList("task_list", PET_Type));
    }
-   /* put task into task_list of slave/master job */ 
+   /* put task into task_list of slave/master job */
    lAppendElem(lGetListRW(jatep, JAT_task_list), petep);
 
    if (!mconf_get_simulate_jobs()) {
@@ -750,10 +765,10 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
          goto Error;
       }
    }
-   
-   /* 
+
+   /*
     * At this time we are sure that we have the task on disk.
-    * Now add a new "running" element for this job to the job 
+    * Now add a new "running" element for this job to the job
     * report which is used as ACK for this job send request.
     * Add the submission time for the task here.
     */
@@ -761,7 +776,7 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
       lListElem *jr = add_job_report(jobid, jataskid, new_task_id, jep);
 
       add_usage(jr, "submission_time", nullptr, lGetUlong64(petep, PET_submission_time));
-      
+
       /* if we are not interested in online usage per task, suppress sending of this job report */
       if (mconf_get_sharetree_reserved_usage() && lGetBool(pe, PE_accounting_summary)) {
          lSetBool(jr, JR_no_send, true);
@@ -771,13 +786,13 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
    /* for debugging: never start job but report a failure */
    if (getenv("FAILURE_BEFORE_START")) {
       execd_job_start_failure(jep, jatep, petep, "FAILURE_BEFORE_START", 0);
-   }   
+   }
 
    if (sge_make_pe_task_active_dir(jep, jatep, petep, nullptr) == nullptr) {
      goto Error;
    }
 
-   /* put task into task_list of slave/master job */ 
+   /* put task into task_list of slave/master job */
    /* send ack to sender of task */
    if (tid) {
       DPRINTF("sending tid %s\n", new_task_id);
@@ -793,7 +808,7 @@ Error:
     */
    /* send nack to sender of task */
    DPRINTF("sending nack\n");
-   packstr(apb, "none");    
+   packstr(apb, "none");
 
    DRETURN(-1);
 }
@@ -803,8 +818,8 @@ Error:
 *     job_verify_execd_job() -- verify a job entering execd
 *
 *  SYNOPSIS
-*     bool 
-*     job_verify_execd_job(const lListElem *job, lList **answer_list) 
+*     bool
+*     job_verify_execd_job(const lListElem *job, lList **answer_list)
 *
 *  FUNCTION
 *     Verifies a job object entering execd.
@@ -821,7 +836,7 @@ Error:
 *            false on error with error message in answer_list
 *
 *  NOTES
-*     MT-NOTE: job_verify_execd_job() is MT safe 
+*     MT-NOTE: job_verify_execd_job() is MT safe
 *
 *  BUGS
 *     The function is far from being complete.
@@ -839,7 +854,7 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
 
    ret = job_verify(job, answer_list, false);
 
-   /* 
+   /*
     * A job entering execd must have some additional properties:
     *    - correct state
     *    - JB_job_number > 0
@@ -876,7 +891,7 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
       const lList *ja_tasks = lGetList(job, JB_ja_tasks);
 
       if (ja_tasks == nullptr || lGetNumberOfElem(ja_tasks) != 1) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                            MSG_JOB_INVALIDJATASK_REQUEST);
          ret = false;
       }
@@ -887,7 +902,7 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
       }
    }
 
-   /* 
+   /*
     * JB_stdout_path_list, JB_stderr_path_list, JB_stdin_path_list
     * validate, stdin may not be the same as stdout or stderr
     * except, when it is "/dev/null".
@@ -901,32 +916,32 @@ job_verify_execd_job(const lListElem *job, lList **answer_list, const char *qual
 
       sge_get_path(qualified_hostname,
                    lGetList(job, JB_stdin_path_list), "",
-                   lGetString(job, JB_owner), 
+                   lGetString(job, JB_owner),
                    lGetString(job, JB_job_name),
                    job_id,
                    job_is_array(job) ? ja_task_id : 0,
                    SGE_STDIN, stdin_path, SGE_PATH_MAX);
       sge_get_path(qualified_hostname,
-                   lGetList(job, JB_stdout_path_list), "", 
-                   lGetString(job, JB_owner), 
+                   lGetList(job, JB_stdout_path_list), "",
+                   lGetString(job, JB_owner),
                    lGetString(job, JB_job_name),
                    job_id,
                    job_is_array(job) ? ja_task_id : 0,
                    SGE_STDOUT, stdout_path, SGE_PATH_MAX);
       sge_get_path(qualified_hostname,
                    lGetList(job, JB_stderr_path_list), "",
-                   lGetString(job, JB_owner), 
+                   lGetString(job, JB_owner),
                    lGetString(job, JB_job_name),
                    job_id,
                    job_is_array(job) ? ja_task_id : 0,
                    SGE_STDERR, stderr_path, SGE_PATH_MAX);
       if (strcmp(stdin_path, "/dev/null") != 0) {
          if (strcmp(stdin_path, stdout_path) == 0) {
-            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_JOB_SAMEPATHSFORINPUTANDOUTPUT_SSS, stdin_path, "stdout", stdout_path);
             ret = false;
          } else if (strcmp(stdin_path, stderr_path) == 0) {
-            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_JOB_SAMEPATHSFORINPUTANDOUTPUT_SSS, stdin_path, "stderr", stderr_path);
             ret = false;
          }
