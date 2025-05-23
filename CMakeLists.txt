@@ -134,6 +134,7 @@ architecture_specific_settings()
 
 # set rpath in binaries and shared libs
 set(CMAKE_INSTALL_RPATH "\$ORIGIN/../../lib/${SGE_ARCH}")
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH "TRUE")
 
 # 3rdparty packages @todo: better install them into
 # <base_dir>/<pkg>/<version>/<arch>/<os>/<osversion>/<debug|release>
