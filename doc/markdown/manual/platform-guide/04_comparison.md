@@ -9,7 +9,7 @@ The table below outlines the differences between the Gridware Cluster Scheduler 
 | Architecture support: xlx-amd64                                                                                   | v9.0.2 |   -    |
 | Department views to restrict visibility of jobs and resources                                                     | v9.0.2 |   -    |
 | Automatic Session Management to improve performance                                                               | v9.0.2 |   -    |
-| qgpu for enahnaced NVIDIA GPU support                                                                             | v9.0.2 |   -    |
+| qgpu for enhanced NVIDIA GPU support                                                                              | v9.0.2 |   -    |
 | Activation of additional thread pools for improved cluster performance (permission requests, reader threads, ...) | v9.0.1 | v9.0.2 |
 | Architecture support: ulx-amd64                                                                                   | v9.0.0 | v9.0.5 |
 | Scope specific resource requests                                                                                  | v9.0.0 | v9.0.0 |
