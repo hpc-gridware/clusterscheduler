@@ -158,8 +158,8 @@
 #define MSG_ANSWER_NOINPUT                  _MESSAGE(23044, _("no input read from stdin"))
 #define MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S  _MESSAGE(23045, _("option " SFN " can only be used with builtin interactive job support configured"))
 
-#define MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS  _MESSAGE(23045, _("denied: " SFQ " must be manager to initiate operation for target " SFN))
-#define MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS _MESSAGE(23046, _("denied: " SFQ " must be operator to initiate operation for target " SFN))
+#define MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS  _MESSAGE(23046, _("denied: " SFQ " must be manager to initiate operation for target " SFN))
+#define MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS _MESSAGE(23047, _("denied: " SFQ " must be operator to initiate operation for target " SFN))
 
 #define MSG_USER_INVALIDNAMEX_S             _MESSAGE(23048, _("invalid user name " SFQ))
 #define MSG_USER_NOHOMEDIRFORUSERX_S        _MESSAGE(23049, _("missing home directory for user " SFQ))
