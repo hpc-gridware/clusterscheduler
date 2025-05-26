@@ -1,31 +1,31 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
@@ -156,6 +156,7 @@
 #define MSG_ANSWER_ERRORREADINGFROMFILEX_S  _MESSAGE(23042, _("error reading from file " SFN))
 #define MSG_ANSWER_ERRORREADINGFROMSTDIN    _MESSAGE(23043, _("error reading from stdin"))
 #define MSG_ANSWER_NOINPUT                  _MESSAGE(23044, _("no input read from stdin"))
+#define MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S  _MESSAGE(23045, _("option " SFN " can only be used with builtin interactive job support configured"))
 
 #define MSG_SGETEXT_MUSTBEMANAGERFORTAR_SS  _MESSAGE(23045, _("denied: " SFQ " must be manager to initiate operation for target " SFN))
 #define MSG_SGETEXT_MUSTBEOPERATORFORTAR_SS _MESSAGE(23046, _("denied: " SFQ " must be operator to initiate operation for target " SFN))
@@ -585,7 +586,7 @@
 #define MSG_GDI_USAGE_Me_OPT_FNAME                       "[-Me fname]"
 #define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec server from file"))
 
-#define MSG_GDI_USAGE_mp_OPT_PE_NAME                     "[-mp pe-name]"  
+#define MSG_GDI_USAGE_mp_OPT_PE_NAME                     "[-mp pe-name]"
 #define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment"))
 
 #define MSG_GDI_USAGE_Mp_OPT_FNAME                       "[-Mp fname]"
@@ -746,22 +747,22 @@
 #define MSG_GDI_UTEXT_sstree_OPT                         _MESSAGE(23433, _("show the sharetree"))
 
 #define MSG_GDI_USAGE_shgrp_OPT                          "[-shgrp group]"
-#define MSG_GDI_UTEXT_shgrp_OPT                          _MESSAGE(23441, _("show host group"))  
+#define MSG_GDI_UTEXT_shgrp_OPT                          _MESSAGE(23441, _("show host group"))
 
 #define MSG_GDI_USAGE_shgrpl_OPT                         "[-shgrpl]"
-#define MSG_GDI_UTEXT_shgrpl_OPT                         _MESSAGE(23442, _("show host group list"))  
+#define MSG_GDI_UTEXT_shgrpl_OPT                         _MESSAGE(23442, _("show host group list"))
 
 #define MSG_GDI_USAGE_ahgrp_OPT                          "[-ahgrp group]"
-#define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry")) 
+#define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry"))
 
 #define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp file]"
-#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file")) 
+#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file"))
 
 #define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group]"
-#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry")) 
+#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry"))
 
 #define MSG_GDI_USAGE_mhgrp_OPT                          "[-mhgrp group]"
-#define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry")) 
+#define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry"))
 
 #define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file]"
 #define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file"))
@@ -845,7 +846,7 @@
 #define MSG_GDI_UTEXT_dattr_OPT                          _MESSAGE(23478, _("delete from a list attribute of an object"))
 
 #define MSG_GDI_USAGE_aattr_OPT                          "[-aattr obj_nm attr_nm val obj_id_list]"
-#define MSG_GDI_UTEXT_aattr_OPT                          _MESSAGE(23479, _("add to a list attribute of an object")) 
+#define MSG_GDI_UTEXT_aattr_OPT                          _MESSAGE(23479, _("add to a list attribute of an object"))
 
 #define MSG_GDI_USAGE_Mattr_OPT                          "[-Mattr obj_nm fname obj_id_list]"
 #define MSG_GDI_UTEXT_Mattr_OPT                          _MESSAGE(23480, _("modify an attribute (or element in a sublist) of an object"))
@@ -857,7 +858,7 @@
 #define MSG_GDI_UTEXT_Dattr_OPT                          _MESSAGE(23482, _("delete from a list attribute of an object"))
 
 #define MSG_GDI_USAGE_Aattr_OPT                          "[-Aattr obj_nm fname obj_id_list]"
-#define MSG_GDI_UTEXT_Aattr_OPT                          _MESSAGE(23483, _("add to a list attribute of an object")) 
+#define MSG_GDI_UTEXT_Aattr_OPT                          _MESSAGE(23483, _("add to a list attribute of an object"))
 
 #define MSG_GDI_USAGE_sync_OPT_YN                        "[-sync r|x|n]"
 #define MSG_GDI_UTEXT_sync_OPT_YN                        _MESSAGE(23484, _("wait for job to end and return exit code"))
