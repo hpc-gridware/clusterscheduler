@@ -2978,7 +2978,7 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
       to global topo_busy string */
    tmp_topo_busy = sge_strdup(nullptr, logical_used_topology);
    if (tmp_topo_busy == nullptr) {
-      return false;
+      DRETURN(false);
    }
 
    DPRINTF("start_at_socket: %d, start_at_core: %d\n", start_at_socket, start_at_core);
@@ -3028,8 +3028,9 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
          possible = true;
 
          /* update place where we can begin */
-         *first_socket = start_at_socket + i - found_sockets - 1;
-         *first_core   = start_at_core + i - found_sockets - found_cores - 1;
+         *first_socket = start_at_socket + found_sockets;
+         *first_core   = start_at_core + found_cores;
+
          DPRINTF("striding possible at pos %d is socket %d core %d\n", i, *first_socket, *first_core);
 
          /* return the accounted topology */ 
@@ -3059,12 +3060,13 @@ bool get_striding_first_socket_first_core_and_account(const int amount, const in
          } else if (logical_used_topology[i] == 'S' || logical_used_topology[i] == 's') {
             /* jumping over a socket */
             found_sockets++;
+            // reset core counter
+            found_cores = 0;
          }
 
          /* at the moment we are not interested in threads or anything else */
          DPRINTF("striding not possible at %d - skipped %d sockets and %d cores\n", i, found_sockets, found_cores);
       }
-   
    } /* end go through the whole topology string */
    
    sge_free(&tmp_topo_busy);
@@ -3203,8 +3205,7 @@ static bool is_starting_point(const char* topo, const int length, const int pos,
 
    if (accounted_cores == amount) {
       /* we have all cores and we are still within the string */
-      is_possible = true;
-      return is_possible;
+      return true;
    }
 
    /* go to the remaining topology which is in use */ 
@@ -3240,8 +3241,7 @@ static bool is_starting_point(const char* topo, const int length, const int pos,
       /* accounted cores */ 
       if (accounted_cores == amount) {
          /* we have all cores and we are still within the string */
-         is_possible = true;
-         break;
+         return true;
       }
    }
    
