@@ -462,8 +462,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          in order to fulfill the selected strategy. if strategy is not
          applicable or in case of errors "nullptr" is written to this
          line in the "config" file */
-      ocs::BindingFinder::create_binding_strategy_string_linux(&core_binding_strategy_string, jep,
-                                           &rankfileinput);
+      ocs::BindingFinder::create_binding_strategy_string_linux(&core_binding_strategy_string, jep, &rankfileinput);
  
       if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
             && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
