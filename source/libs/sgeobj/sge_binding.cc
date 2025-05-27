@@ -35,6 +35,8 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_binding_hlp.h"
+#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #if defined(BINDING_SOLARIS)
 #  include <sys/processor.h>
@@ -1270,10 +1272,12 @@ static bool account_job_on_topology(char** topology, const int topology_length,
 *  SEE ALSO
 *     ???/???
 *******************************************************************************/
-bool binding_explicit_check_and_account(const int* list_of_sockets, const int samount, 
-   const int* list_of_cores, const int score, char** topo_used_by_job, 
-   int* topo_used_by_job_length)
+bool
+binding_explicit_check_and_account(const int* list_of_sockets, const int samount,
+                                   const int* list_of_cores, const int score,
+                                   char** topo_used_by_job, int* topo_used_by_job_length)
 {
+   DENTER(TOP_LAYER);
    int i;
 
    /* position of <socket>,<core> in topology string */
@@ -1282,8 +1286,7 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
    bool possible = true;
 
    /* input parameter validation */
-   if (samount != score || samount <= 0 || list_of_sockets == nullptr
-         || list_of_cores == nullptr) {
+   if (samount != score || samount <= 0 || list_of_sockets == nullptr || list_of_cores == nullptr) {
       return false;
    }
 
@@ -1295,20 +1298,29 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
          return false;
       }
    }
+
+   DPRINTF("binding_explicit_check_and_account: logical_used_topology=%s; %d\n", logical_used_topology, logical_used_topology_length);
    
    /* create output string */ 
    get_execd_topology(topo_used_by_job, topo_used_by_job_length);
 
+   DPRINTF("binding_explicit_check_and_account: topo_used_by_job=%s; %d\n", *topo_used_by_job, *topo_used_by_job_length);
+
    /* go through the <socket>,<core> pair list */
    for (i = 0; i < samount; i++) {
 
+      DPRINTF("binding_explicit_check_and_account: checking socket %d, core %d\n", list_of_sockets[i], list_of_cores[i]);
+
       /* get position in topology string */
-     if ((pos = get_position_in_topology(list_of_sockets[i], list_of_cores[i], 
-        logical_used_topology, logical_used_topology_length)) < 0) {
-        /* the <socket>,<core> does not exist */
-        possible = false;
-        break;
-     } 
+      if ((pos = get_position_in_topology(list_of_sockets[i], list_of_cores[i],
+         logical_used_topology, logical_used_topology_length)) < 0) {
+         /* the <socket>,<core> does not exist */
+         DPRINTF("binding_explicit_check_and_account: position in logical_used_topology not found for socket %d, core %d\n", list_of_sockets[i], list_of_cores[i]);
+         possible = false;
+         break;
+      }
+
+      DPRINTF("binding_explicit_check_and_account: position in logical_used_topology string is %d\n", pos);
 
       /* check if this core is available (DG TODO introduce threads) */
       if (logical_used_topology[pos] == 'C') {
@@ -1316,7 +1328,9 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
          (*topo_used_by_job)[pos] = 'c';
          /* thread binding: account threads here */
          account_all_threads_after_core(topo_used_by_job, pos);
+         DPRINTF("topo_used_by_job after accounting found core at pos %d: %s\n", pos, *topo_used_by_job);
       } else {
+         DPRINTF("binding_explicit_check_and_account: core at position %d is not available\n", pos);
          /* core not usable -> early abort */
          possible = false;
          break;
@@ -1327,9 +1341,12 @@ bool binding_explicit_check_and_account(const int* list_of_sockets, const int sa
    if (possible) {
       if (!account_job_on_topology(&logical_used_topology, logical_used_topology_length,
          *topo_used_by_job, *topo_used_by_job_length)) {
+         DPRINTF("binding_explicit_check_and_account: accounting on logical_used_topology failed\n");
          possible = false;
       }   
    }
+
+   DPRINTF("binding_explicit_check_and_account: logical_used_topology after accounting: %s\n", logical_used_topology);
 
    /* free memory when unsuccessful */
    if (!possible) {
@@ -3266,16 +3283,16 @@ static int get_position_in_topology(const int socket, const int core,
    }
    
    for (i = 0; i < topology_length && topology[i] != '\0'; i++) {
-      if (topology[i] == 'S') {
+      if (topology[i] == 'S' || topology[i] == 's') {
          /* we've got a new socket */
          s++;
          /* invalidate core counter */
          c = -1;
-      } else if (topology[i] == 'C') {
+      } else if (topology[i] == 'C' || topology[i] == 'c') {
          /* we've got a new core */
          c++;
          /* invalidate thread counter */
-      } else if (topology[i] == 'T') {
+      } else if (topology[i] == 'T' || topology[i] == 't') {
          /* we've got a new thread */
       }
       /* check if we are at the position seeking for */
