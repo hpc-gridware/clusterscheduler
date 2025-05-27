@@ -1,35 +1,35 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
  *
  *   All Rights Reserved.
  *
  *   Portions of this code are Copyright 2011 Univa Inc.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -214,18 +214,18 @@
 #define MSG_UTI_UNABLE_TO_EXTRACT_SUP_S      _MESSAGE(59247, _("unable to extract supplementary groups from auth_info: " SFN))
 
 /* ocs_Systemd.cc */
-#define MSG_SYSTEMD_ALREADY_INITIALIZED            _MESSAGE(59230, _("Systemd library already loaded"))
-#define MSG_SYSTEMD_OPEN_LIB_SS                    _MESSAGE(59231, _("can't open shared library " SFN ": " SFN4))
-#define MSG_SYSTEMD_LOAD_FUNC_SS                   _MESSAGE(59232, _("can't load function " SFN ": " SFN4))
-#define MSG_SYSTEMD_CANNOT_CONNECT_IS              _MESSAGE(59233, _("cannot connect to system bus: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_CALL_SIS                _MESSAGE(59234, _("systemd method %s failed: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_CALL_SSIS               _MESSAGE(59235, _("systemd method %s(%s) failed: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_READ_RESULT_SISS        _MESSAGE(59236, _("cannot read result from systemd method %s: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S          _MESSAGE(59237, _("empty result from systemd method %s"))
-#define MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS _MESSAGE(59238, _("cannot create message for systemd method %s: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS  _MESSAGE(59239, _("cannot append %s to message for systemd method %s: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS     _MESSAGE(59240, _("cannot open container %s for systemd method %s: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS    _MESSAGE(59241, _("cannot open container %s for systemd method %s: error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS    _MESSAGE(59242, _("cannot append property %s to message for systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_ALREADY_INITIALIZED            _MESSAGE(59250, _("Systemd library already loaded"))
+#define MSG_SYSTEMD_OPEN_LIB_SS                    _MESSAGE(59251, _("can't open shared library " SFN ": " SFN4))
+#define MSG_SYSTEMD_LOAD_FUNC_SS                   _MESSAGE(59252, _("can't load function " SFN ": " SFN4))
+#define MSG_SYSTEMD_CANNOT_CONNECT_IS              _MESSAGE(59253, _("cannot connect to system bus: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_CALL_SIS                _MESSAGE(59254, _("systemd method %s failed: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_CALL_SSIS               _MESSAGE(59255, _("systemd method %s(%s) failed: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_READ_RESULT_SISS        _MESSAGE(59256, _("cannot read result from systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S          _MESSAGE(59257, _("empty result from systemd method %s"))
+#define MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS _MESSAGE(59258, _("cannot create message for systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS  _MESSAGE(59259, _("cannot append %s to message for systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS     _MESSAGE(59260, _("cannot open container %s for systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS    _MESSAGE(59261, _("cannot open container %s for systemd method %s: error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS    _MESSAGE(59262, _("cannot append property %s to message for systemd method %s: error %d: " SFN4))
 
 // clang-format on
