@@ -248,7 +248,7 @@
 #define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": no free slot found"))
 
 #define MSG_SYSTEMD_INITIALIZED_SSS                      _MESSAGE(29230, _("systemd integration initialized, connected to dbus: " SFN ", running as " SFN ": " SFN))
-#define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29231, _("systemd: moving shepherd to scope failed: " SFN))
+#define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29231, _("systemd: moving shepherd to scope failed: " SFN4))
 
 // clang-format on
 

@@ -94,6 +94,7 @@ namespace ocs::uti {
    // @note This function should be called before using any other methods of the Systemd class.
    bool
    Systemd::initialize(std::string service_name_in, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       bool ret = true;
 
       // initialize only once
@@ -269,12 +270,19 @@ namespace ocs::uti {
          Systemd systemd;
          std::string service_unit_path;
          bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
-         // get unit path of pid
-         std::string pid_unit_path;
-         bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
-         // compare both unit paths, if they are equal then we are running as service
-         if (have_service_unit && have_pid_unit && service_unit_path.compare(pid_unit_path) == 0) {
-            running_as_service = true;
+         if (have_service_unit) {
+            DPRINTF("have_service_unit: %s", service_unit_path.c_str());
+            // get unit path of pid
+            std::string pid_unit_path;
+            bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
+            // compare both unit paths, if they are equal then we are running as service
+            if (have_pid_unit) {
+               DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
+               if (service_unit_path.compare(pid_unit_path) == 0) {
+                  running_as_service = true;
+                  DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+               }
+            }
          }
       }
 
@@ -340,6 +348,7 @@ namespace ocs::uti {
                                   input.c_str());                       // first argument
       if (r < 0) {
          sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SIS, method.c_str(), r, error.message);
+         ret = false;
       } else {
          const char *result = nullptr;
          r = sd_bus_message_read_func(m, "o", &result);
@@ -374,6 +383,7 @@ namespace ocs::uti {
                                  input);                                // first argument
       if (r < 0) {
          sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SIS, method.c_str(), r, error.message);
+         ret = false;
       } else {
          const char *result = nullptr;
          r = sd_bus_message_read_func(m, "o", &result);
