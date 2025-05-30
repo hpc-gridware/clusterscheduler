@@ -90,10 +90,6 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task);
 static int sge_start_jobs();
 static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep);
 
-#ifdef COMPILE_DC
-static void force_job_rlimit(const char* qualified_hostname);
-#endif
-
 extern volatile int jobs_to_start;
 
 extern lList *jr_list;
@@ -201,6 +197,7 @@ static void force_job_rlimit(const char* qualified_hostname)
          jobid = lGetUlong(jep, JB_job_number);
          jataskid = lGetUlong(jatep, JAT_task_number);
 
+         // @todo CS-194 add rss, h_rss, s_rss limits
          cpu_val = vmem_val = s_cpu = h_cpu = s_vmem = h_vmem = 0;
 
          /* retrieve cpu and vmem usage */
