@@ -765,6 +765,7 @@ int main(int argc, char **argv)
                            ocs::uti::Systemd::shepherd_scope_name.c_str());
          } else {
             shepherd_trace("shepherd is not running under systemd control");
+            g_use_systemd = false;
          }
       } else if (sge_dstring_strlen(&error_dstr) > 0) {
          shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
