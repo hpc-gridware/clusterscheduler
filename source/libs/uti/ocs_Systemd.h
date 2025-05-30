@@ -87,11 +87,13 @@ namespace ocs::uti {
       public:
          // constants
          static const std::string execd_service_name;
+         static const std::string shepherd_scope_name;
 
          // static methods
          static bool initialize(std::string service_name_in, dstring *error_dstr);
          static bool is_systemd_available();
          static bool is_running_as_service();
+         static std::string get_slice_name() { return slice_name; }
 
       private:
          // instance data
@@ -111,6 +113,7 @@ namespace ocs::uti {
          bool connect(dstring *error_dstr);
          bool connected() const;
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
+         bool create_scope_with_pid(const std::string &scope, const std::string &slice, pid_t pid, dstring *error_dstr) const;
    };
 }
 #endif

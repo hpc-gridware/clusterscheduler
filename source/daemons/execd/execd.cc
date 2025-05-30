@@ -349,6 +349,7 @@ int main(int argc, char **argv)
    // figure out if we are running as Systemd service
    DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
    if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::execd_service_name, &error_dstr)) {
+      // @todo we already connect in initialize(), no need to repeat this
       bool connected = false;
       ocs::uti::Systemd systemd;
       connected = systemd.connect(&error_dstr);

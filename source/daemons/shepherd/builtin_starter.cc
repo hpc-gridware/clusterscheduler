@@ -40,6 +40,7 @@
 #include <pwd.h>
 #include <cerrno>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -47,6 +48,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_arch.h"
 #include "uti/config_file.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
 #include "setosjobid.h"
@@ -65,6 +67,7 @@
 #define MAX_NUMBER_OF_ENV_VARS 1023
 
 extern bool g_new_interactive_job_support;
+extern bool g_use_systemd;
 extern int  g_noshell;
 extern int  g_newpgrp;
 
@@ -116,9 +119,9 @@ static int count_command(char *command) {
 }
 
 /************************************************************************
- This is the shepherds buitin starter.
+ This is the shepherds builtin starter.
 
- It is also used to start the external starter command .. 
+ It is also used to start the external starter command.
  ************************************************************************/
 void son(const char *childname, char *script_file, int truncate_stderr_out)
 {
@@ -160,7 +163,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    const char *fs_stdin_file="";
    const char *fs_stdout_file="";
    const char *fs_stderr_file="";
-   pid_t pid, pgrp, newpgrp;
+   pid_t pgrp, newpgrp;
    gid_t add_grp_id = 0;
    gid_t gid;
    struct passwd *pw=nullptr;
@@ -173,10 +176,41 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    foreground = 0; /* VX sends SIGTTOU if trace messages go to foreground */
 
    /* From here only the son --------------------------------------*/
-   if (!script_file) {
+   if (script_file == nullptr) {
       /* output error and exit */
       shepherd_error(1, "received nullptr als script file");
    }   
+
+   pid_t pid = getpid();
+
+#if defined (OCS_WITH_SYSTEMD)
+   if (g_use_systemd) {
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      ocs::uti::Systemd systemd;
+      // connect as root, we want to have write access
+      sge_switch2start_user();
+      bool connected = systemd.connect(&error_dstr);
+      sge_switch2admin_user();
+      if (connected) {
+         u_long64 start_time = sge_get_gmt64();
+         const char *slice = get_conf_val("systemd_slice");
+         const char *scope = get_conf_val("systemd_scope");
+         if (slice != nullptr && scope != nullptr) {
+            shepherd_trace("moving shepherd child to job scope '%s' in slice '%s'", scope, slice);
+            bool success = systemd.create_scope_with_pid(scope, slice, pid, &error_dstr);
+            shepherd_trace("==> systemd move_shepherd_to_scope took " sge_u64 " µs", sge_get_gmt64() - start_time);
+            if (!success) {
+               shepherd_error(0, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
+            }
+         } else {
+            shepherd_error(false, "systemd_slice and/or systemd_scope missing in config file, cannot move shepherd child to job scope");
+         }
+      } else {
+         // connect failed
+         shepherd_trace("connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
+      }
+   }
+#endif
 
    /*
    ** interactive jobs have script_file name interactive and
@@ -219,7 +253,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       }
    }
 
-   pid = getpid();
    pgrp = GETPGRP;
 
 #ifdef SOLARIS

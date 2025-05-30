@@ -109,6 +109,8 @@
 #include "execution_states.h"
 #include "msg_common.h"
 
+#include "uti/ocs_Systemd.h"
+
 #if defined(SOLARIS)
 /* wait3() prototype only available if _XOPEN_SOURCE_EXTENDED is defined */
 pid_t wait3(int *, int, struct rusage *);
@@ -134,6 +136,7 @@ pid_t wait3(int *, int, struct rusage *);
 /* global variables */
 bool g_new_interactive_job_support = false;
 int  g_noshell = 0;
+bool g_use_systemd = true;
 
 char shepherd_job_dir[2048];
 int  received_signal=0;  /* set by signal handler, when a signal arrives */
@@ -695,8 +698,7 @@ int main(int argc, char **argv)
    int ckpt_type;
    int return_code = 0;
    int run_epilog, run_pe_stop;
-   dstring ds;
-   char buffer[256];
+   DSTRING_STATIC(ds, 256);
 
    if (argc >= 2) {
       if ( strcmp(argv[1],"-help") == 0) {
@@ -705,8 +707,6 @@ int main(int argc, char **argv)
       }
    }
    shepherd_trace_init( );
-
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    shepherd_trace("shepherd called with uid = " uid_t_fmt ", euid = " uid_t_fmt,
                   getuid(), geteuid());
@@ -750,6 +750,28 @@ int main(int argc, char **argv)
          shepherd_error(1, "can't read configuration file: malloc() failure");
       }
    }
+
+#if defined (OCS_WITH_SYSTEMD)
+   // @todo have a config option to enable/disable systemd integration
+   if (g_use_systemd) {
+      // try to initialize the Systemd integration,
+      // create an instance of Systemd and try to connect to the system bus,
+      // figure out if we are running as Systemd service
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::shepherd_scope_name, &error_dstr)) {
+         shepherd_trace("initialized systemd library");
+         if (ocs::uti::Systemd::is_running_as_service()) {
+            shepherd_trace("shepherd is running under systemd control in slice %s",
+                           ocs::uti::Systemd::shepherd_scope_name.c_str());
+         } else {
+            shepherd_trace("shepherd is not running under systemd control");
+         }
+      } else if (sge_dstring_strlen(&error_dstr) > 0) {
+         shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
+         g_use_systemd = false;
+      }
+   }
+#endif
 
    {
       char *tmp_rsh_daemon;

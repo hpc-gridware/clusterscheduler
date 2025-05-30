@@ -65,6 +65,7 @@
 
 #include "sgeobj/ocs_BindingFinder.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
@@ -834,10 +835,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                        petep == nullptr ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name));
    var_list_set_string(&environmentList, "HOSTNAME", lGetHost(master_q, QU_qhostname));
    var_list_set_string(&environmentList, "QUEUE", lGetString(master_q, QU_qname));
-   /* JB: TODO (ENV): shouldn't we better have a SGE_JOB_ID? */
+
    var_list_set_uint32t(&environmentList, "JOB_ID", job_id);
 
-   /* JG: TODO (ENV): shouldn't we better use SGE_JATASK_ID and have an additional SGE_PETASK_ID? */
    if (job_is_array(jep)) {
       u_long32 start, end, step;
 
@@ -1408,14 +1408,28 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "shell_start_mode=%s\n",
            job_get_shell_start_mode(jep, master_q, shell_start_mode));
    sge_free(&shell_start_mode);
+
    /* we need the basename for loginshell test */
    shell = strrchr(shell_path, '/');
-   if (!shell)
+   if (shell == nullptr) {
       shell = shell_path;
-   else
+   } else {
       shell++;
-
+   }
    fprintf(fp, "use_login_shell=%d\n", ck_login_sh(shell) ? 1 : 0);
+
+   // systemd specific options: slice and scope
+#ifdef OCS_WITH_SYSTEMD
+   {
+      std::string systemd_slice;
+      std::string systemd_scope;
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);;
+      if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
+         fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
+         fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
+      }
+   }
+#endif
 
    /* the following values are needed by the reaper */
    if (mailrec_unparse(lGetList(jep, JB_mail_list), mail_str, sizeof(mail_str))) {

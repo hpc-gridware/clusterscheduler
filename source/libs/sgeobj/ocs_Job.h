@@ -33,11 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "cull/cull.h"
 
 namespace ocs {
    class Job {
    public:
       static void sgeee_sort_jobs(lList **job_list);
+      static bool job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
+                                                  std::string &slice, std::string &scope, dstring *error_dstr);
    };
 }

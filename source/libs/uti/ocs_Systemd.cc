@@ -55,6 +55,7 @@ namespace ocs::uti {
    std::string Systemd::slice_name;
    std::string Systemd::service_name;
    const std::string Systemd::execd_service_name{"execd.service"};
+   const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
    bool Systemd::running_as_service = false;
 
    // @todo move somewhere else
@@ -268,21 +269,29 @@ namespace ocs::uti {
          std::string full_service_name = slice_name + "-" + service_name;
          // get unit path of service
          Systemd systemd;
-         std::string service_unit_path;
-         bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
-         if (have_service_unit) {
-            DPRINTF("have_service_unit: %s", service_unit_path.c_str());
-            // get unit path of pid
-            std::string pid_unit_path;
-            bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
-            // compare both unit paths, if they are equal then we are running as service
-            if (have_pid_unit) {
-               DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
-               if (service_unit_path.compare(pid_unit_path) == 0) {
-                  running_as_service = true;
-                  DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+         if (systemd.connect(error_dstr)) {
+            std::string service_unit_path;
+            bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
+            if (have_service_unit) {
+               DPRINTF("have_service_unit: %s", service_unit_path.c_str());
+               // get unit path of pid
+               std::string pid_unit_path;
+               bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
+               // compare both unit paths, if they are equal then we are running as service
+               if (have_pid_unit) {
+                  DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
+                  if (service_unit_path.compare(pid_unit_path) == 0) {
+                     running_as_service = true;
+                     DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+                  }
+               } else {
+                  DPRINTF("could not get unit path for pid %d: %s", getpid(), sge_dstring_get_string(error_dstr));
                }
+            } else {
+               DPRINTF("could not get unit path for service %s: %s", full_service_name.c_str(), sge_dstring_get_string(error_dstr));
             }
+         } else {
+            DPRINTF("cannot connect to systemd: %s", sge_dstring_get_string(error_dstr));
          }
       }
 
@@ -347,7 +356,7 @@ namespace ocs::uti {
                                   "s",                                  // input signature
                                   input.c_str());                       // first argument
       if (r < 0) {
-         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SIS, method.c_str(), r, error.message);
+         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), input.c_str(), r, error.message);
          ret = false;
       } else {
          const char *result = nullptr;
@@ -382,7 +391,7 @@ namespace ocs::uti {
                                   "u",                                  // input signature
                                  input);                                // first argument
       if (r < 0) {
-         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SIS, method.c_str(), r, error.message);
+         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input), r, error.message);
          ret = false;
       } else {
          const char *result = nullptr;
@@ -402,6 +411,8 @@ namespace ocs::uti {
       return ret;
    }
 
+   // @todo split into two methods, move_shepherd_to_scope and move_shepherd_child_to_scope
+   // @todo split the sdbus method into two methods, one for StartTransientUnit and one for AttachProcessesToUnit
    bool
    Systemd::move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -439,6 +450,8 @@ namespace ocs::uti {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"GetUnit", full_scope_name.c_str(), r, error.message);
             }
          }
+
+         sd_bus_message_unref_func(m);
       }
 
       if (ret && !create) {
@@ -468,114 +481,129 @@ namespace ocs::uti {
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"AttachProcessesToUnit", full_scope_name.c_str(), r, error.message);
             }
          }
+
+         sd_bus_message_unref_func(m);
       }
 
       if (ret && create) {
-         DPRINTF("Systemd::move_shepherd_to_scope: calling StartTransientUnit\n");
-         sd_bus_message *m = nullptr;
-         sd_bus_error error = SD_BUS_ERROR_NULL;
-         // build the method step by step as we add arrays
-         int r = sd_bus_message_new_method_call_func(bus, &m,
-                 "org.freedesktop.systemd1",          // service to contact
-                 "/org/freedesktop/systemd1",         // object path
-                 "org.freedesktop.systemd1.Manager",  // interface name
-                 "StartTransientUnit");       // method name
-         if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS, "StartTransientUnit", r, strerror(-r));
-            ret = false;
-         }
-
-         if (ret) {
-            r = sd_bus_message_append_func(m, "ss", full_scope_name.c_str(), "replace");
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS, "name and mode", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-
-         if (ret) {
-            r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(sv)");
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "properties", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-
-         if (ret) {
-            r = sd_bus_message_append_func(m, "(sv)", "Delegate", "b", 1);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "Delegate", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            r = sd_bus_message_append_func(m, "(sv)", "Slice", "s", full_slice_name.c_str());
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "Slice", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            r = sd_bus_message_append_func(m, "(sv)", "PIDs", "au", 1, pid);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "PIDs", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            r = sd_bus_message_close_container_func(m);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "properties", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(sa(sv))");
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "aux", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            r = sd_bus_message_close_container_func(m);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "aux", "StartTransientUnit", r, strerror(-r));
-               ret = false;
-            }
-         }
-         if (ret) {
-            sd_bus_message *reply = nullptr;
-            r = sd_bus_call_func(bus, m, 0, &error, &reply);
-            if (r < 0) {
-               // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", full_scope_name.c_str(), r, error.message);
-               ret = false;
-            } else {
-               const char *job = nullptr;
-               r = sd_bus_message_read_func(reply, "o", &job);
-               if (r < 0) {
-                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, "StartTransientUnit", r, strerror(-r));
-                  ret = false;
-               } else {
-                  if (job == nullptr) {
-                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S, "StartTransientUnit");
-                     ret = false;
-                  } else {
-                     // wait for the job to finish
-                     sd_bus_wait_for_job_completion(job, error_dstr);
-                  }
-               }
-            }
-            sd_bus_message_unref_func(reply);
-         }
-
-         sd_bus_message_unref_func(m);
-         // @todo: do we need to call sd_bus_error_free(&error)?
+         DPRINTF("Systemd::move_shepherd_to_scope: calling create_scope_with_pid\n");
+         create_scope_with_pid(full_scope_name, full_slice_name, pid, error_dstr);
       }
+
+      // @todo: do we need to call sd_bus_error_free(&error)?
 
       DRETURN(ret);
    }
 
+   // @todo add properties
+   bool
+   Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice, pid_t pid, dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+
+      bool ret = true;
+
+      DPRINTF("Systemd::move_shepherd_to_scope: calling StartTransientUnit\n");
+      sd_bus_message *m = nullptr;
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      // build the method step by step as we add arrays
+      int r = sd_bus_message_new_method_call_func(bus, &m,
+              "org.freedesktop.systemd1",          // service to contact
+              "/org/freedesktop/systemd1",         // object path
+              "org.freedesktop.systemd1.Manager",  // interface name
+              "StartTransientUnit");       // method name
+      if (r < 0) {
+         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS, "StartTransientUnit", r, strerror(-r));
+         ret = false;
+      }
+
+      if (ret) {
+         r = sd_bus_message_append_func(m, "ss", scope.c_str(), "replace"); // @todo use fail?
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS, "name and mode", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+
+      if (ret) {
+         r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(sv)");
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "properties", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "Delegate", "b", 1);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "Delegate", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "Slice", "s", slice.c_str());
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "Slice", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "PIDs", "au", 1, pid);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "PIDs", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_close_container_func(m);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "properties", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(sa(sv))");
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "aux", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_close_container_func(m);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "aux", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         sd_bus_message *reply = nullptr;
+         r = sd_bus_call_func(bus, m, 0, &error, &reply);
+         if (r < 0) {
+            // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
+            ret = false;
+         } else {
+            const char *job = nullptr;
+            r = sd_bus_message_read_func(reply, "o", &job);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, "StartTransientUnit", r, strerror(-r));
+               ret = false;
+            } else {
+               if (job == nullptr) {
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S, "StartTransientUnit");
+                  ret = false;
+               } else {
+                  // wait for the job to finish
+                  sd_bus_wait_for_job_completion(job, error_dstr);
+               }
+            }
+         }
+         sd_bus_message_unref_func(reply);
+      }
+
+      sd_bus_message_unref_func(m);
+
+      DRETURN(ret);
+   }
 
    bool
    Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
