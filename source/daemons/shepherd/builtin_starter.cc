@@ -933,8 +933,7 @@ static void setup_environment()
    if (!inherit_env()) {
       if (shepherd_env_index < 0) {
          shepherd_env[0] = nullptr;
-      }
-      else {
+      } else {
          int index = 0;
 
          while (shepherd_env[index] != nullptr) {
@@ -1376,7 +1375,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       }
    }
 
-   if(is_qlogin) { /* qlogin, qrsh (without command), qrsh <command> */
+   if (is_qlogin) { /* qlogin, qrsh (without command), qrsh <command> */
       if (!g_new_interactive_job_support) {
          shepherd_trace("start qlogin");
          
@@ -1742,72 +1741,13 @@ static void set_inherit_env (bool inherit)
 *******************************************************************************/
 static void start_qlogin_job(const char *shell_path)
 {
-   static char	shell[8+256]       = { "SHELL=" };
-   static char	home[8+MAXPATHLEN] = { "HOME=" };
-   static char	term[8+64]         = { "TERM=" };
-   static char	logname[8+30]      = { "LOGNAME=" };
-   static char	timez[8+100]       = { "TZ=" };
-   static char	hertz[8+10]        = { "HZ=" };
-   static char	path[8+MAXPATHLEN] = { "PATH=" };
-   struct passwd *pw = nullptr;
-   struct passwd pw_struct;
    char minusname[50];
-   char *my_env[8];
-   char *buffer;
-   int  i, size, ret;
 
-   /* generate e.g. "-bash" from the shell path "/bin/bash" */
+   // generate e.g. "-bash" from the shell path "/bin/bash"
    snprintf(minusname, sizeof(minusname), "-%s", sge_basename(shell_path, '/'));
 
-   /* get passwd information for current user */
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-   errno = 0;
-   ret = getpwuid_r(getuid(), &pw_struct, buffer, size, &pw);
-   if (pw == nullptr || ret != 0) {
-      shepherd_error(1, "can't get password entry for user id %d, error: %s (%d)",
-         (int)getuid(), strerror(errno), errno);
-      /* shepherd_error(1,...) does an exit()! */
-   }
-   
-   i = 0;
-   if (pw->pw_shell != nullptr) {
-      my_env[i++] = strncat(shell, pw->pw_shell, 256);
-   }
-   if (pw->pw_dir != nullptr) {
-      my_env[i++] = strncat(home, pw->pw_dir, MAXPATHLEN);
-   }
-   if (getenv("TERM") != nullptr) {
-      my_env[i++] = strncat(term, getenv("TERM"), 64);
-   }
-   if (pw->pw_name != nullptr) {
-      my_env[i++] = strncat(logname, pw->pw_name, 30);
-   }
-
-   /* we inherit the TZ and HZ variables from execd, which it should have
-    * inherited from init, unless execd is started manually with TZ unset in the
-    * corresponding shell
-    */ 
-   if (getenv("TZ") != nullptr) {
-      my_env[i++] = strncat(timez, getenv("TZ"), 100);
-   }
-
-   if (getenv("HZ") != nullptr) {
-      my_env[i++] = strncat(hertz, getenv("HZ"), 10);
-   }
-
-
-#if defined(LINUX86) || defined(LINUXAMD64) || defined(LINUXARM64) || defined(LINUXIA64) || defined (LINUXSPARC) || defined(LINUXSPARC64) || defined(DARWIN_X64)
-   my_env[i++] = strcat(path, "/bin:/usr/bin");
-#else
-   my_env[i++] = strcat(path, "/usr/bin");
-#endif
-   my_env[i] = nullptr;
-
-   sge_free(&buffer);
-  
    shepherd_trace("execle(%s, %s, nullptr, env)", shell_path, minusname);
-   execle(shell_path, minusname, nullptr, my_env);
+   execle(shell_path, minusname, nullptr, sge_get_environment());
 }
 
 /****** builtin_starter/start_qrsh_job() ***************************************

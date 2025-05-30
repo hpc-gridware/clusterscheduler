@@ -57,7 +57,7 @@ ocs::gdi::Client::sge_gdi(Target::TargetValue target, Command::Cmd cmd, SubComma
                           lList **lpp, lCondition *cp, lEnumeration *enp) {
    DENTER(GDI_LAYER);
    lList *alp = nullptr;
-   ocs::gdi::Request gdi_multi{};
+   Request gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
    int id = gdi_multi.request(&alp, ocs::Mode::SEND, target, cmd, sub_cmd, lpp, cp, enp, true);
@@ -327,7 +327,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
       DPRINTF("requesting global and %s\n", lGetHost(hep, EH_name));
    }
    what = lWhat("%T(ALL)", CONF_Type);
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_CONF_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
+   alp = sge_gdi(Target::SGE_CONF_LIST, Command::SGE_GDI_GET, SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
 
    lFreeWhat(&what);
    lFreeWhere(&where);
@@ -336,7 +336,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, lListElem **gep
    success = ((status = lGetUlong(lFirst(alp), AN_status)) == STATUS_OK);
    if (!success) {
       if (!already_logged) {
-         ERROR(MSG_CONF_GETCONF_S, lGetString(lFirst(alp), AN_text));
+         ERROR(SFN, lGetString(lFirst(alp), AN_text));
          already_logged = 1;
       }
 

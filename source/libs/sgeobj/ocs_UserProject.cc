@@ -88,10 +88,10 @@ ocs::UserProject::decay_userprj_usage(lListElem *userprj, bool is_user, const lL
          const lListElem *upp;
          double interval = sge_gmt64_to_gmt32_double(curr_time - usage_time_stamp);
 
-         ocs::Usage::decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
+         Usage::decay_usage(lGetPosList(userprj, obj_usage_POS), decay_list, interval);
 
          for_each_ep(upp, lGetPosList(userprj, obj_project_POS)) {
-            ocs::Usage::decay_usage(lGetPosList(upp, UPP_usage_POS), decay_list, interval);
+            Usage::decay_usage(lGetPosList(upp, UPP_usage_POS), decay_list, interval);
          }
       }
 

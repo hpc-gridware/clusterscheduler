@@ -70,12 +70,12 @@ cluster configuration parameters to integrate mechanisms like `ssh` or the rsh(1
 with the operating system.
 
 `qrsh` jobs can only run in INTERACTIVE queues unless the option `-now no` is used (see below). They can also only be 
-run, if the xxqs_name_sxx_execd(8) is running under the root account.
+run if the xxqs_name_sxx_execd(8) is running under the root account.
 
 `qrsh` provides an additional useful feature for integrating with interactive tools providing a specific command 
 shell. If the environment variable *QRSH_WRAPPER* is set when `qrsh` is invoked, the command interpreter pointed 
 to by *QRSH_WRAPPER* will be executed to run `qrsh` commands instead of the users login shell or any shell specified
-in the `qrsh` command-line. The options `-cwd`, `-v`, `-V`, and `-display` only apply to batch jobs.
+in the `qrsh` command-line.
 
 `qalter` can be used to change the attributes of pending jobs. For array jobs with a mix of running and pending 
 tasks (see the `-t` option below), modification with `qalter` only affects the pending tasks. `qalter` can change 
@@ -405,7 +405,7 @@ the hostname part of the display name (e.g. myhost:1). Local display names (e.g.
 environments. Values set with the `-display` option overwrite settings from the submission environment and from `-v`
 command line options.
 
-If this option is specified then this value will be passed to defined JSV instances as parameter with the name
+If this option is specified, then this value will be passed to defined JSV instances as parameter with the name
 *display*. This value will also be available in the job environment which might optionally be passed to JSV scripts. 
 The variable name will be *DISPLAY*. (see `-jsv` option below or find more information concerning JSV 
 in xxqs_name_sxx_jsv(1))
@@ -1221,11 +1221,15 @@ list of usernames. For manager, it is possible to use the `qalter -u *` command 
 If you use the `-u switch it is not permitted to specify an additional *wc_job_range_list*.
 
 ## -v variable\[=value\],...  
-Available for `qsub`, `qrsh` (with command argument) and `qalter`.
+Available for `qsub`, `qrsh`, `qlogin`, `qsh`, and `qalter`.
 
 Defines or redefines the environment variables to be exported to the execution context of the job. If the `-v` 
 option is present xxQS_NAMExx will add the environment variables defined as arguments to the switch and, optionally, 
 values of specified variables, to the execution context of the job.
+
+In case of `qlogin` and `qrsh` (without a command) the `-v` option can only be specified when the underlying
+transport mechanism is configured as `builtin`.
+See also xxqs_name_sxx_conf(5), attributes `*_command` and `*_daemon` for more information on the transport mechanism.
 
 `qalter` allows changing this option even while the job executes. The modified parameter will only be in effect 
 after a restart or migration of the job, however.
@@ -1249,9 +1253,13 @@ Instead of submitting a job, prints detailed information about the would-be job 
 including the effects of command-line parameters and the external environment.
 
 ## -V  
-Available for `qsub`, `qsh`, `qrsh` with command and `qalter`.
+Available for `qsub`, `qsh`, `qrsh`, `qlogin`, and `qalter`.
 
 Specifies that all environment variables active within the `qsub` utility be exported to the context of the job.
+
+In case of `qlogin` and `qrsh` (without a command) the `-v` option can only be specified when the underlying
+transport mechanism is configured as `builtin`.
+See also xxqs_name_sxx_conf(5), attributes `*_command` and `*_daemon` for more information on the transport mechanism.
 
 All environment variables specified with `-v`, `-V` or the *DISPLAY* variable provided with `-display` will be 
 exported to the defined JSV instances only optionally when this is requested explicitly during the job submission 

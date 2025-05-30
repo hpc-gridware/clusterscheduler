@@ -1187,18 +1187,23 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
       case ORT_update_project_usage:
       DPRINTF("ORDER: ORT_update_project_usage\n");
          {
-            lListElem *up_order;
-            lListElem *up, *ju, *up_ju, *next;
-            int pos;
-            const char *up_name;
-            lList *tlp;
             const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
 
             DPRINTF("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
 
+            lListElem *up_order;
             for_each_rw (up_order, lGetList(ep, OR_joker)) {
-               if ((pos = lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT)) < 0 ||
-                   !(up_name = lGetString(up_order, PR_name))) {
+               int pos = lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT);
+               if (pos < 0) {
+                  continue;
+               }
+               const char *up_name = lGetString(up_order, PR_name);
+               if (up_name == nullptr) {
+                  continue;
+               }
+               lListElem *up = prj_list_locate(master_project_list, up_name);
+               if (up == nullptr) {
+                  /* order contains reference to unknown user/prj object */
                   continue;
                }
 
@@ -1238,13 +1243,15 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                /* update old usage in up for each job appearing in
                   PR_debited_job_usage of 'up_order' */
-               next = lFirstRW(lGetList(up_order, PR_debited_job_usage));
+               lListElem *ju;
+               lListElem *next = lFirstRW(lGetList(up_order, PR_debited_job_usage));
                while ((ju = next)) {
                   next = lNextRW(ju);
 
                   job_number = lGetUlong(ju, UPU_job_number);
 
                   /* seek for existing debited usage of this job */
+                  lListElem *up_ju;
                   if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, PR_debited_job_usage))) {
 
                      /* if passed old usage list is nullptr, delete existing usage */
@@ -1264,6 +1271,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
 
                      if (lGetList(ju, UPU_old_usage_list) != nullptr) {
                         /* unchain ju element and chain it into our user/prj object */
+                        lList *tlp;
                         if (!(tlp = lGetListRW(up, PR_debited_job_usage))) {
                            tlp = lCreateList(up_name, UPU_Type);
                            lSetList(up, PR_debited_job_usage, tlp);
@@ -1277,14 +1285,11 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                }
 
                /* spool and send event */
-
-               {
-                  lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, up_name,
-                                  nullptr, nullptr, up, nullptr, nullptr,
-                                  true, is_spool, gdi_session);
-                  answer_list_output(&answer_list);
-               }
+               lList *answer_list = nullptr;
+               sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, up_name,
+                               nullptr, nullptr, up, nullptr, nullptr,
+                               true, is_spool, gdi_session);
+               answer_list_output(&answer_list);
             }
          }
          break;

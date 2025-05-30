@@ -68,7 +68,7 @@ ocs::gdi::Request::request(lList **alpp, Mode::ModeValue mode, gdi::Target::Targ
    }
 
    // create a new task and append it to the packet
-   auto task = new gdi::Task(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
+   auto task = new Task(target, cmd, sub_cmd, lp, nullptr, &cp, &enp, do_copy);
    id = packet->append_task(task);
 
    // execute the packet if it is the last task (mode == ocs::Mode::SEND)

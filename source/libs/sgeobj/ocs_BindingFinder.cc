@@ -319,13 +319,11 @@ ocs::BindingFinder::linear_linux(dstring *result, const lListElem *binding_elem,
          int cn;
          /* could get the socket,core pairs to bind to   */
          /* tell it to shepherd like an explicit request */
-         sge_dstring_sprintf(result, "%s:",
-                             "explicit");
+         sge_dstring_sprintf(result, "%s:", "explicit");
          /* add the list of socket,core pairs */
          for (cn = 0; cn < camount; cn++) {
             dstring pair = DSTRING_INIT;
-            sge_dstring_sprintf(&pair, "%d,%d:", list_of_sockets[cn],
-                                list_of_cores[cn]);
+            sge_dstring_sprintf(&pair, "%d,%d:", list_of_sockets[cn], list_of_cores[cn]);
             sge_dstring_append_dstring(result, &pair);
             sge_dstring_free(&pair);
          }
@@ -541,9 +539,7 @@ ocs::BindingFinder::explicit_linux(dstring *result, const lListElem *binding_ele
                                              core_list, core_list_length, &topo_by_job, &topo_by_job_length)) {
 
          /* was able to account core usage from job */
-         sge_dstring_sprintf(result, "%s:%s",
-                             request,
-                             topo_by_job);
+         sge_dstring_sprintf(result, "%s:%s", request, topo_by_job);
          retval = true;
       } else {
 
