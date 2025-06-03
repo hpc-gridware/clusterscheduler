@@ -85,6 +85,7 @@ option(WITH_MTMALLOC "Enable use of the mtmalloc memory allocator on Solaris" ON
 option(WITH_QMAKE "Enable build of qmake" ON)
 option(WITH_JNI "Add JNI code for libraries like libdrmaa" ON)
 option(WITH_GPERF "Enable profiling code with Google Performance Tools" OFF)
+option(WITH_LCOV "Enable code coverage analysis with lcov" OFF)
 option(WITH_PYTHON "Enable Python external bindings" OFF)
 
 # private extensions
@@ -183,6 +184,21 @@ if (WITH_GPERF)
    endif()
 else()
    set(GPERFTOOLS_PROFILER "")
+endif()
+
+if (WITH_LCOV)
+   # enable gcov for code coverage
+   list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+   include(cmake/CodeCoverage.cmake)
+   message("Found and enabled build with gcov")
+   set(COVERAGE_EXCLUDES
+           "/opt/rh/*"
+           "source/utilbin/*"
+   )
+   append_coverage_compiler_flags()
+#   append_coverage_compiler_flags()
+#    Or for specific target:
+#   append_coverage_compiler_flags_to_target(YOUR_TARGET_NAME)
 endif()
 
 if (WITH_HWLOC)
