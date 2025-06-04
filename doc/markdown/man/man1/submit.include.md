@@ -221,7 +221,7 @@ Possible values for *binding_strategy* are as follows:
 
         linear:<amount>[:<socket>,<core>]
         striding:<amount>:<n>[:<socket>,<core>]
-        explicit:[<socket>,<core>;...]<socket>,<core>
+        explicit:[<socket>,<core>:...]<socket>,<core>
 
 For the binding strategy linear and striding there is an optional socket and core pair attached. This denotes the
 mandatory starting point for the first core to bind on.

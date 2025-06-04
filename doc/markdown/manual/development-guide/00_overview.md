@@ -14,7 +14,7 @@ Whenever we release a stable version we create a tag in the git repository. Vers
 
 ## Branches
 
-The `master` branch is the main development branch. It is used for the development of new features and bug fixes. When we start working on features for a new major or minor release we will create a new branch for the maintenance of the current release, e.g. a `V90_BRANCH` for the maintenance of `9.0.x` versions when we start developmment on `9.1.0`.
+The `master` branch is the main development branch. It is used for the development of new features and bug fixes. When we start working on features for a new major or minor release we will create a new branch for the maintenance of the current release, e.g. a `V90_BRANCH` for the maintenance of `9.0.x` versions when we start development on `9.1.0`.
 
 ## Existing Tags and Branches of the ClusterScheduler Project
 

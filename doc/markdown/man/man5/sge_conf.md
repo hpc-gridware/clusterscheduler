@@ -1075,7 +1075,7 @@ Each section of the limit rule that is separated by a colon allows you to filter
 The following request characteristics can be used:
 
 - *source* : The source of the request. Possible values are names of command line tools names such as *qsub*, *qstat*, *qalter*. *qconf*, *qhost*, ... that send GDI requests.
-- *type* : The type of the request can be either *ADD*, *MOD*, *DEL* or *GET* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *mod* requests.
+- *type* : The type of the request can be either *ADD*, *MOD*, *DEL* or *GET* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *MOD* requests.
 - *object* : The object of the request. Possible values are
   - *JOB* : Job
   - *CQUEUE* : Cluster Queue

@@ -1,4 +1,4 @@
-# Supported Operatings Systems, Versions and Architectures
+# Supported Operating Systems, Versions and Architectures
 
 The following table shows the matrix of operating systems, versions and architectures on one axis and 
 xxQS_NAMExx components on the other axis. 

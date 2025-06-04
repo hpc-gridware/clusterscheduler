@@ -92,7 +92,7 @@ extern char **environ;
 /* Copy from clients/qrsh/qrsh_starter.c 
  * Trying to include it caused dependency problems
  * TODO: Move it to a common file
- * This TODO should not be neccessary any more if the command is
+ * This TODO should not be necessary any more if the command is
  * transferred in the job object.
  */
 static int count_command(char *command) {

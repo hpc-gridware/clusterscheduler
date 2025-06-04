@@ -4,5 +4,5 @@ xxQS_NAMExx comes with a TCL/Expect based test environment that allows to automa
 test framework can also be integrated in a CI/CD framework.
 
 TODO
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Each file has to end with two empty lines)
 
