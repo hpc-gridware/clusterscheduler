@@ -28,6 +28,14 @@
 			"type":	"lUlongT",
 			"flags":	[]
 		}, {
+			"name":	"systemd_scope",
+			"summary":	"Systemd Scope",
+			"description":	[{
+				"line":	"When the job is running in a systemd scope, this field contains the name of the scope."
+			}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
 			"name":	"ja_task_ID",
 			"summary":	"Array Task Id",
 			"description":	[{

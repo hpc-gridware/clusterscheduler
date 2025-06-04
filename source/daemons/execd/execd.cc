@@ -349,20 +349,21 @@ int main(int argc, char **argv)
    // figure out if we are running as Systemd service
    DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
    if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::execd_service_name, &error_dstr)) {
-      // @todo we already connect in initialize(), no need to repeat this
-      bool connected = false;
       ocs::uti::Systemd systemd;
-      connected = systemd.connect(&error_dstr);
+      bool connected = systemd.connect(&error_dstr);
       if (connected) {
          is_running_as_service = systemd.is_running_as_service();
       } else {
          WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
       }
-      u_long32 old_ll = log_state_get_log_level();
-      log_state_set_log_level(LOG_INFO);
-      INFO(MSG_SYSTEMD_INITIALIZED_SSS, connected ? MSG_YES: MSG_NO, ocs::uti::Systemd::execd_service_name.c_str(),
-           is_running_as_service ? MSG_YES : MSG_NO);
-      log_state_set_log_level(old_ll);
+      if (is_running_as_service) {
+         u_long32 old_ll = log_state_get_log_level();
+         log_state_set_log_level(LOG_INFO);
+         INFO(MSG_SYSTEMD_INITIALIZED_SII, ocs::uti::Systemd::execd_service_name.c_str(),
+                                           ocs::uti::Systemd::get_systemd_version(),
+                                           ocs::uti::Systemd::get_cgroup_version());
+         log_state_set_log_level(old_ll);
+      }
    } else if (sge_dstring_strlen(&error_dstr) > 0) {
       WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
    }

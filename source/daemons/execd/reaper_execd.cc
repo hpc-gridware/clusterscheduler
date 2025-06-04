@@ -1689,6 +1689,8 @@ FCLOSE_ERROR:
 
 static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
 {
+   DENTER(TOP_LAYER);
+
    const lList *usage_list;
    double ru_cpu, pdc_cpu;
    double cpu, r_cpu,
@@ -1700,8 +1702,6 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    const lListElem *pe_task = nullptr;
 
    bool accounting_summary = false;
-
-   DENTER(TOP_LAYER);
 
    usage_list = lGetList(jr, JR_usage);
 
@@ -1819,6 +1819,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          }
       }
    } else {
+      // @todo What sense does this code make? We fetched the values from the jr->usage list and here write them back?
       add_usage(jr, USAGE_ATTR_CPU, nullptr, cpu);
       add_usage(jr, USAGE_ATTR_MEM, nullptr, mem);
       add_usage(jr, USAGE_ATTR_IO,  nullptr, io);

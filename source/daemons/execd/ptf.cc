@@ -93,6 +93,7 @@
 #include "sgedefs.h"
 #include "exec_ifm.h"
 #include "pdc.h"
+#include "execd_systemd.h"
 
 /*
  *
@@ -162,7 +163,7 @@ static void ptf_get_usage_from_data_collector();
 
 static lListElem *ptf_process_job(osjobid_t os_job_id,
                                   const char *task_id_str,
-                                  const lListElem *new_job, u_long32 jataskid);
+                                  const lListElem *new_job, u_long32 jataskid, const char *systemd_scope);
 
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
                                  lListElem **job_elem);
@@ -189,9 +190,38 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 
 #endif
 
-static lList *ptf_jobs = nullptr;
+lList *ptf_jobs = nullptr;
 
 static int is_ptf_running = 0;
+
+extern bool is_running_as_service;
+
+
+/**
+ * @brief use the classic data collector?
+ *
+ * The classic data collector (retrieving usage from the /proc filesystem)
+ * is used when
+ *    - we have no systemd integration for the platform
+ *    - we have systemd but sge_execd is not running under systemd control
+ *
+ * @return true when the data collector shall be used, else false
+ */
+static bool
+ptf_use_datacollector() {
+   bool ret = false;
+
+#if defined (OCS_WITH_SYSTEMD)
+   if (!is_running_as_service) {
+      // cannot use systemd - fall back to data collector
+      ret = true;
+   }
+#else
+   ret = true;
+#endif
+
+   return ret;
+}
 
 /****** execd/ptf/ptf_get_osjobid() *******************************************
 *  NAME
@@ -270,14 +300,14 @@ static void ptf_set_osjobid(lListElem *osjob, osjobid_t osjobid)
 *     char *name            - name of the new list 
 *
 *  RESULT
-*     static lList* - copy of "old_usage_list" or a real new one 
+*     static lList* - the new usage list
 ******************************************************************************/
-static lList *ptf_build_usage_list(const char *name)
+lList *ptf_build_usage_list(const char *name)
 {
+   DENTER(TOP_LAYER);
+
    lList *usage_list;
    lListElem *usage;
-
-   DENTER(TOP_LAYER);
 
    usage_list = lCreateList(name, UA_Type);
 
@@ -586,16 +616,15 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
  *--------------------------------------------------------------------*/
 
 static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
-                                  const lListElem *new_job, u_long32 jataskid)
+                                  const lListElem *new_job, u_long32 jataskid, const char *systemd_scope)
 {
+   DENTER(TOP_LAYER);
+
    lListElem *job, *osjob;
    lList *job_list = ptf_jobs;
    u_long job_id = lGetUlong(new_job, JB_job_number);
-   double job_tickets =
-      lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
-   u_long interactive = (lGetString(new_job, JB_script_file) == nullptr);
-
-   DENTER(TOP_LAYER);
+   double job_tickets = lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
+   bool interactive = lGetString(new_job, JB_script_file) == nullptr;
 
    /*
     * Add the job to the job list, if it does not already exist
@@ -627,20 +656,22 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
       }
       osjoblist = lGetListRW(job, JL_OS_job_list);
       osjob = ptf_get_job_os(osjoblist, os_job_id, &job);
-      if (!osjob) {
-         if (!osjoblist) {
+      if (osjob == nullptr) {
+         if (osjoblist == nullptr) {
             osjoblist = lCreateList("osjoblist", JO_Type);
             lSetList(job, JL_OS_job_list, osjoblist);
          }
          osjob = lCreateElem(JO_Type);
          lSetUlong(osjob, JO_ja_task_ID, jataskid);
          lAppendElem(osjoblist, osjob);
-         lSetList(osjob, JO_usage_list,
-                  ptf_build_usage_list("usagelist"));
+         lSetList(osjob, JO_usage_list, ptf_build_usage_list("usagelist"));
          ptf_set_osjobid(osjob, os_job_id);
       }
-      if (task_id_str) {
+      if (task_id_str != nullptr) {
          lSetString(osjob, JO_task_id_str, task_id_str);
+      }
+      if (systemd_scope != nullptr) {
+         lSetString(osjob, JO_systemd_scope, systemd_scope);
       }
    }
 
@@ -694,11 +725,7 @@ static void ptf_get_usage_from_data_collector()
    if (jobs) {
       jobcount = *(uint64 *) jobs;
 
-#ifndef SOLARIS
       INCJOBPTR(jobs, sizeof(uint64));
-#else
-      INCJOBPTR(jobs, 8);
-#endif
 
       for (i = 0; i < (int)jobcount; i++) {
          lList *usage_list;
@@ -1167,21 +1194,21 @@ static void ptf_set_OS_scheduling_parameters(lList *job_list, double min_share,
 /*--------------------------------------------------------------------
  * ptf_job_started - process new job
  *--------------------------------------------------------------------*/
-int ptf_job_started(osjobid_t os_job_id, const char *task_id_str, 
-                    const lListElem *new_job, u_long32 jataskid)
+int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
+                    const lListElem *new_job, u_long32 jataskid, const char *systemd_scope)
 {
    DENTER(TOP_LAYER);
 
    /*
     * Add new job to job list
     */
-   ptf_process_job(os_job_id, task_id_str, new_job, jataskid);
+   ptf_process_job(os_job_id, task_id_str, new_job, jataskid, systemd_scope);
 
    /*
     * Tell data collector to start collecting data for this job
     */
 #ifdef USE_DC
-   if (os_job_id > 0) {
+   if (os_job_id > 0 || systemd_scope != nullptr) {
       psWatchJob(os_job_id);
    }
 #else
@@ -1229,9 +1256,19 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
     * if job is not complete, go get latest job usage info
     */
    if (!(lGetUlong(ptf_job, JL_state) & JL_JOB_COMPLETE)) {
-      sge_switch2start_user();
-      ptf_get_usage_from_data_collector();
-      sge_switch2admin_user();
+      // @todo This will get usage for all jobs, not just the one, might be expensive when many jobs finish,
+      //       e.g. with short jobs on a big machine.
+      //       And does it make sense at all? We get here when a job finished - all its processes / its systemd scope
+      //       should have vanished by now.
+      if (ptf_use_datacollector()) {
+         sge_switch2start_user();
+         ptf_get_usage_from_data_collector();
+         sge_switch2admin_user();
+      } else {
+#if defined (OCS_WITH_SYSTEMD)
+         ocs::execd::ptf_get_usage_from_systemd();
+#endif
+      }
    }
 
    /*
@@ -1315,21 +1352,21 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
      * minimum usage value.
      */
    for_each_rw(jte, job_ticket_list) {
-
-      /* 
+      /*
        * set JB_script_file because we don't know if this is
        * an interactive job 
        */
       lSetString(jte, JB_script_file, "dummy");
 
+      // The job and os job should already exist.
+      // If not it would not get created in ptf_process_job(), but probably later on
+      // once the job is started.
       job = ptf_process_job(0, nullptr, jte,
                             lGetUlong(lFirst(lGetList(jte, JB_ja_tasks)),
-                            JAT_task_number));
-      if (job) {
+                                      JAT_task_number), nullptr);
+      if (job != nullptr) {
          /* reset temporary usage and priority */
-         lSetDouble(job, JL_usage, MAX(PTF_MIN_JOB_USAGE,
-                                       lGetDouble(job, JL_usage) * 0.1));
-
+         lSetDouble(job, JL_usage, MAX(PTF_MIN_JOB_USAGE, lGetDouble(job, JL_usage) * 0.1));
          lSetDouble(job, JL_curr_pri, 0);
       }
    }
@@ -1341,7 +1378,16 @@ void ptf_update_job_usage()
 {
    DENTER(TOP_LAYER);
 
-   ptf_get_usage_from_data_collector();
+   if (ptf_use_datacollector()) {
+      sge_switch2start_user();
+      ptf_get_usage_from_data_collector();
+      sge_switch2admin_user();
+   } else {
+#if defined (OCS_WITH_SYSTEMD)
+      ocs::execd::ptf_get_usage_from_systemd();
+#endif
+   }
+
    DRETURN_VOID;
 }
 

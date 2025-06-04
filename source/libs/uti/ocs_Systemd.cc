@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #if defined(OCS_WITH_SYSTEMD)
+#include <filesystem>
 #include <fstream>
 #include <dlfcn.h>
 
@@ -51,12 +52,17 @@ namespace ocs::uti {
    sd_bus_wait_func_t Systemd::sd_bus_wait_func = nullptr;
    sd_bus_message_get_member_func_t Systemd::sd_bus_message_get_member_func = nullptr;
    sd_bus_message_get_sender_func_t Systemd::sd_bus_message_get_sender_func = nullptr;
+   sd_bus_path_encode_func_t Systemd::sd_bus_path_encode_func = nullptr;
+   sd_bus_get_property_func_t Systemd::sd_bus_get_property_func = nullptr;
+   sd_bus_error_free_func_t Systemd::sd_bus_error_free_func = nullptr;
 
-   std::string Systemd::slice_name;
-   std::string Systemd::service_name;
+   std::string Systemd::slice_name{};
+   std::string Systemd::service_name{};
    const std::string Systemd::execd_service_name{"execd.service"};
    const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
-   bool Systemd::running_as_service = false;
+   bool Systemd::running_as_service{false};
+   int Systemd::cgroup_version{};
+   int Systemd::systemd_version{};
 
    // @todo move somewhere else
    static std::string
@@ -98,8 +104,20 @@ namespace ocs::uti {
       DENTER(TOP_LAYER);
       bool ret = true;
 
+      if (std::filesystem::exists("/sys/fs/cgroup/systemd")) {
+         // cgroup v1 is available
+         cgroup_version = 1;
+      } else if (std::filesystem::exists("/sys/fs/cgroup/system.slice")) {
+         // cgroup v2 is available
+         cgroup_version = 2;
+      } else {
+         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_SYSTEMD_CANNOT_DETECT_CGROUP_VERSION);
+         ret = false;
+      }
+      DPRINTF("==> cgroup version: %d", cgroup_version);
+
       // initialize only once
-      if (lib_handle != nullptr) {
+      if (ret && lib_handle != nullptr) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_SYSTEMD_ALREADY_INITIALIZED);
          ret = false;
       }
@@ -253,6 +271,30 @@ namespace ocs::uti {
             ret = false;
          }
       }
+      if (ret) {
+         func = "sd_bus_path_encode";
+         sd_bus_path_encode_func = reinterpret_cast<sd_bus_path_encode_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_path_encode_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_get_property";
+         sd_bus_get_property_func = reinterpret_cast<sd_bus_get_property_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_get_property_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_error_free";
+         sd_bus_error_free_func = reinterpret_cast<sd_bus_error_free_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_error_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
 
       // if we could not load the library or the functions, close the library
       if (!ret && lib_handle != nullptr) {
@@ -270,6 +312,13 @@ namespace ocs::uti {
          // get unit path of service
          Systemd systemd;
          if (systemd.connect(error_dstr)) {
+
+            // get systemd version
+            std::string systemd_version_str;
+            systemd.sd_bus_get_property("Manager", "", "Version", systemd_version_str, error_dstr);
+            systemd_version = std::stoi(systemd_version_str);
+            DPRINTF("systemd version: %d", systemd_version);
+
             std::string service_unit_path;
             bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
             if (have_service_unit) {
@@ -553,6 +602,37 @@ namespace ocs::uti {
             ret = false;
          }
       }
+
+      // enable accounting
+      // @todo there would also be
+      //   - BlockAccounting (deprecated by IOAccounting)
+      //   - IPAccounting
+      //   - TasksAccounting
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "CPUAccounting", "b", 1);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "CPUAccounting", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      // Enabling IOAccounting has no effect on cgroup v1.
+      if (ret && cgroup_version == 2) {
+         r = sd_bus_message_append_func(m, "(sv)", "IOAccounting", "b", 1);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "IOAccounting", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "MemoryAccounting", "b", 1);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "MemoryAccounting", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+
+      // @todo in addition pass a map<std::string, std::string> with properties
+
       if (ret) {
          r = sd_bus_message_close_container_func(m);
          if (r < 0) {
@@ -593,7 +673,11 @@ namespace ocs::uti {
                   ret = false;
                } else {
                   // wait for the job to finish
-                  sd_bus_wait_for_job_completion(job, error_dstr);
+                  // @todo AI claims that this is only needed with systemd version >= 239, but is this correct?
+                  // from man page: sd_bus_wait() was added in version 240.
+                  if (systemd_version >= 240) {
+                     ret = sd_bus_wait_for_job_completion(job, error_dstr);
+                  }
                }
             }
          }
@@ -605,88 +689,188 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
-   bool
-   Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
+bool
+Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
+   DENTER(TOP_LAYER);
+   DPRINTF("==> sd_bus_wait_for_job_completion(%s)", job_path.c_str());
+
+   bool ret = true;
+
+   // add match for JobRemoved signal
+   sd_bus_slot *slot = nullptr;
+   if (ret) {
+      std::string match_rule = "type='signal',interface='org.freedesktop.systemd1.Manager',member='JobRemoved'";
+      int r = sd_bus_add_match_func(bus, &slot, match_rule.c_str(), nullptr, nullptr);
+      // @todo should also work but doesn't
+      // int r = sd_bus_match_signal_func(bus, &slot, nullptr, nullptr, "JobRemoved", nullptr, nullptr);
+      if (r < 0) {
+         sge_dstring_sprintf(error_dstr, SFN ": adding match func " SFQ " failed: error %d: " SFN, __func__, match_rule.c_str(), r, strerror(-r));
+         ret = false;
+      }
+   }
+
+   u_long64 timeout = sge_get_gmt64() + 1000000; // 1 second timeout
+   while (ret == true) {
+      if (sge_get_gmt64() > timeout) {
+         sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for job completion", __func__);
+         ret = false;
+         break;
+      }
+
+      // wait for the next signal
+      sd_bus_message *m = nullptr;
+      int r = sd_bus_process_func(bus, &m);
+      DPRINTF("sd_bus_process_func(bus, &m) returned %d", r);
+      if (r < 0) {
+         sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
+         ret = false;
+      } else {
+         // 0 means we need to wait before calling sd_bus_process again
+         if (r == 0) {
+            // we wait with timeout
+            // sd_bus_wait() returns 0 on timeout, not an error, final timeout handled above
+            // does it actually make sense to use a timeout < our final timeout? We use 100ms for now.
+            r = sd_bus_wait_func(bus, 100000);
+            DPRINTF("sd_bus_wait_func(bus, nullptr) returned %d", r);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, SFN ": waiting for bus failed: error %d: " SFN, __func__, r, strerror(-r));
+               ret = false;
+            }
+            // do the next sd_bus_process call
+            sd_bus_message_unref_func(m);
+            continue;
+         }
+      }
+
+      // sd_bus_process read signal
+      if (ret && m != nullptr) {
+         if (strcmp(sd_bus_message_get_member_func(m), "JobRemoved") == 0) {
+            DPRINTF("got JobRemoved signal");
+            const char *completed_job_path = nullptr;
+            // message contains for a signal:
+            // `u`: job id, e.g. `1234`
+            // `o`: job path, e.g. `/org/freedesktop/systemd1/job/1234`
+            // `s`: status, e.g. `"done"`
+            r = sd_bus_message_read_func(m, "uos", nullptr, &completed_job_path, nullptr);
+            DPRINTF("sd_bus_message_read_func(m, \"uos\", &completed_job_path) returned %d", r);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, SFN ": reading job path failed: error %d: " SFN, __func__, r, strerror(-r));
+               ret = false;
+            } else {
+               DPRINTF("completed_job_path = %s", completed_job_path);
+               if (job_path.compare(completed_job_path) == 0) {
+                  sd_bus_message_unref_func(m);
+                  break; // job done
+               }
+            }
+         }
+      }
+
+      sd_bus_message_unref_func(m);
+   }
+
+   // release the match pattern
+   sd_bus_slot_unref_func(slot);
+
+   DRETURN(ret);
+}
+
+bool
+Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
-      DPRINTF("==> sd_bus_wait_for_job_completion(%s)", job_path.c_str());
 
       bool ret = true;
 
-      // add match for JobRemoved signal
-      sd_bus_slot *slot = nullptr;
-      if (ret) {
-         std::string match_rule = "type='signal',interface='org.freedesktop.systemd1.Manager',member='JobRemoved'";
-         int r = sd_bus_add_match_func(bus, &slot, match_rule.c_str(), nullptr, nullptr);
-         // @todo should also work but doesn't
-         // int r = sd_bus_match_signal_func(bus, &slot, nullptr, nullptr, "JobRemoved", nullptr, nullptr);
+      // encode the object path
+      char *path = nullptr;
+      if (unit.empty()) {
+         path = strdup("/org/freedesktop/systemd1");
+      } else {
+         int r = sd_bus_path_encode_func("/org/freedesktop/systemd1/unit", unit.c_str(), &path);
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, SFN ": adding match func " SFQ " failed: error %d: " SFN, __func__, match_rule.c_str(), r, strerror(-r));
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_ENCODE_PATH_SIS, unit.c_str(), r, strerror(-r));
             ret = false;
          }
       }
 
-      u_long64 timeout = sge_get_gmt64() + 1000000; // 1 second timeout
-      while (ret == true) {
-         if (sge_get_gmt64() > timeout) {
-            sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for job completion", __func__);
-            ret = false;
-            break;
-         }
-
-         // wait for the next signal
+      if (ret) {
          sd_bus_message *m = nullptr;
-         int r = sd_bus_process_func(bus, &m);
-         DPRINTF("sd_bus_process_func(bus, &m) returned %d", r);
+         sd_bus_error error = SD_BUS_ERROR_NULL;
+         std::string full_interface = "org.freedesktop.systemd1." + interface; // e.g. "org.freedesktop.systemd1.Unit"
+         int r = sd_bus_get_property_func(bus, "org.freedesktop.systemd1",     // service to contact
+                                      path,                                    // object path
+                                      full_interface.c_str(),                  // interface name
+                                      property.c_str(),                        // property name
+                                      &error,                                  // object to return error in
+                                      &m,                                      // return message on success
+                                      "s");                               // type signature
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
             ret = false;
          } else {
-            // 0 means we need to wait before calling sd_bus_process again
-            if (r == 0) {
-               // we wait with timeout
-               // sd_bus_wait() returns 0 on timeout, not an error, final timeout handled above
-               // does it actually make sense to use a timeout < our final timeout? We use 100ms for now.
-               r = sd_bus_wait_func(bus, 100000);
-               DPRINTF("sd_bus_wait_func(bus, nullptr) returned %d", r);
-               if (r < 0) {
-                  sge_dstring_sprintf(error_dstr, SFN ": waiting for bus failed: error %d: " SFN, __func__, r, strerror(-r));
-                  ret = false;
-               }
-               // do the next sd_bus_process call
-               sd_bus_message_unref_func(m);
-               continue;
+            char *result = nullptr;
+            r = sd_bus_message_read_func(m, "s", &result);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_PROPERTY_RESULT_SIS, property.c_str(), r, strerror(-r));
+               value.clear();
+               ret = false;
+            } else {
+               value = result;
             }
          }
-
-         // sd_bus_process read signal
-         if (ret && m != nullptr) {
-            if (strcmp(sd_bus_message_get_member_func(m), "JobRemoved") == 0) {
-               DPRINTF("got JobRemoved signal");
-               const char *completed_job_path = nullptr;
-               // message contains for a signal:
-               // `u`: job id, e.g. `1234`
-               // `o`: job path, e.g. `/org/freedesktop/systemd1/job/1234`
-               // `s`: status, e.g. `"done"`
-               r = sd_bus_message_read_func(m, "uos", nullptr, &completed_job_path, nullptr);
-               DPRINTF("sd_bus_message_read_func(m, \"uos\", &completed_job_path) returned %d", r);
-               if (r < 0) {
-                  sge_dstring_sprintf(error_dstr, SFN ": reading job path failed: error %d: " SFN, __func__, r, strerror(-r));
-                  ret = false;
-               } else {
-                  DPRINTF("completed_job_path = %s", completed_job_path);
-                  if (job_path.compare(completed_job_path) == 0) {
-                     sd_bus_message_unref_func(m);
-                     break; // job done
-                  }
-               }
-            }
-         }
-
          sd_bus_message_unref_func(m);
+         sd_bus_error_free_func(&error);
       }
 
-      // release the match pattern
-      sd_bus_slot_unref_func(slot);
+      free(path); // free the encoded path
+
+      DRETURN(ret);
+   }
+
+   bool
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+
+      bool ret = true;
+
+      // encode the object path
+      char *path = nullptr;
+      int r = sd_bus_path_encode_func("/org/freedesktop/systemd1/unit", unit.c_str(), &path);
+      if (r < 0) {
+         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_ENCODE_PATH_SIS, unit.c_str(), r, strerror(-r));
+         ret = false;
+      }
+
+      if (ret) {
+         sd_bus_message *m = nullptr;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
+         std::string full_interface = "org.freedesktop.systemd1." + interface;   // e.g. "org.freedesktop.systemd1.Unit"
+         r = sd_bus_get_property_func(bus, "org.freedesktop.systemd1",           // service to contact
+                                      path,                                      // object path
+                                      full_interface.c_str(),                    // interface name
+                                      property.c_str(),                          // property name
+                                      &error,                                    // object to return error in
+                                      &m,                                        // return message on success
+                                      "t");                                 // type signature
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
+            ret = false;
+         } else {
+            uint64_t result{};
+            r = sd_bus_message_read_func(m, "t", &result);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_PROPERTY_RESULT_SIS, property.c_str(), r, strerror(-r));
+               value = 0;
+               ret = false;
+            } else {
+               value = result;
+            }
+         }
+         sd_bus_message_unref_func(m);
+         sd_bus_error_free_func(&error);
+      }
+
+      free(path); // free the encoded path
 
       DRETURN(ret);
    }

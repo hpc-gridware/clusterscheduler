@@ -48,6 +48,9 @@ namespace ocs::uti {
    using sd_bus_wait_func_t = int (*)(sd_bus *bus, int timeout_usec);
    using sd_bus_message_get_sender_func_t = const char *(*)(sd_bus_message *m);
    using sd_bus_message_get_member_func_t = const char *(*)(sd_bus_message *m);
+   using sd_bus_path_encode_func_t = int (*)(const char *prefix, const char *external_id, char **ret_path);
+   using sd_bus_get_property_func_t = int (*)(sd_bus *bus, const char *destination, const char *path, const char *interface, const char *member, sd_bus_error *ret_error, sd_bus_message **reply, const char *type);
+   using sd_bus_error_free_func_t = void (*)(sd_bus_error *error);
 
    // @brief Systemd class
    //
@@ -78,11 +81,16 @@ namespace ocs::uti {
          static sd_bus_wait_func_t sd_bus_wait_func;
          static sd_bus_message_get_sender_func_t sd_bus_message_get_sender_func;
          static sd_bus_message_get_member_func_t sd_bus_message_get_member_func;
+         static sd_bus_path_encode_func_t sd_bus_path_encode_func;
+         static sd_bus_get_property_func_t sd_bus_get_property_func;
+         static sd_bus_error_free_func_t sd_bus_error_free_func;
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
          static std::string slice_name;
          static std::string service_name; // @todo it is e.g. "execd.service" but should be the full service name
          static bool running_as_service;
+         static int cgroup_version;
+         static int systemd_version;
 
       public:
          // constants
@@ -94,6 +102,8 @@ namespace ocs::uti {
          static bool is_systemd_available();
          static bool is_running_as_service();
          static std::string get_slice_name() { return slice_name; }
+         static int get_cgroup_version() { return cgroup_version; }
+         static int get_systemd_version() { return systemd_version; }
 
       private:
          // instance data
@@ -112,8 +122,12 @@ namespace ocs::uti {
 
          bool connect(dstring *error_dstr);
          bool connected() const;
+
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
          bool create_scope_with_pid(const std::string &scope, const std::string &slice, pid_t pid, dstring *error_dstr) const;
+
+         bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const;
+         bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const;
    };
 }
 #endif

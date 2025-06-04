@@ -761,8 +761,9 @@ int main(int argc, char **argv)
       if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::shepherd_scope_name, &error_dstr)) {
          shepherd_trace("initialized systemd library");
          if (ocs::uti::Systemd::is_running_as_service()) {
-            shepherd_trace("shepherd is running under systemd control in slice %s",
-                           ocs::uti::Systemd::shepherd_scope_name.c_str());
+            shepherd_trace("shepherd is running under systemd control in scope %s, systemd version %d, cgroups version %d",
+                           ocs::uti::Systemd::shepherd_scope_name.c_str(), ocs::uti::Systemd::get_systemd_version(),
+                           ocs::uti::Systemd::get_cgroup_version());
          } else {
             shepherd_trace("shepherd is not running under systemd control");
             g_use_systemd = false;

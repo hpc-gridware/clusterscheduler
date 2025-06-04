@@ -348,8 +348,13 @@ static int psRetrieveOSJobData() {
          table to decide whether a process is needed for a job or not. */
       pt_open();
 
-      while (!pt_dispatch_proc_to_job(&job_list, time_stamp, last_time))
-         ; 
+      // pt_dispatch_proc_to_job will read data of a single process from /proc
+      // it will return 0 if there are still processes to read
+      // it will return 1 if there are no more processes to read
+      // we want to read them all
+      while (pt_dispatch_proc_to_job(&job_list, time_stamp, last_time) == 0) {
+         ;
+      }
       last_time = time_stamp;
       pt_close();
    }
@@ -555,9 +560,7 @@ static int psRetrieveOSJobData() {
       job_elem = LNK_DATA(curr, job_elem_t, link);
       job = &job_elem->job;
 
-      /* if job has not been watched within 30 seconds of being pre-added
-         to job list, delete it */
-
+      // if job has not been watched within 30 seconds of being pre-added to job list, delete it
       if (job_elem->precreated) {
 
          if ((job_elem->precreated + 30) < time_stamp) {
@@ -583,14 +586,13 @@ static int psRetrieveOSJobData() {
          //int proccount;
          lnk_link_t *currp, *nextp;
 
-         /* sum up usage of each processes for this job */
+         /* sum up usage of each process for this job */
          //proccount = job->jd_proccount;
          job->jd_utime_a = job->jd_stime_a = 0;
          job->jd_vmem = 0;
          job->jd_rss = 0;
 
-         for(currp=job_elem->procs.next; currp != &job_elem->procs;
-             currp=nextp) {
+         for (currp=job_elem->procs.next; currp != &job_elem->procs; currp=nextp) {
 
             proc_elem_t *proc_elem = LNK_DATA(currp, proc_elem_t, link);
             psProc_t *proc = &proc_elem->proc;
@@ -847,11 +849,7 @@ struct psJob_s *psGetAllJobs()
    psRetrieveOSJobData();
 
    /* calculate size of return data */
-#ifndef SOLARIS
    rsize = sizeof(uint64);
-#else
-   rsize = 8;
-#endif
 
    for (curr=job_list.next; curr != &job_list; curr=curr->next) {
       job_elem_t *job_elem = LNK_DATA(curr, job_elem_t, link);
@@ -870,11 +868,8 @@ struct psJob_s *psGetAllJobs()
    /* fill in return data */
    jobs = rjob;
    *(uint64 *)jobs = jobcount;
-#ifndef SOLARIS
+
    INCJOBPTR(jobs, sizeof(uint64));
-#else
-   INCJOBPTR(jobs, 8);
-#endif
 
    /* copy the job data */
    for (curr=job_list.next; curr != &job_list; curr=curr->next) {

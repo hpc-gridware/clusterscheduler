@@ -247,8 +247,10 @@
 #define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": %d out of " sge_u32 " slots in queue " SFN " are in use"))
 #define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": no free slot found"))
 
-#define MSG_SYSTEMD_INITIALIZED_SSS                      _MESSAGE(29230, _("systemd integration initialized, connected to dbus: " SFN ", running as " SFN ": " SFN))
+#define MSG_SYSTEMD_INITIALIZED_SII                      _MESSAGE(29230, _("systemd integration initialized, running as service " SFN ", systemd version %d, cgroups version %d"))
 #define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29231, _("systemd: moving shepherd to scope failed: " SFN4))
+#define MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S            _MESSAGE(29232, _("cannot connect to systemd: " SFN4))
+#define MSG_CANNOT_TO_GET_PROPERTY_SSS                   _MESSAGE(29233, _("cannot to get property " SFN " from systemd scope " SFN ": " SFN4))
 
 // clang-format on
 

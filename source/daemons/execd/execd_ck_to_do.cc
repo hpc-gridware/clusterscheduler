@@ -48,6 +48,7 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
@@ -99,14 +100,20 @@ extern volatile int jobs_to_start;
 extern lList *jr_list;
 
 #ifdef COMPILE_DC
-static void notify_ptf();
-static void notify_ptf()
-{
-   lListElem *jep;
-   lListElem *tep;
-   int write_job = -1;
+/**
+ * @brief Notify PTF about newly started jobs
+ *
+ * This function checks the job list for jobs that are in the JWAITING4OSJID state
+ * and attempts to register them at PTF. If successful, it changes their state to JRUNNING.
+ * If still waiting for osjobid, it sets the (global) waiting4osjid flag to true,
+ * which will trigger a re-check in the next call to this function.
+ */
 
+static void notify_ptf() {
    DENTER(TOP_LAYER);
+
+   lListElem *jep;
+   int write_job = -1;
 
 #ifdef DEBUG_DC
    ptf_show_registered_jobs();
@@ -141,12 +148,13 @@ static void notify_ptf()
                }
             }
 
-            for_each_rw (tep, lGetList(jatep, JAT_task_list)) {
-               if (lGetUlong(tep, PET_status) == JWAITING4OSJID) {
-                  switch (register_at_ptf(jep, jatep, tep)) {
+            lListElem *petep;
+            for_each_rw (petep, lGetList(jatep, JAT_task_list)) {
+               if (lGetUlong(petep, PET_status) == JWAITING4OSJID) {
+                  switch (register_at_ptf(jep, jatep, petep)) {
                      case 0:   
                         /* succeeded */
-                        lSetUlong(tep, PET_status, JRUNNING);
+                        lSetUlong(petep, PET_status, JRUNNING);
 
                         /* spool state transition */ 
                         write_job = 1;
@@ -405,13 +413,14 @@ int do_ck_to_do(bool is_qmaster_down) {
    int return_value = 0;
    const char *qualified_hostname = component_get_qualified_hostname();
 
-
-
 #ifdef KERBEROS
    krb_renew_tgts(Master_Job_List);
 #endif
 
-   /* start jobs if present */
+   // start jobs if present
+   // when job start orders are received, they are not started immediately,
+   // but are only added to job list and spooled
+   // status JIDLE tells us that the job is ready to be started
    if (jobs_to_start) {
       /* reset jobs_to_start before starting jobs. We may loose
        * a job start if we reset jobs_to_start after sge_start_jobs()
@@ -439,13 +448,13 @@ int do_ck_to_do(bool is_qmaster_down) {
 
    // PDC trigger can be ignored if there are no jobs to observe
    if (lGetNumberOfElem(*ocs::DataStore::get_master_list(SGE_TYPE_JOB)) > 0 && do_pdc) {
+      // register newly submitted jobs at PTF
       notify_ptf();
 
-      sge_switch2start_user();
+      // get online usage of running jobs
       ptf_update_job_usage();
-      sge_switch2admin_user();
 
-      /* check for job limits */
+      // check for job limits
       if (check_for_queue_limits()) {
          force_job_rlimit(qualified_hostname);
       }
@@ -840,11 +849,7 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 }
 
 #ifdef COMPILE_DC
-int register_at_ptf(
-const lListElem *job,
-const lListElem *ja_task,
-const lListElem *pe_task
-) {
+int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task) {
    u_long32 job_id;   
    u_long32 ja_task_id;   
    const char *pe_task_id = nullptr;
@@ -853,8 +858,7 @@ const lListElem *pe_task
    FILE *fp;
    SGE_STRUCT_STAT sb;
 
-   char id_buffer[MAX_STRING_SIZE]; /* static dstring for job id string */
-   dstring id_dstring;
+   DSTRING_STATIC(id_dstring, MAX_STRING_SIZE);
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    gid_t addgrpid;
@@ -864,8 +868,6 @@ const lListElem *pe_task
    osjobid_t osjobid;   
 #endif   
    DENTER(TOP_LAYER);
-
-   sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
    job_id = lGetUlong(job, JB_job_number);
    ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -903,16 +905,31 @@ const lListElem *pe_task
    success = (fscanf(fp, gid_t_fmt, &addgrpid)==1);
    FCLOSE(fp);
    if (!success) {
-      /* can happen that shepherd has opend the file but not written */
-      DRETURN((1));
+      // can happen that shepherd has opened the file but not written
+      DRETURN(1);
    }
    {
       int ptf_error;
 
+      // when running jobs in systemd scopes store the scope id
+      // we need it to retrieve usage information
+      std::string scope;
+      const char *scope_str = nullptr;
+#if defined(OCS_WITH_SYSTEMD)
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      std::string slice;
+      if (ocs::Job::job_get_systemd_slice_and_scope(job, ja_task, pe_task, slice, scope, &error_dstr)) {
+         scope_str = scope.c_str();
+      } else {
+         ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
+               sge_dstring_get_string(&error_dstr));
+         DRETURN(1);
+      }
+#endif
       DPRINTF("Register job with AddGrpId at " pid_t_fmt " PTF\n", addgrpid);
-      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id))) {
+      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id, scope_str))) {
          ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
-         DRETURN((1));
+         DRETURN(1);
       }
    }
 
