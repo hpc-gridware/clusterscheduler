@@ -302,45 +302,47 @@ namespace ocs::uti {
          lib_handle = nullptr;
       }
 
-      // we will need the slice name for the service name, read it once
-      // once we have a slice name, we can figure out if we are running as service
-      service_name = service_name_in;
-      std::string slice_file_name = get_slice_file_name();
-      if (read_one_line_file(slice_file_name, slice_name)) {
-         // build service name, e.g. "ocs6444-execd.service"
-         std::string full_service_name = slice_name + "-" + service_name;
-         // get unit path of service
-         Systemd systemd;
-         if (systemd.connect(error_dstr)) {
+      if (ret) {
+         // we will need the slice name for the service name, read it once
+         // once we have a slice name, we can figure out if we are running as service
+         service_name = service_name_in;
+         std::string slice_file_name = get_slice_file_name();
+         if (read_one_line_file(slice_file_name, slice_name)) {
+            // build service name, e.g. "ocs6444-execd.service"
+            std::string full_service_name = slice_name + "-" + service_name;
+            // get unit path of service
+            Systemd systemd;
+            if (systemd.connect(error_dstr)) {
 
-            // get systemd version
-            std::string systemd_version_str;
-            systemd.sd_bus_get_property("Manager", "", "Version", systemd_version_str, error_dstr);
-            systemd_version = std::stoi(systemd_version_str);
-            DPRINTF("systemd version: %d", systemd_version);
+               // get systemd version
+               std::string systemd_version_str;
+               systemd.sd_bus_get_property("Manager", "", "Version", systemd_version_str, error_dstr);
+               systemd_version = std::stoi(systemd_version_str);
+               DPRINTF("systemd version: %d", systemd_version);
 
-            std::string service_unit_path;
-            bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
-            if (have_service_unit) {
-               DPRINTF("have_service_unit: %s", service_unit_path.c_str());
-               // get unit path of pid
-               std::string pid_unit_path;
-               bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
-               // compare both unit paths, if they are equal then we are running as service
-               if (have_pid_unit) {
-                  DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
-                  if (service_unit_path.compare(pid_unit_path) == 0) {
-                     running_as_service = true;
-                     DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+               std::string service_unit_path;
+               bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
+               if (have_service_unit) {
+                  DPRINTF("have_service_unit: %s", service_unit_path.c_str());
+                  // get unit path of pid
+                  std::string pid_unit_path;
+                  bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
+                  // compare both unit paths, if they are equal then we are running as service
+                  if (have_pid_unit) {
+                     DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
+                     if (service_unit_path.compare(pid_unit_path) == 0) {
+                        running_as_service = true;
+                        DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+                     }
+                  } else {
+                     DPRINTF("could not get unit path for pid %d: %s", getpid(), sge_dstring_get_string(error_dstr));
                   }
                } else {
-                  DPRINTF("could not get unit path for pid %d: %s", getpid(), sge_dstring_get_string(error_dstr));
+                  DPRINTF("could not get unit path for service %s: %s", full_service_name.c_str(), sge_dstring_get_string(error_dstr));
                }
             } else {
-               DPRINTF("could not get unit path for service %s: %s", full_service_name.c_str(), sge_dstring_get_string(error_dstr));
+               DPRINTF("cannot connect to systemd: %s", sge_dstring_get_string(error_dstr));
             }
-         } else {
-            DPRINTF("cannot connect to systemd: %s", sge_dstring_get_string(error_dstr));
          }
       }
 
