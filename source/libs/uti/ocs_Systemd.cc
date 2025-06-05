@@ -538,7 +538,7 @@ namespace ocs::uti {
 
       if (ret && create) {
          DPRINTF("Systemd::move_shepherd_to_scope: calling create_scope_with_pid\n");
-         create_scope_with_pid(full_scope_name, full_slice_name, pid, error_dstr);
+         ret = create_scope_with_pid(full_scope_name, full_slice_name, pid, error_dstr);
       }
 
       // @todo: do we need to call sd_bus_error_free(&error)?
@@ -633,7 +633,17 @@ namespace ocs::uti {
          }
       }
 
-      // @todo in addition pass a map<std::string, std::string> with properties
+      // @todo in addition pass a map<std::string, uint64_t> with properties
+#if 0
+      if (ret) {
+         r = sd_bus_message_append_func(m, "(sv)", "MemoryMax", "t", 1000000000);
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "MemoryMax", "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
+      }
+#endif
+
 
       if (ret) {
          r = sd_bus_message_close_container_func(m);

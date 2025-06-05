@@ -200,14 +200,14 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
             bool success = systemd.create_scope_with_pid(scope, slice, pid, &error_dstr);
             shepherd_trace("==> systemd move_shepherd_to_scope took " sge_u64 " µs", sge_get_gmt64() - start_time);
             if (!success) {
-               shepherd_error(0, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
+               shepherd_error(1, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
             }
          } else {
-            shepherd_error(false, "systemd_slice and/or systemd_scope missing in config file, cannot move shepherd child to job scope");
+            shepherd_error(1, "systemd_slice and/or systemd_scope missing in config file, cannot move shepherd child to job scope");
          }
       } else {
          // connect failed
-         shepherd_trace("connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
+         shepherd_error(1, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
       }
    }
 #endif

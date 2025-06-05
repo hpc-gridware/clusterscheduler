@@ -303,6 +303,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    const lList *path_aliases = nullptr;
    char dce_wrapper_cmd[128];
+   bool starting_shepherd_ok = true;
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -1958,15 +1959,17 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          INFO("==> systemd move_shepherd_to_scope took " sge_u64 " µs", sge_get_gmt64() - start_time);
          if (!success) {
             WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
+            starting_shepherd_ok = false;
          }
       } else {
          // connect failed
          WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+         starting_shepherd_ok = false;
       }
    }
 #endif
 
-   {  /* close all fd's except 0,1,2 */
+   if (starting_shepherd_ok) {  /* close all fd's except 0,1,2 */
       int keep_open[3];
 
       keep_open[0] = 0;
@@ -1979,62 +1982,66 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
     * set KRB5CCNAME so shepherd assumes user's identify for
     * access to DFS or AFS file systems
     */
-   if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
-       lGetString(jep, JB_cred)) {
+   if (starting_shepherd_ok) {
+      if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
+           feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+          lGetString(jep, JB_cred)) {
 
-      char ccname[1024];
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
-      putenv(ccname);
-   }
-
-   DPRINTF("**********************CHILD*********************\n");
-   shepherd_name = SGE_SHEPHERD;
-   snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
-
-   pag_cmd = mconf_get_pag_cmd();
-   shepherd_cmd = mconf_get_shepherd_cmd();
-   if (shepherd_cmd && strlen(shepherd_cmd) &&
-       strcasecmp(shepherd_cmd, "none")) {
-      DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-      execlp(shepherd_cmd, ps_name, nullptr);
-   } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
-      DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-      execlp(dce_wrapper_cmd, ps_name, nullptr);
-   } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
-              !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
-      DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-
-      if (ISTRACE)
-         execlp(shepherd_path, ps_name, nullptr);
-      else
-         execlp(shepherd_path, ps_name, "-bg", nullptr);
-   } else {
-      char commandline[2048];
-
-      DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
-      if (ISTRACE) {
-         snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
-      } else {
-         snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
+         char ccname[1024];
+         snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
+         putenv(ccname);
       }
-
-      execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
    }
-   sge_free(&pag_cmd);
-   sge_free(&shepherd_cmd);
 
+   if (starting_shepherd_ok) {
+      DPRINTF("**********************CHILD*********************\n");
+      shepherd_name = SGE_SHEPHERD;
+      snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
+
+      pag_cmd = mconf_get_pag_cmd();
+      shepherd_cmd = mconf_get_shepherd_cmd();
+      if (shepherd_cmd && strlen(shepherd_cmd) &&
+          strcasecmp(shepherd_cmd, "none")) {
+         DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+         execlp(shepherd_cmd, ps_name, nullptr);
+      } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+         DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+         execlp(dce_wrapper_cmd, ps_name, nullptr);
+      } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
+                 !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
+         DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+
+         if (ISTRACE)
+            execlp(shepherd_path, ps_name, nullptr);
+         else
+            execlp(shepherd_path, ps_name, "-bg", nullptr);
+      } else {
+         char commandline[2048];
+
+         DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
+         if (ISTRACE) {
+            snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
+         } else {
+            snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
+         }
+
+         execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
+      }
+      sge_free(&pag_cmd);
+      sge_free(&shepherd_cmd);
+   }
 
    /*---------------------------------------------------*/
    /* exec() failed - do what shepherd does if it fails */
-
+   // @todo can we set the host in error state (all queues) when starting_shepherd_ok is false?
+   //       Otherwise the job will get scheduled to this host over and over again.
    fp = fopen("error", "w");
    if (fp) {
       fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
