@@ -49,7 +49,7 @@
 #include "uti/ocs_topology.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_binding.h" 
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_answer.h"
 
 #include "msg_common.h"
@@ -2617,7 +2617,7 @@ static int get_core_id_from_logical_core_number_solaris(const int** matrix,
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 
 bool get_linear_automatic_socket_core_list_and_account(const int amount,
-      int** list_of_sockets, int* samount, int** list_of_cores, int* camount, 
+      int** list_of_sockets, int* samount, int** list_of_cores, int* camount,
       char** topo_by_job, int* topo_by_job_length)
 {
    /* return value: if it is possible to fit the request on the host  */
@@ -2705,8 +2705,8 @@ bool get_linear_automatic_socket_core_list_and_account(const int amount,
    return possible;
 }
 
-static bool get_socket_with_most_free_cores(const char* topology, const int topology_length, 
-               int* socket_number) 
+static bool get_socket_with_most_free_cores(const char* topology, const int topology_length,
+               int* socket_number)
 {
    /* get the socket which offers most free cores */
    int highest_amount_of_cores = 0;

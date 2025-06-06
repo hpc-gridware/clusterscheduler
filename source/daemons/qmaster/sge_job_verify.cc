@@ -65,7 +65,7 @@
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 

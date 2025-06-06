@@ -47,11 +47,8 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 
-#include "comm/commlib.h"
-
 #include "cull/cull_list.h"
 
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_var.h"
@@ -67,13 +64,11 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/sge_binding.h"
-#include "sgeobj/cull_parse_util.h"
-#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/ocs_Binding.h"
+#include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"
@@ -4476,7 +4471,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    const lListElem *binding;
    for_each_ep(binding, lGetList(job, JB_binding)) {
       sge_dstring_append(dstr, " -binding ");
-      binding_print_to_string(binding, dstr);
+      ocs::BindingIo::binding_print_to_string(binding, dstr);
    }
 
    job_add_str_opt_to_command_line(job, dstr, "-C", JB_directive_prefix);

@@ -51,7 +51,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_ulong.h"
-#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
@@ -59,7 +59,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_qref.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 
 #include "parse_job_cull.h"
 #include "parse_qsub.h"
@@ -357,7 +357,7 @@ lList *cull_parse_cmdline(
          sge_dstring_append(&argument_string, *sp);
          switch_argument = sge_dstring_get_string(&argument_string);
 
-         if (binding_parse_from_string(binding_elem, &answer, &argument_string)) {
+         if (ocs::BindingIo::binding_parse_from_string(binding_elem, &answer, &argument_string)) {
             lList *binding_list = lCreateList("binding", BN_Type);
 
             lAppendElem(binding_list, binding_elem);

@@ -66,8 +66,9 @@ set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
       config.cc
       cull_parse_util.cc
-      ocs_binding_io.cc
-      ocs_BindingFinder.cc
+      ocs_Binding.cc
+      ocs_BindingIo.cc
+      ocs_BindingExecd2Shepherd.cc
       ocs_Category.cc
       ocs_DataStore.cc
       ocs_HostTopology.cc
@@ -83,7 +84,6 @@ set(LIBRARY_SOURCES
       sge_all_listsL.cc
       sge_answer.cc
       sge_attr.cc
-      sge_binding.cc
       sge_calendar.cc
       sge_centry.cc
       sge_centry_rsmap.cc

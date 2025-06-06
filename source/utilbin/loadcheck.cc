@@ -48,14 +48,14 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 
 #include "basis_types.h"
 #include "msg_utilbin.h"
 
 #include <TestClass.h>
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 #include <sys/utsname.h>
 #endif
 
@@ -63,11 +63,11 @@ void usage();
 void print_mem_load(const char *, const char *, int, double, const char*);
 void check_core_binding();
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 void test_hwloc();
 #endif 
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology);
 #endif
 
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
    tst.method("rhabarberkuchen");
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
    dstring msocket   = DSTRING_INIT;
    dstring mcore     = DSTRING_INIT;
    dstring mthread   = DSTRING_INIT;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
       printf("num_proc        %d\n", nprocs);
    }
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
    fill_socket_core_topology(&msocket, &mcore, &mthread, &mtopology);
    if ((pos && !strcmp("m_socket", argv[pos])) || !pos) {
       printf("m_socket        %s\n", sge_dstring_get_string(&msocket));
@@ -286,7 +286,7 @@ void print_mem_load(const char *name, const char *thisone, int precision, double
 void check_core_binding()
 {
    /* try if it is possible to use hwloc in case of Linux */
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
       printf("Your OGE version has built-in core binding functionality!\n");
       test_hwloc();
 #else
@@ -294,7 +294,7 @@ void check_core_binding()
 #endif
 }
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 void test_hwloc()
 {
    char* topology = nullptr;
@@ -348,7 +348,7 @@ void test_hwloc()
 }
 #endif
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 /****** loadcheck/fill_socket_core_topology() **********************************
 *  NAME
 *     fill_socket_core_topology() -- Get load values regarding processor topology. 

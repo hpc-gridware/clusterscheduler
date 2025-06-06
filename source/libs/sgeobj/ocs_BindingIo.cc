@@ -37,7 +37,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/cull/sge_binding_BN_L.h"
 
 #include "msg_common.h"
@@ -67,9 +67,7 @@
 *
 *******************************************************************************/
 bool
-binding_print_to_string(const lListElem *this_elem, dstring *string) {
-   bool ret = true;
-
+ocs::BindingIo::binding_print_to_string(const lListElem *this_elem, dstring *string) { bool ret = true;
    DENTER(TOP_LAYER);
    if (this_elem != nullptr && string != nullptr) {
       const char *const strategy = lGetString(this_elem, BN_strategy);
@@ -115,8 +113,7 @@ binding_print_to_string(const lListElem *this_elem, dstring *string) {
 }
 
 bool
-binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string)
-{
+ocs::BindingIo::binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string) {
    bool ret = true;
 
    DENTER(TOP_LAYER);
@@ -124,16 +121,16 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
    if (this_elem != nullptr && string != nullptr) {
       int amount = 0;
       int stepsize = 0;
-      int firstsocket = 0;
-      int firstcore = 0;
+      int first_socket = 0;
+      int first_core = 0;
       binding_type_t type = BINDING_TYPE_NONE;
       dstring strategy = DSTRING_INIT;
-      dstring socketcorelist = DSTRING_INIT;
+      dstring socket_core_list = DSTRING_INIT;
       dstring error = DSTRING_INIT;
 
       if (parse_binding_parameter_string(sge_dstring_get_string(string),
-                                         &type, &strategy, &amount, &stepsize, &firstsocket, &firstcore,
-                                         &socketcorelist, &error) != true) {
+                                         &type, &strategy, &amount, &stepsize, &first_socket, &first_core,
+                                         &socket_core_list, &error) != true) {
          dstring parse_binding_error = DSTRING_INIT;
 
          sge_dstring_append_dstring(&parse_binding_error, &error);
@@ -148,18 +145,18 @@ binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *st
          lSetString(this_elem, BN_strategy, sge_dstring_get_string(&strategy));
 
          lSetUlong(this_elem, BN_type, type);
-         lSetUlong(this_elem, BN_parameter_socket_offset, (firstsocket >= 0) ? firstsocket : 0);
-         lSetUlong(this_elem, BN_parameter_core_offset, (firstcore >= 0) ? firstcore : 0);
+         lSetUlong(this_elem, BN_parameter_socket_offset, (first_socket >= 0) ? first_socket : 0);
+         lSetUlong(this_elem, BN_parameter_core_offset, (first_core >= 0) ? first_core : 0);
          lSetUlong(this_elem, BN_parameter_n, (amount >= 0) ? amount : 0);
          lSetUlong(this_elem, BN_parameter_striding_step_size, (stepsize >= 0) ? stepsize : 0);
 
          if (strstr(sge_dstring_get_string(&strategy), "explicit") != nullptr) {
-            lSetString(this_elem, BN_parameter_explicit, sge_dstring_get_string(&socketcorelist));
+            lSetString(this_elem, BN_parameter_explicit, sge_dstring_get_string(&socket_core_list));
          }
       }
 
       sge_dstring_free(&strategy);
-      sge_dstring_free(&socketcorelist);
+      sge_dstring_free(&socket_core_list);
       sge_dstring_free(&error);
    }
 

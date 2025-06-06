@@ -48,6 +48,8 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
+#include "sgeobj/sge_usage.h"
+#include "sgeobj/sge_qinstance.h"
 
 #include "job_report_execd.h"
 #include "reaper_execd.h"

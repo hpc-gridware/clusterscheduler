@@ -73,7 +73,7 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 
 #include "gdi/ocs_gdi_security.h"
 

@@ -51,7 +51,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 
 #include "sched/sgeee.h"
 
