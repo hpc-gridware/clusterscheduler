@@ -647,7 +647,6 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  AddSGEStartUpScript $euid master
  StartQmaster
  AddHosts
- MakeUserKs $ADMINUSER
  CopyCA execd
  CopyCA submit
 
