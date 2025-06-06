@@ -538,7 +538,8 @@ namespace ocs::uti {
 
       if (ret && create) {
          DPRINTF("Systemd::move_shepherd_to_scope: calling create_scope_with_pid\n");
-         ret = create_scope_with_pid(full_scope_name, full_slice_name, pid, error_dstr);
+         SystemdProperties_t properties;
+         ret = create_scope_with_pid(full_scope_name, full_slice_name, properties, pid, error_dstr);
       }
 
       // @todo: do we need to call sd_bus_error_free(&error)?
@@ -548,7 +549,8 @@ namespace ocs::uti {
 
    // @todo add properties
    bool
-   Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice, pid_t pid, dstring *error_dstr) const {
+   Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice,
+                                  const SystemdProperties_t & properties, pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -606,10 +608,6 @@ namespace ocs::uti {
       }
 
       // enable accounting
-      // @todo there would also be
-      //   - BlockAccounting (deprecated by IOAccounting)
-      //   - IPAccounting
-      //   - TasksAccounting
       if (ret) {
          r = sd_bus_message_append_func(m, "(sv)", "CPUAccounting", "b", 1);
          if (r < 0) {
@@ -633,17 +631,32 @@ namespace ocs::uti {
          }
       }
 
-      // @todo in addition pass a map<std::string, uint64_t> with properties
-#if 0
-      if (ret) {
-         r = sd_bus_message_append_func(m, "(sv)", "MemoryMax", "t", 1000000000);
-         if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "MemoryMax", "StartTransientUnit", r, strerror(-r));
-            ret = false;
+      // add properties, e.g. "MemoryMax" or "IOReadBandwidthMax
+      // @todo need to catch bad_variant_access exception? Not really needed here, as we know the types, but to be on the safe side?
+      for (auto const& [key, value] : properties) {
+         if (ret) {
+            switch (value.index()) {
+               case 0: // std::string
+                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "s", std::get<std::string>(value).c_str());
+                  break;
+               case 1: // uint64_t
+                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "t", std::get<uint64_t>(value));
+                  break;
+               case 2: // bool
+                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "b", std::get<bool>(value) ? 1 : 0);
+                  break;
+               default:
+                  // cannot really happen
+                  r = -EINVAL; // invalid type
+                  break;
+            }
+
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, key.c_str(), "StartTransientUnit", r, strerror(-r));
+               ret = false;
+            }
          }
       }
-#endif
-
 
       if (ret) {
          r = sd_bus_message_close_container_func(m);

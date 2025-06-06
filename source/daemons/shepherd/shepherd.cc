@@ -751,30 +751,6 @@ int main(int argc, char **argv)
       }
    }
 
-#if defined (OCS_WITH_SYSTEMD)
-   // @todo have a config option to enable/disable systemd integration
-   if (g_use_systemd) {
-      // try to initialize the Systemd integration,
-      // create an instance of Systemd and try to connect to the system bus,
-      // figure out if we are running as Systemd service
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::shepherd_scope_name, &error_dstr)) {
-         shepherd_trace("initialized systemd library");
-         if (ocs::uti::Systemd::is_running_as_service()) {
-            shepherd_trace("shepherd is running under systemd control in scope %s, systemd version %d, cgroups version %d",
-                           ocs::uti::Systemd::shepherd_scope_name.c_str(), ocs::uti::Systemd::get_systemd_version(),
-                           ocs::uti::Systemd::get_cgroup_version());
-         } else {
-            shepherd_trace("shepherd is not running under systemd control");
-            g_use_systemd = false;
-         }
-      } else if (sge_dstring_strlen(&error_dstr) > 0) {
-         shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
-         g_use_systemd = false;
-      }
-   }
-#endif
-
    {
       char *tmp_rsh_daemon;
       char *tmp_rlogin_daemon;
@@ -876,6 +852,30 @@ int main(int argc, char **argv)
 
    script_timeout = atoi(get_conf_val("script_timeout"));
    notify = atoi(get_conf_val("notify"));
+
+#if defined (OCS_WITH_SYSTEMD)
+   // @todo have a config option to enable/disable systemd integration
+   if (g_use_systemd) {
+      // try to initialize the Systemd integration,
+      // create an instance of Systemd and try to connect to the system bus,
+      // figure out if we are running as Systemd service
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::shepherd_scope_name, &error_dstr)) {
+         shepherd_trace("initialized systemd library");
+         if (ocs::uti::Systemd::is_running_as_service()) {
+            shepherd_trace("shepherd is running under systemd control in scope %s, systemd version %d, cgroups version %d",
+                           ocs::uti::Systemd::shepherd_scope_name.c_str(), ocs::uti::Systemd::get_systemd_version(),
+                           ocs::uti::Systemd::get_cgroup_version());
+         } else {
+            shepherd_trace("shepherd is not running under systemd control");
+            g_use_systemd = false;
+         }
+      } else if (sge_dstring_strlen(&error_dstr) > 0) {
+         shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
+         g_use_systemd = false;
+      }
+   }
+#endif
 
    /*
     * Create processor set
@@ -2816,8 +2816,14 @@ static int start_async_command(const char *descr, char *cmd)
       
       shepherd_trace("starting %s command: %s", descr, cmd);
       pid = getpid();
-      setpgid(pid, pid);  
-      setrlimits(0);
+      setpgid(pid, pid);
+
+      ocs::uti::SystemdProperties_t systemd_properties;
+      setrlimits(0, systemd_properties);
+
+      // @todo if we want to account prolog etc. to the job, then we need to move the child process into the job scope
+      // move_shepherd_child_to_job_scope(pid, systemd_properties);
+
       sge_set_environment();
       umask(022);
       tmp_str = search_conf_val("qsub_gid");
@@ -2859,7 +2865,7 @@ static int start_async_command(const char *descr, char *cmd)
 
       sge_set_def_sig_mask(nullptr, nullptr);
       start_command(descr, get_conf_val("shell_path"),
-         cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
+                    cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
       return 0;   
    }
 

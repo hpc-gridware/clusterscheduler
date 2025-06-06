@@ -53,13 +53,16 @@
 #include "setrlimits.h"
 #include "err_trace.h"
 #include "setjoblimit.h"
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/config_file.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_os.h"
 #include "sgeobj/sge_conf.h"
 
-static void pushlimit(int, struct RLIMIT_STRUCT_TAG *, int trace_rlimit);
+extern bool g_use_systemd;
+
+static void pushlimit(int, struct RLIMIT_STRUCT_TAG *, bool trace_rlimit);
 
 static int get_resource_info(u_long32 resource, const char **name, int *resource_type);
 
@@ -113,7 +116,7 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
    return 1;
 }
 
-void setrlimits(int trace_rlimit) {
+void setrlimits(bool trace_rlimit, ocs::uti::SystemdProperties_t &systemd_limits) {
    sge_rlim_t s_cpu, s_cpu_is_consumable_job;
    sge_rlim_t h_cpu, h_cpu_is_consumable_job;
 
@@ -267,7 +270,11 @@ void setrlimits(int trace_rlimit) {
    h_stack = RL_MIN(h_stack, h_vmem);*/ 
 
    priority = atoi(get_conf_val("priority"));
-   /* had problems doing this with admin user priviledges under HPUX */
+   // We might need root privileges to set the nice value, depending on the soft RLIMIT_NICE,
+   // see man page setpriority.2:
+   //    Traditionally, only a privileged process could lower the nice value (i.e., set a higher priority).
+   //    However, since Linux 2.6.12, an unprivileged process can decrease the nice value of a target process
+   //    that has a suitable RLIMIT_NICE soft limit; see getrlimit(2) for details.
    sge_switch2start_user(); 
    SETPRIORITY(priority);
    sge_switch2admin_user();  
@@ -412,6 +419,22 @@ void setrlimits(int trace_rlimit) {
    rlp.rlim_max = h_rss;
    pushlimit(RLIMIT_RSS, &rlp, trace_rlimit);
 #  endif
+
+   // add systemd limits
+   if (g_use_systemd) {
+      sge_rlim_t h_memory = RL_MIN(h_rss, h_vmem);
+      sge_rlim_t s_memory = RL_MIN(s_rss, s_vmem);
+      if (h_memory != RLIM_INFINITY) {
+         shepherd_trace("SYSTEMD MemoryMax = " sge_u64, h_memory);
+         // make sure that we have the right datatype for the std::variant
+         systemd_limits["MemoryMax"] = reinterpret_cast<uint64_t>(h_memory);
+      }
+      if (s_memory != RLIM_INFINITY) {
+         // make sure that we have the right datatype for the std::variant
+         shepherd_trace("SYSTEMD MemoryHigh = " sge_u64, s_memory);
+         systemd_limits["MemoryHigh"] = reinterpret_cast<uint64_t>(s_memory);
+      }
+   }
 }
 
 /* *INDENT-OFF* */
@@ -473,7 +496,7 @@ static int get_resource_info(u_long32 resource, const char **name,
 }
 
 static void pushlimit(int resource, struct RLIMIT_STRUCT_TAG *rlp,
-                      int trace_rlimit) 
+                      bool trace_rlimit)
 {
    const char *limit_str;
    char trace_str[1024];

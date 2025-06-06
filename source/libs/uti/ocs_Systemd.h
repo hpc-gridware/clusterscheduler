@@ -19,14 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#if defined(OCS_WITH_SYSTEMD)
+#include <map>
+#include <variant>
 #include <string>
 
+#if defined(OCS_WITH_SYSTEMD)
 #include <systemd/sd-bus.h>
 
 #include "sge_dstring.h"
+#endif
 
 namespace ocs::uti {
+   // systemd properties type
+   // we use it in the signature of a shepherd function - therefore, we need it outside OCS_WITH_SYSTEMD
+   using SystemdProperty_t = std::variant<std::string, uint64_t, bool>;
+   using SystemdProperties_t = std::map<std::string, SystemdProperty_t>;
+
+#if defined(OCS_WITH_SYSTEMD)
+
    // function types for the sdbus interface
    using sd_bus_open_system_func_t = int (*)(sd_bus **bus);
    using sd_bus_unref_func_t = sd_bus *(*)(sd_bus *bus);
@@ -124,10 +134,13 @@ namespace ocs::uti {
          bool connected() const;
 
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
-         bool create_scope_with_pid(const std::string &scope, const std::string &slice, pid_t pid, dstring *error_dstr) const;
+         bool create_scope_with_pid(const std::string &scope, const std::string &slice,
+                                    const SystemdProperties_t &properties, pid_t pid, dstring *error_dstr) const;
 
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const;
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const;
    };
-}
+
 #endif
+
+}
