@@ -137,6 +137,7 @@ pid_t wait3(int *, int, struct rusage *);
 bool g_new_interactive_job_support = false;
 int  g_noshell = 0;
 bool g_use_systemd = true;
+ocs::uti::SystemdProperties_t g_systemd_properties;
 
 char shepherd_job_dir[2048];
 int  received_signal=0;  /* set by signal handler, when a signal arrives */
@@ -2818,11 +2819,10 @@ static int start_async_command(const char *descr, char *cmd)
       pid = getpid();
       setpgid(pid, pid);
 
-      ocs::uti::SystemdProperties_t systemd_properties;
-      setrlimits(0, systemd_properties);
+      setrlimits(0, g_systemd_properties);
 
       // @todo if we want to account prolog etc. to the job, then we need to move the child process into the job scope
-      // move_shepherd_child_to_job_scope(pid, systemd_properties);
+      // move_shepherd_child_to_job_scope(pid, g_systemd_properties);
 
       sge_set_environment();
       umask(022);

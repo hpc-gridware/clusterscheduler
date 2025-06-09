@@ -20,8 +20,9 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <map>
-#include <variant>
 #include <string>
+#include <variant>
+#include <vector>
 
 #if defined(OCS_WITH_SYSTEMD)
 #include <systemd/sd-bus.h>
@@ -32,7 +33,7 @@
 namespace ocs::uti {
    // systemd properties type
    // we use it in the signature of a shepherd function - therefore, we need it outside OCS_WITH_SYSTEMD
-   using SystemdProperty_t = std::variant<std::string, uint64_t, bool>;
+   using SystemdProperty_t = std::variant<std::string, uint64_t, bool,std::vector<uint8_t>>;
    using SystemdProperties_t = std::map<std::string, SystemdProperty_t>;
 
 #if defined(OCS_WITH_SYSTEMD)
@@ -48,6 +49,7 @@ namespace ocs::uti {
       const char *destination, const char *path, const char *interface, const char *member);
    using sd_bus_message_unref_func_t = int *(*)(sd_bus_message *m);
    using sd_bus_message_append_func_t = int (*)(sd_bus_message *m, const char *types, ...);
+   using sd_bus_message_append_array_func_t = int (*)(sd_bus_message *m, char type, const void *ptr, size_t size);
    using sd_bus_message_open_container_func_t = int (*)(sd_bus_message *m, int type, const char *types);
    using sd_bus_message_close_container_func_t = int (*)(sd_bus_message *m);
    using sd_bus_call_func_t = int (*)(sd_bus *bus, sd_bus_message *m, uint64_t usec, sd_bus_error *error, sd_bus_message **reply);
@@ -81,6 +83,7 @@ namespace ocs::uti {
          static sd_bus_message_new_method_call_func_t sd_bus_message_new_method_call_func;
          static sd_bus_message_unref_func_t sd_bus_message_unref_func;
          static sd_bus_message_append_func_t sd_bus_message_append_func;
+         static sd_bus_message_append_array_func_t sd_bus_message_append_array_func;
          static sd_bus_message_open_container_func_t sd_bus_message_open_container_func;
          static sd_bus_message_close_container_func_t sd_bus_message_close_container_func;
          static sd_bus_call_func_t sd_bus_call_func;

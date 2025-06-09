@@ -42,6 +42,7 @@ namespace ocs::uti {
    sd_bus_message_new_method_call_func_t Systemd::sd_bus_message_new_method_call_func = nullptr;
    sd_bus_message_unref_func_t Systemd::sd_bus_message_unref_func = nullptr;
    sd_bus_message_append_func_t Systemd::sd_bus_message_append_func = nullptr;
+   sd_bus_message_append_array_func_t Systemd::sd_bus_message_append_array_func = nullptr;
    sd_bus_message_open_container_func_t Systemd::sd_bus_message_open_container_func = nullptr;
    sd_bus_message_close_container_func_t Systemd::sd_bus_message_close_container_func = nullptr;
    sd_bus_call_func_t Systemd::sd_bus_call_func = nullptr;
@@ -187,6 +188,14 @@ namespace ocs::uti {
          func = "sd_bus_message_append";
          sd_bus_message_append_func = reinterpret_cast<sd_bus_message_append_func_t>(dlsym(lib_handle, func));
          if (sd_bus_message_append_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_message_append_array";
+         sd_bus_message_append_array_func = reinterpret_cast<sd_bus_message_append_array_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_message_append_array_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -577,6 +586,7 @@ namespace ocs::uti {
          }
       }
 
+      // we add an array of properties (which are of type struct containing a string and a variant)
       if (ret) {
          r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(sv)");
          if (r < 0) {
@@ -633,27 +643,89 @@ namespace ocs::uti {
 
       // add properties, e.g. "MemoryMax" or "IOReadBandwidthMax
       // @todo need to catch bad_variant_access exception? Not really needed here, as we know the types, but to be on the safe side?
-      for (auto const& [key, value] : properties) {
-         if (ret) {
-            switch (value.index()) {
-               case 0: // std::string
-                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "s", std::get<std::string>(value).c_str());
-                  break;
-               case 1: // uint64_t
-                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "t", std::get<uint64_t>(value));
-                  break;
-               case 2: // bool
-                  r = sd_bus_message_append_func(m, "(sv)", key.c_str(), "b", std::get<bool>(value) ? 1 : 0);
-                  break;
-               default:
-                  // cannot really happen
-                  r = -EINVAL; // invalid type
-                  break;
-            }
 
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, key.c_str(), "StartTransientUnit", r, strerror(-r));
-               ret = false;
+      if (ret && properties.size() > 0) {
+         for (auto const& [key, value] : properties) {
+            if (ret) {
+               // open the struct (sv)
+               r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_STRUCT, "sv");
+               if (r < 0) {
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "one property struct", "StartTransientUnit", r, strerror(-r));
+                  ret = false;
+               }
+               if (ret) {
+                  r = sd_bus_message_append_func(m, "s", key.c_str());
+                  if (r < 0) {
+                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "one property key", "StartTransientUnit", r, strerror(-r));
+                     ret = false;
+                  }
+               }
+               if (ret) {
+                  switch (value.index()) {
+                     case 0: // std::string
+                        r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "s");
+                        break;
+                     case 1: // uint64_t
+                        r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "t");
+                        break;
+                     case 2: // bool
+                        r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "b");
+                        break;
+                     case 3: // std::vector<uint8_t>
+                        r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "ay");
+                        break;
+                     default:
+                        r = -EINVAL; // invalid type
+                        break;
+                  }
+                  if (r < 0) {
+                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS, "one property variant", "StartTransientUnit", r, strerror(-r));
+                     ret = false;
+                  }
+               }
+               if (ret) {
+                  switch (value.index()) {
+                     case 0: // std::string
+                        r = sd_bus_message_append_func(m, "s", std::get<std::string>(value).c_str());
+                        break;
+                     case 1: // uint64_t
+                        r = sd_bus_message_append_func(m, "t", std::get<uint64_t>(value));
+                        break;
+                     case 2: // bool
+                        r = sd_bus_message_append_func(m, "b", std::get<bool>(value) ? 1 : 0);
+                        break;
+                     case 3: // std::vector<uint8_t>
+                     {
+                        // adding the vector<uint8_t> as an array
+                        std::vector bits = std::get<std::vector<uint8_t>>(value);
+                        r = sd_bus_message_append_array_func(m, 'y', bits.data(), bits.size());
+                     }
+                        break;
+                     default:
+                        // cannot really happen
+                        r = -EINVAL; // invalid type
+                        break;
+                  }
+                  if (r < 0) {
+                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, key.c_str(), "StartTransientUnit", r, strerror(-r));
+                     ret = false;
+                  }
+               }
+
+               if (ret) {
+                  r = sd_bus_message_close_container_func(m);
+                  if (r < 0) {
+                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "one property variant", "StartTransientUnit", r, strerror(-r));
+                     ret = false;
+                  }
+               }
+               if (ret) {
+                  r = sd_bus_message_close_container_func(m);
+                  if (r < 0) {
+                     sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS, "one property struct", "StartTransientUnit", r, strerror(-r));
+                     ret = false;
+                  }
+               }
             }
          }
       }

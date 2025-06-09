@@ -67,6 +67,7 @@
 
 extern bool g_new_interactive_job_support;
 extern bool g_use_systemd;
+extern ocs::uti::SystemdProperties_t g_systemd_properties;
 
 extern int  g_noshell;
 extern int  g_newpgrp;
@@ -307,9 +308,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    }
    
    shepherd_trace("setting limits");
-   ocs::uti::SystemdProperties_t systemd_properties;
-   setrlimits(strcmp(childname, "job") == 0, systemd_properties);
-   move_shepherd_child_to_job_scope(pid, systemd_properties);
+   setrlimits(strcmp(childname, "job") == 0, g_systemd_properties);
+   move_shepherd_child_to_job_scope(pid, g_systemd_properties);
 
    shepherd_trace("setting environment");
    sge_set_environment();
