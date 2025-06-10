@@ -56,6 +56,7 @@
 
 #include "builtin_starter.h"
 #include "err_trace.h"
+#include "ocs_shepherd_systemd.h"
 #include "setrlimits.h"
 #include "get_path.h"
 #include "basis_types.h"
@@ -66,8 +67,6 @@
 #define MAX_NUMBER_OF_ENV_VARS 1023
 
 extern bool g_new_interactive_job_support;
-extern bool g_use_systemd;
-extern ocs::uti::SystemdProperties_t g_systemd_properties;
 
 extern int  g_noshell;
 extern int  g_newpgrp;
@@ -308,8 +307,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    }
    
    shepherd_trace("setting limits");
-   setrlimits(strcmp(childname, "job") == 0, g_systemd_properties);
-   move_shepherd_child_to_job_scope(pid, g_systemd_properties);
+   setrlimits(strcmp(childname, "job") == 0);
+   ocs::move_shepherd_child_to_job_scope(pid);
 
    shepherd_trace("setting environment");
    sge_set_environment();
@@ -1136,60 +1135,6 @@ static char **read_job_args(char **preargs, int extra_args)
    }
    args[i + n_preargs] = nullptr;
    return args;
-}
-
-// needs to be called before switching to the job user, when we can still become start_user (root)
-void move_shepherd_child_to_job_scope(int pid, ocs::uti::SystemdProperties_t &systemd_properties) {
-   // move the shepherd child to the job scope
-   // we do this only for the job, not for prolog, epilog, pe_start, pe_stop
-   // @todo we might want to add a execd_params whether to account prolog etc. to the job
-#if defined (OCS_WITH_SYSTEMD)
-   if (g_use_systemd) {
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      // @todo there would also be
-      //   - BlockAccounting (deprecated by IOAccounting)
-      //   - IPAccounting
-      //   - TasksAccounting
-      systemd_properties["CPUAccounting"] = true;
-      systemd_properties["MemoryAccounting"] = true;
-      if (ocs::uti::Systemd::get_cgroup_version() == 2) {
-         systemd_properties["IOAccounting"] = true;
-      }
-
-      // @todo binding
-      //       where to get the binding from?
-      //       config, binding=nullptr <- really
-      //       config, binding=explicit:0,0:1,0:ScSc
-      //       env SGE_BINDING=0 1
-      //       add property AllowedCPUs=<binding>, verify format
-
-      // @todo device isolation
-
-      u_long64 start_time = sge_get_gmt64();
-      const char *slice = get_conf_val("systemd_slice");
-      const char *scope = get_conf_val("systemd_scope");
-      if (slice != nullptr && scope != nullptr) {
-         ocs::uti::Systemd systemd;
-         sge_switch2start_user();
-         bool connected = systemd.connect(&error_dstr);
-         sge_switch2admin_user();
-         if (connected) {
-            pid_t pid = getpid();
-            shepherd_trace("moving shepherd child " pid_t_fmt "to job scope '%s' in slice '%s'", pid, scope, slice);
-            bool success = systemd.create_scope_with_pid(scope, slice, systemd_properties, pid, &error_dstr);
-            shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
-            if (!success) {
-               shepherd_error(1, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
-            }
-         } else {
-            // we treat a connect-error as fatal, connecting worked before
-            shepherd_error(1, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
-         }
-      } else {
-         shepherd_error(1, "systemd_slice and/or systemd_scope missing in config file, cannot move shepherd child to job scope");
-      }
-   }
-#endif
 }
 
 /*--------------------------------------------------------------------

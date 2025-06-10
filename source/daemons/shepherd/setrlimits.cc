@@ -50,6 +50,7 @@
 #define FORMAT_LIMIT(x) (x==RLIMIT_INFINITY)?0:x, (x==RLIMIT_INFINITY)?"\bINFINITY":""
 
 #include "basis_types.h"
+#include "ocs_shepherd_systemd.h"
 #include "setrlimits.h"
 #include "err_trace.h"
 #include "setjoblimit.h"
@@ -59,8 +60,6 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_os.h"
 #include "sgeobj/sge_conf.h"
-
-extern bool g_use_systemd;
 
 static void pushlimit(int, struct RLIMIT_STRUCT_TAG *, bool trace_rlimit);
 
@@ -116,7 +115,7 @@ static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
    return 1;
 }
 
-void setrlimits(bool trace_rlimit, ocs::uti::SystemdProperties_t &systemd_limits) {
+void setrlimits(bool trace_rlimit) {
    sge_rlim_t s_cpu, s_cpu_is_consumable_job;
    sge_rlim_t h_cpu, h_cpu_is_consumable_job;
 
@@ -421,18 +420,18 @@ void setrlimits(bool trace_rlimit, ocs::uti::SystemdProperties_t &systemd_limits
 #  endif
 
    // add systemd limits
-   if (g_use_systemd) {
+   if (ocs::g_use_systemd) {
       sge_rlim_t h_memory = RL_MIN(h_rss, h_vmem);
       sge_rlim_t s_memory = RL_MIN(s_rss, s_vmem);
       if (h_memory != RLIM_INFINITY) {
          shepherd_trace("SYSTEMD MemoryMax = " sge_u64, h_memory);
          // make sure that we have the right datatype for the std::variant
-         systemd_limits["MemoryMax"] = reinterpret_cast<uint64_t>(h_memory);
+         ocs::g_systemd_properties["MemoryMax"] = reinterpret_cast<uint64_t>(h_memory);
       }
       if (s_memory != RLIM_INFINITY) {
          // make sure that we have the right datatype for the std::variant
          shepherd_trace("SYSTEMD MemoryHigh = " sge_u64, s_memory);
-         systemd_limits["MemoryHigh"] = reinterpret_cast<uint64_t>(s_memory);
+         ocs::g_systemd_properties["MemoryHigh"] = reinterpret_cast<uint64_t>(s_memory);
       }
    }
 }

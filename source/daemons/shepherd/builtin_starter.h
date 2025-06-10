@@ -33,8 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/ocs_Systemd.h"
-
 void son(const char *childname, char *script_file, int truncate_stderr_out);
 int sge_set_environment();
 char** sge_get_environment();
@@ -43,6 +41,5 @@ const char *sge_get_env_value(const char *name);
 void start_command(const char *childname, char *shell_path, char *script_file, char *argv0,
                    const char *shell_start_mode, int is_interactive, int is_qlogin, int is_rsh, int is_rlogin,
                    const char *str_title, int use_starter_method);
-void move_shepherd_child_to_job_scope(pid_t pid, ocs::uti::SystemdProperties_t &systemd_properties);
 int check_configured_method(const char *method, const char *name, char *err_str, size_t err_str_size);
 char* build_path(int type);

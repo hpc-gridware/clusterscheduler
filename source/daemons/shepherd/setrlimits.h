@@ -33,8 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/ocs_Systemd.h"
-
 #define RES_PROC     1
 #define RES_JOB      2
 #define RES_BOTH     (RES_PROC|RES_JOB)
@@ -55,4 +53,4 @@ struct resource_table_entry {
    int resource_type[2];
 };
 
-void setrlimits(bool trace_limits, ocs::uti::SystemdProperties_t & systemd_limits);
+void setrlimits(bool trace_limits);

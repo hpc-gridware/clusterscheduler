@@ -49,6 +49,7 @@
 #include "uti/sge_string.h"
 #include "uti/ocs_topology.h"
 
+#include "ocs_shepherd_systemd.h"
 #include "shepherd_binding.h"
 #include "err_trace.h"
 
@@ -56,9 +57,6 @@
 #  include "sge_uidgid.h"
 #  include <sys/pset.h>
 #endif
-
-extern bool g_use_systemd;
-extern ocs::uti::SystemdProperties_t g_systemd_properties;
 
 namespace ocs {
 #if defined(OCS_HWLOC)
@@ -70,8 +68,6 @@ namespace ocs {
                                           int amount_of_cores, int offset, int n, const binding_type_t type);
 
    static bool bind_process_to_mask(hwloc_const_bitmap_t cpuset);
-
-   static bool add_binding_to_systemd_properties(hwloc_const_bitmap_t cpuset);
 
    static bool binding_explicit(const int *list_of_sockets, const int samount,
                                 const int *list_of_cores, const int camount, const binding_type_t type);
@@ -941,36 +937,6 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
          ret = false;
          shepherd_trace("create_binding_env_linux: Couldn't set environment variable!");
       }
-
-      return ret;
-   }
-
-   /**
-    * @brief Adds the CPU binding to the systemd properties.
-    *
-    * Fills in a vector of uint8_t with the CPU mask as bits and adds it to
-    * the systemd properties under the key "AllowedCPUs".
-    *
-    * @param cpuset - cpuset from hwloc which contains the CPU binding (logical cpus).
-    * @return
-    */
-   static bool
-   add_binding_to_systemd_properties(hwloc_const_bitmap_t cpuset) {
-      bool ret = true;
-      unsigned i;
-
-      // create a vector of uint8_t containing the CPU mask as bits
-      std::vector<uint8_t> cpu_mask(hwloc_bitmap_last(cpuset) / 8 + 1, 0);
-      hwloc_bitmap_foreach_begin(i, cpuset) {
-         shepherd_trace("adding CPU %d to AllowedCPUs", i);
-         cpu_mask[i/8] |= (1 << (i % 8));
-      }
-      hwloc_bitmap_foreach_end();
-      for (i = 0; i < cpu_mask.size(); ++i) {
-         shepherd_trace("==> byte %d: %08b", i, cpu_mask[i]);
-      }
-
-      g_systemd_properties["AllowedCPUs"] = cpu_mask;
 
       return ret;
    }
