@@ -1318,7 +1318,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       pe_slots += tmp_slots;
 
       /* reserve global host */
-      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
@@ -1330,7 +1330,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
 
       /* reserve exec host */
       lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
-      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
                                  duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
@@ -1340,7 +1340,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       }
 
       /* reserve queue instance */
-      rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
                              QUEUE_TAG, false, is_master_task, do_per_host_booking);
@@ -1354,7 +1354,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
    if (pe != nullptr) {
       utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
                       duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
+                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr);
       sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
    }
 

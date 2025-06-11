@@ -2952,10 +2952,9 @@ static bool get_free_sockets(const char* topology, const int topology_length,
 *     ???/???
 *******************************************************************************/
 bool get_striding_first_socket_first_core_and_account(const int amount, const int stepsize,
-   const int start_at_socket, const int start_at_core, const bool automatic,
-   int* first_socket, int* first_core, char** accounted_topology, 
-   int* accounted_topology_length) 
-{
+      const int start_at_socket, const int start_at_core, const bool automatic,
+      int *first_socket, int *first_core, char **accounted_topology,
+      int *accounted_topology_length) {
    DENTER(TOP_LAYER);
    /* return value: if it is possible to fit the request on the host */
    bool possible   = false;   

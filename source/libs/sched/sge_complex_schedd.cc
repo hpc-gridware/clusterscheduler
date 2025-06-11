@@ -183,7 +183,7 @@ get_attribute(const char *attrname, const lList *config_attr, const lList *actua
          const lListElem *actual_el;
          if (actual_attr != nullptr && (actual_el = lGetElemStr(actual_attr, RUE_name, attrname))) {
             DSTRING_STATIC(ds, 20);
-            double utilized = zero_utilization ? 0 : utilization_max(actual_el, start_time, duration, false);
+            double utilized = zero_utilization ? 0 : utilization_max(actual_el, start_time, duration, false, nullptr);
             double pj_doubleval;
 
             switch (lGetUlong(cplx_el, CE_relop)) {

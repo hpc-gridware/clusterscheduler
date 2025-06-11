@@ -277,6 +277,9 @@ object_get_subtype(int nm)
       case CONF_entries:
          ret = CF_Type;
          break;
+      case JG_binding_touse:
+         ret = ST_Type;
+         break;
       case SPA_argval_lListT:
          ret = ST_Type;
          break;
@@ -318,6 +321,9 @@ object_get_subtype(int nm)
          break;
       case GRU_resource_map_list:
          ret = RESL_Type;
+         break;
+      case GRU_binding_inuse:
+         ret = ST_Type;
          break;
       case STN_children:
          ret = STN_Type;
@@ -633,6 +639,9 @@ object_get_subtype(int nm)
          break;
       case PRO_groups:
          ret = GR_Type;
+         break;
+      case BN_specific_binding_list:
+         ret = ST_Type;
          break;
       case BN_joker:
          ret = VA_Type;

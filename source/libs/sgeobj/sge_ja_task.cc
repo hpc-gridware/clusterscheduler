@@ -741,12 +741,17 @@ int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slo
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);
    const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
-   const lListElem *granted_resource;
    const void *iterator;
 
-   for (granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
+   for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
         granted_resource != nullptr;
         granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
+
+      // only debit RSMAPs here
+      if (lGetUlong(granted_resource, GRU_type) != GRU_RESOURCE_MAP_TYPE) {
+         continue;
+      }
+
       mods += ja_task_debit_host_rsmap(granted_resource, host, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -755,3 +760,48 @@ int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slo
 
    return mods;
 }
+
+static int
+ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
+   DENTER(TOP_LAYER);
+
+   int mods = 0;
+   const char *ce_name = lGetString(granted_resource, GRU_name);
+   const lListElem *binding_st_elem;
+   for_each_ep (binding_st_elem, lGetList(granted_resource, GRU_binding_inuse)) {
+      mods += host_debit_binding(host, ce_name, binding_st_elem, slots, just_check);
+      if (just_check != nullptr && !*just_check) {
+         break;
+      }
+   }
+   DPRINTF("@todo CS-731: debit bindings\n");
+   DRETURN(mods);
+}
+
+int ja_task_debit_host_bindings(const lListElem *ja_task, lListElem *host, int slots, bool *just_check) {
+   int mods = 0;
+   const char *host_name = lGetHost(host, EH_name);
+   const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
+
+   const void *iterator;
+   for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
+        granted_resource != nullptr;
+        granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
+
+      // only debit RSMAPs here
+      if (lGetUlong(granted_resource, GRU_type) != GRU_BINDING_TYPE) {
+         continue;
+      }
+
+      lWriteElemTo(granted_resource, stderr);
+
+      mods += ja_task_debit_host_binding(granted_resource, host, slots, just_check);
+      if (just_check != nullptr && !*just_check) {
+         break;
+      }
+   }
+
+   return mods;
+}
+
+

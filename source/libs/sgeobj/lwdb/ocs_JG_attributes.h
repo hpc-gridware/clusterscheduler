@@ -41,7 +41,8 @@ enum {
    JG_sticket,
    JG_jcoticket,
    JG_jcfticket,
-   JG_processors
+   JG_processors,
+   JG_binding_touse
 };
 
 constexpr const int JG_Type[] = {
@@ -58,6 +59,7 @@ constexpr const int JG_Type[] = {
    JG_jcoticket,
    JG_jcfticket,
    JG_processors,
+   JG_binding_touse,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -74,7 +76,8 @@ constexpr const int JG_Type[] = {
    {JG_sticket, "JG_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JG_jcoticket, "JG_jcoticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JG_jcfticket, "JG_jcfticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {JG_processors, "JG_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {JG_processors, "JG_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_binding_touse, "JG_binding_touse", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

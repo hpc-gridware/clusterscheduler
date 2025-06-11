@@ -32,6 +32,7 @@ enum {
    RUE_name = 11100,
    RUE_utilized_now,
    RUE_utilized_now_resource_map_list,
+   RUE_utilized_now_binding_inuse,
    RUE_utilized,
    RUE_utilized_now_nonexclusive,
    RUE_utilized_nonexclusive
@@ -41,6 +42,7 @@ constexpr const int RUE_Type[] = {
    RUE_name,
    RUE_utilized_now,
    RUE_utilized_now_resource_map_list,
+   RUE_utilized_now_binding_inuse,
    RUE_utilized,
    RUE_utilized_now_nonexclusive,
    RUE_utilized_nonexclusive,
@@ -51,6 +53,7 @@ constexpr const int RUE_Type[] = {
    {RUE_name, "RUE_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, true, true}, \
    {RUE_utilized_now, "RUE_utilized_now", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RUE_utilized_now_resource_map_list, "RUE_utilized_now_resource_map_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {RUE_utilized_now_binding_inuse, "RUE_utilized_now_binding_inuse", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RUE_utilized, "RUE_utilized", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RUE_utilized_now_nonexclusive, "RUE_utilized_now_nonexclusive", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {RUE_utilized_nonexclusive, "RUE_utilized_nonexclusive", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \

@@ -193,6 +193,7 @@ static const int job_nm[] = {
         JB_ja_tasks,
         JB_ar,
         JB_ja_task_concurrency,
+        JB_binding,
         NoName
 };
 

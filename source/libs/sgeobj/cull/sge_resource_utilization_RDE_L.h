@@ -67,24 +67,30 @@
 *    SGE_LIST(RDE_resource_map_list) - Resource Map List
 *    Amount of Resource Maps which are used.
 *
+*    SGE_STRING(RDE_binding_inuse) - Binding
+*    Cores/threads that are used by jobs. Filled only if the resource is slots and when bookkeeping is done on host level.
+*
 */
 
 enum {
    RDE_time = RDE_LOWERBOUND,
    RDE_amount,
-   RDE_resource_map_list
+   RDE_resource_map_list,
+   RDE_binding_inuse
 };
 
 LISTDEF(RDE_Type)
    SGE_ULONG64(RDE_time, CULL_DEFAULT)
    SGE_DOUBLE(RDE_amount, CULL_DEFAULT)
    SGE_LIST(RDE_resource_map_list, RESL_Type, CULL_DEFAULT)
+   SGE_STRING(RDE_binding_inuse, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(RDEN)
    NAME("RDE_time")
    NAME("RDE_amount")
    NAME("RDE_resource_map_list")
+   NAME("RDE_binding_inuse")
 NAMEEND
 
 #define RDE_SIZE sizeof(RDEN)/sizeof(char *)

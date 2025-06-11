@@ -1090,8 +1090,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
             // the resource was requested
             DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name, dval, debit_slots);
             if (dval != 0.0) {
-               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, 0.0, cr_config, cr,
-                                                         is_exclusive, just_check)) {
+               if (!rc_debit_consumable_explicit_request(name, obj_type, obj_name, debit_slots, dval, 0.0, cr_config, cr, is_exclusive, just_check)) {
                   break;
                }
                mods++;

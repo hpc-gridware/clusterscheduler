@@ -110,6 +110,9 @@ host_merge(lListElem *host, const lListElem *global_host);
 int
 host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);
 
+int
+host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check);
+
 bool host_do_per_host_booking(const char **last_hostname, const char *hostname);
 
 bool

@@ -33,6 +33,7 @@ enum {
    GRU_name,
    GRU_amount,
    GRU_resource_map_list,
+   GRU_binding_inuse,
    GRU_host
 };
 
@@ -41,6 +42,7 @@ constexpr const int GRU_Type[] = {
    GRU_name,
    GRU_amount,
    GRU_resource_map_list,
+   GRU_binding_inuse,
    GRU_host,
    AttributeStatic::END_OF_ATTRIBUTES
 };
@@ -50,6 +52,7 @@ constexpr const int GRU_Type[] = {
    {GRU_name, "GRU_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {GRU_amount, "GRU_amount", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {GRU_resource_map_list, "GRU_resource_map_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {GRU_binding_inuse, "GRU_binding_inuse", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {GRU_host, "GRU_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
