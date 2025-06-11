@@ -783,7 +783,6 @@ int ja_task_debit_host_bindings(const lListElem *ja_task, lListElem *host, int s
    const char *host_name = lGetHost(host, EH_name);
    const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
    const void *iterator;
-
    for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
         granted_resource != nullptr;
         granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
