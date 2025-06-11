@@ -536,6 +536,54 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
    return mods;
 }
 
+int
+host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
+   DENTER(TOP_LAYER);
+
+   int mods = 0;
+
+   // we book cores/threads in the resource utilization of slots
+   lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
+   lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
+
+
+   // what is currently booked and what should be booked additionally
+   const char *binding_to_use = lGetString(resl, ST_name);
+   const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
+
+   DPRINTF("in use: %s, to use: %s, slots: %d\n",
+           binding_in_use ? binding_in_use : "null",
+           binding_to_use ? binding_to_use : "null",
+           slots);
+
+   // just check uf the requested change makes sense then return
+   if (just_check != nullptr) {
+      // @todo CS-731: check if binding_to_use can be added to binding_in_use or if this should cause a conflict
+      if (binding_in_use == nullptr || strcmp(binding_to_use, binding_in_use) != 0) {
+         *just_check = true;
+         mods++;
+      } else {
+         *just_check = false;
+      }
+      DRETURN(mods);
+   }
+
+   // make the change
+   // @todo CS-731: check if binding_to_use is already in binding_in_use
+   // add/remove all cores/threads that are set in binding_to_use to binding_in_use
+   if (slots > 0) {
+      lSetString(resource, RUE_utilized_now_binding_inuse, binding_to_use);
+   } else {
+      lSetString(resource, RUE_utilized_now_binding_inuse, nullptr);
+   }
+
+   DPRINTF("host_debit_binding\n");
+   lWriteListTo(resource_utilization, stderr);
+
+   mods++;
+   DRETURN(mods);
+}
+
 bool
 host_do_per_host_booking(const char **last_hostname, const char *hostname)
 {

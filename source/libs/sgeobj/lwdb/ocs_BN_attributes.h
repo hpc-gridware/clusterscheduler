@@ -36,6 +36,9 @@ enum {
    BN_parameter_core_offset,
    BN_parameter_striding_step_size,
    BN_parameter_explicit,
+   BN_specific_hostname,
+   BN_specific_binding,
+   BN_specific_binding_list,
    BN_joker
 };
 
@@ -47,6 +50,9 @@ constexpr const int BN_Type[] = {
    BN_parameter_core_offset,
    BN_parameter_striding_step_size,
    BN_parameter_explicit,
+   BN_specific_hostname,
+   BN_specific_binding,
+   BN_specific_binding_list,
    BN_joker,
    AttributeStatic::END_OF_ATTRIBUTES
 };
@@ -59,6 +65,9 @@ constexpr const int BN_Type[] = {
    {BN_parameter_core_offset, "BN_parameter_core_offset", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_parameter_striding_step_size, "BN_parameter_striding_step_size", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_parameter_explicit, "BN_parameter_explicit", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_specific_hostname, "BN_specific_hostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_specific_binding, "BN_specific_binding", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_specific_binding_list, "BN_specific_binding_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {BN_joker, "BN_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace

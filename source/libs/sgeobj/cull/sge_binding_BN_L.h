@@ -32,26 +32,36 @@
 *
 * @todo add description
 *
-*    SGE_STRING(BN_strategy) - @todo add summary
-*    @todo add description
+*    SGE_STRING(BN_strategy) - Binding strategy ...
+*    ... like linear, striding or explicit
 *
-*    SGE_ULONG(BN_type) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(BN_type) - Binding instance type
+*    set, PE or env
 *
-*    SGE_ULONG(BN_parameter_n) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(BN_parameter_n) - amount of cores
+*    Amount of CPU cores to bind
 *
-*    SGE_ULONG(BN_parameter_socket_offset) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(BN_parameter_socket_offset) - socket ID
+*    Logical socket ID to bind to, starting with 0
 *
-*    SGE_ULONG(BN_parameter_core_offset) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(BN_parameter_core_offset) - logical core ID of specified socket
+*    Logical core ID of specified socket to bind to, starting with 0
 *
-*    SGE_ULONG(BN_parameter_striding_step_size) - @todo add summary
-*    @todo add description
+*    SGE_ULONG(BN_parameter_striding_step_size) - Step size for striding
+*    Defines the striding's step size, starting with 1. Not used for other strategies.
 *
-*    SGE_STRING(BN_parameter_explicit) - @todo add summary
-*    @todo add description
+*    SGE_STRING(BN_parameter_explicit) - socket core list
+*    used for explicit binding, a list of logical socket/core pairs
+*
+*    SGE_HOST(BN_specific_hostname) - hostname of a host where the other specific attributes are valid for
+*    Used in scheduler only to identify where a specific binding decision was done for.
+*
+*    SGE_STRING(BN_specific_binding) - A specific binding decision for a task or job on a host
+*    Used in scheduler only to hold a binding decision for a specific task or job on a host.
+*
+*    SGE_LIST(BN_specific_binding_list) - Sublist of individual task specific bindings.
+*    Id of sublist specifies a task ID and the string the binding done for that task.
+*    Exists only if task specific binding decisions have to be done.
 *
 *    SGE_LIST(BN_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
@@ -68,6 +78,9 @@ enum {
    BN_parameter_core_offset,
    BN_parameter_striding_step_size,
    BN_parameter_explicit,
+   BN_specific_hostname,
+   BN_specific_binding,
+   BN_specific_binding_list,
    BN_joker
 };
 
@@ -79,6 +92,9 @@ LISTDEF(BN_Type)
    SGE_ULONG(BN_parameter_core_offset, CULL_SUBLIST)
    SGE_ULONG(BN_parameter_striding_step_size, CULL_SUBLIST)
    SGE_STRING(BN_parameter_explicit, CULL_SUBLIST)
+   SGE_HOST(BN_specific_hostname, CULL_SUBLIST)
+   SGE_STRING(BN_specific_binding, CULL_SUBLIST)
+   SGE_LIST(BN_specific_binding_list, ST_Type, CULL_SPOOL)
    SGE_LIST(BN_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
@@ -90,6 +106,9 @@ NAMEDEF(BNN)
    NAME("BN_parameter_core_offset")
    NAME("BN_parameter_striding_step_size")
    NAME("BN_parameter_explicit")
+   NAME("BN_specific_hostname")
+   NAME("BN_specific_binding")
+   NAME("BN_specific_binding_list")
    NAME("BN_joker")
 NAMEEND
 

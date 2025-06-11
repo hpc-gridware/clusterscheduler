@@ -23,7 +23,7 @@
 #include "sgeobj/ocs_HostTopology.h"
 
 int main (int argc, char *argv[]) {
-   std::string topo_mask = "ScTTCtTsctTtt";
+   std::string topo_mask = "ScTTCtTsctTctt";
    ocs::HostTopology ht = ocs::HostTopology(topo_mask);
 
    std::cout << topo_mask << std::endl;
