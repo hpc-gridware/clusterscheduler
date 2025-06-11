@@ -280,18 +280,17 @@ ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(dstring *result
 *******************************************************************************/
 bool
 ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
+   DENTER(TOP_LAYER);
+
    int first_socket = 0;
    int first_core = 0;
    int used_first_socket = 0;
    int used_first_core = 0;
-   int amount = 0;
    char *topo_job = nullptr;
    int topo_job_length = 0;
    bool retval;
 
-   DENTER(TOP_LAYER);
-
-   amount = (int) lGetUlong(binding_elem, BN_parameter_n);
+   int amount = (int) lGetUlong(binding_elem, BN_parameter_n);
 
    /* check if first socket and first core have to be determined by execd or
       not */
@@ -305,8 +304,9 @@ ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *bindi
       shephered */
 
    if (automatic) {
-      /* user has not specified where to begin, this has now beeing
-         figured out automatically */
+      DPRINTF("automatic\n");
+
+      /* user has not specified where to begin, this has now being figured out automatically */
       int *list_of_sockets = nullptr;
       int samount = 0;
       int *list_of_cores = nullptr;
@@ -345,25 +345,20 @@ ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *bindi
       }
 
    } else {
+      DPRINTF("not automatic\n");
+
       /* we have already a socket,core tuple to start with, therefore we
          use this one if possible or do not do any binding */
-      if (get_striding_first_socket_first_core_and_account(amount, 1, first_socket,
-                                                           first_core, automatic, &used_first_socket, &used_first_core,
-                                                           &topo_job,
-                                                           &topo_job_length)) {
+      if (get_striding_first_socket_first_core_and_account(amount, 1, first_socket, first_core,
+                                                           automatic, &used_first_socket, &used_first_core,
+                                                           &topo_job, &topo_job_length)) {
 
          /* only "linear" is allowed in config file, because execd has to figure
             out first <socket,core> to bind to (not shepherd - because of race
             conditions) */
-         sge_dstring_sprintf(result, "%s:%d:%d,%d:%s",
-                             "linear",
-                             amount,
-                             first_socket,
-                             first_core,
-                             topo_job);
+         sge_dstring_sprintf(result, "%s:%d:%d,%d:%s", "linear", amount, first_socket, first_core, topo_job);
 
          retval = true;
-
       } else {
          /* couldn't allocate cores */
          DPRINTF("ERROR: Couldn't allocate cores with respect to binding request!");

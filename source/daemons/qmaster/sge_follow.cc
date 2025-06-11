@@ -170,7 +170,7 @@ do_stree_spooling() {
          Follow_Control.is_spooling = DO_SPOOL;
          is_spool = true;
       } else {
-         DPRINTF("stree/prj/user spooling will not be done. Time not reached");
+         DPRINTF("stree/prj/user spooling will not be done. Time not reached\n");
          Follow_Control.is_spooling = DONOT_SPOOL;
       }
    }

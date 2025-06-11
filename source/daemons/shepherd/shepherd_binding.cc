@@ -515,7 +515,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                return false;
             }
 
-            /* collect the other processo r ids with the strategy */
+            /* collect the other processor ids with the strategy */
             for (int cores_set = 1; cores_set < amount_of_cores; ++cores_set) {
                next_core++;
                /* jump to next socket when it is needed */

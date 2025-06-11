@@ -1163,7 +1163,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
             job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ep, AR_resource_list)));
 
-            rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+            rc_add_job_utilization(nullptr, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                    this_elem, centry_list, lGetUlong(gdil_ep, JG_slots),
                                    QU_consumable_config_list, QU_resource_utilization, name,
                                    lGetUlong64(ep, AR_start_time), lGetUlong64(ep, AR_duration),
