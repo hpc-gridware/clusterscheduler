@@ -178,8 +178,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 
             sge_dstring_clear(&reason);
             ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list,  tmp_rue_list,
-                                       nullptr, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
-                                       SGE_RQS_NAME);
+                                   nullptr, nullptr, &reason, false, 1,
+                                   DOMINANT_LAYER_RQS, 0.0, &tmp_time, SGE_RQS_NAME, nullptr);
             if (ret != DISPATCH_OK) {
                DPRINTF("denied because: %s\n", sge_dstring_get_string(&reason));
                lFreeList(&tmp_rue_list);

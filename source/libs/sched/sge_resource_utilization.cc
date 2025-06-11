@@ -55,6 +55,7 @@
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/sge_str.h"
 
 #include "debit.h"
 #include "sge_job_schedd.h"
@@ -208,15 +209,42 @@ void utilization_print(const lListElem *cr, const char *object_name)
    const lListElem *rde;
    DSTRING_STATIC(dstr, 64);
 
-   DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
-           object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
-           lGetDouble(cr, RUE_utilized_now));
-   for_each_ep(rde, lGetList(cr, RUE_utilized)) {
-      DPRINTF("\t%s  %f\n", sge_ctime64(lGetUlong64(rde, RDE_time), &dstr), lGetDouble(rde, RDE_amount));
+   // @todo CS-731: RUE_utilized_now_binding_inuse not set correctly
+
+   if (object_name == nullptr) {
+      object_name = "<unknown_object>";
    }
-   DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
-           object_name?object_name:"<unknown_object>", lGetString(cr, RUE_name),
-           lGetDouble(cr, RUE_utilized_now_nonexclusive));
+   const char *name = lGetString(cr, RUE_name);
+   bool show_binding_inuse = strcmp(name, SGE_ATTR_SLOTS) == 0;
+
+   double utilized_now = lGetDouble(cr, RUE_utilized_now);
+   if (show_binding_inuse) {
+      const char *binding_now = lGetString(cr, RUE_utilized_now_binding_inuse);
+      if (binding_now) {
+         binding_now = "nothing-bound";
+      }
+
+      DPRINTF("resource utilization: %s: utilized-now: %s=%f (%s)\n", object_name, name, utilized_now, binding_now);
+   } else {
+      DPRINTF("resource utilization: %s: utilized-now: %s=%f\n", object_name, name, utilized_now);
+   }
+   for_each_ep(rde, lGetList(cr, RUE_utilized)) {
+      u_long64 time = lGetUlong64(rde, RDE_time);
+      double amount = lGetDouble(rde, RDE_amount);
+      const char *time_str = sge_ctime64(time, &dstr);
+
+      if (show_binding_inuse) {
+         const char *binding_inuse_str = lGetString(rde, RDE_binding_inuse);
+         if (binding_inuse_str == nullptr) {
+            binding_inuse_str = "nothing-bound";
+         }
+
+         DPRINTF("\t%s %f (%s)\n", time_str, amount, binding_inuse_str);
+      } else {
+         DPRINTF("\t%s %f\n", time_str, amount);
+      }
+   }
+   DPRINTF("resource utilization: %s: utilized-now-non-exclusive: %s=%f\n", object_name, name, lGetDouble(cr, RUE_utilized_now_nonexclusive));
    for_each_ep(rde, lGetList(cr, RUE_utilized_nonexclusive)) {
       DPRINTF("\t%s  %f\n", sge_ctime64(lGetUlong64(rde, RDE_time), &dstr), lGetDouble(rde, RDE_amount));
    }
@@ -274,16 +302,14 @@ static u_long64 utilization_endtime(u_long64 start, u_long64 duration)
 *******************************************************************************/
 int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, double utilization,
                      u_long32 job_id, u_long32 ja_taskid, u_long32 level, const char *object_name,
-                     const char *type, bool for_job, bool implicit_non_exclusive) 
-{
+                     const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse) {
+   DENTER(TOP_LAYER);
    lList *resource_diagram;
    lListElem *thiz, *prev, *start, *end;
    const char *name = lGetString(cr, RUE_name);
    u_long64 end_time;
    int nm;
    double util_prev;
-   
-   DENTER(TOP_LAYER);
 
    if (implicit_non_exclusive) {
       nm = RUE_utilized_nonexclusive;
@@ -291,6 +317,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       nm = RUE_utilized;
    }
    resource_diagram = lGetListRW(cr, nm);
+
 
    /* A reservation is only neccessary in one of the following cases:
       - for_job is true (this means no advance reservation request) 
@@ -307,8 +334,19 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    end_time = utilization_endtime(start_time, duration);
 
-   serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time,
-                     level, object_name, name, utilization);
+   serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time, level, object_name, name, utilization);
+
+   dstring binding_touse_dstr = DSTRING_INIT;
+   bool add_bindings = false;
+   if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0) {
+      DPRINTF("@todo CS-731 utilization_add(%s) add task binding by combining all tasks bindings to one string\n", object_name);
+      if (binding_touse != nullptr) {
+         sge_dstring_sprintf(&binding_touse_dstr, "%s", lGetString(lFirst(binding_touse), ST_name));
+      } else {
+         sge_dstring_sprintf(&binding_touse_dstr, "%s", "@todo CS-731");
+      }
+      add_bindings = true;
+   }
 
    /* ensure resource diagram is initialized */
    if (resource_diagram == nullptr) {
@@ -321,6 +359,8 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    if (start) {
       /* if we found one add the utilization amount to it */
       lAddDouble(start, RDE_amount, utilization);
+      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
+      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
    } else {
       /* otherwise insert a new one after the element before resp. at the list begin */
       if (prev)
@@ -330,6 +370,8 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       start = lCreateElem(RDE_Type);
       lSetUlong64(start, RDE_time, start_time);
       lSetDouble(start, RDE_amount, utilization + util_prev);
+      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
+      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
       lInsertElem(resource_diagram, prev, start);
    }
 
@@ -348,6 +390,8 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       }
       /* increment amount of elements in-between */
       lAddDouble(thiz, RDE_amount, utilization);
+      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
+      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
       prev = thiz;
       thiz = lNextRW(thiz);
    }
@@ -360,12 +404,17 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lInsertElem(resource_diagram, prev, end);
    }
 
-#if 0
-   utilization_print(cr, "pe_slots");
-   printf("this was before utilization_normalize()\n");
+#if 1
+   dstring combined_name = DSTRING_INIT;
+   sge_dstring_sprintf(&combined_name, "%s-%s", object_name, name);
+   utilization_print(cr, sge_dstring_get_string(&combined_name));
+   sge_dstring_free(&combined_name);
 #endif
 
    utilization_normalize(resource_diagram);
+
+   sge_dstring_free(&binding_touse_dstr);
+
    DRETURN(0);
 }
 
@@ -460,17 +509,15 @@ static void utilization_normalize(lList *diagram)
 *  NOTES
 *     MT-NOTE: utilization_queue_end() is MT safe 
 *******************************************************************************/
-double utilization_queue_end(const lListElem *cr, bool for_excl_request)
-{
-   const lListElem *ep = lLast(lGetList(cr, RUE_utilized));
-   double max = 0.0;
-
+double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
    DENTER(TOP_LAYER);
 
 #if 1
    utilization_print(cr, "the object");
 #endif
 
+   double max = 0.0;
+   const lListElem *ep = lLast(lGetList(cr, RUE_utilized));
    if (ep) {
       if (lGetUlong64(ep, RDE_time) != U_LONG64_MAX) {
          max = lGetDouble(ep, RDE_amount);
@@ -496,31 +543,20 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request)
    DRETURN(max);
 }
 
-
-/****** sge_resource_utilization/utilization_max() *****************************
-*  NAME
-*     utilization_max() -- Determine max utilization within timeframe
-*
-*  SYNOPSIS
-*     double utilization_max(const lListElem *cr, u_long32 start_time, u_long32 
-*     duration) 
-*
-*  FUNCTION
-*     Determines the maximum utilization at the given timeframe.
-*
-*  INPUTS
-*     const lListElem *cr - Resource utilization entry (RUE_utilized)
-*     u_long32 start_time - Start time of the timeframe
-*     u_long32 duration   - Duration of timeframe
-*     bool for_excl_request - For exclusive request
-*
-*  RESULT
-*     double - Maximum utilization
-*
-*  NOTES
-*     MT-NOTE: utilization_max() is MT safe 
-*******************************************************************************/
-double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request)
+// /**
+//  * Returns the maximum utilization within a timeframe and additional details
+//  *
+//  * @param cr Resource utilization entry (RUE_utilized)
+//  * @param start_time Start time of the timeframe
+//  * @param duration Duration of timeframe
+//  * @param for_excl_request Whether to check for exclusive requests
+//  * @param[out] binding_inuse Only available for slots on host level.
+//  * @return Maximum utilization value
+//  *
+//  * @todo CS-731 In case of reservation we need to OR all binding_inuse over the jobs duration to see cores/threads that can still be used
+//  */
+double
+utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request, dstring *binding_inuse)
 {
    const lListElem *rde;
    lListElem *start, *prev;
@@ -564,7 +600,7 @@ double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 durati
       }
    }
 
-   /* now watch out for the maximum before end time */ 
+   /* now watch out for the maximum before end time */
    while (rde && end_time > lGetUlong64(rde, RDE_time)) {
       max = MAX(max, lGetDouble(rde, RDE_amount));
       rde = lNext(rde);
@@ -572,8 +608,7 @@ double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 durati
    
    if (for_excl_request) {
       double max_nonexclusive = 0.0;
-      utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized_nonexclusive), start_time, 
-            &start, &prev);
+      utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized_nonexclusive), start_time, &start, &prev);
 
       if (start) {
          max_nonexclusive = lGetDouble(start, RDE_amount);
@@ -599,37 +634,21 @@ double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 durati
    DRETURN(max); 
 }
 
-/****** sge_resource_utilization/utilization_below() ***************************
-*  NAME
-*     utilization_below() -- Determine earliest time util is below max_util
-*
-*  SYNOPSIS
-*     u_long32 utilization_below(const lListElem *cr, double max_util, const 
-*     char *object_name) 
-*
-*  FUNCTION
-*     Determine and return earliest time utilization is below max_util.
-*
-*  INPUTS
-*     const lListElem *cr     - Resource utilization entry (RUE_utilized)
-*     double max_util         - The maximum utilization we're asking
-*     const char *object_name - Name of the queue/host/global for monitoring 
-*                               purposes.
-*     bool for_excl_request   - match for exclusive request
-*
-*  RESULT
-*     u_long32 - The earliest time or DISPATCH_TIME_NOW.
-*
-*  NOTES
-*     MT-NOTE: utilization_below() is MT safe 
-*******************************************************************************/
-u_long64 utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request)
-{
+/** @brief Determine earliest time utilization is below max_util.
+ *
+ * @param cr Resource utilization entry (RUE_utilized)
+ * @param max_util The maximum utilization we're asking
+ * @param object_name Name of the queue/host/global for monitoring purposes.
+ * @param for_excl_request match for exclusive request
+ * @param binding_inuse Only available for slots on host level.
+ * @return The earliest time or DISPATCH_TIME_NOW.
+ */
+u_long64
+utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request, dstring *binding_inuse) {
+   DENTER(TOP_LAYER);
    const lListElem *rde;
    double util = 0;
    u_long64 when = DISPATCH_TIME_NOW;
-
-   DENTER(TOP_LAYER);
 
 #if 0
    utilization_print(cr, object_name);
@@ -710,7 +729,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       /* parallel environment  */
       if (a->pe) {
          utilization_add(lFirstRW(lGetList(a->pe, PE_resource_utilization)), a->start, a->duration, a->slots,
-               a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type, for_job_scheduling, false);
+               a->job_id, a->ja_task_id, PE_TAG, lGetString(a->pe, PE_name), type, for_job_scheduling, false, nullptr);
       }
 
       bool is_master_task = true;
@@ -729,13 +748,13 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          // global
          // we really need to do it per gdil_ep, because we have to consider is_master_task and ign_sreq_on_mhost
-         rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, slots,
+         rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, a->gep, a->centry_list, slots,
                                 EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME,
                                 a->start, a->duration, GLOBAL_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
 
          // host
          if ((hep = host_list_locate(a->host_list, eh_name)) != nullptr) {
-            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
+            rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, hep, a->centry_list, slots,
                                    EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
                                    a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
          }
@@ -750,7 +769,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
              * schedule runs: running/suspneded/migrating jobs.
              * 
              */
-            rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
+            rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                    QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                    a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, false);
          }
@@ -797,18 +816,18 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
             if ((qep = lGetSubStrRW(a->ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
-               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
+               rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
                                       a->duration, QUEUE_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
             if (ar_global_host != nullptr) {
-               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, ar_global_host, a->centry_list, slots,
+               rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, ar_global_host, a->centry_list, slots,
                                       EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_global_host_booking);
             }
             lListElem *host = lGetSubHostRW(a->ar, EH_name, eh_name, AR_reserved_hosts);
             if (host != nullptr) {
-               rc_add_job_utilization(a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
+               rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
                                       EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
@@ -821,7 +840,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    DRETURN(0);
 }
 
-int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
+int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
                            bool is_master_task, bool do_per_host_booking)
@@ -874,8 +893,8 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
       if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL)) {
          if (dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
-            utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag, obj_name, type,
-                            for_job_scheduling, false);
+            utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
+                            obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
             mods++;
             did_booking = true;
          }
@@ -893,7 +912,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for one slot (the master task)
                   utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
-                                  obj_name, type, for_job_scheduling, false);
+                                  obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
                   mods++;
                   did_booking = true;
                }
@@ -921,7 +940,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
                // book it for the remaining slave tasks
                slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
-                               obj_name, type, for_job_scheduling, false);
+                               obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
                mods++;
                did_booking = true;
             }
@@ -933,7 +952,7 @@ int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id
          dval = 1.0;
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                         obj_name, type, for_job_scheduling, true);
+                         obj_name, type, for_job_scheduling, true, lGetList(gdil, JG_binding_touse));
          mods++;
       }
    }
@@ -1025,7 +1044,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
             if (dval != 0.0) {
                /* update RUE_utilized resource diagram to reflect jobs utilization */
                utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
-                               RQS_TAG, obj_name, type, true, false);
+                               RQS_TAG, obj_name, type, true, false, nullptr);
                mods++;
                did_booking = true;
             }
@@ -1043,7 +1062,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for one slot (the master task)
                      utilization_add(rue_elem, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id,
-                                     RQS_TAG, obj_name, type, true, false);
+                                     RQS_TAG, obj_name, type, true, false, nullptr);
                      mods++;
                      did_booking = true;
                   }
@@ -1071,7 +1090,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
                      // book it for the remaining slave tasks
                      slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                      utilization_add(rue_elem, start_time, duration, slave_debit_slots * dval, job_id, task_id,
-                                     RQS_TAG, obj_name, type, true, false);
+                                     RQS_TAG, obj_name, type, true, false, nullptr);
                      mods++;
                      did_booking = true;
                   }
@@ -1083,7 +1102,7 @@ rqs_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, c
          if (!did_booking && lGetUlong(raw_centry, CE_relop) == CMPLXEXCL_OP) {
             dval = 1.0;
             utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
-                            RQS_TAG, obj_name, type, true, true);
+                            RQS_TAG, obj_name, type, true, true, nullptr);
             mods++;
          }
       }

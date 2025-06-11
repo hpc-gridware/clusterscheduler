@@ -41,14 +41,14 @@
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
 void utilization_print(const lListElem *cr, const char *object_name);
 int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, double utilization,
-   u_long32 job_id, u_long32 ja_taskid, u_long32 level, const char *object_name, const char *type, bool for_job, bool implicit_non_exclusive);
-double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request);
-u_long64 utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request);
+   u_long32 job_id, u_long32 ja_taskid, u_long32 level, const char *object_name, const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse);
+double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request, dstring *binding_inuse);
+u_long64 utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request, dstring *binding_inuse);
 
 int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_job_scheduling);
 double utilization_queue_end(const lListElem *cr, bool for_excl_request);
 
-int rc_add_job_utilization(lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
+int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListElem *pe, u_long32 task_id, const char *type, lListElem *ep,
                            const lList *centry_list, int slots, int config_nm, int actual_nm, const char *obj_name,
                            u_long64 start_time, u_long64 duration, u_long32 tag, bool for_job_scheduling,
                            bool is_master_task, bool do_per_host_booking);

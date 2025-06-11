@@ -352,6 +352,7 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListE
                                lGetHost(hep, EH_name), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
       mods += ja_task_debit_host_rsmaps(jatep, hep, slots, just_check);
+      mods += ja_task_debit_host_bindings(jatep, hep, slots, just_check);
    }
    return mods;
 }

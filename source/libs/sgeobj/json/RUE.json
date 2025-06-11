@@ -45,6 +45,14 @@
 			"subCullPrefix":	"RESL",
 			"flags":	[]
 		}, {
+			"name":	"utilized_now_binding_inuse",
+			"summary":	"Utilized Now Binding In Use",
+			"description":	[{
+				"line":	"Topology string with lowercase core/threads that are currently in use."
+			}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
 			"name":	"utilized",
 			"summary":	"Utilized",
 			"description":	[{

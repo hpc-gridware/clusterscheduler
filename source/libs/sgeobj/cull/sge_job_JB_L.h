@@ -561,7 +561,7 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_grp_list, ST_Type, CULL_SPOOL)
    SGE_LIST(JB_joker, VA_Type, CULL_SPOOL)
    SGE_ULONG(JB_sync_options, CULL_SPOOL)
-   SGE_ULONG(JB_category_id, CULL_HASH | CULL_SPOOL)
+   SGE_ULONG(JB_category_id, CULL_HASH)
 LISTEND
 
 NAMEDEF(JBN)
