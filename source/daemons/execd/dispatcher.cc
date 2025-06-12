@@ -55,6 +55,7 @@
 #include "msg_execd.h"
 #include "execd.h"
 #include "execd_job_exec.h"
+#include "execd_profiling.h"
 #include "execd_ticket.h"
 #include "job_report_execd.h"
 #include "execd_signal_queue.h"
@@ -81,7 +82,6 @@ int sge_execd_process_messages() {
    u_long64 last_alive_check = 0;
    u_long64 load_report_time = 0;
    u_long64 alive_check_interval = 0;
-   u_long64 next_prof_output = 0;
 
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
@@ -102,6 +102,7 @@ int sge_execd_process_messages() {
    }
 
    while (!terminate) {
+      ocs::execd_profiling_start_stop();
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
       u_long64 now = sge_get_gmt64();
@@ -380,7 +381,7 @@ int sge_execd_process_messages() {
       }
 
       PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
-      thread_output_profiling("execd profiling summary:", &next_prof_output);
+      ocs::execd_profiling_output();
    }
    sge_monitor_free(&monitor);
 

@@ -69,6 +69,7 @@
 #include "sig_handlers.h"
 #include "usage.h"
 #include "execd.h"
+#include "execd_profiling.h"
 #include "sge.h"
 #include "msg_common.h"
 #include "msg_execd.h"
@@ -176,9 +177,7 @@ int main(int argc, char **argv)
 
    set_thread_name(pthread_self(),"Execd Thread");
 
-   prof_set_level_name(SGE_PROF_CUSTOM1, "dispatcher", nullptr);
-   prof_set_level_name(SGE_PROF_CUSTOM2, "systemd", nullptr);
-   prof_set_level_name(SGE_PROF_CUSTOM3, "ptf/pdc", nullptr);
+   ocs::execd_profiling_initialize();
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
    /* init language output for gettext() , it will use the right language */
@@ -395,18 +394,6 @@ int main(int argc, char **argv)
 
    sge_sig_handler_in_main_loop = 1;
 
-   if (thread_prof_active_by_id(pthread_self())) {
-      prof_start(SGE_PROF_CUSTOM1, nullptr);
-      prof_start(SGE_PROF_CUSTOM2, nullptr);
-      prof_start(SGE_PROF_CUSTOM3, nullptr);
-      prof_start(SGE_PROF_GDI_REQUEST, nullptr);
-   } else {
-      prof_stop(SGE_PROF_CUSTOM1, nullptr);
-      prof_stop(SGE_PROF_CUSTOM2, nullptr);
-      prof_stop(SGE_PROF_CUSTOM3, nullptr);
-      prof_stop(SGE_PROF_GDI_REQUEST, nullptr);
-   }
-
    /* Start dispatching */
    execd_exit_state = sge_execd_process_messages();
 
@@ -425,7 +412,7 @@ int main(int argc, char **argv)
 #endif
    lFreeList(master_job_list);
 
-   sge_prof_cleanup();
+   ocs::execd_profiling_cleanup();
 
    sge_shutdown(execd_exit_state);
    DRETURN(execd_exit_state);
