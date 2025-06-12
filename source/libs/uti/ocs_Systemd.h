@@ -33,7 +33,9 @@
 namespace ocs::uti {
    // systemd properties type
    // we use it in the signature of a shepherd function - therefore, we need it outside OCS_WITH_SYSTEMD
-   using SystemdProperty_t = std::variant<std::string, uint64_t, bool,std::vector<uint8_t>>;
+   using SystemdDevice_t =  std::pair<std::string, std::string>;
+   using SystemdProperty_t = std::variant<std::string, uint64_t, bool,
+                                          std::vector<uint8_t>, std::vector<SystemdDevice_t>>;
    using SystemdProperties_t = std::map<std::string, SystemdProperty_t>;
 
 #if defined(OCS_WITH_SYSTEMD)
@@ -52,6 +54,8 @@ namespace ocs::uti {
    using sd_bus_message_append_array_func_t = int (*)(sd_bus_message *m, char type, const void *ptr, size_t size);
    using sd_bus_message_open_container_func_t = int (*)(sd_bus_message *m, int type, const char *types);
    using sd_bus_message_close_container_func_t = int (*)(sd_bus_message *m);
+   using sd_bus_message_dump_func_t = int (*)(sd_bus_message *m, FILE *f, int flags);
+   using sd_bus_message_rewind_func_t = int (*)(sd_bus_message *m, int complete);
    using sd_bus_call_func_t = int (*)(sd_bus *bus, sd_bus_message *m, uint64_t usec, sd_bus_error *error, sd_bus_message **reply);
    using sd_bus_add_match_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *match, sd_bus_message_handler_t callback, void *userdata);
    using sd_bus_match_signal_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *path, const char *interface, const char *member, sd_bus_message_handler_t callback, void *userdata);
@@ -86,6 +90,8 @@ namespace ocs::uti {
          static sd_bus_message_append_array_func_t sd_bus_message_append_array_func;
          static sd_bus_message_open_container_func_t sd_bus_message_open_container_func;
          static sd_bus_message_close_container_func_t sd_bus_message_close_container_func;
+         static sd_bus_message_dump_func_t sd_bus_message_dump_func;
+         static sd_bus_message_rewind_func_t sd_bus_message_rewind_func;
          static sd_bus_call_func_t sd_bus_call_func;
          static sd_bus_add_match_func_t sd_bus_add_match_func;
          static sd_bus_match_signal_func_t sd_bus_match_signal_func;

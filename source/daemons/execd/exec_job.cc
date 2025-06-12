@@ -1429,6 +1429,16 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
       }
    }
+
+   // device isolation
+   // for testing purposes until we have device isolation via RSMAPs
+   env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
+   if (env != nullptr) {
+      const char *devices_allow = lGetString(env, VA_value);
+      fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
+   } else {
+      fprintf(fp, "devices_allow=\n");
+   }
 #endif
 
    /* the following values are needed by the reaper */

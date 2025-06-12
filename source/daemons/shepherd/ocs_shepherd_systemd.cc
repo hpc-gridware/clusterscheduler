@@ -18,6 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <string.h>
+
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
@@ -55,12 +58,71 @@ namespace ocs {
 #endif
    }
 
+#if defined (OCS_WITH_SYSTEMD)
+   static void
+   add_accounting_settings() {
+      // @todo there would also be
+      //   - BlockAccounting (deprecated by IOAccounting)
+      //   - IPAccounting
+      //   - TasksAccounting
+      g_systemd_properties["CPUAccounting"] = true;
+      g_systemd_properties["MemoryAccounting"] = true;
+      if (ocs::uti::Systemd::get_cgroup_version() == 2) {
+         g_systemd_properties["IOAccounting"] = true;
+      }
+   }
+
+#define DEVICES_DELIMITOR ";"
+#define DEVICES_DEFAULT_MODE "r"
+   //       DeviceAllow, array of structs having two strings: device name and access mode: a(ss)
+   //          use config file entry devices_allow to specify devices which are allowed
+   //          @todo have an execd_params for devices which shall always be allowed?
+   //       DevicePolicy, string:
+   //          "strict" - no devices allowed except what is specified in DeviceAllow
+   //          "closed" - like strict, but also allows /dev/null, /dev/zero, /dev/full, /dev/random, /dev/urandom
+   //          "auto" - allows all devices, unless DeviceAllow is set, then it behaves like closed (?)
+   //          @todo have an execd_params for this?
+   static void
+   add_devices_allow() {
+      char *devices_allow = get_conf_val("devices_allow");
+      if (devices_allow != nullptr && strlen(devices_allow) > 0) {
+         // switch to closed device policy
+         g_systemd_properties["DevicePolicy"] = "closed";
+         std::vector<ocs::uti::SystemdDevice_t> devices;
+         saved_vars_s *context = nullptr;
+         char *device = sge_strtok_r(devices_allow, DEVICES_DELIMITOR, &context);
+         ocs::uti::SystemdDevice_t systemd_device{};
+         while (device != nullptr) {
+            // device is a string of the form "device_name=access_mode"
+            // where access_mode can contain "r", "w", "rw"
+            char *access_mode = strchr(device, '=');
+            if (access_mode == nullptr || *access_mode == '\0') {
+               shepherd_trace("no mode specifice for device %s, using \"rw\" as default", device);
+               systemd_device.second = DEVICES_DEFAULT_MODE; // default access mode
+            } else {
+               *access_mode = '\0'; // split device name and access mode
+               access_mode++;
+               systemd_device.second = access_mode;
+            }
+            systemd_device.first = device; // device name
+            shepherd_trace("adding device %s with access mode %s to systemd properties DeviceAllow",
+                           systemd_device.first.c_str(), systemd_device.second.c_str());
+            devices.push_back(systemd_device);
+
+            // optionally next device
+            device = sge_strtok_r(nullptr, DEVICES_DELIMITOR, &context);
+         }
+         g_systemd_properties["DeviceAllow"] = devices;
+      }
+   }
+#endif
+
    // needs to be called before switching to the job user, when we can still become start_user (root)
    void
    move_shepherd_child_to_job_scope(int pid) {
    // move the shepherd child to the job scope
    // we do this only for the job, not for prolog, epilog, pe_start, pe_stop
-   // @todo we might want to add a execd_params whether to account prolog etc. to the job
+   // @todo we might want to add an execd_params whether to account prolog etc. to the job
 #if defined (OCS_WITH_SYSTEMD)
    if (g_use_systemd) {
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
@@ -74,8 +136,9 @@ namespace ocs {
          g_systemd_properties["IOAccounting"] = true;
       }
 
-      // @todo device isolation
-      //       DeviceAllow, array of structs having two strings: device name and access mode: a(ss)
+      add_accounting_settings();
+      add_devices_allow();
+
       u_long64 start_time = sge_get_gmt64();
       const char *slice = get_conf_val("systemd_slice");
       const char *scope = get_conf_val("systemd_scope");

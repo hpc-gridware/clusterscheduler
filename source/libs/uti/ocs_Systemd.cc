@@ -56,6 +56,8 @@ namespace ocs::uti {
    sd_bus_path_encode_func_t Systemd::sd_bus_path_encode_func = nullptr;
    sd_bus_get_property_func_t Systemd::sd_bus_get_property_func = nullptr;
    sd_bus_error_free_func_t Systemd::sd_bus_error_free_func = nullptr;
+   sd_bus_message_dump_func_t Systemd::sd_bus_message_dump_func = nullptr;
+   sd_bus_message_rewind_func_t Systemd::sd_bus_message_rewind_func = nullptr;
 
    std::string Systemd::slice_name{};
    std::string Systemd::service_name{};
@@ -212,6 +214,22 @@ namespace ocs::uti {
          func = "sd_bus_message_close_container";
          sd_bus_message_close_container_func = reinterpret_cast<sd_bus_message_close_container_func_t>(dlsym(lib_handle, func));
          if (sd_bus_message_close_container_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_message_dump";
+         sd_bus_message_dump_func = reinterpret_cast<sd_bus_message_dump_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_message_dump_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "sd_bus_message_rewind";
+         sd_bus_message_rewind_func = reinterpret_cast<sd_bus_message_rewind_func_t>(dlsym(lib_handle, func));
+         if (sd_bus_message_rewind_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -559,7 +577,7 @@ namespace ocs::uti {
    // @todo add properties
    bool
    Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice,
-                                  const SystemdProperties_t & properties, pid_t pid, dstring *error_dstr) const {
+                                  const SystemdProperties_t &properties, pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -617,33 +635,8 @@ namespace ocs::uti {
          }
       }
 
-      // enable accounting
-      if (ret) {
-         r = sd_bus_message_append_func(m, "(sv)", "CPUAccounting", "b", 1);
-         if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "CPUAccounting", "StartTransientUnit", r, strerror(-r));
-            ret = false;
-         }
-      }
-      // Enabling IOAccounting has no effect on cgroup v1.
-      if (ret && cgroup_version == 2) {
-         r = sd_bus_message_append_func(m, "(sv)", "IOAccounting", "b", 1);
-         if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "IOAccounting", "StartTransientUnit", r, strerror(-r));
-            ret = false;
-         }
-      }
-      if (ret) {
-         r = sd_bus_message_append_func(m, "(sv)", "MemoryAccounting", "b", 1);
-         if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS, "MemoryAccounting", "StartTransientUnit", r, strerror(-r));
-            ret = false;
-         }
-      }
-
       // add properties, e.g. "MemoryMax" or "IOReadBandwidthMax
       // @todo need to catch bad_variant_access exception? Not really needed here, as we know the types, but to be on the safe side?
-
       if (ret && properties.size() > 0) {
          for (auto const& [key, value] : properties) {
             if (ret) {
@@ -674,6 +667,9 @@ namespace ocs::uti {
                      case 3: // std::vector<uint8_t>
                         r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "ay");
                         break;
+                     case 4: // SystemdDevice_t (struct of two strings, device and mode)
+                        r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_VARIANT, "a(ss)");
+                        break;
                      default:
                         r = -EINVAL; // invalid type
                         break;
@@ -695,11 +691,31 @@ namespace ocs::uti {
                         r = sd_bus_message_append_func(m, "b", std::get<bool>(value) ? 1 : 0);
                         break;
                      case 3: // std::vector<uint8_t>
-                     {
-                        // adding the vector<uint8_t> as an array
-                        std::vector bits = std::get<std::vector<uint8_t>>(value);
-                        r = sd_bus_message_append_array_func(m, 'y', bits.data(), bits.size());
-                     }
+                        {
+                           // adding the vector<uint8_t> as an array
+                           std::vector bits = std::get<std::vector<uint8_t>>(value);
+                           r = sd_bus_message_append_array_func(m, 'y', bits.data(), bits.size());
+                        }
+                        break;
+                     case 4:
+                        {
+                           std::vector<SystemdDevice_t> devices = std::get<std::vector<SystemdDevice_t>>(value);
+                           // adding the vector<SystemdDevice_t> as an array of structs (ss)
+                           r = sd_bus_message_open_container_func(m, SD_BUS_TYPE_ARRAY, "(ss)");
+                           if (r >= 0) {
+                              for (auto const& device : devices) {
+                                 // append each device as a struct (ss)
+                                 r = sd_bus_message_append_func(m, "(ss)", device.first.c_str(), device.second.c_str());
+                                 if (r < 0) {
+                                    break;
+                                 }
+                              }
+                           }
+                           if (r >= 0) {
+                              // close the array of structs
+                              r = sd_bus_message_close_container_func(m);
+                           }
+                        }
                         break;
                      default:
                         // cannot really happen
@@ -727,7 +743,7 @@ namespace ocs::uti {
                   }
                }
             }
-         }
+         } // loop over properties
       }
 
       if (ret) {
