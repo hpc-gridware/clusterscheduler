@@ -29,6 +29,9 @@
 #include "uti/ocs_Systemd.h"
 
 #include "execd_systemd.h"
+
+#include <sge_profiling.h>
+
 #include "msg_execd.h"
 #include "ptf.h"
 
@@ -100,7 +103,8 @@ namespace ocs::execd {
 
       // Initialize the systemd connection and retrieve usage information
       ocs::uti::Systemd systemd;
-      if (!systemd.connect(&error_dstr)) {
+      bool success = systemd.connect(&error_dstr);
+      if (!success) {
          WARNING(MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S, sge_dstring_get_string(&error_dstr));
       } else {
          // Loop over all jobs, ja_tasks, and pe_tasks
@@ -112,7 +116,8 @@ namespace ocs::execd {
                if (scope_str != nullptr) {
                   std::string scope{scope_str};
                   std::string state;
-                  if (systemd.sd_bus_get_property("Unit", scope, "ActiveState", state, &error_dstr)) {
+                  success = systemd.sd_bus_get_property("Unit", scope, "ActiveState", state, &error_dstr);
+                  if (success) {
                       if (state.compare("active") == 0) {
                         DPRINTF("==> Job is active in systemd scope %s", scope.c_str());
                         lList *usage_list = lGetListRW(os_job, JO_usage_list);

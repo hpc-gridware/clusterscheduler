@@ -53,6 +53,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -1953,9 +1954,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // Therefore, we need to create a new scope when the first shepherd process is started,
    // and just attach the following shepherd processes to this scope.
    // @todo CS-1241: add profiling info, want to know how long systemd operations take
-   //                and we should also profile the equivalents (e.g. in case of retrieving job usage)
+   //                ==> and we should also profile the equivalents (e.g. in case of retrieving job usage)
 #if defined (OCS_WITH_SYSTEMD)
    if (is_running_as_service) {
+      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
       DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
       ocs::uti::Systemd systemd;
       // connect as root, we want to have write access
@@ -1964,9 +1966,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_switch2admin_user();
       if (connected) {
          pid_t pid = getpid();
-         u_long64 start_time = sge_get_gmt64();
          bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
-         INFO("==> systemd move_shepherd_to_scope took " sge_u64 " µs", sge_get_gmt64() - start_time);
          if (!success) {
             WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
             starting_shepherd_ok = false;
@@ -1976,6 +1976,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
          starting_shepherd_ok = false;
       }
+      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
+      double prof_systemd = prof_get_measurement_wallclock(SGE_PROF_CUSTOM2, true, nullptr);
+      PROFILING("PROF: moving shepherd to systemd scope took %.6f seconds", prof_systemd);
    }
 #endif
 
@@ -2136,6 +2139,3 @@ get_nhosts(const lList *gdil_orig) {
 
    DRETURN(nhosts);
 }
-
-
-

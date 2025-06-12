@@ -164,7 +164,6 @@ int main(int argc, char **argv)
    int printed_points = 0;
    int max_enroll_tries;
    static char tmp_err_file_name[SGE_PATH_MAX];
-   u_long64 next_prof_output = 0;
    int execd_exit_state = 0;
    lList **master_job_list = nullptr;
    lList *alp = nullptr;
@@ -177,8 +176,9 @@ int main(int argc, char **argv)
 
    set_thread_name(pthread_self(),"Execd Thread");
 
-   prof_set_level_name(SGE_PROF_CUSTOM1, "Execd Thread", nullptr);
-   prof_set_level_name(SGE_PROF_CUSTOM2, "Execd Dispatch", nullptr);
+   prof_set_level_name(SGE_PROF_CUSTOM1, "dispatcher", nullptr);
+   prof_set_level_name(SGE_PROF_CUSTOM2, "systemd", nullptr);
+   prof_set_level_name(SGE_PROF_CUSTOM3, "ptf/pdc", nullptr);
 
 #ifdef __SGE_COMPILE_WITH_GETTEXT__
    /* init language output for gettext() , it will use the right language */
@@ -398,14 +398,14 @@ int main(int argc, char **argv)
    if (thread_prof_active_by_id(pthread_self())) {
       prof_start(SGE_PROF_CUSTOM1, nullptr);
       prof_start(SGE_PROF_CUSTOM2, nullptr);
+      prof_start(SGE_PROF_CUSTOM3, nullptr);
       prof_start(SGE_PROF_GDI_REQUEST, nullptr);
    } else {
       prof_stop(SGE_PROF_CUSTOM1, nullptr);
       prof_stop(SGE_PROF_CUSTOM2, nullptr);
+      prof_stop(SGE_PROF_CUSTOM3, nullptr);
       prof_stop(SGE_PROF_GDI_REQUEST, nullptr);
    }
-
-   PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
 
    /* Start dispatching */
    execd_exit_state = sge_execd_process_messages();
@@ -425,16 +425,6 @@ int main(int argc, char **argv)
 #endif
    lFreeList(master_job_list);
 
-   PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
-   if (prof_is_active(SGE_PROF_ALL)) {
-      u_long64 now = sge_get_gmt64();
-
-      if (now > next_prof_output) {
-         prof_output_info(SGE_PROF_ALL, false, "profiling summary:\n");
-         prof_reset(SGE_PROF_ALL,nullptr);
-         next_prof_output = now + sge_gmt32_to_gmt64(60);
-      }
-   }
    sge_prof_cleanup();
 
    sge_shutdown(execd_exit_state);

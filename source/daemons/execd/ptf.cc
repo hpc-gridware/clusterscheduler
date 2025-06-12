@@ -72,6 +72,7 @@
 
 #include "uti/sge_language.h"
 #include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
@@ -1380,11 +1381,15 @@ void ptf_update_job_usage()
 
    if (ptf_use_datacollector()) {
       sge_switch2start_user();
+      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
       ptf_get_usage_from_data_collector();
+      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM3);
       sge_switch2admin_user();
    } else {
 #if defined (OCS_WITH_SYSTEMD)
+      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
       ocs::execd::ptf_get_usage_from_systemd();
+      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
 #endif
    }
 

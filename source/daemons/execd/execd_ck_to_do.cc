@@ -850,7 +850,9 @@ static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 
 #ifdef COMPILE_DC
 int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task) {
-   u_long32 job_id;   
+   DENTER(TOP_LAYER);
+
+   u_long32 job_id;
    u_long32 ja_task_id;   
    const char *pe_task_id = nullptr;
 
@@ -866,8 +868,7 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 #else   
    dstring osjobid_path = DSTRING_INIT;
    osjobid_t osjobid;   
-#endif   
-   DENTER(TOP_LAYER);
+#endif
 
    job_id = lGetUlong(job, JB_job_number);
    ja_task_id = lGetUlong(ja_task, JAT_task_number);

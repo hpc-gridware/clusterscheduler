@@ -38,6 +38,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
@@ -80,6 +81,7 @@ int sge_execd_process_messages() {
    u_long64 last_alive_check = 0;
    u_long64 load_report_time = 0;
    u_long64 alive_check_interval = 0;
+   u_long64 next_prof_output = 0;
 
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
@@ -100,6 +102,8 @@ int sge_execd_process_messages() {
    }
 
    while (!terminate) {
+      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
+
       u_long64 now = sge_get_gmt64();
       ocs::gdi::ClientServerBase::struct_msg_t msg;
       char* buffer     = nullptr;
@@ -353,7 +357,7 @@ int sge_execd_process_messages() {
       }
 
       if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
-         /* we have to reconnect, when the problem is fixed */
+         /* we have to reconnect when the problem is fixed */
          do_reconnect = true;
          /* we do not expect that the problem is fast to fix */
          sleep(EXECD_MAX_RECONNECT_TIMEOUT);
@@ -374,6 +378,9 @@ int sge_execd_process_messages() {
             do_reconnect = true;
          }
       }
+
+      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
+      thread_output_profiling("execd profiling summary:", &next_prof_output);
    }
    sge_monitor_free(&monitor);
 

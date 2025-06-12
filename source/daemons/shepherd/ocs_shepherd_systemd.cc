@@ -151,8 +151,9 @@ namespace ocs {
             pid_t pid = getpid();
             shepherd_trace("moving shepherd child " pid_t_fmt "to job scope '%s' in slice '%s'", pid, scope, slice);
             bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, &error_dstr);
-            shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
-            if (!success) {
+            if (success) {
+               shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
+            } else {
                shepherd_error(1, "moving shepherd child to job scope failed: %s", sge_dstring_get_string(&error_dstr));
             }
          } else {
