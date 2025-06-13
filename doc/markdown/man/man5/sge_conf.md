@@ -1044,10 +1044,18 @@ completely.
 
 ***ENABLE_BINDING***
 
-If this parameter is set then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
-binding parameters that are specified during submission time of a job. This parameter is not set per default and 
+If this parameter is set, then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
+binding parameters that are specified during submission time of a job. This parameter is not set per default, and 
 therefore all binding related information will be ignored. Find more information for job to core binding in the 
 section `-binding` of qsub(1).
+
+***ENABLE_SYSTEMD***
+
+If this parameter is set,
+and an execution hosts supports systemd, then jobs will be started in a systemd scope. This allows the execution daemon to
+manage the job's processes as a group, which is useful for resource management and job control.
+
+This parameter is set to true by default, meaning that on hosts that support systemd, jobs will be started in a systemd scope. If a host does not support systemd, then this parameter will be ignored.
 
 ***SCRIPT_TIMEOUT***
 
