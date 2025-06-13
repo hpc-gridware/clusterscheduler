@@ -323,15 +323,9 @@ namespace ocs::uti {
          }
       }
 
-      // if we could not load the library or the functions, close the library
-      if (!ret && lib_handle != nullptr) {
-         dlclose(lib_handle);
-         lib_handle = nullptr;
-      }
-
       if (ret) {
-         // we will need the slice name for the service name, read it once
-         // once we have a slice name, we can figure out if we are running as service
+         // We will need the slice name for the service name, read it once.
+         // If we have a slice name, we can figure out if we are running as service.
          service_name = service_name_in;
          std::string slice_file_name = get_slice_file_name();
          if (read_one_line_file(slice_file_name, slice_name)) {
@@ -340,7 +334,6 @@ namespace ocs::uti {
             // get unit path of service
             Systemd systemd;
             if (systemd.connect(error_dstr)) {
-
                // get systemd version
                std::string systemd_version_str;
                systemd.sd_bus_get_property("Manager", "", "Version", systemd_version_str, error_dstr);
@@ -351,7 +344,7 @@ namespace ocs::uti {
                bool have_service_unit = systemd.sd_bus_method_s_o("GetUnit", full_service_name, service_unit_path, error_dstr);
                if (have_service_unit) {
                   DPRINTF("have_service_unit: %s", service_unit_path.c_str());
-                  // get unit path of pid
+                  // get the unit path of this process
                   std::string pid_unit_path;
                   bool have_pid_unit = systemd.sd_bus_method_u_o("GetUnitByPID", getpid(), pid_unit_path, error_dstr);
                   // compare both unit paths, if they are equal then we are running as service
@@ -359,18 +352,29 @@ namespace ocs::uti {
                      DPRINTF("have_pid_unit: %s", pid_unit_path.c_str());
                      if (service_unit_path.compare(pid_unit_path) == 0) {
                         running_as_service = true;
-                        DPRINTF("we ar running as systemd service: %s", service_unit_path.c_str());
+                        DPRINTF("we are running as systemd service: %s", service_unit_path.c_str());
                      }
                   } else {
                      DPRINTF("could not get unit path for pid %d: %s", getpid(), sge_dstring_get_string(error_dstr));
+                     // this is OK, we might not be running as a service
                   }
                } else {
                   DPRINTF("could not get unit path for service %s: %s", full_service_name.c_str(), sge_dstring_get_string(error_dstr));
+                  // this is OK, we might not be running as a service
                }
             } else {
                DPRINTF("cannot connect to systemd: %s", sge_dstring_get_string(error_dstr));
+               ret = false;
             }
          }
+      }
+
+      // if we could not load the library or the functions,
+      // or we cannot connect to the systemd,
+      // then close the library
+      if (!ret && lib_handle != nullptr) {
+         dlclose(lib_handle);
+         lib_handle = nullptr;
       }
 
       return ret;

@@ -403,6 +403,7 @@ update_wallclock_usage(u_long64 now, const lListElem *job, const lListElem *ja_t
 
 int do_ck_to_do(bool is_qmaster_down) {
    DENTER(TOP_LAYER);
+
    u_long64 now = sge_get_gmt64();
    static u_long64 next_pdc = 0;
    static u_long64 next_signal = 0;

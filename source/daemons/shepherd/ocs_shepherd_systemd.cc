@@ -41,16 +41,14 @@ namespace ocs {
          // figure out if we are running as Systemd service
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
          if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::shepherd_scope_name, &error_dstr)) {
-            shepherd_trace("initialized systemd library");
+            shepherd_trace("initialized systemd library, systemd version %d, cgroups version %d",
+                           ocs::uti::Systemd::get_systemd_version(), ocs::uti::Systemd::get_cgroup_version());
             if (ocs::uti::Systemd::is_running_as_service()) {
-               shepherd_trace("shepherd is running under systemd control in scope %s, systemd version %d, cgroups version %d",
-                              ocs::uti::Systemd::shepherd_scope_name.c_str(), ocs::uti::Systemd::get_systemd_version(),
-                              ocs::uti::Systemd::get_cgroup_version());
-            } else {
-               shepherd_trace("shepherd is not running under systemd control");
-               g_use_systemd = false;
+               // we are running under systemd control
+               shepherd_trace("shepherd is running under systemd control in scope %s",
+                              ocs::uti::Systemd::shepherd_scope_name.c_str());
             }
-         } else if (sge_dstring_strlen(&error_dstr) > 0) {
+         } else {
             shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
             g_use_systemd = false;
          }
@@ -149,7 +147,7 @@ namespace ocs {
          sge_switch2admin_user();
          if (connected) {
             pid_t pid = getpid();
-            shepherd_trace("moving shepherd child " pid_t_fmt "to job scope '%s' in slice '%s'", pid, scope, slice);
+            shepherd_trace("moving shepherd child " pid_t_fmt " to job scope '%s' in slice '%s'", pid, scope, slice);
             bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, &error_dstr);
             if (success) {
                shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);

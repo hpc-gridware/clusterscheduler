@@ -22,8 +22,14 @@
 namespace ocs::execd {
 #if defined(OCS_WITH_SYSTEMD)
 
-void
-ptf_get_usage_from_systemd();
+   void
+   execd_systemd_init();
+
+   bool
+   execd_move_shepherd_to_scope();
+
+   void
+   ptf_get_usage_from_systemd();
 
 #endif
 }

@@ -2155,7 +2155,7 @@ CheckSliceName()
 }
 
 #-------------------------------------------------------------------------
-# CheckSliceName: Check if a service is installed
+# IsSystemdServiceInstalled: Check if a service is installed
 # $1 - the service type (qmaster, shadow, execd, ...)
 #
 IsSystemdServiceInstalled()
@@ -2237,6 +2237,65 @@ GetDefaultSliceName()
    return 0
 }
 
+GetSystemdSliceName()
+{
+   not_exists_error=$1
+   if [ -f "$SGE_ROOT/$SGE_CELL/common/slice_name" ]; then
+      # read the slice name from $SGE_ROOT/$SGE_CELL/common/slice_name
+      SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
+      if [ $? -ne 0 ]; then
+         $INFOTEXT "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         $INFOTEXT -log "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         exit 1
+      fi
+      $ECHO "$SLICE_NAME"
+   else
+      if [ "$not_exists_error" = "true" ]; then
+         $INFOTEXT "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
+         $INFOTEXT -log "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
+         exit 1
+      fi
+      return 1
+   fi
+
+   return 0
+}
+
+SetupSystemdSliceName()
+{
+   # if we are on a systemd system, we need to define the slice name
+   if [ "$RC_FILE" = "systemd" ]; then
+      SLICE_NAME=`GetSystemdSliceName "false"`
+      # if slice name is not yet defined, we ask the user for it
+      if [ $? -ne 0 ]; then
+         # query toplevel slice name
+         slice_name_is_ok="false"
+         while [ "$slice_name_is_ok" = "false" ]; do
+            $CLEAR
+            if [ "$AUTO" = "false" ]; then
+               # set the default
+               SLICE_NAME=`GetDefaultSliceName`
+            fi
+            $INFOTEXT "Installing %s systemd unit file\n" $DAEMON_NAME
+            $INFOTEXT "%s will be running withing a top level systemd/cgroups slice, default is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
+            $INFOTEXT "If you are running multiple clusters on the same host, please use a unique slice name.\n"
+            $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\n hit <RETURN> to use [%s] >> " $SLICE_NAME
+            SLICE_NAME=`Enter $SLICE_NAME`
+            CheckSliceName $SLICE_NAME
+            if [ $? -eq 0 ]; then
+               slice_name_is_ok="true"
+            elif [ "$AUTO" = "true" ]; then
+               # avoid endless loop when slice is incorrectly defined
+               return 1
+            fi
+         done
+
+         # store the slice name in $SGE_ROOT/$SGE_CELL/common/slice_name
+         SafelyCreateFile "$SGE_ROOT/$SGE_CELL/common/slice_name" 644 "$SLICE_NAME"
+      fi
+   fi
+}
+
 #-------------------------------------------------------------------------
 # InstallSystemdUnitFile: Install the systemd unit file from template
 #
@@ -2256,44 +2315,9 @@ InstallSystemdUnitFile()
          ;;
    esac
 
-   if [ -f "$SGE_ROOT/$SGE_CELL/common/slice_name" ]; then
-      # read the slice name from $SGE_ROOT/$SGE_CELL/common/slice_name
-      SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
-      if [ $? -ne 0 ]; then
-         $INFOTEXT "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
-         $INFOTEXT -log "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
-         WaitClear "noclear"
-         return 1
-      fi
-      $INFOTEXT "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
-      $INFOTEXT -log "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
-      WaitClear "noclear"
-   else
-      # query toplevel slice name
-      slice_name_is_ok="false"
-      while [ "$slice_name_is_ok" = "false" ]; do
-         $CLEAR
-         if [ "$AUTO" = "false" ]; then
-            # set the default
-            SLICE_NAME=`GetDefaultSliceName`
-         fi
-         $INFOTEXT "Installing %s systemd unit file\n" $DAEMON_NAME
-         $INFOTEXT "%s will be running withing a top level systemd/cgroups slice, default is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
-         $INFOTEXT "If you are running multiple clusters on the same host, please use a unique slice name.\n"
-         $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\n hit <RETURN> to use [%s] >> " $SLICE_NAME
-         SLICE_NAME=`Enter $SLICE_NAME`
-         CheckSliceName $SLICE_NAME
-         if [ $? -eq 0 ]; then
-            slice_name_is_ok="true"
-         elif [ "$AUTO" = "true" ]; then
-            # avoid endless loop when slice is incorrectly defined
-            return 1
-         fi
-      done
-
-      # store the slice name in $SGE_ROOT/$SGE_CELL/common/slice_name
-      SafelyCreateFile "$SGE_ROOT/$SGE_CELL/common/slice_name" 644 "$SLICE_NAME"
-   fi
+   SLICE_NAME=`GetSystemdSliceName "true"`
+   $INFOTEXT "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
+   $INFOTEXT -log "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
 
    # replace variables in the template, store the result in a tmp file
    TMP_UNIT_FILE="/tmp/sge_${DAEMON_NAME}_unit_file.$$"

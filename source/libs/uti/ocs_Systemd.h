@@ -118,8 +118,8 @@ namespace ocs::uti {
 
          // static methods
          static bool initialize(std::string service_name_in, dstring *error_dstr);
-         static bool is_systemd_available();
-         static bool is_running_as_service();
+         static bool is_systemd_available();  // we can load the systemd library and connect to systemd
+         static bool is_running_as_service(); // the process is running as a systemd service
          static std::string get_slice_name() { return slice_name; }
          static int get_cgroup_version() { return cgroup_version; }
          static int get_systemd_version() { return systemd_version; }

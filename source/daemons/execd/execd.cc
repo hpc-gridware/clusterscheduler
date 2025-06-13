@@ -62,6 +62,8 @@
 
 #include "sge_load_sensor.h"
 #include "dispatcher.h"
+#include "execd_systemd.h"
+#include "execd_profiling.h"
 #include "load_avg.h"
 #include "reaper_execd.h"
 #include "setup_execd.h"
@@ -69,7 +71,8 @@
 #include "sig_handlers.h"
 #include "usage.h"
 #include "execd.h"
-#include "execd_profiling.h"
+
+
 #include "sge.h"
 #include "msg_common.h"
 #include "msg_execd.h"
@@ -109,10 +112,6 @@ static u_long64 last_qmaster_registration_time = 0;
 u_long64 get_last_qmaster_register_time() {
    return last_qmaster_registration_time;
 }
-
-#if defined (OCS_WITH_SYSTEMD)
-bool is_running_as_service = false;
-#endif
 
 /****** execd/sge_execd_application_status() ***********************************
 *  NAME
@@ -343,29 +342,7 @@ int main(int argc, char **argv)
    starting_up();
 
 #if defined (OCS_WITH_SYSTEMD)
-   // try to initialize the Systemd integration,
-   // create an instance of Systemd and try to connect to the system bus,
-   // figure out if we are running as Systemd service
-   DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-   if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::execd_service_name, &error_dstr)) {
-      ocs::uti::Systemd systemd;
-      bool connected = systemd.connect(&error_dstr);
-      if (connected) {
-         is_running_as_service = systemd.is_running_as_service();
-      } else {
-         WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
-      }
-      if (is_running_as_service) {
-         u_long32 old_ll = log_state_get_log_level();
-         log_state_set_log_level(LOG_INFO);
-         INFO(MSG_SYSTEMD_INITIALIZED_SII, ocs::uti::Systemd::execd_service_name.c_str(),
-                                           ocs::uti::Systemd::get_systemd_version(),
-                                           ocs::uti::Systemd::get_cgroup_version());
-         log_state_set_log_level(old_ll);
-      }
-   } else if (sge_dstring_strlen(&error_dstr) > 0) {
-      WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
-   }
+   ocs::execd::execd_systemd_init();
 #endif
 
    /*

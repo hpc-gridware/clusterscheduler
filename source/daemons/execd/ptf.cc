@@ -70,6 +70,7 @@
 
 #include "comm/commlib.h"
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_language.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -195,9 +196,6 @@ lList *ptf_jobs = nullptr;
 
 static int is_ptf_running = 0;
 
-extern bool is_running_as_service;
-
-
 /**
  * @brief use the classic data collector?
  *
@@ -213,7 +211,7 @@ ptf_use_datacollector() {
    bool ret = false;
 
 #if defined (OCS_WITH_SYSTEMD)
-   if (!is_running_as_service) {
+   if (!ocs::uti::Systemd::is_systemd_available()) {
       // cannot use systemd - fall back to data collector
       ret = true;
    }

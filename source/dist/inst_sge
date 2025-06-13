@@ -522,6 +522,7 @@ if [ "$UPDATE" = true ]; then
    CreateSGEStartUpScripts $euid true execd
    CreateSettingsFile
    InitCA
+   SetupSystemdSliceName
    SetupRcScriptNames qmaster #New qmaster RC script/SMF
    InstallRcScript
    #TODO: Need to ensure there is no qmaster on the same port running
@@ -644,6 +645,7 @@ if [ "$QMASTER" = "install" -a "$UPDATE" != "true" ]; then
  CreateSGEStartUpScripts $euid true execd
  CreateSettingsFile
  InitCA
+ SetupSystemdSliceName
  AddSGEStartUpScript $euid qmaster
  StartQmaster
  AddHosts

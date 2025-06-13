@@ -41,6 +41,57 @@ extern lList *ptf_jobs;
 namespace ocs::execd {
 #if defined(OCS_WITH_SYSTEMD)
 
+   void execd_systemd_init() {
+      // try to initialize the Systemd integration,
+      // create an instance of Systemd and try to connect to the system bus,
+      // figure out if we are running as Systemd service
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      if (ocs::uti::Systemd::initialize(ocs::uti::Systemd::execd_service_name, &error_dstr)) {
+         u_long32 old_ll = log_state_get_log_level();
+         log_state_set_log_level(LOG_INFO);
+         INFO(MSG_SYSTEMD_INITIALIZED_II, ocs::uti::Systemd::get_systemd_version(),
+                                          ocs::uti::Systemd::get_cgroup_version());
+         if (ocs::uti::Systemd::is_running_as_service()) {
+            INFO(MSG_SYSTEMD_RUNNING_AS_SERVICE_S, ocs::uti::Systemd::execd_service_name.c_str());
+         }
+         log_state_set_log_level(old_ll);
+      } else if (sge_dstring_strlen(&error_dstr) > 0) {
+         WARNING(SFNMAX, sge_dstring_get_string(&error_dstr));
+      }
+   }
+
+   bool
+   execd_move_shepherd_to_scope() {
+      bool ret = true;
+
+      if (ocs::uti::Systemd::is_running_as_service()) {
+         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
+         DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+         ocs::uti::Systemd systemd;
+         // connect as root, we want to have write access
+         sge_switch2start_user();
+         bool connected = systemd.connect(&err_dstr);
+         sge_switch2admin_user();
+         if (connected) {
+            pid_t pid = getpid();
+            bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
+            if (!success) {
+               WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
+               ret = false;
+            }
+         } else {
+            // connect failed
+            WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+            ret = false;
+         }
+         PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
+         double prof_systemd = prof_get_measurement_wallclock(SGE_PROF_CUSTOM2, true, nullptr);
+         PROFILING("PROF: moving shepherd to systemd scope took %.6f seconds", prof_systemd);
+      }
+
+      return ret;
+   }
+
    static void
    ptf_get_usage_value_from_systemd(ocs::uti::Systemd &systemd, std::string &scope, lList *usage_list, const char *property_str, const char *usage_attr_str, double factor) {
       DENTER(TOP_LAYER);

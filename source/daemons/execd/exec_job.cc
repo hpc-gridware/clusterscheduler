@@ -92,6 +92,7 @@
 #include "sge_job_qmaster.h"
 #include "tmpdir.h"
 #include "exec_job.h"
+#include "execd_systemd.h"
 #include "mail.h"
 #include "basis_types.h"
 #include "pdc.h"
@@ -123,8 +124,6 @@ extern char execd_spool_dir[SGE_PATH_MAX];
 static int addgrpid_already_in_use(long);
 
 static long get_next_addgrpid(lList *, long);
-
-extern bool is_running_as_service;
 
 #endif
 #endif
@@ -1953,33 +1952,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // The shepherd scope is automatically deleted again when the last shepherd process exits.
    // Therefore, we need to create a new scope when the first shepherd process is started,
    // and just attach the following shepherd processes to this scope.
-   // @todo CS-1241: add profiling info, want to know how long systemd operations take
-   //                ==> and we should also profile the equivalents (e.g. in case of retrieving job usage)
 #if defined (OCS_WITH_SYSTEMD)
-   if (is_running_as_service) {
-      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
-      DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
-      ocs::uti::Systemd systemd;
-      // connect as root, we want to have write access
-      sge_switch2start_user();
-      bool connected = systemd.connect(&err_dstr);
-      sge_switch2admin_user();
-      if (connected) {
-         pid_t pid = getpid();
-         bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
-         if (!success) {
-            WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
-            starting_shepherd_ok = false;
-         }
-      } else {
-         // connect failed
-         WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
-         starting_shepherd_ok = false;
-      }
-      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
-      double prof_systemd = prof_get_measurement_wallclock(SGE_PROF_CUSTOM2, true, nullptr);
-      PROFILING("PROF: moving shepherd to systemd scope took %.6f seconds", prof_systemd);
-   }
+   starting_shepherd_ok = ocs::execd::execd_move_shepherd_to_scope();
 #endif
 
    if (starting_shepherd_ok) {  /* close all fd's except 0,1,2 */
