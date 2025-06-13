@@ -145,6 +145,7 @@ static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool ignore_ngroups_max_limit = false;
+static bool enable_systemd = true;
 static bool do_credentials = true;
 static bool do_authentication = true;
 static bool is_monitor_message = true;
@@ -680,6 +681,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       ignore_ngroups_max_limit = false;
+      enable_systemd = true;
       do_credentials = true;
       do_authentication = true;
       is_monitor_message = true;
@@ -1092,7 +1094,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_bool_param(s, "IGNORE_NGROUPS_MAX_LIMIT", &ignore_ngroups_max_limit)) {
             continue;
-         } 
+         }
+         if (parse_bool_param(s, "ENABLE_SYSTEMD", &enable_systemd)) {
+            continue;
+         }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
@@ -2699,6 +2704,16 @@ bool mconf_get_ignore_ngroups_max_limit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = ignore_ngroups_max_limit;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_enable_systemd() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = enable_systemd;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

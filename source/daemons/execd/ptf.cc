@@ -202,7 +202,7 @@ static int is_ptf_running = 0;
  * The classic data collector (retrieving usage from the /proc filesystem)
  * is used when
  *    - we have no systemd integration for the platform
- *    - we have systemd but sge_execd is not running under systemd control
+ *    - we have systemd, but sge_execd is not running under systemd control
  *
  * @return true when the data collector shall be used, else false
  */
@@ -211,8 +211,9 @@ ptf_use_datacollector() {
    bool ret = false;
 
 #if defined (OCS_WITH_SYSTEMD)
-   if (!ocs::uti::Systemd::is_systemd_available()) {
-      // cannot use systemd - fall back to data collector
+   if (!mconf_get_enable_systemd() ||
+       !ocs::uti::Systemd::is_systemd_available()) {
+      // shall not or cannot use systemd - fall back to data collector
       ret = true;
    }
 #else

@@ -1418,26 +1418,35 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
    fprintf(fp, "use_login_shell=%d\n", ck_login_sh(shell) ? 1 : 0);
 
-   // systemd specific options: slice and scope
+   // systemd specific options:
+   //    - enable_systemd
+   //    - slice and scope
+   //    - devices_allow
 #ifdef OCS_WITH_SYSTEMD
    {
-      std::string systemd_slice;
-      std::string systemd_scope;
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);;
-      if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
-         fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
-         fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
-      }
-   }
+      bool enable_systemd = mconf_get_enable_systemd();
+      fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
 
-   // device isolation
-   // for testing purposes until we have device isolation via RSMAPs
-   env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
-   if (env != nullptr) {
-      const char *devices_allow = lGetString(env, VA_value);
-      fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
-   } else {
-      fprintf(fp, "devices_allow=\n");
+      if (enable_systemd) {
+         // slice and scope
+         std::string systemd_slice;
+         std::string systemd_scope;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);;
+         if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
+            fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
+            fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
+         }
+
+         // device isolation
+         // for testing purposes until we have device isolation via RSMAPs
+         env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
+         if (env != nullptr) {
+            const char *devices_allow = lGetString(env, VA_value);
+            fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
+         } else {
+            fprintf(fp, "devices_allow=\n");
+         }
+      }
    }
 #endif
 

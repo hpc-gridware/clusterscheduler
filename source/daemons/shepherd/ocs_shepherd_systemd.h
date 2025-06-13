@@ -30,6 +30,6 @@ namespace ocs {
    void move_shepherd_child_to_job_scope(pid_t pid);
 
 #if defined(OCS_HWLOC)
-   bool add_binding_to_systemd_properties(hwloc_const_bitmap_t cpuset);
+   void add_binding_to_systemd_properties(hwloc_const_bitmap_t cpuset);
 #endif
 } // namespace ocs

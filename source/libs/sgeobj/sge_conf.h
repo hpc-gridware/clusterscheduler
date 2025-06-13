@@ -183,6 +183,7 @@ void mconf_get_s_locks(char **pret);
 int mconf_get_jsv_timeout();
 int mconf_get_jsv_threshold();
 bool mconf_get_ignore_ngroups_max_limit();
+bool mconf_get_enable_systemd();
 bool mconf_get_enable_submit_lib_path();
 bool mconf_get_enable_submit_ld_preload();
 u_long32 mconf_get_script_timeout();

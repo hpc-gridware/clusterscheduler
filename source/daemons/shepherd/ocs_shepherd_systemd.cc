@@ -18,7 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <string.h>
+#include <cstring>
 
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
@@ -34,7 +34,8 @@ namespace ocs {
 
    void shepherd_systemd_init() {
 #if defined (OCS_WITH_SYSTEMD)
-      // @todo have a config option to enable/disable systemd integration
+      // we can enable/disable systemd integration via execd_param ENABLE_SYSTEMD
+      g_use_systemd = std::stoi(get_conf_val("enable_systemd")) != 0;
       if (g_use_systemd) {
          // try to initialize the Systemd integration,
          // create an instance of Systemd and try to connect to the system bus,
@@ -52,6 +53,8 @@ namespace ocs {
             shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
             g_use_systemd = false;
          }
+      } else {
+         shepherd_trace("systemd integration is disabled");
       }
 #endif
    }
@@ -59,14 +62,16 @@ namespace ocs {
 #if defined (OCS_WITH_SYSTEMD)
    static void
    add_accounting_settings() {
-      // @todo there would also be
-      //   - BlockAccounting (deprecated by IOAccounting)
-      //   - IPAccounting
-      //   - TasksAccounting
-      g_systemd_properties["CPUAccounting"] = true;
-      g_systemd_properties["MemoryAccounting"] = true;
-      if (ocs::uti::Systemd::get_cgroup_version() == 2) {
-         g_systemd_properties["IOAccounting"] = true;
+      if (g_use_systemd) {
+         // @todo there would also be
+         //   - BlockAccounting (deprecated by IOAccounting)
+         //   - IPAccounting
+         //   - TasksAccounting
+         g_systemd_properties["CPUAccounting"] = true;
+         g_systemd_properties["MemoryAccounting"] = true;
+         if (ocs::uti::Systemd::get_cgroup_version() == 2) {
+            g_systemd_properties["IOAccounting"] = true;
+         }
       }
    }
 
@@ -82,42 +87,44 @@ namespace ocs {
    //          @todo have an execd_params for this?
    static void
    add_devices_allow() {
-      char *devices_allow = get_conf_val("devices_allow");
-      if (devices_allow != nullptr && strlen(devices_allow) > 0) {
-         // switch to closed device policy
-         g_systemd_properties["DevicePolicy"] = "closed";
-         std::vector<ocs::uti::SystemdDevice_t> devices;
-         saved_vars_s *context = nullptr;
-         char *device = sge_strtok_r(devices_allow, DEVICES_DELIMITOR, &context);
-         ocs::uti::SystemdDevice_t systemd_device{};
-         while (device != nullptr) {
-            // device is a string of the form "device_name=access_mode"
-            // where access_mode can contain "r", "w", "rw"
-            char *access_mode = strchr(device, '=');
-            if (access_mode == nullptr || *access_mode == '\0') {
-               shepherd_trace("no mode specifice for device %s, using \"rw\" as default", device);
-               systemd_device.second = DEVICES_DEFAULT_MODE; // default access mode
-            } else {
-               *access_mode = '\0'; // split device name and access mode
-               access_mode++;
-               systemd_device.second = access_mode;
-            }
-            systemd_device.first = device; // device name
-            shepherd_trace("adding device %s with access mode %s to systemd properties DeviceAllow",
-                           systemd_device.first.c_str(), systemd_device.second.c_str());
-            devices.push_back(systemd_device);
+      if (g_use_systemd) {
+         char *devices_allow = get_conf_val("devices_allow");
+         if (devices_allow != nullptr && strlen(devices_allow) > 0) {
+            // switch to closed device policy
+            g_systemd_properties["DevicePolicy"] = "closed";
+            std::vector<ocs::uti::SystemdDevice_t> devices;
+            saved_vars_s *context = nullptr;
+            char *device = sge_strtok_r(devices_allow, DEVICES_DELIMITOR, &context);
+            ocs::uti::SystemdDevice_t systemd_device{};
+            while (device != nullptr) {
+               // device is a string of the form "device_name=access_mode"
+               // where access_mode can contain "r", "w", "rw"
+               char *access_mode = strchr(device, '=');
+               if (access_mode == nullptr || *access_mode == '\0') {
+                  shepherd_trace("no mode specifice for device %s, using \"rw\" as default", device);
+                  systemd_device.second = DEVICES_DEFAULT_MODE; // default access mode
+               } else {
+                  *access_mode = '\0'; // split device name and access mode
+                  access_mode++;
+                  systemd_device.second = access_mode;
+               }
+               systemd_device.first = device; // device name
+               shepherd_trace("adding device %s with access mode %s to systemd properties DeviceAllow",
+                              systemd_device.first.c_str(), systemd_device.second.c_str());
+               devices.push_back(systemd_device);
 
-            // optionally next device
-            device = sge_strtok_r(nullptr, DEVICES_DELIMITOR, &context);
+               // optionally next device
+               device = sge_strtok_r(nullptr, DEVICES_DELIMITOR, &context);
+            }
+            g_systemd_properties["DeviceAllow"] = devices;
          }
-         g_systemd_properties["DeviceAllow"] = devices;
       }
    }
 #endif
 
    // needs to be called before switching to the job user, when we can still become start_user (root)
    void
-   move_shepherd_child_to_job_scope(int pid) {
+   move_shepherd_child_to_job_scope(pid_t pid) {
    // move the shepherd child to the job scope
    // we do this only for the job, not for prolog, epilog, pe_start, pe_stop
    // @todo we might want to add an execd_params whether to account prolog etc. to the job
@@ -137,7 +144,7 @@ namespace ocs {
       add_accounting_settings();
       add_devices_allow();
 
-      u_long64 start_time = sge_get_gmt64();
+      const u_long64 start_time = sge_get_gmt64();
       const char *slice = get_conf_val("systemd_slice");
       const char *scope = get_conf_val("systemd_scope");
       if (slice != nullptr && scope != nullptr) {
@@ -146,7 +153,6 @@ namespace ocs {
          bool connected = systemd.connect(&error_dstr);
          sge_switch2admin_user();
          if (connected) {
-            pid_t pid = getpid();
             shepherd_trace("moving shepherd child " pid_t_fmt " to job scope '%s' in slice '%s'", pid, scope, slice);
             bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, &error_dstr);
             if (success) {
@@ -176,27 +182,25 @@ namespace ocs {
     * @return
     */
 #if defined(OCS_HWLOC)
-   bool
-   add_binding_to_systemd_properties(hwloc_const_bitmap_t cpuset) {
-      bool ret = true;
-      unsigned i;
+   void
+   add_binding_to_systemd_properties(const hwloc_const_bitmap_t cpuset) {
+      if (g_use_systemd) {
+         unsigned i;
 
-      // create a vector of uint8_t containing the CPU mask as bits
-      std::vector<uint8_t> cpu_mask(hwloc_bitmap_last(cpuset) / 8 + 1, 0);
-      hwloc_bitmap_foreach_begin(i, cpuset) {
-         shepherd_trace("adding CPU %d to AllowedCPUs", i);
-         cpu_mask[i/8] |= (1 << (i % 8));
+         // create a vector of uint8_t containing the CPU mask as bits
+         std::vector<uint8_t> cpu_mask(hwloc_bitmap_last(cpuset) / 8 + 1, 0);
+         hwloc_bitmap_foreach_begin(i, cpuset) {
+            shepherd_trace("adding CPU %d to AllowedCPUs", i);
+            cpu_mask[i/8] |= 1 << (i % 8);
+         }
+         hwloc_bitmap_foreach_end();
+         for (i = 0; i < cpu_mask.size(); ++i) {
+            shepherd_trace("==> byte %d: %08b", i, cpu_mask[i]);
+         }
+
+         g_systemd_properties["AllowedCPUs"] = cpu_mask;
       }
-      hwloc_bitmap_foreach_end();
-      for (i = 0; i < cpu_mask.size(); ++i) {
-         shepherd_trace("==> byte %d: %08b", i, cpu_mask[i]);
-      }
-
-      g_systemd_properties["AllowedCPUs"] = cpu_mask;
-
-      return ret;
    }
 #endif
-
 
 } // namespace ocs
