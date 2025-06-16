@@ -1019,38 +1019,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
       if (rlp == nullptr) {
-         /* search next add_grp_id */
-         temp_id = last_addgrpid;
-         last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
-         while (addgrpid_already_in_use(last_addgrpid)) {
-            last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
-            if (temp_id == last_addgrpid) {
-               snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
-               lFreeList(&environmentList);
-               FCLOSE(fp);
-               DRETURN((-1));
-            }
-         }
-
-         /* write add_grp_id to job-structure and file */
-         snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
-         fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
-         if(petep == nullptr) {
-            lSetString(jatep, JAT_osjobid, str_id);
-         } else {
-            lSetString(petep, PET_osjobid, str_id);
-         }
-
-         if (mconf_get_ignore_ngroups_max_limit()) {
-         	fprintf(fp, "skip_ngroups_max_silently=yes\n");
-         }
-         
-         lFreeList(&rlp);
          lFreeList(&alp);
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          lFreeList(&environmentList);
          FCLOSE(fp);
-         DRETURN((-2));
+         DRETURN(-2);
       }
 
       /* search next add_grp_id */
@@ -1062,7 +1035,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
             lFreeList(&environmentList);
             FCLOSE(fp);
-            DRETURN((-1));
+            DRETURN(-1);
          }
       }
 
