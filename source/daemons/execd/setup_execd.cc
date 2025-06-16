@@ -42,7 +42,7 @@
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_utility.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"

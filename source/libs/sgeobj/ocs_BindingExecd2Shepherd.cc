@@ -24,9 +24,9 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 
-#include "sgeobj/ocs_BindingFinder.h"
+#include "sgeobj/ocs_BindingExecd2Shepherd.h"
 
 #if defined(BINDING_SOLARIS) || defined(OCS_HWLOC)
 
@@ -56,7 +56,7 @@
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::parse_job_accounting_and_create_logical_list(const char *binding_string, char **rankfileinput) {
+ocs::BindingExecd2Shepherd::parse_job_accounting_and_create_logical_list(const char *binding_string, char **rankfileinput) {
    bool retval;
 
    int *sockets = nullptr;
@@ -151,7 +151,7 @@ ocs::BindingFinder::parse_job_accounting_and_create_logical_list(const char *bin
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::create_binding_strategy_string_linux(dstring *result, lListElem *jep, char **rankfileinput) {
+ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(dstring *result, lListElem *jep, char **rankfileinput) {
    /* temporary result string with or without "env:" prefix (when environment
       variable for binding should be set or not) */
    dstring tmp_result = DSTRING_INIT;
@@ -279,7 +279,7 @@ ocs::BindingFinder::create_binding_strategy_string_linux(dstring *result, lListE
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::linear_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
+ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
    int first_socket = 0;
    int first_core = 0;
    int used_first_socket = 0;
@@ -413,7 +413,7 @@ ocs::BindingFinder::linear_linux(dstring *result, const lListElem *binding_elem,
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::striding_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
+ocs::BindingExecd2Shepherd::striding_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
    int first_socket = 0;
    int first_core = 0;
    int used_first_socket = 0;
@@ -507,7 +507,7 @@ ocs::BindingFinder::striding_linux(dstring *result, const lListElem *binding_ele
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::explicit_linux(dstring *result, const lListElem *binding_elem) {
+ocs::BindingExecd2Shepherd::explicit_linux(dstring *result, const lListElem *binding_elem) {
    /* pointer to string which contains the <socket>,<core> pairs */
    const char *request = nullptr;
 
@@ -598,7 +598,7 @@ ocs::BindingFinder::explicit_linux(dstring *result, const lListElem *binding_ele
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::create_binding_strategy_string_solaris(dstring* result, lListElem *jep, char* err_str, int err_length, char** env, char** rankfileinput)
+ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(dstring* result, lListElem *jep, char* err_str, int err_length, char** env, char** rankfileinput)
 {
 
    /* 1. check cull list and check which binding strategy was requested */
@@ -693,7 +693,7 @@ ocs::BindingFinder::create_binding_strategy_string_solaris(dstring* result, lLis
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::linear_automatic_solaris(dstring* result, const lListElem* binding_elem, char** env)
+ocs::BindingExecd2Shepherd::linear_automatic_solaris(dstring* result, const lListElem* binding_elem, char** env)
 {
    int amount;  /* amount of cores to bind to       */
    binding_type_t type;    /* type of binding (set|env|pe)     */
@@ -801,7 +801,7 @@ ocs::BindingFinder::linear_automatic_solaris(dstring* result, const lListElem* b
 *
 *******************************************************************************/
 bool
-ocs::BindingFinder::striding_solaris(dstring* result, const lListElem* binding_elem, const bool automatic, const bool do_linear, char* err_str, int err_length, char** env)
+ocs::BindingExecd2Shepherd::striding_solaris(dstring* result, const lListElem* binding_elem, const bool automatic, const bool do_linear, char* err_str, int err_length, char** env)
 {
    /* 2. check if a starting point exist */
    int first_socket = 0;
@@ -939,7 +939,7 @@ ocs::BindingFinder::striding_solaris(dstring* result, const lListElem* binding_e
 *     MT-NOTE: explicit_solaris() is not MT safe
 *
 *******************************************************************************/
-bool ocs::BindingFinder::explicit_solaris(dstring* result, const lListElem* binding_elem, char* err_str, int err_length, char** env)
+bool ocs::BindingExecd2Shepherd::explicit_solaris(dstring* result, const lListElem* binding_elem, char* err_str, int err_length, char** env)
 {
    /* pointer to string which contains the <socket>,<core> pairs */
    const char* request = nullptr;

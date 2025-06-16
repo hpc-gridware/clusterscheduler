@@ -55,7 +55,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_conf.h" 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -2551,7 +2551,7 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
             const lListElem *binding_elem = lFirst(binding_list);
             dstring binding_param = DSTRING_INIT;
 
-            binding_print_to_string(binding_elem, &binding_param);
+            ocs::BindingIo::binding_print_to_string(binding_elem, &binding_param);
             if (handler->report_binding_started && 
                 (ret=handler->report_binding_started(handler, alpp))) {
                DPRINTF("handler->report_binding_started failed\n");

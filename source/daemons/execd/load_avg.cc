@@ -58,7 +58,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_report.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_usage.h"

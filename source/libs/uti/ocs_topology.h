@@ -19,7 +19,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 
 #include <string>
 #include <hwloc.h>

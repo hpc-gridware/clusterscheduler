@@ -64,7 +64,7 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
-#include "sgeobj/ocs_BindingFinder.h"
+#include "sgeobj/ocs_BindingExecd2Shepherd.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
@@ -80,7 +80,7 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_path_alias.h"
@@ -367,8 +367,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* env var reflecting SGE_BINDING if set */
    char *sge_binding_environment = nullptr;
    /* string reflecting the logical socket,core pairs if "pe" is set */
-   char *rankfileinput = nullptr;
-
    dstring core_binding_strategy_string = DSTRING_INIT;
 
    /* retrieve the job, jatask and petask id once */
@@ -454,71 +452,43 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_slots += (int) lGetUlong(gdil_ep, JG_slots);
    }
 
-   /***************** core binding part ************************************/
-   /* binding strategy: SOLARIS -> create processor set id
-                        LINUX   -> use setaffinity */
+   // Core Binding
+   //
+   // Linux: "set affinity" is used to bind the job to cores
+   // - check, depending on the used topology, which cores can be used in order to fulfill the selected strategy.
+   // - if strategy is not applicable or in case of errors "nullptr" is written to this line in the "config" file
+   // - in case SGE_BINDING environment variable has to be set this is done in the shepherd itself and not here.
+   //
+   // Solaris: "processor sets" are used to bind the job to cores
+   // - try to create processor set according to binding strategy and write processor set id to "binding" element in config file
+   // - in case SGE_BINDING environment variable has to be setup instead of creating processor sets, this have to be done here
+   //   (on Linux this is done from shepherd itself)
+   char *rankfileinput = nullptr;
    if (mconf_get_enable_binding()) {
 
 #if defined(OCS_HWLOC)
-      dstring pseudo_usage = DSTRING_INIT;
-      lListElem *jr = nullptr;
-
-      /* check, depending on the used topology, which cores are can be used
-         in order to fulfill the selected strategy. if strategy is not
-         applicable or in case of errors "nullptr" is written to this
-         line in the "config" file */
-      ocs::BindingFinder::create_binding_strategy_string_linux(&core_binding_strategy_string, jep, &rankfileinput);
- 
-      if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
-            && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
+      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(&core_binding_strategy_string, jep, &rankfileinput);
+#elif defined(BINDING_SOLARIS)
+      ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(&core_binding_strategy_string, jep, err_str, err_length, &sge_binding_environment, &rankfileinput);
+      if (sge_binding_environment != nullptr) {
+         INFO("SGE_BINDING variable set: %s", sge_binding_environment);
+      }
+#endif
          
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
+      if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
+          && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
          INFO("core binding: %s", sge_dstring_get_string(&core_binding_strategy_string));
 
-         /* add to job report */
-         jr = get_job_report(job_id, ja_task_id, pe_task_id);
+         dstring pseudo_usage = DSTRING_INIT;
          sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s",
                              binding_get_topology_for_job(sge_dstring_get_string(&core_binding_strategy_string)));
 
+         lListElem *jr = get_job_report(job_id, ja_task_id, pe_task_id);
          add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-
-         /* send job report   */
          flush_job_report(jr);
-      }
-
-      sge_dstring_free(&pseudo_usage);
-#elif defined(BINDING_SOLARIS)
-
-      /* try to create processor set according to binding strategy 
-         and write processor set id to "binding" element in 
-         config file */
-         dstring pseudo_usage = DSTRING_INIT;
-         lListElem* jr        = nullptr;
-
-         ocs::BindingFinder::create_binding_strategy_string_solaris(&core_binding_strategy_string, jep, err_str, err_length, &sge_binding_environment, &rankfileinput);
-
-         /* in case SGE_BINDING environment variable has to be setup instead 
-            of creating processor sets, this have to be done here (on Linux 
-            this is done from shepherd itself) */
-         if (sge_binding_environment != nullptr) {
-            INFO("SGE_BINDING variable set: %s", sge_binding_environment);
-         }
-         
-         if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
-               && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
-            
-            sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s", 
-                           binding_get_topology_for_job((sge_dstring_get_string(&core_binding_strategy_string))));
-
-            jr = get_job_report(job_id, ja_task_id, pe_task_id);
-            
-            add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-            
-            /* send job report   */
-            flush_job_report(jr);
-         }
-
          sge_dstring_free(&pseudo_usage);
-
+      }
 #endif
    }
    if (rankfileinput != nullptr) {
@@ -1053,38 +1023,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                    0, 0, INF_NOT_ALLOWED);
       sge_free(&gid_range);
       if (rlp == nullptr) {
-         /* search next add_grp_id */
-         temp_id = last_addgrpid;
-         last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
-         while (addgrpid_already_in_use(last_addgrpid)) {
-            last_addgrpid = get_next_addgrpid (rlp, last_addgrpid);
-            if (temp_id == last_addgrpid) {
-               snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
-               lFreeList(&environmentList);
-               FCLOSE(fp);
-               DRETURN((-1));
-            }
-         }
-
-         /* write add_grp_id to job-structure and file */
-         snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
-         fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
-         if(petep == nullptr) {
-            lSetString(jatep, JAT_osjobid, str_id);
-         } else {
-            lSetString(petep, PET_osjobid, str_id);
-         }
-
-         if (mconf_get_ignore_ngroups_max_limit()) {
-         	fprintf(fp, "skip_ngroups_max_silently=yes\n");
-         }
-         
-         lFreeList(&rlp);
          lFreeList(&alp);
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          lFreeList(&environmentList);
          FCLOSE(fp);
-         DRETURN((-2));
+         DRETURN(-2);
       }
 
       /* search next add_grp_id */
@@ -1096,7 +1039,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOADDGID);
             lFreeList(&environmentList);
             FCLOSE(fp);
-            DRETURN((-1));
+            DRETURN(-1);
          }
       }
 

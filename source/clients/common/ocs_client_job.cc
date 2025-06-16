@@ -39,12 +39,11 @@
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/cull_parse_util.h"
-#include "sgeobj/ocs_binding_io.h"
+#include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_job.h"
@@ -59,7 +58,6 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_mesobj.h"
-#include "sgeobj/sge_grantedres.h"
 
 #include "get_path.h"
 #include "ocs_client_job.h"
@@ -612,7 +610,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          const lListElem *binding_elem = lFirst(binding_list);
          dstring binding_param = DSTRING_INIT;
 
-         binding_print_to_string(binding_elem, &binding_param);
+         ocs::BindingIo::binding_print_to_string(binding_elem, &binding_param);
          printf("binding:                    " SFN "\n", sge_dstring_get_string(&binding_param));
          sge_dstring_free(&binding_param);
       }

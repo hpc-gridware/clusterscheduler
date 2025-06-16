@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 namespace ocs {
-   class BindingFinder {
+   class BindingExecd2Shepherd {
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
    private:
       static bool parse_job_accounting_and_create_logical_list(const char *binding_string, char **rankfileinput);

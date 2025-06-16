@@ -18,7 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#if defined(OCS_HWLOC)
+#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 #include <string>
 #include "ocs_topology.h"
 
@@ -178,8 +178,9 @@ namespace ocs {
    int topo_get_amount_of_cores_for_socket(int socket_number) {
       int ret = 0;
 
-#if 1
-      // How could we get inhomgenious topology?
+#if defined(HWLOC)
+      // This works also for inhomogeneous topologies, e.g. when some cores are disabled
+      // Does not work for Solaris where cores bound to processor sets are not counted
       if (topo_has_topology_information()) {
          hwloc_obj_t socket;
          socket = hwloc_get_obj_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_number);
@@ -188,6 +189,7 @@ namespace ocs {
          }
       }
 #else
+      // Works only for homogeneous topologies, e.g. when all cores are enabled
       int socket = ocs::topo_get_total_amount_of_sockets();
       int cores =  ocs::topo_get_total_amount_of_cores();
       ret = cores / socket;

@@ -59,7 +59,7 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_binding.h"
+#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"

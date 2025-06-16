@@ -223,8 +223,6 @@ function(architecture_specific_settings)
       # Solaris (unsupported for qmaster)
 
       message(STATUS "We are on Solaris: ${SGE_ARCH}")
-      # @todo CS-983 Processor set binding on Solaris is broken
-      # add_compile_definitions(SOLARIS BINDING_SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_definitions(__EXTENSIONS__)
       add_compile_definitions(SOLARIS GETHOSTBYNAME_R5 GETHOSTBYADDR_R7 SPOOLING_dynamic __SGE_COMPILE_WITH_GETTEXT__)
       add_compile_options(-fPIC)
