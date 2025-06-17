@@ -170,7 +170,7 @@ typedef struct {
 
 typedef struct {
    lnk_link_t link;
-   JobID_t jid;            
+   JobID_t jid;
    psProc_t proc;
    double bwtime;
    double rwtime;

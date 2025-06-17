@@ -1183,10 +1183,11 @@ int ckpt_type
 
    /* Write pid to job_pid file and set ckpt_pid to original job pid 
     * Kill job if we can't write job_pid file and exit with error
-    * sets ckpt_pid to 0 for non kernel level checkpointing jobs
+    * sets ckpt_pid to 0 for non-kernel level checkpointing jobs
     */
-   if (!strcmp(childname, "job"))
+   if (strcmp(childname, "job") == 0) {
       handle_job_pid(ckpt_info.type, pid, &(ckpt_info.pid));
+   }
 
    /* Does not affect pe/prolog/epilog etc. since ckpt_type is set to 0 */
    set_ckpt_params(ckpt_info.type,
@@ -2757,7 +2758,7 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
       shepherd_signal_job(pid, SIGKILL);
       shepherd_error(1, "can't write \"job_pid\" file");   
    } 
-}   
+}
 
 /*-------------------------------------------------------------------------*/
 static int start_async_command(const char *descr, char *cmd)
@@ -2937,21 +2938,23 @@ shepherd_signal_job(pid_t pid, int sig) {
         if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
 #   if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 #      ifdef COMPILE_DC
-            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
-                gid_t add_grp_id;
-                char *cp = search_conf_val("add_grp_id");
-
-                if (cp) {
-                    add_grp_id = atol(cp);
-                } else {
-                    add_grp_id = 0;
-                }
-
-                shepherd_trace("pdc_kill_addgrpid: %d %d", (int) add_grp_id , sig);
-                sge_switch2start_user();
-                pdc_kill_addgrpid(add_grp_id, sig, shepherd_trace);
-                sge_switch2admin_user();
-            }
+           if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
+              gid_t add_grp_id;
+              char *cp = search_conf_val("add_grp_id");
+              if (cp != nullptr) {
+                 add_grp_id = atol(cp);
+              } else {
+                 add_grp_id = 0;
+              }
+              if (add_grp_id == 0) {
+                 shepherd_trace("add_grp_id is 0, not calling pdc_kill_addgrpid");
+              } else {
+                 shepherd_trace("pdc_kill_addgrpid: %d %d", (int) add_grp_id, sig);
+                 sge_switch2start_user();
+                 pdc_kill_addgrpid(add_grp_id, sig, shepherd_trace);
+                 sge_switch2admin_user();
+              }
+           }
 #      endif
 #   endif
         }

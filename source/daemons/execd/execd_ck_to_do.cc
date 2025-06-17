@@ -477,7 +477,7 @@ int do_ck_to_do(bool is_qmaster_down) {
       for_each_rw (jep, *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB)) {
          for_each_rw (jatep, lGetList(jep, JB_ja_tasks)) {
 
-            // don't update wallclock before job actually started or after it ended */
+            // don't update wallclock before a job actually started or after it ended */
             u_long32 status = lGetUlong(jatep, JAT_status);
             if (status == JWAITING4OSJID || status == JEXITING) {
                continue;
@@ -857,19 +857,9 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
    u_long32 ja_task_id;   
    const char *pe_task_id = nullptr;
 
-   int success;
-   FILE *fp;
    SGE_STRUCT_STAT sb;
 
    DSTRING_STATIC(id_dstring, MAX_STRING_SIZE);
-
-#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-   gid_t addgrpid;
-   dstring addgrpid_path = DSTRING_INIT;
-#else   
-   dstring osjobid_path = DSTRING_INIT;
-   osjobid_t osjobid;   
-#endif
 
    job_id = lGetUlong(job, JB_job_number);
    ja_task_id = lGetUlong(ja_task, JAT_task_number);
@@ -878,38 +868,46 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
    }
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-   /**
-    ** read additional group id and use it as osjobid 
-    **/
-
-   /* open addgrpid file */
-   sge_get_active_job_file_path(&addgrpid_path,
-                                job_id, ja_task_id, pe_task_id, ADDGRPID);
-   DPRINTF("Registering job %s with PTF\n",
-           job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
+   // Check if the addgrpid file exists,
+   // this means that the shepherd has started the job.
+   DSTRING_STATIC(addgrpid_path, SGE_PATH_MAX);
+   sge_get_active_job_file_path(&addgrpid_path, job_id, ja_task_id, pe_task_id, ADDGRPID);
+   DPRINTF("Registering job %s with PTF\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
 
    if (SGE_STAT(sge_dstring_get_string(&addgrpid_path), &sb) && errno == ENOENT) {
-      DPRINTF("still waiting for addgrpid of job %s\n",
-         job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
-      sge_dstring_free(&addgrpid_path);
+      DPRINTF("still waiting for addgrpid of job %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
       DRETURN(1);
    }  
 
+   gid_t addgrpid;
+#if 1
+   // We store the addgrpid in the ja_task/pe_task when writing the config file,
+   // and the job is spooled immediately after forking the shepherd,
+   // so we can use it here, even when sge_execd gets restarted.
+   const char *addgrpid_str;
+   if (pe_task != nullptr) {
+      addgrpid_str = lGetString(pe_task, PET_osjobid);
+   } else {
+      addgrpid_str = lGetString(ja_task, JAT_osjobid);
+   }
+   addgrpid = static_cast<gid_t>(std::stoul(addgrpid_str));
+#else
+   // We need to read the addgrpid file.
+   FILE *fp;
    if (!(fp = fopen(sge_dstring_get_string(&addgrpid_path), "r"))) {
       ERROR(MSG_EXECD_NOADDGIDOPEN_SSS, sge_dstring_get_string(&addgrpid_path), job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno));
-      sge_dstring_free(&addgrpid_path);
       DRETURN(-1);
    }
-  
-   sge_dstring_free(&addgrpid_path);       
 
    /* read addgrpid */
-   success = (fscanf(fp, gid_t_fmt, &addgrpid)==1);
+   int success = fscanf(fp, gid_t_fmt, &addgrpid) == 1;
    FCLOSE(fp);
    if (!success) {
-      // can happen that shepherd has opened the file but not written
+      // can happen that shepherd has opened the file but not yet written
       DRETURN(1);
    }
+#endif
+
    {
       int ptf_error;
 
@@ -928,7 +926,7 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
          DRETURN(1);
       }
 #endif
-      DPRINTF("Register job with AddGrpId at " pid_t_fmt " PTF\n", addgrpid);
+      DPRINTF("Register job with AddGrpId at " gid_t_fmt " PTF\n", addgrpid);
       if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id, scope_str))) {
          ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
          DRETURN(1);
@@ -936,38 +934,49 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
    }
 
    /* store addgrpid in job report to be sent to qmaster later on */
-   {
-      char addgrpid_str[64];
-      lListElem *jr;
+{
+#if 0
+   char addgrpid_str[64];
 
-      snprintf(addgrpid_str, sizeof(addgrpid_str), pid_t_fmt, addgrpid);
-      if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
-         lSetString(jr, JR_osjobid, addgrpid_str);
-      }
-      DPRINTF("job %s: addgrpid = %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), addgrpid_str);
+   snprintf(addgrpid_str, sizeof(addgrpid_str), pid_t_fmt, addgrpid);
+#endif
+   lListElem *jr;
+   if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
+      lSetString(jr, JR_osjobid, addgrpid_str);
    }
+   DPRINTF("job %s: addgrpid = %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), addgrpid_str);
+}
 #else
    /* read osjobid if possible */
-   sge_get_active_job_file_path(&osjobid_path,
-                                job_id, ja_task_id, pe_task_id, OSJOBID);
-   
-   DPRINTF(("Registering job %s with PTF\n", 
-            job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
+   DSTRING_STATIC(osjobid_path, SGE_PATH_MAX);
+   sge_get_active_job_file_path(&osjobid_path, job_id, ja_task_id, pe_task_id, OSJOBID);
+
+   DPRINTF(("Registering job %s with PTF\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
 
    if (SGE_STAT(sge_dstring_get_string(&osjobid_path), &sb) && errno == ENOENT) {
-      DPRINTF(("still waiting for osjobid of job %s\n", 
+      DPRINTF(("still waiting for osjobid of job %s\n",
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring)));
-      sge_dstring_free(&osjobid_path);      
+      sge_dstring_free(&osjobid_path);
       DRETURN(1);
-   } 
+   }
 
+   osjobid_t osjobid;
+#if 1
+   const char *osjobid_str;
+   if (pe_task != nullptr) {
+      osjobid_str = lGetString(pe_task, PET_osjobid);
+   } else {
+      osjobid_str = lGetString(ja_task, JAT_osjobid);
+   }
+   osjobid = static_cast<gid_t>(std::stoul(osjobid_str));
+#else
    if (!(fp=fopen(sge_dstring_get_string(&osjobid_path), "r"))) {
       ERROR(MSG_EXECD_NOOSJOBIDOPEN_SSS, sge_dstring_get_string(&osjobid_path), job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), strerror(errno));
-      sge_dstring_free(&osjobid_path);      
+      sge_dstring_free(&osjobid_path);
       DRETURN(-1);
    }
 
-   sge_dstring_free(&osjobid_path);      
+   sge_dstring_free(&osjobid_path);
 
    success = (fscanf(fp, OSJOBID_FMT, &osjobid)==1);
    FCLOSE(fp);
@@ -975,7 +984,7 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
       /* can happen that shepherd has opend the file but not written */
       DRETURN(1);
    }
-
+#endif
    {
       int ptf_error;
       if ((ptf_error = ptf_job_started(osjobid, pe_task_id, job, ja_task_id))) {
@@ -986,20 +995,24 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
    /* store osjobid in job report to be sent to qmaster later on */
    {
+#if 0
       char osjobid_str[64];
-      lListElem *jr;
-
       sprintf(osjobid_str, OSJOBID_FMT, osjobid);
+#endif
+      lListElem *jr;
       if ((jr=get_job_report(job_id, ja_task_id, pe_task_id)))
-         lSetString(jr, JR_osjobid, osjobid_str); 
-      DPRINTF(("job %s: osjobid = %s\n", 
+         lSetString(jr, JR_osjobid, osjobid_str);
+      DPRINTF(("job %s: osjobid = %s\n",
                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
                osjobid_str));
    }
 #endif
 
    DRETURN(0);
-FCLOSE_ERROR:
-   DRETURN(1);
+#if 0
+   FCLOSE_ERROR:
+      DRETURN(1);
+#endif
 }
+
 #endif

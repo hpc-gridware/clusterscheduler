@@ -168,7 +168,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id,
                                   const lListElem *new_job, u_long32 jataskid, const char *systemd_scope);
 
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
-                                 lListElem **job_elem);
+                                 const char *systemd_scope, lListElem **job_elem);
 
 static void ptf_set_job_priority(lListElem *job);
 
@@ -566,8 +566,8 @@ static lListElem *ptf_get_job(u_long job_id)
 *     static lListElem* - osjob (JO_Type) 
 *                         or nullptr if it was not found.
 ******************************************************************************/
-static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id, 
-                                 lListElem **job_elem)
+static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
+                                 const char *systemd_scope, lListElem **job_elem)
 {
    lListElem *job;
    lListElem *osjob = nullptr;
@@ -576,7 +576,17 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    DENTER(TOP_LAYER);
 
 #if defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
-   where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
+   bool with_systemd = false;
+#if defined(OCS_WITH_SYSTEMD)
+   if (systemd_scope != nullptr && mconf_get_enable_systemd()) {
+      with_systemd = true;
+   }
+#endif
+   if (with_systemd) {
+      where = lWhere("%T(%I == %u || %I == %s)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id, JO_systemd_scope, systemd_scope);
+   } else {
+      where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
+   }
 #else
    where = lWhere("%T(%I == %u && %I == %u)", JO_Type,
                   JO_OS_job_ID, (u_long) (os_job_id & 0xffffffff),
@@ -642,20 +652,18 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
  *    add osjob job && osjobid == 0 skip
  */
    job = ptf_get_job(job_id);
-   if (os_job_id == 0) {
-      if (job == nullptr) {
-         DRETURN(nullptr);
-      }
-   } else {
-      lList *osjoblist;
-
-      if (job == nullptr) {
-         job = lCreateElem(JL_Type);
+   if (job == nullptr) {
+      job = lCreateElem(JL_Type);
+      if (job != nullptr) {
          lAppendElem(job_list, job);
          lSetUlong(job, JL_job_ID, job_id);
       }
+   }
+   if (job != nullptr) {
+      lList *osjoblist;
+
       osjoblist = lGetListRW(job, JL_OS_job_list);
-      osjob = ptf_get_job_os(osjoblist, os_job_id, &job);
+      osjob = ptf_get_job_os(osjoblist, os_job_id, systemd_scope, &job);
       if (osjob == nullptr) {
          if (osjoblist == nullptr) {
             osjoblist = lCreateList("osjoblist", JO_Type);
@@ -673,18 +681,18 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
       if (systemd_scope != nullptr) {
          lSetString(osjob, JO_systemd_scope, systemd_scope);
       }
-   }
 
-   /*
-    * set number of tickets in job entry
-    */
-   lSetUlong(job, JL_tickets, (u_long32)MAX(job_tickets, 1));
+      /*
+       * set number of tickets in job entry
+       */
+      lSetUlong(job, JL_tickets, (u_long32)MAX(job_tickets, 1));
 
-   /*
-    * set interactive job flag
-    */
-   if (interactive) {
-      lSetUlong(job, JL_interactive, 1);
+      /*
+       * set interactive job flag
+       */
+      if (interactive) {
+         lSetUlong(job, JL_interactive, 1);
+      }
    }
 
    DRETURN(job);
@@ -735,7 +743,9 @@ static void ptf_get_usage_from_data_collector()
          /* look up job in job list */
 
          job = nullptr;
-         osjob = ptf_get_job_os(ptf_jobs, jobs->jd_jid, &job);
+         // Passing nullptr as sytemd_scope:
+         // Here we are in the data collector, there must be an add_grp_id / osjobid.
+         osjob = ptf_get_job_os(ptf_jobs, jobs->jd_jid, nullptr, &job);
 
          if (osjob) {
             u_long job_state = lGetUlong(osjob, JO_state);

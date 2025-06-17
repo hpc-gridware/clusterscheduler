@@ -46,6 +46,7 @@
 #include "err_trace.h"
 #include "execution_states.h"
 #include "msg_common.h"
+#include "sge.h"
 
 bool shepherd_write_pid_file(pid_t pid, dstring *errmsg)
 {
@@ -216,11 +217,12 @@ FCLOSE_ERROR:
    return false;
 }
 
-
+#if 0
+// @todo never called
 bool shepherd_write_osjobid_file(const char *osjobid)
 {
    bool ret = true;
-   const char *const filename = "osjobid";
+   const char *const filename = OSJOBID;
    FILE *fp = nullptr;
 
    fp = fopen(filename, "w");
@@ -237,6 +239,7 @@ FCLOSE_ERROR:
    shepherd_error(1, MSG_FILE_NOCLOSE_SS, filename, strerror(errno));
    return false;
 }
+#endif
 
 bool 
 shepherd_write_processor_set_number_file(int proc_set)
@@ -398,6 +401,3 @@ checkpointed_file_exists()
    SGE_STRUCT_STAT buf;
    return !SGE_STAT("checkpointed", &buf);
 }
-
-
-

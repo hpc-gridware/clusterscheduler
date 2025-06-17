@@ -345,7 +345,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* --- switch to intermediate user */
    shepherd_trace("switching to intermediate/target user");
-   if(is_qlogin_starter && !g_new_interactive_job_support) {
+   if (is_qlogin_starter && !g_new_interactive_job_support) {
       /* 
        * In the old IJS, we didn't have to set the additional group id,
        * because our custom rshd did it for us.

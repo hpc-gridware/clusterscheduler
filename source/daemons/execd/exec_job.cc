@@ -307,6 +307,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+   bool enable_systemd = mconf_get_enable_systemd();
    static gid_t last_addgrpid;
 #endif
 #endif
@@ -997,27 +998,27 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 #ifdef COMPILE_DC
 
-#  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
-   {
+#if defined(LINUX)
+   if (!sup_groups_in_proc()) {
+      lFreeList(&environmentList);
+      snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
+      FCLOSE(fp);
+      DRETURN(-2);
+   }
+#endif
+
+   // Set the additional group id.
+   // When we are using systemd we do not need to set an additional group id - we use value 0.
+   if (enable_systemd) {
+      last_addgrpid = 0;
+   } else {
+      // parse range and create list
       lList *rlp = nullptr;
       lList *alp = nullptr;
       gid_t temp_id;
-      char str_id[256];
-      char *gid_range = nullptr;
-#     if defined(LINUX)
-
-      if (!sup_groups_in_proc()) {
-         lFreeList(&environmentList);
-         snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
-         FCLOSE(fp);
-         DRETURN(-2);
-      }
-
-#     endif
-
-      /* parse range add create list */
-      gid_range = mconf_get_gid_range();
+      char *gid_range = mconf_get_gid_range();
       DPRINTF("gid_range = %s\n", gid_range);
       range_list_parse_from_string(&rlp, &alp, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
@@ -1042,23 +1043,24 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             DRETURN(-1);
          }
       }
+      lFreeList(&rlp);
+      lFreeList(&alp);
+   }
 
-      /* write add_grp_id to job-structure and file */
-      snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
-      fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
+   // write add_grp_id to config file and to the job-structure
+   fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
+   {
+      char str_id[256];
+      snprintf(str_id, sizeof(str_id), gid_t_fmt, last_addgrpid);
       if (petep == nullptr) {
          lSetString(jatep, JAT_osjobid, str_id);
       } else {
          lSetString(petep, PET_osjobid, str_id);
       }
+   }
 
-      if (mconf_get_ignore_ngroups_max_limit()) {
-         fprintf(fp, "skip_ngroups_max_silently=yes\n");
-      }
-
-      lFreeList(&rlp);
-      lFreeList(&alp);
-
+   if (mconf_get_ignore_ngroups_max_limit()) {
+      fprintf(fp, "skip_ngroups_max_silently=yes\n");
    }
 
 #endif
@@ -1367,7 +1369,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    //    - devices_allow
 #ifdef OCS_WITH_SYSTEMD
    {
-      bool enable_systemd = mconf_get_enable_systemd();
       fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
 
       if (enable_systemd) {
@@ -1624,6 +1625,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "qlogin_daemon=%s\n", qlogin_daemon);
             sge_free(&qlogin_daemon);
          } else {
+            // @todo CS-1262 we do no longer deliver a rshd or rlogind
+            //       no longer need the write_osjob_id config value, remove it from here and from shepherd
             if (JOB_TYPE_IS_QRSH(jb_now)) {
                char *rsh_daemon = mconf_get_rsh_daemon();
                strcat(daemon, "rshd");
