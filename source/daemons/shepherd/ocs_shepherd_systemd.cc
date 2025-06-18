@@ -20,6 +20,7 @@
 
 #include <cstring>
 
+#include "uti/sge_signal.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
@@ -203,4 +204,63 @@ namespace ocs {
    }
 #endif
 
+   void shepherd_systemd_signal_job(int signal) {
+#if defined(OCS_WITH_SYSTEMD)
+      // Signalling via systemd
+      //   - Need the scope name
+      //   - StopUnit, when the job shall be killed
+      //      - Mode should probably be "replace", in case we get multiple kill signals from execd
+      //      - It will return a job! Need to wait for it to finish.
+      //   - KillUnit, for arbitrary signals
+      //      - attrib "who" should be "all" to kill all processes in the scope
+      //   - FreezeUnit, for suspending the job
+      //   - ThawUnit, for resuming the job
+      ocs::uti::Systemd systemd;
+      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+      sge_switch2start_user();
+      bool connected = systemd.connect(&error_dstr);
+      sge_switch2admin_user();
+      if (!connected) {
+         // error, but do not exit shepherd - signals are repeated, next time might work
+         shepherd_error(0, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
+         return;
+      }
+
+      const char *scope = get_conf_val("systemd_scope");
+      bool success;
+
+      switch (signal) {
+         case SIGKILL:
+            success = systemd.stop_unit(scope, &error_dstr);
+            break;
+         case SIGSTOP:
+            if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
+               // systemd 250+ supports freeze/thaw for cgroup v2
+               success = systemd.freeze_unit(scope, &error_dstr);
+            } else {
+               // use KillUnit for older versions or cgroup v1
+               success = systemd.signal_unit(scope, signal, &error_dstr);
+            }
+            break;
+         case SIGCONT:
+            if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
+               // systemd 250+ supports freeze/thaw for cgroup v2
+               success = systemd.thaw_unit(scope, &error_dstr);
+            } else {
+               // use KillUnit for older versions or cgroup v1
+               success = systemd.signal_unit(scope, signal, &error_dstr);
+            }
+            break;
+         default:
+            success = systemd.signal_unit(scope, signal, &error_dstr);
+            break;
+      }
+
+      if (!success) {
+         shepherd_error(0, "signalling job in systemd scope '%s' failed: %s", scope, sge_dstring_get_string(&error_dstr));
+      } else {
+         shepherd_trace("signalled job in systemd scope '%s' with signal %s", scope,  sge_sys_sig2str(signal));
+      }
+#endif
+   }
 } // namespace ocs

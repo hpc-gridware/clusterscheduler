@@ -150,7 +150,9 @@ function(architecture_specific_settings)
 
       # build with systemd?
       # @todo check api version, we need at least
-      #       - 231: here sd_bus_process() was added
+      #       - 235: here FreezeUnit and ThawUnit were added (not required, we work around this not being available)
+      #       - 231: 240? here sd_bus_process() was added (not required, we work around this)
+      #       - 221: here StopUnit was added
       if (EXISTS /usr/include/systemd/sd-bus.h)
          set(WITH_SYSTEMD ON PARENT_SCOPE CACHE STRING "" FORCE)
          message(STATUS "systemd development files found")

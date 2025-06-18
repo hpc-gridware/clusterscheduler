@@ -1001,5 +1001,103 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
       DRETURN(ret);
    }
 
+   bool
+   Systemd::stop_unit(const std::string &unit, dstring *error_dstr) const {
+      bool ret = true;
+
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      if (ret) {
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
+                                      "/org/freedesktop/systemd1",          // object path
+                                      "org.freedesktop.systemd1.Manager",   // interface name
+                                      "StopUnit",                           // method name
+                                      &error,                               // object to return error in
+                                      nullptr,                              // return message on success (not needed)
+                                                                            // @todo Really? Would give us the job we could wait on.
+                                      "ss",                                 // input signature
+                                      unit.c_str(),                         // first argument (unit name)
+                                      "replace");                           // second argument (mode)
+         // If the unit does not exist, we get -2 (ENOENT) which is OK
+         if (r < 0 && -r != ENOENT) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StopUnit", unit.c_str(), r, error.message);
+            ret = false;
+         }
+      }
+      sd_bus_error_free_func(&error);
+
+      return ret;
+   }
+
+   bool
+   Systemd::freeze_unit(const std::string &unit, dstring *error_dstr) const {
+      bool ret = true;
+
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      if (ret) {
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
+                                      "/org/freedesktop/systemd1",          // object path
+                                      "org.freedesktop.systemd1.Manager",   // interface name
+                                      "FreezeUnit",                         // method name
+                                      &error,                               // object to return error in
+                                      nullptr,                              // return message on success (not needed)
+                                      "s",                                  // input signature
+                                      unit.c_str());                        // first argument (unit name)
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "FreezeUnit", unit.c_str(), r, error.message);
+            ret = false;
+         }
+      }
+
+      return ret;
+   }
+
+   bool
+   Systemd::thaw_unit(const std::string &unit, dstring *error_dstr) const {
+      bool ret = true;
+
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      if (ret) {
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
+                                      "/org/freedesktop/systemd1",          // object path
+                                      "org.freedesktop.systemd1.Manager",   // interface name
+                                      "ThawUnit",                           // method name
+                                      &error,                               // object to return error in
+                                      nullptr,                              // return message on success (not needed)
+                                      "s",                                  // input signature
+                                      unit.c_str());                        // first argument (unit name)
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "ThawUnit", unit.c_str(), r, error.message);
+            ret = false;
+         }
+      }
+
+      return ret;
+   }
+
+   bool
+   Systemd::signal_unit(const std::string &unit, int signal, dstring *error_dstr) const {
+      bool ret = true;
+
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      if (ret) {
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
+                                      "/org/freedesktop/systemd1",          // object path
+                                      "org.freedesktop.systemd1.Manager",   // interface name
+                                      "KillUnit",                           // method name
+                                      &error,                               // object to return error in
+                                      nullptr,                              // return message on success (not needed)
+                                      "ssi",                                // input signature
+                                      unit.c_str(),                         // first argument (unit name)
+                                      "all",                                // second argument (mode), signal all processes in the unit
+                                      signal);                              // third argument (signal number)
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "SignalUnit", unit.c_str(), r, error.message);
+            ret = false;
+         }
+      }
+
+      return ret;
+   }
+
 } // namespace
 #endif

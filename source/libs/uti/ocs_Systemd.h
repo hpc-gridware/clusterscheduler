@@ -146,6 +146,11 @@ namespace ocs::uti {
 
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const;
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const;
+
+         bool stop_unit(const std::string &unit, dstring *error_dstr) const;
+         bool freeze_unit(const std::string &unit, dstring *error_dstr) const;
+         bool thaw_unit(const std::string &unit, dstring *error_dstr) const;
+         bool signal_unit(const std::string &unit, int signal, dstring *error_dstr) const;
    };
 
 #endif
