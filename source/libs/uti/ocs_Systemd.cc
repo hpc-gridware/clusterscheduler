@@ -56,8 +56,6 @@ namespace ocs::uti {
    sd_bus_path_encode_func_t Systemd::sd_bus_path_encode_func = nullptr;
    sd_bus_get_property_func_t Systemd::sd_bus_get_property_func = nullptr;
    sd_bus_error_free_func_t Systemd::sd_bus_error_free_func = nullptr;
-   sd_bus_message_dump_func_t Systemd::sd_bus_message_dump_func = nullptr;
-   sd_bus_message_rewind_func_t Systemd::sd_bus_message_rewind_func = nullptr;
 
    std::string Systemd::slice_name{};
    std::string Systemd::service_name{};
@@ -214,22 +212,6 @@ namespace ocs::uti {
          func = "sd_bus_message_close_container";
          sd_bus_message_close_container_func = reinterpret_cast<sd_bus_message_close_container_func_t>(dlsym(lib_handle, func));
          if (sd_bus_message_close_container_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "sd_bus_message_dump";
-         sd_bus_message_dump_func = reinterpret_cast<sd_bus_message_dump_func_t>(dlsym(lib_handle, func));
-         if (sd_bus_message_dump_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "sd_bus_message_rewind";
-         sd_bus_message_rewind_func = reinterpret_cast<sd_bus_message_rewind_func_t>(dlsym(lib_handle, func));
-         if (sd_bus_message_rewind_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -448,7 +430,7 @@ namespace ocs::uti {
             ret = false;
          } else {
             if (result == nullptr) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S, method.c_str());
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
                ret = false;
             }
             output = result;
@@ -483,7 +465,7 @@ namespace ocs::uti {
             ret = false;
          } else {
             if (result == nullptr) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S, method.c_str());
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
                ret = false;
             }
             output = result;
@@ -587,17 +569,33 @@ namespace ocs::uti {
       bool ret = true;
 
       DPRINTF("Systemd::move_shepherd_to_scope: calling StartTransientUnit\n");
+
+      // StartTransientUnit will start a systemd job, we have to wait for it to finish
+      // @todo AI claims that this is only needed with systemd version >= 239, but is this correct?
+      //          from man page: sd_bus_wait() was added in version 240.
+      //          but older shared libs have it already - so with which version shall we start to use it?
+      sd_bus_slot *slot = nullptr;
+      if (systemd_version >= 240) {
+         slot = sd_bus_wait_for_job_subscribe("JobRemoved", error_dstr);
+         if (slot == nullptr) {
+            ret = false;
+         }
+      }
+
       sd_bus_message *m = nullptr;
       sd_bus_error error = SD_BUS_ERROR_NULL;
-      // build the method step by step as we add arrays
-      int r = sd_bus_message_new_method_call_func(bus, &m,
-              "org.freedesktop.systemd1",          // service to contact
-              "/org/freedesktop/systemd1",         // object path
-              "org.freedesktop.systemd1.Manager",  // interface name
-              "StartTransientUnit");       // method name
-      if (r < 0) {
-         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS, "StartTransientUnit", r, strerror(-r));
-         ret = false;
+      int r;
+      if (ret) {
+         // build the method step by step as we add arrays
+         int r = sd_bus_message_new_method_call_func(bus, &m,
+                 "org.freedesktop.systemd1",          // service to contact
+                 "/org/freedesktop/systemd1",         // object path
+                 "org.freedesktop.systemd1.Manager",  // interface name
+                 "StartTransientUnit");       // method name
+         if (r < 0) {
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS, "StartTransientUnit", r, strerror(-r));
+            ret = false;
+         }
       }
 
       if (ret) {
@@ -786,14 +784,13 @@ namespace ocs::uti {
                ret = false;
             } else {
                if (job == nullptr) {
-                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S, "StartTransientUnit");
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, "StartTransientUnit");
                   ret = false;
                } else {
                   // wait for the job to finish
-                  // @todo AI claims that this is only needed with systemd version >= 239, but is this correct?
-                  // from man page: sd_bus_wait() was added in version 240.
-                  if (systemd_version >= 240) {
+                  if (slot != nullptr) {
                      ret = sd_bus_wait_for_job_completion(job, error_dstr);
+                     sd_bus_wait_for_job_unsubscribe(&slot);
                   }
                }
             }
@@ -806,6 +803,30 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   sd_bus_slot *
+   Systemd::sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+
+      // add match for JobRemoved signal
+      sd_bus_slot *slot = nullptr;
+      std::string match_rule = "type='signal',interface='org.freedesktop.systemd1.Manager',member='" + signal + "'";
+      int r = sd_bus_add_match_func(bus, &slot, match_rule.c_str(), nullptr, nullptr);
+      // @todo should also work but doesn't
+      // int r = sd_bus_match_signal_func(bus, &slot, nullptr, nullptr, "JobRemoved", nullptr, nullptr);
+      if (r < 0) {
+         sge_dstring_sprintf(error_dstr, SFN ": adding match func " SFQ " failed: error %d: " SFN, __func__, match_rule.c_str(), r, strerror(-r));
+      }
+
+      DRETURN(slot);
+   }
+
+   void
+   Systemd::sd_bus_wait_for_job_unsubscribe(sd_bus_slot **slot) const {
+      // release the match pattern
+      sd_bus_slot_unref_func(*slot);
+      slot = nullptr;
+   }
+
 bool
 Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
    DENTER(TOP_LAYER);
@@ -813,23 +834,14 @@ Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *er
 
    bool ret = true;
 
-   // add match for JobRemoved signal
-   sd_bus_slot *slot = nullptr;
-   if (ret) {
-      std::string match_rule = "type='signal',interface='org.freedesktop.systemd1.Manager',member='JobRemoved'";
-      int r = sd_bus_add_match_func(bus, &slot, match_rule.c_str(), nullptr, nullptr);
-      // @todo should also work but doesn't
-      // int r = sd_bus_match_signal_func(bus, &slot, nullptr, nullptr, "JobRemoved", nullptr, nullptr);
-      if (r < 0) {
-         sge_dstring_sprintf(error_dstr, SFN ": adding match func " SFQ " failed: error %d: " SFN, __func__, match_rule.c_str(), r, strerror(-r));
-         ret = false;
-      }
-   }
-
-   u_long64 timeout = sge_get_gmt64() + 1000000; // 1 second timeout
+   // Wait for the job to finish.
+   // @todo What is an appropriate timeout?
+   //       1 second was not enough in some cases, so we use 5 seconds.
+   //       Make it configurable?
+   u_long64 timeout = sge_get_gmt64() + 5000000; // 5 second timeout
    while (ret == true) {
       if (sge_get_gmt64() > timeout) {
-         sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for job completion", __func__);
+         sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for completion of job " SFN, __func__, job_path.c_str());
          ret = false;
          break;
       }
@@ -885,9 +897,6 @@ Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *er
 
       sd_bus_message_unref_func(m);
    }
-
-   // release the match pattern
-   sd_bus_slot_unref_func(slot);
 
    DRETURN(ret);
 }

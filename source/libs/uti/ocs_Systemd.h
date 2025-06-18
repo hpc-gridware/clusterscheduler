@@ -54,8 +54,6 @@ namespace ocs::uti {
    using sd_bus_message_append_array_func_t = int (*)(sd_bus_message *m, char type, const void *ptr, size_t size);
    using sd_bus_message_open_container_func_t = int (*)(sd_bus_message *m, int type, const char *types);
    using sd_bus_message_close_container_func_t = int (*)(sd_bus_message *m);
-   using sd_bus_message_dump_func_t = int (*)(sd_bus_message *m, FILE *f, int flags);
-   using sd_bus_message_rewind_func_t = int (*)(sd_bus_message *m, int complete);
    using sd_bus_call_func_t = int (*)(sd_bus *bus, sd_bus_message *m, uint64_t usec, sd_bus_error *error, sd_bus_message **reply);
    using sd_bus_add_match_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *match, sd_bus_message_handler_t callback, void *userdata);
    using sd_bus_match_signal_func_t = int (*)(sd_bus *bus, sd_bus_slot **slot, const char *path, const char *interface, const char *member, sd_bus_message_handler_t callback, void *userdata);
@@ -90,8 +88,6 @@ namespace ocs::uti {
          static sd_bus_message_append_array_func_t sd_bus_message_append_array_func;
          static sd_bus_message_open_container_func_t sd_bus_message_open_container_func;
          static sd_bus_message_close_container_func_t sd_bus_message_close_container_func;
-         static sd_bus_message_dump_func_t sd_bus_message_dump_func;
-         static sd_bus_message_rewind_func_t sd_bus_message_rewind_func;
          static sd_bus_call_func_t sd_bus_call_func;
          static sd_bus_add_match_func_t sd_bus_add_match_func;
          static sd_bus_match_signal_func_t sd_bus_match_signal_func;
@@ -131,6 +127,8 @@ namespace ocs::uti {
          // instance methods
          bool sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const;
          bool sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const;
+         sd_bus_slot *sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const;
+         void sd_bus_wait_for_job_unsubscribe(sd_bus_slot **slot) const;
          bool sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const;
          std::string get_unit_for_pid();
          std::string get_unit_for_service(std::string &service);

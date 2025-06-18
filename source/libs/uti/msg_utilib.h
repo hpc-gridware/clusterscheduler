@@ -220,7 +220,7 @@
 #define MSG_SYSTEMD_CANNOT_CONNECT_IS              _MESSAGE(59253, _("cannot connect to system bus: error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_CALL_SSIS               _MESSAGE(59254, _("systemd method " SFN "(" SFN ") failed: error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_READ_RESULT_SISS        _MESSAGE(59256, _("cannot read result from systemd method " SFN ": error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_EMPTY_RESULT_S          _MESSAGE(59257, _("empty result from systemd method " SFN))
+#define MSG_SYSTEMD_EMPTY_RESULT_S                 _MESSAGE(59257, _("empty result from systemd method " SFN))
 #define MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS _MESSAGE(59258, _("cannot create message for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS  _MESSAGE(59259, _("cannot append " SFN " to message for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS     _MESSAGE(59260, _("cannot open container " SFN " for systemd method " SFN ": error %d: " SFN4))
