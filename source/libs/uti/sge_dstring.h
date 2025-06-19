@@ -98,6 +98,8 @@ void sge_dstring_free(dstring *sb);
 
 const char *sge_dstring_get_string(const dstring *string);
 
+char *sge_dstring_get_string_rw(dstring *string);
+
 const char *sge_dstring_copy_string(dstring *sb, const char *str);
 
 const char *sge_dstring_copy_dstring(dstring *sb1, const dstring *sb2);
