@@ -77,7 +77,7 @@
 *    SGE_STRING(JG_processors) - Processor Set
 *    Processor set the job is supposed to run on (Solaris only?)
 *
-*    SGE_LIST(JG_binding_touse) - Binding that should be used
+*    SGE_LIST(JG_binding_to_use) - Binding that should be used
 *    One entry for sequential jobs or host specific binding, multiple entries for PE jobs in case of task specific binding
 *
 */
@@ -96,7 +96,7 @@ enum {
    JG_jcoticket,
    JG_jcfticket,
    JG_processors,
-   JG_binding_touse
+   JG_binding_to_use
 };
 
 LISTDEF(JG_Type)
@@ -113,7 +113,7 @@ LISTDEF(JG_Type)
    SGE_DOUBLE(JG_jcoticket, CULL_DEFAULT)
    SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT)
    SGE_STRING(JG_processors, CULL_DEFAULT)
-   SGE_LIST(JG_binding_touse, ST_Type, CULL_DEFAULT)
+   SGE_LIST(JG_binding_to_use, ST_Type, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(JGN)
@@ -130,7 +130,7 @@ NAMEDEF(JGN)
    NAME("JG_jcoticket")
    NAME("JG_jcfticket")
    NAME("JG_processors")
-   NAME("JG_binding_touse")
+   NAME("JG_binding_to_use")
 NAMEEND
 
 #define JG_SIZE sizeof(JGN)/sizeof(char *)

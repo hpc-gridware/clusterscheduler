@@ -250,6 +250,9 @@ object_get_subtype(int nm)
       case OR_granted_resources_list:
          ret = GRU_Type;
          break;
+      case OQ_binding_to_use:
+         ret = ST_Type;
+         break;
       case US_entries:
          ret = UE_Type;
          break;
@@ -277,7 +280,7 @@ object_get_subtype(int nm)
       case CONF_entries:
          ret = CF_Type;
          break;
-      case JG_binding_touse:
+      case JG_binding_to_use:
          ret = ST_Type;
          break;
       case SPA_argval_lListT:

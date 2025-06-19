@@ -761,10 +761,10 @@ int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slo
    return mods;
 }
 
+// @todo CS-731: DONE: debit bindings
 static int
 ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
    DENTER(TOP_LAYER);
-
    int mods = 0;
    const char *ce_name = lGetString(granted_resource, GRU_name);
    const lListElem *binding_st_elem;
@@ -774,26 +774,24 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
          break;
       }
    }
-   DPRINTF("@todo CS-731: debit bindings\n");
    DRETURN(mods);
 }
 
+// @todo CS-731: DONE: debit bindings
 int ja_task_debit_host_bindings(const lListElem *ja_task, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);
    const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
-
    const void *iterator;
+
    for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
         granted_resource != nullptr;
         granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
 
-      // only debit RSMAPs here
+      // only debit binding information here
       if (lGetUlong(granted_resource, GRU_type) != GRU_BINDING_TYPE) {
          continue;
       }
-
-      lWriteElemTo(granted_resource, stderr);
 
       mods += ja_task_debit_host_binding(granted_resource, host, slots, just_check);
       if (just_check != nullptr && !*just_check) {

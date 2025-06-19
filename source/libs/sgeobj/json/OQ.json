@@ -63,5 +63,15 @@
 				}],
 			"type":	"lDoubleT",
 			"flags":	[]
+		}, {
+			"name":	"binding_to_use",
+			"summary":	"Binding that should be used",
+			"description":	[{
+				"line":	"One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding"
+			}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[]
 		}]
 }

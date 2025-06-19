@@ -107,16 +107,14 @@ static bool
 gru_list_add_binding_touse(sge_assignment_t *a, lList **granted_resources_list, const char *host_name, const lList *binding_touse_list) {
    DENTER(TOP_LAYER);
    if (binding_touse_list != nullptr) {
-      const lListElem *binding_touse_elem;
-      for_each_ep(binding_touse_elem, binding_touse_list) {
-         DPRINTF("  ==> gru_list_add_binding_touse:");
-         DPRINTF("   -> adding new GRU with binding information: %d element(s)\n", lGetNumberOfElem(binding_touse_list));
-         // @todo CS-731: is the GRU_name correct here? can we use slots?
-         lListElem *gru = lAddElemStr(granted_resources_list, GRU_name, "slots", GRU_Type);
-         lSetHost(gru, GRU_host, host_name);
-         lSetUlong(gru, GRU_type, GRU_BINDING_TYPE);
-         lSetList(gru, GRU_binding_inuse, lCopyList("binding_to_use", binding_touse_list));
-      }
+      DPRINTF("  ==> gru_list_add_binding_touse:\n");
+      DPRINTF("   -> adding new GRU with binding information: %d element(s)\n", lGetNumberOfElem(binding_touse_list));
+
+      // @todo CS-731: is the GRU_name correct here? can we use slots? JG suggests a new complex "binding"
+      lListElem *gru = lAddElemStr(granted_resources_list, GRU_name, SGE_ATTR_SLOTS, GRU_Type);
+      lSetHost(gru, GRU_host, host_name);
+      lSetUlong(gru, GRU_type, GRU_BINDING_TYPE);
+      lSetList(gru, GRU_binding_inuse, lCopyList("binding_to_use", binding_touse_list));
    }
    DRETURN(true);
 }
@@ -209,17 +207,15 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    for_each_ep(gdil_ep, a->gdil) {
       int slots = lGetUlong(gdil_ep, JG_slots);
       const char *host_name = lGetHost(gdil_ep, JG_qhostname);
-      const lList *binding_touse_list = lGetList(gdil_ep, JG_binding_touse);
 
       DPRINTF("gdil_ep: %s, %d slots%s\n", host_name, slots, is_master_task ? ", master task" : "");
 
-      // @todo CS-731: add the binding_touse information
-#if 1
-      ret = gru_list_add_binding_touse(a, &granted_resources_list, host_name, binding_touse_list);
+      // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
+      const lList *binding_to_use_list = lGetList(gdil_ep, JG_binding_to_use);
+      ret = gru_list_add_binding_touse(a, &granted_resources_list, host_name, binding_to_use_list);
       if (!ret) {
          break;
       }
-#endif
 
       // book the global resources
       const lListElem *request;
@@ -307,12 +303,6 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    } else {
       lFreeList(&granted_resources_list);
    }
-
-   // CS-731: add the granted binding
-#if 1
-   DPRINTF("add_granted_resource_list: after adding binding information\n");
-   lWriteElemTo(ja_task, stderr);
-#endif
 
    DRETURN(ret);
 }

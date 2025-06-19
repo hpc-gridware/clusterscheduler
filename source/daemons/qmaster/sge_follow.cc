@@ -479,6 +479,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             gdil_ep = lAddElemStr(&gdil, JG_qname, q_name, JG_Type); /* free me on error! */
             lSetHost(gdil_ep, JG_qhostname, lGetHost(qep, QU_qhostname));
             lSetUlong(gdil_ep, JG_slots, q_slots);
+            lSetList(gdil_ep, JG_binding_to_use, lCopyList("binding_to_use",lGetList(oep, OQ_binding_to_use)));
 
             /* ------------------------------------------------
              *  tag each gdil entry of slave exec host

@@ -56,6 +56,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/ocs_HostTopology.h"
 
 #include "debit.h"
 #include "sge_job_schedd.h"
@@ -134,7 +135,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
       DPRINTF("-------------------------------------------\n");
       DPRINTF("PARALLEL ENVIRONMENT \"%s\"\n", name);
       for_each_ep(cr, lGetList(ep, PE_resource_utilization)) {
-         utilization_print(cr, name);
+         utilization_print(cr, name, false);
       }
    }
 
@@ -143,7 +144,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
       DPRINTF("-------------------------------------------\n");
       DPRINTF("GLOBAL HOST RESOURCES\n");
       for_each_ep(cr, lGetList(ep, EH_resource_utilization)) {
-         utilization_print(cr, SGE_GLOBAL_NAME);
+         utilization_print(cr, SGE_GLOBAL_NAME, false);
       }
    }
 
@@ -154,7 +155,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          DPRINTF("-------------------------------------------\n");
          DPRINTF("EXEC HOST \"%s\"\n", name);
          for_each_ep(cr, lGetList(ep, EH_resource_utilization)) {
-            utilization_print(cr, name);
+            utilization_print(cr, name, true);
          }
       }
    }
@@ -166,7 +167,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          DPRINTF("-------------------------------------------\n");
          DPRINTF("QUEUE \"%s\"\n", name);
          for_each_ep(cr, lGetList(ep, QU_resource_utilization)) {
-            utilization_print(cr, name);
+            utilization_print(cr, name, false);
          }
       }
    }
@@ -182,7 +183,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
          DPRINTF("-------------------------------------------\n");
          DPRINTF("AR " sge_u32 " HOST \"%s\"\n", ar_id, name);
          for_each_ep(cr, lGetList(host, EH_resource_utilization)) {
-            utilization_print(cr, name);
+            utilization_print(cr, name, false);
          }
       }
       const lListElem *queue;
@@ -192,7 +193,7 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
             DPRINTF("-------------------------------------------\n");
             DPRINTF("AR " sge_u32 " QUEUE \"%s\"\n", ar_id, name);
             for_each_ep(cr, lGetList(queue, QU_resource_utilization)) {
-               utilization_print(cr, name);
+               utilization_print(cr, name, false);
             }
          }
       }
@@ -202,32 +203,21 @@ static void utilization_print_all(const lList* pe_list, lList *host_list, const 
    DRETURN_VOID;
 }
 
-void utilization_print(const lListElem *cr, const char *object_name) 
+void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse)
 {
    DENTER(TOP_LAYER);
 
    const lListElem *rde;
    DSTRING_STATIC(dstr, 64);
 
-   // @todo CS-731: RUE_utilized_now_binding_inuse not set correctly
-
    if (object_name == nullptr) {
       object_name = "<unknown_object>";
    }
    const char *name = lGetString(cr, RUE_name);
-   bool show_binding_inuse = strcmp(name, SGE_ATTR_SLOTS) == 0;
-
    double utilized_now = lGetDouble(cr, RUE_utilized_now);
-   if (show_binding_inuse) {
-      const char *binding_now = lGetString(cr, RUE_utilized_now_binding_inuse);
-      if (binding_now) {
-         binding_now = "nothing-bound";
-      }
 
-      DPRINTF("resource utilization: %s: utilized-now: %s=%f (%s)\n", object_name, name, utilized_now, binding_now);
-   } else {
-      DPRINTF("resource utilization: %s: utilized-now: %s=%f\n", object_name, name, utilized_now);
-   }
+   DPRINTF("resource utilization: %s: utilized-now: %s=%f\n", object_name, name, utilized_now);
+
    for_each_ep(rde, lGetList(cr, RUE_utilized)) {
       u_long64 time = lGetUlong64(rde, RDE_time);
       double amount = lGetDouble(rde, RDE_amount);
@@ -266,6 +256,7 @@ static u_long64 utilization_endtime(u_long64 start, u_long64 duration)
 
    DRETURN(end_time);
 }
+
 
 /****** sge_resource_utilization/utilization_add() *****************************
 *  NAME
@@ -309,7 +300,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    const char *name = lGetString(cr, RUE_name);
    u_long64 end_time;
    int nm;
-   double util_prev;
 
    if (implicit_non_exclusive) {
       nm = RUE_utilized_nonexclusive;
@@ -318,17 +308,14 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    }
    resource_diagram = lGetListRW(cr, nm);
 
-
-   /* A reservation is only neccessary in one of the following cases:
+   /* A reservation is only necessary in one of the following cases:
       - for_job is true (this means no advance reservation request) 
-      - reservation is enabled and job duration not zero 
+      - reservation is enabled and job duration not zero
       - queue is already reserved by an advance reservation (resource_diagram != nullptr)
    */
-   if (for_job && (sconf_get_max_reservations() == 0 || duration == 0)
-      && resource_diagram == nullptr) /* AR queues have a resource diagram and we must reflect changes for this queues */
-   { 
+   /* AR queues have a resource diagram and we must reflect changes for this queues */
+   if (for_job && (sconf_get_max_reservations() == 0 || duration == 0) && resource_diagram == nullptr) {
       DPRINTF("max reservations reached or duration is 0\n");
-
       DRETURN(0);
    }
 
@@ -336,16 +323,24 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time, level, object_name, name, utilization);
 
-   dstring binding_touse_dstr = DSTRING_INIT;
-   bool add_bindings = false;
+   // @todo CS-731: DONE: add all entries in the list instead of just the first
+   bool handle_binding = false;
+   DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
    if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0) {
-      DPRINTF("@todo CS-731 utilization_add(%s) add task binding by combining all tasks bindings to one string\n", object_name);
-      if (binding_touse != nullptr) {
-         sge_dstring_sprintf(&binding_touse_dstr, "%s", lGetString(lFirst(binding_touse), ST_name));
-      } else {
-         sge_dstring_sprintf(&binding_touse_dstr, "%s", "@todo CS-731");
+      handle_binding = true;
+
+      // we have at least one binding_to_use element. copy the first one to the binding_touse_dstr
+      const lListElem *to_use_elem = lFirst(binding_touse);
+      sge_dstring_copy_string(&binding_to_use_dstr, lGetString(to_use_elem, ST_name));
+      DSTRING_STATIC(next_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+
+      // add all cores/threads of additional elements to the binding_to_use_dstr
+      to_use_elem = lNext(to_use_elem);
+      while (to_use_elem) {
+         sge_dstring_copy_string(&next_to_use_dstr, lGetString(to_use_elem, ST_name));
+         ocs::HostTopology::add_used_threads(&binding_to_use_dstr, &next_to_use_dstr);
+         to_use_elem = lNext(to_use_elem);
       }
-      add_bindings = true;
    }
 
    /* ensure resource diagram is initialized */
@@ -356,22 +351,37 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    utilization_find_time_or_prevstart_or_prev(resource_diagram, start_time, &start, &prev);
 
+   double util_prev = 0.0;
+   const char *binding_prev = nullptr;
    if (start) {
-      /* if we found one add the utilization amount to it */
+      // if the start element is already there, we can just add the utilization to it
       lAddDouble(start, RDE_amount, utilization);
-      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
-      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
+      // @todo CS-731: DONE: add binding_inuse information to the start element
+      if (handle_binding) {
+         ocs::HostTopology::elem_add_binding(start, RDE_binding_inuse,
+                                 lGetString(start, RDE_binding_inuse),
+                                sge_dstring_get_string(&binding_to_use_dstr));
+      }
    } else {
-      /* otherwise insert a new one after the element before resp. at the list begin */
-      if (prev)
+      // no start element found, so we need to create one
+      // if there is a previous element, we can add its amount and binding_inuse to the new element
+      // otherwise we just create a new element with the utilization. it is the new list beginning
+      if (prev != nullptr) {
          util_prev = lGetDouble(prev, RDE_amount);
-      else 
-         util_prev = 0;
+         binding_prev = lGetString(prev, RDE_binding_inuse);
+      }
+
+      // create a new start element with the utilization and binding_inuse
       start = lCreateElem(RDE_Type);
       lSetUlong64(start, RDE_time, start_time);
       lSetDouble(start, RDE_amount, utilization + util_prev);
-      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
-      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
+      // @todo CS-731: DONE: add binding_inuse information to the start element
+      if (handle_binding) {
+         ocs::HostTopology::elem_add_binding(start, RDE_binding_inuse, binding_prev,
+                                sge_dstring_get_string(&binding_to_use_dstr));
+      }
+
+      // Insert the new element with our start time after the previous element that has an earlier start time
       lInsertElem(resource_diagram, prev, start);
    }
 
@@ -390,43 +400,60 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       }
       /* increment amount of elements in-between */
       lAddDouble(thiz, RDE_amount, utilization);
-      // @todo CS-731: code is not correct. wee need a logical or for the binding_inuse for this element
-      lSetString(start, RDE_binding_inuse, add_bindings ? sge_dstring_get_string(&binding_touse_dstr) : nullptr);
+      // @todo CS-731: DONE: add binding_inuse information to the thiz element
+      if (handle_binding) {
+         ocs::HostTopology::elem_add_binding(thiz, RDE_binding_inuse,
+                                 lGetString(thiz, RDE_binding_inuse),
+                                sge_dstring_get_string(&binding_to_use_dstr));
+      }
       prev = thiz;
       thiz = lNextRW(thiz);
    }
 
    if (!end) {
       util_prev = lGetDouble(prev, RDE_amount);
+      binding_prev = lGetString(prev, RDE_binding_inuse);
+
       end = lCreateElem(RDE_Type);
       lSetUlong64(end, RDE_time, end_time);
       lSetDouble(end, RDE_amount, util_prev - utilization);
+      if (handle_binding) {
+         ocs::HostTopology::elem_remove_binding(end, RDE_binding_inuse, binding_prev,
+                                                sge_dstring_get_string(&binding_to_use_dstr));
+      }
+
       lInsertElem(resource_diagram, prev, end);
    }
 
+   // @todo CS-731: disable when finished
 #if 1
    dstring combined_name = DSTRING_INIT;
    sge_dstring_sprintf(&combined_name, "%s-%s", object_name, name);
-   utilization_print(cr, sge_dstring_get_string(&combined_name));
+   utilization_print(cr, sge_dstring_get_string(&combined_name), handle_binding);
    sge_dstring_free(&combined_name);
 #endif
 
    utilization_normalize(resource_diagram);
 
-   sge_dstring_free(&binding_touse_dstr);
-
    DRETURN(0);
 }
 
-/* 
-   Find element with specified time or the element before it 
-
-   If the element exists it is returned in 'hit'. Otherwise,
-   the element before it is returned or nullptr if no such exists.
-
-*/
-static void utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long64 time, lListElem **hit, lListElem **before)
-{ 
+/** @brief finds the element with the specified time or the element before it
+ *
+ * This function searches for an element in the utilization diagram
+ * that matches the specified time. If an element with the exact time is found,
+ * that element is returned in the `hit` pointer. If no such element exists,
+ * the function finds the element that is before the specified time
+ * and returns it in the `before` pointer. If no such element exists,
+ * the `before` pointer is set to nullptr.
+ *
+ *  @param diagram the utilization diagram to search in
+ *  @param time the time to search for
+ *  @param hit pointer to store the found element (nullptr if not found)
+ *  @param before pointer to store the element before the found one (nullptr if no such exists)
+ */
+static void
+utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long64 time, lListElem **hit, lListElem **before) {
    lListElem *start, *thiz, *prev;
 
    start = nullptr;
@@ -513,7 +540,7 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
    DENTER(TOP_LAYER);
 
 #if 1
-   utilization_print(cr, "the object");
+   utilization_print(cr, "the object", false);
 #endif
 
    double max = 0.0;
@@ -543,18 +570,15 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
    DRETURN(max);
 }
 
-// /**
-//  * Returns the maximum utilization within a timeframe and additional details
-//  *
-//  * @param cr Resource utilization entry (RUE_utilized)
-//  * @param start_time Start time of the timeframe
-//  * @param duration Duration of timeframe
-//  * @param for_excl_request Whether to check for exclusive requests
-//  * @param[out] binding_inuse Only available for slots on host level.
-//  * @return Maximum utilization value
-//  *
-//  * @todo CS-731 In case of reservation we need to OR all binding_inuse over the jobs duration to see cores/threads that can still be used
-//  */
+/** @brief Returns the maximum utilization within a timeframe and additional details
+ *
+ * @param cr Resource utilization entry (RUE_utilized)
+ * @param start_time Start time of the timeframe
+ * @param duration Duration of timeframe
+ * @param for_excl_request Whether to check for exclusive requests
+ * @param[out] binding_inuse Only available for slots on host level.
+ * @return Maximum utilization value
+ */
 double
 utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request, dstring *binding_inuse)
 {
@@ -583,7 +607,7 @@ utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, boo
    }
    
 #if 1
-   utilization_print(cr, "the object");
+   utilization_print(cr, "the object", false);
 #endif
 
    utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized), start_time, &start, &prev);
@@ -894,7 +918,7 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
          if (dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
             utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                            obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
+                            obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
             mods++;
             did_booking = true;
          }
@@ -912,7 +936,7 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for one slot (the master task)
                   utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
-                                  obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
+                                  obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
                   mods++;
                   did_booking = true;
                }
@@ -940,7 +964,7 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
                // book it for the remaining slave tasks
                slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
-                               obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_touse));
+                               obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
                mods++;
                did_booking = true;
             }
@@ -952,7 +976,7 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
          dval = 1.0;
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                         obj_name, type, for_job_scheduling, true, lGetList(gdil, JG_binding_touse));
+                         obj_name, type, for_job_scheduling, true, lGetList(gdil, JG_binding_to_use));
          mods++;
       }
    }

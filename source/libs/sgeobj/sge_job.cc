@@ -2764,7 +2764,9 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
       ret = false; 
    }
    if (is_default_request && *value == 0) {
+#if 0
       DPRINTF("job_get_contribution_by_scope: default request for %s is 0, ignoring\n", name);
+#endif
       ret = false;
    }
    
