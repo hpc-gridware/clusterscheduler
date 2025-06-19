@@ -180,6 +180,7 @@ lList
             ep2=lCreateElem(OQ_Type);
 
             lSetUlong(ep2, OQ_slots, qslots);
+            lSetList(ep2, OQ_binding_to_use, lCopyList("binding_to_use", lGetList(gel, JG_binding_to_use)));
             lSetString(ep2, OQ_dest_queue, lGetString(gel, JG_qname));
             lSetUlong(ep2, OQ_dest_version, lGetUlong(gel, JG_qversion));
             lSetDouble(ep2, OQ_ticket, lGetDouble(gel, JG_ticket));

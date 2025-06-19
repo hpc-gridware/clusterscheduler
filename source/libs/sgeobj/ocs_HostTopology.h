@@ -20,37 +20,27 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <string>
-#include <sstream>
-#include <utility>
-#include <vector>
+#include "uti/sge_dstring.h"
+#include "cull/cull.h"
 
 namespace ocs {
    class HostTopology {
-      class Node {
-      public:
-         char c;
-         size_t id;
-         std::vector<Node> nodes;
-
-         explicit Node(char c, std::vector<Node> nodes) : c(c), id(0), nodes(std::move(nodes)) {}
-         explicit Node(char c) : c(c), id(0), nodes() {}
-         ~Node() = default;
-      };
-
-      std::string topo_mask;
-      std::vector<Node> sockets;
-
-      void parseTopoMask(std::string &topo_mask);
-      void buildTopoMask(const Node& node, std::ostringstream& oss) const;
-      void buildFullTopoMask(const Node& node, std::ostringstream& oss) const;
-      void numberTopoNodes(std::vector<Node> &nodes);
-      void sortNodes(std::vector<Node>& nodes);
-
+      static void add_or_remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr, bool do_add);
    public:
-      HostTopology(std::string &topo_mask);
+      constexpr static int MAX_TOPOLOGY_LENGTH = 2560;
 
-      std::string getTopoMask() const;
-      std::string getFullTopoMask() const;
-   };
+      static void correct_topology_upper_lower(dstring *topology_dstr);
+      static void correct_topology_missing_threads(dstring *topology_dstr);
+      static bool find_first_unused_thread(const dstring *topology_dstr, int *pos, int *socket, int *core, int *thread);
+
+      static void add_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr);
+      static void add_used_threads(lListElem *elem, int topology_nm, dstring *topology_in_use_dstr);
+      static void add_used_thread(dstring *topology_dstr, int pos);
+      static void remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr);
+      static void remove_used_thread(dstring *topology_dstr, int pos);
+      static void remove_all_used_threads(dstring *topology_dstr);
+
+      static void elem_add_binding(lListElem *elem, int nm, const char *binding_now, const char *binding_to_use);
+      static void elem_remove_binding(lListElem *elem, int nm, const char *binding_now, const char *binding_to_use);
+      };
 }

@@ -39,7 +39,7 @@
 
 /* those are for treating resource utilization */
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
-void utilization_print(const lListElem *cr, const char *object_name);
+void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse);
 int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, double utilization,
    u_long32 job_id, u_long32 ja_taskid, u_long32 level, const char *object_name, const char *type, bool for_job, bool implicit_non_exclusive, const lList *binding_touse);
 double utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request, dstring *binding_inuse);
