@@ -570,7 +570,7 @@ ocs::ClassicReportingFileWriter::reporting_write_consumables(lList **answer_list
              * consumables, which are requested by the job
              * slots is an implicit request - always log it if requested
              */
-            if (strcmp(name, "slots") != 0 && job != nullptr) {
+            if (strcmp(name, SGE_ATTR_SLOTS) != 0 && job != nullptr) {
                if (job_get_request(job, name) == nullptr) {
                   log_variable = false;
                }
