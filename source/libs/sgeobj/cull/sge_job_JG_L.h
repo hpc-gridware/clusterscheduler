@@ -78,7 +78,7 @@
 *    Processor set the job is supposed to run on (Solaris only?)
 *
 *    SGE_LIST(JG_binding_to_use) - Binding that should be used
-*    One entry for sequential jobs or host specific binding, multiple entries for PE jobs in case of task specific binding
+*    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
 *
 */
 

@@ -1483,12 +1483,14 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      /* the centry_list_fill_request returns 0 if success */
+      // fill missing attributes in EH_consumable_config_list
       if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true,
                                    false, false)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
+
+      // debit resources
       {
          lListElem *jep = nullptr;
          const lListElem *ar_ep;

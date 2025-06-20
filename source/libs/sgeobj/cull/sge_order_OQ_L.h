@@ -56,7 +56,7 @@
 *    Total SGEEE sharetree tickets.
 *
 *    SGE_LIST(OQ_binding_to_use) - Binding that should be used
-*    One entry for sequential jobs or host specific binding, multiple entries for PE jobs in case of task specific binding
+*    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
 *
 */
 

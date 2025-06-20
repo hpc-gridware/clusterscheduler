@@ -367,7 +367,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                lListElem *slots_ce = nullptr;
 
                /* implicit slots entry */
-               if (lGetElemStr(new_value, CE_name, "slots") == nullptr) {
+               if (lGetElemStr(new_value, CE_name, SGE_ATTR_SLOTS) == nullptr) {
                   const lList *cq_slots_attr = lGetList(cqueue, CQ_job_slots);
                   u_long32 slots_value;
                   dstring buffer = DSTRING_INIT;
@@ -379,7 +379,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   if (new_value == nullptr) {
                      created_new_value = true;
                   }
-                  slots_ce = lAddElemStr(&new_value, CE_name, "slots", CE_Type);
+                  slots_ce = lAddElemStr(&new_value, CE_name, SGE_ATTR_SLOTS, CE_Type);
                   lSetDouble(slots_ce, CE_doubleval, slots_value);
                   lSetString(slots_ce, CE_stringval, sge_dstring_get_string(&buffer));
                   sge_dstring_free(&buffer);

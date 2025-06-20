@@ -1328,11 +1328,11 @@ add_calendar_to_schedule(lList *queue_list, u_long64 now)
       if (queue_states != nullptr) {
       
          const lList *consumable_list = lGetList(queue, QU_consumable_config_list);
-         const lListElem *slot_elem = lGetElemStr(consumable_list, CE_name, "slots"); 
+         const lListElem *slot_elem = lGetElemStr(consumable_list, CE_name, SGE_ATTR_SLOTS);
          double slot_count = lGetDouble(slot_elem, CE_doubleval); 
 
          const lList *queue_uti_list = lGetList(queue, QU_resource_utilization);
-         lListElem *slot_uti = lGetElemStrRW(queue_uti_list, RUE_name, "slots");
+         lListElem *slot_uti = lGetElemStrRW(queue_uti_list, RUE_name, SGE_ATTR_SLOTS);
          lList *slot_uti_list = lGetListRW(slot_uti, RUE_utilized);
          
          const lListElem *queue_state = nullptr;

@@ -1035,7 +1035,6 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
                     int config_nm, int actual_nm, const char *obj_name, bool is_master_task,
                     bool do_per_host_booking, bool *just_check) {
    DENTER(TOP_LAYER);
-
    int mods = 0;
 
    if (ep == nullptr) {
@@ -1047,6 +1046,23 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       *just_check = true;
    }
 
+   // @todo: CS-731: only required for binding if user has not defined a capacity for slots
+   // if we debit EH_consumable_config_list, we need to ensure that the slots complex is available for the binding booking
+   // We need to add it if the admin did not add it on host level
+   lListElem *auto_slots = nullptr;
+   if (config_nm == EH_consumable_config_list && lGetElemStr(lGetListRW(ep, config_nm), CE_name, SGE_ATTR_SLOTS) == nullptr) {
+
+      // @todo: CS-731: this upper limit might be reduced to either the amount of cores or threads depending on the binding settings
+      constexpr int max_slots_value = std::numeric_limits<int>::max();
+
+      auto_slots = lCreateElem(CE_Type);
+      lSetString(auto_slots, CE_name, SGE_ATTR_SLOTS);
+      lSetDouble(auto_slots, CE_doubleval, max_slots_value);
+      std::string str = std::to_string(max_slots_value);
+      lSetString(auto_slots, CE_stringval, str.c_str());
+      lAppendElem(lGetListRW(ep, config_nm), auto_slots);
+   }
+
    // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
    const lListElem *cr_config;
    for_each_ep(cr_config, lGetList(ep, config_nm)) {
@@ -1055,6 +1071,11 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
 
       // search complex definition (with default request)
       if (!(dcep = centry_list_locate(centry_list, name))) {
+         if (auto_slots != nullptr) {
+            // remove the auto_slots element, if it was created
+            lDechainElem(lGetListRW(ep, config_nm), auto_slots);
+            lFreeElem(&auto_slots);
+         }
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       }
@@ -1167,6 +1188,11 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       }
    }
 
+   if (auto_slots != nullptr) {
+      // remove the auto_slots element, if it was created
+      lDechainElem(lGetListRW(ep, config_nm), auto_slots);
+      lFreeElem(&auto_slots);
+   }
    DRETURN(mods);
 }
 

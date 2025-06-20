@@ -319,7 +319,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
    if (host_specific_binding) {
       const char *hostname = lGetHost(host, EH_name);
-      lListElem *binding_elem = lGetElemHostRW(a->binding_touse, BN_specific_hostname, hostname);
+      lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
 
       // early exit if we have already a host specific binding
       if (binding_elem != nullptr) {
@@ -348,7 +348,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       ocs::HostTopology::add_used_thread(&binding_to_use_dstr, pos);
 
       // store the binding decision in the assignment structure
-      binding_elem = lAddElemHost(&(a->binding_touse), BN_specific_hostname, hostname, BN_Type);
+      binding_elem = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
       lSetString(binding_elem, BN_specific_binding, sge_dstring_get_string(&binding_to_use_dstr));
       lSetList(binding_elem, BN_specific_binding_list, nullptr);
       DPRINTF("binding: host binding for host %s will be %s\n", hostname, sge_dstring_get_string(&binding_to_use_dstr));
@@ -360,7 +360,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       DRETURN(slots);
    } else if (task_specific_binding) {
       const char *hostname = lGetHost(host, EH_name);
-      lListElem *binding_elem = lGetElemHostRW(a->binding_touse, BN_specific_hostname, hostname);
+      lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       u_long32 next_binding_id_for_task = 0;
 
       // if binding element for host already exists then there are already binding decisions
@@ -411,7 +411,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
          // store the binding decision for the task
          if (binding_elem == nullptr) {
-            binding_elem = lAddElemHost(&(a->binding_touse), BN_specific_hostname, hostname, BN_Type);
+            binding_elem = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
          }
          lListElem *binding_for_task = lAddSubUlong(binding_elem, ST_id, next_binding_id_for_task, BN_specific_binding_list, ST_Type);
          lSetString(binding_for_task, ST_name, sge_dstring_get_string(&task_binding_to_use_dstr));
@@ -448,9 +448,6 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 static bool
 copy_binding(const sge_assignment_t *a) {
    DENTER(TOP_LAYER);
-   DPRINTF("binding copy: binding_touse\n");
-   lWriteListTo(a->binding_touse, stderr);
-
    bool host_specific_binding = false;
    bool task_specific_binding = false;
 
@@ -460,7 +457,7 @@ copy_binding(const sge_assignment_t *a) {
       const char *hostname = lGetHost(jg_elem, JG_qhostname);
 
       // try to find a binding for the host
-      lListElem *binding_elem = lGetElemHostRW(a->binding_touse, BN_specific_hostname, hostname);
+      lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       if (binding_elem == nullptr) {
          DPRINTF("binding-copy: no binding found for host %s\n", hostname);
          DRETURN(true);
@@ -603,7 +600,7 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
 
    if (move_gdil) {
       lFreeList(&(dst->gdil));
-      lFreeList(&(dst->binding_touse));
+      lFreeList(&(dst->binding_to_use));
       lFreeList(&(dst->limit_list));
       lFreeList(&(dst->skip_cqueue_list));
       lFreeList(&(dst->skip_host_list));
@@ -616,16 +613,16 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 
    if (move_gdil) {
-      src->gdil = src->binding_touse = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
+      src->gdil = src->binding_to_use = src->limit_list = src->skip_cqueue_list = src->skip_host_list = nullptr;
    } else {
-      dst->gdil = dst->binding_touse = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
+      dst->gdil = dst->binding_to_use = dst->limit_list = dst->skip_cqueue_list = dst->skip_host_list = nullptr;
    }
 }
 
 void assignment_release(sge_assignment_t *a)
 {
    lFreeList(&(a->gdil));
-   lFreeList(&(a->binding_touse));
+   lFreeList(&(a->binding_to_use));
    lFreeList(&(a->limit_list));
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
@@ -1652,7 +1649,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    dispatch_t ret;
    bool is_not_found = false;
    DSTRING_STATIC(binding_inuse, 2048);
-   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, "slots") == 0);
+   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
 
    clear_resource_tags(requested, QUEUE_TAG);
 
@@ -1693,7 +1690,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
 
          for_each_rw (attr, actual_attr) {
             name = lGetString(attr, RUE_name);
-            if (!strcmp(name, "slots")) {
+            if (!strcmp(name, SGE_ATTR_SLOTS)) {
                continue;
             }
 
@@ -6311,23 +6308,37 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    DSTRING_STATIC(reason, 1024);
    int avail = 0;
    int max_slots = INT_MAX;
-   const char *name;
    const lListElem *actual;
    lListElem *cep, *req;
    dispatch_t result, ret = DISPATCH_OK;
    DSTRING_STATIC(binding_inuse, 2048);
-   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, "slots") == 0);
+   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
 
    clear_resource_tags(a->job, QUEUE_TAG);
 
    /* --- implicit slot request */
-   name = SGE_ATTR_SLOTS;
-
    // if slots are not defined on host level
    // @todo what is force_slots?
-   const lListElem *tep = lGetElemStr(total_list, CE_name, name);
+   const lListElem *tep = lGetElemStr(total_list, CE_name, SGE_ATTR_SLOTS);
    if (tep == nullptr && force_slots) {
       DRETURN(DISPATCH_OK); // no slots capacity defined on exec host level, it's the queue instances which limit it
+   }
+
+   // @todo: CS-731: only required for binding if user has not defined a capacity for slots
+   // if we debit EH_consumable_config_list, we need to ensure that the slots complex is available for the binding booking
+   // We need to add it if the admin did not add it on host level
+   lListElem *auto_slots = nullptr;
+   if (slots_on_host_layer && tep == nullptr) {
+      // @todo: CS-731: this upper limit might be reduced to either the amount of cores or threads depending on the binding settings
+      constexpr int max_slots_value = std::numeric_limits<int>::max();
+
+      auto_slots = lCreateElem(CE_Type);
+      lSetString(auto_slots, CE_name, SGE_ATTR_SLOTS);
+      lSetDouble(auto_slots, CE_doubleval, max_slots_value);
+      std::string str = std::to_string(max_slots_value);
+      lSetString(auto_slots, CE_stringval, str.c_str());
+      tep = auto_slots;
+      lAppendElem((lList*)total_list, auto_slots);
    }
 
    // if slots is defined on host level then check how much is available
@@ -6353,17 +6364,29 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                            SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, "slots=1",
                            object_name, sge_dstring_get_string(&reason));
          }
+         // @todo CS-731: we can remove autoslots if we created them above
+         if (auto_slots != nullptr) {
+            lDechainElem((lList*)total_list, auto_slots);
+            lFreeElem(&auto_slots);
+         }
+
          // @todo CS-601 remove all tags. This could come from a host (but we don't have the object!)
          //              or a queue - we have it
          DRETURN(result);
       }
 
       max_slots      = MIN(max_slots,      avail);
-      DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, name, max_slots);
+      DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, SGE_ATTR_SLOTS, max_slots);
    }
 
+   // @todo CS-731: we can remove autoslots if we created them above
+   if (auto_slots != nullptr) {
+      lDechainElem((lList*)total_list, auto_slots);
+      lFreeElem(&auto_slots);
+   }
 
    /* --- default requests except slots which we handled above */
+   const char *name;
    for_each_ep(actual, rue_list) {
       name = lGetString(actual, RUE_name);
       if (strcmp(name, SGE_ATTR_SLOTS) == 0) {
