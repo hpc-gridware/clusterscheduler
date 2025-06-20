@@ -151,7 +151,7 @@ typedef struct {
    int        soft_violations;    /* number of soft request violations              */
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr  */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
-   lList      *binding_touse;     /* Core/thread binding information                */
+   lList      *binding_to_use;    /* Core/thread binding information                */
    /* ------ scheduler profiling index as picky pack data ------------------------- */
    sched_prof_t *pi;
 } sge_assignment_t;

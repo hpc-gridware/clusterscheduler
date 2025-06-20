@@ -1005,7 +1005,7 @@ static int sge_print_job(lListElem *job, lListElem *jatep, lListElem *qep, int p
             double dval;
 
             name = lGetString(ce, CE_name);
-            if (!lGetUlong(ce, CE_consumable) || !strcmp(name, "slots") || job_get_request(job, name)) {
+            if (!lGetUlong(ce, CE_consumable) || !strcmp(name, SGE_ATTR_SLOTS) || job_get_request(job, name)) {
                continue;
             }
 

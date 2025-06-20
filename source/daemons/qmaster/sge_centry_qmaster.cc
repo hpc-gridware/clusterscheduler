@@ -93,7 +93,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
 
          DPRINTF("Got CE_name: " SFQ "\n", name);
          lSetString(centry, CE_name, name);
-         if (!strcmp("slots", name)) {
+         if (!strcmp(SGE_ATTR_SLOTS, name)) {
             is_slots_attr = true;
          }
       }
