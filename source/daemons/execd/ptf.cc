@@ -196,33 +196,6 @@ lList *ptf_jobs = nullptr;
 
 static int is_ptf_running = 0;
 
-/**
- * @brief use the classic data collector?
- *
- * The classic data collector (retrieving usage from the /proc filesystem)
- * is used when
- *    - we have no systemd integration for the platform
- *    - we have systemd, but sge_execd is not running under systemd control
- *
- * @return true when the data collector shall be used, else false
- */
-static bool
-ptf_use_datacollector() {
-   bool ret = false;
-
-#if defined (OCS_WITH_SYSTEMD)
-   if (!mconf_get_enable_systemd() ||
-       !ocs::uti::Systemd::is_systemd_available()) {
-      // shall not or cannot use systemd - fall back to data collector
-      ret = true;
-   }
-#else
-   ret = true;
-#endif
-
-   return ret;
-}
-
 /****** execd/ptf/ptf_get_osjobid() *******************************************
 *  NAME
 *     ptf_get_osjobid() -- return the job id 
@@ -306,56 +279,23 @@ lList *ptf_build_usage_list(const char *name)
 {
    DENTER(TOP_LAYER);
 
-   lList *usage_list;
-   lListElem *usage;
+   lList* usage_list = lCreateList(name, UA_Type);
 
-   usage_list = lCreateList(name, UA_Type);
+   lAddElemStr(&usage_list, UA_name, USAGE_ATTR_WALLCLOCK, UA_Type);
 
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_IO);
-   lSetDouble(usage, UA_value, 0);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_IOW);
-   lSetDouble(usage, UA_value, 0);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_MEM);
-   lSetDouble(usage, UA_value, 0);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_CPU);
-   lSetDouble(usage, UA_value, 0);
-   lAppendElem(usage_list, usage);
+   if (mconf_get_usage_collection() != USAGE_COLLECTION_NONE) {
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IO, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IOW, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MEM, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_CPU, UA_Type);
 
 #if defined(LINUX) || defined(SOLARIS) || defined(FREEBSD) || defined(DARWIN)
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_VMEM);
-   lSetDouble(usage, UA_value, 0);
-   DPRINTF("adding usage attribute %s\n", USAGE_ATTR_VMEM);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_MAXVMEM);
-   lSetDouble(usage, UA_value, 0);
-   DPRINTF("adding usage attribute %s\n", USAGE_ATTR_MAXVMEM);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_RSS);
-   lSetDouble(usage, UA_value, 0);
-   DPRINTF("adding usage attribute %s\n", USAGE_ATTR_RSS);
-   lAppendElem(usage_list, usage);
-
-   usage = lCreateElem(UA_Type);
-   lSetString(usage, UA_name, USAGE_ATTR_MAXRSS);
-   lSetDouble(usage, UA_value, 0);
-   DPRINTF("adding usage attribute %s\n", USAGE_ATTR_MAXRSS);
-   lAppendElem(usage_list, usage);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_VMEM, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXVMEM, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_RSS, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXRSS, UA_Type);
 #endif
+   }
 
    DRETURN(usage_list);
 }
@@ -729,6 +669,9 @@ static void ptf_get_usage_from_data_collector()
    const char *tid;
    int i, j;
 
+   // in case of hybrid mode, we will not use PDC data for systemd provided usage (cpu, rss, maxrss)
+   bool hybrid_mode = ocs::execd::execd_is_hybrid_usage_collection();
+
    ojobs = jobs = psGetAllJobs();
    if (jobs) {
       jobcount = *(uint64 *) jobs;
@@ -758,16 +701,26 @@ static void ptf_get_usage_from_data_collector()
 
             /* fill in usage for job */
             usage_list = lGetListRW(osjob, JO_usage_list);
-            if (!usage_list) {
+            if (usage_list == nullptr) {
                usage_list = ptf_build_usage_list("usagelist");
                lSetList(osjob, JO_usage_list, usage_list);
             }
 
             /* set CPU usage */
-            cpu_usage_value = jobs->jd_utime_c + jobs->jd_utime_a +
-               jobs->jd_stime_c + jobs->jd_stime_a;
-            if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_CPU))) {
-               lSetDouble(usage, UA_value, MAX(cpu_usage_value, lGetDouble(usage, UA_value)));
+            if (!hybrid_mode) {
+               cpu_usage_value = jobs->jd_utime_c + jobs->jd_utime_a +
+                  jobs->jd_stime_c + jobs->jd_stime_a;
+               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_CPU))) {
+                  lSetDouble(usage, UA_value, MAX(cpu_usage_value, lGetDouble(usage, UA_value)));
+               }
+
+               /* set rss and maxrss usage */
+               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS))) {
+                  lSetDouble(usage, UA_value, jobs->jd_rss);
+               }
+               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS))) {
+                  lSetDouble(usage, UA_value, jobs->jd_maxrss);
+               }
             }
 
             /* set mem usage (in GB seconds) */
@@ -777,8 +730,7 @@ static void ptf_get_usage_from_data_collector()
 
             /* set I/O usage (in GB) */
             if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_IO))) {
-               lSetDouble(usage, UA_value,
-                          (double) jobs->jd_chars / 1073741824.0);
+               lSetDouble(usage, UA_value, (double) jobs->jd_chars / 1073741824.0);
             }
 
             /* set I/O wait time */
@@ -794,14 +746,6 @@ static void ptf_get_usage_from_data_collector()
             }
             if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXVMEM))) {
                lSetDouble(usage, UA_value, jobs->jd_himem);
-            }
-
-            /* set rss and maxrss usage */
-            if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS))) {
-               lSetDouble(usage, UA_value, jobs->jd_rss);
-            }
-            if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS))) {
-               lSetDouble(usage, UA_value, jobs->jd_maxrss);
             }
 
             /* build new pid list */
@@ -890,8 +834,7 @@ static void ptf_get_usage_from_data_collector()
 
          /* set job state */
          if (!active_jobs) {
-            lSetUlong(job, JL_state, lGetUlong(job, JL_state) 
-                      & JL_JOB_COMPLETE);
+            lSetUlong(job, JL_state, lGetUlong(job, JL_state) & JL_JOB_COMPLETE);
          }
       }
    }
@@ -1218,8 +1161,8 @@ int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
     * Tell data collector to start collecting data for this job
     */
 #ifdef USE_DC
-   if (os_job_id > 0 || systemd_scope != nullptr) {
-      psWatchJob(os_job_id);
+   if (os_job_id > 0) {
+      psWatchJob(os_job_id, systemd_scope != nullptr && mconf_get_usage_collection() == USAGE_COLLECTION_HYBRID);
    }
 #else
 
@@ -1270,15 +1213,17 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
       //       e.g. with short jobs on a big machine.
       //       And does it make sense at all? We get here when a job finished - all its processes / its systemd scope
       //       should have vanished by now.
-      if (ptf_use_datacollector()) {
+      if (ocs::execd::execd_use_pdc_for_usage_collection()) {
          sge_switch2start_user();
          ptf_get_usage_from_data_collector();
          sge_switch2admin_user();
-      } else {
-#if defined (OCS_WITH_SYSTEMD)
-         ocs::execd::ptf_get_usage_from_systemd();
-#endif
       }
+
+#if defined (OCS_WITH_SYSTEMD)
+      if (ocs::execd::execd_use_systemd_for_usage_collection()) {
+         ocs::execd::ptf_get_usage_from_systemd();
+      }
+#endif
    }
 
    /*
@@ -1388,19 +1333,21 @@ void ptf_update_job_usage()
 {
    DENTER(TOP_LAYER);
 
-   if (ptf_use_datacollector()) {
+   if (ocs::execd::execd_use_pdc_for_usage_collection()) {
       sge_switch2start_user();
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
       ptf_get_usage_from_data_collector();
       PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM3);
       sge_switch2admin_user();
-   } else {
+   }
+
 #if defined (OCS_WITH_SYSTEMD)
+   if (ocs::execd::execd_use_systemd_for_usage_collection()) {
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
       ocs::execd::ptf_get_usage_from_systemd();
       PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
-#endif
    }
+#endif
 
    DRETURN_VOID;
 }

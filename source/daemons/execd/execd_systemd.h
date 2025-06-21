@@ -20,6 +20,14 @@
 /*___INFO__MARK_END_NEW__*/
 
 namespace ocs::execd {
+
+   bool
+   execd_use_pdc_for_usage_collection();
+   bool
+   execd_use_systemd_for_usage_collection();
+   bool
+   execd_is_hybrid_usage_collection();
+
 #if defined(OCS_WITH_SYSTEMD)
 
    void

@@ -1068,6 +1068,15 @@ in one load report interval. The default for *execd_params* is none.
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
+***USAGE_COLLECTION***
+
+This parameter controls how xxqs_name_sxx_execd collects the online usage information of jobs. The following values are recognized:
+
+- *FALSE* : No online usage information is collected. Use with care, this also disables limit enforcement for *s_cpu*, *h_cpu*, *s_rss*, *h_rss*, *s_vmem*, and *h_vmem*.
+- *PDC* : Online usage information is collected by the PDC (Portable Data Collector) mode, even if Systemd is available.
+- *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, and iow.
+- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*.
+
 ## gdi_request_limits
 
 This value is a global configuration parameter only, and is used to prevent denial-of-service attacks on the xxqs_name_sxx_qmaster(8) process.

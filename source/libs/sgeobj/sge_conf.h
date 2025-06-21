@@ -52,6 +52,13 @@ typedef enum {
    KEEP_ACTIVE_ERROR
 } keep_active_t;
 
+typedef enum {
+   USAGE_COLLECTION_NONE = 0,   // no usage collection
+   USAGE_COLLECTION_PDC,        // usage collection via PDC
+   USAGE_COLLECTION_HYBRID,     // usage collection via PDC and systemd
+   USAGE_COLLECTION_DEFAULT     // default: systemd if available, otherwise PDC
+} usage_collection_t;
+
 typedef int (*tDaemonizeFunc)(void *ctx);
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
@@ -128,6 +135,7 @@ bool mconf_get_do_authentication();
 bool mconf_get_acct_reserved_usage();
 bool mconf_get_sharetree_reserved_usage();
 keep_active_t mconf_get_keep_active();
+usage_collection_t mconf_get_usage_collection();
 bool mconf_get_enable_binding();
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();

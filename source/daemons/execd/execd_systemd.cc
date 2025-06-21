@@ -30,6 +30,7 @@
 
 #include "execd_systemd.h"
 
+#include <sge_conf.h>
 #include <sge_profiling.h>
 
 #include "msg_execd.h"
@@ -229,4 +230,56 @@ namespace ocs::execd {
    }
 
 #endif
+
+   bool
+   execd_use_pdc_for_usage_collection() {
+      bool ret = true;
+
+      // When we are using systemd we usually do not use PDC for usage collection,
+      // except when we configured in execd_params USAGE_COLLECTION to use PDC or HYBRID.
+#if defined(OCS_WITH_SYSTEMD)
+      if (mconf_get_enable_systemd() &&
+          ocs::uti::Systemd::is_systemd_available()) {
+         ret = false;
+         usage_collection_t uc = mconf_get_usage_collection();
+         if (uc == USAGE_COLLECTION_PDC || uc == USAGE_COLLECTION_HYBRID) {
+            ret = true;
+         }
+      }
+#endif
+
+      return ret;
+   }
+
+   bool
+   execd_use_systemd_for_usage_collection() {
+      bool ret = false;
+
+      // When using systemd is enabled and the binaries are compiled with systemd support,
+      // we use systemd for usage collection.
+      // Except when we explicitly disabled it in execd_params USAGE_COLLECTION.
+#if defined(OCS_WITH_SYSTEMD)
+      if (mconf_get_enable_systemd() &&
+          ocs::uti::Systemd::is_systemd_available()) {
+         ret = true;
+         usage_collection_t uc = mconf_get_usage_collection();
+         if (uc == USAGE_COLLECTION_NONE || uc == USAGE_COLLECTION_PDC) {
+            ret = false; // we do not use systemd for usage collection
+         }
+      }
+#endif
+
+      return ret;
+   }
+
+   bool
+   execd_is_hybrid_usage_collection() {
+      bool hybrid_mode = mconf_get_usage_collection() == USAGE_COLLECTION_HYBRID;
+
+   #if defined(OCS_WITH_SYSTEMD)
+         hybrid_mode &= ocs::uti::Systemd::is_systemd_available();
+   #endif
+
+         return hybrid_mode;
+      }
 }

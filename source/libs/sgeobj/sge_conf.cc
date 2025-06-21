@@ -184,6 +184,8 @@ static long ptf_min_priority = -999;
 static int max_dynamic_event_clients = 1000;
 
 static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
+static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
+
 static u_long32 script_timeout = 120;
 #ifdef LINUX
 static bool enable_binding = true;
@@ -913,6 +915,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_max_priority = -999;
       ptf_min_priority = -999;
       keep_active = KEEP_ACTIVE_FALSE;
+      usage_collection = USAGE_COLLECTION_DEFAULT;
       script_timeout = 120;
 #ifdef LINUX
       enable_binding = true;
@@ -974,6 +977,22 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                   keep_active = KEEP_ACTIVE_TRUE;
                } else {
                   keep_active = KEEP_ACTIVE_FALSE;
+               }
+               continue;
+            }
+         }
+         {
+            if (strncasecmp(s, "USAGE_COLLECTION", sizeof("USAGE_COLLECTION")-1) == 0) {
+               const char *usage_collection_str = &s[sizeof("USAGE_COLLECTION=")-1];
+
+               if (strncasecmp(usage_collection_str, TRUE_STR, sizeof(TRUE_STR)-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_DEFAULT;
+               } else if (strncasecmp(usage_collection_str, "PDC", sizeof("PDC")-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_PDC;
+               } else if (strncasecmp(usage_collection_str, "HYBRID", sizeof("HYBRID")-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_HYBRID;
+               } else {
+                  usage_collection = USAGE_COLLECTION_NONE;
                }
                continue;
             }
@@ -2135,6 +2154,18 @@ keep_active_t mconf_get_keep_active() {
    ret = keep_active;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+usage_collection_t mconf_get_usage_collection() {
+   DENTER(BASIS_LAYER);
+
+   usage_collection_t ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = usage_collection;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
    DRETURN(ret);
 }
 

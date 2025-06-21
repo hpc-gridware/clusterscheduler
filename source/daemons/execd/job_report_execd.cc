@@ -217,7 +217,7 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
       DRETURN(-1);
    }
 
-   /* check if we already have an usage value with this name */
+   /* check if we already have a usage value with this name */
    usage = lGetSubStrRW(jr, UA_name, name, JR_usage);
    if (!usage) {
       if (!(usage = lAddSubStr(jr, UA_name, name, JR_usage, UA_Type))) {

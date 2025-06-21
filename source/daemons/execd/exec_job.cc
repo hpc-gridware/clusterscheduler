@@ -307,7 +307,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-   bool enable_systemd = mconf_get_enable_systemd();
    static gid_t last_addgrpid;
 #endif
 #endif
@@ -1011,9 +1010,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    // Set the additional group id.
    // When we are using systemd we do not need to set an additional group id - we use value 0.
-   if (enable_systemd) {
-      last_addgrpid = 0;
-   } else {
+   // Unless in hybrid usage collection mode where we get usage from both Systemd and via PDC
+   if (ocs::execd::execd_use_pdc_for_usage_collection()) {
       // parse range and create list
       lList *rlp = nullptr;
       lList *alp = nullptr;
@@ -1045,6 +1043,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
       lFreeList(&rlp);
       lFreeList(&alp);
+   } else {
+      // we do not use PDC for usage collection, no need to set an additional group id
+      last_addgrpid = 0;
    }
 
    // write add_grp_id to config file and to the job-structure
@@ -1369,6 +1370,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    //    - devices_allow
 #ifdef OCS_WITH_SYSTEMD
    {
+      bool enable_systemd = mconf_get_enable_systemd();
       fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
 
       if (enable_systemd) {

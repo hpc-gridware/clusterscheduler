@@ -600,19 +600,25 @@ static int psRetrieveOSJobData() {
             nextp = currp->next; /* in case currp is deleted */
 
             if (time_stamp == proc->pd_tstamp) { 
-               /* maybe still living */
-               job->jd_utime_a += proc->pd_utime;    
-               job->jd_stime_a += proc->pd_stime;    
-               job->jd_vmem += proc_elem->vmem;    
-               job->jd_rss += proc_elem->rss;    
-               job->jd_mem += (proc_elem->mem/1024.0);    
+               // maybe still living
+               // in hybrid mode, we are not interested in cpu and rss / maxrss
+               if (!job_elem->hybrid_mode) {
+                  job->jd_utime_a += proc->pd_utime;
+                  job->jd_stime_a += proc->pd_stime;
+                  job->jd_rss += proc_elem->rss;
+               }
+               job->jd_vmem += proc_elem->vmem;
+               job->jd_mem += (proc_elem->mem/1024.0);
 #if defined(LINUX)
                job->jd_chars += proc_elem->delta_chars;     
 #endif
             } else { 
-               /* most likely exited */
-               job->jd_utime_c += proc->pd_utime;    
-               job->jd_stime_c += proc->pd_stime;    
+               // most likely exited
+               // we do not sum up memory usage (@todo should we?)
+               if (!job_elem->hybrid_mode) {
+                  job->jd_utime_c += proc->pd_utime;
+                  job->jd_stime_c += proc->pd_stime;
+               }
                job->jd_proccount--;
               
                /* remove process entry from list */
@@ -627,8 +633,10 @@ static int psRetrieveOSJobData() {
          if (job->jd_vmem > job->jd_himem) {
             job->jd_himem = job->jd_vmem;
          }
-         if (job->jd_rss > job->jd_maxrss) {
-            job->jd_maxrss = job->jd_rss;
+         if (!job_elem->hybrid_mode) {
+            if (job->jd_rss > job->jd_maxrss) {
+               job->jd_maxrss = job->jd_rss;
+            }
          }
       } 
 
@@ -693,7 +701,7 @@ int psStopCollector()
 }
 
 
-int psWatchJob(JobID_t JobID)
+int psWatchJob(JobID_t JobID, bool hybrid_mode)
 {
    if (JobID != 0) {
       lnk_link_t *curr;
@@ -716,6 +724,7 @@ int psWatchJob(JobID_t JobID)
          memset(job_elem, 0, sizeof(job_elem_t));
          job_elem->starttime = get_gmt();
          job_elem->job.jd_jid = JobID;
+         job_elem->hybrid_mode = hybrid_mode;
          job_elem->job.jd_length = sizeof(psJob_t);
          LNK_INIT(&job_elem->procs);
          LNK_INIT(&job_elem->arses);
