@@ -101,7 +101,7 @@ namespace ocs::uti {
    // @return true if initialization was successful, false otherwise
    // @note This function should be called before using any other methods of the Systemd class.
    bool
-   Systemd::initialize(std::string service_name_in, dstring *error_dstr) {
+   Systemd::initialize(const std::string &service_name_in, dstring *error_dstr) {
       DENTER(TOP_LAYER);
       bool ret = true;
 
@@ -404,7 +404,6 @@ namespace ocs::uti {
    }
 
    // @todo no need to have different method names (BUT the name expresses the type of input)
-   // @todo how to handle diagnostics output, error messages, ...
    bool
    Systemd::sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
@@ -436,6 +435,7 @@ namespace ocs::uti {
             output = result;
          }
       }
+      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -471,12 +471,11 @@ namespace ocs::uti {
             output = result;
          }
       }
+      sd_bus_error_free_func(&error);
 
       return ret;
    }
 
-   // @todo split into two methods, move_shepherd_to_scope and move_shepherd_child_to_scope
-   // @todo split the sdbus method into two methods, one for StartTransientUnit and one for AttachProcessesToUnit
    bool
    Systemd::move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -547,6 +546,7 @@ namespace ocs::uti {
          }
 
          sd_bus_message_unref_func(m);
+         sd_bus_error_free_func(&error);
       }
 
       if (ret && create) {
@@ -555,12 +555,9 @@ namespace ocs::uti {
          ret = create_scope_with_pid(full_scope_name, full_slice_name, properties, pid, error_dstr);
       }
 
-      // @todo: do we need to call sd_bus_error_free(&error)?
-
       DRETURN(ret);
    }
 
-   // @todo add properties
    bool
    Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice,
                                   const SystemdProperties_t &properties, pid_t pid, dstring *error_dstr) const {
@@ -583,7 +580,6 @@ namespace ocs::uti {
       }
 
       sd_bus_message *m = nullptr;
-      sd_bus_error error = SD_BUS_ERROR_NULL;
       int r;
       if (ret) {
          // build the method step by step as we add arrays
@@ -599,7 +595,7 @@ namespace ocs::uti {
       }
 
       if (ret) {
-         r = sd_bus_message_append_func(m, "ss", scope.c_str(), "replace"); // @todo use fail?
+         r = sd_bus_message_append_func(m, "ss", scope.c_str(), "replace");
          if (r < 0) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS, "name and mode", "StartTransientUnit", r, strerror(-r));
             ret = false;
@@ -771,6 +767,7 @@ namespace ocs::uti {
       }
       if (ret) {
          sd_bus_message *reply = nullptr;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
          r = sd_bus_call_func(bus, m, 0, &error, &reply);
          if (r < 0) {
             // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
@@ -796,6 +793,7 @@ namespace ocs::uti {
             }
          }
          sd_bus_message_unref_func(reply);
+         sd_bus_error_free_func(&error);
       }
 
       sd_bus_message_unref_func(m);
@@ -1047,6 +1045,7 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
             ret = false;
          }
       }
+      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -1070,6 +1069,7 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
             ret = false;
          }
       }
+      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -1095,6 +1095,7 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
             ret = false;
          }
       }
+      sd_bus_error_free_func(&error);
 
       return ret;
    }
