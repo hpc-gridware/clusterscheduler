@@ -32,10 +32,12 @@ namespace ocs {
       static void correct_topology_upper_lower(dstring *topology_dstr);
       static void correct_topology_missing_threads(dstring *topology_dstr);
       static bool find_first_unused_thread(const dstring *topology_dstr, int *pos, int *socket, int *core, int *thread);
+      static bool find_first_unused_thread(const dstring *topology_dstr, int *pos);
 
       static void add_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr);
       static void add_used_threads(lListElem *elem, int topology_nm, dstring *topology_in_use_dstr);
       static void add_used_thread(dstring *topology_dstr, int pos);
+
       static void remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr);
       static void remove_used_thread(dstring *topology_dstr, int pos);
       static void remove_all_used_threads(dstring *topology_dstr);
