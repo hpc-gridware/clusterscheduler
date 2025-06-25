@@ -336,8 +336,8 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       }
 
       // try to find a binding for the host (e.g. find one unused thread in the topology)
-      int pos, socket, core, thread;
-      ret = ocs::HostTopology::find_first_unused_thread(&binding_to_use_dstr, &pos, &socket, &core, &thread);
+      int pos;
+      ret = ocs::HostTopology::find_first_unused_thread(&binding_to_use_dstr, &pos);
       if (!ret) {
          DPRINTF("binding: no unused thread found in topology %s for host %s\n", sge_dstring_get_string(&binding_to_use_dstr), hostname);
          DRETURN(0);
@@ -391,8 +391,8 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       for (max_slots = 0; max_slots < slots; max_slots++) {
 
          // find binding for one slot
-         int pos, socket, core, thread;
-         ret = ocs::HostTopology::find_first_unused_thread(&binding_in_use_dstr, &pos, &socket, &core, &thread);
+         int pos;
+         ret = ocs::HostTopology::find_first_unused_thread(&binding_in_use_dstr, &pos);
          if (!ret) {
             DPRINTF("binding: no unused thread found in topology %s for slot %d\n", sge_dstring_get_string(&binding_in_use_dstr), max_slots);
             break;

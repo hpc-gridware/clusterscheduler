@@ -109,6 +109,35 @@ ocs::HostTopology::find_first_unused_thread(const dstring *topology_dstr, int *p
    DRETURN(false);
 }
 
+/** @brief Find the first unused thread in a topology string
+ *
+ * This function is a convenience wrapper that only returns the position of the first unused thread.
+ * It does not provide socket, core, or thread information.
+ *
+ * @param topology_dstr The topology string to search in.
+ * @param pos Pointer to store the position of the found thread.
+ * @return true if a thread was found, false otherwise.
+ */
+bool
+ocs::HostTopology::find_first_unused_thread(const dstring *topology_dstr, int *pos) {
+   int socket, core, thread;
+
+   return find_first_unused_thread(topology_dstr, pos, &socket, &core, &thread);
+}
+
+/** @brief Add or remove used threads in a topology string
+ *
+ * This function modifies the topology string by either adding or removing used threads
+ * based on the provided `topology_in_use_dstr`. If `do_add` is true, it adds threads,
+ * otherwise it removes them.
+ *
+ * The function assumes that both strings have the same length and that they represent
+ * the same topology structure.
+ *
+ * @param topology_dstr The topology string to modify.
+ * @param topology_in_use_dstr The string representing the threads in use.
+ * @param do_add If true, add used threads; if false, remove them.
+ */
 void
 ocs::HostTopology::add_or_remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr, const bool do_add) {
    DENTER(TOP_LAYER);
@@ -134,12 +163,30 @@ ocs::HostTopology::add_or_remove_used_threads(dstring *topology_dstr, const dstr
    DRETURN_VOID;
 }
 
+/** @brief Add used threads to a topology string
+ *
+ * This function adds the used threads from `topology_in_use_dstr` to `topology_dstr`.
+ * It modifies the topology string in place and ensures that the topology string is
+ * correctly formatted after the operation.
+ *
+ * @param topology_dstr The topology string to modify.
+ * @param topology_in_use_dstr The string representing the threads in use.
+ */
 void
 ocs::HostTopology::add_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr) {
    add_or_remove_used_threads(topology_dstr, topology_in_use_dstr, true);
    correct_topology_upper_lower(topology_dstr);
 }
 
+/** @brief Add used threads to a topology string stored in a CULL element
+ *
+ * This function retrieves the topology string from the CULL element, adds the used threads
+ * from `topology_in_use_dstr`, and updates the CULL element with the modified topology string.
+ *
+ * @param elem The CULL element containing the topology string.
+ * @param topology_nm The nm of the topology string in the CULL element.
+ * @param topology_in_use_dstr The string representing the threads in use.
+ */
 void
 ocs::HostTopology::add_used_threads(lListElem *elem, const int topology_nm, dstring *topology_in_use_dstr) {
    DENTER(TOP_LAYER);
@@ -206,7 +253,7 @@ ocs::HostTopology::elem_remove_binding(lListElem *elem, const int nm, const char
    sge_dstring_copy_string(&topology_dstr, binding_now != nullptr ? binding_now : binding_to_use);
    DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
    sge_dstring_copy_string(&binding_to_use_dstr, binding_to_use);
-   ocs::HostTopology::remove_used_threads(&topology_dstr, &binding_to_use_dstr);
+   remove_used_threads(&topology_dstr, &binding_to_use_dstr);
    lSetString(elem, nm, sge_dstring_get_string(&topology_dstr));
 #if 0
    DPRINTF("utilization_remove_binding %s\n", sge_dstring_get_string(&topology_dstr));
@@ -214,12 +261,28 @@ ocs::HostTopology::elem_remove_binding(lListElem *elem, const int nm, const char
    DRETURN_VOID;
 }
 
+/** @brief Remove used threads from a topology string
+ *
+ * This function modifies the topology string by removing the used threads specified in `topology_in_use_dstr`.
+ * It ensures that the topology string is correctly formatted after the operation.
+ *
+ * @param topology The topology string to modify.
+ * @param topology_in_use The string representing the threads in use.
+ */
 void
 ocs::HostTopology::remove_used_threads(dstring *topology, const dstring *topology_in_use) {
    add_or_remove_used_threads(topology, topology_in_use, false);
    correct_topology_upper_lower(topology);
 }
 
+/** @brief Add a used thread to a topology string at a specific position
+ *
+ * This function modifies the topology string by adding a used thread (lowercase 't') at the specified position.
+ * It also ensures that the topology string is correctly formatted after the operation.
+ *
+ * @param topology_dstr The topology string to modify.
+ * @param pos The position where the used thread should be added.
+ */
 void
 ocs::HostTopology::add_used_thread(dstring *topology_dstr, const int pos) {
    char *topology = sge_dstring_get_string_rw(topology_dstr);
@@ -227,7 +290,14 @@ ocs::HostTopology::add_used_thread(dstring *topology_dstr, const int pos) {
    correct_topology_upper_lower(topology_dstr);
 }
 
-
+/** @brief Remove a used thread from a topology string at a specific position
+ *
+ * This function modifies the topology string by removing a used thread (lowercase 't') at the specified position.
+ * It also ensures that the topology string is correctly formatted after the operation.
+ *
+ * @param topology_dstr The topology string to modify.
+ * @param pos The position where the used thread should be removed.
+ */
 void
 ocs::HostTopology::remove_used_thread(dstring *topology_dstr, const int pos) {
    char *topology = sge_dstring_get_string_rw(topology_dstr);
@@ -235,6 +305,14 @@ ocs::HostTopology::remove_used_thread(dstring *topology_dstr, const int pos) {
    correct_topology_upper_lower(topology_dstr);
 }
 
+/** @brief Correct the topology string by adding missing threads
+ *
+ * This function modifies the topology string by adding missing threads (lowercase 't' or uppercase 'T')
+ * after cores (lowercase 'c', uppercase 'C', lowercase 'e', uppercase 'E') that do not have any threads.
+ * It ensures that the topology string is correctly formatted after the operation.
+ *
+ * @param topology_dstr The topology string to modify.
+ */
 void
 ocs::HostTopology::correct_topology_missing_threads(dstring *topology_dstr) {
    DENTER(TOP_LAYER);
@@ -277,6 +355,17 @@ ocs::HostTopology::correct_topology_missing_threads(dstring *topology_dstr) {
    DRETURN_VOID;
 }
 
+/** @brief Correct the topology string by adjusting the case of threads, cores, and sockets
+ *
+ * This function modifies the topology string by ensuring that:
+ *
+ * - Threads are represented as lowercase 't' if they are used, or uppercase 'T' if they are unused.
+ * - Cores are represented as lowercase 'c' or 'e' if all threads on the core are used, or uppercase 'C' or 'E' if not.
+ * - Sockets are represented as lowercase 's' if all cores on sockets are used, or uppercase 'S' if not.
+ * - It also ensures that memory/cache letters remain uppercase.
+ *
+ * @param topology_dstr The topology string to modify.
+ */
 void
 ocs::HostTopology::correct_topology_upper_lower(dstring *topology_dstr) {
    DENTER(TOP_LAYER);
@@ -332,8 +421,16 @@ ocs::HostTopology::correct_topology_upper_lower(dstring *topology_dstr) {
    }
 
    DRETURN_VOID;
-} /* ocs::HostTopology::correct_topology_string */
+}
 
+/** @brief Remove all used threads from a topology string
+ *
+ * This function modifies the topology string by converting all used threads (lowercase 't' or uppercase 'T')
+ * to uppercase, effectively marking them as unused. It ensures that the topology string is correctly formatted
+ * after the operation.
+ *
+ * @param topology_dstr The topology string to modify.
+ */
 void
 ocs::HostTopology::remove_all_used_threads(dstring *topology_dstr) {
    DENTER(TOP_LAYER);
