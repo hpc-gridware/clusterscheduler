@@ -911,16 +911,16 @@ check_explicit_binding_string(const char *expl, int amount,
    bool success = true;
    struct saved_vars_s *context = nullptr;
 
+   if (expl == nullptr || amount == 0) {
+      return false;
+   }
+
    /* pointer to the first position of all <socket,core> pairs */
    int pair_number = 0;
    char **pairs = (char **)sge_malloc(sizeof(char *) * amount);
    SGE_ASSERT(pairs != nullptr);
 
    char *pair = nullptr;
-
-   if (expl == nullptr || amount == 0) {
-      return false;
-   }
 
    /* skip "explicit:" */
    if (with_explicit_prefix) {
