@@ -257,7 +257,7 @@ namespace ocs {
       }
 
       if (!success) {
-         shepherd_error(0, "signalling job in systemd scope '%s' failed: %s", scope, sge_dstring_get_string(&error_dstr));
+         shepherd_trace("signalling job in systemd scope '%s' failed: %s", scope, sge_dstring_get_string(&error_dstr));
       } else {
          shepherd_trace("signalled job in systemd scope '%s' with signal %s", scope,  sge_sys_sig2str(signal));
       }

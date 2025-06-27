@@ -32,6 +32,8 @@
 #include "ocs_Systemd.h"
 
 namespace ocs::uti {
+   static const int NUM_SD_BUS_RETRIES = 5; // Number of retries for sd_bus_* methods after EINTR
+
    //================================================================================
    // static members
    void *ocs::uti::Systemd::lib_handle = nullptr;
@@ -407,10 +409,14 @@ namespace ocs::uti {
    bool
    Systemd::sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      sd_bus_message *m = nullptr;
 
-      int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
+         sd_bus_message *m = nullptr;
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
                                   "/org/freedesktop/systemd1",          // object path
                                   "org.freedesktop.systemd1.Manager",   // interface name
                                   method.c_str(),                       // method name
@@ -418,24 +424,33 @@ namespace ocs::uti {
                                   &m,                                   // return message on success
                                   "s",                                  // input signature
                                   input.c_str());                       // first argument
-      if (r < 0) {
-         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), input.c_str(), r, error.message);
-         ret = false;
-      } else {
-         const char *result = nullptr;
-         r = sd_bus_message_read_func(m, "o", &result);
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, method.c_str(), r, error.message);
-            ret = false;
-         } else {
-            if (result == nullptr) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), input.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
                ret = false;
             }
-            output = result;
+         } else {
+            const char *result = nullptr;
+            r = sd_bus_message_read_func(m, "o", &result);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, method.c_str(), r, error.message);
+               ret = false;
+            } else {
+               if (result == nullptr) {
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
+                  ret = false;
+               }
+               output = result;
+            }
          }
+         sd_bus_error_free_func(&error);
+         sd_bus_message_unref_func(m);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -443,10 +458,14 @@ namespace ocs::uti {
    bool
    Systemd::sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      sd_bus_message *m = nullptr;
 
-      int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
+         sd_bus_message *m = nullptr;
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
                                   "/org/freedesktop/systemd1",          // object path
                                   "org.freedesktop.systemd1.Manager",   // interface name
                                   method.c_str(),                       // method name
@@ -454,24 +473,33 @@ namespace ocs::uti {
                                   &m,                                   // return message on success
                                   "u",                                  // input signature
                                  input);                                // first argument
-      if (r < 0) {
-         sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input), r, error.message);
-         ret = false;
-      } else {
-         const char *result = nullptr;
-         r = sd_bus_message_read_func(m, "o", &result);
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, method.c_str(), r, error.message);
-            ret = false;
-         } else {
-            if (result == nullptr) {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, method.c_str(), std::to_string(input), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
                ret = false;
             }
-            output = result;
+         } else {
+            const char *result = nullptr;
+            r = sd_bus_message_read_func(m, "o", &result);
+            if (r < 0) {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_READ_RESULT_SISS, method.c_str(), r, error.message);
+               ret = false;
+            } else {
+               if (result == nullptr) {
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_EMPTY_RESULT_S, method.c_str());
+                  ret = false;
+               }
+               output = result;
+            }
          }
+         sd_bus_error_free_func(&error);
+         sd_bus_message_unref_func(m);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -485,7 +513,10 @@ namespace ocs::uti {
       std::string full_scope_name = slice_name + "-" + "shepherds.scope";
       std::string full_slice_name = slice_name + ".slice";
 
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
          DPRINTF("Systemd::move_shepherd_to_scope: Calling GetUnit\n");
          sd_bus_message *m = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -508,12 +539,18 @@ namespace ocs::uti {
             if (-r == ENOENT) {
                DPRINTF("Systemd::move_shepherd_to_scope: scope does not exist, create it\n");
                create = true;
+            } else if (-r == EINTR && retries < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
             } else {
-               ret = false;
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"GetUnit", full_scope_name.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
             }
          }
 
+         sd_bus_error_free_func(&error);
          sd_bus_message_unref_func(m);
       }
 
@@ -521,7 +558,11 @@ namespace ocs::uti {
          DPRINTF("Systemd::move_shepherd_to_scope: calling AttachProcessesToUnit\n");
          sd_bus_message *m = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
-         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
+         bool retry_on_interrupt = true;        // retry on EINTR
+         int retries = 0;
+         while (ret && retry_on_interrupt) {
+            retry_on_interrupt = false;
+            int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
                                      "/org/freedesktop/systemd1",          // object path
                                      "org.freedesktop.systemd1.Manager",   // interface name
                                      "AttachProcessesToUnit",              // method name
@@ -531,22 +572,28 @@ namespace ocs::uti {
                                      full_scope_name.c_str(),              //    -> scope
                                      "",                                   //    -> subcgroup
                                      1, pid);                              // array containing one pid
-         if (r < 0) {
-            // ENOENT (-2): scope does not yet exist
-            // we just checked that above, but there might be a race condition
-            // the scope might just have been removed between checking and trying to attach
-            // in this case we create the scope (call StartTransientUnit below)
-            if (-r == ENOENT) {
-               DPRINTF("Systemd::move_shepherd_to_scope: scope no longer exists, calling StartTransientUnit\n");
-               create = true;
-            } else {
-               ret = false;
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"AttachProcessesToUnit", full_scope_name.c_str(), r, error.message);
+            if (r < 0) {
+               // ENOENT (-2): scope does not yet exist
+               // we just checked that above, but there might be a race condition
+               // the scope might just have been removed between checking and trying to attach
+               // in this case we create the scope (call StartTransientUnit below)
+               if (-r == ENOENT) {
+                  DPRINTF("Systemd::move_shepherd_to_scope: scope no longer exists, calling StartTransientUnit\n");
+                  create = true;
+               } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+                  retry_on_interrupt = true;
+               } else {
+                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"AttachProcessesToUnit", full_scope_name.c_str(), r, error.message);
+                  if (retries > 0) {
+                     sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+                  }
+                  ret = false;
+               }
             }
-         }
 
-         sd_bus_message_unref_func(m);
-         sd_bus_error_free_func(&error);
+            sd_bus_message_unref_func(m);
+            sd_bus_error_free_func(&error);
+         }
       }
 
       if (ret && create) {
@@ -765,14 +812,24 @@ namespace ocs::uti {
             ret = false;
          }
       }
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
          sd_bus_message *reply = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
          r = sd_bus_call_func(bus, m, 0, &error, &reply);
          if (r < 0) {
-            // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
-            ret = false;
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          } else {
             const char *job = nullptr;
             r = sd_bus_message_read_func(reply, "o", &job);
@@ -849,8 +906,11 @@ Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *er
       int r = sd_bus_process_func(bus, &m);
       DPRINTF("sd_bus_process_func(bus, &m) returned %d", r);
       if (r < 0) {
-         sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
-         ret = false;
+         if (-r != EINTR) {
+            // We ignore EINTR, as we might get it, e.g., when sge_execd gets a SIGCHILD from an exiting sge_shepherd.
+            sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
+            ret = false;
+         }
       } else {
          // 0 means we need to wait before calling sd_bus_process again
          if (r == 0) {
@@ -917,7 +977,10 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
          }
       }
 
-      if (ret) {
+      int retries = 0;
+      bool retry_on_interrupt = true;        // retry on EINTR
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
          sd_bus_message *m = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
          std::string full_interface = "org.freedesktop.systemd1." + interface; // e.g. "org.freedesktop.systemd1.Unit"
@@ -929,8 +992,16 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       &m,                                      // return message on success
                                       "s");                               // type signature
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
-            ret = false;
+            DPRINTF("sd_bus_get_property(%s, %s, %s) returned %d: %s", interface.c_str(), unit.c_str(), property.c_str(), r, error.message);
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          } else {
             char *result = nullptr;
             r = sd_bus_message_read_func(m, "s", &result);
@@ -965,7 +1036,10 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
          ret = false;
       }
 
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
          sd_bus_message *m = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
          std::string full_interface = "org.freedesktop.systemd1." + interface;   // e.g. "org.freedesktop.systemd1.Unit"
@@ -977,8 +1051,16 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       &m,                                        // return message on success
                                       "t");                                 // type signature
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
-            ret = false;
+            DPRINTF("sd_bus_get_property(%s, %s, %s) returned %d: %s", interface.c_str(), unit.c_str(), property.c_str(), r, error.message);
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          } else {
             uint64_t result{};
             r = sd_bus_message_read_func(m, "t", &result);
@@ -1003,8 +1085,11 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
    Systemd::stop_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
          int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
                                       "/org/freedesktop/systemd1",          // object path
                                       "org.freedesktop.systemd1.Manager",   // interface name
@@ -1017,11 +1102,18 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       "replace");                           // second argument (mode)
          // If the unit does not exist, we get -2 (ENOENT) which is OK
          if (r < 0 && -r != ENOENT) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StopUnit", unit.c_str(), r, error.message);
-            ret = false;
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StopUnit", unit.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          }
+         sd_bus_error_free_func(&error);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -1030,8 +1122,11 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
    Systemd::freeze_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
          int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
                                       "/org/freedesktop/systemd1",          // object path
                                       "org.freedesktop.systemd1.Manager",   // interface name
@@ -1041,11 +1136,19 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       "s",                                  // input signature
                                       unit.c_str());                        // first argument (unit name)
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "FreezeUnit", unit.c_str(), r, error.message);
-            ret = false;
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "FreezeUnit", unit.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          }
+
+         sd_bus_error_free_func(&error);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -1054,8 +1157,11 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
    Systemd::thaw_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
 
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
          int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
                                       "/org/freedesktop/systemd1",          // object path
                                       "org.freedesktop.systemd1.Manager",   // interface name
@@ -1065,11 +1171,19 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       "s",                                  // input signature
                                       unit.c_str());                        // first argument (unit name)
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "ThawUnit", unit.c_str(), r, error.message);
-            ret = false;
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "ThawUnit", unit.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          }
+
+         sd_bus_error_free_func(&error);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
@@ -1078,8 +1192,11 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
    Systemd::signal_unit(const std::string &unit, int signal, dstring *error_dstr) const {
       bool ret = true;
 
-      sd_bus_error error = SD_BUS_ERROR_NULL;
-      if (ret) {
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         sd_bus_error error = SD_BUS_ERROR_NULL;
          int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",   // service to contact
                                       "/org/freedesktop/systemd1",          // object path
                                       "org.freedesktop.systemd1.Manager",   // interface name
@@ -1091,11 +1208,18 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       "all",                                // second argument (mode), signal all processes in the unit
                                       signal);                              // third argument (signal number)
          if (r < 0) {
-            sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "SignalUnit", unit.c_str(), r, error.message);
-            ret = false;
+            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "SignalUnit", unit.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
          }
+         sd_bus_error_free_func(&error);
       }
-      sd_bus_error_free_func(&error);
 
       return ret;
    }
