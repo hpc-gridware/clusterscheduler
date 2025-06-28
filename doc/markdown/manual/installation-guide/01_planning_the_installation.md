@@ -352,24 +352,6 @@ It is recommended to properly name the groups of the specified GIDs in the direc
 groups but some of the common Unix tools do. They might respond with an error message if the group name
 is not available if the tool is executed as part of a job.
 
-### Which scheduling profile should be used?
-
-You can choose from three default scheduling profiles: *normal*, *high*, and *max*. After installation, 
-you can change or adapt the selected profile to optimize your cluster setup.
-
-The *normal* profile uses interval-based scheduling of jobs. The feature *load adjustments* and 
-*scheduler job information* are enabled to collect and preserve information about each scheduling cycle for 
-further analysis.
-
-The scheduler is optimized for cluster throughput in the *high* profile, with interval-based scheduling enabled. 
-However, other time-consuming features that could provide more insight into scheduling decisions are disabled.
-
-The *max* profile further optimizes the scheduling profile for throughput. For short jobs that can run as soon as 
-they enter a cluster or as soon as resources become available, interval-based scheduling is disabled. 
-
-It is recommended to use the *high* profile and later adjust it for better performance or more data 
-collection capabilities.
-
 ### Which installation method would you like to use?
 
 If this is your first time installing xxQS_NAMExx, we suggest a manual installation.
@@ -378,4 +360,3 @@ Automatic installation is recommended if you need to install or reinstall a clus
 to install multiple clusters with slightly different settings.
 
 [//]: # (Eeach file has to end with two emty lines)
-

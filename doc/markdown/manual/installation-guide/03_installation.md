@@ -360,7 +360,7 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-20. Host Permissions: Select the hosts that should later on run the execution service. Those host will be administration hosts and submit hosts automatically.
+20. Host Permissions: Select the hosts that should later on run the execution service. Those hosts will be administration hosts and submit hosts automatically.
 
     ```
     Adding Cluster Scheduler hosts
@@ -380,7 +380,7 @@ Here are the steps required to complete the installation.
     Do you want to use a file which contains the list of hosts (y/n) [n] >> 
     ``` 
 
-    If you have no file available you can also add those hostnames manually:
+    If you have no file available, you can also add those hostnames manually:
 
     ```
     Adding admin and submit hosts
@@ -442,33 +442,7 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-22. Scheduler Configuration: Choose one of the predefined templates for the scheduler configuration.
-
-    ```
-    Scheduler Tuning
-    ----------------
-    
-    The details on the different options are described in the manual. 
-    
-    Configurations
-    --------------
-    1) Normal
-             Fixed interval scheduling, report limited scheduling information,
-             actual + assumed load
-   
-    2) High
-             Fixed interval scheduling, report limited scheduling information,
-             actual load
-   
-    3) Max
-             Immediate Scheduling, report no scheduling information,
-             actual load
- 
-    Enter the number of your preferred configuration and hit <RETURN>! 
-    Default configuration is [1] >> 
-    ```
-
-23. Installation Summary
+22. Installation Summary
 
     ```
     Using Cluster Scheduler
@@ -575,13 +549,13 @@ Here are the steps required to complete the installation.
    # cd $SGE_ROOT
    ```
    
-4. Verify, that the execution host has been declared as administrative host. Do this by executing the following `qconf` command on the master machine. The hostlist should contain the hostname of the new execution host. If it does not exit, then add the hostname to the list of administrative hosts by executing `qconf -ah <hostname>` on the master machine.
+3. Verify that the execution host has been declared as administrative host. Do this by executing the following `qconf` command on the master machine. The hostlist should contain the hostname of the new execution host. If it does not exit, then add the hostname to the list of administrative hosts by executing `qconf -ah <hostname>` on the master machine.
 
    ```
    # qconf -sh
    ...
    ```
-5. Start the installation process by executing the `install_execd` script and read and follow the given instructions.
+4. Start the installation process by executing the `install_execd` script and read and follow the given instructions.
 
    ```
    # ./install_execd
@@ -608,7 +582,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ```
  
-6. Confirm the installation directory. The suggested default is the directory you set in the master service installation.
+5. Confirm the installation directory. The suggested default is the directory you set in the master service installation.
 
    ```
    Checking $SGE_ROOT directory
@@ -623,7 +597,7 @@ Here are the steps required to complete the installation.
    to use default [<installation_directory>] >> 
    ```
    
-7. Confirm the cell directory. The suggested default is the directory you set in the master service installation. You can enter a different cell name if you intend to start the execution service in a different cell.
+6. Confirm the cell directory. The suggested default is the directory you set in the master service installation. You can enter a different cell name if you intend to start the execution service in a different cell.
 
    ```
    Cluster Scheduler cells
@@ -633,7 +607,7 @@ Here are the steps required to complete the installation.
    installation or press <RETURN> to use [default] >>
    ```
    
-8. Confirm the detected execution daemon TCP/IP port number.
+7. Confirm the detected execution daemon TCP/IP port number.
 
    ```
    Cluster Scheduler TCP/IP communication service
@@ -646,7 +620,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ``` 
    
-9. The installer does verify the local hostname resolution and if the current host is an administrative host. 
+8. The installer does verify the local hostname resolution and if the current host is an administrative host. 
 
    ```
    Checking hostname resolving
@@ -656,7 +630,7 @@ Here are the steps required to complete the installation.
 
    Hit <RETURN> to continue >>
    
-10. Specify the spooling directory for execution hosts
+9. Specify the spooling directory for execution hosts
 
    ```
    Execd spool directory configuration
@@ -678,7 +652,7 @@ Here are the steps required to complete the installation.
    for this host (y/n) [n] >>
    ``` 
    
-11. The installer will create a local configuration for the execution host.
+10. The installer will create a local configuration for the execution host.
 
    ```
    Creating local configuration
@@ -689,7 +663,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >> 
    ```
 
-12. Now specify if you want to start the execution service automatically.
+11. Now specify if you want to start the execution service automatically.
 
    ```
    execd startup script
@@ -699,7 +673,7 @@ Here are the steps required to complete the installation.
    start execd at machine boot (y/n) [y] >> 
    ```
    
-13. The execution service is started.
+12. The execution service is started.
 
    ```
    Cluster Scheduler execution daemon startup
@@ -711,7 +685,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ```
    
-14. Specify a queue for the new host.
+13. Specify a queue for the new host.
 
    ```
    Adding a queue for this host
@@ -803,4 +777,3 @@ The uninstallation of the xxQS_NAMExx software can be done manually or automatic
    ```
 
 [//]: # (Eeach file has to end with two emty lines)
-
