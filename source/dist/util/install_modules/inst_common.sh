@@ -2276,10 +2276,10 @@ SetupSystemdSliceName()
                # set the default
                SLICE_NAME=`GetDefaultSliceName`
             fi
-            $INFOTEXT "Installing %s systemd unit file\n" $DAEMON_NAME
-            $INFOTEXT "%s will be running withing a top level systemd/cgroups slice, default is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
-            $INFOTEXT "If you are running multiple clusters on the same host, please use a unique slice name.\n"
-            $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\n hit <RETURN> to use [%s] >> " $SLICE_NAME
+            $INFOTEXT -u "\nSetting up systemd toplevel slice name"
+            $INFOTEXT "%s will be running withing a top level systemd/cgroups slice,\ndefault is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
+            $INFOTEXT "If you are running multiple clusters on the same host,\nplease use a unique slice name.\n"
+            $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\nhit <RETURN> to use [%s] >> " $SLICE_NAME
             SLICE_NAME=`Enter $SLICE_NAME`
             CheckSliceName $SLICE_NAME
             if [ $? -eq 0 ]; then

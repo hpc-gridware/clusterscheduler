@@ -280,7 +280,7 @@ Please refer to the next question for more information.
 
 ### Where is the spooling area for the master service located?
 
-For HA-setups, it must be a shared network location; otherwise, it can be the local filesystem of the host 
+For HA setups, it must be a shared network location; otherwise, it can be the local filesystem of the host 
 running the master service.
 
 Ensure that the spooling location meets the requirements of the spooling mechanism. Classic spooling can be done on 

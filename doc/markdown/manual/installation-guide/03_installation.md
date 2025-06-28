@@ -5,17 +5,17 @@ installation process for xxQS_NAMExx.
 
 ## Manual Installation
 
-This section covers the manual installation process on the command line. Note the prerequisites are required as outlined in previous chapters. If the hostname setup, usernames and service configuration are correct for all hosts that you intend to include in you cluster, then you can continue with the installation the master service.
+This section covers the manual installation process on the command line. Note the prerequisites are required as outlined in previous chapters. If the hostname setup, usernames and service configuration are correct for all hosts that you intend to include in your cluster, then you can continue with the installation of the master service.
 
 ### Installation of the Master Service
 
-During the execution the master's installation procedure following steps are processed.
+During the execution of the master's installation procedure, the following steps are processed.
 
 * a cell directory will be created that will contain files that are read by all service components as well as client applications communicating with the service within that cell.
 
-* next installation steps for other services are prepared (e.g. admin hosts are defined that will later on be allowed to run execution services).
+* next installation steps for other services are prepared (e.g., admin hosts are defined that will later on be allowed to run execution services).
 
-* a default configuration is created and user specific changes are applied.
+* a default configuration is created and user-specific changes are applied.
 
 * the master service is started and basic tests of its functionality are executed.
 
@@ -37,7 +37,7 @@ Here are the steps required to complete the installation.
    ```
    # ./install_qmaster
    ```
-   In order to install with Munge authentication pass the `-munge` option to the installation script.
+   To install with Munge authentication pass the `-munge` option to the installation script.
 
    ```
     # ./install_qmaster -munge
@@ -65,7 +65,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ```
 
-4. Admin User: Either accept the suggested admin user or reject it. If you reject the suggestion then you can select a different one.
+4. Admin User: Either accept the suggested admin user or reject it. If you reject the suggestion, then you can select a different one.
 
    ```
    Cluster Scheduler admin user account
@@ -105,7 +105,7 @@ Here are the steps required to complete the installation.
    to use default [<installation_directory>] >> 
    ```
 
-6. Master Service Port: Specify which service port should be used for the master service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_qmaster` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
+6. Master Service Port: Specify which service port should be used for the master service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_qmaster` then the installer will show you the configured port number and use that as service port. Alternatively, you can specify a different port number via shell environment.
 
    ```
    Cluster Scheduler TCP/IP communication service
@@ -132,7 +132,7 @@ Here are the steps required to complete the installation.
    (default: 2) >> 
    ```
 
-7. Execution Service Port: Specify which service port should be used for the execution service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_execd` then the installer will show you the configured port number and use that as service port. Alternatively you can specify a different port number via shell environment.
+7. Execution Service Port: Specify which service port should be used for the execution service. If you have an entry in */etc/services* or if a directory service is available that provides that information for `sge_execd` then the installer will show you the configured port number and use that as service port. Alternatively, you can specify a different port number via shell environment.
 
    ```
    Cluster Scheduler TCP/IP communication service
@@ -248,7 +248,7 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-13. Choose Spooling Method: Select classic or BDB spooling. As part of this step the spooling file will be created.
+13. Choose Spooling Method: Select classic or BDB spooling. As part of this step, the spooling file will be created.
 
     ```
     Setup spooling
@@ -339,7 +339,24 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-18. Autostart: Select if the master service should be integrated into the launch environment of the OS.
+18. Systemd slice: If you are using a systemd based operating system, then the installer will create a toplevel systemd slice under which the xxQS_NAMExx services and the jobs will be run.   
+It is recommended to specify a unique slice name to make sure that the slice does not collide with the setup of other clusters that you might run in parallel. The suggested default is `ocs` + the qmaster service port number, e.g. `ocs6444.slice`.   
+The slice name is stored in `$SGE_ROOT/$SGE_CELL/default/slice_name`.   
+This dialog will only be shown once during the installation of the first service running on a systemd based operating system, usually the master service.
+
+    ```
+    Setting up systemd toplevel slice name
+    --------------------------------------
+    qmaster will be running withing a top level systemd/cgroups slice,
+    default is "ocs6444.slice".
+    If you are running multiple clusters on the same host,
+    please use a unique slice name.
+    
+    Please enter the slice name (without the trailing .slice) or
+    hit <RETURN> to use [ocs6444] >> 
+    ```
+
+19. Autostart: Select if the master service should be integrated into the launch environment of the OS.
 
     ```
     qmaster startup script
@@ -349,7 +366,7 @@ Here are the steps required to complete the installation.
     start qmaster at machine boot (y/n) [y] >> 
     ```
 
-19. Service Start: Now the master service is started.
+20. Service Start: Now the master service is started.
 
     ```
     Cluster Scheduler qmaster startup
@@ -360,7 +377,7 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-20. Host Permissions: Select the hosts that should later on run the execution service. Those hosts will be administration hosts and submit hosts automatically.
+21. Host Permissions: Select the hosts that should later run the execution service. Those hosts will be administration hosts and submit hosts automatically.
 
     ```
     Adding Cluster Scheduler hosts
@@ -395,7 +412,7 @@ Here are the steps required to complete the installation.
     Host(s): 
     ```
 
-    Optionally you also add your shadow hosts now as administrative hosts:
+    Optionally, you also add your shadow hosts now as administrative hosts:
  
     ```
     Adding Cluster Scheduler shadow hosts
@@ -430,7 +447,7 @@ Here are the steps required to complete the installation.
     Host(s): 
     ```
 
-21. Default Configuration Steps: Depending on you host setup and configuration steps some default configuration objects will be created for you cluster.
+22. Default Configuration Steps: Depending on your host setup and configuration steps, some default configuration objects will be created for your cluster.
 
     ```
     Creating the default <all.q> queue and <allhosts> hostgroup
@@ -442,7 +459,7 @@ Here are the steps required to complete the installation.
     Hit <RETURN> to continue >> 
     ```
 
-22. Installation Summary
+23. Installation Summary
 
     ```
     Using Cluster Scheduler
@@ -499,7 +516,7 @@ Here are the steps required to complete the installation.
     Do you want to see previous screen about using Cluster Scheduler again (y/n) [n] >>
     ```
    
-    Should you have seen error messages during the installation then the mentioned message files will contain more details about them.
+    Should you have seen error messages during the installation, then the mentioned message files will contain more details about them.
  
     ```
     Your Cluster Scheduler qmaster installation is now completed
@@ -528,7 +545,7 @@ Here are the steps required to complete the installation.
 
 ### Installation of the Execution Service
 
-During the execution host installation procedure following steps are processed:
+During the execution host installation procedure, the following steps are processed:
 
 * It is tested that the master service is running and that the execution host is able to communicate with the master service.
 
@@ -620,7 +637,7 @@ Here are the steps required to complete the installation.
    Hit <RETURN> to continue >>
    ``` 
    
-8. The installer does verify the local hostname resolution and if the current host is an administrative host. 
+8. The installer does verify the local hostname resolution, and if the current host is an administrative host. 
 
    ```
    Checking hostname resolving
@@ -711,7 +728,7 @@ The auto installation is also able to install services on remote hosts if either
 
 1. Login as root on the system where you intend to install a service.
  
-2. Make of copy of a configuration template file and prepare it with the answers to the questions that are usually asked during the manual installation process. If the root user has no write permissions in $SGE_ROOT then choose a different path but make sure that you preserve the file for the uninstallation process.
+2. Make a copy of the configuration template file and prepare it with the answers to the questions that are usually asked during the manual installation process. If the root user has no write permissions in $ SGE_ROOT, then choose a different path but make sure that you preserve the file for the uninstallation process.
 
    ```
    $ cp $SGE_ROOT/util/install_modules/inst_template.conf $SGE_ROOT/my_template.conf
@@ -726,7 +743,7 @@ The auto installation is also able to install services on remote hosts if either
    ./inst_sge -m -auto $SGE_ROOT/my_template.conf
    ```
 
-   In order to install with Munge authentication pass the `-munge` option to the installation script.
+   To install with Munge authentication pass the `-munge` option to the installation script.
 
    ```
    cd $SGE_ROOT
@@ -751,11 +768,11 @@ The auto installation is also able to install services on remote hosts if either
 
 ## Uninstallation
 
-The uninstallation of the xxQS_NAMExx software can be done manually or automatically using the configuration template created during the auto installation. If you uninstall an execution host then make sure that there are no running jobs on that host. If you uninstall manually then make sure that all execution hosts are uninstalled first before you uninstall the master host or other services.
+The uninstallation of the xxQS_NAMExx software can be done manually or automatically using the configuration template created during the auto installation. If you uninstall an execution host, then make sure that there are no running jobs on that host. If you uninstall manually, then make sure that all execution hosts are uninstalled first before you uninstall the master host or other services.
 
 1. Login as root on the system where you installed a service.
 
-2. Automatic uninstall the execution service on execution hosts.
+2. Automatic uninstallation of the execution service on execution hosts.
 
    ```
    cd $SGE_ROOT
