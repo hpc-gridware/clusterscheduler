@@ -709,7 +709,7 @@ static int sge_start_jobs()
 
 static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep)
 {
-   char err_str[256];
+   char err_str[10000];
    int pid;
    u_long64 now;
    u_long32 job_id, ja_task_id;
