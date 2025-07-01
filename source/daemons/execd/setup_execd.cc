@@ -184,8 +184,7 @@ int job_initialize_job(lListElem *job)
          sge_get_file_path(active_dir, sizeof(active_dir), JOB_ACTIVE_DIR, FORMAT_DEFAULT, SPOOL_WITHIN_EXECD, job_id, ja_task_id, nullptr);
          if (SGE_STAT(active_dir, &stat_buffer)) {
             /* lost active directory - initiate cleanup for job */
-            execd_job_run_failure(job, ja_task, nullptr, "lost active dir of running "
-                                  "job", GFSTATE_HOST);
+            execd_job_run_failure(job, ja_task, nullptr, "lost active dir of running " "job", GFSTATE_HOST);
             continue;
          }
       }

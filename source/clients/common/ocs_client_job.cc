@@ -766,7 +766,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             const char *message = lGetString(mesobj, QIM_message);
 
             if (message != nullptr) {
-               printf(SFN " %11d:   " SFN "\n", first_task ? "error reason" : "            ",
+               printf(SFN " %11d:   %s\n", first_task ? "error reason" : "            ",
                       (int) lGetUlong(jatep, JAT_task_number), message);
             }
             first_task = false;
