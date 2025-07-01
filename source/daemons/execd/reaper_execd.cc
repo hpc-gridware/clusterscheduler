@@ -814,7 +814,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
    char *exec_file, *script_file, *tmpdir, *job_owner, *qname;
    dstring jobdir = DSTRING_INIT;
    char fname[SGE_PATH_MAX];
-   char err_str_buffer[1024];
+   char err_str_buffer[10000];
    dstring err_str;
    SGE_STRUCT_STAT statbuf;
    lListElem *jep = nullptr, *petep = nullptr, *jatep = nullptr;
@@ -1348,7 +1348,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    SGE_STRUCT_STAT statbuf;
    char fname[SGE_PATH_MAX];
    pid_t pid;           /* pid of shepherd */
-   char err_str[1024];
+   char err_str[10000];
    u_long32 jobid, jataskid;
    const char *pe_task_id_str = nullptr;
    static u_long64 startup_time = sge_get_gmt64();
