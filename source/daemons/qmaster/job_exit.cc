@@ -76,6 +76,7 @@
  ************************************************************************/
 void
 sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *monitor, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
    lListElem *queueep = nullptr;
    const char *err_str = nullptr;
    const char *qname = nullptr;
@@ -88,8 +89,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *master_ar_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_AR);
    lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
 
    /* JG: TODO: we'd prefer some more precise timestamp, e.g. from jr */
    u_long64 timestamp = sge_get_gmt64();
