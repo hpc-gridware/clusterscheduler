@@ -65,14 +65,19 @@ namespace ocs {
       // get accounting data
       rapidjson::StringBuffer json_buffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(json_buffer);
+
+      // we need to protect the usage_pattern_list via the config_mutex
+      sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
       ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, &usage_pattern_list, 0,
                              false, true);
+      sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
       if (ret) {
          // append data to buffer
          json_buffer.Put('\n');
-         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
          buffer += json_buffer.GetString();
-         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
       }
 
       DRETURN(ret);
@@ -82,9 +87,9 @@ namespace ocs {
    JsonReportingFileWriter::create_record(rapidjson::StringBuffer &stringBuffer) {
       stringBuffer.Put('\n');
 
-      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
       buffer += stringBuffer.GetString();
-      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    }
 
    bool
