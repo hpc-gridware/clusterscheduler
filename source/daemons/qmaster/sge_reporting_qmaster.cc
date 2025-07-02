@@ -269,9 +269,9 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
                              category_string, nullptr, REPORTING_DELIMITER, false, false);
       if (ret) {
          /* write accounting file */
-         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
          buffer += sge_dstring_get_string(&job_dstring);
-         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
       }
 
       // If immediate flushing is enabled, flush the buffer now
@@ -287,13 +287,13 @@ ocs::ClassicAccountingFileWriter::create_acct_record(lList **answer_list, lListE
 
 void
 ocs::ClassicReportingFileWriter::create_record(const char *type, const char *data) {
-   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    buffer += std::to_string(sge_gmt64_to_time_t(sge_get_gmt64()));
    buffer += REPORTING_DELIMITER;
    buffer += type;
    buffer += REPORTING_DELIMITER;
    buffer += data;
-   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 }
 
 /****** qmaster/reporting/create_acct_record() *******************
@@ -916,9 +916,9 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
 
          /* write data to reporting buffer */
          // @todo use create_record
-         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
          buffer += sge_dstring_get_string(&data_dstring);
-         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+         sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
          /* cleanup */
          sge_dstring_free(&prefix_dstring);
@@ -1009,9 +1009,9 @@ ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                               lGetUlong(ar, AR_id), REPORTING_DELIMITER,
                               (owner != nullptr) ? owner : "");
    // @todo use create_record
-   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    buffer += sge_dstring_get_string(&dstr);
-   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
    sge_dstring_free(&dstr);
 
@@ -1087,9 +1087,9 @@ ocs::ClassicReportingFileWriter::create_ar_attribute_record(lList **answer_list,
                               sge_dstring_get_string(&ar_granted_resources));
 
    // @todo use create_record
-   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    buffer += sge_dstring_get_string(&dstr);
-   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
    sge_dstring_free(&ar_granted_resources);
    sge_dstring_free(&dstr);
@@ -1159,9 +1159,9 @@ ocs::ClassicReportingFileWriter::create_ar_log_record(lList **answer_list,
                               (ar_description != nullptr) ? ar_description : "");
 
    // @todo use create_record
-   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    buffer += sge_dstring_get_string(&dstr);
-   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
    sge_dstring_free(&state_string);
    sge_dstring_free(&dstr);
@@ -1220,9 +1220,9 @@ bool ocs::ClassicReportingFileWriter::create_ar_acct_record(lList **answer_list,
    }
 
    // @todo use create_record
-   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
    buffer += sge_dstring_get_string(&dstr);
-   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+   sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
    sge_dstring_free(&dstr);
 
@@ -1286,4 +1286,3 @@ ocs::ClassicReportingFileWriter::create_single_ar_acct_record(dstring *dstr,
                               hostname, REPORTING_DELIMITER,
                               slots);
 }
-
