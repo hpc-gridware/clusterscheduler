@@ -68,9 +68,11 @@
 #include "execd_signal_queue.h"
 #include "exec_job.h"
 #include "execution_states.h"
-#include "msg_execd.h"
 #include "sig_handlers.h"
 #include "sge.h"
+
+#include "msg_common.h"
+#include "msg_execd.h"
 
 #ifdef COMPILE_DC
 #  include "ptf.h"
@@ -179,60 +181,116 @@ static void notify_ptf()
    DRETURN_VOID;
 }
 
+/**
+ * @brief
+ * Sum up the queue limit for a job resource limit.
+ * It is called multiple times for each gdil element. If a limit is INFINITY in one of the gdil elements,
+ * the resulting limit will be set to INFINITY (DBL_MAX).
+ *
+ * @param queue The queue element to read the limit from (from gdil).
+ * @param limit_nm The name of the limit attribute in the queue element (e.g., QU_h_cpu)
+ * @param type The type of the limit (e.g., TYPE_TIM for time limits).
+ * @param nslots The number of slots allocated for the job in this queue.
+ * @param limit Reference to the variable where the summed limit will be stored.
+ */
+static void
+force_job_rlimit_sum_up_limit(const lListElem *queue, int limit_nm, u_long32 type, int nslots, double &limit) {
+   double queue_limit{};
+   parse_ulong_val(&queue_limit, nullptr, type, lGetString(queue, limit_nm), nullptr, 0);
+   if (queue_limit == DBL_MAX) {
+      limit = DBL_MAX;
+   } else {
+      limit += queue_limit * nslots;
+   }
+}
+
+/**
+ * @brief
+ * Check if the job resource limit is exceeded and apply the limit.
+ * If the limit is exceeded, the job is signaled with SGE_SIGKILL (hard limits) or SGE_SIGXCPU (soft limits).
+ *
+ * @param usage The current usage of the resource.
+ * @param limit The limit for the resource.
+ * @param limit_name The name of the resource limit (e.g., "h_cpu").
+ * @param is_hard_limit True if it is a hard limit, false if it is a soft limit.
+ * @param queue The queue element where the job is running.
+ * @param jobid The job ID.
+ * @param jataskid The job task ID.
+ *
+ * @return true if the job was signaled, false otherwise.
+ */
+static bool
+force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
+                             bool is_hard_limit, const lListElem *queue,
+                             u_long32 jobid, u_long32 jataskid) {
+   bool signaled = false;
+
+   if (limit < usage) {
+      if (is_hard_limit) {
+         WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, limit_name,
+                 lGetString(queue, QU_full_name), usage, limit);
+         signal_job(jobid, jataskid, SGE_SIGKILL);
+      } else {
+         WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, limit_name,
+                 lGetString(queue, QU_full_name), usage, limit);
+         signal_job(jobid, jataskid, SGE_SIGXCPU);
+      }
+      signaled = true;
+   }
+
+   return signaled;
+}
+
+
 /* force job resource limits */
 static void force_job_rlimit(const char* qualified_hostname)
 {
-   const lListElem *jep;
-
    DENTER(TOP_LAYER);
 
+   const lListElem *jep;
    for_each_ep(jep, *ocs::DataStore::get_master_list(SGE_TYPE_JOB)) {
       const lListElem *jatep;
-
       for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-         const lListElem *q=nullptr, *cpu_ep, *vmem_ep, *gdil_ep;
-         double cpu_val, vmem_val;
-         double s_cpu, h_cpu;
-         double s_vmem, h_vmem;
-         int cpu_exceeded;
-         lList *usage_list;
-         u_long32 jobid, jataskid;
+         u_long32 jobid = lGetUlong(jep, JB_job_number);
+         u_long32 jataskid = lGetUlong(jatep, JAT_task_number);
 
-         jobid = lGetUlong(jep, JB_job_number);
-         jataskid = lGetUlong(jatep, JAT_task_number);
-
-         cpu_val = vmem_val = s_cpu = h_cpu = s_vmem = h_vmem = 0;
+         double s_cpu{}, h_cpu{};
+         double s_rss{}, h_rss{};
+         double s_vmem{}, h_vmem{};
 
          /* retrieve cpu and vmem usage */
-         usage_list = ptf_get_job_usage(jobid, jataskid, "*");
+         lList *usage_list = ptf_get_job_usage(jobid, jataskid, "*");
          if (usage_list == nullptr) {
             continue;
          }
 
-         if ((cpu_ep = lGetElemStr(usage_list, UA_name, USAGE_ATTR_CPU))) {
-            cpu_val = lGetDouble(cpu_ep, UA_value);
-         }
+         double cpu_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_CPU, 0.0);
+         double vmem_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_VMEM, 0.0);
+         double rss_val = usage_list_get_double_usage(usage_list, USAGE_ATTR_RSS, 0.0);
 
-         if ((vmem_ep = lGetElemStr(usage_list, UA_name, USAGE_ATTR_VMEM))) {
-            vmem_val = lGetDouble(vmem_ep, UA_value);
-         }
-            
-         DPRINTF("JOB " sge_u32 " %s %10.5f %s %10.5f\n", jobid,
-            cpu_ep != nullptr ? USAGE_ATTR_CPU : "(" USAGE_ATTR_CPU ")", cpu_val,
-            vmem_ep != nullptr ? USAGE_ATTR_VMEM : "(" USAGE_ATTR_VMEM ")", vmem_val);
+         DPRINTF("JOB " sge_u32" %s %10.5f %s %10.5f\n", jobid,
+            USAGE_ATTR_CPU, cpu_val,
+            USAGE_ATTR_VMEM, vmem_val);
 
-         /* free no longer needed usage_list */
+         // free no longer necessary usage_list
          lFreeList(&usage_list);
-         cpu_ep = vmem_ep = nullptr;
 
-         bool first_gdil_ep = true;
-         for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            double lim;
-            char err_str[128];
-            size_t err_size = sizeof(err_str) - 1;
+         const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+         const lListElem *q = nullptr, *gdil_ep;
+         const lListElem *first_gdil_ep = lFirst(gdil);
+         const void *iterator = nullptr;
+         const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+         while ((gdil_ep = next_gdil_ep) != nullptr) {
+            next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
 
-            if (sge_hostcmp(qualified_hostname, lGetHost(gdil_ep, JG_qhostname))
-                || !(q = lGetObject(gdil_ep, JG_queue))) {
+            // need the queue object - it must have been delivered by sge_qmaster
+            q = lGetObject(gdil_ep, JG_queue);
+            if (q == nullptr) {
+               // this should never happen, but if it does, we have to skip this gdil_ep
+               CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
+#if defined (ENABLE_DEBUG_CHECKS)
+               abort();
+#endif
                continue;
             }
 
@@ -246,8 +304,8 @@ static void force_job_rlimit(const char* qualified_hostname)
             //          - the master task + one slave task is running on this host (nslots = 1)
             //          only in the second case we have to increase nslots,
             //          but better always increase it and not kill the job erroneously
-            if (first_gdil_ep) {
-               first_gdil_ep = false;
+            // @todo shouldn't we handle ja_task and pe_tasks separately?
+            if (gdil_ep == first_gdil_ep) {
                const lListElem *pe = lGetObject(jatep, JAT_pe_object);
                if (pe != nullptr) {
                   if (!lGetBool(pe, PE_job_is_first_task)) {
@@ -256,50 +314,26 @@ static void force_job_rlimit(const char* qualified_hostname)
                }
             }
 
-            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_cpu), err_str, err_size);
-            if (lim == DBL_MAX) {
-               s_cpu = DBL_MAX;
-            } else {
-               s_cpu += lim * nslots; 
-            }
-
-            parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_cpu), err_str, err_size);
-            if (lim == DBL_MAX) {
-               h_cpu = DBL_MAX;
-            } else {
-               h_cpu += lim * nslots; 
-            }
-
-            parse_ulong_val(&lim, nullptr, TYPE_MEM, lGetString(q, QU_s_vmem), err_str, err_size);
-            if (lim == DBL_MAX) {
-               s_vmem = DBL_MAX;
-            } else {
-               s_vmem += lim * nslots; 
-            }
-
-            parse_ulong_val(&lim, nullptr, TYPE_MEM, lGetString(q, QU_h_vmem), err_str, err_size);
-            if (lim == DBL_MAX) {
-               h_vmem = DBL_MAX;
-            } else {
-               h_vmem += lim * nslots; 
-            }
+            force_job_rlimit_sum_up_limit(q, QU_s_cpu, TYPE_TIM, nslots, s_cpu);
+            force_job_rlimit_sum_up_limit(q, QU_h_cpu, TYPE_TIM, nslots, h_cpu);
+            force_job_rlimit_sum_up_limit(q, QU_s_rss, TYPE_MEM, nslots, s_rss);
+            force_job_rlimit_sum_up_limit(q, QU_h_rss, TYPE_MEM, nslots, h_rss);
+            force_job_rlimit_sum_up_limit(q, QU_s_vmem, TYPE_MEM, nslots, s_vmem);
+            force_job_rlimit_sum_up_limit(q, QU_h_vmem, TYPE_MEM, nslots, h_vmem);
          } /* foreach gdil_ep */
 
-         if (h_cpu < cpu_val || h_vmem < vmem_val) {
-            cpu_exceeded = (h_cpu < cpu_val);
-            WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, cpu_exceeded ? "h_cpu" : "h_vmem",
-                    q?lGetString(q, QU_full_name) : "-",
-                    cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? h_cpu : h_vmem);
-            signal_job(jobid, jataskid, SGE_SIGKILL);
+         // @todo we output the queue name, which might be incorrect, we might have multiple queues on the host
+         // hard limits
+         if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
+             force_job_rlimit_apply_limit(rss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
+             force_job_rlimit_apply_limit(vmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
             continue;
          }
 
-         if (s_cpu < cpu_val || s_vmem < vmem_val) {
-            cpu_exceeded = (s_cpu < cpu_val);
-            WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, cpu_exceeded ? "s_cpu" : "s_vmem",
-            q?lGetString(q, QU_full_name) : "-",
-            cpu_exceeded ? cpu_val : vmem_val, cpu_exceeded ? s_cpu : s_vmem);
-            signal_job(jobid, jataskid, SGE_SIGXCPU);
+         // soft limits
+         if (force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
+             force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
+             force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jobid, jataskid)) {
             continue;
          }
       } /* foreach jatep */
