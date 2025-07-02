@@ -49,15 +49,31 @@
 namespace ocs {
    // static attributes
    std::array<ReportingFileWriter *, ReportingFileWriter::NUM_WRITERS> ReportingFileWriter::writers;
+
+   // configuration parameters
    std::string ReportingFileWriter::reporting_params;
    std::string ReportingFileWriter::usage_patterns;
    std::vector<std::pair<std::string, std::string>> ReportingFileWriter::usage_pattern_list;
+
+   // We have two mutexes to protec access to the writers and the configuration parameters.
+   // Make sure to use the mutexes in the right order, i.e., always lock the writer_mutex before
+   // the config_mutex; otherwise we might end up in a deadlock situation.
+   // This order is required as in the writing functions we loop over all writers (need to lock them),
+   // and in the writers doing their work we might need to access the configuration parameters.
+
+   // protecting the writers array
+   pthread_mutex_t ReportingFileWriter::writer_mutex = PTHREAD_MUTEX_INITIALIZER;
+   std::string ReportingFileWriter::writer_mutex_name = "reporting_writer_mutex";
+   // protecting the configuration parameters
+   pthread_mutex_t ReportingFileWriter::config_mutex = PTHREAD_MUTEX_INITIALIZER;
+   std::string ReportingFileWriter::config_mutex_name = "reporting_config_mutex";
 
    /**
     * initialize all configured writers and make them read their configuration from the
     * reporting params (@see ReportingFileWriter::update_config())
     */
    void ReportingFileWriter::initialize() {
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       // create the Writers
       if (mconf_get_old_accounting()) {
          writers[CLASSIC_ACCOUNTING] = new ClassicAccountingFileWriter;
@@ -75,6 +91,7 @@ namespace ocs {
       if (mconf_get_do_monitoring()) {
          writers[JSON_MONITORING] = new MonitoringFileWriter;
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       // make Writers read their configuration
       update_config_all();
@@ -84,12 +101,14 @@ namespace ocs {
     * shutdown all writers
     */
    void ReportingFileWriter::shutdown() {
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (int i = 0; i < NUM_WRITERS; i++) {
          if (writers[i] != nullptr) {
             delete writers[i];
             writers[i] = nullptr;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
    }
 
    /**
@@ -101,11 +120,13 @@ namespace ocs {
    bool ReportingFileWriter::flush_all() {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->flush()) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -121,6 +142,8 @@ namespace ocs {
     */
    u_long64 ReportingFileWriter::trigger_all(monitoring_t *monitor) {
       u_long64 next_trigger = U_LONG64_MAX;
+
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr) {
             u_long64 next = w->trigger(monitor);
@@ -129,6 +152,7 @@ namespace ocs {
             }
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return next_trigger;
    }
@@ -136,17 +160,26 @@ namespace ocs {
    /**
     * If the reporting_params were changed
     * - creates newly enabled writers
-    * - removes no longer needed writers
+    * - removes the no longer necessary writers
     * - makes all configured writers read their configuration from the reporting_params
     */
    void ReportingFileWriter::update_config_all() {
+      bool config_changed = false;
       const char *rp_str = mconf_get_reporting_params();
       std::string current_reporting_params = rp_str ? rp_str : "";
       sge_free(&rp_str);
-      if (current_reporting_params != reporting_params) {
-         reporting_params = current_reporting_params;
 
+      // check if the config has changed and update it
+      sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+      if (current_reporting_params != reporting_params) {
+         config_changed = true;
+         reporting_params = current_reporting_params;
+      }
+      sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+      if (config_changed) {
          // if we switched accounting type, update the writers
+         sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
          if (mconf_get_old_accounting()) {
             // we might have switched accounting type to classic
             if (writers[CLASSIC_ACCOUNTING] == nullptr) {
@@ -212,9 +245,11 @@ namespace ocs {
                writers[JSON_MONITORING] = nullptr;
             }
          }
+         sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
          // usage patterns for accounting
          std::string new_usage_patterns = mconf_get_usage_patterns();
+         sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
          if (new_usage_patterns != usage_patterns) {
             usage_patterns = new_usage_patterns;
             usage_pattern_list.clear();
@@ -236,6 +271,7 @@ namespace ocs {
             }
             sge_free_saved_vars(context);
          }
+         sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
          // now configure all active Writers
          for (auto w: writers) {
@@ -254,11 +290,13 @@ namespace ocs {
    bool ReportingFileWriter::create_new_job_records(lList **answer_list, const lListElem *job) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_new_job_record(answer_list, job)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -269,6 +307,7 @@ namespace ocs {
                                              const char *message) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr &&
              !w->create_job_log(answer_list, event_time, type, user, host, job_report, job, ja_task, pe_task,
@@ -276,6 +315,7 @@ namespace ocs {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -284,11 +324,13 @@ namespace ocs {
                                                  lListElem *ja_task, bool intermediate) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_acct_record(answer_list, job_report, job, ja_task, intermediate)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -296,11 +338,13 @@ namespace ocs {
    bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_host_record(answer_list, host, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -310,11 +354,13 @@ namespace ocs {
                                                        u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_host_consumable_record(answer_list, host, job, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -322,11 +368,13 @@ namespace ocs {
    bool ReportingFileWriter::create_queue_records(lList **answer_list, const lListElem *queue, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_queue_record(answer_list, queue, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -336,11 +384,13 @@ namespace ocs {
                                                              u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_queue_consumable_record(answer_list, host, queue, job, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -348,11 +398,13 @@ namespace ocs {
    bool ReportingFileWriter::create_new_ar_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_new_ar_record(answer_list, ar, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -361,11 +413,13 @@ namespace ocs {
    ReportingFileWriter::create_ar_attribute_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_ar_attribute_record(answer_list, ar, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -374,11 +428,13 @@ namespace ocs {
                                                    const char *ar_description, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_ar_log_record(answer_list, ar, state, ar_description, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -386,11 +442,13 @@ namespace ocs {
    bool ReportingFileWriter::create_ar_acct_records(lList **answer_list, const lListElem *ar, u_long64 report_time) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_ar_acct_record(answer_list, ar, report_time)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -398,11 +456,13 @@ namespace ocs {
    bool ReportingFileWriter::create_monitoring_records(const char *json_data) {
       bool ret = true;
 
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
          if (w != nullptr && !w->create_monitoring_record(json_data)) {
             ret = false;
          }
       }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
    }
@@ -523,7 +583,7 @@ namespace ocs {
 
       DENTER(TOP_LAYER);
 
-      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
       /* do we have anything to write? */
       size_t size = buffer.length();
@@ -586,7 +646,7 @@ namespace ocs {
          buffer.clear();
       }
 
-      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
       DRETURN(ret);
    }
@@ -625,4 +685,3 @@ namespace ocs {
       }
    }
 } // namespace ocs
-

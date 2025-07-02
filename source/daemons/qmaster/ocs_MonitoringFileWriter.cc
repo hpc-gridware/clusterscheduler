@@ -40,10 +40,10 @@ namespace ocs {
       DENTER(TOP_LAYER);
 
       // append data to buffer
-      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_lock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
       this->buffer += json_data;
       this->buffer += "\n";
-      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &mutex);
+      sge_mutex_unlock(typeid(*this).name(), __func__, __LINE__, &buffer_mutex);
 
       DRETURN(true);
    }
