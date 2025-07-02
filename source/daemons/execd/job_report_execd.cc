@@ -57,8 +57,10 @@
 #include "job_report_execd.h"
 #include "reaper_execd.h"
 #include "execd_signal_queue.h"
-#include "msg_execd.h"
 #include "load_avg.h"
+
+#include "msg_common.h"
+#include "msg_execd.h"
 
 lList *jr_list = nullptr;
 static bool flush_jr = false;
@@ -393,55 +395,66 @@ int do_ack(struct_msg_t *aMsg)
    DRETURN(0);
 }
 
+/**
+ * @brief
+ * This function checks if the queue limits for a job are set and updates the
+ * global check_queue_limits counter accordingly.
+ *
+ * @param queue The queue element to check.
+ * @param type The type of limit to check (e.g., TYPE_TIM, TYPE_MEM).
+ * @param limit_nm The name of the limit attribute in the queue (e.g., QU_h_cpu).
+ * @param increase If true, increments the check_queue_limits counter; otherwise, decrements it.
+ *
+ * @return true if a limit was found and processed, false otherwise.
+ */
+static bool
+count_queue_limits(const lListElem *queue, u_long32 type, int limit_nm, bool increase) {
+   // check_queue_limits is a global variable that is used to determine
+   // whether we need to check queue limits or not.
+   // @todo: store this once in the ja_task?
+   double lim{};
+   bool found_limit = false;
+   parse_ulong_val(&lim, nullptr, type, lGetString(queue, limit_nm), nullptr, 0);
+   if (lim != DBL_MAX) {
+      if (increase) {
+         check_queue_limits++;
+      } else {
+         check_queue_limits--;
+      }
+      found_limit = true;
+   }
+
+   return found_limit;
+}
+
 void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem *jep, bool increase)
 {
    const lListElem *jatep;
    const lListElem *gdil_ep;
 
    for_each_ep(jatep, lGetList(jep, JB_ja_tasks)) {
-      for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-         double lim;
-         lListElem *q;
+      const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+      const void *iterator = nullptr;
+      const lListElem *next_gdil_ep = lGetElemHostFirst(gdil, JG_qhostname, qualified_hostname, &iterator);
+      while ((gdil_ep = next_gdil_ep) != nullptr) {
+         next_gdil_ep = lGetElemHostNext(gdil, JG_qhostname, qualified_hostname, &iterator);
 
-         if (sge_hostcmp(qualified_hostname, lGetHost(gdil_ep, JG_qhostname)) 
-             || !(q = lGetObject(gdil_ep, JG_queue))) {
+         const lListElem *q = lGetObject(gdil_ep, JG_queue);
+         if (q == nullptr) {
+            // this should never happen, but if it does, we have to skip this gdil_ep
+            CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
+#if defined (ENABLE_DEBUG_CHECKS)
+            abort();
+#endif
             continue;
          }
 
-         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_cpu), nullptr, 0);
-         if (lim != DBL_MAX) {
-            if (increase) {
-               check_queue_limits++;
-            } else {
-               check_queue_limits--;
-            }
-            break;
-         }
-         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_cpu), nullptr, 0);
-         if (lim != DBL_MAX) {
-            if (increase) {
-               check_queue_limits++;
-            } else {
-               check_queue_limits--;
-            }
-            break;
-         }
-         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_s_vmem), nullptr, 0);
-         if (lim != DBL_MAX) {
-            if (increase) {
-               check_queue_limits++;
-            } else {
-               check_queue_limits--;
-            }
-            break;
-         }
-         parse_ulong_val(&lim, nullptr, TYPE_TIM, lGetString(q, QU_h_vmem), nullptr, 0);
-         if (lim != DBL_MAX) {
-            if (increase) {
-               check_queue_limits++;
-            } else {
-               check_queue_limits--;
-            }
+         if (count_queue_limits(q, TYPE_TIM, QU_s_cpu, increase) ||
+             count_queue_limits(q, TYPE_TIM, QU_h_cpu, increase) ||
+             count_queue_limits(q, TYPE_MEM, QU_s_rss, increase) ||
+             count_queue_limits(q, TYPE_MEM, QU_h_rss, increase) ||
+             count_queue_limits(q, TYPE_MEM, QU_s_vmem, increase) ||
+             count_queue_limits(q, TYPE_MEM, QU_h_vmem, increase)) {
             break;
          }
       }
