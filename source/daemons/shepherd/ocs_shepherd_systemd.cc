@@ -132,15 +132,6 @@ namespace ocs {
 #if defined (OCS_WITH_SYSTEMD)
    if (g_use_systemd) {
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      // @todo there would also be
-      //   - BlockAccounting (deprecated by IOAccounting)
-      //   - IPAccounting
-      //   - TasksAccounting
-      g_systemd_properties["CPUAccounting"] = true;
-      g_systemd_properties["MemoryAccounting"] = true;
-      if (ocs::uti::Systemd::get_cgroup_version() == 2) {
-         g_systemd_properties["IOAccounting"] = true;
-      }
 
       add_accounting_settings();
       add_devices_allow();
@@ -195,9 +186,6 @@ namespace ocs {
             cpu_mask[i/8] |= 1 << (i % 8);
          }
          hwloc_bitmap_foreach_end();
-         for (i = 0; i < cpu_mask.size(); ++i) {
-            shepherd_trace("==> byte %d: %08b", i, cpu_mask[i]);
-         }
 
          g_systemd_properties["AllowedCPUs"] = cpu_mask;
       }
@@ -206,7 +194,7 @@ namespace ocs {
 
    void shepherd_systemd_signal_job(int signal) {
 #if defined(OCS_WITH_SYSTEMD)
-      // Signalling via systemd
+      // Signaling via systemd
       //   - Need the scope name
       //   - StopUnit, when the job shall be killed
       //      - Mode should probably be "replace", in case we get multiple kill signals from execd

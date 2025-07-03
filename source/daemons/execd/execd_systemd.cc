@@ -181,9 +181,7 @@ namespace ocs::execd {
                            usage_list = ptf_build_usage_list("usagelist");
                            lSetList(os_job, JO_usage_list, usage_list);
                         }
-                        //u_int64_t sd_vmem, sd_cpu; // @todo rss, max_rss, max_vmem, io
                         // from systemd we do *not* get vmem / maxvmem
-                        // @todo: io usage
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "CPUUsageNSec", USAGE_ATTR_CPU, 1.0 / 1000000000.0); // convert nanoseconds to seconds
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "MemoryCurrent", USAGE_ATTR_RSS, 1.0);
                         // With cgroup v2 we can get MemoryPeak, with cgroup v1 we need to calculate it ourselves.
