@@ -149,23 +149,16 @@ function(architecture_specific_settings)
       endif ()
 
       # build with systemd?
-      # @todo check api version, we need at least
+      # @todo we might want to check the api version, we need at least
       #       - 235: here FreezeUnit and ThawUnit were added (not required, we work around this not being available)
       #       - 231: 240? here sd_bus_process() was added (not required, we work around this)
       #       - 221: here StopUnit was added
+      #       Our build hosts are OK as it is (RHEL-8 compatible for lx-* has a recent enough version,
+      #       RHEL-7 compatible for ulx-* does not have it at all)
       if (EXISTS /usr/include/systemd/sd-bus.h)
          set(WITH_SYSTEMD ON PARENT_SCOPE CACHE STRING "" FORCE)
          message(STATUS "systemd development files found")
       endif()
-
-#      # build with cgroup?
-#      @todo need to build libcgroup as 3rdparty tool
-#      if (EXISTS /usr/include/libcgroup.h)
-#         set(WITH_CGROUPS ON PARENT_SCOPE CACHE STRING "" FORCE)
-#         message(STATUS "libcgroup development files found")
-#      else()
-#         message(WARNING "libcgroups development files not found")
-#      endif()
 
       if (SGE_ARCH MATCHES "lx-riscv64")
          # Linux RiscV

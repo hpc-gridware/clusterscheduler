@@ -63,6 +63,15 @@ See details in the Installation Guide, chapters "Planning the Installation" and 
 
 (Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
 
+### Systemd Integration
+
+xxQS_NAMExx is now integrated with systemd, the system and service manager for Linux operating systems. This integration allows xxQS_NAMExx to be managed as a systemd service, providing better control over the startup, shutdown, and management of the xxQS_NAMExx daemons.
+
+In addition, xxQS_NAMExx jobs can be run under systemd control, which allows for better management of job execution and resource allocation, including core binding and device isolation through systemd's cgroup management.   
+Collection of job resource usage statistics can be done via systemd. Given that usage reporting of systemd is not as detailed as the one provided by the xxQS_NAMExx builtin data collector, it is possible to fall back to the xxQS_NAMExx data collector.
+
+(Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
+
 ### qsub -sync r
 
 Additionally to the existing `qsub -sync y` option, new options have been introduced that allow to wait for certain job states.
@@ -72,4 +81,3 @@ Additionally to the existing `qsub -sync y` option, new options have been introd
 (Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
 
 [//]: # (Eeach file has to end with two emty lines)
-
