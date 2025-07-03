@@ -2,6 +2,48 @@
 
 # Release notes - Cluster Scheduler
 
+## v9.0.7
+
+### Improvement
+
+[CS-194](https://hpc-gridware.atlassian.net/browse/CS-194) add rss limits
+
+[CS-315](https://hpc-gridware.atlassian.net/browse/CS-315) make sure that the accounting and reporting code is thread safe
+
+[CS-443](https://hpc-gridware.atlassian.net/browse/CS-443) export environment variables to qrsh jobs without command
+
+[CS-1303](https://hpc-gridware.atlassian.net/browse/CS-1303) Add qtelemetry description into the Admin Guide
+
+### Task
+
+[CS-1304](https://hpc-gridware.atlassian.net/browse/CS-1304) Enable OCS/GCS build with gcov
+
+[CS-1309](https://hpc-gridware.atlassian.net/browse/CS-1309) Do lvoc run for GCS version 9.0.6
+
+[CS-1310](https://hpc-gridware.atlassian.net/browse/CS-1310) Add bind tests to check manual start position for binding strategies
+
+### Sub-task
+
+[CS-1285](https://hpc-gridware.atlassian.net/browse/CS-1285) Split binding specific code in test suite and add modules that allow to implement new tests for scheduler binding
+
+### Bug
+
+[CS-1269](https://hpc-gridware.atlassian.net/browse/CS-1269) error reason reported in error file and shown by  qstat -j jobid is truncated
+
+[CS-1281](https://hpc-gridware.atlassian.net/browse/CS-1281) testsuite fails in post-check tests when option "interactive ssh" is used
+
+[CS-1286](https://hpc-gridware.atlassian.net/browse/CS-1286) Core binding \(striding strategy\) not applied although cores might be available.
+
+[CS-1288](https://hpc-gridware.atlassian.net/browse/CS-1288) Core binding \(explicit strategy\) does not reserve cores correctly
+
+[CS-1311](https://hpc-gridware.atlassian.net/browse/CS-1311) Error message in autoinstaller: MakeUserKs command not found
+
+[CS-1323](https://hpc-gridware.atlassian.net/browse/CS-1323) code writing add\_grp\_id to shepherd config file is duplicated and looks incorrect
+
+[CS-1340](https://hpc-gridware.atlassian.net/browse/CS-1340) testsuite installation fails with coverage testing enabled
+
+[CS-1341](https://hpc-gridware.atlassian.net/browse/CS-1341) installation guide mentions scheduler profiles which do not exist
+
 ## v9.0.6
 
 ### Improvement
