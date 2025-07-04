@@ -146,7 +146,8 @@ namespace ocs {
          sge_switch2admin_user();
          if (connected) {
             shepherd_trace("moving shepherd child " pid_t_fmt " to job scope '%s' in slice '%s'", pid, scope, slice);
-            bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, &error_dstr);
+            bool scope_already_exists = false;
+            bool success = systemd.create_scope_with_pid(scope, slice, g_systemd_properties, pid, scope_already_exists, &error_dstr);
             if (success) {
                shepherd_trace("moving shepherd child took " sge_u64 " µs", sge_get_gmt64() - start_time);
             } else {

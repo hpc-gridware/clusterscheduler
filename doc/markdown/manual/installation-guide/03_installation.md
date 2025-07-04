@@ -794,3 +794,4 @@ The uninstallation of the xxQS_NAMExx software can be done manually or automatic
    ```
 
 [//]: # (Eeach file has to end with two emty lines)
+

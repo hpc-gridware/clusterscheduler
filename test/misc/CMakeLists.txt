@@ -20,8 +20,6 @@
 
 # test/misc
 
-#add_subdirectory(systemd)
-
 #add_executable(test_valgrind test_valgrind.cc)
 #add_compile_options(test_valgrind PRIVATE "-no-pedantic -Wno-error")
 add_executable(test_cond_timedwait test_cond_timedwait.cc)

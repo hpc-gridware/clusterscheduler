@@ -162,9 +162,7 @@ function(architecture_specific_settings)
 
       if (SGE_ARCH MATCHES "lx-riscv64")
          # Linux RiscV
-         # @todo why?
          add_compile_options(-fPIC)
-         # @todo why?
          set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")

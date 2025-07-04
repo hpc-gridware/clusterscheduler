@@ -38,6 +38,8 @@ Tags and branches before `V9` will also not be described here.
 |              | V904\_TAG   | fourth 9.0 patch                                  |
 |              | V905\_TAG   | fifth 9.0 patch                                   |
 |              | V906\_TAG   | sixth 9.0 patch                                   |
+|              | V907\_TAG   | seventh 9.0 patch                                 |
 |              |             |                                                   |
 
 [//]: # (Each file has to end with two emty lines)
+

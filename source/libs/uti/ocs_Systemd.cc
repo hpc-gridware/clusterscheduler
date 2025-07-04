@@ -61,8 +61,6 @@ namespace ocs::uti {
 
    std::string Systemd::slice_name{};
    std::string Systemd::service_name{};
-   const std::string Systemd::execd_service_name{"execd.service"};
-   const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
    bool Systemd::running_as_service{false};
    int Systemd::cgroup_version{};
    int Systemd::systemd_version{};
@@ -383,8 +381,10 @@ namespace ocs::uti {
 
    Systemd::~Systemd() {
       // Destructor implementation
-      sd_bus_unref_func(bus);
-      bus = nullptr;
+      if (bus != nullptr) {
+         sd_bus_unref_func(bus);
+         bus = nullptr;
+      }
    }
 
    bool
@@ -542,7 +542,7 @@ namespace ocs::uti {
             } else if (-r == EINTR && retries < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
-               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"GetUnit", full_scope_name.c_str(), r, error.message);
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "GetUnit", full_scope_name.c_str(), r, error.message);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
                }
@@ -554,52 +554,101 @@ namespace ocs::uti {
          sd_bus_message_unref_func(m);
       }
 
+#if 0
+      // Enable for debugging the situation, that the scope did not exist, according to GetUnit,
+      // but when we try to create it, it suddenly exists.
+      // This can happen if sge_execd forks multiple shepherds in short succession,
+      // they all see that the unit does not exist, but only one of them can create it, the others fail.
+      // Submit an array job to the test host, and you should see the DPRINTF output below.
+      srand(pid);
+      int microsecs = rand() % 1000000;
+      DPRINTF("===> sleeping for %d µsec, then %s shepherd scope %s", microsecs, create ? "creating" : "attaching to", full_scope_name.c_str());
+      usleep(microsecs);
+#endif
+
+      // the scope exists, we can attach the shepherd to it
       if (ret && !create) {
          DPRINTF("Systemd::move_shepherd_to_scope: calling AttachProcessesToUnit\n");
-         sd_bus_message *m = nullptr;
-         sd_bus_error error = SD_BUS_ERROR_NULL;
-         bool retry_on_interrupt = true;        // retry on EINTR
-         int retries = 0;
-         while (ret && retry_on_interrupt) {
-            retry_on_interrupt = false;
-            int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
-                                     "/org/freedesktop/systemd1",          // object path
-                                     "org.freedesktop.systemd1.Manager",   // interface name
-                                     "AttachProcessesToUnit",              // method name
-                                     &error,                               // object to return error in
-                                     &m,                                   // return message on success
-                                     "ssau",                               // input signature
-                                     full_scope_name.c_str(),              //    -> scope
-                                     "",                                   //    -> subcgroup
-                                     1, pid);                              // array containing one pid
-            if (r < 0) {
-               // ENOENT (-2): scope does not yet exist
-               // we just checked that above, but there might be a race condition
-               // the scope might just have been removed between checking and trying to attach
-               // in this case we create the scope (call StartTransientUnit below)
-               if (-r == ENOENT) {
-                  DPRINTF("Systemd::move_shepherd_to_scope: scope no longer exists, calling StartTransientUnit\n");
-                  create = true;
-               } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
-                  retry_on_interrupt = true;
-               } else {
-                  sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS,"AttachProcessesToUnit", full_scope_name.c_str(), r, error.message);
-                  if (retries > 0) {
-                     sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
-                  }
-                  ret = false;
-               }
-            }
+         bool scope_not_exists = false;
+         ret = attach_pid_to_scope(full_scope_name, pid, scope_not_exists, error_dstr);
+         if (!ret && scope_not_exists) {
+            // The scope vanished between GetUnit and AttachProcessesToUnit,
+            // we have to create it again.
 
-            sd_bus_message_unref_func(m);
-            sd_bus_error_free_func(&error);
+            // Clear dstring as we handle the error.
+            sge_dstring_clear(error_dstr);
+            DPRINTF("Systemd::move_shepherd_to_scope: scope no longer exists, calling StartTransientUnit\n");
+            create = true;
          }
       }
 
       if (ret && create) {
          DPRINTF("Systemd::move_shepherd_to_scope: calling create_scope_with_pid\n");
          SystemdProperties_t properties;
-         ret = create_scope_with_pid(full_scope_name, full_slice_name, properties, pid, error_dstr);
+         bool scope_already_exists = false;
+         ret = create_scope_with_pid(full_scope_name, full_slice_name, properties, pid, scope_already_exists, error_dstr);
+         if (!ret) {
+            if (scope_already_exists) {
+               // The scope already exists, someone (another shepherd) created it in the meantime.
+               // We can try to attach the pid to the existing scope.
+               DPRINTF("===> Scope already exists, while GetUnit called earlier said it didn't exist.");
+
+               // Clear dstring as we handle the error.
+               sge_dstring_clear(error_dstr);
+
+               bool scope_not_exists = false;
+               ret = attach_pid_to_scope(full_scope_name, pid, scope_not_exists, error_dstr);
+               // if it fails here again, then there was really a problem
+            }
+         }
+      }
+
+      DRETURN(ret);
+   }
+
+   bool
+   Systemd::attach_pid_to_scope(const std::string &scope, pid_t pid, bool &scope_not_exists, dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+
+      bool ret = true;
+      scope_not_exists = false;
+
+      DPRINTF("Systemd::attach_pid_to_scope: calling AttachProcessesToUnit\n");
+      sd_bus_message *m = nullptr;
+      sd_bus_error error = SD_BUS_ERROR_NULL;
+      bool retry_on_interrupt = true;        // retry on EINTR
+      int retries = 0;
+      while (ret && retry_on_interrupt) {
+         retry_on_interrupt = false;
+         int r = sd_bus_call_method_func(bus, "org.freedesktop.systemd1",  // service to contact
+                                  "/org/freedesktop/systemd1",          // object path
+                                  "org.freedesktop.systemd1.Manager",   // interface name
+                                  "AttachProcessesToUnit",              // method name
+                                  &error,                               // object to return error in
+                                  &m,                                   // return message on success
+                                  "ssau",                               // input signature
+                                  scope.c_str(),                        //    -> scope
+                                  "",                                   //    -> subcgroup
+                                  1, pid);                              // array containing one pid
+         if (r < 0) {
+            if (-r == ENOENT) {
+               scope_not_exists = true;
+               DPRINTF("Systemd::attach_pid_to_scope: scope does not exist\n");
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "AttachProcessesToUnit", scope.c_str(), r, error.message);
+               ret = false;
+            } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+               retry_on_interrupt = true;
+            } else {
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "AttachProcessesToUnit", scope.c_str(), r, error.message);
+               if (retries > 0) {
+                  sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
+               }
+               ret = false;
+            }
+         }
+
+         sd_bus_message_unref_func(m);
+         sd_bus_error_free_func(&error);
       }
 
       DRETURN(ret);
@@ -607,7 +656,8 @@ namespace ocs::uti {
 
    bool
    Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice,
-                                  const SystemdProperties_t &properties, pid_t pid, dstring *error_dstr) const {
+                                  const SystemdProperties_t &properties, pid_t pid, bool &scope_already_exists,
+                                  dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -630,7 +680,7 @@ namespace ocs::uti {
       int r;
       if (ret) {
          // build the method step by step as we add arrays
-         int r = sd_bus_message_new_method_call_func(bus, &m,
+         r = sd_bus_message_new_method_call_func(bus, &m,
                  "org.freedesktop.systemd1",          // service to contact
                  "/org/freedesktop/systemd1",         // object path
                  "org.freedesktop.systemd1.Manager",  // interface name
@@ -642,7 +692,7 @@ namespace ocs::uti {
       }
 
       if (ret) {
-         r = sd_bus_message_append_func(m, "ss", scope.c_str(), "replace");
+         r = sd_bus_message_append_func(m, "ss", scope.c_str(), "fail");
          if (r < 0) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS, "name and mode", "StartTransientUnit", r, strerror(-r));
             ret = false;
@@ -819,11 +869,16 @@ namespace ocs::uti {
          sd_bus_message *reply = nullptr;
          sd_bus_error error = SD_BUS_ERROR_NULL;
          r = sd_bus_call_func(bus, m, 0, &error, &reply);
+         DPRINTF("===> StartTransientUnit returned %d", r);
          if (r < 0) {
-            if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
+            if (-r == EEXIST) {
+               scope_already_exists = true;
+               DPRINTF("Systemd::attach_pid_to_scope: scope does not exist\n");
+               sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
+               ret = false;
+            } else if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
-               // Special handling for -17: EEXIST: scope already exists? No, who would create the scope for us?
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "StartTransientUnit", scope.c_str(), r, error.message);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);

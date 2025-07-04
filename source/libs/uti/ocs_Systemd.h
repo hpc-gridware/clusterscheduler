@@ -102,15 +102,15 @@ namespace ocs::uti {
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
          static std::string slice_name;
-         static std::string service_name; // @todo it is e.g. "execd.service" but should be the full service name
+         static std::string service_name;
          static bool running_as_service;
          static int cgroup_version;
          static int systemd_version;
 
       public:
          // constants
-         static const std::string execd_service_name;
-         static const std::string shepherd_scope_name;
+         static constexpr std::string execd_service_name{"execd.service"};
+         static constexpr std::string shepherd_scope_name{"shepherds.scope"};
 
          // static methods
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);
@@ -130,8 +130,6 @@ namespace ocs::uti {
          sd_bus_slot *sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const;
          void sd_bus_wait_for_job_unsubscribe(sd_bus_slot **slot) const;
          bool sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const;
-         std::string get_unit_for_pid();
-         std::string get_unit_for_service(std::string &service);
 
       public:
          Systemd();
@@ -142,7 +140,9 @@ namespace ocs::uti {
 
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
          bool create_scope_with_pid(const std::string &scope, const std::string &slice,
-                                    const SystemdProperties_t &properties, pid_t pid, dstring *error_dstr) const;
+                                    const SystemdProperties_t &properties, pid_t pid, bool &scope_already_exists, dstring *error_dstr) const;
+         bool
+         attach_pid_to_scope(const std::string &scope, pid_t pid, bool &scope_not_exists, dstring *error_dstr) const;
 
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const;
          bool sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const;

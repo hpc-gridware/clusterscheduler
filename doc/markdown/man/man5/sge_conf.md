@@ -1392,3 +1392,4 @@ xxqs_name_sxx_shepherd*(8), cron(8),
 # COPYRIGHT
 
 See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.
+
