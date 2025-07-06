@@ -359,5 +359,5 @@ If this is your first time installing xxQS_NAMExx, we suggest a manual installat
 Automatic installation is recommended if you need to install or reinstall a cluster multiple times or if you plan 
 to install multiple clusters with slightly different settings.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

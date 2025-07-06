@@ -67,10 +67,13 @@ See details in the Installation Guide, chapters "Planning the Installation" and 
 
 xxQS_NAMExx is now integrated with systemd, the system and service manager for Linux operating systems. This integration allows xxQS_NAMExx to be managed as a systemd service, providing better control over the startup, shutdown, and management of the xxQS_NAMExx daemons.
 
-In addition, xxQS_NAMExx jobs can be run under systemd control, which allows for better management of job execution and resource allocation, including core binding and device isolation through systemd's cgroup management.   
-Collection of job resource usage statistics can be done via systemd. Given that usage reporting of systemd is not as detailed as the one provided by the xxQS_NAMExx builtin data collector, it is possible to fall back to the xxQS_NAMExx data collector.
+In addition, xxQS_NAMExx jobs can optionally be run under systemd control, which allows for better management of job execution and resource allocation, including core binding and device isolation through systemd's cgroup management. This behavior can be configured; by default jobs are run under systemd control, if available, but this can be changed by setting the `USE_SYSTEMD` `execd_params` parameter.
 
-(Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
+Collection of job resource usage statistics can be done via systemd.
+
+Given that usage reporting of systemd is not as detailed as the one provided by the xxQS_NAMExx builtin data collector, it is possible to fall back to the xxQS_NAMExx data collector. There is also a hybrid usage collection mode in which the builtin data collector supplements the values systemd does not provide. Which mode of the usage collection is used can be configured via the `USAGE_COLLECTION` `execd_params` parameter.
+
+For further details on how to configure and use systemd integration, please refer to the xxQS_NAMExx Installation Guide, the xxQS_NAMExx Administration Guide, and the man pages.
 
 ### qsub -sync r
 
@@ -80,4 +83,5 @@ Additionally to the existing `qsub -sync y` option, new options have been introd
 
 (Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
+

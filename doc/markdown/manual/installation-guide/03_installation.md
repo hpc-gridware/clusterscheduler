@@ -793,5 +793,5 @@ The uninstallation of the xxQS_NAMExx software can be done manually or automatic
    ./inst_sge ...  
    ```
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

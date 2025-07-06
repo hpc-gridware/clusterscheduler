@@ -33,5 +33,5 @@ The following table outlines the maintenance schedule for major and minor releas
 
 * **(3)**: Optional extension of Phase 3 for up to three years (two additional years) subject to agreement in the support contract.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

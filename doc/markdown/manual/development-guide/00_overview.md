@@ -41,5 +41,5 @@ Tags and branches before `V9` will also not be described here.
 |              | V907\_TAG   | seventh 9.0 patch                                 |
 |              |             |                                                   |
 
-[//]: # (Each file has to end with two emty lines)
+[//]: # (Each file has to end with two empty lines)
 
