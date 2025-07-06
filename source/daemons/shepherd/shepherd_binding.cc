@@ -81,6 +81,88 @@ namespace ocs {
 
 #if defined(OCS_HWLOC) && !defined(SOLARIS)
 
+
+   int do_thread_binding() {
+      // read binding parameters from config file
+      char *binding_to_use = get_conf_val("binding_to_use");
+      if (binding_to_use == nullptr) {
+         shepherd_trace("do_thread_binding: \"binding_to_use\" parameter not found in config file");
+         return -1;
+      }
+      if (strcasecmp("none", binding_to_use) == 0) {
+         shepherd_trace("do_thread_binding: binding is disabled (no socket/core/thread specified)");
+         return 0;
+
+      }
+      char *binding_instance_str = get_conf_val("binding_instance");
+      if (binding_instance_str == nullptr) {
+         shepherd_trace("do_thread_binding: \"binding_instance\" parameter not found in config file");
+         return -1;
+      }
+      if (strcasecmp("none", binding_instance_str) == 0) {
+         shepherd_trace("do_thread_binding: binding is disabled (no instance specified)");
+      }
+
+      // determine binding instance type
+      int binding_instance = BINDING_TYPE_NONE;
+      if (strcmp(binding_instance_str, "3") == 0) {
+         binding_instance = BINDING_TYPE_SET;
+      } else if (strcmp(binding_instance_str, "2") == 0) {
+         binding_instance = BINDING_TYPE_ENV;
+      } else if (strcmp(binding_instance_str, "1") == 0) {
+         binding_instance = BINDING_TYPE_PE;
+      }
+      if (binding_instance == BINDING_TYPE_NONE) {
+         shepherd_trace("do_thread_binding: invalid binding instance specified");
+         return -1;
+      }
+
+      // prepare binding mask containing the PU's
+      hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+
+      int socket_id = -1;
+      int core_id = -1;
+      int thread_id = -1;
+
+      for (int pos = 0; binding_to_use[pos] != '\0'; pos++) {
+         switch (binding_to_use[pos]) {
+            case 'S':
+            case 's':
+               socket_id++;
+               core_id = -1; // reset core and thread id for new socket
+               thread_id = -1;
+               break;
+            case 'C':
+            case 'E':
+            case 'c':
+            case 'e':
+               core_id++;
+               thread_id = -1; // reset thread id for new core
+               break;
+            case 'T':
+               thread_id++;
+               break;
+            case 't': {
+               thread_id++;
+
+               int pu_id = topo_add_hw_for_logical_id(cpuset, socket_id, core_id, thread_id);
+               shepherd_trace("do_thread_binding: adding PU %d to cpuset for S%dC%dT%d", pu_id, socket_id, core_id, thread_id);
+               break;
+            }
+            default:
+               break;
+         }
+      }
+
+      // set the binding mask
+      if (!bind_process_to_mask(cpuset)) {
+         shepherd_trace("do_thread_binding: binding to prepared PUs failed");
+         return -1;
+      }
+
+      return 0;
+   }
+
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME
 *     do_core_binding() -- Performs the core binding task for the Linux OS. 

@@ -301,7 +301,7 @@ ocs::HostTopology::add_used_thread(dstring *topology_dstr, const int pos) {
 void
 ocs::HostTopology::remove_used_thread(dstring *topology_dstr, const int pos) {
    char *topology = sge_dstring_get_string_rw(topology_dstr);
-   topology[pos] = toupper(topology[pos]);
+   topology[pos] = std::toupper(topology[pos]);
    correct_topology_upper_lower(topology_dstr);
 }
 

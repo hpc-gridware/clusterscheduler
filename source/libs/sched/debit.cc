@@ -347,6 +347,7 @@ int
 debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListElem *pe, lListElem *hep,
                       const lList *centry_list, int slots, bool is_master_task, bool do_per_host_booking,
                       bool *just_check) {
+   DENTER(TOP_LAYER);
    int mods = 0;
    mods += rc_debit_consumable(jep, pe, hep, centry_list, slots, EH_consumable_config_list, EH_resource_utilization,
                                lGetHost(hep, EH_name), is_master_task, do_per_host_booking, just_check);
@@ -354,7 +355,7 @@ debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListE
       mods += ja_task_debit_host_rsmaps(jatep, hep, slots, just_check);
       mods += ja_task_debit_host_bindings(jatep, hep, slots, just_check);
    }
-   return mods;
+   DRETURN(mods);
 }
 
 /****** sge_resource_quota_schedd/debit_job_from_rqs() **********************************
