@@ -38,5 +38,7 @@ namespace ocs {
 
    int do_core_binding();
 
+   int do_thread_binding();
+
 #endif
 }

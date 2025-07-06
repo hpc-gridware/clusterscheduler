@@ -22,6 +22,9 @@
 #include <string>
 #include "ocs_topology.h"
 
+#include "err_trace.h"
+#include "sge_log.h"
+
 namespace ocs {
 
    // we do lazy initialization of the hwloc library
@@ -270,6 +273,33 @@ namespace ocs {
       }
 
       return ret;
+   }
+
+   int topo_add_hw_for_logical_id(hwloc_bitmap_t cpuset, int socket_id, int core_id, int thread_id) {
+      if (!topo_has_topology_information()) {
+         return -1;
+      }
+
+      // find the core via HWLOC
+      hwloc_obj_t core = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_SOCKET, socket_id, HWLOC_OBJ_CORE, core_id);
+      if (core == nullptr) {
+         return -1;
+      }
+
+      // check if  thread_id is correct
+      //SGE_ASSERT(thread_id < topo_count_type_in_object(core , HWLOC_OBJ_PU));
+
+      // find the PU (thread) via HWLOC
+      hwloc_obj_t pu = hwloc_get_obj_below_by_type(topo_hwloc_topology, HWLOC_OBJ_CORE, core->logical_index, HWLOC_OBJ_PU, thread_id);
+      if (pu == nullptr) {
+         return -1;
+      }
+
+      // add the PU (thread) to the cpuset
+      hwloc_bitmap_or(cpuset, cpuset, pu->cpuset);
+
+      // return the OS index of the PU (thread)
+      return pu->os_index;
    }
 
    /**
