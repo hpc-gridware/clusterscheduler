@@ -545,11 +545,17 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
    lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
 
+   // add resource utilization entry if it does not exist yet
+   if (resource == nullptr) {
+      resource = lAddSubStr(host, RUE_name, ce_name, EH_resource_utilization, RUE_Type);
+      lSetString(resource, RUE_utilized_now_binding_inuse, nullptr);
+   }
+
    // what is currently booked and what should be booked additionally
    const char *binding_to_use = lGetString(resl, ST_name);
    const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
 
-#if 0
+#if 1
    DPRINTF("host_debit_binding: in-use: %s, to-use: %s, slots: %d\n",
            binding_in_use ? binding_in_use : "null", binding_to_use ? binding_to_use : "null", slots);
 #endif
