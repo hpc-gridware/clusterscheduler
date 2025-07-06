@@ -36,6 +36,8 @@ namespace ocs {
    bool topo_get_topology(char **topology, int *length); // @todo switch to the func above
    bool topo_get_processor_ids(int socket_number, int core_number, int **proc_ids, int *amount);
 
+   int topo_add_hw_for_logical_id(hwloc_bitmap_t cpuset, int socket_id, int core_id, int thread_id);
+
    int topo_get_amount_of_cores_for_socket(int socket_number);
 
    int topo_get_amount_of_threads_for_core(int socket_number, int core_number);

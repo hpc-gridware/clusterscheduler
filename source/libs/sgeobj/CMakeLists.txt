@@ -75,6 +75,8 @@ set(LIBRARY_SOURCES
       ocs_Job.cc
       ocs_Session.cc
       ocs_ShareTree.cc
+      ocs_TopologyNode.cc
+      ocs_TopologyString.cc
       ocs_Usage.cc
       ocs_UserProject.cc
       ocs_Version.cc

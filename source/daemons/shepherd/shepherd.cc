@@ -856,9 +856,14 @@ int main(int argc, char **argv)
     */
    sge_pset_create_processor_set();
 
-   /*
-    * Perform core binding (do not use processor set together with core binding)
-    */
+   // @todo: CS-731: do the new thread binding
+#if defined(OCS_HWLOC)
+   ocs::do_thread_binding();
+#endif
+
+   /* 
+    * Perform core binding (do not use processor set together with core binding) 
+    */ 
 #if defined(OCS_HWLOC)
    ocs::do_core_binding();
 #elif defined(BINDING_SOLARIS)

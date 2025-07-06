@@ -102,6 +102,8 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
+#include "ocs_HostTopology.h"
+#include "ocs_TopologyString.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -452,6 +454,38 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_slots += (int) lGetUlong(gdil_ep, JG_slots);
    }
 
+   // @todo: CS-731: find the binding decision for the job that needs to be written to the config file
+   DSTRING_STATIC(binding_to_use, ocs::TopologyString::MAX_LENGTH);
+   // @todo: CS-731: support other binding strategies than set also in shepherd
+   int binding_instance = BINDING_TYPE_SET;
+   if (mconf_get_enable_binding()) {
+      const lListElem *gr;
+      for_each_ep(gr, lGetList(jatep, JAT_granted_resources_list)) {
+         if (u_long32 type = lGetUlong(gr, GRU_type); type != GRU_BINDING_TYPE) {
+            continue; // we are only interested in binding resources
+         }
+
+         // @todo: CS-731: this code is still not correct for task specific binding
+         // if the granted binding list contains just one entry then we can use it directly (host binding or task binding with one task)
+         // but if there are multiple entries then we should choose an unused one and pass it to the shepherd
+         // for now we just OR all binding decisions and pass it to the shepherd as if we should do a host binding.
+         // The OS scheduler will then decide finally which task gets which part of the combined mask.
+         const lList *binding_list = lGetList(gr, GRU_binding_inuse);
+         const lListElem *be;
+         for_each_ep(be, binding_list) {
+            // we have a binding entry, append it to the binding_to_use dstring
+            if (sge_dstring_get_string(&binding_to_use)[0] == '\0') {
+               sge_dstring_append(&binding_to_use, lGetString(be, ST_name));
+            } else {
+               DSTRING_STATIC(binding_to_add, ocs::TopologyString::MAX_LENGTH);
+               sge_dstring_append(&binding_to_add, lGetString(be, ST_name));
+
+               ocs::HostTopology::add_used_threads(&binding_to_use, &binding_to_add);
+            }
+         }
+      }
+   }
+
    // Core Binding
    //
    // Linux: "set affinity" is used to bind the job to cores
@@ -474,7 +508,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          INFO("SGE_BINDING variable set: %s", sge_binding_environment);
       }
 #endif
-         
+
+      // @todo: CS-731: no need to send jobs binding back to the master
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
       if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
           && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
@@ -1448,6 +1483,15 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fprintf(fp, "binding=%s\n", processor_binding_strategy);
 
    }
+
+   // @todo CS-731: write the binding to the config file.
+   {
+      const char *binding_to_use_str = sge_dstring_get_string(&binding_to_use);
+      fprintf(fp, "binding_to_use=%s\n", binding_to_use_str[0] == '\0' ? "none" : binding_to_use_str);
+      fprintf(fp, "binding_instance=%d\n", binding_instance);
+   }
+
+
    if (petep != nullptr) {
       fprintf(fp, "job_name=%s\n", lGetString(petep, PET_name));
    } else {
