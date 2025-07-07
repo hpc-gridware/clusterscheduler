@@ -612,7 +612,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       const lListElem *uep, *jatep, *pe_task_ep;
 
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         int first_task = 1;
          double wallclock, cpu, mem, io, vmem, maxvmem, rss, maxrss;
 
          /* jobs whose job start orders were not processed to the end
@@ -621,11 +620,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING)
             continue;
 
-         printf("%-12s %11d:   ", first_task ? "usage" : " ", (int) lGetUlong(jatep, JAT_task_number));
-
-         if (first_task) {
-            first_task = 0;
-         }
+         printf("%-12s %11d:   ", "usage", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
 
          wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
 
@@ -680,7 +675,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       const lListElem *jatep;
 
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         int first_task = 1;
          const lListElem *usage_elem;
          const char *binding_inuse = nullptr;
 
@@ -699,17 +693,23 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                break;
             }
          }
-         printf("%-12s %11d:   %s\n", first_task ? "binding" : " ",
-                (int) lGetUlong(jatep, JAT_task_number), binding_inuse != nullptr ? binding_inuse : "NONE");
-         if (first_task) {
-            first_task = 0;
-         }
+         printf("%-12s %11d:   %s\n", "binding",
+                static_cast<int>(lGetUlong(jatep, JAT_task_number)), binding_inuse != nullptr ? binding_inuse : "NONE");
       }
    }
 
    /* OUTPUT for RSMAP resources */
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
       const lListElem *jatep = nullptr;
+
+      // show start time of each task
+      for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
+         DSTRING_STATIC(time_ds, 32);
+
+         printf("%-12s %11d:   %s\n", "start_time",
+                static_cast<int>(lGetUlong(jatep, JAT_task_number)),
+                sge_ctime64(lGetUlong64(jatep, JAT_start_time), &time_ds));
+      }
 
       for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
          const lListElem *resu = nullptr;
@@ -759,17 +759,15 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       const lListElem *jatep;
 
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         bool first_task = true;
          const lListElem *mesobj;
 
          for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
             const char *message = lGetString(mesobj, QIM_message);
 
             if (message != nullptr) {
-               printf(SFN " %11d:   %s\n", first_task ? "error reason" : "            ",
-                      (int) lGetUlong(jatep, JAT_task_number), message);
+               printf(SFN " %11d:   %s\n", "error reason",
+                      static_cast<int>(lGetUlong(jatep, JAT_task_number)), message);
             }
-            first_task = false;
          }
       }
    }
