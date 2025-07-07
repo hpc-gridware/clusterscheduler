@@ -4701,4 +4701,3 @@ void job_normalize_priority(lListElem *jep, u_long32 priority)
    lSetUlong(jep, JB_priority, priority);
    lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
 }
-
