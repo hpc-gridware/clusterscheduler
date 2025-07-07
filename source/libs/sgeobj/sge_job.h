@@ -556,5 +556,10 @@ job_get_sync_options_string(const lListElem *job);
 bool
 job_is_visible(const char *owner, bool is_manager, bool show_department_view, const lList *acl_list);
 
-void job_normalize_priority(lListElem *jep, u_long32 priority);
+void
+job_normalize_priority(lListElem *jep, u_long32 priority);
+
+lList *
+gdil_make_host_unique(const lList *gdil_in);
+
 
