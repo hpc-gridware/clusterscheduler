@@ -543,4 +543,8 @@ job_set_command_line(lListElem *job, int argc, const char *argv[]);
 bool
 job_is_visible(const char *owner, bool is_manager, bool show_department_view, const lList *acl_list);
 
+void
+job_normalize_priority(lListElem *jep, u_long32 priority);
 
+lList *
+gdil_make_host_unique(const lList *gdil_in);
