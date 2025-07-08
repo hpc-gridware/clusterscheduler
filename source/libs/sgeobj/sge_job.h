@@ -562,4 +562,6 @@ job_normalize_priority(lListElem *jep, u_long32 priority);
 lList *
 gdil_make_host_unique(const lList *gdil_in);
 
+u_long32
+jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep);
 
