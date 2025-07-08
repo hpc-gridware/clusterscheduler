@@ -4715,3 +4715,41 @@ gdil_make_host_unique(const lList *gdil_in) {
 
    DRETURN(gdil_out);
 }
+
+u_long32
+jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep) {
+   DENTER(TOP_LAYER);
+
+   u_long32 status = lGetUlong(jatep, JAT_status);
+   u_long32 state = lGetUlong(jatep, JAT_state);
+   if (status == JRUNNING) {
+      state |= JRUNNING;
+      state &= ~JTRANSFERING;
+   } else if (status == JTRANSFERING) {
+      state |= JTRANSFERING;
+      state &= ~JRUNNING;
+   } else if (status == JFINISHED) {
+      state |= JEXITING;
+      state &= ~(JRUNNING | JTRANSFERING);
+   }
+
+   // correct running state if the job is suspended (remove the 'r')
+   if (ISSET(state, JSUSPENDED_ON_SUBORDINATE) ||
+       ISSET(state, JSUSPENDED) ||
+       ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
+      state &= ~JRUNNING;
+   }
+
+   // show hold state if the job is held or has predecessors
+   if (lGetList(job, JB_jid_predecessor_list) ||
+       lGetUlong(jatep, JAT_hold)) {
+      state |= JHELD;
+   }
+
+   // show 'R' state if the job is restarted
+   if (lGetUlong(jatep, JAT_job_restarted)) {
+      state &= ~JWAITING;
+      state |= JMIGRATING;
+   }
+   DRETURN(state);
+}

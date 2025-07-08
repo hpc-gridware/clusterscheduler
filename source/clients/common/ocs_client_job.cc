@@ -283,7 +283,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_resource_list:", str_scope);
             }
-            printf("%-28s", str_attrib);
+            printf("%-32s", str_attrib);
             sge_show_ce_type_list(lp);
             printf("\n");
          }
@@ -295,7 +295,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_resource_list:", str_scope);
             }
-            printf("%-28s", str_attrib);
+            printf("%-32s", str_attrib);
             sge_show_ce_type_list(lp);
             printf("\n");
          }
@@ -309,7 +309,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_queue_list:", str_scope);
             }
-            printf("%-28s", str_attrib);
+            printf("%-32s", str_attrib);
             uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
          }
 
@@ -322,7 +322,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_queue_list:", str_scope);
             }
-            printf("%-28s", str_attrib);
+            printf("%-32s", str_attrib);
             uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
          }
       }
@@ -470,7 +470,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          dstring range_string = DSTRING_INIT;
 
          range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
-         printf("%-28s%s range: %s\n", "parallel_environment:", lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
+         printf("%-32s%s range: %s\n", "parallel_environment:", lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
          sge_dstring_free(&range_string);
       }
 
@@ -609,44 +609,58 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
+
+      lList *ja_tasks = lGetListRW(job, JB_ja_tasks);
+      if (ja_tasks != nullptr) {
+         lPSortList(ja_tasks, "%I+", JAT_task_number);
+      }
+
       const lListElem *uep, *jatep, *pe_task_ep;
-
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         double wallclock, cpu, mem, io, vmem, maxvmem, rss, maxrss;
-
-         /* jobs whose job start orders were not processed to the end
-            due to a qmaster/schedd collision appear in the JB_ja_tasks
-            list but are not running - thus we may not print usage for those */
-         if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING)
-            continue;
-
-         printf("%-16s %11d:   ", "usage", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-
-         wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
-
-         /* master task */
-         SUM_UP_JATASK_USAGE(jatep, wallclock, USAGE_ATTR_WALLCLOCK);
-         SUM_UP_JATASK_USAGE(jatep, cpu, USAGE_ATTR_CPU);
-         SUM_UP_JATASK_USAGE(jatep, mem, USAGE_ATTR_MEM);
-         SUM_UP_JATASK_USAGE(jatep, io, USAGE_ATTR_IO);
-         SUM_UP_JATASK_USAGE(jatep, vmem, USAGE_ATTR_VMEM);
-         SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
-         SUM_UP_JATASK_USAGE(jatep, rss, USAGE_ATTR_RSS);
-         SUM_UP_JATASK_USAGE(jatep, maxrss, USAGE_ATTR_MAXRSS);
-
-         /* slave tasks */
-         for_each_ep(pe_task_ep, lGetList(jatep, JAT_task_list)) {
-            // we do not sum up wallclock usage per pe task
-            SUM_UP_PETASK_USAGE(pe_task_ep, cpu, USAGE_ATTR_CPU);
-            SUM_UP_PETASK_USAGE(pe_task_ep, mem, USAGE_ATTR_MEM);
-            SUM_UP_PETASK_USAGE(pe_task_ep, io, USAGE_ATTR_IO);
-            SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
-            SUM_UP_PETASK_USAGE(pe_task_ep, maxvmem, USAGE_ATTR_MAXVMEM);
-            SUM_UP_PETASK_USAGE(pe_task_ep, rss, USAGE_ATTR_RSS);
-            SUM_UP_PETASK_USAGE(pe_task_ep, maxrss, USAGE_ATTR_MAXRSS);
+         // show task state
+         {
+            // create state string and show it
+            char state_string[8];
+            u_long32 state = jatask_combine_state_and_status_for_output(job, jatep);
+            job_get_state_string(state_string, state);
+            printf("%-16s %11d:   %s\n", "job_state", static_cast<int>(lGetUlong(jatep, JAT_task_number)), state_string);
          }
 
+         // show job usage information
          {
+            /* jobs whose job start orders were not processed to the end
+               due to a qmaster/schedd collision appear in the JB_ja_tasks
+               list but are not running - thus we may not print usage for those */
+            if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING)
+               continue;
+
+            printf("%-16s %11d:   ", "usage", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
+
+            double wallclock, cpu, mem, io, vmem, maxvmem, rss, maxrss;
+            wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
+
+            /* master task */
+            SUM_UP_JATASK_USAGE(jatep, wallclock, USAGE_ATTR_WALLCLOCK);
+            SUM_UP_JATASK_USAGE(jatep, cpu, USAGE_ATTR_CPU);
+            SUM_UP_JATASK_USAGE(jatep, mem, USAGE_ATTR_MEM);
+            SUM_UP_JATASK_USAGE(jatep, io, USAGE_ATTR_IO);
+            SUM_UP_JATASK_USAGE(jatep, vmem, USAGE_ATTR_VMEM);
+            SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
+            SUM_UP_JATASK_USAGE(jatep, rss, USAGE_ATTR_RSS);
+            SUM_UP_JATASK_USAGE(jatep, maxrss, USAGE_ATTR_MAXRSS);
+
+            /* slave tasks */
+            for_each_ep(pe_task_ep, lGetList(jatep, JAT_task_list)) {
+               // we do not sum up wallclock usage per pe task
+               SUM_UP_PETASK_USAGE(pe_task_ep, cpu, USAGE_ATTR_CPU);
+               SUM_UP_PETASK_USAGE(pe_task_ep, mem, USAGE_ATTR_MEM);
+               SUM_UP_PETASK_USAGE(pe_task_ep, io, USAGE_ATTR_IO);
+               SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
+               SUM_UP_PETASK_USAGE(pe_task_ep, maxvmem, USAGE_ATTR_MAXVMEM);
+               SUM_UP_PETASK_USAGE(pe_task_ep, rss, USAGE_ATTR_RSS);
+               SUM_UP_PETASK_USAGE(pe_task_ep, maxrss, USAGE_ATTR_MAXRSS);
+            }
+
             DSTRING_STATIC(wallclock_string, 32);
             DSTRING_STATIC(cpu_string, 32);
             DSTRING_STATIC(vmem_string, 32);
@@ -668,131 +682,121 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                    (rss == 0.0) ? "N/A" : sge_dstring_get_string(&rss_string),
                    (maxrss == 0.0) ? "N/A" : sge_dstring_get_string(&maxrss_string));
          }
-      }
-   }
 
-   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0 && show_binding) {
-      const lListElem *jatep;
+         // show binding information
+         if (show_binding) {
+            const lListElem *usage_elem;
+            const char *binding_inuse = nullptr;
 
-      for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         const lListElem *usage_elem;
-         const char *binding_inuse = nullptr;
+            if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
+               continue;
+            }
+            for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
+               const char *binding_name = "binding_inuse";
+               const char *usage_name = lGetString(usage_elem, UA_name);
 
-         if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
-            continue;
-         }
-         for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
-            const char *binding_name = "binding_inuse";
-            const char *usage_name = lGetString(usage_elem, UA_name);
-
-            if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
-               binding_inuse = strstr(usage_name, "!");
-               if (binding_inuse != nullptr) {
-                  binding_inuse++;
+               if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
+                  binding_inuse = strstr(usage_name, "!");
+                  if (binding_inuse != nullptr) {
+                     binding_inuse++;
+                  }
+                  break;
                }
+            }
+            printf("%-16s %11d:   %s\n", "binding",
+                   static_cast<int>(lGetUlong(jatep, JAT_task_number)), binding_inuse != nullptr ? binding_inuse : "NONE");
+         }
+
+         // show granted host list
+         {
+            // If we do not have the list then skip the output
+            if (lGetPosViaElem(jatep, JAT_granted_destin_identifier_list, SGE_NO_ABORT) < 0) {
                break;
             }
-         }
-         printf("%-16s %11d:   %s\n", "binding",
-                static_cast<int>(lGetUlong(jatep, JAT_task_number)), binding_inuse != nullptr ? binding_inuse : "NONE");
-      }
-   }
 
-   /* OUTPUT for RSMAP resources */
-   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      const lListElem *jatep = nullptr;
+            // get the list of granted hosts and make it unique
+            lList *gdil_unique = gdil_make_host_unique(lGetList(jatep, JAT_granted_destin_identifier_list));
 
-      // show granted host list
-      for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
-         // If we do not have the list then skip the output
-         if (lGetPosViaElem(jatep, JAT_granted_destin_identifier_list, SGE_NO_ABORT) < 0) {
-            break;
-         }
+            // skip tasks that have not been scheduled so far
+            if (gdil_unique == nullptr) {
+               continue;
+            }
 
-         // get the list of granted hosts and make it unique
-         lList *gdil_unique = gdil_make_host_unique(lGetList(jatep, JAT_granted_destin_identifier_list));
+            // print the task number and the list of granted hosts
+            printf("%-16s %11d:   ", "exec_host_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
+            int fields[] = {JG_qhostname, JG_slots, 0};
+            const char *delimiter[] = {":", ", ", "\n"};
+            uni_print_list(stdout, nullptr, 0, gdil_unique, fields, delimiter, 0);
 
-         // skip tasks that have not been scheduled so far
-         if (gdil_unique == nullptr) {
-            continue;
+
+            // free the list of granted hosts
+            lFreeList(&gdil_unique);
          }
 
-         // print the task number and the list of granted hosts
-         printf("%-16s %11d:   ", "exec_host_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-         int fields[] = {JG_qhostname, JG_slots, 0};
-         const char *delimiter[] = {":", ", ", "\n"};
-         uni_print_list(stdout, nullptr, 0, gdil_unique, fields, delimiter, 0);
+         // show start time of each task
+         {
+            DSTRING_STATIC(time_ds, 32);
 
+            printf("%-16s %11d:   %s\n", "start_time",
+                   static_cast<int>(lGetUlong(jatep, JAT_task_number)),
+                   sge_ctime64(lGetUlong64(jatep, JAT_start_time), &time_ds));
+         }
 
-         // free the list of granted hosts
-         lFreeList(&gdil_unique);
-      }
+         // show granted resources
+         {
+            const lListElem *resu = nullptr;
+            bool first_task = true;
+            bool is_first_remap = true;
+            dstring task_resources = DSTRING_INIT;
+            const char *resource_ids = nullptr;
 
-      // show start time of each task
-      for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
-         DSTRING_STATIC(time_ds, 32);
+            /* go through all RSMAP resources for the particular task and create a string */
+            for_each_ep (resu, lGetList(jatep, JAT_granted_resources_list)) {
+               if (lGetUlong(resu, GRU_type) == GRU_RESOURCE_MAP_TYPE) {
+                  const char *name = lGetString(resu, GRU_name);
+                  const char *host = lGetHost(resu, GRU_host);
+                  const lList *ids = lGetList(resu, GRU_resource_map_list);
 
-         printf("%-16s %11d:   %s\n", "start_time",
-                static_cast<int>(lGetUlong(jatep, JAT_task_number)),
-                sge_ctime64(lGetUlong64(jatep, JAT_start_time), &time_ds));
-      }
-
-      for_each_ep (jatep, lGetList(job, JB_ja_tasks)) {
-         const lListElem *resu = nullptr;
-         bool first_task = true;
-         bool is_first_remap = true;
-         dstring task_resources = DSTRING_INIT;
-         const char *resource_ids = nullptr;
-
-         /* go through all RSMAP resources for the particular task and create a string */
-         for_each_ep (resu, lGetList(jatep, JAT_granted_resources_list)) {
-            if (lGetUlong(resu, GRU_type) == GRU_RESOURCE_MAP_TYPE) {
-               const char *name = lGetString(resu, GRU_name);
-               const char *host = lGetHost(resu, GRU_host);
-               const lList *ids = lGetList(resu, GRU_resource_map_list);
-
-               if (name != nullptr && ids != nullptr && host != nullptr) {
-                  if (is_first_remap) {
-                     is_first_remap = false;
-                  } else {
-                     sge_dstring_append(&task_resources, ",");
+                  if (name != nullptr && ids != nullptr && host != nullptr) {
+                     if (is_first_remap) {
+                        is_first_remap = false;
+                     } else {
+                        sge_dstring_append(&task_resources, ",");
+                     }
+                     sge_dstring_append(&task_resources, name);
+                     sge_dstring_append(&task_resources, "=");
+                     sge_dstring_append(&task_resources, host);
+                     sge_dstring_append(&task_resources, "=");
+                     sge_dstring_append(&task_resources, "(");
+                     std::string id_buffer;
+                     sge_dstring_append(&task_resources, granted_res_get_id_string(id_buffer, ids));
+                     sge_dstring_append(&task_resources, ")");
                   }
-                  sge_dstring_append(&task_resources, name);
-                  sge_dstring_append(&task_resources, "=");
-                  sge_dstring_append(&task_resources, host);
-                  sge_dstring_append(&task_resources, "=");
-                  sge_dstring_append(&task_resources, "(");
-                  std::string id_buffer;
-                  sge_dstring_append(&task_resources, granted_res_get_id_string(id_buffer, ids));
-                  sge_dstring_append(&task_resources, ")");
                }
             }
+            /* print out granted resources */
+            resource_ids = sge_dstring_get_string(&task_resources);
+
+            printf("%-16s %11d:   %s\n", first_task ? "resource_map" : " ",
+                   (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
+            if (first_task) {
+               first_task = false;
+            }
+
+            sge_dstring_free(&task_resources);
          }
-         /* print out granted resources */
-         resource_ids = sge_dstring_get_string(&task_resources);
 
-         printf("%-16s %11d:   %s\n", first_task ? "resource_map" : " ",
-                (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
-         if (first_task) {
-            first_task = false;
-         }
+         // show messages (error reasons) for each task
+         {
+            const lListElem *mesobj;
 
-         sge_dstring_free(&task_resources);
-      }
-   }
+            for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
+               const char *message = lGetString(mesobj, QIM_message);
 
-   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
-      const lListElem *jatep;
-
-      for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         const lListElem *mesobj;
-
-         for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
-            const char *message = lGetString(mesobj, QIM_message);
-
-            if (message != nullptr) {
-               printf(SFN " %11d:   %s\n", "error reason",
-                      static_cast<int>(lGetUlong(jatep, JAT_task_number)), message);
+               if (message != nullptr) {
+                  printf(SFN " %11d:   " SFN "\n", "error reason",
+                         static_cast<int>(lGetUlong(jatep, JAT_task_number)), message);
+               }
             }
          }
       }
