@@ -362,12 +362,28 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Check if systemd is available
+    *
+    * This function checks if the systemd library is loaded and available for use.
+    * It returns true if the library is loaded, otherwise false.
+    *
+    * @return true if systemd is available, false otherwise
+    */
    bool
    Systemd::is_systemd_available() {
       // Check if systemd is available
       return lib_handle != nullptr;
    }
 
+   /*!
+    * @brief Check if we are running as a systemd service
+    *
+    * This function checks if the current process is running as a systemd service.
+    * It returns true if the process is running as a service, otherwise false.
+    *
+    * @return true if running as a service, false otherwise
+    */
    bool
    Systemd::is_running_as_service() {
       return running_as_service;
@@ -375,10 +391,22 @@ namespace ocs::uti {
 
    //================================================================================
    // instance methods
+
+   /*!
+    * @brief Constructor for the Systemd class
+    *
+    * This constructor initializes the Systemd object and sets the bus pointer to nullptr.
+    */
    Systemd::Systemd()
       : bus(nullptr) {
    }
 
+   /*!
+    * @brief Destructor for the Systemd class
+    *
+    * This destructor cleans up the Systemd object by unreferencing the bus pointer
+    * if it is not nullptr.
+    */
    Systemd::~Systemd() {
       // Destructor implementation
       if (bus != nullptr) {
@@ -387,6 +415,16 @@ namespace ocs::uti {
       }
    }
 
+   /*!
+    * @brief Connect to the systemd bus
+    *
+    * This function attempts to connect to the systemd bus using the sd_bus_open_system_func.
+    * If the connection is successful, it returns true. If there is an error, it sets the
+    * error_dstr with an appropriate error message and returns false.
+    *
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the connection was successful, false otherwise
+    */
    bool
    Systemd::connect(dstring *error_dstr) {
       bool ret = true;
@@ -400,12 +438,33 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Check if the systemd bus is connected
+    *
+    * This function checks if the bus pointer is not nullptr, indicating that a connection
+    * to the systemd bus has been established.
+    *
+    * @return true if connected to the systemd bus, false otherwise
+    */
    bool
    Systemd::connected() const {
       return bus != nullptr;
    }
 
-   // @todo no need to have different method names (BUT the name expresses the type of input)
+   /*!
+    * @brief Call a systemd method with a string input and get an object output
+    *
+    * This function calls a systemd method with a string input and retrieves an object output.
+    * An object is represented as a string in this context, which is the path to the object.
+    * It handles retries in case of EINTR errors and returns true if the call was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param method The name of the systemd method to call
+    * @param input The input string to pass to the method
+    * @param output A reference to a string where the output will be stored
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the method call was successful, false otherwise
+    */
    bool
    Systemd::sd_bus_method_s_o(const std::string &method, std::string &input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
@@ -455,6 +514,20 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Call a systemd method with a uint32_t input and get an object output
+    *
+    * This function calls a systemd method with a uint32_t input and retrieves an object output.
+    * An object is represented as a string in this context, which is the path to the object.
+    * It handles retries in case of EINTR errors and returns true if the call was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param method The name of the systemd method to call
+    * @param input The input uint32_t to pass to the method
+    * @param output A reference to a string where the output will be stored
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the method call was successful, false otherwise
+    */
    bool
    Systemd::sd_bus_method_u_o(const std::string &method, uint32_t input, std::string &output, dstring *error_dstr) const {
       bool ret = true;
@@ -504,6 +577,19 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Move a shepherd process to a systemd scope
+    *
+    * This function moves a shepherd process identified by its PID to a systemd scope.
+    * It first checks if the scope exists, and if not, it creates it. If the scope already
+    * exists, it attaches the shepherd process to it. It handles retries in case of EINTR errors
+    * and returns true if the operation was successful, otherwise it sets the error_dstr with an
+    * appropriate error message.
+    *
+    * @param pid The PID of the shepherd process to move
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -606,6 +692,26 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Attach a PID to a systemd scope
+    *
+    * This function attaches a given PID to a specified systemd scope.
+    * If the operation fails as the scope does not exist, it sets the scope_not_exists flag to true and
+    * returns false. It handles retries in case of EINTR errors and returns true
+    * if the operation was successful, otherwise it sets the error_dstr with an
+    * appropriate error message.
+    *
+    * Background for the scope_not_exists flag: We can run into race conditions:
+    * - We call GetUnit to check if the scope exists.
+    * - If it exists, we call AttachProcessesToUnit to attach the PID to the scope.
+    * - But between GetUnit and AttachProcessesToUnit, the scope might have been removed.
+    *
+    * @param scope The name of the systemd scope to attach the PID to
+    * @param pid The PID to attach to the scope
+    * @param scope_not_exists A reference to a boolean that will be set to true if the scope does not exist
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::attach_pid_to_scope(const std::string &scope, pid_t pid, bool &scope_not_exists, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -654,6 +760,30 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Create a systemd scope with a given PID
+    *
+    * This function creates a systemd scope with the specified name and slice,
+    * and attaches the given PID to it. It also sets properties for the scope.
+    * If the scope already exists, it sets the scope_already_exists flag to true
+    * and returns false.
+    * It handles retries in case of EINTR errors and returns true if the operation
+    * was successful, otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * Background for the scope_already_exists flag: We can run into race conditions:
+    * - We call GetUnit to check if the scope exists.
+    * - If it does not exist, we call this function to create it.
+    * - But between GetUnit and StartTransientUnit, the scope might have been created by another process,
+    *   e.g., a second execd child (sge_shepherd) having been forked and calling move_shepherd_to_scope().
+    *
+    * @param scope The name of the systemd scope to create
+    * @param slice The name of the systemd slice to use
+    * @param properties A map of properties to set for the scope
+    * @param pid The PID to attach to the scope
+    * @param scope_already_exists A reference to a boolean that will be set to true if the scope already exists
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::create_scope_with_pid(const std::string &scope, const std::string &slice,
                                   const SystemdProperties_t &properties, pid_t pid, bool &scope_already_exists,
@@ -913,6 +1043,17 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Wait for a systemd job signal
+    *
+    * This function subscribes to a systemd job signal, allowing the caller to wait for
+    * specific job events, such as JobRemoved. It returns a pointer to the sd_bus_slot
+    * that can be used to receive the signals.
+    *
+    * @param signal The name of the signal to subscribe to (e.g., "JobRemoved")
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return A pointer to the sd_bus_slot for the subscribed signal, or nullptr on failure
+    */
    sd_bus_slot *
    Systemd::sd_bus_wait_for_job_subscribe(const std::string &signal, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -930,6 +1071,14 @@ namespace ocs::uti {
       DRETURN(slot);
    }
 
+   /*!
+    * @brief Unsubscribe from a systemd job signal
+    *
+    * This function unsubscribes from a systemd job signal by releasing the match pattern
+    * associated with the sd_bus_slot. It sets the slot pointer to nullptr after unreferencing it.
+    *
+    * @param slot A pointer to the sd_bus_slot to unsubscribe from
+    */
    void
    Systemd::sd_bus_wait_for_job_unsubscribe(sd_bus_slot **slot) const {
       // release the match pattern
@@ -937,6 +1086,19 @@ namespace ocs::uti {
       slot = nullptr;
    }
 
+   /*!
+    * @brief Wait for a systemd job to complete
+    *
+    * This function waits for a specific systemd job to complete by processing bus messages
+    * and checking for the JobRemoved signal. It returns true if the job was completed successfully,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    * It waits with a 5s timeout for the job to complete, if it times out it returns an error.
+    * @note we might want to adjust the timeout based on experience, or make it configurable.
+    *
+    * @param job_path The path of the job to wait for completion
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the job was completed successfully, false otherwise
+    */
    bool
    Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -1014,6 +1176,20 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Get a string property from a systemd unit
+    *
+    * This function retrieves a property from a specified systemd unit.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param interface The interface of the systemd unit (e.g., "Unit" or "Scope")
+    * @param unit The name of the systemd unit to query
+    * @param property The name of the property to retrieve
+    * @param value A reference to a string where the property value will be stored
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -1077,6 +1253,20 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Get an integer property from a systemd unit
+    *
+    * This function retrieves a property from a specified systemd unit.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param interface The interface of the systemd unit (e.g., "Unit" or "Scope")
+    * @param unit The name of the systemd unit to query
+    * @param property The name of the property to retrieve
+    * @param value A reference to a uint64_t where the property value will be stored
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
@@ -1136,6 +1326,17 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /*!
+    * @brief Stop a systemd unit
+    *
+    * This function stops a specified systemd unit by calling the StopUnit method.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param unit The name of the systemd unit to stop
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::stop_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
@@ -1173,6 +1374,17 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Freeze (suspend) a systemd unit
+    *
+    * This function stops a specified systemd unit by calling the StopUnit method.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param unit The name of the systemd unit to stop
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::freeze_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
@@ -1208,6 +1420,17 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Thaw (unsuspend) a systemd unit
+    *
+    * This function thaws (unsuspends) a specified systemd unit by calling the ThawUnit method.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * @param unit The name of the systemd unit to thaw
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::thaw_unit(const std::string &unit, dstring *error_dstr) const {
       bool ret = true;
@@ -1243,6 +1466,23 @@ namespace ocs::uti {
       return ret;
    }
 
+   /*!
+    * @brief Send a signal to a systemd unit
+    *
+    * This function sends a signal to a specified systemd unit by calling the KillUnit method.
+    * It handles retries in case of EINTR errors and returns true if the operation was successful,
+    * otherwise it sets the error_dstr with an appropriate error message.
+    *
+    * It uses the KillUnit method of the systemd Manager interface to send a signal to the unit.
+    * Depending on the `only_main` parameter, it can signal either the main process of the unit
+    * or all processes associated with the unit.
+    *
+    * @param unit The name of the systemd unit to signal
+    * @param signal The signal number to send (e.g., SIGTERM)
+    * @param only_main If true, only the main process of the unit will be signaled
+    * @param error_dstr A pointer to a dstring where error messages will be stored
+    * @return true if the operation was successful, false otherwise
+    */
    bool
    Systemd::signal_unit(const std::string &unit, int signal, bool only_main, dstring *error_dstr) const {
       bool ret = true;

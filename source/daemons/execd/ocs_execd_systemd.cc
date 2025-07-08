@@ -28,7 +28,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/ocs_Systemd.h"
 
-#include "execd_systemd.h"
+#include "ocs_execd_systemd.h"
 
 #include <sge_conf.h>
 #include <sge_profiling.h>
@@ -42,6 +42,11 @@ extern lList *ptf_jobs;
 namespace ocs::execd {
 #if defined(OCS_WITH_SYSTEMD)
 
+   /*!
+    * @brief Initialize the Systemd integration for execd.
+    * This function checks if Systemd integration is available and if the process is running as a Systemd service.
+    * It initializes the Systemd library and logs the Systemd version and cgroup version.
+    */
    void execd_systemd_init() {
       // try to initialize the Systemd integration,
       // create an instance of Systemd and try to connect to the system bus,
@@ -61,6 +66,17 @@ namespace ocs::execd {
       }
    }
 
+   /*!
+    * @brief Move the shepherd process to the Systemd scope.
+    *
+    * This function moves the shepherd process to the Systemd scope if sge_execd is running as a service.
+    * Reason: When sge_execd is running as a service, shutting down the service would also kill all the
+    * sge_shepherd processes, which is not desired. E.g., we want to be able to update the sge_execd
+    * while we have running jobs (with their shepherds also staying alive).
+    *
+    * It connects to Systemd and attempts to move the shepherd process to the appropriate scope.
+    * Returns true on success, false on failure.
+    */
    bool
    execd_move_shepherd_to_scope() {
       bool ret = true;
@@ -95,6 +111,20 @@ namespace ocs::execd {
       return ret;
    }
 
+   /*!
+    * @brief Get one value from Systemd for a specific scope.
+    *
+    * This function retrieves one usage value from Systemd for a given scope and updates the usage_list.
+    * A scaling factor can be applied to convert the value to the desired unit
+    * (e.g., converting CPUUsageNSec from nanoseconds to seconds).
+    *
+    * @param systemd The Systemd object used to interact with the Systemd bus.
+    * @param scope The scope for which the usage values are retrieved.
+    * @param usage_list The list where the usage values will be stored.
+    * @param property_str The property to retrieve from Systemd (e.g., "CPUUsageNSec").
+    * @param usage_attr_str The attribute name in the usage_list (e.g., USAGE_ATTR_CPU).
+    * @param factor The factor to convert the value (e.g., 1.0 / 1000000000.0 for nanoseconds to seconds).
+    */
    static void
    ptf_get_usage_value_from_systemd(ocs::uti::Systemd &systemd, std::string &scope, lList *usage_list, const char *property_str, const char *usage_attr_str, double factor) {
       DENTER(TOP_LAYER);
@@ -120,6 +150,22 @@ namespace ocs::execd {
    }
 
 #if 0
+   /*!
+    * @brief Get two usage values from Systemd for a specific scope.
+    *
+    * This function retrieves and sums up two usage values from Systemd for a given scope and updates the usage_list.
+    * For example, it can be used to get both IOReadBytes and IOWriteBytes for a job scope and combine them
+    * into the one USAGE_ATTR_IO value.
+    * A scaling factor can be applied to convert the values to the desired unit.
+    *
+    * @param systemd The Systemd object used to interact with the Systemd bus.
+    * @param scope The scope for which the usage values are retrieved.
+    * @param usage_list The list where the usage values will be stored.
+    * @param property1_str The first property to retrieve from Systemd (e.g., "IOReadBytes").
+    * @param property2_str The second property to retrieve from Systemd (e.g., "IOWriteBytes").
+    * @param usage_attr_str The attribute name in the usage_list (e.g., USAGE_ATTR_IO).
+    * @param factor The factor to convert the value (e.g., 1.0 for bytes).
+    */
    static void
    ptf_get_usage_value_from_systemd2(ocs::uti::Systemd &systemd, std::string &scope, lList *usage_list, const char *property1_str, const char *property2_str, const char *usage_attr_str, double factor) {
       DENTER(TOP_LAYER);
@@ -149,6 +195,17 @@ namespace ocs::execd {
    }
 #endif
 
+   /*!
+    * @brief Get usage information from Systemd for all jobs, ja_tasks, and pe_tasks.
+    *
+    * This function retrieves usage information from Systemd for all jobs, ja_tasks, and pe_tasks
+    * that are currently active. It updates the usage_list for each job with
+    * CPU, memory, and optionally IO usage values.
+    * @note There are a number of open issues here:
+    *       - CS-1389: IO needs to be re-considered, as the values delivered by Systemd looked incorrect, at least
+    *                  on certain OSes, possibly depending on the Systemd or the Cgroup version.
+    *       - CS-1398: Re-evaluate how we handle MemoryPeak, as it is not available on all OSes and Systemd versions.
+    */
    void
    ptf_get_usage_from_systemd() {
       DENTER(TOP_LAYER);
@@ -227,6 +284,14 @@ namespace ocs::execd {
 
 #endif
 
+   /*!
+    * @brief Check if execd should use PDC for usage collection.
+    *
+    * This function checks the configuration to determine if PDC should be used for usage collection.
+    * It returns true if PDC is enabled or hybrid mode is configured, otherwise false.
+    *
+    * @return true if PDC is used for usage collection, false otherwise.
+    */
    bool
    execd_use_pdc_for_usage_collection() {
       bool ret = true;
@@ -247,6 +312,14 @@ namespace ocs::execd {
       return ret;
    }
 
+   /*!
+    * @brief Check if execd should use Systemd for usage collection.
+    *
+    * This function checks the configuration to determine if Systemd should be used for usage collection.
+    * It returns true if Systemd is enabled and available, and usage collection is not set to NONE or PDC.
+    *
+    * @return true if Systemd is used for usage collection, false otherwise.
+    */
    bool
    execd_use_systemd_for_usage_collection() {
       bool ret = false;
@@ -268,6 +341,15 @@ namespace ocs::execd {
       return ret;
    }
 
+   /*!
+    * @brief Check if execd is in hybrid usage collection mode.
+    *
+    * This function checks the configuration to determine if execd is in hybrid usage collection mode.
+    * Hybrid mode means that both PDC and Systemd are used for usage collection.
+    * It returns true if hybrid mode is enabled, otherwise false.
+    *
+    * @return true if execd is in hybrid usage collection mode, false otherwise.
+    */
    bool
    execd_is_hybrid_usage_collection() {
       bool hybrid_mode = mconf_get_usage_collection() == USAGE_COLLECTION_HYBRID;

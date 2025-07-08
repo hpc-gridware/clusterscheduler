@@ -33,6 +33,13 @@ namespace ocs {
    bool g_use_systemd = true;
    ocs::uti::SystemdProperties_t g_systemd_properties;
 
+   /**
+    * @brief Initialize the Systemd integration.
+    *
+    * This function checks if Systemd integration is enabled via the configuration
+    * and initializes the Systemd library if it is enabled. It also checks if the
+    * shepherd is running under Systemd control.
+    */
    void shepherd_systemd_init() {
 #if defined (OCS_WITH_SYSTEMD)
       // we can enable/disable systemd integration via execd_param ENABLE_SYSTEMD
@@ -67,13 +74,19 @@ namespace ocs {
    }
 
 #if defined (OCS_WITH_SYSTEMD)
+   /**
+    * @brief Adds accounting settings to the systemd properties.
+    *
+    * This function sets CPU and Memory accounting properties for systemd.
+    * If cgroup version 2 is used, it also enables IO accounting.
+    * @note We enable IOAccounting, but we actually do not use the IO values delivered
+    *       in sge_execd for the `io` usage value, see CS-1389.
+    * @note We might want to enable further accounting settings in the future,
+    *       like IPAccounting, see CS-1390.
+    */
    static void
    add_accounting_settings() {
       if (g_use_systemd) {
-         // @todo there would also be
-         //   - BlockAccounting (deprecated by IOAccounting)
-         //   - IPAccounting
-         //   - TasksAccounting
          g_systemd_properties["CPUAccounting"] = true;
          g_systemd_properties["MemoryAccounting"] = true;
          if (ocs::uti::Systemd::get_cgroup_version() == 2) {
@@ -129,12 +142,21 @@ namespace ocs {
    }
 #endif
 
-   // needs to be called before switching to the job user, when we can still become start_user (root)
+   /**
+    * @brief Moves the shepherd child process to the job scope.
+    *
+    * This function is used to move the shepherd child process (the job) to the job scope
+    * in systemd. It should be called before switching to the job user, when we can still become
+    * the start user (root).
+    *
+    * @param pid - The PID of the shepherd child process to move.
+    *
+    * @note This function is only applicable when systemd integration is enabled.
+    */
    void
    move_shepherd_child_to_job_scope(pid_t pid) {
    // move the shepherd child to the job scope
    // we do this only for the job, not for prolog, epilog, pe_start, pe_stop
-   // @todo we might want to add an execd_params whether to account prolog etc. to the job
 #if defined (OCS_WITH_SYSTEMD)
    if (g_use_systemd) {
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);

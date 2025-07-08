@@ -30,7 +30,7 @@ add_executable(
       execd_kill_execd.cc
       execd_profiling.cc
       execd_signal_queue.cc
-      execd_systemd.cc
+        ocs_execd_systemd.cc
       execd_ticket.cc
       get_path.cc
       job_report_execd.cc
