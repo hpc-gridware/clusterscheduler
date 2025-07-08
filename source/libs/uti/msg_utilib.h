@@ -225,7 +225,7 @@
 #define MSG_SYSTEMD_CANNOT_CREATE_MESSAGE_CALL_SIS _MESSAGE(59258, _("cannot create message for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_APPEND_TO_MESSAGE_SSIS  _MESSAGE(59259, _("cannot append " SFN " to message for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_OPEN_CONTAINER_SSIS     _MESSAGE(59260, _("cannot open container " SFN " for systemd method " SFN ": error %d: " SFN4))
-#define MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS    _MESSAGE(59261, _("cannot open container " SFN " for systemd method " SFN ": error %d: " SFN4))
+#define MSG_SYSTEMD_CANNOT_CLOSE_CONTAINER_SSIS    _MESSAGE(59261, _("cannot close container " SFN " for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_APPEND_PROPERTY_SSIS    _MESSAGE(59262, _("cannot append property " SFN " to message for systemd method " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_READ_PROPERTY_RESULT_SIS  _MESSAGE(59263, _("cannot read result value of property " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_ENCODE_PATH_SIS         _MESSAGE(59264, _("cannot encode path for unit " SFN ": error %d: " SFN4))

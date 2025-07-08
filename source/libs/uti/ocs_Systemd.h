@@ -150,7 +150,7 @@ namespace ocs::uti {
          bool stop_unit(const std::string &unit, dstring *error_dstr) const;
          bool freeze_unit(const std::string &unit, dstring *error_dstr) const;
          bool thaw_unit(const std::string &unit, dstring *error_dstr) const;
-         bool signal_unit(const std::string &unit, int signal, dstring *error_dstr) const;
+         bool signal_unit(const std::string &unit, int signal, bool only_main, dstring *error_dstr) const;
    };
 
 #endif

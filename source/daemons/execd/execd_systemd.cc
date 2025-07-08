@@ -107,11 +107,9 @@ namespace ocs::execd {
          uint64_t value{};
          std::string property{property_str};
          if (systemd.sd_bus_get_property("Scope", scope, property, value, &error_dstr)) {
-            if (usage_elem != nullptr) {
-               double usage_value = value * factor;
-               lSetDouble(usage_elem, UA_value, usage_value);
-               DPRINTF("==> Updated usage %s for scope '%s': %f", usage_attr_str, scope.c_str(), usage_value);
-            }
+            double usage_value = value * factor;
+            lSetDouble(usage_elem, UA_value, usage_value);
+            DPRINTF("==> Updated usage %s for scope '%s': %f", usage_attr_str, scope.c_str(), usage_value);
          } else {
             // I18N, and the message should already contain all necessary information (?)
             WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));

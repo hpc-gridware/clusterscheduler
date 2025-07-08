@@ -937,85 +937,85 @@ namespace ocs::uti {
       slot = nullptr;
    }
 
-bool
-Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
-   DENTER(TOP_LAYER);
-   DPRINTF("==> sd_bus_wait_for_job_completion(%s)", job_path.c_str());
+   bool
+   Systemd::sd_bus_wait_for_job_completion(const std::string &job_path, dstring *error_dstr) const {
+      DENTER(TOP_LAYER);
+      DPRINTF("==> sd_bus_wait_for_job_completion(%s)", job_path.c_str());
 
-   bool ret = true;
+      bool ret = true;
 
-   // Wait for the job to finish.
-   // @todo What is an appropriate timeout?
-   //       1 second was not enough in some cases, so we use 5 seconds.
-   //       Make it configurable?
-   u_long64 timeout = sge_get_gmt64() + 5000000; // 5 second timeout
-   while (ret == true) {
-      if (sge_get_gmt64() > timeout) {
-         sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for completion of job " SFN, __func__, job_path.c_str());
-         ret = false;
-         break;
-      }
-
-      // wait for the next signal
-      sd_bus_message *m = nullptr;
-      int r = sd_bus_process_func(bus, &m);
-      DPRINTF("sd_bus_process_func(bus, &m) returned %d", r);
-      if (r < 0) {
-         if (-r != EINTR) {
-            // We ignore EINTR, as we might get it, e.g., when sge_execd gets a SIGCHILD from an exiting sge_shepherd.
-            sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
+      // Wait for the job to finish.
+      // @todo What is an appropriate timeout?
+      //       1 second was not enough in some cases, so we use 5 seconds.
+      //       Make it configurable?
+      u_long64 timeout = sge_get_gmt64() + 5000000; // 5 second timeout
+      while (ret == true) {
+         if (sge_get_gmt64() > timeout) {
+            sge_dstring_sprintf(error_dstr, SFN ": timeout waiting for completion of job " SFN, __func__, job_path.c_str());
             ret = false;
+            break;
          }
-      } else {
-         // 0 means we need to wait before calling sd_bus_process again
-         if (r == 0) {
-            // we wait with timeout
-            // sd_bus_wait() returns 0 on timeout, not an error, final timeout handled above
-            // does it actually make sense to use a timeout < our final timeout? We use 100ms for now.
-            r = sd_bus_wait_func(bus, 100000);
-            DPRINTF("sd_bus_wait_func(bus, nullptr) returned %d", r);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, SFN ": waiting for bus failed: error %d: " SFN, __func__, r, strerror(-r));
+
+         // wait for the next signal
+         sd_bus_message *m = nullptr;
+         int r = sd_bus_process_func(bus, &m);
+         DPRINTF("sd_bus_process_func(bus, &m) returned %d", r);
+         if (r < 0) {
+            if (-r != EINTR) {
+               // We ignore EINTR, as we might get it, e.g., when sge_execd gets a SIGCHILD from an exiting sge_shepherd.
+               sge_dstring_sprintf(error_dstr, SFN ": processing bus failed: error %d: " SFN, __func__, r, strerror(-r));
                ret = false;
             }
-            // do the next sd_bus_process call
-            sd_bus_message_unref_func(m);
-            continue;
+         } else {
+            // 0 means we need to wait before calling sd_bus_process again
+            if (r == 0) {
+               // we wait with timeout
+               // sd_bus_wait() returns 0 on timeout, not an error, final timeout handled above
+               // does it actually make sense to use a timeout < our final timeout? We use 100ms for now.
+               r = sd_bus_wait_func(bus, 100000);
+               DPRINTF("sd_bus_wait_func(bus, nullptr) returned %d", r);
+               if (r < 0) {
+                  sge_dstring_sprintf(error_dstr, SFN ": waiting for bus failed: error %d: " SFN, __func__, r, strerror(-r));
+                  ret = false;
+               }
+               // do the next sd_bus_process call
+               sd_bus_message_unref_func(m);
+               continue;
+            }
          }
-      }
 
-      // sd_bus_process read signal
-      if (ret && m != nullptr) {
-         if (strcmp(sd_bus_message_get_member_func(m), "JobRemoved") == 0) {
-            DPRINTF("got JobRemoved signal");
-            const char *completed_job_path = nullptr;
-            // message contains for a signal:
-            // `u`: job id, e.g. `1234`
-            // `o`: job path, e.g. `/org/freedesktop/systemd1/job/1234`
-            // `s`: status, e.g. `"done"`
-            r = sd_bus_message_read_func(m, "uos", nullptr, &completed_job_path, nullptr);
-            DPRINTF("sd_bus_message_read_func(m, \"uos\", &completed_job_path) returned %d", r);
-            if (r < 0) {
-               sge_dstring_sprintf(error_dstr, SFN ": reading job path failed: error %d: " SFN, __func__, r, strerror(-r));
-               ret = false;
-            } else {
-               DPRINTF("completed_job_path = %s", completed_job_path);
-               if (job_path.compare(completed_job_path) == 0) {
-                  sd_bus_message_unref_func(m);
-                  break; // job done
+         // sd_bus_process read signal
+         if (ret && m != nullptr) {
+            if (strcmp(sd_bus_message_get_member_func(m), "JobRemoved") == 0) {
+               DPRINTF("got JobRemoved signal");
+               const char *completed_job_path = nullptr;
+               // message contains for a signal:
+               // `u`: job id, e.g. `1234`
+               // `o`: job path, e.g. `/org/freedesktop/systemd1/job/1234`
+               // `s`: status, e.g. `"done"`
+               r = sd_bus_message_read_func(m, "uos", nullptr, &completed_job_path, nullptr);
+               DPRINTF("sd_bus_message_read_func(m, \"uos\", &completed_job_path) returned %d", r);
+               if (r < 0) {
+                  sge_dstring_sprintf(error_dstr, SFN ": reading job path failed: error %d: " SFN, __func__, r, strerror(-r));
+                  ret = false;
+               } else {
+                  DPRINTF("completed_job_path = %s", completed_job_path);
+                  if (job_path.compare(completed_job_path) == 0) {
+                     sd_bus_message_unref_func(m);
+                     break; // job done
+                  }
                }
             }
          }
+
+         sd_bus_message_unref_func(m);
       }
 
-      sd_bus_message_unref_func(m);
+      DRETURN(ret);
    }
 
-   DRETURN(ret);
-}
-
-bool
-Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const {
+   bool
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1244,7 +1244,7 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
    }
 
    bool
-   Systemd::signal_unit(const std::string &unit, int signal, dstring *error_dstr) const {
+   Systemd::signal_unit(const std::string &unit, int signal, bool only_main, dstring *error_dstr) const {
       bool ret = true;
 
       bool retry_on_interrupt = true;        // retry on EINTR
@@ -1260,7 +1260,7 @@ Systemd::sd_bus_get_property(const std::string &interface, const std::string &un
                                       nullptr,                              // return message on success (not needed)
                                       "ssi",                                // input signature
                                       unit.c_str(),                         // first argument (unit name)
-                                      "all",                                // second argument (mode), signal all processes in the unit
+                                      only_main ? "main" : "all",           // second argument (mode)
                                       signal);                              // third argument (signal number)
          if (r < 0) {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {

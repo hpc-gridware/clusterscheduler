@@ -421,6 +421,11 @@ void setrlimits(bool trace_rlimit) {
 
    // add systemd limits
    if (ocs::g_use_systemd) {
+      // We apply the minimum of rss and vmem limits.
+      // Systemd doesn't have vmem limits.
+      // So we either apply the (usually lower) rss limit
+      // or the (usually higher) vmem limit to ensure the job does not exceed with rss at least
+      // a given vmem (total memory) limit.
       sge_rlim_t h_memory = RL_MIN(h_rss, h_vmem);
       sge_rlim_t s_memory = RL_MIN(s_rss, s_vmem);
       if (h_memory != RLIM_INFINITY) {

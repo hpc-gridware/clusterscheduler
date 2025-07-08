@@ -2311,6 +2311,7 @@ InstallSystemdUnitFile()
          ;;
       *)
          $INFOTEXT "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
+         $INFOTEXT -log "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
          return 1
          ;;
    esac
@@ -2323,7 +2324,7 @@ InstallSystemdUnitFile()
    TMP_UNIT_FILE="/tmp/sge_${DAEMON_NAME}_unit_file.$$"
    sed -e "s%GENROOT%${SGE_ROOT_VAL}%g" \
        -e "s%GENCELL%${SGE_CELL_VAL}%g" \
-       -e "s%GENPRODUCT%Open Cluster Scheduler%g" \
+       -e "s%GENPRODUCT%Cluster Scheduler%g" \
        -e "s%GENSLICE%${SLICE_NAME}%" \
        $template_file > $TMP_UNIT_FILE
 
@@ -2526,46 +2527,6 @@ InstallRcScript()
    elif [ "$RC_FILE" = "freebsd" ]; then
       echo  cp $SGE_STARTUP_FILE $RC_PREFIX/sge${RC_SUFFIX}
       Execute cp $SGE_STARTUP_FILE $RC_PREFIX/sge${RC_SUFFIX}
-   elif [ "$RC_FILE" = "SGE" ]; then
-      RC_DIR="$RC_DIR.$SGE_CLUSTER_NAME"
-      echo  mkdir -p "$RC_PREFIX/$RC_DIR"
-      Execute mkdir -p "$RC_PREFIX/$RC_DIR"
-
-cat << PLIST > "$RC_PREFIX/$RC_DIR/StartupParameters.plist"
-{
-   Description = "Cluster Scheduler";
-   Provides = ("SGE");
-   Requires = ("Disks", "NFS", "Resolver");
-   Uses = ("NetworkExtensions");
-   OrderPreference = "Late";
-   Messages =
-   {
-     start = "Starting Cluster Scheduler";
-     stop = "Stopping Cluster Scheduler";
-     restart = "Restarting Cluster Scheduler";
-   };
-}
-PLIST
-
-     if [ $hosttype = "qmaster" ]; then
-        DARWIN_GEN_REPLACE="#GENMASTERRC"
-     elif [ $hosttype = "bdb" ]; then
-        DARWIN_GEN_REPLACE="#GENBDBRC"
-     else
-        DARWIN_GEN_REPLACE="#GENEXECDRC"
-     fi
-
-     if [ -f "$RC_PREFIX/$RC_DIR/$RC_FILE" ]; then
-        DARWIN_TEMPLATE="$RC_PREFIX/$RC_DIR/$RC_FILE"
-     else
-        DARWIN_TEMPLATE="util/rctemplates/darwin_template"
-     fi
-
-     Execute sed -e "s%${DARWIN_GEN_REPLACE}%${SGE_STARTUP_FILE}%g" \
-          "$DARWIN_TEMPLATE" > "$RC_PREFIX/$RC_DIR/$RC_FILE.$$"
-     Execute chmod a+x "$RC_PREFIX/$RC_DIR/$RC_FILE.$$"
-     Execute mv "$RC_PREFIX/$RC_DIR/$RC_FILE.$$" "$RC_PREFIX/$RC_DIR/$RC_FILE"
-     RC_DIR="SGE"
    else
       # if this is not System V we simple add the call to the
       # startup script to RC_FILE

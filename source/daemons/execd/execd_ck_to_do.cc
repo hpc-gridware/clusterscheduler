@@ -969,11 +969,6 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
    /* store addgrpid in job report to be sent to qmaster later on */
 {
-#if 0
-   char addgrpid_str[64];
-
-   snprintf(addgrpid_str, sizeof(addgrpid_str), pid_t_fmt, addgrpid);
-#endif
    lListElem *jr;
    if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
       lSetString(jr, JR_osjobid, addgrpid_str);
@@ -1029,10 +1024,6 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
    /* store osjobid in job report to be sent to qmaster later on */
    {
-#if 0
-      char osjobid_str[64];
-      sprintf(osjobid_str, OSJOBID_FMT, osjobid);
-#endif
       lListElem *jr;
       if ((jr=get_job_report(job_id, ja_task_id, pe_task_id)))
          lSetString(jr, JR_osjobid, osjobid_str);

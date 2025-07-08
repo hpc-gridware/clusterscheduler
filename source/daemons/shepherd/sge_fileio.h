@@ -47,13 +47,7 @@ shepherd_write_usage_file(u_long32 wait_status, int exit_status,
 bool
 shepherd_write_job_pid_file(const char *job_pid);
 
-#if 0
-// @todo never called
 bool
-shepherd_write_osjobid_file(const char *osjobid);
-#endif
-
-bool 
 shepherd_write_shepherd_about_to_exit_file();
 
 bool 

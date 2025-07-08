@@ -2939,7 +2939,7 @@ shepherd_signal_job(pid_t pid, int sig) {
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
      if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
         if (ocs::g_use_systemd) {
-            ocs::shepherd_systemd_signal_job(sig);
+            ocs::shepherd_systemd_signal_job(sig, pid > 0);
         } else {
 #  ifdef COMPILE_DC
            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {

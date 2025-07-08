@@ -522,6 +522,9 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
       with_systemd = true;
    }
 #endif
+   // If systemd is enabled we always search by both addgrp and systemd scope
+   // the USAGE_COLLECTION setting could be changed, but this shall not affect running jobs,
+   // so we cannot decide based on USAGE_COLLECTION what the search criteria are.
    if (with_systemd) {
       where = lWhere("%T(%I == %u || %I == %s)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id, JO_systemd_scope, systemd_scope);
    } else {
@@ -1162,7 +1165,7 @@ int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
     */
 #ifdef USE_DC
    if (os_job_id > 0) {
-      psWatchJob(os_job_id, systemd_scope != nullptr && mconf_get_usage_collection() == USAGE_COLLECTION_HYBRID);
+      psWatchJob(os_job_id, ocs::execd::execd_is_hybrid_usage_collection());
    }
 #else
 

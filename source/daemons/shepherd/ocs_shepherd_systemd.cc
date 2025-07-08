@@ -36,7 +36,13 @@ namespace ocs {
    void shepherd_systemd_init() {
 #if defined (OCS_WITH_SYSTEMD)
       // we can enable/disable systemd integration via execd_param ENABLE_SYSTEMD
-      g_use_systemd = std::stoi(get_conf_val("enable_systemd")) != 0;
+      const char *enable_systemd = get_conf_val("enable_systemd");
+      if (enable_systemd == nullptr) {
+         // execd didn't write config?
+         g_use_systemd = false;
+      } else {
+         g_use_systemd = std::stoi(enable_systemd) != 0;
+      }
       if (g_use_systemd) {
          // try to initialize the Systemd integration,
          // create an instance of Systemd and try to connect to the system bus,
@@ -193,7 +199,17 @@ namespace ocs {
    }
 #endif
 
-   void shepherd_systemd_signal_job(int signal) {
+   /**
+    * @brief Signals a job in the systemd scope.
+    *
+    * This function sends a signal to the job running in the systemd scope.
+    * It handles different signals like SIGKILL, SIGSTOP, and SIGCONT and uses the appropriate systemd methods.
+    * It differentiates between signaling the entire job scope or just the main process of the job.
+    *
+    * @param signal - The signal to send to the job.
+    * @param only_main - If true, only the main process of the job is signaled.
+    */
+   void shepherd_systemd_signal_job(int signal, bool only_main) {
 #if defined(OCS_WITH_SYSTEMD)
       // Signaling via systemd
       //   - Need the scope name
@@ -228,7 +244,7 @@ namespace ocs {
                success = systemd.freeze_unit(scope, &error_dstr);
             } else {
                // use KillUnit for older versions or cgroup v1
-               success = systemd.signal_unit(scope, signal, &error_dstr);
+               success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
             }
             break;
          case SIGCONT:
@@ -237,11 +253,11 @@ namespace ocs {
                success = systemd.thaw_unit(scope, &error_dstr);
             } else {
                // use KillUnit for older versions or cgroup v1
-               success = systemd.signal_unit(scope, signal, &error_dstr);
+               success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
             }
             break;
          default:
-            success = systemd.signal_unit(scope, signal, &error_dstr);
+            success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
             break;
       }
 

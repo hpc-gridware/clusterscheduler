@@ -1,6 +1,6 @@
 [Unit]
-Description=GENPRODUCT sge_qmaster service
-Documentation=man:sge_qmaster(8)
+Description=GENPRODUCT sge_qmaster and optionally sge_shadowd services
+Documentation=man:sge_qmaster(8) man:sge_shadowd(8)
 #Wants=network.target
 After=network-online.target remote-fs.target autofs.service
 #RequiresMountsFor=GENROOT
