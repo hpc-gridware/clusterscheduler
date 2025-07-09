@@ -4653,15 +4653,6 @@ job_is_visible(const char *owner, const bool is_manager, const bool show_departm
    DRETURN(false);
 }
 
-void job_normalize_priority(lListElem *jep, u_long32 priority)
-{
-   constexpr double min_priority = 0.0;
-   constexpr double max_priority = 2048.0;
-
-   lSetUlong(jep, JB_priority, priority);
-   lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
-}
-
 /** @brief Summarizes the slots of the given gdil list.
  *
  * The function will return a new list with one entry for each host.
