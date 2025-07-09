@@ -610,7 +610,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          const lListElem *binding_elem = lFirst(binding_list);
          dstring binding_param = DSTRING_INIT;
 
-         binding_print_to_string(binding_elem, &binding_param);
+         ocs::BindingIo::binding_print_to_string(binding_elem, &binding_param);
          printf("binding:                        " SFN "\n", sge_dstring_get_string(&binding_param));
          sge_dstring_free(&binding_param);
       }
