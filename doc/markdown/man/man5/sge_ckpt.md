@@ -21,9 +21,8 @@ system kernel.
 
 Checkpointing jobs need to be identified to the xxQS_NAMExx system by using the `-ckpt` option of the qsub(1) command. 
 The argument to this flag refers to a so called checkpointing environment, which defines the attributes of the 
-checkpointing method to be used (see xxqs_name_sxx_checkpoint(5) for details). Checkpointing environments are setup by the qconf(1)
-options `-ackpt`, `-dckpt`, `-mckpt` and `-sckpt`. The qsub(1) option `-c` can be used to overwrite the *when* 
-attribute for the referenced checkpointing environment.
+checkpointing method to be used (see xxqs_name_sxx_checkpoint(5) for details). Checkpointing environments are set up by the qconf(1)
+options `-ackpt`, `-dckpt`, `-mckpt` and `-sckpt`. The qsub(1) option `-c` can be used to overwrite the *when*-attribute for the referenced checkpointing environment.
 
 If a queue is of the type *CHECKPOINTING*, jobs need to have the checkpointing attribute flagged (see the `-ckpt` 
 option to qsub(1)) to be permitted to run in such a queue. As opposed to the behavior for regular batch jobs, 

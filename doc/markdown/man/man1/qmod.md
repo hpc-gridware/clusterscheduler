@@ -98,7 +98,7 @@ For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), xxqs_name_sxx_ckpt(1), qstat(1),
+xxqs_name_sxx_intro(1), xxqs_name_sxx_ckpt(5), qstat(1),
 xxqs_name_queue_conf(5), xxqs_name_sxx_execd(8), xxqs_name_sxx_types(1).
 
 # COPYRIGHT
