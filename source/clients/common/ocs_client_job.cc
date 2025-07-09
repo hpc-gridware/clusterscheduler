@@ -722,8 +722,14 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                break;
             }
 
+            const char *delimiter[] = {":", ", ", "\n"};
+            const lList *gdil_org = lGetList(jatep, JAT_granted_destin_identifier_list);
+            int queue_fields[] = {JG_qname, JG_slots, 0};
+            printf("%-16s %11d:   ", "exec_queue_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
+            uni_print_list(stdout, nullptr, 0, gdil_org, queue_fields, delimiter, 0);
+
             // get the list of granted hosts and make it unique
-            lList *gdil_unique = gdil_make_host_unique(lGetList(jatep, JAT_granted_destin_identifier_list));
+            lList *gdil_unique = gdil_make_host_unique(gdil_org);
 
             // skip tasks that have not been scheduled so far
             if (gdil_unique == nullptr) {
@@ -731,10 +737,10 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             }
 
             // print the task number and the list of granted hosts
+            int host_fields[] = {JG_qhostname, JG_slots, 0};
             printf("%-16s %11d:   ", "exec_host_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-            int fields[] = {JG_qhostname, JG_slots, 0};
-            const char *delimiter[] = {":", ", ", "\n"};
-            uni_print_list(stdout, nullptr, 0, gdil_unique, fields, delimiter, 0);
+            uni_print_list(stdout, nullptr, 0, gdil_unique, host_fields, delimiter, 0);
+
 
 
             // free the list of granted hosts
