@@ -16,7 +16,7 @@ Checkpointing is a facility to save the complete status of an executing program 
 this so called checkpoint at a later point of time if the original program or job was halted, e.g. through a system 
 crash.
 
-xxQS_NAMExx provides various levels of checkpointing support (see xxqs_name_sxx_ckpt(1)). The checkpointing environment 
+xxQS_NAMExx provides various levels of checkpointing support (see xxqs_name_sxx_ckpt(5)). The checkpointing environment 
 described here is a means to configure the different types of checkpointing in use for your xxQS_NAMExx cluster or 
 parts thereof. For that purpose you can define the operations which have to be executed in initiating a checkpoint 
 generation, a migration of a checkpoint to another host or a restart of a checkpointed application as well as the 
@@ -130,7 +130,7 @@ xxQS_NAMExx has no means to detect this.
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), xxqs_name_sxx_ckpt(1), xxqs_name_sxx_types(1), qconf(1), qmod(1), qsub(1), xxqs_name_sxx_execd(8).
+xxqs_name_sxx_intro(1), xxqs_name_sxx_ckpt(5), xxqs_name_sxx_types(1), qconf(1), qmod(1), qsub(1), xxqs_name_sxx_execd(8).
 
 # COPYRIGHT
 

@@ -19,7 +19,7 @@ date: __DATE__
 `xxqs_name_sxx_shepherd` provides the parent process functionality for a single xxQS_NAMExx job. The parent 
 functionality is necessary on UNIX systems to retrieve resource usage information (see getrusage(2)) after a job 
 has finished. In addition, the `xxqs_name_sxx_shepherd` forwards signals to the job, such as the signals for 
-suspension, enabling, termination and the xxQS_NAMExx checkpointing signal (see xxqs_name_sxx_ckpt(1) for details).
+suspension, enabling, termination and the xxQS_NAMExx checkpointing signal (see xxqs_name_sxx_ckpt(5) for details).
 
 The `xxqs_name_sxx_shepherd` receives information about the job to be started from the xxqs_name_sxx_execd(8). 
 During the execution of the job it actually starts up to 5 child processes. First a prolog script is
