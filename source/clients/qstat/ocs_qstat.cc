@@ -2195,7 +2195,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
                   printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
                   first_run = 0;
                } else {
-                  printf("%s", "                            ");
+                  printf("%s", "                                ");
                }
                printf("%s\n", lGetString(mes, MES_message));
             }
@@ -2210,7 +2210,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
                         printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
                         first_run = 0;
                      } else {
-                        printf("%s", "                            ");
+                        printf("%s", "                                ");
                      }
                      printf("%s\n", lGetString(mes, MES_message));
                   }
