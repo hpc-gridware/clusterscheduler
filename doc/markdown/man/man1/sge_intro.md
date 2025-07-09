@@ -18,7 +18,7 @@ only lightly loaded. The work load is distributed among the workstations in the 
 situation of each machine and the resource requirements of the jobs.
 
 User level checkpointing programs are supported and a transparent checkpointing mechanism is provided 
-(see *xxqs_name_sxx_ckpt*(1)). Checkpointing jobs migrate from workstation to workstation without user
+(see *xxqs_name_sxx_ckpt*(5)). Checkpointing jobs migrate from workstation to workstation without user
 intervention on load demand. In addition to batch jobs, interactive jobs and parallel jobs can also be submitted to 
 xxQS_NAMExx.
 

@@ -297,7 +297,7 @@ Available for `qsub` and `qalter` only.
 
 Defines or redefines whether the job should be checkpointed, and if so, under what circumstances. The specification 
 of the checkpointing occasions with this option overwrites the definitions of the *when* parameter in the 
-checkpointing environment (see xxqs_name_sxx_checkpoint(5)) referenced by the `qsub -ckpt` switch. Possible values for
+checkpointing environment (see xxqs_name_sxx_ckpt(5)) referenced by the `qsub -ckpt` switch. Possible values for
 *occasion_specifier* are
 
 * n	- no checkpoint is performed. 

@@ -21,7 +21,7 @@
 # clusterscheduler/doc/markdown/man/man5
 
 # build all man pages from section 5
-set(PAGES sge_access_list sge_accounting sge_aliases sge_bootstrap sge_calendar_conf sge_checkpoint sge_complex
+set(PAGES sge_access_list sge_accounting sge_aliases sge_bootstrap sge_calendar_conf sge_checkpoint sge_ckpt sge_complex
       sge_category sge_conf sge_host_aliases sge_host_conf sge_hostgroup sge_monitoring
       sge_pe sge_priority sge_project sge_qhost sge_qstat sge_qselect sge_qtask
       sge_queue_conf sge_reporting sge_request sge_resource_quota sge_sched_conf sge_share_tree sge_user)
@@ -37,6 +37,7 @@ add_custom_target(troffman5 ALL DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/sge_category.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_calendar_conf.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_checkpoint.5
+      ${CMAKE_CURRENT_BINARY_DIR}/sge_ckpt.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_complex.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_conf.5
       ${CMAKE_CURRENT_BINARY_DIR}/sge_host_aliases.5
