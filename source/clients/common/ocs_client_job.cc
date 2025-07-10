@@ -713,7 +713,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                break;
             }
 
-            const char *delimiter[] = {":", ", ", "\n"};
+            const char *delimiter[] = {":", ",", "\n"};
             const lList *gdil_org = lGetList(jatep, JAT_granted_destin_identifier_list);
             int queue_fields[] = {JG_qname, JG_slots, 0};
             printf("%-16s %11d:   ", "exec_queue_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
