@@ -73,6 +73,7 @@
 
 #include "symbols.h"
 #include "msg_common.h"
+#include "uti/sge_hostname.h"
 
 
 /****** sgeobj/job/job_get_ja_task_template_pending() *************************
@@ -4702,3 +4703,94 @@ void job_normalize_priority(lListElem *jep, u_long32 priority)
    lSetDouble(jep, JB_nppri, sge_normalize_value(priority, min_priority, max_priority));
 }
 
+/** @brief Summarizes the slots of the given gdil list.
+ *
+ * The function will return a new list with one entry for each host.
+ * The slots of all entries for the same host will be accumulated.
+ *
+ * @param gdil_in the input list
+ * @return a new list with summarized entries. Caller is responsible for freeing the list.
+ */
+lList *
+gdil_make_host_unique(const lList *gdil_in) {
+   DENTER(TOP_LAYER);
+
+   // no input -> nothing to do
+   if (gdil_in == nullptr) {
+      DRETURN(nullptr);
+   }
+
+   // just one entry -> return a copy of the input
+   lList *gdil_out = lCopyList("gdil_summarize_hosts", gdil_in);
+   if (lGetNumberOfElem(gdil_out) == 1) {
+      DRETURN(gdil_out);
+   }
+
+   // not required as long as only master host has a separate entry
+   // not to sort also ensures that the first entry shows the master host
+#if 0
+   // make entries for same host to appear in the list as consecutive entries
+   lPSortList(gdil_out, "%I+", JG_qhostname);
+#endif
+
+   // first gdil that we will use to summarize the slots and the hostname
+   lListElem *first_gdil = lFirstRW(gdil_out);
+   const char *first_hostname = lGetHost(first_gdil, JG_qhostname);
+
+   // iterate over the rest of the list and summarize the slots for entries with the same hostname
+   lListElem *next_gdil = lNextRW(first_gdil);
+   lListElem *gdil;
+   while ((gdil = next_gdil) != nullptr) {
+      next_gdil = lNextRW(gdil);
+
+      // if the next gdil has a different hostname then it is the first gdil for this new hostname
+      // otherwise we summarize the slots of the current gdil into the first gdil
+      if (const char *next_gdil_hostname = lGetHost(gdil, JG_qhostname); sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
+         first_gdil = gdil;
+         first_hostname = next_gdil_hostname;
+      } else {
+         lAddUlong(first_gdil, JG_slots, lGetUlong(gdil, JG_slots));
+         lRemoveElem(gdil_out, &gdil);
+      }
+   }
+
+   DRETURN(gdil_out);
+}
+
+u_long32
+jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep) {
+   DENTER(TOP_LAYER);
+
+   u_long32 status = lGetUlong(jatep, JAT_status);
+   u_long32 state = lGetUlong(jatep, JAT_state);
+   if (status == JRUNNING) {
+      state |= JRUNNING;
+      state &= ~JTRANSFERING;
+   } else if (status == JTRANSFERING) {
+      state |= JTRANSFERING;
+      state &= ~JRUNNING;
+   } else if (status == JFINISHED) {
+      state |= JEXITING;
+      state &= ~(JRUNNING | JTRANSFERING);
+   }
+
+   // correct running state if the job is suspended (remove the 'r')
+   if (ISSET(state, JSUSPENDED_ON_SUBORDINATE) ||
+       ISSET(state, JSUSPENDED) ||
+       ISSET(state, JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
+      state &= ~JRUNNING;
+   }
+
+   // show hold state if the job is held or has predecessors
+   if (lGetList(job, JB_jid_predecessor_list) ||
+       lGetUlong(jatep, JAT_hold)) {
+      state |= JHELD;
+   }
+
+   // show 'R' state if the job is restarted
+   if (lGetUlong(jatep, JAT_job_restarted)) {
+      state &= ~JWAITING;
+      state |= JMIGRATING;
+   }
+   DRETURN(state);
+}
