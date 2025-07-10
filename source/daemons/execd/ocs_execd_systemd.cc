@@ -223,6 +223,7 @@ namespace ocs::execd {
          for_each_rw (ptf_job, ptf_jobs) {
             lListElem *os_job;
             for_each_rw (os_job, lGetList(ptf_job, JL_OS_job_list)) {
+               usage_collection_t usage_collection = static_cast<usage_collection_t>(lGetUlong(os_job, JO_usage_collection));
                const char *scope_str = lGetString(os_job, JO_systemd_scope);
                if (scope_str != nullptr) {
                   std::string scope{scope_str};
@@ -233,7 +234,7 @@ namespace ocs::execd {
                         DPRINTF("==> Job is active in systemd scope %s", scope.c_str());
                         lList *usage_list = lGetListRW(os_job, JO_usage_list);
                         if (usage_list == nullptr) {
-                           usage_list = ptf_build_usage_list("usagelist");
+                           usage_list = ptf_build_usage_list("usagelist", usage_collection);
                            lSetList(os_job, JO_usage_list, usage_list);
                         }
                         // from systemd we do *not* get vmem / maxvmem

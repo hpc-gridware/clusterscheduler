@@ -20,6 +20,8 @@
 
 #include <cstring>
 
+#include "sgeobj/sge_conf.h"
+
 #include "uti/sge_signal.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
@@ -28,6 +30,7 @@
 #include "config_file.h"
 #include "err_trace.h"
 #include "ocs_shepherd_systemd.h"
+
 
 namespace ocs {
    bool g_use_systemd = true;
@@ -87,10 +90,19 @@ namespace ocs {
    static void
    add_accounting_settings() {
       if (g_use_systemd) {
-         g_systemd_properties["CPUAccounting"] = true;
-         g_systemd_properties["MemoryAccounting"] = true;
-         if (ocs::uti::Systemd::get_cgroup_version() == 2) {
-            g_systemd_properties["IOAccounting"] = true;
+         // get usage collection mode from execd_params
+         const char *usage_collection_str = get_conf_val("usage_collection");
+         usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
+         if (usage_collection_str != nullptr) {
+            usage_collection = static_cast<usage_collection_t>(std::stoi(usage_collection_str));
+         }
+         // we enable accounting settings only if we are using systemd for usage collection
+         if (usage_collection == USAGE_COLLECTION_DEFAULT || usage_collection == USAGE_COLLECTION_HYBRID) {
+            g_systemd_properties["CPUAccounting"] = true;
+            g_systemd_properties["MemoryAccounting"] = true;
+            if (ocs::uti::Systemd::get_cgroup_version() == 2) {
+               g_systemd_properties["IOAccounting"] = true;
+            }
          }
       }
    }

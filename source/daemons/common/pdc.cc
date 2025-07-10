@@ -602,7 +602,7 @@ static int psRetrieveOSJobData() {
             if (time_stamp == proc->pd_tstamp) { 
                // maybe still living
                // in hybrid mode, we are not interested in cpu and rss / maxrss
-               if (!job_elem->hybrid_mode) {
+               if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
                   job->jd_utime_a += proc->pd_utime;
                   job->jd_stime_a += proc->pd_stime;
                   job->jd_rss += proc_elem->rss;
@@ -615,7 +615,7 @@ static int psRetrieveOSJobData() {
             } else { 
                // most likely exited
                // we do not sum up memory usage (@todo should we?)
-               if (!job_elem->hybrid_mode) {
+               if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
                   job->jd_utime_c += proc->pd_utime;
                   job->jd_stime_c += proc->pd_stime;
                }
@@ -633,7 +633,7 @@ static int psRetrieveOSJobData() {
          if (job->jd_vmem > job->jd_himem) {
             job->jd_himem = job->jd_vmem;
          }
-         if (!job_elem->hybrid_mode) {
+         if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
             if (job->jd_rss > job->jd_maxrss) {
                job->jd_maxrss = job->jd_rss;
             }
@@ -701,7 +701,7 @@ int psStopCollector()
 }
 
 
-int psWatchJob(JobID_t JobID, bool hybrid_mode)
+int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
 {
    if (JobID != 0) {
       lnk_link_t *curr;
@@ -724,7 +724,7 @@ int psWatchJob(JobID_t JobID, bool hybrid_mode)
          memset(job_elem, 0, sizeof(job_elem_t));
          job_elem->starttime = get_gmt();
          job_elem->job.jd_jid = JobID;
-         job_elem->hybrid_mode = hybrid_mode;
+         job_elem->usage_collection = usage_collection;
          job_elem->job.jd_length = sizeof(psJob_t);
          LNK_INIT(&job_elem->procs);
          LNK_INIT(&job_elem->arses);

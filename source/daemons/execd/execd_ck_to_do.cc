@@ -947,21 +947,46 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
       // when running jobs in systemd scopes store the scope id
       // we need it to retrieve usage information
-      std::string scope;
+      // it is already stored and spooled in the ja_task/pe_task
+      // similar to the osjobid/addgrpid
       const char *scope_str = nullptr;
 #if defined(OCS_WITH_SYSTEMD)
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      std::string slice;
-      if (ocs::Job::job_get_systemd_slice_and_scope(job, ja_task, pe_task, slice, scope, &error_dstr)) {
-         scope_str = scope.c_str();
+      if (pe_task != nullptr) {
+         scope_str = lGetString(pe_task, PET_systemd_scope);
       } else {
-         ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring),
-               sge_dstring_get_string(&error_dstr));
-         DRETURN(1);
+         scope_str = lGetString(ja_task, JAT_systemd_scope);
       }
 #endif
-      DPRINTF("Register job with AddGrpId at " gid_t_fmt " PTF\n", addgrpid);
-      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id, scope_str))) {
+
+      // We need the usage collection mode to register the job,
+      // and we stored it in the ja_task/pe_task when starting the job.
+      usage_collection_t usage_collection;
+      if (pe_task != nullptr) {
+         usage_collection = static_cast<usage_collection_t>(lGetUlong(pe_task, PET_usage_collection));
+      } else {
+         usage_collection = static_cast<usage_collection_t>(lGetUlong(ja_task, JAT_usage_collection));
+      }
+
+      // If we do not want to get usage via Systemd, then pass nullptr as scope_str
+      if (scope_str != nullptr) {
+         if (usage_collection != USAGE_COLLECTION_DEFAULT && usage_collection != USAGE_COLLECTION_HYBRID) {
+            scope_str = nullptr;
+         }
+      }
+
+      // If we do not want to get usage via PTF, then pass 0 as addgrpid
+      if (addgrpid != 0) {
+         // if we have a systemd scope and it is not hybrid, we use only systemd
+         if (scope_str != nullptr &&
+             usage_collection != USAGE_COLLECTION_HYBRID && usage_collection != USAGE_COLLECTION_PDC) {
+            addgrpid = 0;
+         } else if (usage_collection == USAGE_COLLECTION_NONE) {
+            addgrpid = 0;
+         }
+      }
+
+      DPRINTF("Register job with AddGrpId " gid_t_fmt " and systemd scope " SFN " at PTF\n", addgrpid, scope_str != nullptr ? scope_str : "null");
+      if ((ptf_error = ptf_job_started(addgrpid, pe_task_id, job, ja_task_id, scope_str, usage_collection))) {
          ERROR(MSG_JOB_NOREGISTERPTF_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), ptf_errstr(ptf_error));
          DRETURN(1);
       }
@@ -969,6 +994,7 @@ int register_at_ptf(const lListElem *job, const lListElem *ja_task, const lListE
 
    /* store addgrpid in job report to be sent to qmaster later on */
 {
+   // @todo CS-1409 - JR_osjobid is probably not needed at all
    lListElem *jr;
    if ((jr=get_job_report(job_id, ja_task_id, pe_task_id))) {
       lSetString(jr, JR_osjobid, addgrpid_str);

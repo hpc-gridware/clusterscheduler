@@ -1008,10 +1008,22 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 #endif
 
+   // The usage_collection mode.
+   {
+      usage_collection_t usage_collection = mconf_get_usage_collection();
+      fprintf(fp, "usage_collection= " sge_u32 "\n", usage_collection);
+      if (petep == nullptr) {
+         lSetUlong(jatep, JAT_usage_collection, usage_collection);
+      } else {
+         lSetUlong(petep, PET_usage_collection, usage_collection);
+      }
+   }
+
    // Set the additional group id.
    // When we are using systemd we do not need to set an additional group id - we use value 0.
-   // Unless in hybrid usage collection mode where we get usage from both Systemd and via PDC
-   if (ocs::execd::execd_use_pdc_for_usage_collection()) {
+   // Unless in hybrid usage collection mode where we get usage from both Systemd and via PDC.
+   // And when we enabled killing by add_grp_id, we also need to set it.
+   if (ocs::execd::execd_use_pdc_for_usage_collection() || mconf_get_enable_addgrp_kill()) {
       // parse range and create list
       lList *rlp = nullptr;
       lList *alp = nullptr;
@@ -1044,7 +1056,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       lFreeList(&rlp);
       lFreeList(&alp);
    } else {
-      // we do not use PDC for usage collection, no need to set an additional group id
+      // We do not use PDC for usage collection nor do we kill by addrgp,
+      // no need to set an additional group id.
       last_addgrpid = 0;
    }
 
@@ -1391,6 +1404,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
          } else {
             fprintf(fp, "devices_allow=\n");
+         }
+         if (petep == nullptr) {
+            lSetString(jatep, JAT_systemd_scope, systemd_scope.c_str());
+         } else {
+            lSetString(petep, PET_systemd_scope, systemd_scope.c_str());
          }
       }
    }

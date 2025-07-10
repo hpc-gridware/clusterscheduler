@@ -36,6 +36,16 @@
 			"type":	"lStringT",
 			"flags":	[]
 		}, {
+			"name":	"usage_collection",
+			"summary":	"Usage Collection Mode",
+			"description":	[{
+				"line":	"Usage collection mode used for the os job."
+			}, {
+				"line":	"One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
+			}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
 			"name":	"ja_task_ID",
 			"summary":	"Array Task Id",
 			"description":	[{
