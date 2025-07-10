@@ -378,11 +378,10 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("\n");
       }
 
-   if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_priority) != BASE_PRIORITY) {
-         printf("priority:                       ");
-         printf("%d\n", (int) lGetUlong(job, JB_priority) - BASE_PRIORITY);
-      }
+   if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0) {
+      printf("priority:                       ");
+      printf("%d\n", (int) lGetUlong(job, JB_priority) - BASE_PRIORITY);
+   }
 
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
       printf("jobshare:                       ");
@@ -480,7 +479,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          int fields[] = {JRE_job_name, 0};
 
          delis[0] = "";
-         printf("jid_predecessor_list (req):      ");
+         printf("jid_predecessor_list (req):     ");
          uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_request_list), fields, delis, 0);
       }
 
@@ -498,7 +497,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          int fields[] = {JRE_job_number, 0};
 
          delis[0] = "";
-         printf("jid_successor_list:              ");
+         printf("jid_successor_list:             ");
          uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_successor_list), fields, delis, 0);
       }
 
