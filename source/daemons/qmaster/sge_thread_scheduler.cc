@@ -569,7 +569,7 @@ sge_scheduler_main(void *arg) {
       bool handled_events = false;
       lList *event_list = nullptr;
       int execute = 0;
-      lList *orders = nullptr;
+      lList *orders = nullptr; // @todo apparently nothing is done with it, remove it?
 
       bool do_start = sconf_get_profiling();
       prof_start_stop(SGE_PROF_OTHER, nullptr, do_start);

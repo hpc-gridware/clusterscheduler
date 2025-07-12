@@ -267,7 +267,9 @@ sge_worker_main(void *arg) {
          // handle the request (GDI/Report/Ack ...
          if (packet->request_type == PACKET_GDI_REQUEST) {
             lList *tmp_answer_list = nullptr;
-            packet->pack_header(&tmp_answer_list, &packet->pb);
+            if (!packet->is_intern_request) {
+               packet->pack_header(&tmp_answer_list, &packet->pb);
+            }
 
             for (size_t i = 0; i < packet->tasks.size(); ++i) {
                bool has_next = (i < packet->tasks.size() - 1);
