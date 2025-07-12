@@ -47,7 +47,7 @@ namespace ocs {
 
       static void decay_usage(const lList *usage_list, const lList *decay_list, double interval);
 
-      static void add_decay_element(lList *decay_list, double value, const char *name);
+      static void add_decay_element(lList **decay_list, double value, const char *name);
 
       static lList *get_decay_list();
 

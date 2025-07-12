@@ -96,10 +96,10 @@ ocs::Usage::calculate_default_decay_constant(const int halftime) {
    sconf_set_decay_constant(sge_decay_constant);
 }
 
-void ocs::Usage::add_decay_element(lList *decay_list, double value, const char *name) {
+void ocs::Usage::add_decay_element(lList **decay_list, double value, const char *name) {
    double decay_rate, decay_constant;
    calculate_decay_constant(value, &decay_rate, &decay_constant);
-   lListElem *u = lAddElemStr(&decay_list, UA_name, name, UA_Type);
+   lListElem *u = lAddElemStr(decay_list, UA_name, name, UA_Type);
    lSetDouble(u, UA_value, decay_constant);
 }
 
@@ -119,11 +119,11 @@ ocs::Usage::get_decay_list() {
       const lListElem *ep = nullptr;
 
       for_each_rw(ep, halflife_decay_list) {
-         add_decay_element(decay_list, lGetDouble(ep, UA_value), lGetString(ep, UA_name));
+         add_decay_element(&decay_list, lGetDouble(ep, UA_value), lGetString(ep, UA_name));
       }
    } else {
       // @todo: what is the purpose of this?
-      add_decay_element(decay_list, -1, "finished_jobs");
+      add_decay_element(&decay_list, -1, "finished_jobs");
    }
    lFreeList(&halflife_decay_list);
    return decay_list;
