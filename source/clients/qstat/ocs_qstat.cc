@@ -2040,38 +2040,52 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
          }
       }
    }
-   what = lWhat("%T(%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I->%T%I%I%I%I->%T(%I%I%I%I%I%I%I%I%I%I%I)"
-            "%I%I%I%I->%T(%I)%I->%T(%I)%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I%I%I%I%I%I%I%I%I%I%I%I%I->%T%I%I)",
-            JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time, JB_submission_command_line,
-            JB_owner, JB_uid, JB_group, JB_gid, JB_account, JB_merge_stderr, 
-            JB_mail_list, JB_project, JB_department, JB_notify, JB_job_name,
-            JB_stdout_path_list, 
-            /**/
-            PN_Type, JB_jobshare, JB_request_set_list, JB_shell_list,
-            /**/
-            PN_Type, JB_env_list, JB_job_args, JB_script_file, JB_ja_tasks,
-            /**/
-            JAT_Type, JAT_status, JAT_state, JAT_hold, JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted,
-            JAT_task_list, JAT_message_list, JAT_start_time, JAT_granted_resources_list, JAT_granted_destin_identifier_list,
-            /**/
-            JB_context, JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, 
-            /**/
-            JRE_Type, JRE_job_number, 
-            /**/
-            JB_jid_successor_list,
-            /**/
-            JRE_Type, JRE_job_number, 
-            /**/
-            JB_deadline, JB_execution_time, JB_checkpoint_name, 
-            JB_checkpoint_attr, JB_checkpoint_interval, JB_directive_prefix, 
-            JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority, 
-            JB_restart, JB_verify, JB_script_size,
-            JB_pe, 
-            RN_Type, JB_pe_range, JB_jid_request_list, JB_ja_ad_request_list,
-            JB_verify_suitable_queues, JB_soft_wallclock_gmt,
-            JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
-            JB_ja_structure, JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
-            JB_grp_list, RN_Type, JB_sync_options, JB_category_id);
+   what = lWhat("%T(%I%I%I%I"
+                    "%I%I%I%I%I"
+                    "%I%I%I%I"
+                    "%I%I%I%I"
+                    "%I%I%I"
+
+                    "%I%I%I"
+                    "%I->%T(%I%I%I"
+                    "%I%I%I%I"
+                    "%I%I%I"
+                    "%I)%I"
+
+                    "%I%I%I->%T"
+                    "(%I)%I->%T(%I)%I"
+                    "%I%I%I%I%I"
+                    "%I%I%I%I"
+                    "%I%I%I%I%I"
+
+                    "%I%I%I"
+                    "%I%I%I%I%I"
+                    "%I%I%I%I"
+                    "%I%I%I)",
+
+            JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time,
+            JB_submission_command_line, JB_owner, JB_uid, JB_group, JB_gid,
+            JB_account, JB_merge_stderr, JB_mail_list, JB_project,
+            JB_department, JB_notify, JB_job_name, JB_stdout_path_list,
+            JB_jobshare, JB_request_set_list, JB_shell_list,
+
+            JB_env_list, JB_job_args, JB_script_file,
+            JB_ja_tasks, JAT_Type, JAT_state, JAT_status, JAT_hold,
+            JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted, JAT_task_list,
+            JAT_message_list, JAT_start_time, JAT_granted_resources_list,
+            JAT_granted_destin_identifier_list, JB_context,
+
+            JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, JRE_Type,
+            JRE_job_number, JB_jid_successor_list, JRE_Type, JRE_job_number, JB_deadline,
+            JB_execution_time, JB_checkpoint_name, JB_checkpoint_attr, JB_checkpoint_interval, JB_directive_prefix,
+            JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority,
+            JB_restart, JB_verify, JB_script_size, JB_pe, JB_pe_range,
+
+            JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
+            JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
+            JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+            JB_grp_list, JB_sync_options, JB_category_id);
+
    /* get job list */
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &jlp, where, what);
    lFreeWhere(&where);
