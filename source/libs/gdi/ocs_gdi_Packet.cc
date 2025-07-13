@@ -579,7 +579,7 @@ ocs::gdi::Packet::wait_for_result_external(lList **malpp) {
 
    /*
     * The packet itself has already be executed in ocs::gdi::Client::sge_gdi_packet_execute_external()
-    * so it is only necessary to create the muti answer and do cleanup
+    * so it is only necessary to create the multi answer and do cleanup
     */
    create_multi_answer(malpp);
 

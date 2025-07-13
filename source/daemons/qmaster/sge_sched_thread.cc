@@ -183,7 +183,7 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, bool monitor_next_r
    DRETURN_VOID;
 }
 
-void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order) {
+void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists) {
    order_t orders = ORDER_INIT;
    lList **splitted_job_lists[SPLIT_LAST];            /* JB_Type */
    lList *waiting_due_to_pedecessor_list = nullptr;   /* JB_Type */
@@ -207,9 +207,6 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM0);
 
    // initializations
-   orders.pendingOrderList = *order;
-   *order = nullptr;
-
    prof_job_count = lGetNumberOfElem(lists->job_list);
 
    sconf_reset_jobs();

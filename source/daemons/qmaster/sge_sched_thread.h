@@ -81,4 +81,4 @@ int
 subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
 void
-scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists, lList **order);
+scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_data_t *lists);
