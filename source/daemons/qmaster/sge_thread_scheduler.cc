@@ -569,7 +569,6 @@ sge_scheduler_main(void *arg) {
       bool handled_events = false;
       lList *event_list = nullptr;
       int execute = 0;
-      lList *orders = nullptr;
 
       bool do_start = sconf_get_profiling();
       prof_start_stop(SGE_PROF_OTHER, nullptr, do_start);
@@ -837,7 +836,7 @@ sge_scheduler_main(void *arg) {
          }
 #endif
 
-         scheduler_method(evc, &answer_list, &copy, &orders);
+         scheduler_method(evc, &answer_list, &copy);
 
 #ifdef WITH_GPERF
          if (disable_gperf) {

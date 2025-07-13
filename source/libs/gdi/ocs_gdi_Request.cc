@@ -51,6 +51,7 @@ ocs::gdi::Request::wait() {
       } else {
          packet->wait_for_result_external(&multi_answer_list);
       }
+      delete packet;
       packet = nullptr;
    }
    DRETURN_VOID;

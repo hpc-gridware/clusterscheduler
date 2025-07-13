@@ -25,7 +25,7 @@
    fun:malloc
    fun:_Z10sge_mallocm
    fun:_Z25sge_csp_path_class_createP19sge_error_class_str
-   fun:_Z16gdi_client_setupijPP6_lListb
+   fun:_ZN3ocs3gdi10ClientBase5setupEijPP6_lListb
    ...
 }
 
@@ -34,12 +34,10 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
-   fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
-   fun:_Z35sge_gdi_packet_initialize_auth_infoP23_sge_gdi_packet_class_t
-   fun:_Z21sge_gdi_packet_createPP6_lList
-   fun:_Z13sge_gdi_multiPP6_lListijjS1_P11_lConditionP13_lEnumerationP16_state_gdi_multib
+   fun:_Z25component_get_thread_namev
+   fun:_Z17sge_gethostbyaddrPK7in_addrPi
+   fun:_ZL18component_tl0_initP19sge_component_tl0_t
+   fun:_Z25component_set_thread_namePKc
    ...
 }
 
@@ -50,10 +48,8 @@
    fun:malloc
    fun:_Z10sge_mallocm
    fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
+   fun:_ZL39component_ts0_init_supplementary_groupsv
    fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
-   fun:_ZL13japi_send_jobPP10_lListElemPjP7dstring
-   fun:_Z12japi_run_jobP7dstringPP10_lListElemS0_
-   fun:drmaa_run_job
    ...
 }
 
@@ -78,6 +74,74 @@
    fun:_Z26component_set_component_idi
    fun:_Z16gdi_client_setupijPP6_lListb
 }
+
+{
+   Component is not cleaned up properly (4) (auth info)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z23component_get_auth_infov
+   fun:_Z15init_packbufferP15sge_pack_buffermbb
+   ...
+}
+
+{
+   Component is not cleaned up properly (5) (auth info)
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_ZL20sge_dstring_allocateP7dstringm
+   fun:_Z18sge_dstring_appendP7dstringPKc
+   fun:_Z23sge_dstring_copy_stringP7dstringPKc
+   fun:_ZL32sge_dstring_vsprintf_copy_appendP7dstringPFPKcS0_S2_ES2_P13__va_list_tag
+   fun:_Z19sge_dstring_sprintfP7dstringPKcz
+   fun:_Z23component_get_auth_infov
+   ...
+}
+
+{
+   Component is not cleaned up properly (6) (auth info, isn't this the same as above? But it is still being reported)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_ZL20sge_dstring_allocateP7dstringm
+   fun:_Z18sge_dstring_appendP7dstringPKc
+   fun:_Z23sge_dstring_copy_stringP7dstringPKc
+   fun:_ZL32sge_dstring_vsprintf_copy_appendP7dstringPFPKcS0_S2_ES2_P13__va_list_tag
+   fun:_Z19sge_dstring_sprintfP7dstringPKcz
+   fun:_Z23component_get_auth_infov
+   ...
+}
+
+
+{
+   Component is not cleaned up properly (5) (auth info)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
+   fun:_ZL39component_ts0_init_supplementary_groupsv
+   fun:_Z23component_get_auth_infov
+   ...
+}
+
+{
+   Component is not cleaned up properly (6) (log buffer)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z24component_get_log_bufferv
+   fun:_Z17sge_gethostbynamePKcPi
+   fun:_ZL18component_tl0_initP19sge_component_tl0_t
+   fun:_Z24component_get_log_bufferv
+   fun:_Z17sge_gethostbynamePKcPi
+   ...
+}
+
 
 {
    @todo CS-631 Packet auth info is not cleaned up properly
@@ -220,4 +284,139 @@
    fun:main
 }
 
+{
+   @todo thread local storage (TLS) is not cleaned up properly (BDB)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z11bdb_get_txnP9_bdb_info
+   fun:_Z35spool_berkeleydb_default_write_funcPP6_lListPK10_lListElemS4_S4_PKc15sge_object_type
+   fun:_Z18spool_write_objectPP6_lListPK10_lListElemS4_PKc15sge_object_typeb
+   ...
+}
+
+{
+   @todo thread local storage (TLS) is not cleaned up properly (BDB)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z10sge_mallocm
+   fun:_Z10bdb_createPKc
+   fun:spool_berkeleydb_create_context
+   fun:_Z28spool_dynamic_create_contextPP6_lListPKcS3_S3_
+   fun:_Z28spool_create_dynamic_contextPP6_lListPKcS3_S3_
+   fun:_Z26sge_initialize_persistencePP6_lList
+   ...
+}
+
+{
+   @todo thread local storage (TLS) is not cleaned up properly (BDB)
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Z11bdb_get_txnP9_bdb_info
+   fun:_Z34spool_berkeleydb_start_transactionPP6_lListP9_bdb_info
+   fun:_Z33spool_berkeleydb_transaction_funcPP6_lListPK10_lListElem28spooling_transaction_command
+   fun:_Z17spool_transactionPP6_lListPK10_lListElem28spooling_transaction_command
+   ...
+}
+
+{
+   BerkeleyDB issue, nothing we can do about it (1)
+   Memcheck:Cond
+   fun:__log_putr
+   fun:__log_put
+   fun:__log_put_record_int
+   fun:__log_put_record
+   fun:__db_pitem
+   fun:__bam_iitem
+   fun:__bamc_put
+   fun:__dbc_iput
+   fun:__db_put
+   fun:__db_put_pp
+   ...
+}
+
+{
+   BerkeleyDB issue, nothing we can do about it (2)
+   Memcheck:Param
+   pwrite64(buf)
+   fun:pwrite
+   fun:__os_io
+   fun:__log_write
+   fun:__log_put
+   fun:__log_put_record_int
+   fun:__log_put_record
+   fun:__txn_commit
+   fun:__txn_commit_pp
+   ...
+}
+
+{
+   BerkeleyDB issue, nothing we can do about it (3)
+   Memcheck:Param
+   pwrite64(buf)
+   fun:pwrite
+   fun:__os_io
+   fun:__memp_pgwrite.part.0
+   fun:__memp_bhwrite
+   fun:__memp_sync_int
+   fun:__db_sync
+   fun:__db_refresh
+   fun:__db_close
+   fun:__db_close_pp
+   ...
+}
+
+{
+   BerkeleyDB issue, nothing we can do about it (4)
+   Memcheck:Param
+   pwrite64(buf)
+   fun:pwrite
+   fun:__os_io
+   fun:__log_write
+   fun:__log_flush_int
+   fun:__log_put
+   fun:__log_put_record_int
+   fun:__log_put_record
+   fun:__db_free
+   fun:__db_doff
+   fun:__bam_ditem
+   fun:__bamc_physdel
+   fun:__bamc_close
+}
+
+{
+   BerkeleyDB issue, nothing we can do about it (5)
+   Memcheck:Param
+   pwrite64(buf)
+   fun:pwrite
+   fun:__os_io
+   fun:__memp_pgwrite.part.0
+   fun:__memp_bhwrite
+   fun:__memp_sync_int
+   fun:__txn_checkpoint
+   fun:__txn_checkpoint_pp
+   ...
+}
+
+
+# @todo here we have some sort of recursion:
+#{
+#   <insert_a_suppression_name_here>
+#   Memcheck:Leak
+#   match-leak-kinds: definite
+#   fun:malloc
+#   fun:_Z24component_get_log_bufferv
+#   fun:_Z17sge_gethostbynamePKcPi
+#   fun:_ZL18component_tl0_initP19sge_component_tl0_t
+#   fun:_Z24component_get_log_bufferv
+#   fun:_Z17sge_gethostbynamePKcPi
+#   fun:_ZL18component_tl0_initP19sge_component_tl0_t
+#   fun:_Z24component_get_log_bufferv
+#   fun:_Z17sge_gethostbynamePKcPi
+#   fun:_ZL20cl_com_gethostbynamePKcPP14cl_com_hostentPi
+#   fun:_Z24cl_com_host_list_refreshP16cl_raw_list_type
+#   fun:_ZL21cl_com_trigger_threadPv
+#}
 
