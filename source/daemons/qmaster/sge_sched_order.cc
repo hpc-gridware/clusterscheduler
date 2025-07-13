@@ -110,6 +110,7 @@ sge_schedd_add_gdi_order_request(order_t *orders, lList **answer_list, lList **o
          sge_sl_insert(Master_Request_Queue.request_list, gdi_multi, SGE_SL_BACKWARD);
       } else {
          answer_list_log(answer_list, false, false);
+         delete gdi_multi;
          ret = false;
       }
    } else {
