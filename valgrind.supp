@@ -34,12 +34,10 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
-   fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
-   fun:_Z35sge_gdi_packet_initialize_auth_infoP23_sge_gdi_packet_class_t
-   fun:_Z21sge_gdi_packet_createPP6_lList
-   fun:_Z13sge_gdi_multiPP6_lListijjS1_P11_lConditionP13_lEnumerationP16_state_gdi_multib
+   fun:_Z25component_get_thread_namev
+   fun:_Z17sge_gethostbyaddrPK7in_addrPi
+   fun:_ZL18component_tl0_initP19sge_component_tl0_t
+   fun:_Z25component_set_thread_namePKc
    ...
 }
 
@@ -50,10 +48,8 @@
    fun:malloc
    fun:_Z10sge_mallocm
    fun:_Z14ocs_get_groupsPiPP14ocs_grp_elem_tPci
+   fun:_ZL39component_ts0_init_supplementary_groupsv
    fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
-   fun:_ZL13japi_send_jobPP10_lListElemPjP7dstring
-   fun:_Z12japi_run_jobP7dstringPP10_lListElemS0_
-   fun:drmaa_run_job
    ...
 }
 
