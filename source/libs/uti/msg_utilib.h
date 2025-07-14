@@ -230,5 +230,6 @@
 #define MSG_SYSTEMD_CANNOT_READ_PROPERTY_RESULT_SIS  _MESSAGE(59263, _("cannot read result value of property " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_ENCODE_PATH_SIS         _MESSAGE(59264, _("cannot encode path for unit " SFN ": error %d: " SFN4))
 #define MSG_SYSTEMD_CANNOT_DETECT_CGROUP_VERSION   _MESSAGE(59265, _("cannot detect cgroup version"))
+#define MSG_SYSTEMD_NOT_ROOT                       _MESSAGE(59266, _("cannot initialize the systemd integration, we are not running as root user"))
 
 // clang-format on

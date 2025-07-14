@@ -100,6 +100,7 @@ namespace ocs::uti {
    // @param error_dstr A pointer to a dstring where error messages will be stored
    // @return true if initialization was successful, false otherwise
    // @note This function should be called before using any other methods of the Systemd class.
+   // @note Must be root when calling this function (in our daemons before switching to admin user).
    bool
    Systemd::initialize(const std::string &service_name_in, dstring *error_dstr) {
       DENTER(TOP_LAYER);
@@ -116,6 +117,12 @@ namespace ocs::uti {
          ret = false;
       }
       DPRINTF("==> cgroup version: %d", cgroup_version);
+
+      // In order to use systemd, we need to be root (for writing operations)
+      if (ret && getuid() != 0) {
+         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_SYSTEMD_NOT_ROOT);
+         ret = false;
+      }
 
       // initialize only once
       if (ret && lib_handle != nullptr) {

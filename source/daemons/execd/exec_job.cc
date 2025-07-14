@@ -1383,7 +1383,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    //    - devices_allow
 #ifdef OCS_WITH_SYSTEMD
    {
-      bool enable_systemd = mconf_get_enable_systemd();
+      bool enable_systemd = mconf_get_enable_systemd() && ocs::uti::Systemd::is_systemd_available();
       fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
 
       if (enable_systemd) {

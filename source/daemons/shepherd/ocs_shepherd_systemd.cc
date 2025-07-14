@@ -259,46 +259,45 @@ namespace ocs {
       sge_switch2start_user();
       bool connected = systemd.connect(&error_dstr);
       sge_switch2admin_user();
-      if (!connected) {
+      if (connected) {
+         const char *scope = get_conf_val("systemd_scope");
+         bool success;
+
+         switch (signal) {
+            case SIGKILL:
+               success = systemd.stop_unit(scope, &error_dstr);
+               break;
+            case SIGSTOP:
+               if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
+                  // systemd 250+ supports freeze/thaw for cgroup v2
+                  success = systemd.freeze_unit(scope, &error_dstr);
+               } else {
+                  // use KillUnit for older versions or cgroup v1
+                  success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
+               }
+               break;
+            case SIGCONT:
+               if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
+                  // systemd 250+ supports freeze/thaw for cgroup v2
+                  success = systemd.thaw_unit(scope, &error_dstr);
+               } else {
+                  // use KillUnit for older versions or cgroup v1
+                  success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
+               }
+               break;
+            default:
+               success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
+               break;
+         }
+
+         if (!success) {
+            shepherd_trace("signalling job in systemd scope '%s' failed: %s", scope, sge_dstring_get_string(&error_dstr));
+         } else {
+            shepherd_trace("signalled job in systemd scope '%s' with signal %s", scope,  sge_sys_sig2str(signal));
+         }
+      } else {
          // error, but do not exit shepherd - signals are repeated, next time might work
          shepherd_error(0, "connecting to systemd failed: %s", sge_dstring_get_string(&error_dstr));
-         return;
-      }
-
-      const char *scope = get_conf_val("systemd_scope");
-      bool success;
-
-      switch (signal) {
-         case SIGKILL:
-            success = systemd.stop_unit(scope, &error_dstr);
-            break;
-         case SIGSTOP:
-            if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
-               // systemd 250+ supports freeze/thaw for cgroup v2
-               success = systemd.freeze_unit(scope, &error_dstr);
-            } else {
-               // use KillUnit for older versions or cgroup v1
-               success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
-            }
-            break;
-         case SIGCONT:
-            if (systemd.get_systemd_version() >= 250 && systemd.get_cgroup_version() == 2) {
-               // systemd 250+ supports freeze/thaw for cgroup v2
-               success = systemd.thaw_unit(scope, &error_dstr);
-            } else {
-               // use KillUnit for older versions or cgroup v1
-               success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
-            }
-            break;
-         default:
-            success = systemd.signal_unit(scope, signal, only_main, &error_dstr);
-            break;
-      }
-
-      if (!success) {
-         shepherd_trace("signalling job in systemd scope '%s' failed: %s", scope, sge_dstring_get_string(&error_dstr));
-      } else {
-         shepherd_trace("signalled job in systemd scope '%s' with signal %s", scope,  sge_sys_sig2str(signal));
       }
 #endif
    }

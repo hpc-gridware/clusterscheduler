@@ -205,6 +205,7 @@ namespace ocs::execd {
     *       - CS-1389: IO needs to be re-considered, as the values delivered by Systemd looked incorrect, at least
     *                  on certain OSes, possibly depending on the Systemd or the Cgroup version.
     *       - CS-1398: Re-evaluate how we handle MemoryPeak, as it is not available on all OSes and Systemd versions.
+    * @note Need to be root for calling this function - call switch2start_user().
     */
    void
    ptf_get_usage_from_systemd() {
