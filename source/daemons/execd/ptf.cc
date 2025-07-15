@@ -75,22 +75,19 @@
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_stdio.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_usage.h"
 
+#include "ocs_common_systemd.h"
 #include "ptf.h"
-#include "sge.h"
 #include "basis_types.h"
-#include "msg_common.h"
 #include "msg_execd.h"
 #include "sgedefs.h"
 #include "exec_ifm.h"
@@ -712,7 +709,7 @@ static void ptf_get_usage_from_data_collector()
                }
 
                /* set CPU usage */
-               if (usage_collection != USAGE_COLLECTION_HYBRID) {
+               if (ocs::common::use_pdc_for_usage_collection(usage_collection)) {
                   cpu_usage_value = jobs->jd_utime_c + jobs->jd_utime_a +
                      jobs->jd_stime_c + jobs->jd_stime_a;
                   if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_CPU))) {

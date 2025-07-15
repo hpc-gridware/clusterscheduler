@@ -25,6 +25,7 @@ set(LIBRARY_SOURCES
       err_trace.cc
       lock.cc
       mail.cc
+      ocs_common_systemd.cc
       pdc.cc
       procfs.cc
       qlogin_starter.cc

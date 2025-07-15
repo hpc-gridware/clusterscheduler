@@ -112,13 +112,11 @@ int main(int argc,char *argv[])
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_feature.h"
+#include "ocs_common_systemd.h"
 
-#include "msg_execd.h"
 #include "sgedefs.h"
 #include "exec_ifm.h"
 #include "pdc.h"
-#include "ptf.h"
 #include "procfs.h"
 #include "basis_types.h"
 
@@ -602,7 +600,7 @@ static int psRetrieveOSJobData() {
             if (time_stamp == proc->pd_tstamp) { 
                // maybe still living
                // in hybrid mode, we are not interested in cpu and rss / maxrss
-               if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
+               if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
                   job->jd_utime_a += proc->pd_utime;
                   job->jd_stime_a += proc->pd_stime;
                   job->jd_rss += proc_elem->rss;
@@ -615,7 +613,7 @@ static int psRetrieveOSJobData() {
             } else { 
                // most likely exited
                // we do not sum up memory usage (@todo should we?)
-               if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
+               if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
                   job->jd_utime_c += proc->pd_utime;
                   job->jd_stime_c += proc->pd_stime;
                }
@@ -633,7 +631,7 @@ static int psRetrieveOSJobData() {
          if (job->jd_vmem > job->jd_himem) {
             job->jd_himem = job->jd_vmem;
          }
-         if (job_elem->usage_collection != USAGE_COLLECTION_HYBRID) {
+         if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
             if (job->jd_rss > job->jd_maxrss) {
                job->jd_maxrss = job->jd_rss;
             }

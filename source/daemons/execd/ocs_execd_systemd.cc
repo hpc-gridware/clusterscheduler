@@ -20,18 +20,19 @@
 
 #include "cull/cull.h"
 
+#include "ocs_common_systemd.h"
+
 #include "sgeobj/cull/sge_ptf_JL_L.h"
 #include "sgeobj/cull/sge_ptf_JO_L.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_usage.h"
 
-#include "uti/sge_log.h"
-#include "uti/sge_rmon_macros.h"
 #include "uti/ocs_Systemd.h"
+#include "uti/sge_log.h"
+#include "uti/sge_profiling.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "ocs_execd_systemd.h"
-
-#include <sge_conf.h>
-#include <sge_profiling.h>
 
 #include "msg_execd.h"
 #include "ptf.h"
@@ -296,22 +297,7 @@ namespace ocs::execd {
     */
    bool
    execd_use_pdc_for_usage_collection() {
-      bool ret = true;
-
-      // When we are using systemd we usually do not use PDC for usage collection,
-      // except when we configured in execd_params USAGE_COLLECTION to use PDC or HYBRID.
-#if defined(OCS_WITH_SYSTEMD)
-      if (mconf_get_enable_systemd() &&
-          ocs::uti::Systemd::is_systemd_available()) {
-         ret = false;
-         usage_collection_t uc = mconf_get_usage_collection();
-         if (uc == USAGE_COLLECTION_PDC || uc == USAGE_COLLECTION_HYBRID) {
-            ret = true;
-         }
-      }
-#endif
-
-      return ret;
+      return ocs::common::use_pdc_for_usage_collection(mconf_get_usage_collection());
    }
 
    /*!
