@@ -87,6 +87,9 @@
 
 #include "ocs_common_systemd.h"
 #include "ptf.h"
+
+#include "execd.h"
+
 #include "basis_types.h"
 #include "msg_execd.h"
 #include "sgedefs.h"
@@ -614,19 +617,19 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
          lAppendElem(osjoblist, osjob);
          lSetList(osjob, JO_usage_list, ptf_build_usage_list("usagelist", usage_collection));
          ptf_set_osjobid(osjob, os_job_id);
-      }
-      if (task_id_str != nullptr) {
-         lSetString(osjob, JO_task_id_str, task_id_str);
-      }
-      lSetUlong(osjob, JO_usage_collection, usage_collection);
-      if (systemd_scope != nullptr) {
-         lSetString(osjob, JO_systemd_scope, systemd_scope);
+         if (task_id_str != nullptr) {
+            lSetString(osjob, JO_task_id_str, task_id_str);
+         }
+         lSetUlong(osjob, JO_usage_collection, usage_collection);
+         if (systemd_scope != nullptr) {
+            lSetString(osjob, JO_systemd_scope, systemd_scope);
+         }
       }
 
       /*
        * set number of tickets in job entry
        */
-      lSetUlong(job, JL_tickets, (u_long32)MAX(job_tickets, 1));
+      lSetUlong(job, JL_tickets, static_cast<u_long32>(MAX(job_tickets, 1.0)));
 
       /*
        * set interactive job flag
@@ -1298,8 +1301,6 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
 
 int ptf_process_job_ticket_list(lList *job_ticket_list)
 {
-   lListElem *jte, *job;
-
    DENTER(TOP_LAYER);
 
     /*
@@ -1307,26 +1308,40 @@ int ptf_process_job_ticket_list(lList *job_ticket_list)
      * tickets from the job ticket list.  Reset the usage to the
      * minimum usage value.
      */
+   lListElem *jte;
    for_each_rw(jte, job_ticket_list) {
       /*
        * set JB_script_file because we don't know if this is
        * an interactive job 
        */
+      // @todo required?
       lSetString(jte, JB_script_file, "dummy");
 
       // The job and os job should already exist.
       // If not it would not get created in ptf_process_job(), but probably later on
       // once the job is started.
-      // @todo: instead of calling mconf_get_usage_collection we need to
-      //        - find the job/ja_task from the master_job_list
-      //        - use JAT_usage_collection from the ja_task
-      job = ptf_process_job(0, nullptr, jte,
-                            lGetUlong(lFirst(lGetList(jte, JB_ja_tasks)),
-                                      JAT_task_number), nullptr, mconf_get_usage_collection());
-      if (job != nullptr) {
-         /* reset temporary usage and priority */
-         lSetDouble(job, JL_usage, MAX(PTF_MIN_JOB_USAGE, lGetDouble(job, JL_usage) * 0.1));
-         lSetDouble(job, JL_curr_pri, 0);
+      // @todo what about tightly integrated PE tasks? The ja_task then only is a SLAVE container,
+      //       it doesn't have osjobid, systemd_scope, usage_collection.
+      u_long32 job_id = lGetUlong(jte, JB_job_number);
+      const lListElem *jte_ja_task = lFirst(lGetList(jte, JB_ja_tasks));
+      u_long32 ja_task_id = lGetUlong(jte_ja_task, JAT_task_number);
+      lListElem *job, *ja_task;
+      if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+         osjobid_t osjobid{};
+         const char *osjobid_str = lGetString(ja_task, JAT_osjobid);
+         if (osjobid_str != nullptr) {
+            osjobid = static_cast<osjobid_t>(std::stoi(osjobid_str));
+         }
+         lListElem *ptf_job = ptf_process_job(osjobid, nullptr,
+            jte, ja_task_id, lGetString(ja_task, JAT_systemd_scope),
+            static_cast<usage_collection_t>(lGetUlong(ja_task, JAT_usage_collection)));
+         if (ptf_job != nullptr) {
+            /* reset temporary usage and priority */
+            lSetDouble(ptf_job, JL_usage, MAX(PTF_MIN_JOB_USAGE, lGetDouble(ptf_job, JL_usage) * 0.1));
+            lSetDouble(ptf_job, JL_curr_pri, 0);
+         }
+      } else {
+         // this might be a valid situation, e.g., immediately after job start
       }
    }
 
