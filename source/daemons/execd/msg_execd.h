@@ -63,7 +63,7 @@
 #define MSG_STATUS_LOADSENSOREXITEDWITHEXITSTATUS_I         _MESSAGE(29015, _("load sensor exited with exit status = %d"))
 #define MSG_STATUS_MAILERDIEDTHROUGHSIGNALXY_SI             _MESSAGE(29016, _("mailer died through signal " SFN " = %d"))
 #define MSG_STATUS_MAILEREXITEDWITHEXITSTATUS_I             _MESSAGE(29017, _("mailer exited with exit status = %d"))
-#define MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_US                 _MESSAGE(29018, _("reaping job \"" sge_u32 "\" ptf complains: " SFN))
+#define MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_SS                 _MESSAGE(29018, _("reaping job " SFN ": ptf complains: " SFN))
 #define MSG_JOB_CLEANUPJOBCALLEDWITHINVALIDPARAMETERS       _MESSAGE(29019, _("clean_up_job() called with invalid parameters"))
 #define MSG_JOB_CANTFINDDIRXFORREAPINGJOBYZ_SS              _MESSAGE(29020, _("can't find directory " SFN " for reaping job " SFN))
 #define MSG_JOB_CANTREADCONFIGFILEFORJOBXY_S                _MESSAGE(29021, _("can't read config file for job " SFN))

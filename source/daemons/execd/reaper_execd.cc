@@ -353,6 +353,9 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
 
       /* if the job was a 'short-runner' omit the warning */
       if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+         // @todo what about short PE tasks?
+         // @todo and I doubt that the code is required at all,
+         //       might just have been a workaround for bug CS-1019
          /* check if the job was a short-runner */  
          u_long64 time_since_started = sge_get_gmt64() - lGetUlong64(ja_task, JAT_start_time);
          if (time_since_started <= sge_gmt32_to_gmt64(2)) {
@@ -362,7 +365,9 @@ static void unregister_from_ptf(u_long32 job_id, u_long32 ja_task_id,
          }
       }
 
-      WARNING(MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_US, job_id, ptf_errstr(ptf_error));
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      WARNING(MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_SS, job_get_id_string(job_id, ja_task_id, pe_task_id, &dstr_error),
+              ptf_errstr(ptf_error));
    } else {
       if (usage) {
          lXchgList(jr, JR_usage, &usage);
@@ -1310,6 +1315,9 @@ clean_up_old_jobs(bool startup) {
       // Do early exit:
       // - if cleanup was already done
       // - if there are no jobs to process (0 jobs or only simulated jobs)
+      // @todo do we actually want to do the cleanup if there are (only) running jobs?
+      //       and even with finished jobs, cleanup could get between the job having finished and the ack from qmaster
+      //       triggering deletion of the active job directory
       DRETURN(true);
    }
 
