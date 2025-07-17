@@ -14,7 +14,17 @@
 					"line":	"The Job Id."
 				}],
 			"type":	"lUlongT",
-			"flags":	[]
+			"flags":	[
+				{
+					"name": "PRIMARY_KEY"
+				},
+				{
+					"name": "UNIQUE"
+				},
+				{
+					"name": "HASH"
+				}
+			]
 		}, {
 			"name":	"OS_job_list",
 			"summary":	"OS Job List",

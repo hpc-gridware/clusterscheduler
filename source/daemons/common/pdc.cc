@@ -736,13 +736,15 @@ int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
 
 
 int psIgnoreJob(JobID_t JobID) {
-   lnk_link_t *curr;
+   if (JobID != 0) {
+      lnk_link_t *curr;
 
-   /* if job is in the list, remove it */
+      /* if job is in the list, remove it */
 
-   if ((curr = find_job(JobID))) {
-      LNK_DELETE(curr);
-      free_job(LNK_DATA(curr, job_elem_t, link));
+      if ((curr = find_job(JobID))) {
+         LNK_DELETE(curr);
+         free_job(LNK_DATA(curr, job_elem_t, link));
+      }
    }
 
    return 0;

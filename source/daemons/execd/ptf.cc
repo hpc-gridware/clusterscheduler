@@ -167,8 +167,10 @@ static lListElem *ptf_process_job(osjobid_t os_job_id,
                                   const char *task_id_str,
                                   const lListElem *new_job, u_long32 jataskid, const char *systemd_scope, usage_collection_t usage_collection);
 
-static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
-                                 const char *systemd_scope, lListElem **job_elem);
+static lListElem *ptf_get_job_osjob_by_osjobid(const lList *job_list, osjobid_t os_job_id,
+                                               lListElem **job_elem);
+
+static lListElem *ptf_get_osjob_by_ids(lList *osjoblist, u_long32 ja_task_id, const char *pe_task_id);
 
 static void ptf_set_job_priority(lListElem *job);
 
@@ -469,12 +471,7 @@ static void ptf_setpriority_addgrpid(const lListElem *job, const lListElem *osjo
 ******************************************************************************/
 static lListElem *ptf_get_job(u_long job_id)
 {
-   lListElem *job;
-   lCondition *where;
-
-   where = lWhere("%T(%I == %u)", JL_Type, JL_job_ID, job_id);
-   job = lFindFirstRW(ptf_jobs, where);
-   lFreeWhere(&where);
+   lListElem *job = lGetElemUlongRW(ptf_jobs, JL_job_ID, job_id);
    return job;
 }
 
@@ -506,30 +503,20 @@ static lListElem *ptf_get_job(u_long job_id)
 *     static lListElem* - osjob (JO_Type) 
 *                         or nullptr if it was not found.
 ******************************************************************************/
-static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
-                                 const char *systemd_scope, lListElem **job_elem)
+static lListElem *ptf_get_job_osjob_by_osjobid(const lList *job_list, osjobid_t os_job_id,
+                                               lListElem **job_elem)
 {
+   DENTER(TOP_LAYER);
+
    lListElem *job;
    lListElem *osjob = nullptr;
    lCondition *where;
 
-   DENTER(TOP_LAYER);
-
+   // @todo use lGetElemUlong instead of building a lCondition
+   //       only possible, when we remove the non LINUX, SOLARIS etc. branch
+   //       or make a u_long64 out of the 2 u_long32 values
 #if defined(LINUX) || defined(SOLARIS) || defined(DARWIN) || defined(FREEBSD) || defined(NETBSD)
-   bool with_systemd = false;
-#if defined(OCS_WITH_SYSTEMD)
-   if (systemd_scope != nullptr && mconf_get_enable_systemd()) {
-      with_systemd = true;
-   }
-#endif
-   // If systemd is enabled we always search by both addgrp and systemd scope
-   // the USAGE_COLLECTION setting could be changed, but this shall not affect running jobs,
-   // so we cannot decide based on USAGE_COLLECTION what the search criteria are.
-   if (with_systemd) {
-      where = lWhere("%T(%I == %u || %I == %s)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id, JO_systemd_scope, systemd_scope);
-   } else {
-      where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
-   }
+   where = lWhere("%T(%I == %u)", JO_Type, JO_OS_job_ID, (u_long32) os_job_id);
 #else
    where = lWhere("%T(%I == %u && %I == %u)", JO_Type,
                   JO_OS_job_ID, (u_long) (os_job_id & 0xffffffff),
@@ -559,6 +546,29 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    DRETURN(osjob);
 }
 
+static lListElem *ptf_get_osjob_by_ids(lList *osjoblist, u_long32 ja_task_id, const char *pe_task_id) {
+   lListElem *osjob;
+
+   for_each_rw(osjob, osjoblist) {
+      if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
+         const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
+         if (pe_task_id == nullptr) {
+            if (osjob_pe_task_id == nullptr) {
+               // we found the array task element (and not a possible pe task element with the same job/ja_task_id)
+               break;
+            }
+         } else {
+            // we have a pe task, check if the task id matches
+            if (osjob_pe_task_id != nullptr && strcmp(pe_task_id, osjob_pe_task_id) == 0) {
+               // found the pe task element
+               break;
+            }
+         }
+      }
+   }
+
+   return osjob;
+}
 
 /*--------------------------------------------------------------------
  * ptf_process_job - process a job received from the SGE scheduler.
@@ -573,8 +583,6 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
 {
    DENTER(TOP_LAYER);
 
-   lListElem *job, *osjob;
-   lList *job_list = ptf_jobs;
    u_long job_id = lGetUlong(new_job, JB_job_number);
    double job_tickets = lGetDouble(lFirst(lGetList(new_job, JB_ja_tasks)), JAT_tix);
    bool interactive = lGetString(new_job, JB_script_file) == nullptr;
@@ -594,32 +602,26 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
  *    else
  *    add osjob job && osjobid == 0 skip
  */
-   job = ptf_get_job(job_id);
+   lListElem *job = ptf_get_job(job_id);
    if (job == nullptr) {
-      job = lCreateElem(JL_Type);
-      if (job != nullptr) {
-         lAppendElem(job_list, job);
-         lSetUlong(job, JL_job_ID, job_id);
-      }
+      job = lAddElemUlong(&ptf_jobs, JL_job_ID, job_id, JL_Type);
    }
    if (job != nullptr) {
-      lList *osjoblist;
-
-      osjoblist = lGetListRW(job, JL_OS_job_list);
-      osjob = ptf_get_job_os(osjoblist, os_job_id, systemd_scope, &job);
+      lList *osjoblist = lGetListRW(job, JL_OS_job_list);
+      lListElem *osjob = ptf_get_osjob_by_ids(osjoblist, jataskid, task_id_str);
       if (osjob == nullptr) {
-         if (osjoblist == nullptr) {
-            osjoblist = lCreateList("osjoblist", JO_Type);
-            lSetList(job, JL_OS_job_list, osjoblist);
+         osjob = lAddSubUlong(job, JO_ja_task_ID, jataskid, JL_OS_job_list, JO_Type);
+         if (osjob != nullptr) {
+            if (task_id_str != nullptr) {
+               lSetString(osjob, JO_task_id_str, task_id_str);
+            }
+            lSetList(osjob, JO_usage_list, ptf_build_usage_list("usagelist", usage_collection));
          }
-         osjob = lCreateElem(JO_Type);
-         lSetUlong(osjob, JO_ja_task_ID, jataskid);
-         lAppendElem(osjoblist, osjob);
-         lSetList(osjob, JO_usage_list, ptf_build_usage_list("usagelist", usage_collection));
+      }
+      // this function might get called first before we have the osjobid
+      // in later calls then make sure to update osjobid and systemd_scope
+      if (osjob != nullptr) {
          ptf_set_osjobid(osjob, os_job_id);
-         if (task_id_str != nullptr) {
-            lSetString(osjob, JO_task_id_str, task_id_str);
-         }
          lSetUlong(osjob, JO_usage_collection, usage_collection);
          if (systemd_scope != nullptr) {
             lSetString(osjob, JO_systemd_scope, systemd_scope);
@@ -691,7 +693,7 @@ static void ptf_get_usage_from_data_collector()
          job = nullptr;
          // Passing nullptr as systemd_scope:
          // Here we are in the data collector, there must be an add_grp_id / osjobid.
-         osjob = ptf_get_job_os(ptf_jobs, jobs->jd_jid, nullptr, &job);
+         osjob = ptf_get_job_osjob_by_osjobid(ptf_jobs, jobs->jd_jid, &job);
          if (osjob != nullptr) {
             // If the osjobid / addgrp == 0, we do not want to get usage from PDC.
             if (lGetUlong(osjob, JO_OS_job_ID) != 0) {
@@ -1198,18 +1200,13 @@ int ptf_job_started(osjobid_t os_job_id, const char *task_id_str,
 
 int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lList **usage)
 {
-   lListElem *ptf_job, *osjob;
-   lList *osjobs;
-
    DENTER(TOP_LAYER);
 
-   ptf_job = ptf_get_job(job_id);
+   lListElem *ptf_job = ptf_get_job(job_id);
 
    if (ptf_job == nullptr) {
       DRETURN(PTF_ERROR_JOB_NOT_FOUND);
    }
-
-   osjobs = lGetListRW(ptf_job, JL_OS_job_list);
 
    /*
     * if job is not complete, go get latest job usage info
@@ -1236,21 +1233,9 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
     */
    *usage = _ptf_get_job_usage(ptf_job, ja_task_id, pe_task_id); 
 
-   /* Search ja/pe ptf task */
-   if (pe_task_id == nullptr) {
-      osjob = lFirstRW(osjobs);
-   } else {
-      for_each_rw(osjob, osjobs) {
-         if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
-            const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
-
-            if (osjob_pe_task_id != nullptr &&
-                strcmp(pe_task_id, osjob_pe_task_id) == 0) {
-               break;
-            } 
-         }
-      }
-   }
+   // search ptf osjob
+   lList *osjobs = lGetListRW(ptf_job, JL_OS_job_list);
+   lListElem *osjob = ptf_get_osjob_by_ids(osjobs, ja_task_id, pe_task_id);
 
    if (osjob == nullptr) {
       DRETURN(PTF_ERROR_JOB_NOT_FOUND);
