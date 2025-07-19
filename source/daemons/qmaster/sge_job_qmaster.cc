@@ -995,16 +995,16 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
                                 const char *ruser,
                                 int force,
                                 monitoring_t *monitor, u_long64 gdi_session) {
-   u_long32 job_number, task_number;
-   lListElem *qep = nullptr;
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
    DENTER(TOP_LAYER);
 
-   job_number = lGetUlong(j, JB_job_number);
-   task_number = lGetUlong(t, JAT_task_number);
-   qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(t, JAT_master_queue));
-   if (!qep) {
+   u_long32 job_number = lGetUlong(j, JB_job_number);
+   u_long32 task_number = lGetUlong(t, JAT_task_number);
+   bool is_array = job_is_array(j);
+
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   lListElem *qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(t, JAT_master_queue));
+   if (qep == nullptr) {
       ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, lGetString(t, JAT_master_queue));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    }
@@ -1015,7 +1015,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          cancel_job_resend(job_number, task_number);
          j = nullptr;
 
-         if (job_is_array(j)) {
+         if (is_array) {
             ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
             ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
@@ -1031,7 +1031,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          const char *qualified_hostname = component_get_qualified_hostname();
          lListElem *dummy_jr = lCreateElem(JR_Type);
 
-         if (job_is_array(j)) {
+         if (is_array) {
             ERROR(MSG_JOB_FORCEDDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
             ERROR(MSG_JOB_FORCEDDELJOB_SU, ruser, sge_u32c(job_number));
@@ -1057,8 +1057,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
           * 4. execd informs master of job exits and job is
           *    deleted from master lists
           */
-
-         if (job_is_array(j)) {
+         if (is_array) {
             INFO(MSG_JOB_REGDELTASK_SUU, ruser, sge_u32c(job_number), sge_u32c(task_number));
          } else {
             INFO(MSG_JOB_REGDELX_SSU, ruser, SGE_OBJ_JOB, sge_u32c(job_number));
@@ -1072,6 +1071,7 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
 
 void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
    DENTER(TOP_LAYER);
+
    if (j != nullptr && t != nullptr) {
 
       u_long32 state = lGetUlong(t, JAT_state);
