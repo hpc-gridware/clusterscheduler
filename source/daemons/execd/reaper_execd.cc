@@ -470,11 +470,10 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
 
    DTRACE;
 
-   /* job to core binding: on Solaris the processor set have to be deleted 
+   /* job to core binding: on Solaris the processor set have to be deleted
       and the cores have to be freed */ 
       
    binding = get_conf_val("binding");
-   
    clean_up_binding(binding);
 
    /*
@@ -547,8 +546,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    }
 
    /* look for error file this overrules errors found yet */
-   sge_get_active_job_file_path(&fname,
-                                job_id, ja_task_id, pe_task_id, "error");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "error");
    if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
       int n;
       char *new_line;
@@ -635,8 +633,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
     * If the job finishes, the shepherd must remove the "checkpointed" file
     */  
 
-   sge_get_active_job_file_path(&fname,
-                                job_id, ja_task_id, pe_task_id, "checkpointed");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "checkpointed");
    ckpt_arena = 1;   /* 1 job will be restarted in case of failure *
                       * 2 job will be restarted from ckpt arena    */
    if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
@@ -652,8 +649,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
          FCLOSE_IGNORE_ERROR(fp);
       }   
 
-      sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, 
-                                "job_pid");
+      sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "job_pid");
       if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
          if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
             if (!fscanf(fp, sge_u32 , &job_pid))
@@ -852,7 +848,19 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
    if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep, false)) {
       lListElem *master_q;
       int used_slots;
-   
+
+      // We get here through a ACK_JOB_EXIT.
+      // If it is not a pe task we are removing, then it is the master task.
+      // If there are still pe tasks running, we may not yet remove the master task,
+      // as we would delete the pe tasks' active_job directories and other data.
+      // Just return, the ACK_JOB_EXIT will be repeated by sge_qmaster.
+      if (pe_task_id == nullptr &&
+          lGetNumberOfElem(lGetList(jatep, JAT_task_list)) > 1) {
+         // flush the job report to speed up repeating of the ACK_JOB_EXIT
+         flush_job_report(jr);
+         DRETURN_VOID;
+      }
+
       DPRINTF("REMOVING WITH jep && jatep\n");
       if (pe_task_id_str) {
          petep = lGetElemStrRW(lGetList(jatep, JAT_task_list), PET_id, pe_task_id_str);
@@ -917,7 +925,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
          DPRINTF("%s: used slots decreased to %d\n", lGetString(master_q, QU_full_name), used_slots);
       }
 
-      /* 
+      /*
        * when the job finished / the last task of a pe job finished
        * delete the tmpdir for this job
        * the slave container of a tightly integrated parallel job 
@@ -2062,6 +2070,9 @@ reaper_sendmail(lListElem *jep, lListElem *jr) {
 *     This function sets the slave job to status JEXITING,
 *     if all pe tasks already exited, it triggers sending
 *     of the final slave job report.
+*     The ACK_SIGNAL_SLAVE is repeated by sge_qmaster until all
+*     slave tasks have finished and sge_execd sent the final
+*     report for this job.
 *
 *  INPUTS
 *     u_long32 job_id     - job id of the slave job
