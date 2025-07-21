@@ -2897,7 +2897,6 @@ shepherd_signal_job(pid_t pid, int sig) {
     * if the signal is the kill signal, we first kill the pid of the started command.
     * subsequent kills are passed to the shepherd's child.
     * In this case (first_kill && sig == SIGKILL) we do not kill via systemd.
-    * @todo: Not 100% sure: E.g., if we suspend a qrsh job, shall the whole process tree be suspended? I'd say no.
     */
    static int first_kill = 1;       // first time we signal with SIGKILL
    static time_t first_kill_ts = 0;
@@ -2911,13 +2910,14 @@ shepherd_signal_job(pid_t pid, int sig) {
          pid_file_name = get_conf_val("qrsh_pid_file");
 
          sge_switch2start_user();
+         bool read_qrsh_file = shepherd_read_qrsh_file(pid_file_name, &qrsh_pid);
+         sge_switch2admin_user();
 
-         if (shepherd_read_qrsh_file(pid_file_name, &qrsh_pid)) {
+         if (read_qrsh_file) {
             is_qrsh = true;
             pid = -qrsh_pid;
             shepherd_trace("found pid of qrsh client command: " pid_t_fmt, pid);
          }
-         sge_switch2admin_user();
       }
    }
 
@@ -2939,7 +2939,13 @@ shepherd_signal_job(pid_t pid, int sig) {
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
      if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
         if (ocs::g_use_systemd) {
-            ocs::shepherd_systemd_signal_job(sig, pid > 0);
+           pid_t systemd_pid = pid;
+           // for all the nofify signals we only signal the main process (usually: the job script)
+           // it will handle e.g., a SIGUSR1, child processes usually not
+           if (sig != SIGKILL && sig != SIGSTOP && sig != SIGCONT) {
+              systemd_pid = abs(systemd_pid);
+           }
+            ocs::shepherd_systemd_signal_job(sig, systemd_pid > 0);
         } else {
 #  ifdef COMPILE_DC
            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {

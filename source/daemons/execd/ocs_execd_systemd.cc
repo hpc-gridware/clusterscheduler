@@ -24,7 +24,10 @@
 
 #include "sgeobj/cull/sge_ptf_JL_L.h"
 #include "sgeobj/cull/sge_ptf_JO_L.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_usage.h"
 
 #include "uti/ocs_Systemd.h"
@@ -32,6 +35,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 
+#include "execd.h"
 #include "ocs_execd_systemd.h"
 
 #include "msg_execd.h"
@@ -110,6 +114,112 @@ namespace ocs::execd {
       }
 
       return ret;
+   }
+
+   /*!
+    * @brief Store the Systemd slice name for a tightly integrated parallel job.
+    *
+    * This function stores the Systemd slice name in the JA task element if the job is a tightly integrated
+    * parallel job (i.e., it has control slaves enabled).
+    * If no slice name is provided, it builds one based on the job and task information.
+    * This slice name is used at job end to delete the slice if no more tasks are running.
+    *
+    * This function is called
+    * - when a job is made available on a slave host of a tightly integrated parallel job
+    * - when the master task of a tightly integrated parallel job is started
+    *
+    * @param job The job element containing job information.
+    * @param ja_task The JA task element where the slice name will be stored.
+    * @param slice_name The name of the Systemd slice to store, or nullptr to build it automatically.
+    */
+   void
+   execd_store_tight_pe_slice(const lListElem *job, lListElem *ja_task, const char *slice_name) {
+      const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+      if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
+         // tightly integrated parallel job, store the slice name
+         if (slice_name != nullptr) {
+            lSetString(ja_task, JAT_systemd_slice, slice_name);
+         } else {
+            // no slice name given, build it ourselves
+            std::string systemd_slice;
+            std::string systemd_scope;
+            DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+            if (ocs::Job::job_get_systemd_slice_and_scope(job, ja_task, nullptr, systemd_slice, systemd_scope, &error_dstr)) {
+               lSetString(ja_task, JAT_systemd_slice, systemd_slice.c_str());
+            }
+         }
+      }
+   }
+
+   /*!
+    * @brief Delete the Systemd slice for a tightly integrated parallel job.
+    *
+    * This function deletes the Systemd slice for a tightly integrated parallel job.
+    * It connects to Systemd and attempts to stop the specified slice.
+    * If the slice is successfully stopped, it is removed from the system by systemd.
+    *
+    * @param slice The name of the Systemd slice to delete.
+    */
+   static void
+   execd_delete_tight_pe_slice(const char *slice) {
+      if (slice != nullptr) {
+         ocs::uti::Systemd systemd;
+         DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
+         // connect as root, we want to have write access
+         sge_switch2start_user();
+         bool connected = systemd.connect(&err_dstr);
+         sge_switch2admin_user();
+         if (connected) {
+            bool success = systemd.stop_unit(slice, &err_dstr);
+            if (!success) {
+               WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+            }
+         } else {
+            // connect failed
+            WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
+         }
+      }
+   }
+
+   /*!
+    * @brief Delete the Systemd slice for a tightly integrated parallel job.
+    *
+    * This function is called when a tightly integrated parallel job is finished,
+    * and there are no more pe tasks left in the job.
+    * It checks if the job has a Systemd slice and deletes it if it exists.
+    * It clears the slice name in the JA task element to ensure that deletion is not repeated.
+    *
+    * @param job_id The job ID of the job to check.
+    * @param ja_task_id The JA task ID of the job to check.
+    * @param pe_task_id The PE task ID, or nullptr if this is the master task.
+    */
+   void
+   execd_delete_tight_pe_slice(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id) {
+      // We might need to remove a systemd slice (in case this is the master task of a tightly integrated pe job).
+      // Only if there are no more pe tasks left in the job.
+      if (pe_task_id == nullptr) {
+         bool enable_systemd = mconf_get_enable_systemd();
+         if (enable_systemd) {
+            lListElem *job = nullptr;
+            lListElem *ja_task = nullptr;
+            if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
+               const char *slice = lGetString(ja_task, JAT_systemd_slice);
+               // only if there is a job slice and it has not yet been deleted
+               if (slice != nullptr) {
+                  const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+                  // if it is tight integration and there are no running pe tasks left,
+                  // we can delete the systemd slice
+                  if (pe != nullptr && lGetBool(pe, PE_control_slaves) &&
+                      lGetNumberOfElem(lGetList(ja_task, JAT_task_list)) == 0) {
+                     // tightly integrated parallel job, no more pe tasks left
+                     execd_delete_tight_pe_slice(slice);
+                     // make sure to delete the slice only once
+                     lSetString(ja_task, JAT_systemd_slice, nullptr);
+                  }
+               }
+            }
+         }
+      }
    }
 
    /*!

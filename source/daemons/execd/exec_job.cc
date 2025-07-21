@@ -1390,7 +1390,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          // slice and scope
          std::string systemd_slice;
          std::string systemd_scope;
-         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
          if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
             fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
             fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
@@ -1409,6 +1409,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             lSetString(jatep, JAT_systemd_scope, systemd_scope.c_str());
          } else {
             lSetString(petep, PET_systemd_scope, systemd_scope.c_str());
+         }
+
+         // in case of tightly integrated parallel jobs, we need to store the systemd slice.
+         // this is one place (where the master task is started),
+         // the other one is when the slave container is started.
+         if (petep == nullptr) {
+            ocs::execd::execd_store_tight_pe_slice(jep, jatep, systemd_slice.c_str());
          }
       }
    }

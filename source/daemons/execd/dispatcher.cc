@@ -166,7 +166,7 @@ int sge_execd_process_messages() {
                      do_ack(&msg);
                   break;
                   case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
-                     case ocs::gdi::ClientServerBase::TAG_SIGJOB:
+                  case ocs::gdi::ClientServerBase::TAG_SIGJOB:
                      if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
                         do_signal_queue(&msg, &apb);
                         is_apb_used = true;

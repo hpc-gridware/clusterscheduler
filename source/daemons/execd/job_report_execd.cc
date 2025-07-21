@@ -52,6 +52,7 @@
 #include "sgeobj/sge_qinstance.h"
 
 #include "job_report_execd.h"
+#include "ocs_execd_systemd.h"
 #include "reaper_execd.h"
 #include "execd_signal_queue.h"
 #include "load_avg.h"
@@ -287,7 +288,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 /*
 **          This is the answer of qmaster if we report a job as exiting
 **          - job gets removed from job report list and from job list
-**          - job gets cleaned from file system                       
+**          - job gets cleaned from file system
 **          - retry is triggered by next job report sent to qmaster 
 **            containing this job as "exiting"                  
 */
@@ -295,8 +296,15 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
             jataskid = lGetUlong(ack, ACK_id2);
             pe_task_id_str = lGetString(ack, ACK_str);
 
-            DPRINTF("remove exiting job " sge_u32 "/" sge_u32 "/%s\n",
+            DPRINTF("remove exiting job " sge_u32 "." sge_u32 " %s\n",
                     jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
+
+#if defined(OCS_WITH_SYSTEMD)
+            if (pe_task_id_str == nullptr) {
+               // remove the tight pe job slave container (if any) job from systemd
+               ocs::execd::execd_delete_tight_pe_slice(jobid, jataskid, pe_task_id_str);
+            }
+#endif
 
             if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
                remove_acked_job_exit(jobid, jataskid, pe_task_id_str, jr);

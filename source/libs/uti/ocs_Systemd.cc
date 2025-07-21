@@ -151,7 +151,9 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "sd_bus_unref";
+         // func = "sd_bus_unref";
+         // safer is sd_bus_flush_close_unref()
+         func = "sd_bus_flush_close_unref";
          sd_bus_unref_func = reinterpret_cast<sd_bus_unref_func_t>(dlsym(lib_handle, func));
          if (sd_bus_unref_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_LOAD_FUNC_SS, func, dlerror());

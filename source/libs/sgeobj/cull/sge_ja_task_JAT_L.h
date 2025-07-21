@@ -124,6 +124,13 @@
 *    Only used in sge_execd, it is set during the startup phase of the
 *    job.
 *
+*    SGE_STRING(JAT_systemd_slice) - Systemd Slice
+*    In case of tightly integrated parallel jobs, the job's tasks (master and slave)
+*    are started within a slice. We only store it if we have a tightly integrated parallel job,
+*    and this slice needs to be deleted after the job is finished.
+*    Only used in sge_execd, it is set during the startup phase of the
+*    job.
+*
 *    SGE_ULONG(JAT_usage_collection) - Usage Collection Mode
 *    Usage collection mode of a pe task.
 *    One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE).
@@ -222,6 +229,7 @@ enum {
    JAT_pid,
    JAT_osjobid,
    JAT_systemd_scope,
+   JAT_systemd_slice,
    JAT_usage_collection,
    JAT_usage_list,
    JAT_scaled_usage_list,
@@ -264,6 +272,7 @@ LISTDEF(JAT_Type)
    SGE_ULONG(JAT_pid, CULL_SUBLIST)
    SGE_STRING(JAT_osjobid, CULL_SUBLIST)
    SGE_STRING(JAT_systemd_scope, CULL_SUBLIST)
+   SGE_STRING(JAT_systemd_slice, CULL_SUBLIST)
    SGE_ULONG(JAT_usage_collection, CULL_DEFAULT)
    SGE_LIST(JAT_usage_list, UA_Type, CULL_SUBLIST)
    SGE_LIST(JAT_scaled_usage_list, UA_Type, CULL_SUBLIST)
@@ -306,6 +315,7 @@ NAMEDEF(JATN)
    NAME("JAT_pid")
    NAME("JAT_osjobid")
    NAME("JAT_systemd_scope")
+   NAME("JAT_systemd_slice")
    NAME("JAT_usage_collection")
    NAME("JAT_usage_list")
    NAME("JAT_scaled_usage_list")

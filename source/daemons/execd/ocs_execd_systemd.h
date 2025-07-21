@@ -37,6 +37,12 @@ namespace ocs::execd {
    execd_move_shepherd_to_scope();
 
    void
+   execd_store_tight_pe_slice(const lListElem *job, lListElem *ja_task, const char *slice_name = nullptr);
+
+   void
+   execd_delete_tight_pe_slice(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id);
+
+   void
    ptf_get_usage_from_systemd();
 
 #endif

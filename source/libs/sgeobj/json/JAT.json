@@ -255,9 +255,27 @@
 			"name":	"systemd_scope",
 			"summary":	"Systemd Scope",
 			"description":	[{
-					"line":	"In case a job is started in a systemd scope, this is the"
+				"line":	"In case a job is started in a systemd scope, this is the"
+			}, {
+				"line":	"scope unit name."
+			}, {
+				"line":	"Only used in sge_execd, it is set during the startup phase of the"
+			}, {
+				"line":	"job."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"systemd_slice",
+			"summary":	"Systemd Slice",
+			"description":	[{
+					"line":	"In case of tightly integrated parallel jobs, the job's tasks (master and slave)"
+				}, {
+					"line":	"are started within a slice. We only store it if we have a tightly integrated parallel job,"
                }, {
-					"line":	"scope unit name."
+					"line":	"and this slice needs to be deleted after the job is finished."
                }, {
 					"line":	"Only used in sge_execd, it is set during the startup phase of the"
                }, {
