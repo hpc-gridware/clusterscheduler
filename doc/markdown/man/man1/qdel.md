@@ -52,7 +52,7 @@ possible to use `qdel -u "\*"` to delete all jobs of all users. If a manager wan
 a user, he has to specify the user and the job. If no job is specified all jobs from that user are deleted.
 
 ## *wc_job_range_list*
-A list of jobs, which should be deleted. Find details in 
+A list of jobs, which should be deleted. Find details in xxqs_name_sxx_types(1).
 
 # ENVIRONMENTAL VARIABLES
 
