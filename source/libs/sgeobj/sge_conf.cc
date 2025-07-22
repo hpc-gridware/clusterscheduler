@@ -145,6 +145,7 @@ static bool enable_enforce_master_limit = false;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool ignore_ngroups_max_limit = false;
+static bool enable_systemd = true;
 static bool do_credentials = true;
 static bool do_authentication = true;
 static bool is_monitor_message = true;
@@ -183,6 +184,8 @@ static long ptf_min_priority = -999;
 static int max_dynamic_event_clients = 1000;
 
 static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
+static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
+
 static u_long32 script_timeout = 120;
 #ifdef LINUX
 static bool enable_binding = true;
@@ -680,6 +683,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       ignore_ngroups_max_limit = false;
+      enable_systemd = true;
       do_credentials = true;
       do_authentication = true;
       is_monitor_message = true;
@@ -911,6 +915,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_max_priority = -999;
       ptf_min_priority = -999;
       keep_active = KEEP_ACTIVE_FALSE;
+      usage_collection = USAGE_COLLECTION_DEFAULT;
       script_timeout = 120;
 #ifdef LINUX
       enable_binding = true;
@@ -972,6 +977,22 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                   keep_active = KEEP_ACTIVE_TRUE;
                } else {
                   keep_active = KEEP_ACTIVE_FALSE;
+               }
+               continue;
+            }
+         }
+         {
+            if (strncasecmp(s, "USAGE_COLLECTION", sizeof("USAGE_COLLECTION")-1) == 0) {
+               const char *usage_collection_str = &s[sizeof("USAGE_COLLECTION=")-1];
+
+               if (strncasecmp(usage_collection_str, TRUE_STR, sizeof(TRUE_STR)-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_DEFAULT;
+               } else if (strncasecmp(usage_collection_str, "PDC", sizeof("PDC")-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_PDC;
+               } else if (strncasecmp(usage_collection_str, "HYBRID", sizeof("HYBRID")-1) == 0) {
+                  usage_collection = USAGE_COLLECTION_HYBRID;
+               } else {
+                  usage_collection = USAGE_COLLECTION_NONE;
                }
                continue;
             }
@@ -1092,7 +1113,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_bool_param(s, "IGNORE_NGROUPS_MAX_LIMIT", &ignore_ngroups_max_limit)) {
             continue;
-         } 
+         }
+         if (parse_bool_param(s, "ENABLE_SYSTEMD", &enable_systemd)) {
+            continue;
+         }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
@@ -2133,6 +2157,18 @@ keep_active_t mconf_get_keep_active() {
    DRETURN(ret);
 }
 
+usage_collection_t mconf_get_usage_collection() {
+   DENTER(BASIS_LAYER);
+
+   usage_collection_t ret;
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = usage_collection;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   DRETURN(ret);
+}
+
 bool mconf_get_enable_binding() {
    bool ret;
 
@@ -2699,6 +2735,16 @@ bool mconf_get_ignore_ngroups_max_limit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = ignore_ngroups_max_limit;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_enable_systemd() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = enable_systemd;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

@@ -371,21 +371,18 @@ FCLOSE_ERROR:
    DRETURN_VOID;
 }
 
-int pt_open()
-{
+int pt_open() {
    cwd = opendir(PROC_DIR);
-   return !cwd;
+   return cwd == nullptr;
 }
-void pt_close()
-{
+
+void pt_close() {
    closedir(cwd);
 }
 
-int pt_dispatch_proc_to_job(
-lnk_link_t *job_list,
-int time_stamp,
-time_t last_time
-) {
+int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time) {
+   DENTER(TOP_LAYER);
+
    char procnam[1024];
    int fd = -1;
 #if defined(LINUX)
@@ -426,8 +423,6 @@ time_t last_time
    double old_time = 0;
    uint64 old_vmem = 0;
 
-   DENTER(TOP_LAYER);
-
    max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
       ERROR(SFNMAX, MSG_SGE_NGROUPS_MAXOSRECONFIGURATIONNECESSARY);
@@ -440,30 +435,41 @@ time_t last_time
       DRETURN(1);
    }
 
-   /* find next valid entry in procfs */ 
+   // loop over all processes in /proc
    while ((dent = readdir(cwd))) {
       char *pidname;
 
 #ifndef LINUX
-      if (!dent->d_name)
+      // on Linux d_name is a char array, it cannot be nullptr
+      // on other systems it is a pointer to a string, which can be nullptr
+      if (dent->d_name == nullptr) {
          continue;
+      }
 #endif
-      if (!dent->d_name[0])
+      // skip empty string
+      if (dent->d_name[0] == '\0') {
          continue;
+      }
 
-      if (!strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "."))
+      // skip directory entries for current and parent directory
+      if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0) {
          continue;
+      }
 
-      if (dent->d_name[0] == '.')
-          pidname = &dent->d_name[1];
-      else
-          pidname = dent->d_name;
+      // handle process names starting with a dot (e.g. ".1234") - @todo why would this be the case?
+      if (dent->d_name[0] == '.') {
+         pidname = &dent->d_name[1];
+      } else {
+         pidname = dent->d_name;
+      }
 
-      if (atoi(pidname) == 0)
+      // skip entries which are not numeric (e.g. "self", "thread-self")
+      if (atoi(pidname) == 0) {
          continue;
+      }
 
 #if defined(LINUX)
-      /* check only processes which belongs to a GE job */
+      // check only processes that belong to a job
       if ((pr = get_pr(atoi(pidname))) != nullptr) {
          /* set process as still running */
          lSetPosBool(pr, pos_run, true);
@@ -472,6 +478,8 @@ time_t last_time
          }
       }
 
+      // read the stat file
+      // we get stime and utime, vmem and rss from it
       sprintf(procnam, PROC_DIR "/%s/stat", dent->d_name);
       if (SGE_STAT(procnam, &fst)) {
          if (errno != ENOENT) {
@@ -675,14 +683,15 @@ time_t last_time
          for (group=0; !found_it && group<groups; group++) {
             if ((gid_t)job_elem->job.jd_jid == list[group]) {  // @todo: is this correct? jd_jid is a pid_t, list[group] gid_t
 #if defined(LINUX)
-               /* mark this process as relevant */
+               // mark this process as relevant
                lSetPosBool(pr, pos_rel, true);
 #endif
                found_it = 1;
             }
          }
-         if (found_it)
+         if (found_it) {
             break;
+         }
       }
 
       if (curr == job_list) { /* this is not a traced process */ 
@@ -690,14 +699,13 @@ time_t last_time
          continue;
       }
 
-      /* we always read only one entry per function call
-         the while loop is needed to read next one */
+      // we always read only one entry per function call the while loop is needed to read next one
       break;
    } /* while */
 
    sge_free(&list);
 
-   if (!dent) {/* visited all files in procfs */
+   if (dent == nullptr) { // visited all files in procfs
 #if defined(LINUX)
       clean_procList();
 #endif

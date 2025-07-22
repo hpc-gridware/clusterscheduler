@@ -112,13 +112,11 @@ int main(int argc,char *argv[])
 
 #include "cull/cull.h"
 
-#include "sgeobj/sge_feature.h"
+#include "ocs_common_systemd.h"
 
-#include "msg_execd.h"
 #include "sgedefs.h"
 #include "exec_ifm.h"
 #include "pdc.h"
-#include "ptf.h"
 #include "procfs.h"
 #include "basis_types.h"
 
@@ -348,8 +346,13 @@ static int psRetrieveOSJobData() {
          table to decide whether a process is needed for a job or not. */
       pt_open();
 
-      while (!pt_dispatch_proc_to_job(&job_list, time_stamp, last_time))
-         ; 
+      // pt_dispatch_proc_to_job will read data of a single process from /proc
+      // it will return 0 if there are still processes to read
+      // it will return 1 if there are no more processes to read
+      // we want to read them all
+      while (pt_dispatch_proc_to_job(&job_list, time_stamp, last_time) == 0) {
+         ;
+      }
       last_time = time_stamp;
       pt_close();
    }
@@ -555,9 +558,7 @@ static int psRetrieveOSJobData() {
       job_elem = LNK_DATA(curr, job_elem_t, link);
       job = &job_elem->job;
 
-      /* if job has not been watched within 30 seconds of being pre-added
-         to job list, delete it */
-
+      // if job has not been watched within 30 seconds of being pre-added to job list, delete it
       if (job_elem->precreated) {
 
          if ((job_elem->precreated + 30) < time_stamp) {
@@ -583,14 +584,13 @@ static int psRetrieveOSJobData() {
          //int proccount;
          lnk_link_t *currp, *nextp;
 
-         /* sum up usage of each processes for this job */
+         /* sum up usage of each process for this job */
          //proccount = job->jd_proccount;
          job->jd_utime_a = job->jd_stime_a = 0;
          job->jd_vmem = 0;
          job->jd_rss = 0;
 
-         for(currp=job_elem->procs.next; currp != &job_elem->procs;
-             currp=nextp) {
+         for (currp=job_elem->procs.next; currp != &job_elem->procs; currp=nextp) {
 
             proc_elem_t *proc_elem = LNK_DATA(currp, proc_elem_t, link);
             psProc_t *proc = &proc_elem->proc;
@@ -598,19 +598,25 @@ static int psRetrieveOSJobData() {
             nextp = currp->next; /* in case currp is deleted */
 
             if (time_stamp == proc->pd_tstamp) { 
-               /* maybe still living */
-               job->jd_utime_a += proc->pd_utime;    
-               job->jd_stime_a += proc->pd_stime;    
-               job->jd_vmem += proc_elem->vmem;    
-               job->jd_rss += proc_elem->rss;    
-               job->jd_mem += (proc_elem->mem/1024.0);    
+               // maybe still living
+               // in hybrid mode, we are not interested in cpu and rss / maxrss
+               if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
+                  job->jd_utime_a += proc->pd_utime;
+                  job->jd_stime_a += proc->pd_stime;
+                  job->jd_rss += proc_elem->rss;
+               }
+               job->jd_vmem += proc_elem->vmem;
+               job->jd_mem += (proc_elem->mem/1024.0);
 #if defined(LINUX)
                job->jd_chars += proc_elem->delta_chars;     
 #endif
             } else { 
-               /* most likely exited */
-               job->jd_utime_c += proc->pd_utime;    
-               job->jd_stime_c += proc->pd_stime;    
+               // most likely exited
+               // we do not sum up memory usage (@todo should we?)
+               if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
+                  job->jd_utime_c += proc->pd_utime;
+                  job->jd_stime_c += proc->pd_stime;
+               }
                job->jd_proccount--;
               
                /* remove process entry from list */
@@ -625,8 +631,10 @@ static int psRetrieveOSJobData() {
          if (job->jd_vmem > job->jd_himem) {
             job->jd_himem = job->jd_vmem;
          }
-         if (job->jd_rss > job->jd_maxrss) {
-            job->jd_maxrss = job->jd_rss;
+         if (ocs::common::use_pdc_for_usage_collection(job_elem->usage_collection)) {
+            if (job->jd_rss > job->jd_maxrss) {
+               job->jd_maxrss = job->jd_rss;
+            }
          }
       } 
 
@@ -691,9 +699,10 @@ int psStopCollector()
 }
 
 
-int psWatchJob(JobID_t JobID)
+int psWatchJob(JobID_t JobID, usage_collection_t usage_collection)
 {
-   lnk_link_t *curr;
+   if (JobID != 0) {
+      lnk_link_t *curr;
 
 #  if DEBUG
 
@@ -704,20 +713,22 @@ int psWatchJob(JobID_t JobID)
 
 #  endif
 
-   /* if job to watch is not already in the list then add it */
-
-   if ((curr=find_job(JobID))) {
-      LNK_DATA(curr, job_elem_t, link)->precreated = 0;
-   } else {
-      job_elem_t *job_elem = (job_elem_t *)sge_malloc(sizeof(job_elem_t));
-      memset(job_elem, 0, sizeof(job_elem_t));
-      job_elem->starttime = get_gmt();
-      job_elem->job.jd_jid = JobID;
-      job_elem->job.jd_length = sizeof(psJob_t);
-      LNK_INIT(&job_elem->procs);
-      LNK_INIT(&job_elem->arses);
-      /* add to job list */
-      LNK_ADD(job_list.prev, &job_elem->link);
+      /* if job to watch is not already in the list then add it */
+      curr = find_job(JobID);
+      if (curr != nullptr) {
+         LNK_DATA(curr, job_elem_t, link)->precreated = 0;
+      } else {
+         job_elem_t *job_elem = (job_elem_t *)sge_malloc(sizeof(job_elem_t));
+         memset(job_elem, 0, sizeof(job_elem_t));
+         job_elem->starttime = get_gmt();
+         job_elem->job.jd_jid = JobID;
+         job_elem->usage_collection = usage_collection;
+         job_elem->job.jd_length = sizeof(psJob_t);
+         LNK_INIT(&job_elem->procs);
+         LNK_INIT(&job_elem->arses);
+         /* add to job list */
+         LNK_ADD(job_list.prev, &job_elem->link);
+      }
    }
 
    return 0;
@@ -725,13 +736,15 @@ int psWatchJob(JobID_t JobID)
 
 
 int psIgnoreJob(JobID_t JobID) {
-   lnk_link_t *curr;
+   if (JobID != 0) {
+      lnk_link_t *curr;
 
-   /* if job is in the list, remove it */
+      /* if job is in the list, remove it */
 
-   if ((curr = find_job(JobID))) {
-      LNK_DELETE(curr);
-      free_job(LNK_DATA(curr, job_elem_t, link));
+      if ((curr = find_job(JobID))) {
+         LNK_DELETE(curr);
+         free_job(LNK_DATA(curr, job_elem_t, link));
+      }
    }
 
    return 0;
@@ -847,11 +860,7 @@ struct psJob_s *psGetAllJobs()
    psRetrieveOSJobData();
 
    /* calculate size of return data */
-#ifndef SOLARIS
    rsize = sizeof(uint64);
-#else
-   rsize = 8;
-#endif
 
    for (curr=job_list.next; curr != &job_list; curr=curr->next) {
       job_elem_t *job_elem = LNK_DATA(curr, job_elem_t, link);
@@ -870,11 +879,8 @@ struct psJob_s *psGetAllJobs()
    /* fill in return data */
    jobs = rjob;
    *(uint64 *)jobs = jobcount;
-#ifndef SOLARIS
+
    INCJOBPTR(jobs, sizeof(uint64));
-#else
-   INCJOBPTR(jobs, 8);
-#endif
 
    /* copy the job data */
    for (curr=job_list.next; curr != &job_list; curr=curr->next) {

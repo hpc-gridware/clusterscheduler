@@ -446,13 +446,22 @@ StartExecd()
       fi
       $SVCADM enable -s "svc:/application/sge/execd:$SGE_CLUSTER_NAME"
       if [ $? -ne 0 ]; then
-         $INFOTEXT "\nFailed to start execution deamon over SMF.\n" \
+         $INFOTEXT "\nFailed to start execution daemon over SMF.\n" \
                    "Check service by issuing svcs -l svc:/application/sge/execd:%s" $SGE_CLUSTER_NAME
-         $INFOTEXT -log "\nFailed to start execution deamon over SMF.\n" \
+         $INFOTEXT -log "\nFailed to start execution daemon over SMF.\n" \
                         "Check service by issuing svcs -l svc:/application/sge/execd:%s" $SGE_CLUSTER_NAME
          if [ $AUTO = true ]; then
             MoveLog
          fi
+         exit 1
+      fi
+   elif [ "$RC_FILE" = "systemd" -a `IsSystemdServiceInstalled "execd"` = "true" ]; then
+      SERVICE_NAME=`GetServiceName "execd"`
+      systemctl start "$SERVICE_NAME"
+      if [ $? -ne 0 ]; then
+         $INFOTEXT "sge_execd start problem"
+         $INFOTEXT -log "sge_execd start problem"
+         MoveLog
          exit 1
       fi
    else

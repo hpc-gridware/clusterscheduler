@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <csignal>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_binding_hlp.h"
@@ -52,6 +53,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -64,6 +66,7 @@
 
 #include "sgeobj/ocs_BindingExecd2Shepherd.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_ja_task.h"
@@ -89,6 +92,7 @@
 #include "sge_job_qmaster.h"
 #include "tmpdir.h"
 #include "exec_job.h"
+#include "ocs_execd_systemd.h"
 #include "mail.h"
 #include "basis_types.h"
 #include "pdc.h"
@@ -299,6 +303,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    const lList *path_aliases = nullptr;
    char dce_wrapper_cmd[128];
+   bool starting_shepherd_ok = true;
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -800,10 +805,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                        petep == nullptr ? lGetString(jep, JB_job_name) : lGetString(petep, PET_name));
    var_list_set_string(&environmentList, "HOSTNAME", lGetHost(master_q, QU_qhostname));
    var_list_set_string(&environmentList, "QUEUE", lGetString(master_q, QU_qname));
-   /* JB: TODO (ENV): shouldn't we better have a SGE_JOB_ID? */
+
    var_list_set_uint32t(&environmentList, "JOB_ID", job_id);
 
-   /* JG: TODO (ENV): shouldn't we better use SGE_JATASK_ID and have an additional SGE_PETASK_ID? */
    if (job_is_array(jep)) {
       u_long32 start, end, step;
 
@@ -993,27 +997,38 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 #ifdef COMPILE_DC
 
-#  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
+#if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
 
+#if defined(LINUX)
+   if (!sup_groups_in_proc()) {
+      lFreeList(&environmentList);
+      snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
+      FCLOSE(fp);
+      DRETURN(-2);
+   }
+#endif
+
+   // The usage_collection mode.
    {
+      usage_collection_t usage_collection = mconf_get_usage_collection();
+      fprintf(fp, "usage_collection= " sge_u32 "\n", usage_collection);
+      if (petep == nullptr) {
+         lSetUlong(jatep, JAT_usage_collection, usage_collection);
+      } else {
+         lSetUlong(petep, PET_usage_collection, usage_collection);
+      }
+   }
+
+   // Set the additional group id.
+   // When we are using systemd we do not need to set an additional group id - we use value 0.
+   // Unless in hybrid usage collection mode where we get usage from both Systemd and via PDC.
+   // And when we enabled killing by add_grp_id, we also need to set it.
+   if (ocs::execd::execd_use_pdc_for_usage_collection() || mconf_get_enable_addgrp_kill()) {
+      // parse range and create list
       lList *rlp = nullptr;
       lList *alp = nullptr;
       gid_t temp_id;
-      char str_id[256];
-      char *gid_range = nullptr;
-#     if defined(LINUX)
-
-      if (!sup_groups_in_proc()) {
-         lFreeList(&environmentList);
-         snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOSGID);
-         FCLOSE(fp);
-         DRETURN(-2);
-      }
-
-#     endif
-
-      /* parse range add create list */
-      gid_range = mconf_get_gid_range();
+      char *gid_range = mconf_get_gid_range();
       DPRINTF("gid_range = %s\n", gid_range);
       range_list_parse_from_string(&rlp, &alp, gid_range,
                                    0, 0, INF_NOT_ALLOWED);
@@ -1038,23 +1053,28 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             DRETURN(-1);
          }
       }
+      lFreeList(&rlp);
+      lFreeList(&alp);
+   } else {
+      // We do not use PDC for usage collection nor do we kill by addrgp,
+      // no need to set an additional group id.
+      last_addgrpid = 0;
+   }
 
-      /* write add_grp_id to job-structure and file */
-      snprintf(str_id, sizeof(str_id), "%ld", (long) last_addgrpid);
-      fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
+   // write add_grp_id to config file and to the job-structure
+   fprintf(fp, "add_grp_id=" gid_t_fmt "\n", last_addgrpid);
+   {
+      char str_id[256];
+      snprintf(str_id, sizeof(str_id), gid_t_fmt, last_addgrpid);
       if (petep == nullptr) {
          lSetString(jatep, JAT_osjobid, str_id);
       } else {
          lSetString(petep, PET_osjobid, str_id);
       }
+   }
 
-      if (mconf_get_ignore_ngroups_max_limit()) {
-         fprintf(fp, "skip_ngroups_max_silently=yes\n");
-      }
-
-      lFreeList(&rlp);
-      lFreeList(&alp);
-
+   if (mconf_get_ignore_ngroups_max_limit()) {
+      fprintf(fp, "skip_ngroups_max_silently=yes\n");
    }
 
 #endif
@@ -1347,14 +1367,59 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "shell_start_mode=%s\n",
            job_get_shell_start_mode(jep, master_q, shell_start_mode));
    sge_free(&shell_start_mode);
+
    /* we need the basename for loginshell test */
    shell = strrchr(shell_path, '/');
-   if (!shell)
+   if (shell == nullptr) {
       shell = shell_path;
-   else
+   } else {
       shell++;
-
+   }
    fprintf(fp, "use_login_shell=%d\n", ck_login_sh(shell) ? 1 : 0);
+
+   // systemd specific options:
+   //    - enable_systemd
+   //    - slice and scope
+   //    - devices_allow
+#ifdef OCS_WITH_SYSTEMD
+   {
+      bool enable_systemd = mconf_get_enable_systemd() && ocs::uti::Systemd::is_systemd_available();
+      fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
+
+      if (enable_systemd) {
+         // slice and scope
+         std::string systemd_slice;
+         std::string systemd_scope;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
+            fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
+            fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
+         }
+
+         // device isolation
+         // for testing purposes until we have device isolation via RSMAPs
+         env = lGetElemStr(lGetList(jep, JB_env_list), VA_variable, "SGE_DEBUG_DEVICES_ALLOW");
+         if (env != nullptr) {
+            const char *devices_allow = lGetString(env, VA_value);
+            fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
+         } else {
+            fprintf(fp, "devices_allow=\n");
+         }
+         if (petep == nullptr) {
+            lSetString(jatep, JAT_systemd_scope, systemd_scope.c_str());
+         } else {
+            lSetString(petep, PET_systemd_scope, systemd_scope.c_str());
+         }
+
+         // in case of tightly integrated parallel jobs, we need to store the systemd slice.
+         // this is one place (where the master task is started),
+         // the other one is when the slave container is started.
+         if (petep == nullptr) {
+            ocs::execd::execd_store_tight_pe_slice(jep, jatep, systemd_slice.c_str());
+         }
+      }
+   }
+#endif
 
    /* the following values are needed by the reaper */
    if (mailrec_unparse(lGetList(jep, JB_mail_list), mail_str, sizeof(mail_str))) {
@@ -1587,6 +1652,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "qlogin_daemon=%s\n", qlogin_daemon);
             sge_free(&qlogin_daemon);
          } else {
+            // @todo CS-1262 we do no longer deliver a rshd or rlogind
+            //       no longer need the write_osjob_id config value, remove it from here and from shepherd
             if (JOB_TYPE_IS_QRSH(jb_now)) {
                char *rsh_daemon = mconf_get_rsh_daemon();
                strcat(daemon, "rshd");
@@ -1844,7 +1911,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
 
       if (chdir(execd_spool_dir))       /* go back */
-         /* if this happens (dont know how) we have a real problem */
+         /* if this happens (don't know how) we have a real problem */
          ERROR(MSG_FILE_CHDIR_SS, execd_spool_dir, strerror(errno));
       if (i == -1) {
          if (getenv("SGE_FAILURE_BEFORE_FORK")) {
@@ -1857,7 +1924,21 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       DRETURN(i);
    }
 
-   {  /* close all fd's except 0,1,2 */
+   // If we are running under systemd control,
+   // we need to move the shepherd out of the execd scope.
+   // We create a new scope for the shepherd, e.g. "ocs-shepherd.scope".
+   // The shepherd process may *not* run within the scope of running a job - it might have limits which would lead
+   // to sge_shepherd being killed.
+   // Moving the shepherd pid to a new scope must be done here (in the child process), otherwise the shepherd
+   // might already have forked and have started job processes within the execd scope.
+   // The shepherd scope is automatically deleted again when the last shepherd process exits.
+   // Therefore, we need to create a new scope when the first shepherd process is started,
+   // and just attach the following shepherd processes to this scope.
+#if defined (OCS_WITH_SYSTEMD)
+   starting_shepherd_ok = ocs::execd::execd_move_shepherd_to_scope();
+#endif
+
+   if (starting_shepherd_ok) {  /* close all fd's except 0,1,2 */
       int keep_open[3];
 
       keep_open[0] = 0;
@@ -1870,62 +1951,66 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
     * set KRB5CCNAME so shepherd assumes user's identify for
     * access to DFS or AFS file systems
     */
-   if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
-       lGetString(jep, JB_cred)) {
+   if (starting_shepherd_ok) {
+      if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
+           feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+          lGetString(jep, JB_cred)) {
 
-      char ccname[1024];
-      snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
-      putenv(ccname);
-   }
-
-   DPRINTF("**********************CHILD*********************\n");
-   shepherd_name = SGE_SHEPHERD;
-   snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
-
-   pag_cmd = mconf_get_pag_cmd();
-   shepherd_cmd = mconf_get_shepherd_cmd();
-   if (shepherd_cmd && strlen(shepherd_cmd) &&
-       strcasecmp(shepherd_cmd, "none")) {
-      DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-      execlp(shepherd_cmd, ps_name, nullptr);
-   } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
-      DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-      execlp(dce_wrapper_cmd, ps_name, nullptr);
-   } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
-              !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
-      DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name),
-              lGetString(master_q, QU_full_name));
-
-      if (ISTRACE)
-         execlp(shepherd_path, ps_name, nullptr);
-      else
-         execlp(shepherd_path, ps_name, "-bg", nullptr);
-   } else {
-      char commandline[2048];
-
-      DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
-              lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
-      if (ISTRACE) {
-         snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
-      } else {
-         snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
+         char ccname[1024];
+         snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
+         putenv(ccname);
       }
-
-      execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
    }
-   sge_free(&pag_cmd);
-   sge_free(&shepherd_cmd);
 
+   if (starting_shepherd_ok) {
+      DPRINTF("**********************CHILD*********************\n");
+      shepherd_name = SGE_SHEPHERD;
+      snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
+
+      pag_cmd = mconf_get_pag_cmd();
+      shepherd_cmd = mconf_get_shepherd_cmd();
+      if (shepherd_cmd && strlen(shepherd_cmd) &&
+          strcasecmp(shepherd_cmd, "none")) {
+         DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+         execlp(shepherd_cmd, ps_name, nullptr);
+      } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+         DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+         execlp(dce_wrapper_cmd, ps_name, nullptr);
+      } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
+                 !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
+         DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name),
+                 lGetString(master_q, QU_full_name));
+
+         if (ISTRACE)
+            execlp(shepherd_path, ps_name, nullptr);
+         else
+            execlp(shepherd_path, ps_name, "-bg", nullptr);
+      } else {
+         char commandline[2048];
+
+         DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
+                 lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
+         if (ISTRACE) {
+            snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
+         } else {
+            snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
+         }
+
+         execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
+      }
+      sge_free(&pag_cmd);
+      sge_free(&shepherd_cmd);
+   }
 
    /*---------------------------------------------------*/
    /* exec() failed - do what shepherd does if it fails */
-
+   // @todo can we set the host in error state (all queues) when starting_shepherd_ok is false?
+   //       Otherwise the job will get scheduled to this host over and over again.
    fp = fopen("error", "w");
    if (fp) {
       fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
@@ -2010,6 +2095,3 @@ get_nhosts(const lList *gdil_orig) {
 
    DRETURN(nhosts);
 }
-
-
-

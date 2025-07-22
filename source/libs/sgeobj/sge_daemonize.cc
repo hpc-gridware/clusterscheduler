@@ -75,7 +75,7 @@ static int fd_pipe[2];
 *     The parent process will exit with one of the following exit states:
 *
 *     typedef enum uti_daemonize_state_type {
-*        SGE_DEAMONIZE_OK           = 0,  ok 
+*        SGE_DAEMONIZE_OK           = 0,  ok
 *        SGE_DAEMONIZE_DEAD_CHILD   = 1,  child exited before sending state 
 *        SGE_DAEMONIZE_TIMEOUT      = 2   timeout whild waiting for state 
 *     } uti_daemonize_state_t;
@@ -181,7 +181,7 @@ bool sge_daemonize_prepare() {
       }
 
       switch (exit_status) {
-         case SGE_DEAMONIZE_OK:
+         case SGE_DAEMONIZE_OK:
             INFO(SFNMAX, MSG_UTI_DAEMONIZE_OK);
             break;
          case SGE_DAEMONIZE_DEAD_CHILD:
@@ -269,7 +269,7 @@ sge_daemonize_finalize() {
    }
 
    /* The response id has 4 byte, send it to father process */
-   snprintf(tmp_buffer, 4, "%3d", SGE_DEAMONIZE_OK);
+   snprintf(tmp_buffer, 4, "%3d", SGE_DAEMONIZE_OK);
    if (write(fd_pipe[1], tmp_buffer, 4) != 4) {
       dstring ds = DSTRING_INIT;
       CRITICAL(MSG_FILE_CANNOT_WRITE_SS, "fd_pipe[1]", sge_strerror(errno, &ds));

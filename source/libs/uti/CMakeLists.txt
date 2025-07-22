@@ -24,6 +24,7 @@ set(LIBRARY_SOURCES
       config_file.cc
       ocs_JsonUtil.cc
       ocs_Munge.cc
+      ocs_Systemd.cc
       ocs_TerminationManager.cc
       ocs_cond.cc
       sge_afsutil.cc

@@ -55,8 +55,8 @@ static lList *procList;
 *******************************************************************************/
 lListElem *get_pr (int pid)
 {
-   if (!procList) {
-      gen_procList ();
+   if (procList == nullptr) {
+      gen_procList();
       return nullptr;
    }
 
@@ -65,8 +65,8 @@ lListElem *get_pr (int pid)
 
 void append_pr (lListElem *pr)
 {
-   if (!procList) {
-      gen_procList ();
+   if (procList == nullptr) {
+      gen_procList();
    }
    lAppendElem(procList, pr);
 }

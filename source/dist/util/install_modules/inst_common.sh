@@ -709,7 +709,7 @@ AddChangedHost()
 CheckConfigFile()
 {
    CONFIG_FILE=$1
-   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
+   KNOWN_CONFIG_FILE_ENTRIES_INSTALL="SGE_ROOT SGE_QMASTER_PORT SGE_EXECD_PORT CELL_NAME ADMIN_USER QMASTER_SPOOL_DIR EXECD_SPOOL_DIR GID_RANGE SPOOLING_METHOD DB_SPOOLING_DIR PAR_EXECD_INST_COUNT ADMIN_HOST_LIST SUBMIT_HOST_LIST EXEC_HOST_LIST EXECD_SPOOL_DIR_LOCAL HOSTNAME_RESOLVING SHELL_NAME COPY_COMMAND DEFAULT_DOMAIN ADMIN_MAIL ADD_TO_RC SLICE_NAME SET_FILE_PERMS RESCHEDULE_JOBS SCHEDD_CONF SHADOW_HOST EXEC_HOST_LIST_RM REMOVE_RC CSP_RECREATE CSP_COPY_CERTS CSP_COUNTRY_CODE CSP_STATE CSP_LOCATION CSP_ORGA CSP_ORGA_UNIT CSP_MAIL_ADDRESS SGE_ENABLE_SMF SGE_CLUSTER_NAME"
    KNOWN_CONFIG_FILE_ENTRIES_BACKUP="SGE_ROOT SGE_CELL BACKUP_DIR TAR BACKUP_FILE"
    MAX_GID=2147483647 #unsigned int = 32bit - 1
    MIN_GID=100        #from 0 - 100 may be reserved GIDs
@@ -1475,14 +1475,12 @@ GetDefaultClusterName() {
 SetupRcScriptNames61()
 {
    case $1 in
-      qmaster)
-         hosttype="master";;
       shadow)
          return;;
       *)
          hosttype=$1;;
    esac
-   if [ $hosttype = "master" ]; then
+   if [ $hosttype = "qmaster" ]; then
       TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
       STARTUP_FILE_NAME=sgemaster
       S95NAME=S95sgemaster
@@ -1528,15 +1526,13 @@ SetupRcScriptNames()
    fi
 
    case $1 in
-      qmaster)
-         hosttype="master";;
       shadow)
          DAEMON_NAME="shadow"
          return;;
       *)
          hosttype=$1;;
    esac
-   if [ $hosttype = "master" ]; then
+   if [ $hosttype = "qmaster" ]; then
       script_name=sgemaster
       TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
       STARTUP_FILE_NAME=sgemaster.$SGE_CLUSTER_NAME
@@ -1576,14 +1572,18 @@ SetupRcScriptNames()
 #-------------------------------------------------------------------------
 # CheckRCfiles: Check for presence RC scripts
 #               Requires SGE_ROOT and SGE_CELL to be set
-# $1 ... can be empty or "61" to detect darwin RC script on 61
+# $1 host type (qmaster, execd, ...)
 #
 CheckRCfiles()
 {
+   hosttype=$1
    rc_ret=0
    rc_path=""
+   if [ "$RC_FILE" = "systemd" -a `IsSystemdServiceInstalled $hosttype` = "true" ]; then
+      SERVICE_NAME=`GetServiceName $hosttype`
+      rc_path="$RC_PREFIX/$SERVICE_NAME"
    # LSB, etc.
-   if [ "$RC_FILE" = "lsb" -o "$RC_FILE" = "insserv-linux" -o "$RC_FILE" = "update-rc.d" -o "$RC_FILE" = "rc-update" ]; then
+   elif [ "$RC_FILE" = "lsb" -o "$RC_FILE" = "insserv-linux" -o "$RC_FILE" = "update-rc.d" -o "$RC_FILE" = "rc-update" ]; then
       rc_path="$RC_PREFIX/$STARTUP_FILE_NAME"
    # System V
    elif [ "$RC_FILE" = "sysv_rc" ]; then
@@ -1615,7 +1615,7 @@ CheckRCfiles()
 #-------------------------------------------------------------------------
 # CheckIfClusterNameAlreadyExists: Check for presence of SMF service and RC script
 #                                  Requires SGE_ROOT and SGE_CELL to be set
-# $1 ... compoment we are installing
+# $1 ... component we are installing
 #
 CheckIfClusterNameAlreadyExists() 
 {
@@ -1648,7 +1648,7 @@ CheckIfClusterNameAlreadyExists()
    #Check for RCscript
    SetupRcScriptNames $hosttype
 
-   CheckRCfiles
+   CheckRCfiles $hosttype
    rc_res=$?
   
    #Prepare correct return value and message
@@ -1696,7 +1696,7 @@ RemoveRC_SMF()
    esac
    if [ $rem_res -ne 0 ]; then
       $INFOTEXT "Removal not successful!"
-      if [ "$AUTO"=true ]; then
+      if [ "$AUTO" = "true" ]; then
          $INFOTEXT -log "Removal not successful!"
          MoveLog
       fi
@@ -1755,7 +1755,7 @@ SearchForExistingInstallations()
 # ProcessSGEClusterName: Ask for cluster name
 #                        Requires SGE_ROOT and SGE_CELL to be set
 # $1 ... compoment we are installing
-#        valid values are: bdb, master, shadowd, execd, dbwriter
+#        valid values are: bdb, qmaster, shadowd, execd, dbwriter
 #                          "" - no service checking
 #
 ProcessSGEClusterName()
@@ -1771,9 +1771,8 @@ ProcessSGEClusterName()
       SGE_QMASTER_PORT=`./utilbin/$SGE_ARCH/getservbyname -number sge_qmaster`
    fi
 
-   done=false
-
-   while [ $done = false ]; do
+   done="false"
+   while [ "$done" = "false" ]; do
       GetDefaultClusterName
       $CLEAR
       $INFOTEXT -u "\nUnique cluster name"
@@ -1819,16 +1818,16 @@ ProcessSGEClusterName()
             if [ $? -eq 0 ]; then
                $CLEAR
                RemoveRC_SMF $1 $validation_res
-               done=true
+               done="true"
             fi                  
          else
-            done=true
+            done="true"
          fi      
       else
-         done=true
+         done="true"
       fi
    done
-      
+
    #Only BDB or qmaster installation can create cluster_name file
    if [ \( "$1" = "bdb" -o "$1" = "qmaster" -o "$UPDATE" = "true" \) -a ! -f $SGE_ROOT/$SGE_CELL/common/cluster_name ]; then
       Makedir "$SGE_ROOT/$SGE_CELL/common"
@@ -2026,7 +2025,7 @@ CreateSGEStartUpScripts()
    create=$2
    hosttype=$3
 
-   if [ $hosttype = "master" ]; then
+   if [ $hosttype = "qmaster" ]; then
       TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
       STARTUP_FILE_NAME=sgemaster
    else
@@ -2050,7 +2049,7 @@ CreateSGEStartUpScripts()
 
    if [ $create = true ]; then
 
-      if [ $hosttype = "master" ]; then
+      if [ $hosttype = "qmaster" ]; then
          template="util/rctemplates/sgemaster_template"
          svc_name="sgemaster.${SGE_CLUSTER_NAME}"
       else
@@ -2087,10 +2086,10 @@ CreateSGEStartUpScripts()
 
       rm -f $TMP_SGE_STARTUP_FILE ${TMP_SGE_STARTUP_FILE}.0 ${TMP_SGE_STARTUP_FILE}.1
 
-      if [ $euid = 0 -a "$ADMINUSER" != default -a $QMASTER = "install" -a $hosttype = "master" ]; then
+      if [ $euid = 0 -a "$ADMINUSER" != default -a $QMASTER = "install" -a $hosttype = "qmaster" ]; then
          AddDefaultManager root $ADMINUSER
          AddDefaultOperator $ADMINUSER
-      elif [ $euid != 0 -a $hosttype = "master" ]; then
+      elif [ $euid != 0 -a $hosttype = "qmaster" ]; then
          AddDefaultManager $USER
          AddDefaultOperator $USER
       fi
@@ -2124,6 +2123,236 @@ AddSGEStartUpScript()
    $CLEAR
 }
 
+#-------------------------------------------------------------------------
+# CheckSliceName: Check if a slice name is correct
+# It may only contain lower case characters and numbers.
+# It must start with a character.
+# It may not contain the trailing ".slice".
+#
+CheckSliceName()
+{
+   slice_name=$1
+
+   # slice name may only contain lowercase letters and numbers
+   echo $slice_name | grep -qE '^[a-z][a-z0-9]+$'
+   if [ $? -ne 0 ]; then
+      $INFOTEXT "Slice name may only contain lowercase letters and numbers."
+      $INFOTEXT -log "Slice name may only contain lowercase letters and numbers."
+      WaitClear "noclear"
+      return 1
+   fi
+
+   # it may not contain the trailing ".slice"
+   echo $slice_name | grep -qE '^[a-z][a-z0-9]+.slice$'
+   if [ $? -eq 0 ]; then
+      $INFOTEXT "Slice name may not contain the trailing \".slice\"."
+      $INFOTEXT -log "Slice name may not contain the trailing \".slice\"."
+      WaitClear "noclear"
+      return 1
+   fi
+
+   return 0
+}
+
+#-------------------------------------------------------------------------
+# IsSystemdServiceInstalled: Check if a service is installed
+# $1 - the service type (qmaster, shadow, execd, ...)
+#
+IsSystemdServiceInstalled()
+{
+   # Check if the systemd service is installed
+   SERVICE_NAME=`GetServiceName $1 "false"`
+   if [ $? -ne 0 ]; then
+      $ECHO "false"
+      return 1
+   fi
+
+   # Check if the service file exists
+   if [ ! -f "$RC_PREFIX/$SERVICE_NAME" ]; then
+      $ECHO "false"
+      return 1
+   fi
+
+   $ECHO "true"
+   return 0
+}
+
+#-------------------------------------------------------------------------
+# GetServiceName: Return the name of the systemd service
+# $1 - the service type (qmaster, shadow, execd, ...)
+# $2 - optional: boolean log_error, "true" or "false"
+#
+GetServiceName()
+{
+   log_error="true"
+   UNIT_NAME=$1
+   if [ $# -gt 1 ]; then
+      log_error=$2
+   fi
+
+   if [ ! -f "$SGE_ROOT/$SGE_CELL/common/slice_name" ]; then
+      if [ "$log_error" = "true" ]; then
+         $INFOTEXT "$SGE_ROOT/$SGE_CELL/common/slice_name does not exist"
+         $INFOTEXT -log "$SGE_ROOT/$SGE_CELL/common/slice_name does not exist"
+         WaitClear "noclear"
+      fi
+      $ECHO "no_known_${UNIT_NAME}_service_yet.service"
+      return 1
+   fi
+
+   SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
+   if [ $? -ne 0 ]; then
+      if [ "$log_error" = "true" ]; then
+         $INFOTEXT "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         $INFOTEXT -log "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         WaitClear "noclear"
+      fi
+      $ECHO "no_known_${UNIT_NAME}_service_yet.service"
+      return 1
+   fi
+
+   if [ "$UNIT_NAME" = "shadow" ]; then
+      UNIT_NAME="qmaster"
+   fi
+   SERVICE_NAME="$SLICE_NAME-$UNIT_NAME.service"
+   $ECHO $SERVICE_NAME
+   return 0
+}
+
+#-------------------------------------------------------------------------
+# GetDefaultSliceName: Get the name of the top level slice
+#
+GetDefaultSliceName()
+{
+   DEFAULT_SLICE_NAME="ocs"
+   # @todo do we always want to append the SGE_QMASTER_PORT?
+   #       simply "ocs-qmaster.service" is shorter and more readable than "ocs1234-qmaster.service"
+   #       and it is what you are looking for when you are looking for the qmaster service
+   #       BUT: when doing a side by side update the new cluster must not use the same slice name - handle it there?
+   if [ "$SGE_QMASTER_PORT" != "" ]; then
+      DEFAULT_SLICE_NAME="${DEFAULT_SLICE_NAME}${SGE_QMASTER_PORT}"
+   fi
+
+   $ECHO "$DEFAULT_SLICE_NAME"
+   return 0
+}
+
+GetSystemdSliceName()
+{
+   not_exists_error=$1
+   if [ -f "$SGE_ROOT/$SGE_CELL/common/slice_name" ]; then
+      # read the slice name from $SGE_ROOT/$SGE_CELL/common/slice_name
+      SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
+      if [ $? -ne 0 ]; then
+         $INFOTEXT "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         $INFOTEXT -log "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
+         exit 1
+      fi
+      $ECHO "$SLICE_NAME"
+   else
+      if [ "$not_exists_error" = "true" ]; then
+         $INFOTEXT "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
+         $INFOTEXT -log "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
+         exit 1
+      fi
+      return 1
+   fi
+
+   return 0
+}
+
+SetupSystemdSliceName()
+{
+   # if we are on a systemd system, we need to define the slice name
+   if [ "$RC_FILE" = "systemd" ]; then
+      SLICE_NAME=`GetSystemdSliceName "false"`
+      # if slice name is not yet defined, we ask the user for it
+      if [ $? -ne 0 ]; then
+         # query toplevel slice name
+         slice_name_is_ok="false"
+         while [ "$slice_name_is_ok" = "false" ]; do
+            $CLEAR
+            if [ "$AUTO" = "false" ]; then
+               # set the default
+               SLICE_NAME=`GetDefaultSliceName`
+            fi
+            $INFOTEXT -u "\nSetting up systemd toplevel slice name"
+            $INFOTEXT "%s will be running withing a top level systemd/cgroups slice,\ndefault is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
+            $INFOTEXT "If you are running multiple clusters on the same host,\nplease use a unique slice name.\n"
+            $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\nhit <RETURN> to use [%s] >> " $SLICE_NAME
+            SLICE_NAME=`Enter $SLICE_NAME`
+            CheckSliceName $SLICE_NAME
+            if [ $? -eq 0 ]; then
+               slice_name_is_ok="true"
+            elif [ "$AUTO" = "true" ]; then
+               # avoid endless loop when slice is incorrectly defined
+               return 1
+            fi
+         done
+
+         # store the slice name in $SGE_ROOT/$SGE_CELL/common/slice_name
+         SafelyCreateFile "$SGE_ROOT/$SGE_CELL/common/slice_name" 644 "$SLICE_NAME"
+      fi
+   fi
+}
+
+#-------------------------------------------------------------------------
+# InstallSystemdUnitFile: Install the systemd unit file from template
+#
+InstallSystemdUnitFile()
+{
+   # source template and destination file names
+   case $DAEMON_NAME in
+      qmaster|shadow)
+         template_file="$SGE_ROOT/util/rctemplates/sgemaster_systemd_template"
+         ;;
+      execd)
+         template_file="$SGE_ROOT/util/rctemplates/sgeexecd_systemd_template"
+         ;;
+      *)
+         $INFOTEXT "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
+         $INFOTEXT -log "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
+         return 1
+         ;;
+   esac
+
+   SLICE_NAME=`GetSystemdSliceName "true"`
+   $INFOTEXT "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
+   $INFOTEXT -log "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
+
+   # replace variables in the template, store the result in a tmp file
+   TMP_UNIT_FILE="/tmp/sge_${DAEMON_NAME}_unit_file.$$"
+   sed -e "s%GENROOT%${SGE_ROOT_VAL}%g" \
+       -e "s%GENCELL%${SGE_CELL_VAL}%g" \
+       -e "s%GENPRODUCT%Cluster Scheduler%g" \
+       -e "s%GENSLICE%${SLICE_NAME}%" \
+       $template_file > $TMP_UNIT_FILE
+
+   SERVICE_NAME=`GetServiceName $DAEMON_NAME`
+   if [ $? -ne 0 ]; then
+      return 1
+   fi
+
+   # copy the tmp file to the systemd directory ($RC_PREFIX)
+   # and make sure systemd is aware of the new unit file
+   unit_file="$RC_PREFIX/$SERVICE_NAME"
+   Execute cp $TMP_UNIT_FILE $unit_file
+   Execute rm -f $TMP_UNIT_FILE
+   Execute systemctl daemon-reload
+
+   $INFOTEXT "Installed %s systemd unit file to %s" $DAEMON_NAME $unit_file
+   $INFOTEXT -log "Installed %s systemd unit file to %s" $DAEMON_NAME $unit_file
+
+   return 0
+}
+
+#-------------------------------------------------------------------------
+# EnableSystemdService: Enable a systemd service given by SERVICE_NAME
+#
+EnableSystemdService()
+{
+   Execute systemctl enable $SERVICE_NAME
+}
 
 InstallRcScript()
 {
@@ -2189,8 +2418,14 @@ InstallRcScript()
       return
    fi
 
+   # Linux host with systemd
+   if [ "$RC_FILE" = "systemd" ]; then
+      InstallSystemdUnitFile
+      if [ $? -eq 0 ]; then
+         EnableSystemdService
+      fi
    # If system is Linux Standard Base (LSB) compliant, use the install_initd utility
-   if [ "$RC_FILE" = lsb ]; then
+   elif [ "$RC_FILE" = "lsb" ]; then
       echo cp $SGE_STARTUP_FILE $RC_PREFIX/$STARTUP_FILE_NAME
       echo /usr/lib/lsb/install_initd $RC_PREFIX/$STARTUP_FILE_NAME
       Execute cp $SGE_STARTUP_FILE $RC_PREFIX/$STARTUP_FILE_NAME
@@ -2521,10 +2756,10 @@ CheckRunningDaemon()
 BackupConfig()
 {
    DATE=`date '+%Y-%m-%d_%H_%M_%S'`
-   BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters cluster_name"
+   BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters cluster_name slice_name"
    BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
-   BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name"
+   BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="sgeCA local_conf" 
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts usermapping users usersets zombies"
    BUP_COMMON_FILE_LIST=""
@@ -2588,10 +2823,10 @@ BackupConfig()
 RestoreConfig()
 {
    DATE=`date '+%H_%M_%S'`
-   BUP_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters st.enabled cluster_name"
+   BUP_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters st.enabled cluster_name slice_name"
    BUP_COMMON_DIR_LIST="sgeCA"
    BUP_SPOOL_FILE_LIST="jobseqnum"
-   BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name"
+   BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="sgeCA local_conf" 
    BUP_CLASSIC_SPOOL_FILE_LIST="jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts usermapping users usersets zombies"
 
@@ -2968,7 +3203,7 @@ RemoveRcScript()
    hosttype=$2
    euid=$3
    upgrade=$4
-   
+
    # --- from here only if root installs ---
    if [ $euid != 0 ]; then
       return 0
@@ -3023,9 +3258,30 @@ RemoveRcScript()
       #This might happen when we do a reinstall and have RC scripts, but now
       #want to use SMF.
    fi
-   
+
+   # If system has systemd
+   if [ "$RC_FILE" = "systemd" ]; then
+      SERVICE_NAME=`GetServiceName $hosttype "false"`
+      if [ $? -eq 0 ]; then
+         if [ -f "$RC_PREFIX/$SERVICE_NAME" ]; then
+            $INFOTEXT "Removing %s service" "$SERVICE_NAME"
+            $INFOTEXT -log "Removing %s service" "$SERVICE_NAME"
+            systemctl is-active "$SERVICE_NAME"
+            if [ $? -eq 0 ]; then
+               systemctl stop "$SERVICE_NAME"
+            fi
+            systemctl is-enabled "$SERVICE_NAME"
+            if [ $? -eq 0 ]; then
+               systemctl disable "$SERVICE_NAME"
+            fi
+            rm -f "$RC_PREFIX/$SERVICE_NAME"
+            systemctl daemon-reload
+         else
+            $INFOTEXT "Service %s not found, skipping removal" "$SERVICE_NAME"
+         fi
+      fi
    # If system is Linux Standard Base (LSB) compliant, use the install_initd utility
-   if [ "$RC_FILE" = lsb ]; then
+   elif [ "$RC_FILE" = "lsb" ]; then
       echo /usr/lib/lsb/remove_initd $RC_PREFIX/$STARTUP_FILE_NAME
       Execute /usr/lib/lsb/remove_initd $RC_PREFIX/$STARTUP_FILE_NAME
       # Several old Red Hat releases do not create/remove startup links from LSB conform
@@ -3085,7 +3341,7 @@ RemoveRcScript()
       if [ -z "$v61" ]; then
          RC_DIR="$RC_DIR.$SGE_CLUSTER_NAME"
       fi
-      if [ $hosttype = "master" ]; then
+      if [ $hosttype = "qmaster" ]; then
         DARWIN_GEN_REPLACE="#GENMASTERRC"
       elif [ $hosttype = "bdb" ]; then
         DARWIN_GEN_REPLACE="#GENBDBRC"

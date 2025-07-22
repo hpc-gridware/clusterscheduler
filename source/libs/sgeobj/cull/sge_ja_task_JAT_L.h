@@ -118,6 +118,23 @@
 *    Could be / was a OS supported job id on no longer supported platforms
 *    like Cray, Nec, Irix.
 *
+*    SGE_STRING(JAT_systemd_scope) - Systemd Scope
+*    In case a job is started in a systemd scope, this is the
+*    scope unit name.
+*    Only used in sge_execd, it is set during the startup phase of the
+*    job.
+*
+*    SGE_STRING(JAT_systemd_slice) - Systemd Slice
+*    In case of tightly integrated parallel jobs, the job's tasks (master and slave)
+*    are started within a slice. We only store it if we have a tightly integrated parallel job,
+*    and this slice needs to be deleted after the job is finished.
+*    Only used in sge_execd, it is set during the startup phase of the
+*    job.
+*
+*    SGE_ULONG(JAT_usage_collection) - Usage Collection Mode
+*    Usage collection mode of a pe task.
+*    One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE).
+*
 *    SGE_LIST(JAT_usage_list) - Usage List
 *    Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list.
 *    Scheduling is using the scaled usage.
@@ -211,6 +228,9 @@ enum {
    JAT_pending_signal_delivery_time,
    JAT_pid,
    JAT_osjobid,
+   JAT_systemd_scope,
+   JAT_systemd_slice,
+   JAT_usage_collection,
    JAT_usage_list,
    JAT_scaled_usage_list,
    JAT_reported_usage_list,
@@ -251,6 +271,9 @@ LISTDEF(JAT_Type)
    SGE_ULONG64(JAT_pending_signal_delivery_time, CULL_SUBLIST)
    SGE_ULONG(JAT_pid, CULL_SUBLIST)
    SGE_STRING(JAT_osjobid, CULL_SUBLIST)
+   SGE_STRING(JAT_systemd_scope, CULL_SUBLIST)
+   SGE_STRING(JAT_systemd_slice, CULL_SUBLIST)
+   SGE_ULONG(JAT_usage_collection, CULL_DEFAULT)
    SGE_LIST(JAT_usage_list, UA_Type, CULL_SUBLIST)
    SGE_LIST(JAT_scaled_usage_list, UA_Type, CULL_SUBLIST)
    SGE_LIST(JAT_reported_usage_list, UA_Type, CULL_SUBLIST)
@@ -291,6 +314,9 @@ NAMEDEF(JATN)
    NAME("JAT_pending_signal_delivery_time")
    NAME("JAT_pid")
    NAME("JAT_osjobid")
+   NAME("JAT_systemd_scope")
+   NAME("JAT_systemd_slice")
+   NAME("JAT_usage_collection")
    NAME("JAT_usage_list")
    NAME("JAT_scaled_usage_list")
    NAME("JAT_reported_usage_list")

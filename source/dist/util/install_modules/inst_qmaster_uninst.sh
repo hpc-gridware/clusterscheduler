@@ -48,10 +48,9 @@ RemoveQmaster()
       $INFOTEXT -n -ask "y" "n" -def "n" "Do you want to uninstall the master host? [n] >> "
    fi
 
-   if [ $? = 0 ]; then
+   if [ $? -eq 0 ]; then
       $INFOTEXT -n "We're going to uninstall the master host now!\n"
       CheckRegisteredExecd
-
    else
       MoveLog
       exit 0 
@@ -77,8 +76,6 @@ CheckRegisteredExecd()
    $INFOTEXT "There are no running execution host registered!\n"
    $INFOTEXT -log "There are no running execution host registered!\n"
    ShutdownMaster
-   
-
 }
 
 ShutdownMaster()
@@ -115,7 +112,7 @@ ShutdownMaster()
    
    toDelete="accounting act_qmaster bootstrap cluster_name configuration jmx local_conf qtask sched_configuration sgeCA sge_request sgemaster"
    
-   RemoveRcScript $HOST master $euid
+   RemoveRcScript $HOST "qmaster" $euid
 
    if [ -f $SGE_ROOT/$SGE_CELL/common/sgebdb ]; then
       $INFOTEXT "Berkeley db server is being used with this installation"

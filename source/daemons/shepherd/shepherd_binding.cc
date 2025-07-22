@@ -43,12 +43,13 @@
 #include "basis_types.h"
 #include "uti/config_file.h"
 
-
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
 #include "uti/ocs_topology.h"
 
+#include "ocs_shepherd_systemd.h"
 #include "shepherd_binding.h"
 #include "err_trace.h"
 
@@ -551,9 +552,10 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                } else {
                   shepherd_trace("binding_set_linear_linux: problems while creating SGE_BINDING env");
                }
-
+            } else if (g_use_systemd) {
+               // when we are using Systemd then we set the binding via systemd property AllowCPUs
+               add_binding_to_systemd_properties(cpuset);
             } else {
-
                /* bind SET process to mask */
                if (!bind_process_to_mask(cpuset)) {
                   /* there was an error while binding */
@@ -712,6 +714,9 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                } else {
                   shepherd_trace("binding_set_striding_linux: problems while creating SGE_BINDING env");
                }
+            } else if (g_use_systemd) {
+               // when we are using Systemd then we set the binding via systemd property AllowCPUs
+               add_binding_to_systemd_properties(cpuset);
             } else {
                /* bind process to mask */
                if (bind_process_to_mask(cpuset)) {
@@ -860,6 +865,9 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                } else {
                   shepherd_trace("binding_explicit: problems while creating SGE_BINDING env");
                }
+            } else if (g_use_systemd) {
+               // when we are using Systemd then we set the binding via systemd property AllowCPUs
+               add_binding_to_systemd_properties(cpuset);
             } else {
                /* do the core binding for the current process with the mask */
                if (bind_process_to_mask(cpuset)) {
@@ -934,5 +942,5 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    }
 
 #endif
-}
 
+}

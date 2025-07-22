@@ -188,5 +188,5 @@ Here we use *CLion* as example because it provides full integration with CMake t
 
 Next step is to build and install xxQS_NAMExx.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

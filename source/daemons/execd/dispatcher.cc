@@ -38,6 +38,7 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
+#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
@@ -54,6 +55,7 @@
 #include "msg_execd.h"
 #include "execd.h"
 #include "execd_job_exec.h"
+#include "execd_profiling.h"
 #include "execd_ticket.h"
 #include "job_report_execd.h"
 #include "execd_signal_queue.h"
@@ -100,6 +102,9 @@ int sge_execd_process_messages() {
    }
 
    while (!terminate) {
+      ocs::execd_profiling_start_stop();
+      PROF_START_MEASUREMENT(SGE_PROF_CUSTOM1);
+
       u_long64 now = sge_get_gmt64();
       ocs::gdi::ClientServerBase::struct_msg_t msg;
       char* buffer     = nullptr;
@@ -161,7 +166,7 @@ int sge_execd_process_messages() {
                      do_ack(&msg);
                   break;
                   case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
-                     case ocs::gdi::ClientServerBase::TAG_SIGJOB:
+                  case ocs::gdi::ClientServerBase::TAG_SIGJOB:
                      if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
                         do_signal_queue(&msg, &apb);
                         is_apb_used = true;
@@ -353,7 +358,7 @@ int sge_execd_process_messages() {
       }
 
       if (ocs::gdi::ClientBase::sge_get_com_error_flag(EXECD, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
-         /* we have to reconnect, when the problem is fixed */
+         /* we have to reconnect when the problem is fixed */
          do_reconnect = true;
          /* we do not expect that the problem is fast to fix */
          sleep(EXECD_MAX_RECONNECT_TIMEOUT);
@@ -374,6 +379,9 @@ int sge_execd_process_messages() {
             do_reconnect = true;
          }
       }
+
+      PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM1);
+      ocs::execd_profiling_output();
    }
    sge_monitor_free(&monitor);
 

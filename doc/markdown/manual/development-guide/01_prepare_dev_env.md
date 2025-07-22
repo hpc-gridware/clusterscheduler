@@ -267,5 +267,5 @@ git clone https://github.com/hpc-gridware/gcs-extensions
 git clone https://github.com/hpc-gridware/gcs-testsuite
 ```
 
-[//]: # (Each file has to end with two emty lines)
+[//]: # (Each file has to end with two empty lines)
 

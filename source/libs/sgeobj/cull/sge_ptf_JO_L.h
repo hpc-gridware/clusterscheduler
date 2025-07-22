@@ -41,6 +41,13 @@
 *    SGE_ULONG(JO_OS_job_ID2) - OS Job Id 2
 *    OS job id (upper 32 bits). @todo Replace the two id fields by one u_long64?
 *
+*    SGE_STRING(JO_systemd_scope) - Systemd Scope
+*    When the job is running in a systemd scope, this field contains the name of the scope.
+*
+*    SGE_ULONG(JO_usage_collection) - Usage Collection Mode
+*    Usage collection mode used for the os job.
+*    One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE).
+*
 *    SGE_ULONG(JO_ja_task_ID) - Array Task Id
 *    In case of an array job: Task number of an array task.
 *
@@ -61,6 +68,8 @@
 enum {
    JO_OS_job_ID = JO_LOWERBOUND,
    JO_OS_job_ID2,
+   JO_systemd_scope,
+   JO_usage_collection,
    JO_ja_task_ID,
    JO_task_id_str,
    JO_state,
@@ -71,6 +80,8 @@ enum {
 LISTDEF(JO_Type)
    SGE_ULONG(JO_OS_job_ID, CULL_DEFAULT)
    SGE_ULONG(JO_OS_job_ID2, CULL_DEFAULT)
+   SGE_STRING(JO_systemd_scope, CULL_DEFAULT)
+   SGE_ULONG(JO_usage_collection, CULL_DEFAULT)
    SGE_ULONG(JO_ja_task_ID, CULL_DEFAULT)
    SGE_STRING(JO_task_id_str, CULL_DEFAULT)
    SGE_ULONG(JO_state, CULL_DEFAULT)
@@ -81,6 +92,8 @@ LISTEND
 NAMEDEF(JON)
    NAME("JO_OS_job_ID")
    NAME("JO_OS_job_ID2")
+   NAME("JO_systemd_scope")
+   NAME("JO_usage_collection")
    NAME("JO_ja_task_ID")
    NAME("JO_task_id_str")
    NAME("JO_state")

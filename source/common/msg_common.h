@@ -123,6 +123,8 @@
 #define MSG_NONE                                         _MESSAGE(23004, _("none"))
 #define MSG_NULL                                         _MESSAGE(23005, _("(nullptr)"))
 #define MSG_SMALLNULL                                    _MESSAGE(23006, _("(null)"))
+#define MSG_YES                                          _MESSAGE(23007, _("yes"))
+#define MSG_NO                                           _MESSAGE(23008, _("no"))
 
 #define MSG_FILE_CHDIR_SS                                _MESSAGE(23011, _("can't change dir to " SFN ": " SFN))
 #define MSG_FILE_NOCHOWN_SS                              _MESSAGE(23012, _("can't chown file or directory " SFN ": " SFN))

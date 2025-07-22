@@ -89,6 +89,7 @@
 #  include <termio.h>
 #endif
 
+#include "ocs_shepherd_systemd.h"
 #include "sge_ijs_threads.h"
 #include "sge_ijs_comm.h"
 #include "sge_shepherd_ijs.h"
@@ -108,6 +109,8 @@
 #include "signal_queue.h"
 #include "execution_states.h"
 #include "msg_common.h"
+
+#include "uti/ocs_Systemd.h"
 
 #if defined(SOLARIS)
 /* wait3() prototype only available if _XOPEN_SOURCE_EXTENDED is defined */
@@ -177,7 +180,6 @@ static pid_t start_token_cmd(int wait_for_finish, const char *cmd,
 
 /* overridable control methods */
 static void verify_method(const char *method_name);
-void shepherd_signal_job(pid_t pid, int sig);
 
 /* signal functions */
 static void signal_handler(int signal);
@@ -695,8 +697,7 @@ int main(int argc, char **argv)
    int ckpt_type;
    int return_code = 0;
    int run_epilog, run_pe_stop;
-   dstring ds;
-   char buffer[256];
+   DSTRING_STATIC(ds, 256);
 
    if (argc >= 2) {
       if ( strcmp(argv[1],"-help") == 0) {
@@ -705,8 +706,6 @@ int main(int argc, char **argv)
       }
    }
    shepherd_trace_init( );
-
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    shepherd_trace("shepherd called with uid = " uid_t_fmt ", euid = " uid_t_fmt,
                   getuid(), geteuid());
@@ -852,6 +851,8 @@ int main(int argc, char **argv)
 
    script_timeout = atoi(get_conf_val("script_timeout"));
    notify = atoi(get_conf_val("notify"));
+
+   ocs::shepherd_systemd_init();
 
    /*
     * Create processor set
@@ -1181,10 +1182,11 @@ int ckpt_type
 
    /* Write pid to job_pid file and set ckpt_pid to original job pid 
     * Kill job if we can't write job_pid file and exit with error
-    * sets ckpt_pid to 0 for non kernel level checkpointing jobs
+    * sets ckpt_pid to 0 for non-kernel level checkpointing jobs
     */
-   if (!strcmp(childname, "job"))
+   if (strcmp(childname, "job") == 0) {
       handle_job_pid(ckpt_info.type, pid, &(ckpt_info.pid));
+   }
 
    /* Does not affect pe/prolog/epilog etc. since ckpt_type is set to 0 */
    set_ckpt_params(ckpt_info.type,
@@ -2755,7 +2757,7 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid)
       shepherd_signal_job(pid, SIGKILL);
       shepherd_error(1, "can't write \"job_pid\" file");   
    } 
-}   
+}
 
 /*-------------------------------------------------------------------------*/
 static int start_async_command(const char *descr, char *cmd)
@@ -2792,8 +2794,13 @@ static int start_async_command(const char *descr, char *cmd)
       
       shepherd_trace("starting %s command: %s", descr, cmd);
       pid = getpid();
-      setpgid(pid, pid);  
+      setpgid(pid, pid);
+
       setrlimits(0);
+
+      // @todo if we want to account prolog etc. to the job, then we need to move the child process into the job scope
+      // move_shepherd_child_to_job_scope(pid);
+
       sge_set_environment();
       umask(022);
       tmp_str = search_conf_val("qsub_gid");
@@ -2835,7 +2842,7 @@ static int start_async_command(const char *descr, char *cmd)
 
       sge_set_def_sig_mask(nullptr, nullptr);
       start_command(descr, get_conf_val("shell_path"),
-         cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
+                    cmd, cmd, "start_as_command", 0, 0, 0, 0, "", 0);
       return 0;   
    }
 
@@ -2881,82 +2888,94 @@ void
 shepherd_signal_job(pid_t pid, int sig) {
    /*
     * Normal signaling for OSes without reliable grouping mechanisms and if
-    * special signaling fails (e.g. not running as root)
+    * special signaling fails (e.g., not running as root)
     */
 
    /*
-    * if child is a qrsh job (config rsh_daemon exists), get pid of started command
-    * and pass signal to that one
+    * if the child is a qrsh job (config rsh_daemon exists), get pid of started command
+    * and pass signal to that one,
     * if the signal is the kill signal, we first kill the pid of the started command.
     * subsequent kills are passed to the shepherd's child.
+    * In this case (first_kill && sig == SIGKILL) we do not kill via systemd.
     */
-   {
-      static int first_kill = 1;
-      static time_t first_kill_ts = 0;
-      static bool is_qrsh = false;
-   
-      if (first_kill == 1 || sig != SIGKILL) {
-         if (search_conf_val("qrsh_pid_file") != nullptr) {
-            char *pid_file_name = nullptr;
-            pid_t qrsh_pid = 0;
+   static int first_kill = 1;       // first time we signal with SIGKILL
+   static time_t first_kill_ts = 0;
+   static bool is_qrsh = false;
 
-            pid_file_name = get_conf_val("qrsh_pid_file");
+   if (first_kill == 1 || sig != SIGKILL) {
+      if (search_conf_val("qrsh_pid_file") != nullptr) {
+         char *pid_file_name = nullptr;
+         pid_t qrsh_pid = 0;
 
-            sge_switch2start_user();
+         pid_file_name = get_conf_val("qrsh_pid_file");
 
-            if (shepherd_read_qrsh_file(pid_file_name, &qrsh_pid)) {
-               is_qrsh = true;
-               pid = -qrsh_pid;
-               shepherd_trace("found pid of qrsh client command: " pid_t_fmt, pid);
-            }
-            sge_switch2admin_user();
+         sge_switch2start_user();
+         bool read_qrsh_file = shepherd_read_qrsh_file(pid_file_name, &qrsh_pid);
+         sge_switch2admin_user();
+
+         if (read_qrsh_file) {
+            is_qrsh = true;
+            pid = -qrsh_pid;
+            shepherd_trace("found pid of qrsh client command: " pid_t_fmt, pid);
          }
       }
+   }
 
-     /*
-      * It is possible that one signal requests from qmaster contains several
-      * kills for the same process. If this process is a tight integrated job
-      * the master task can be killed twice. For the slave tasks this means the
-      * qrsh -d is killed in the same time as the qrsh_starter child and so no
-      * qrsh_exit_code file is written (see Issue: 1679)
-      */
-      if ((first_kill == 1) || (time(nullptr) - first_kill_ts > 10) || (sig != SIGKILL)) {
-        shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
-        sge_switch2start_user();
-        kill(pid, sig);
-        sge_switch2admin_user();
+  /*
+   * It is possible that one signal requests from qmaster contains several
+   * kills for the same process. If this process is a tightly integrated job,
+   * the master task can be killed twice. For the slave tasks, this means the
+   * qrsh -inherit is killed at the same time as the qrsh_starter child and so no
+   * qrsh_exit_code file is written (see Issue: 1679)
+   */
+   if (first_kill == 1 || time(nullptr) - first_kill_ts > 10 || sig != SIGKILL) {
+      // We always signal the pid / process group first via the kill method.
+      // In addition, we might signal with systemd or via additional group id.
+     shepherd_trace("now sending signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
+     sge_switch2start_user();
+     kill(pid, sig);
+     sge_switch2admin_user();
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-        if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
-#   if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
-#      ifdef COMPILE_DC
-            if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
-                gid_t add_grp_id;
-                char *cp = search_conf_val("add_grp_id");
-
-                if (cp) {
-                    add_grp_id = atol(cp);
-                } else {
-                    add_grp_id = 0;
-                }
-
-                shepherd_trace("pdc_kill_addgrpid: %d %d", (int) add_grp_id , sig);
-                sge_switch2start_user();
-                pdc_kill_addgrpid(add_grp_id, sig, shepherd_trace);
-                sge_switch2admin_user();
-            }
-#      endif
-#   endif
+     if (first_kill == 0 || sig != SIGKILL || !is_qrsh) {
+        if (ocs::g_use_systemd) {
+           pid_t systemd_pid = pid;
+           // for all the nofify signals we only signal the main process (usually: the job script)
+           // it will handle e.g., a SIGUSR1, child processes usually not
+           if (sig != SIGKILL && sig != SIGSTOP && sig != SIGCONT) {
+              systemd_pid = abs(systemd_pid);
+           }
+            ocs::shepherd_systemd_signal_job(sig, systemd_pid > 0);
+        } else {
+#  ifdef COMPILE_DC
+           if (atoi(get_conf_val("enable_addgrp_kill")) == 1) {
+              gid_t add_grp_id;
+              char *cp = search_conf_val("add_grp_id");
+              if (cp != nullptr) {
+                 add_grp_id = atol(cp);
+              } else {
+                 add_grp_id = 0;
+              }
+              if (add_grp_id == 0) {
+                 shepherd_trace("add_grp_id is 0, not calling pdc_kill_addgrpid");
+              } else {
+                 shepherd_trace("pdc_kill_addgrpid: %d %d", (int) add_grp_id, sig);
+                 sge_switch2start_user();
+                 pdc_kill_addgrpid(add_grp_id, sig, shepherd_trace);
+                 sge_switch2admin_user();
+              }
+           }
+#  endif
         }
+     }
 # endif
-      } else {
-        shepherd_trace("ignored signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
-      }
+   } else {
+     shepherd_trace("ignored signal %s to pid " pid_t_fmt, sge_sys_sig2str(sig), pid);
+   }
 
-      if (sig == SIGKILL) {
-        first_kill = 0;
-        first_kill_ts = time(nullptr);
-      }
+   if (sig == SIGKILL) {
+     first_kill = 0;
+     first_kill_ts = time(nullptr);
    }
 }
 

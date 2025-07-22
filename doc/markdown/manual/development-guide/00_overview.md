@@ -34,7 +34,12 @@ Tags and branches before `V9` will also not be described here.
 |              | V900p1\_TAG | patch to the 9.0.0 making it work on GCP (CS-663) |
 |              |             |                                                   |
 | V90\_BRANCH  |             | maintenance of 9.0                                |
+|              | V903\_TAG   | third 9.0 patch                                   |
+|              | V904\_TAG   | fourth 9.0 patch                                  |
+|              | V905\_TAG   | fifth 9.0 patch                                   |
+|              | V906\_TAG   | sixth 9.0 patch                                   |
+|              | V907\_TAG   | seventh 9.0 patch                                 |
 |              |             |                                                   |
 
-[//]: # (Each file has to end with two emty lines)
+[//]: # (Each file has to end with two empty lines)
 

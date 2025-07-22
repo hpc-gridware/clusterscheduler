@@ -47,6 +47,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_arch.h"
 #include "uti/config_file.h"
+#include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 
 #include "setosjobid.h"
@@ -55,6 +56,7 @@
 
 #include "builtin_starter.h"
 #include "err_trace.h"
+#include "ocs_shepherd_systemd.h"
 #include "setrlimits.h"
 #include "get_path.h"
 #include "basis_types.h"
@@ -65,6 +67,7 @@
 #define MAX_NUMBER_OF_ENV_VARS 1023
 
 extern bool g_new_interactive_job_support;
+
 extern int  g_noshell;
 extern int  g_newpgrp;
 
@@ -116,9 +119,9 @@ static int count_command(char *command) {
 }
 
 /************************************************************************
- This is the shepherds buitin starter.
+ This is the shepherds builtin starter.
 
- It is also used to start the external starter command .. 
+ It is also used to start the external starter command.
  ************************************************************************/
 void son(const char *childname, char *script_file, int truncate_stderr_out)
 {
@@ -160,7 +163,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    const char *fs_stdin_file="";
    const char *fs_stdout_file="";
    const char *fs_stderr_file="";
-   pid_t pid, pgrp, newpgrp;
+   pid_t pgrp, newpgrp;
    gid_t add_grp_id = 0;
    gid_t gid;
    struct passwd *pw=nullptr;
@@ -173,10 +176,12 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    foreground = 0; /* VX sends SIGTTOU if trace messages go to foreground */
 
    /* From here only the son --------------------------------------*/
-   if (!script_file) {
+   if (script_file == nullptr) {
       /* output error and exit */
       shepherd_error(1, "received nullptr als script file");
    }   
+
+   pid_t pid = getpid();
 
    /*
    ** interactive jobs have script_file name interactive and
@@ -219,7 +224,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       }
    }
 
-   pid = getpid();
    pgrp = GETPGRP;
 
 #ifdef SOLARIS
@@ -295,7 +299,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    umask(022);
 
-   if (!strcmp(childname, "job")) {
+   if (strcmp(childname, "job") == 0) {
       char *write_osjob_id = get_conf_val("write_osjob_id");
       if(write_osjob_id != nullptr && atoi(write_osjob_id) != 0) {
          setosjobid(newpgrp, &add_grp_id, pw);
@@ -303,7 +307,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    }
    
    shepherd_trace("setting limits");
-   setrlimits(!strcmp(childname, "job"));
+   setrlimits(strcmp(childname, "job") == 0);
+   ocs::move_shepherd_child_to_job_scope(pid);
 
    shepherd_trace("setting environment");
    sge_set_environment();
@@ -340,7 +345,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* --- switch to intermediate user */
    shepherd_trace("switching to intermediate/target user");
-   if(is_qlogin_starter && !g_new_interactive_job_support) {
+   if (is_qlogin_starter && !g_new_interactive_job_support) {
       /* 
        * In the old IJS, we didn't have to set the additional group id,
        * because our custom rshd did it for us.
@@ -630,7 +635,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       shepherd_error(1, "error: fd for in is not 0");
    }
 
-   if(!is_qlogin_starter) {
+   if (!is_qlogin_starter) {
       /* -cwd or from pw->pw_dir */
       if (sge_chdir(cwd)) {
          shepherd_state = SSTATE_NO_CWD;
@@ -707,10 +712,11 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* get basename of shell for building argv[0] */
    cp = strrchr(shell_path, '/');
-   if (!cp)
+   if (cp == nullptr) {
       shell_basename = shell_path;
-   else
+   } else {
       shell_basename = cp+1;
+   }
 
    {
       SGE_STRUCT_STAT sbuf;
@@ -749,7 +755,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       snprintf(str_title, sizeof(str_title), "SGE Interactive Job %s on %s in Queue %s", job_id, host, queue);
    }
 
-/* ---- switch to target user */
+   /* ---- switch to target user */
    if (intermediate_user) {
       if (is_qlogin_starter) {
          ret = sge_set_uid_gid_addgrp(target_user, nullptr, 0, 0, 0,
@@ -802,7 +808,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
          }
       }
    }
-   start_command(childname, shell_path, script_file, argv0, shell_start_mode, 
+   start_command(childname, shell_path, script_file, argv0, shell_start_mode,
                  is_interactive, is_qlogin, is_rsh, is_rlogin, str_title, 
                  use_starter_method);
 
@@ -1131,31 +1137,22 @@ static char **read_job_args(char **preargs, int extra_args)
    return args;
 }
 
-
 /*--------------------------------------------------------------------
  * set_shepherd_signal_mask
  * set signal mask that shepherd can handle signals from execd
+ * If use_starter_method is set, then the shellpath contains the starter_method.
  *--------------------------------------------------------------------*/
-void start_command(
-const char *childname,
-char *shell_path,
-char *script_file,
-char *argv0,
-const char *shell_start_mode,
-int is_interactive,
-int is_qlogin,
-int is_rsh,
-int is_rlogin,
-const char *str_title,
-int use_starter_method /* If this flag is set the shellpath contains the
-                        * starter_method */
-) {
+void start_command(const char *childname, char *shell_path, char *script_file, char *argv0,
+                   const char *shell_start_mode, int is_interactive, int is_qlogin, int is_rsh, int is_rlogin,
+                   const char *str_title, int use_starter_method) {
    char **args;
    char **pstr;
    char *pc;
    char *pre_args[10];
    char **pre_args_ptr;
    char err_str[2048];
+
+   bool is_the_job = strcmp(childname, "job") == 0;
 
    pre_args_ptr = &pre_args[0];
    
@@ -1177,7 +1174,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
    */
    if ((atoi(get_conf_val("handle_as_binary")) == 1) &&
        (atoi(get_conf_val("no_shell")) == 0) &&
-       !is_rsh && !is_qlogin && !strcmp(childname, "job") && use_starter_method != 1 ) {
+       !is_rsh && !is_qlogin && is_the_job && use_starter_method != 1 ) {
       int arg_id = 0;
       dstring arguments = DSTRING_INIT;
       int n_job_args;
@@ -1310,8 +1307,7 @@ int use_starter_method /* If this flag is set the shellpath contains the
       /*
       ** unix_behaviour/raw_exec
       */
-      if (!strcmp(childname, "job")) {
-         
+      if (is_the_job) {
          int arg_id = 0;
 #if 0
          shepherd_trace("Case 7.1: job" );

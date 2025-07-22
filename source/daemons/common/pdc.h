@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "sgeobj/sge_conf.h"
+
 #include "err_trace.h"
 #include "exec_ifm.h"
 
@@ -154,6 +156,7 @@ typedef struct psSys_s psSys_t;
 typedef struct {
    lnk_link_t link;
    psJob_t job;
+   usage_collection_t usage_collection; // USAGE_COLLECTION_DEFAULT, ...
    lnk_link_t procs;
    lnk_link_t arses;
    time_t precreated;     /* set if job element created before psWatchJob */
@@ -170,7 +173,7 @@ typedef struct {
 
 typedef struct {
    lnk_link_t link;
-   JobID_t jid;            
+   JobID_t jid;
    psProc_t proc;
    double bwtime;
    double rwtime;
@@ -198,7 +201,7 @@ extern long pagesize;
 
 int		psStartCollector();
 int		psStopCollector();
-int		psWatchJob(JobID_t JobID);
+int		psWatchJob(JobID_t JobID, usage_collection_t usage_collection);
 int		psIgnoreJob(JobID_t JobID);
 struct psStat_s	*psStatus();
 struct psJob_s *psGetOneJob(JobID_t JobID);

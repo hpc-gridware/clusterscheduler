@@ -1042,10 +1042,19 @@ StartQmaster()
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
       $SVCADM enable -s "svc:/application/sge/qmaster:$SGE_CLUSTER_NAME"
       if [ $? -ne 0 ]; then
-         $INFOTEXT "\nFailed to start qmaster deamon over SMF. Check service by issuing "\
+         $INFOTEXT "\nFailed to start qmaster daemon over SMF. Check service by issuing "\
                    "svcs -l svc:/application/sge/qmaster:%s" $SGE_CLUSTER_NAME
-         $INFOTEXT -log "\nFailed to start qmaster deamon over SMF. Check service by issuing "\
+         $INFOTEXT -log "\nFailed to start qmaster daemon over SMF. Check service by issuing "\
                         "svcs -l svc:/application/sge/qmaster:%s" $SGE_CLUSTER_NAME
+         MoveLog
+         exit 1
+      fi
+   elif [ $RC_FILE = "systemd" -a `IsSystemdServiceInstalled "qmaster"` = "true" ]; then
+      SERVICE_NAME=`GetServiceName "qmaster"`
+      systemctl start "$SERVICE_NAME"
+      if [ $? -ne 0 ]; then
+         $INFOTEXT "sge_qmaster start problem"
+         $INFOTEXT -log "sge_qmaster start problem"
          MoveLog
          exit 1
       fi
@@ -1297,7 +1306,7 @@ AddHostsFromFile()
       file=`Enter none`
       if [ "$file" = "none" -o ! -f "$file" ]; then
          $INFOTEXT "\nYou entered an invalid file name or the file does not exist."
-         $INFOTEXT -auto $autoinst -ask "y" "n" -def "y" -n \
+         $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
                    "Do you want to enter a new file name (y/n) [y] >> "
          if [ $? = 1 ]; then
             return 1

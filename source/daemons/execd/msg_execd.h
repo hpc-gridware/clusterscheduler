@@ -63,7 +63,7 @@
 #define MSG_STATUS_LOADSENSOREXITEDWITHEXITSTATUS_I         _MESSAGE(29015, _("load sensor exited with exit status = %d"))
 #define MSG_STATUS_MAILERDIEDTHROUGHSIGNALXY_SI             _MESSAGE(29016, _("mailer died through signal " SFN " = %d"))
 #define MSG_STATUS_MAILEREXITEDWITHEXITSTATUS_I             _MESSAGE(29017, _("mailer exited with exit status = %d"))
-#define MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_US                 _MESSAGE(29018, _("reaping job \"" sge_u32 "\" ptf complains: " SFN))
+#define MSG_JOB_REAPINGJOBXPTFCOMPLAINSY_SS                 _MESSAGE(29018, _("reaping job " SFN ": ptf complains: " SFN))
 #define MSG_JOB_CLEANUPJOBCALLEDWITHINVALIDPARAMETERS       _MESSAGE(29019, _("clean_up_job() called with invalid parameters"))
 #define MSG_JOB_CANTFINDDIRXFORREAPINGJOBYZ_SS              _MESSAGE(29020, _("can't find directory " SFN " for reaping job " SFN))
 #define MSG_JOB_CANTREADCONFIGFILEFORJOBXY_S                _MESSAGE(29021, _("can't read config file for job " SFN))
@@ -247,7 +247,12 @@
 #define MSG_REJECT_TASK_SLOTS_IN_USE_UUIUS               _MESSAGE(29224, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": %d out of " sge_u32 " slots in queue " SFN " are in use"))
 #define MSG_REJECT_TASK_NO_FREE_SLOT_FOUND_UU            _MESSAGE(29225, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": no free slot found"))
 
+#define MSG_SYSTEMD_INITIALIZED_II                       _MESSAGE(29230, _("systemd integration initialized, systemd version %d, cgroups version %d"))
+#define MSG_SYSTEMD_RUNNING_AS_SERVICE_S                 _MESSAGE(29231, _("running as service " SFN))
+#define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29232, _("systemd: moving shepherd to scope failed: " SFN4))
+#define MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S            _MESSAGE(29233, _("cannot connect to systemd: " SFN4))
+#define MSG_CANNOT_TO_GET_PROPERTY_SSS                   _MESSAGE(29234, _("cannot to get property " SFN " from systemd scope " SFN ": " SFN4))
+
 // clang-format on
 
 #endif /* __MSG_EXECD_H */
-

@@ -180,5 +180,5 @@ Here are the steps required to complete the in-place upgrade:
 
 11. Continue with post installation steps.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 
