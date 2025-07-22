@@ -854,7 +854,19 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
    if (execd_get_job_ja_task(job_id, ja_task_id, &jep, &jatep, false)) {
       lListElem *master_q;
       int used_slots;
-   
+
+      // We get here through an ACK_JOB_EXIT.
+      // If it is not a pe task we are removing, then it is the master task.
+      // If there are still pe tasks running, we may not yet remove the master task,
+      // as we would delete the pe tasks' active_job directories and other data.
+      // Just return, the ACK_JOB_EXIT will be repeated by sge_qmaster.
+      if (pe_task_id == nullptr &&
+          lGetNumberOfElem(lGetList(jatep, JAT_task_list)) > 0) {
+         // flush the job report to speed up repeating of the ACK_JOB_EXIT
+         flush_job_report(jr);
+         DRETURN_VOID;
+      }
+
       DPRINTF("REMOVING WITH jep && jatep\n");
       if (pe_task_id_str) {
          petep = lGetElemStrRW(lGetList(jatep, JAT_task_list), PET_id, pe_task_id_str);
