@@ -1044,10 +1044,18 @@ completely.
 
 ***ENABLE_BINDING***
 
-If this parameter is set then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
-binding parameters that are specified during submission time of a job. This parameter is not set per default and 
+If this parameter is set, then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
+binding parameters that are specified during submission time of a job. This parameter is not set per default, and 
 therefore all binding related information will be ignored. Find more information for job to core binding in the 
 section `-binding` of qsub(1).
+
+***ENABLE_SYSTEMD***
+
+If this parameter is set,
+and an execution hosts supports systemd, then jobs will be started in a systemd scope. This allows the execution daemon to
+manage the job's processes as a group, which is useful for resource management and job control.
+
+This parameter is set to true by default, meaning that on hosts that support systemd, jobs will be started in a systemd scope. If a host does not support systemd, then this parameter will be ignored.
 
 ***SCRIPT_TIMEOUT***
 
@@ -1059,6 +1067,15 @@ Changing *execd_params* will take effect after it was propagated to the executio
 in one load report interval. The default for *execd_params* is none.
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
+
+***USAGE_COLLECTION***
+
+This parameter controls how xxqs_name_sxx_execd collects the online usage information of jobs. The following values are recognized:
+
+- *FALSE* : No online usage information is collected. Use with care, this also disables limit enforcement for *s_cpu*, *h_cpu*, *s_rss*, *h_rss*, *s_vmem*, and *h_vmem*.
+- *PDC* : Online usage information is collected by the PDC (Portable Data Collector) mode, even if Systemd is available.
+- *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, and iow.
+- *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*.
 
 ## gdi_request_limits
 
@@ -1375,3 +1392,4 @@ xxqs_name_sxx_shepherd*(8), cron(8),
 # COPYRIGHT
 
 See xxqs_name_sxx_intro(1) for a full statement of rights and permissions.
+

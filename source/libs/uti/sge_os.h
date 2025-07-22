@@ -54,7 +54,7 @@
  * max. supported number = 999 
  */
 typedef enum uti_daemonize_state_type {
-   SGE_DEAMONIZE_OK = 0,
+   SGE_DAEMONIZE_OK = 0,
    SGE_DAEMONIZE_DEAD_CHILD = 100,
    SGE_DAEMONIZE_TIMEOUT = 101
 } uti_daemonize_state_t;

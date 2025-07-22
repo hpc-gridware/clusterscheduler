@@ -69,6 +69,7 @@
 #include "spool/classic/read_write_job.h"
 
 #include "execd.h"
+#include "ocs_execd_systemd.h"
 #include "reaper_execd.h"
 #include "job_report_execd.h"
 #include "execd_job_exec.h"
@@ -201,7 +202,7 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
    lFreeList(&answer_list);
 
    for_each_rw(ja_task, lGetList(jelem, JB_ja_tasks)) {
-      DPRINTF("Job: %ld Task: %ld\n", (long) lGetUlong(jelem, JB_job_number), (long) lGetUlong(ja_task, JAT_task_number));
+      DPRINTF("Job: " sge_u32 " Task: " sge_u32 "\n", lGetUlong(jelem, JB_job_number), lGetUlong(ja_task, JAT_task_number));
       ret = handle_job(jelem, ja_task, 1);
    }
 
@@ -388,6 +389,15 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
    /* check if job has queue limits and increase global flag if necessary */
    modify_queue_limits_flag_for_job(component_get_qualified_hostname(), jelem, true);
+
+#if defined (OCS_WITH_SYSTEMD)
+   if (slave) {
+      bool enable_systemd = mconf_get_enable_systemd();
+      if (enable_systemd) {
+         ocs::execd::execd_store_tight_pe_slice(jelem, jatep);
+      }
+   }
+#endif
 
    /* put into job list */
    lAppendElem(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), jelem);

@@ -236,11 +236,15 @@ void lWriteElemTo(const lListElem *ep, FILE *fp);
 
 void lWriteElemToStr(const lListElem *ep, dstring *buffer);
 
+void lWriteElemToMessagesFile(const lListElem *ep, u_long32 log_level);
+
 void lWriteList(const lList *lp);
 
 void lWriteListTo(const lList *lp, FILE *fp);
 
 void lWriteListToStr(const lList *lp, dstring *buffer);
+
+void lWriteListToMessagesFile(const lList *lp, u_long32 log_level);
 
 lListElem *lCreateElem(const lDescr *dp);
 

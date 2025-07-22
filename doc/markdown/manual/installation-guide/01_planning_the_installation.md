@@ -280,7 +280,7 @@ Please refer to the next question for more information.
 
 ### Where is the spooling area for the master service located?
 
-For HA-setups, it must be a shared network location; otherwise, it can be the local filesystem of the host 
+For HA setups, it must be a shared network location; otherwise, it can be the local filesystem of the host 
 running the master service.
 
 Ensure that the spooling location meets the requirements of the spooling mechanism. Classic spooling can be done on 
@@ -359,4 +359,5 @@ If this is your first time installing xxQS_NAMExx, we suggest a manual installat
 Automatic installation is recommended if you need to install or reinstall a cluster multiple times or if you plan 
 to install multiple clusters with slightly different settings.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
+

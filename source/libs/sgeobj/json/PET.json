@@ -67,9 +67,33 @@
 			"name":	"osjobid",
 			"summary":	"OS JobId",
 			"description":	[{
-					"line":	"OS jobid / additional group id of a running pe task."
+				"line":	"OS jobid / additional group id of a running pe task."
+			}],
+			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"systemd_scope",
+			"summary":	"Systemd Scope",
+			"description":	[{
+					"line":	"In case a pe task is started in a systemd scope, this is the"
+				}, {
+					"line":	"scope unit name."
+				}, {
+					"line":	"Only used in sge_execd, it is set during the startup phase of the"
+				}, {
+					"line":	"pe task."
 				}],
 			"type":	"lStringT",
+			"flags":	[]
+		}, {
+			"name":	"usage_collection",
+			"summary":	"Usage Collection Mode",
+			"description":	[{
+					"line":	"Usage collection mode of a pe task."
+				}, {
+					"line":	"One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
+				}],
+			"type":	"lUlongT",
 			"flags":	[]
 		}, {
 			"name":	"usage",

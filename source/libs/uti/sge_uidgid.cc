@@ -803,7 +803,7 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
 
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
    /* add Additional group id to current list of groups */
-   if (add_grp) {
+   if (add_grp != 0) {
       if (sge_add_group(add_grp, err_str, err_str_size, skip_silently) == -1) {
          return 5;
       }
@@ -1467,5 +1467,3 @@ double sge_normalize_value(double value, double range_min, double range_max)
       return 0.5;
    return (value - range_min) / (range_max - range_min);
 }
-
-

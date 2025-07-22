@@ -36,8 +36,10 @@
 void son(const char *childname, char *script_file, int truncate_stderr_out);
 int sge_set_environment();
 char** sge_get_environment();
-int sge_set_env_value(const char *, const char *);
-const char *sge_get_env_value(const char *);
-void start_command(const char *, char *, char *, char *, const char *, int, int, int, int, const char *, int);
+int sge_set_env_value(const char *name, const char* value);
+const char *sge_get_env_value(const char *name);
+void start_command(const char *childname, char *shell_path, char *script_file, char *argv0,
+                   const char *shell_start_mode, int is_interactive, int is_qlogin, int is_rsh, int is_rlogin,
+                   const char *str_title, int use_starter_method);
 int check_configured_method(const char *method, const char *name, char *err_str, size_t err_str_size);
 char* build_path(int type);

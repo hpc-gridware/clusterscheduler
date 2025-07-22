@@ -301,7 +301,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
       sge_set_message_id_output(1); \
       snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
       sge_set_message_id_output(0); \
-      sge_log(LOG_DEBUG, SGE_EVENT,__FILE__,__LINE__); \
+      sge_log(LOG_DEBUG, log_buffer,__FILE__,__LINE__); \
    } \
 } void()
 #else

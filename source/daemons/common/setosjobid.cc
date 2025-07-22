@@ -44,30 +44,34 @@
 #include "err_trace.h"
 #include "setosjobid.h"
 
+#include <uti/sge.h>
+
 void setosjobid(pid_t sid, gid_t *add_grp_id_ptr, struct passwd *pw)
 {
-   FILE *fp=nullptr;
-
    shepherd_trace("setosjobid: uid = " pid_t_fmt ", euid = " pid_t_fmt, getuid(), geteuid());
+
+   FILE *fp = nullptr;
 
 #  if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
       /* Read SgeId from config-File and create Addgrpid-File */
-      {  
-         char *cp;
-         if ((cp = search_conf_val("add_grp_id")))
+      {
+         char *cp = search_conf_val("add_grp_id");
+         if (cp != nullptr) {
             *add_grp_id_ptr = atol(cp);
-         else
+         } else {
             *add_grp_id_ptr = 0;
+         }
       }
-      if ((fp = fopen("addgrpid", "w")) == nullptr) {
-         shepherd_error(1, "can't open \"addgrpid\" file");   
+      fp = fopen(ADDGRPID, "w");
+      if (fp == nullptr) {
+         shepherd_error(1, "can't open \"addgrpid\" file");
       }
       fprintf(fp, gid_t_fmt"\n", *add_grp_id_ptr);
       FCLOSE(fp);   
 #  else
    {
       char osjobid[100];
-      if ((fp = fopen("osjobid", "w")) == nullptr) {
+      if ((fp = fopen(OSJOBID, "w")) == nullptr) {
          shepherd_error(1, "can't open \"osjobid\" file");
       }
 

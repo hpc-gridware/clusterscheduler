@@ -256,7 +256,7 @@ security modules are active.
 <font color="#660000">Instructions for Cluster Scheduler spool directories in
 DFS</font></h2>
 If you would like to maintain the Cluster Scheduler spool directories in DFS,
-then the Cluster Scheduler deamons must run under a DCE identity. The best way
+then the Cluster Scheduler daemons must run under a DCE identity. The best way
 to accomplish this is to create a unique DCE account (e.g. "sge_daemon")
 and put the key into the default keytab. To create the account, follow
 the DCE Instructions above substituting the DCE account name that you choose
@@ -337,7 +337,7 @@ file resides. Suppose the user "janedoe" had a .k5login file in her home
 directory containing the following line: johndoe@FUBAR.ORG This would allow
 her husband "johndoe" to use Cluster Scheduler to access her account. However,
 in order for this to work, the .k5login file must be accessible by the
-qmaster deamon running on the qmaster host. If the qmaster host does not
+qmaster daemon running on the qmaster host. If the qmaster host does not
 have access to the users home directories, then the Cluster Scheduler manager
 has the option to create "dummy" home directories which simply contain
 the appropriate .k5login files for the appropriate users. The dummy home

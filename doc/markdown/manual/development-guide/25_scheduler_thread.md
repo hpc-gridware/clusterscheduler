@@ -296,5 +296,5 @@ we can switch off a few potentially expensive features and just rely on scheduli
 * do not configure queue load_thresholds and suspend_thresholds
 * do not use load adjustments (in the scheduler config)
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

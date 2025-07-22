@@ -88,6 +88,7 @@ option(WITH_LCOV "Enable code coverage analysis with lcov" OFF)
 option(WITH_PYTHON "Enable Python external bindings" OFF)
 option(WITH_BOOST "Enable Boost framework" OFF)
 option(WITH_MUNGE "Enable Munge authentication" ON)
+option(WITH_SYSTEMD "Enable systemd support" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -186,6 +187,10 @@ endif ()
 
 if (WITH_MUNGE)
    add_compile_definitions("OCS_WITH_MUNGE")
+endif()
+
+if (WITH_SYSTEMD)
+   add_compile_definitions("OCS_WITH_SYSTEMD")
 endif()
 
 #if (SGE_ARCH MATCHES "darwin-arm64" OR SGE_ARCH MATCHES "fbsd-amd64")

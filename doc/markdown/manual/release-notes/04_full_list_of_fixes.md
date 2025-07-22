@@ -4,5 +4,5 @@
 
 ## v9.1.0prealpha
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

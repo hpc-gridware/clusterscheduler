@@ -304,9 +304,7 @@ RemoveReferences()
    for q in `qconf -sql`; do
       qconf -purge queue "*" "$q@$exechost" 
    done
-
 }
-
 
 RemoveSpoolDir()
 {

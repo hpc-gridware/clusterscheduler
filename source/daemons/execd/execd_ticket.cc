@@ -63,8 +63,6 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
 
    while (pb_unused(&(aMsg->buf))>0) {
-      lList *jatasks = nullptr;
-
       if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid) || unpackdouble(&(aMsg->buf), &ticket)) {
          ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
@@ -72,13 +70,13 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
       DPRINTF("got %lf new tickets for job " sge_u32 "." sge_u32 "\n", ticket, jobid, jataskid);
 
+      // @todo we use only very few attributes of JB_Type and JAT_type here - use reduced elements
       job_ticket = lAddElemUlong(&ticket_modifier, JB_job_number, jobid, JB_Type);   
-      if (job_ticket) {
-         task_ticket = lAddElemUlong(&jatasks, JAT_task_number, jataskid, JAT_Type);
+      if (job_ticket != nullptr) {
+         task_ticket = lAddSubUlong(job_ticket, JAT_task_number, jataskid, JB_ja_tasks, JAT_Type);
          if (task_ticket) {
             lSetDouble(task_ticket, JAT_tix, ticket);
          }
-         lSetList(job_ticket, JB_ja_tasks, jatasks);
       }
    }
   

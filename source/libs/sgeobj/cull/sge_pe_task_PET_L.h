@@ -51,6 +51,16 @@
 *    SGE_STRING(PET_osjobid) - OS JobId
 *    OS jobid / additional group id of a running pe task.
 *
+*    SGE_STRING(PET_systemd_scope) - Systemd Scope
+*    In case a pe task is started in a systemd scope, this is the
+*    scope unit name.
+*    Only used in sge_execd, it is set during the startup phase of the
+*    pe task.
+*
+*    SGE_ULONG(PET_usage_collection) - Usage Collection Mode
+*    Usage collection mode of a pe task.
+*    One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE).
+*
 *    SGE_LIST(PET_usage) - Usage
 *    Usage list of a running/just finished pe task.
 *
@@ -103,6 +113,8 @@ enum {
    PET_granted_destin_identifier_list,
    PET_pid,
    PET_osjobid,
+   PET_systemd_scope,
+   PET_usage_collection,
    PET_usage,
    PET_scaled_usage,
    PET_reported_usage,
@@ -124,6 +136,8 @@ LISTDEF(PET_Type)
    SGE_LIST(PET_granted_destin_identifier_list, JG_Type, CULL_SUBLIST)
    SGE_ULONG(PET_pid, CULL_DEFAULT)
    SGE_STRING(PET_osjobid, CULL_DEFAULT)
+   SGE_STRING(PET_systemd_scope, CULL_DEFAULT)
+   SGE_ULONG(PET_usage_collection, CULL_DEFAULT)
    SGE_LIST(PET_usage, UA_Type, CULL_SUBLIST)
    SGE_LIST(PET_scaled_usage, UA_Type, CULL_SUBLIST)
    SGE_LIST(PET_reported_usage, UA_Type, CULL_SUBLIST)
@@ -145,6 +159,8 @@ NAMEDEF(PETN)
    NAME("PET_granted_destin_identifier_list")
    NAME("PET_pid")
    NAME("PET_osjobid")
+   NAME("PET_systemd_scope")
+   NAME("PET_usage_collection")
    NAME("PET_usage")
    NAME("PET_scaled_usage")
    NAME("PET_reported_usage")

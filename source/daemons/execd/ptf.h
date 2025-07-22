@@ -37,6 +37,8 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/sge_conf.h"
+
 #define PTF_COMPENSATION_FACTOR 2.0
 
 typedef pid_t osjobid_t;
@@ -140,13 +142,13 @@ void ptf_unregister_registered_job(u_long32 job_id, u_long32 ja_task_id );
 void ptf_reinit_queue_priority(u_long32 job_id, u_long32 ja_task_idr, 
                                const char *pe_task_id_str, int priority);
 
-int ptf_job_started(osjobid_t os_jobid, const char *task_id_str, 
-                    const lListElem *job, u_long32 jataskid);
+int ptf_job_started(osjobid_t os_jobid, const char *task_id_str,
+                    const lListElem *job, u_long32 jataskid, const char *systemd_scope, usage_collection_t usage_collection);
 
+lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collection);
 int ptf_get_usage(lList **jobs);
 
-lList *ptf_get_job_usage(u_long job_id, u_long ja_task_id, 
-                         const char *task_id);
+lList *ptf_get_job_usage(u_long job_id, u_long ja_task_id, const char *task_id);
 
 int ptf_process_job_ticket_list(lList *jobs);
 

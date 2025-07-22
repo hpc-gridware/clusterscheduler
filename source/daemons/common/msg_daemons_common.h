@@ -149,4 +149,6 @@
 #define MSG_STARTUP_USING_MUNGE                 _MESSAGE(27102, _("using Munge authentication"))
 #define MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU  _MESSAGE(27103, _("message from " SFN "/" SFN " with wrong uid: " uid_t_fmt " (expected " uid_t_fmt ")"))
 
+#define MSG_STARTUP_IN_CGROUP_S                 _MESSAGE(27104, _("running in cgroup " SFN))
+
 // clang-format on

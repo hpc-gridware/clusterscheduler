@@ -9,5 +9,5 @@ Changes in the *major* version may introduce incompatibilities. Variations in th
 > 
 > This document is specific to version v9.0.x of HPC-Gridware's product suite and describes the functionality of its components. If you are using or planning to use a different major or minor version, please refer to the corresponding `Platforms Guide` or contact our sales or support team for assistance.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Eeach file has to end with two empty lines)
 

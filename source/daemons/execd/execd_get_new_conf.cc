@@ -84,10 +84,11 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir");
    }
 
-   // if the keep_active flag has changed, we need to enforce cleanup of old jobs
-   // to get rid of old active jobs directories
+   // if the keep_active flag has changed,
+   // and when keep_active has been switched off,
+   // we need to enforce cleanup of old jobs to get rid of old active jobs directories
    keep_active_t keep_active = mconf_get_keep_active();
-   if (old_keep_active != keep_active) {
+   if (old_keep_active != keep_active && keep_active == KEEP_ACTIVE_FALSE) {
       set_enforce_cleanup_old_jobs();
    }
 
