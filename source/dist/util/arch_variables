@@ -260,7 +260,11 @@ WaitClear()
    if [ "$text" != "" ]; then
       $ECHO "$text"
    else
-      Translate 2 "Hit <RETURN> to continue >> "
+      if [ "$AUTO" = true ]; then
+         echo
+      else
+         Translate 2 "Hit <RETURN> to continue >> "
+      fi
    fi
 
    if [ "$AUTO" = true ]; then
