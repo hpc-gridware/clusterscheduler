@@ -120,6 +120,8 @@ int main(int argc,char *argv[])
 #include "procfs.h"
 #include "basis_types.h"
 
+#include "msg_execd.h"
+
 #if defined(PDC_STANDALONE)
 #  include "uti/sge_log.h"
 #  include "uti/sge_language.h"

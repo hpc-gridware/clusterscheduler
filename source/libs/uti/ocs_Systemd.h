@@ -109,8 +109,8 @@ namespace ocs::uti {
 
       public:
          // constants
-         static constexpr std::string execd_service_name{"execd.service"};
-         static constexpr std::string shepherd_scope_name{"shepherds.scope"};
+         static const std::string execd_service_name;
+         static const std::string shepherd_scope_name;
 
          // static methods
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);

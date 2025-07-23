@@ -419,6 +419,7 @@ void setrlimits(bool trace_rlimit) {
    pushlimit(RLIMIT_RSS, &rlp, trace_rlimit);
 #  endif
 
+#if defined(OCS_WITH_SYSTEMD)
    // add systemd limits
    if (ocs::g_use_systemd) {
       // We apply the minimum of rss and vmem limits.
@@ -431,14 +432,15 @@ void setrlimits(bool trace_rlimit) {
       if (h_memory != RLIM_INFINITY) {
          shepherd_trace("SYSTEMD MemoryMax = " sge_u64, h_memory);
          // make sure that we have the right datatype for the std::variant
-         ocs::g_systemd_properties["MemoryMax"] = reinterpret_cast<uint64_t>(h_memory);
+         ocs::g_systemd_properties["MemoryMax"] = static_cast<uint64_t>(h_memory);
       }
       if (s_memory != RLIM_INFINITY) {
          // make sure that we have the right datatype for the std::variant
          shepherd_trace("SYSTEMD MemoryHigh = " sge_u64, s_memory);
-         ocs::g_systemd_properties["MemoryHigh"] = reinterpret_cast<uint64_t>(s_memory);
+         ocs::g_systemd_properties["MemoryHigh"] = static_cast<uint64_t>(s_memory);
       }
    }
+#endif
 }
 
 /* *INDENT-OFF* */
