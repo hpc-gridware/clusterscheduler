@@ -80,13 +80,17 @@ namespace ocs::uti {
    static bool
    read_one_line_file(const std::string &file_name, std::string &line) {
       bool ret = false;
-      std::ifstream file(file_name);
-      if (file.is_open()) {
-         if (std::getline(file, line)) {
-            ret = true;
+
+      if (std::filesystem::exists(file_name)) {
+         std::ifstream file(file_name);
+         if (file.is_open()) {
+            if (std::getline(file, line)) {
+               ret = true;
+            }
+            file.close();
          }
-         file.close();
       }
+
       return ret;
    }
 
@@ -319,7 +323,8 @@ namespace ocs::uti {
          // If we have a slice name, we can figure out if we are running as service.
          service_name = service_name_in;
          std::string slice_file_name = get_slice_file_name();
-         if (read_one_line_file(slice_file_name, slice_name)) {
+         ret = read_one_line_file(slice_file_name, slice_name);
+         if (ret) {
             // build service name, e.g. "ocs6444-execd.service"
             std::string full_service_name = slice_name + "-" + service_name;
             // get unit path of service
@@ -357,6 +362,8 @@ namespace ocs::uti {
                DPRINTF("cannot connect to systemd: %s", sge_dstring_get_string(error_dstr));
                ret = false;
             }
+         } else {
+            DPRINTF("slice name file " SFQ "does not exist or is not readable", slice_file_name.c_str());
          }
       }
 
