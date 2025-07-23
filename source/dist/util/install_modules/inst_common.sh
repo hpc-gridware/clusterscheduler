@@ -2242,18 +2242,24 @@ GetSystemdSliceName()
    not_exists_error=$1
    if [ -f "$SGE_ROOT/$SGE_CELL/common/slice_name" ]; then
       # read the slice name from $SGE_ROOT/$SGE_CELL/common/slice_name
-      SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
+      FILE_SLICE_NAME=`cat $SGE_ROOT/$SGE_CELL/common/slice_name`
       if [ $? -ne 0 ]; then
          $INFOTEXT "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
          $INFOTEXT -log "Could not read $SGE_ROOT/$SGE_CELL/common/slice_name"
          exit 1
       fi
-      $ECHO "$SLICE_NAME"
+      $ECHO "$FILE_SLICE_NAME"
    else
       if [ "$not_exists_error" = "true" ]; then
          $INFOTEXT "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
          $INFOTEXT -log "No slice name defined, file %s does not exist" "$SGE_ROOT/$SGE_CELL/common/slice_name"
          exit 1
+      fi
+      if [ "$AUTO" = "true" ]; then
+         # if we are in auto mode, we return what has been configured in the auto config file
+         $ECHO "$SLICE_NAME"
+      else
+         $ECHO ""
       fi
       return 1
    fi
@@ -2277,11 +2283,12 @@ SetupSystemdSliceName()
                SLICE_NAME=`GetDefaultSliceName`
             fi
             $INFOTEXT -u "\nSetting up systemd toplevel slice name"
+            $INFOTEXT -log "\nSetting up systemd toplevel slice name"
             $INFOTEXT "%s will be running withing a top level systemd/cgroups slice,\ndefault is \"%s.slice\"." $DAEMON_NAME $SLICE_NAME
             $INFOTEXT "If you are running multiple clusters on the same host,\nplease use a unique slice name.\n"
             $INFOTEXT -n "Please enter the slice name (without the trailing .slice) or\nhit <RETURN> to use [%s] >> " $SLICE_NAME
             SLICE_NAME=`Enter $SLICE_NAME`
-            CheckSliceName $SLICE_NAME
+            CheckSliceName "$SLICE_NAME"
             if [ $? -eq 0 ]; then
                slice_name_is_ok="true"
             elif [ "$AUTO" = "true" ]; then
