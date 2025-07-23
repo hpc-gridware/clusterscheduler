@@ -65,6 +65,9 @@ namespace ocs::uti {
    int Systemd::cgroup_version{};
    int Systemd::systemd_version{};
 
+   const std::string Systemd::execd_service_name{"execd.service"};
+   const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
+
    // @todo move somewhere else
    static std::string
    get_slice_file_name() {
