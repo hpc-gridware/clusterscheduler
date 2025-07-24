@@ -167,6 +167,8 @@ static lListElem *ptf_process_job(osjobid_t os_job_id,
 static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
                                  lListElem **job_elem);
 
+static lListElem *ptf_get_osjob_by_ids(lList *osjoblist, u_long32 ja_task_id, const char *pe_task_id);
+
 static void ptf_set_job_priority(lListElem *job);
 
 static lList *_ptf_get_job_usage(lListElem *job, u_long ja_task_id,
@@ -582,6 +584,31 @@ static lListElem *ptf_get_job_os(const lList *job_list, osjobid_t os_job_id,
    DRETURN(osjob);
 }
 
+static lListElem *ptf_get_osjob_by_ids(lList *osjoblist, u_long32 ja_task_id, const char *pe_task_id) {
+   lListElem *osjob;
+
+   for_each_rw(osjob, osjoblist) {
+      if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
+         const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
+         if (pe_task_id == nullptr) {
+            if (osjob_pe_task_id == nullptr) {
+               // we found the array task element (and not a possible pe task element with the same job/ja_task_id)
+               break;
+            }
+         } else {
+            // we have a pe task, check if the task id matches
+            if (osjob_pe_task_id != nullptr && strcmp(pe_task_id, osjob_pe_task_id) == 0) {
+               // found the pe task element
+               break;
+            }
+         }
+      }
+   }
+
+   return osjob;
+}
+
+
 
 /*--------------------------------------------------------------------
  * ptf_process_job - process a job received from the SGE scheduler.
@@ -632,7 +659,7 @@ static lListElem *ptf_process_job(osjobid_t os_job_id, const char *task_id_str,
          lSetUlong(job, JL_job_ID, job_id);
       }
       osjoblist = lGetListRW(job, JL_OS_job_list);
-      osjob = ptf_get_job_os(osjoblist, os_job_id, &job);
+      osjob = ptf_get_osjob_by_ids(osjoblist, jataskid, task_id_str);
       if (!osjob) {
          if (!osjoblist) {
             osjoblist = lCreateList("osjoblist", JO_Type);
@@ -1247,21 +1274,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
    *usage = _ptf_get_job_usage(ptf_job, ja_task_id, pe_task_id); 
 
    /* Search ja/pe ptf task */
-   if (pe_task_id == nullptr) {
-      osjob = lFirstRW(osjobs);
-   } else {
-      for_each_rw(osjob, osjobs) {
-         if (lGetUlong(osjob, JO_ja_task_ID) == ja_task_id) {
-            const char *osjob_pe_task_id = lGetString(osjob, JO_task_id_str);
-
-            if (osjob_pe_task_id != nullptr &&
-                strcmp(pe_task_id, osjob_pe_task_id) == 0) {
-               break;
-            } 
-         }
-      }
-   }
-
+   osjob = ptf_get_osjob_by_ids(osjobs, ja_task_id, pe_task_id);
    if (osjob == nullptr) {
       DRETURN(PTF_ERROR_JOB_NOT_FOUND);
    } 
