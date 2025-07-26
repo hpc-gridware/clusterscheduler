@@ -237,28 +237,18 @@ qinstance_increase_qversion(lListElem *this_elem) {
    DRETURN_VOID;
 }
 
-/****** sgeobj/qinstance/qinstance_check_owner() ******************************
-*  NAME
-*     qinstance_check_owner() -- check if a user is queue owner
-*
-*  SYNOPSIS
-*     bool 
-*     qinstance_check_owner(const lListElem *queue, const char *user_name) 
-*
-*  FUNCTION
-*     Checks if the given user is an owner of the given queue.
-*     Managers and operators are implicitly owner of all queues.
-*
-*  INPUTS
-*     const lListElem *queue - the queue to check
-*     const char *user_name  - the user name to check
-*
-*  RESULT
-*     bool - true, if the user is owner, else false
-******************************************************************************/
+/*!
+ * @brief check if the packet user is the owner of the qinstance
+ *
+ * This function checks if the user of the given packet is the owner of the
+ * qinstance element "this_elem". If the user is an operator, it returns true.
+ *
+ * @param packet GDI packet containing the ownership information of the request creator
+ * @param this_elem qinstance element to check
+ * @return true if the user is the owner, false otherwise
+ */
 bool
-qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem,
-                      const lList *master_manager_list, const lList *master_operator_list) {
+qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem) {
    bool ret = false;
 
    DENTER(TOP_LAYER);
@@ -267,14 +257,13 @@ qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *this_elem
    }
    if (this_elem == nullptr) {
       ret = false;
-   } else if (manop_is_operator(packet, master_manager_list, master_operator_list)) {
-      ret = true;
    } else {
       const lList *owner_list = lGetList(this_elem, QU_owner_list);
       if (lGetElemStr(owner_list, US_name, packet->user) != nullptr) {
          ret = true;
       }
    }
+
    DRETURN(ret);
 }
 

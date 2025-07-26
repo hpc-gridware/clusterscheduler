@@ -53,6 +53,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -385,23 +386,29 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
 static int
 sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *qep, u_long32 action,
                        u_long32 force, lList **answer, monitoring_t *monitor) {
-   bool isoperator;
-   bool isowner;
-   int result = 0;
-   const char *ehname = lGetHost(qep, QU_qhostname);
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
-
    DENTER(TOP_LAYER);
 
-   isowner = qinstance_check_owner(packet, qep, master_manager_list, master_operator_list);
-   isoperator = manop_is_operator(packet, master_manager_list, master_operator_list);
+   int result = 0;
+   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+   bool isowner = qinstance_is_owner(packet, qep);
+   bool isoperator = manop_is_operator(packet, master_manager_list, master_operator_list);
 
-   if (!isowner) {
+   if (!isowner && !isoperator) {
       ERROR(MSG_QUEUE_NOCHANGEQPERMS_SS, packet->user, lGetString(qep, QU_full_name));
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
+   }
+
+   // if we are not owner but operator (or manager), we need to be on an admin host
+   if (!isowner) {
+      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr;
+      if (!is_admin_host) {
+         ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+         answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         DRETURN(-1);
+      }
    }
 
    if (qep == nullptr) {
@@ -457,7 +464,11 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem
          break;
       case QI_DO_CLEAN:
       case QI_DO_RESCHEDULE:
-         cqueue_list_del_all_orphaned(master_cqueue_list, answer, lGetString(qep, QU_qname), ehname, packet->gdi_session);
+         {
+            lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+            cqueue_list_del_all_orphaned(master_cqueue_list, answer, lGetString(qep, QU_qname),
+                                         lGetHost(qep, QU_qhostname), packet->gdi_session);
+         }
          break;
       default:
          break;
@@ -469,21 +480,31 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem
 static int
 sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lListElem *jatep,
                      u_long32 task_id, u_long32 action, u_long32 force, lList **answer, monitoring_t *monitor) {
-   lListElem *queueep;
-   u_long32 job_id;
-
    DENTER(TOP_LAYER);
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
-   job_id = lGetUlong(jep, JB_job_number);
+   u_long32 job_id = lGetUlong(jep, JB_job_number);
 
-   /* check the modifying users permissions */
-   if (strcmp(packet->user, lGetString(jep, JB_owner)) && !manop_is_operator(packet, master_manager_list, master_operator_list)) {
-      ERROR(MSG_JOB_NOMODJOBPERMS_SU, packet->user, job_id);
-      answer_list_add(answer, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
-      DRETURN(-1);
+   // check the modifying users permissions
+   // need to be either owner
+   // or operator/manager on an admin host
+   if (sge_strnullcmp(packet->user, lGetString(jep, JB_owner)) != 0) {
+      const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
+      const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
+
+      if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+         ERROR(MSG_JOB_NOMODJOBPERMS_SU, packet->user, job_id);
+         answer_list_add(answer, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
+         DRETURN(-1);
+      }
+
+      // if we are an operator, then we also need to be on an admin host
+      const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
+      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr;
+      if (!is_admin_host) {
+         ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+         answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         DRETURN(-1);
+      }
    }
 
    if (!jatep) {
@@ -499,7 +520,9 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
 
    task_id = lGetUlong(jatep, JAT_task_number);
 
+   lListElem *queueep;
    if (lGetString(jatep, JAT_master_queue)) {
+      const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
       queueep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(jatep, JAT_master_queue));
    } else {
       queueep = nullptr;
@@ -586,7 +609,6 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, u_long32 force,
                  int isoperator, int isowner, monitoring_t *monitor) {
    lListElem *nextjep, *jep;
    const char *qname = nullptr;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
@@ -595,7 +617,8 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, u_long32 force,
 
    DPRINTF("cleaning queue >%s<\n", qname);
 
-   if (!manop_is_manager(packet, master_manager_list)) {
+   // need to be operator/manager for qmod -r
+   if (!isoperator) {
       ERROR(SFNMAX, MSG_QUEUE_NOCLEANQPERMS);
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);

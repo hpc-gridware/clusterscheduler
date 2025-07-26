@@ -81,8 +81,7 @@ void
 qinstance_increase_qversion(lListElem *this_elem);
 
 bool
-qinstance_check_owner(const ocs::gdi::Packet *packet, const lListElem *queue,
-                      const lList *master_manager_list, const lList *master_operator_list);
+qinstance_is_owner(const ocs::gdi::Packet *packet, const lListElem *queue);
 
 bool
 qinstance_is_pe_referenced(const lListElem *this_elem,
