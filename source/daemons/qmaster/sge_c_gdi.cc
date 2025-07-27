@@ -146,7 +146,7 @@ static bool
 sge_task_check_get_perm_host(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, monitoring_t *monitor);
 
 static bool
-sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_long32 target);
+sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_long32 target, u_long32 command);
 
 static int
 schedd_mod(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task, lList **alpp, lListElem *modp, lListElem *ep, int add, const char *ruser,
@@ -255,6 +255,7 @@ bool
 sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
                                      monitoring_t *monitor) {
    DENTER(TOP_LAYER);
+
    int operation = SGE_GDI_GET_OPERATION(task->command);
    switch (operation) {
       case SGE_GDI_GET:
@@ -267,36 +268,27 @@ sge_c_gdi_check_execution_permission(sge_gdi_packet_class_t *packet, sge_gdi_tas
          if (!sge_chck_mod_perm_user(packet, &(task->answer_list), task->target)) {
             DRETURN(false);
          }
-         if (!sge_chck_mod_perm_host(packet, &(task->answer_list), task->target)) {
+         if (!sge_chck_mod_perm_host(packet, &(task->answer_list), task->target, operation)) {
             DRETURN(false);
          }
          DRETURN(true);
       }
       case SGE_GDI_TRIGGER:
-      {
-         const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-         const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-
-         // operators are allowed to trigger rescheduling requests
+         // queue and job owners are allowed to trigger queues/jobs
+         // this is done via qmod command on the cluster queue list
          // other trigger requests must have been initiated by a manager
-         if (task->target == SGE_CQ_LIST) {
-            if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
-               ERROR(MSG_SGETEXT_MUSTBEOPERATOR_S, packet->user);
-               answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
-               DRETURN(false);
-            }
-         } else {
+         if (task->target != SGE_CQ_LIST) {
+            const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
             if (!manop_is_manager(packet, master_manager_list)) {
                ERROR(MSG_SGETEXT_MUSTBEMANAGER_S, packet->user);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
                DRETURN(false);
             }
          }
-         if (!sge_chck_mod_perm_host(packet, &(task->answer_list), task->target)) {
+         if (!sge_chck_mod_perm_host(packet, &(task->answer_list), task->target, operation)) {
             DRETURN(false);
          }
          DRETURN(true);
-      }
       case SGE_GDI_PERMCHECK:
       default:
          // no checks required anyone can do that
@@ -1385,7 +1377,7 @@ sge_chck_mod_perm_user(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
 }
 
 static bool
-sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_long32 target) {
+sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_long32 target, const u_long32 command) {
    DENTER(TOP_LAYER);
 
    /* check permissions of host */
@@ -1396,7 +1388,6 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
       case SGE_UO_LIST:
       case SGE_UM_LIST:
       case SGE_SH_LIST:
-      case SGE_CQ_LIST:
       case SGE_CE_LIST:
       case SGE_PE_LIST:
       case SGE_CONF_LIST:
@@ -1424,7 +1415,6 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
       case SGE_EH_LIST:
 
          /* host must be either admin host or exec host and execd */
-
          if (!(host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host) ||
                (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), packet->host) &&
                 !strcmp(packet->commproc, prognames[EXECD])))) {
@@ -1435,6 +1425,7 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
          break;
 
       case SGE_JB_LIST:
+
          /* host must be SGE_SH_LIST */
          if (!host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host)) {
             ERROR(MSG_SGETEXT_NOSUBMITHOST_S, packet->host);
@@ -1442,6 +1433,27 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
             DRETURN(false);
          }
          break;
+
+      case SGE_CQ_LIST:
+            if (command == SGE_GDI_TRIGGER) {
+               // trigger on cluster queue list is qmod (e.g., -s),
+               // must be submit or admin host
+               if (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host) == nullptr &&
+                   host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), packet->host) == nullptr) {
+                  ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+                  DRETURN(false);
+               }
+            } else {
+               // all other commands on cluster queue list are configuration commands,
+               // need to be admin host
+               if (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host) == nullptr) {
+                  ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
+                  answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
+                  DRETURN(false);
+               }
+            }
+            break;
       case SGE_EV_LIST:
          /* to start an event client or if an event client
             performs modify requests on itself
