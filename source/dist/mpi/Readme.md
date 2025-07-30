@@ -51,7 +51,7 @@ developing high-performance applications.
 Install the parallel environment for Intel MPI and add it to a queue with the following commands:
 
 ```bash
-qconf -Ap $SGE_ROOT/mpi/intel-mpi.pe
+qconf -Ap $SGE_ROOT/mpi/intel-mpi/intel-mpi.pe
 qconf -aattr queue pe_list intel-mpi.pe <queue_name>
 ```
 
