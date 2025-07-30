@@ -87,7 +87,7 @@
 #define MSG_SHEPHERD_INCORRECTCONFIGFILEFORJOBXY_UU         _MESSAGE(29041, _("incorrect config file for job " sge_U32CFormat "." sge_U32CFormat ""))
 #define MSG_SHEPHERD_CANTSTARTJOBXY_US                      _MESSAGE(29042, _("can't start job \"" sge_U32CFormat "\": " SFN))
 #define MSG_SHEPHERD_PROBLEMSAFTERSTART_DS                  _MESSAGE(29043, _("problems after job start \"" sge_U32CFormat "\": " SFN))
-#define MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER    _MESSAGE(29044, _("ja-task \"" sge_U32CFormat "." sge_U32CFormat "\" is unknown - reporting it to qmaster"))
+#define MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER    _MESSAGE(29044, _("ja-task \"" sge_u32 "." sge_u32 "\" is unknown - reporting it to qmaster"))
 #define MSG_SHEPHERD_CKECKINGFOROLDJOBS                     _MESSAGE(29045, _("checking for old jobs"))
 #define MSG_SHEPHERD_NOOLDJOBSATSTARTUP                     _MESSAGE(29046, _("no old jobs at startup"))
 #define MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND          _MESSAGE(29047, _("can't get processes from ps command"))
@@ -109,7 +109,7 @@
 #define MSG_SHEPHERD_EXECDWENTDOWNDURINGJOBSTART            _MESSAGE(29062, _("execd went down during job start"))
 #define MSG_EXECD_ERRORREADINGPIDOFJOB_UU                   _MESSAGE(29063, _("error reading pid for job " sge_U32CFormat "." sge_U32CFormat))
 #define MSG_SHEPHERD_CKECKINGFOROLDJOBSAFTER                _MESSAGE(29064, _("checking for old jobs after configuration change"))
-#define MSG_JR_ERRSTR_EXECDDONTKNOWJOB                      _MESSAGE(29068, _("execd doesn't know this job"))
+#define MSG_JR_ERRSTR_EXECDDONTKNOWJOB                      _MESSAGE(29068, _("execd doesn't know this job or pe task"))
 #define MSG_EXECD_GOTACKFORPETASKBUTISNOTINSTATEEXITING_S   _MESSAGE(29069, _("get exit ack for pe task " SFN " but task is not in state exiting"))
 
 #define MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS             _MESSAGE(29072, _("job " sge_U32CFormat " pid " sge_U32CFormat " setpriority failure: " SFN))
