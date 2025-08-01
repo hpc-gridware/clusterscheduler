@@ -298,11 +298,14 @@ static int
 find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *binding_to_use_schedule_dstr) {
    DENTER(TOP_LAYER);
 
-   if (!a || !host) {
-      DRETURN(0);
+   // @todo CS-732: handle finding for jobs and in future also ARs
+   // if we have no job or binding request within the job then
+   // we have no binding request, are in qselect mode, or we are handling an AR
+   if (a == nullptr || host == nullptr || a->job == nullptr || lGetList(a->job, JB_binding) == nullptr) {
+      DRETURN(slots);
    }
 
-#if 0
+#if 1
    const lList *binding = lGetList(a->job, JB_binding);
    if (binding != nullptr) {
       DPRINTF("Binding\n");
