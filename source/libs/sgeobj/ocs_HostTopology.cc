@@ -142,10 +142,27 @@ void
 ocs::HostTopology::add_or_remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr, const bool do_add) {
    DENTER(TOP_LAYER);
 
+   // nothing to do
+   if (topology_dstr == nullptr || topology_in_use_dstr == nullptr) {
+      DRETURN_VOID;
+   }
+
+   // @todo: CS-731 why are they sometimes different in execd
+   DPRINTF("topology_dstr: %s\n", sge_dstring_get_string(topology_dstr));
+   DPRINTF("topology_in_use_dstr: %s\n", sge_dstring_get_string(topology_in_use_dstr));
+
    // strings need to have same length
    const char *topology_in_use = sge_dstring_get_string(topology_in_use_dstr);
    char *topology = sge_dstring_get_string_rw(topology_dstr);
-   SGE_ASSERT(strlen(sge_dstring_get_string(topology_dstr)) == strlen(topology_in_use));
+
+   bool equal = strlen(sge_dstring_get_string(topology_dstr)) == strlen(topology_in_use);
+   if (!equal) {
+      // @todo: CS-731 why are they sometimes different in execd
+      // If the lengths are not equal, we cannot proceed
+      // This should not happen in a well-formed topology string
+      ERROR("Topology strings have different lengths: %zu vs %zu", strlen(sge_dstring_get_string(topology_dstr)), strlen(topology_in_use));
+      DRETURN_VOID;
+   }
 
    for (size_t i = 0; topology_in_use[i] != '\0'; i++) {
       char new_thread_letter = 'T';
