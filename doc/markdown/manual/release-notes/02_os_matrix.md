@@ -43,6 +43,8 @@ xxQS_NAMExx components on the other axis.
 | OpenIndiana      | 11      | x86-64       |           a           |         a         |          a           |
 | SUSE Leap Linux  | 15      | x86-64       |           x           |         x         |          x           |
 | SUSE Tumbleweed  |         | x86-64       |           a           |         x         |          x           |
+| SUSE SLES        | 15      | x86-64       |           x           |         x         |          x           |
+| SUSE SLES        | 15 SP7  | x86-64       |           x           |         x         |          x           |
 | Ubuntu Linux     | 20.04   | x86-64       |           x           |         x         |          x           |
 | Ubuntu Linux     | 22.04   | x86-64       |           x           |         x         |          x           |
 | Ubuntu Linux     | 24.04   | x86-64       |           x           |         x         |          x           |
