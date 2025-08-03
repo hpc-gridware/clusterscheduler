@@ -451,8 +451,7 @@ static int do_epilog(int timeout, int ckpt_type)
       int i, n_exit_status = count_exit_status();
 
       /* start epilog */
-      replace_params(epilog, command, sizeof(command)-1, 
-                     prolog_epilog_variables);
+      replace_params(epilog, command, sizeof(command)-1, prolog_epilog_variables);
       exit_status = start_child("epilog", command, nullptr, timeout, ckpt_type);
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
@@ -500,8 +499,7 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
       int i, n_exit_status = count_exit_status();
 
       shepherd_trace(pe_start);
-      replace_params(pe_start, command, sizeof(command)-1, 
-         pe_variables);
+      replace_params(pe_start, command, sizeof(command)-1, pe_variables);
       shepherd_trace(command);
 
       /* 
@@ -561,8 +559,7 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
       shepherd_state = SSTATE_BEFORE_PESTOP;
 
       shepherd_trace(pe_stop);
-      replace_params(pe_stop, command, sizeof(command)-1, 
-         pe_variables);
+      replace_params(pe_stop, command, sizeof(command)-1, pe_variables);
       shepherd_trace(command);
       exit_status = start_child("pe_stop", command, nullptr, timeout, ckpt_type);
 
@@ -1979,8 +1976,7 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
       if (*ctrl_pid == -999) {
          char command[10000];
 
-         replace_params(sge_dstring_get_string(&method), command,
-                        sizeof(command)-1, ctrl_method_variables);
+         replace_params(sge_dstring_get_string(&method), command, sizeof(command)-1, ctrl_method_variables);
          *ctrl_pid = start_async_command(method_name, command);
       } else {
          shepherd_trace("Skipped start of suspend: previous command "
@@ -2664,16 +2660,14 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
       cmd = get_conf_val("ckpt_migr_command");
       if (strcasecmp("none", cmd)) {
          shepherd_trace(cmd);
-         replace_params(cmd, migr_command, migr_len,
-                        ckpt_variables);
+         replace_params(cmd, migr_command, migr_len, ckpt_variables);
          shepherd_trace(migr_command);
       }
 
       cmd = get_conf_val("ckpt_clean_command");
       if (strcasecmp("none", cmd)) {
          shepherd_trace(cmd);
-         replace_params(cmd, clean_command, clean_len,
-                        ckpt_variables);
+         replace_params(cmd, clean_command, clean_len, ckpt_variables);
          shepherd_trace(clean_command);
       }
    }
@@ -2689,7 +2683,7 @@ static void set_ckpt_params(int ckpt_type, char *ckpt_command, int ckpt_len,
    } else {
       *ckpt_interval = 0;      
    }
-}      
+}
 
 /*-------------------------------------------------------------------------
  * set_ckpt_restart_command

@@ -123,8 +123,7 @@ static int count_command(char *command) {
 
  It is also used to start the external starter command.
  ************************************************************************/
-void son(const char *childname, char *script_file, int truncate_stderr_out)
-{
+void son(const char *childname, char *script_file, int truncate_stderr_out) {
    int   in, out, err;          /* hold fds */
    int   i;
    int   merge_stderr;
@@ -172,6 +171,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    int size;
    bool skip_silently = false;
    int pty;
+   bool is_the_job = strcmp(childname, "job") == 0;
 
    foreground = 0; /* VX sends SIGTTOU if trace messages go to foreground */
 
@@ -249,7 +249,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       newpgrp = g_newpgrp;
    }
 
-   /* run these procedures under a different user ? */
+   // run these procedures under a different user?
    if (!strcmp(childname, "pe_start") ||
        !strcmp(childname, "pe_stop") ||
        !strcmp(childname, "prolog") ||
@@ -258,9 +258,9 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       target_user = parse_script_params(&script_file);
    }
 
-   if (!target_user)
+   if (!target_user) {
       target_user = get_conf_val("job_owner");
-   else {
+   } else {
       /* 
        *  The reason for using the job owner as intermediate user
        *  is that for output of prolog/epilog the same files are
@@ -299,7 +299,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    umask(022);
 
-   if (strcmp(childname, "job") == 0) {
+   if (is_the_job) {
       char *write_osjob_id = get_conf_val("write_osjob_id");
       if(write_osjob_id != nullptr && atoi(write_osjob_id) != 0) {
          setosjobid(newpgrp, &add_grp_id, pw);
@@ -307,8 +307,12 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    }
    
    shepherd_trace("setting limits");
-   setrlimits(strcmp(childname, "job") == 0);
-   ocs::move_shepherd_child_to_job_scope(pid);
+   setrlimits(is_the_job);
+
+   // for the job, we move the shepherd child process into the job scope
+   if (is_the_job) {
+      ocs::move_shepherd_child_to_job_scope(pid);
+   }
 
    shepherd_trace("setting environment");
    sge_set_environment();
@@ -447,8 +451,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       if (!strcmp(childname, "prolog") || !strcmp(childname, "epilog")) {
          stdin_path = strdup("/dev/null");
          if (fs_stdin) {
-            /* we need the jobs stdin_path here in prolog,
-               because the file must be copied */
+            // we need the jobs stdin_path here in prolog, because the file must be copied
             stdin_path_for_fs = build_path(SGE_STDIN);
          }
          stdout_path = build_path(SGE_STDOUT);
@@ -694,7 +697,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
     */
 
    if (!is_interactive && !is_qlogin && !is_qlogin_starter &&
-       !strcmp(childname, "job") &&
+       is_the_job &&
        (starter_method = get_conf_val("starter_method")) &&
        strcasecmp(starter_method, "none")) {
 
