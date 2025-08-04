@@ -339,8 +339,8 @@ ocs::TopologyString::correct_upper_lower() {
     int threads_unused = 0;
     int cores_used = 0;
     int cores_unused = 0;
-    int socket_used = 0;
-    int socket_unused = 0;
+    //int socket_used = 0;
+    //int socket_unused = 0;
     for (int i = static_cast<int>(strlen(topology)) - 1; i >= 0; i--) {
         switch (topology[i]) {
             case 't':
@@ -368,10 +368,10 @@ ocs::TopologyString::correct_upper_lower() {
                 // All cores on the socket are used
                 if (cores_unused == 0 && cores_used > 0) {
                     topology[i] = std::tolower(topology[i]);
-                    socket_used++;
+                    //socket_used++;
                 } else {
                     topology[i] = std::toupper(topology[i]);
-                    socket_unused++;
+                    //socket_unused++;
                 }
                 cores_used = cores_unused = 0;
                 break;

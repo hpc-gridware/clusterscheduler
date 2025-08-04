@@ -917,8 +917,12 @@ int rc_add_job_utilization(const lListElem *gdil, lListElem *jep, const lListEle
       if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL)) {
          if (dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
+            const lList *binding_to_use = nullptr;
+            if (tag == HOST_TAG) {
+               binding_to_use = lGetList(gdil, JG_binding_to_use);
+            }
             utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                            obj_name, type, for_job_scheduling, false, lGetList(gdil, JG_binding_to_use));
+                            obj_name, type, for_job_scheduling, false, binding_to_use);
             mods++;
             did_booking = true;
          }
