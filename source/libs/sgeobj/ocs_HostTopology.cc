@@ -393,8 +393,8 @@ ocs::HostTopology::correct_topology_upper_lower(dstring *topology_dstr) {
    int threads_unused = 0;
    int cores_used = 0;
    int cores_unused = 0;
-   int socket_used = 0;
-   int socket_unused = 0;
+   //int socket_used = 0;
+   //int socket_unused = 0;
    for (int i = static_cast<int>(strlen(topology)) - 1; i >= 0; i--) {
       switch (topology[i]) {
          case 't':
@@ -422,10 +422,10 @@ ocs::HostTopology::correct_topology_upper_lower(dstring *topology_dstr) {
             // All cores on the socket are used
             if (cores_unused == 0 && cores_used > 0) {
                topology[i] = tolower(topology[i]);
-               socket_used++;
+               //socket_used++;
             } else {
                topology[i] = toupper(topology[i]);
-               socket_unused++;
+               //socket_unused++;
             }
             cores_used = cores_unused = 0;
             break;
