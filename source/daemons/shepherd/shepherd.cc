@@ -702,7 +702,7 @@ int main(int argc, char **argv)
          return 1;
       }
    }
-   shepherd_trace_init( );
+   shepherd_trace_init();
 
    shepherd_trace("shepherd called with uid = " uid_t_fmt ", euid = " uid_t_fmt,
                   getuid(), geteuid());
@@ -1028,8 +1028,9 @@ int main(int argc, char **argv)
          close_parent_loop(exit_status_for_qrsh);
       }
    }
-	
-   shepherd_trace_exit( );
+
+   shepherd_trace("shepherd about to exit %d", return_code);
+   shepherd_trace_exit();
    return return_code;
 }
 

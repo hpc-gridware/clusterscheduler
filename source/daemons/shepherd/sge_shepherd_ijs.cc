@@ -233,7 +233,7 @@ static int append_to_buf(int fd, char *pbuf, int *buf_bytes)
 static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
 {
    int ret = 0;
-   dstring err_msg = DSTRING_INIT;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
    if (comm_write_message(g_comm_handle, g_hostname, 
       COMM_SERVER, 1, (unsigned char*)pbuf, 
@@ -248,7 +248,6 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
 #endif
    }
 
-   sge_dstring_free(&err_msg);
    return ret;
 }
 
@@ -286,7 +285,7 @@ static void* pty_to_commlib(void *t_conf)
    int                  stdout_bytes = 0;
    int                  stderr_bytes = 0;
    bool                 b_select_timeout = false;
-   dstring              err_msg = DSTRING_INIT;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
    /* Report to thread lib that this thread starts up now */
    thread_func_startup(t_conf);
@@ -487,7 +486,6 @@ static void* pty_to_commlib(void *t_conf)
 #endif
    g_raised_event = 2;
    thread_trigger_event(&g_thread_main);
-   sge_dstring_free(&err_msg);
 
 #ifdef EXTENSIVE_TRACING
    shepherd_trace("pty_to_commlib: leaving pty_to_commlib thread");
@@ -525,7 +523,7 @@ static void* commlib_to_pty(void *t_conf)
    int                  ret;
    int                  do_exit = 0;
    int                  fd_write = -1;
-   dstring              err_msg = DSTRING_INIT;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
    /* report to thread lib that thread starts up now */
    thread_func_startup(t_conf);
@@ -545,8 +543,7 @@ static void* commlib_to_pty(void *t_conf)
       /* wait blocking for a message from commlib */
       recv_mess.cl_message = nullptr;
       recv_mess.data       = nullptr;
-      sge_dstring_free(&err_msg);
-      sge_dstring_sprintf(&err_msg, "");
+      sge_dstring_clear(&err_msg);
 
       ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
 
@@ -743,8 +740,6 @@ static void* commlib_to_pty(void *t_conf)
     */
    shepherd_signal_job(g_job_pid, SIGKILL);
 
-   sge_dstring_free(&err_msg);
-
 #ifdef EXTENSIVE_TRACING
    shepherd_trace("commlib_to_pty: leaving commlib_to_pty function");
 #endif
@@ -917,8 +912,7 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    while (g_raised_event == 0) {
       ret = thread_wait_for_event(&g_thread_main, 0, 0);
    }
-   shepherd_trace("parent: received event %d, g_raised_event = %d", 
-                  ret, g_raised_event);
+   shepherd_trace("parent: received event %d, g_raised_event = %d", ret, g_raised_event);
 
    /* 
     * One of the worker threads sent an event, so shut down both threads now.
@@ -939,13 +933,6 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
     */
    cl_thread_trigger_thread_condition(g_comm_handle->app_condition, 1);
 
-
-   close(g_p_ijs_fds->pty_master);
-
-   close(g_p_ijs_fds->pipe_in);
-   close(g_p_ijs_fds->pipe_out);
-   close(g_p_ijs_fds->pipe_err);
-
    /*
     * Wait until threads have shut down and call cleanup functions
     */
@@ -954,6 +941,11 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    cl_thread_cleanup(thread_pty_to_commlib);
    cl_thread_cleanup(thread_commlib_to_pty);
 
+   close(g_p_ijs_fds->pty_master);
+
+   close(g_p_ijs_fds->pipe_in);
+   close(g_p_ijs_fds->pipe_out);
+   close(g_p_ijs_fds->pipe_err);
 
 #if 0
 {
@@ -977,7 +969,7 @@ int close_parent_loop(int exit_status)
 {
    int     ret = 0;
    char    sz_exit_status[21]; 
-   dstring err_msg = DSTRING_INIT;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
    /*
     * Send UNREGISTER_CTRL_MSG
@@ -1047,8 +1039,7 @@ int close_parent_loop(int exit_status)
    }
 
    sge_free(&g_hostname);
-   sge_dstring_free(&err_msg);
-   shepherd_trace("parent: leaving closinge_parent_loop()");
+   shepherd_trace("parent: leaving close_parent_loop()");
    return 0;
 }
 
