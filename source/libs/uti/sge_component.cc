@@ -244,6 +244,7 @@ static void component_ts0_init_user() {
    SGE_ASSERT(sge_gid2group(gid, group_name, sizeof(group_name), MAX_NIS_RETRIES) == 0);
    set_username(user, user_name);
    set_group_name(user, group_name);
+   user->user_initialized = true;
 
    // supplementary groups are lazy initialized in component_get
    user->supplementary_grp_initialized = false;
