@@ -1375,7 +1375,7 @@ clean_up_old_jobs(bool startup) {
       ERROR(SFNMAX, MSG_SHEPHERD_CANTGETPROCESSESFROMPSCOMMAND);
       DRETURN(false);
    }
-   INFO("Found %d shepherd processes. Starting cleanup of active jobs directory and (re)sync of job states.", number_of_shepherd);
+   INFO(MSG_EXECD_FOUND_N_SHEPHERD_PROCS_I, number_of_shepherd);
 
    // Check for old jobs. Either remove them or report them to the qmaster depending on the state.
    cleanup_jobs_and_states(startup, number_of_shepherd, shepherd_pids);
@@ -1420,7 +1420,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
    DPRINTF("Found job directory: %s\n", dir);
    if (startup) {
       INFO(MSG_SHEPHERD_FOUNDDIROFJOBX_S, dir);
-   }   
+   }
    
    /* Look for pid of shepherd */
    snprintf(fname, sizeof(fname), "%s/pid", dir);
