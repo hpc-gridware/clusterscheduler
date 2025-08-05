@@ -1147,25 +1147,56 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
 
 /**************************************************************************
  This function is called if we are asked by the master concerning a job
- we dont know anything about. We have to tell this to the qmaster, so that
+ we don't know anything about. We have to tell this to the qmaster, so that
  he can clean up this job.
  This is done very like the normal job finish and runs into the same
  functions in the qmaster.
  **************************************************************************/
 void job_unknown(u_long32 jobid, u_long32 jataskid, char *qname)
 {
-   lListElem *jr;
-
    DENTER(TOP_LAYER);
 
    ERROR(MSG_SHEPHERD_JATASKXYISKNOWNREPORTINGITTOQMASTER, jobid, jataskid);
 
-   jr = add_job_report(jobid, jataskid, nullptr, nullptr);
-   if (jr) {
-      lSetString(jr, JR_queue_name, qname);
-      lSetUlong(jr, JR_failed, ESSTATE_UNKNOWN_JOB); 
-      lSetUlong(jr, JR_state, JEXITING);
-      lSetString(jr, JR_err_str, (char*) MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
+   // If there are still pe tasks running for this unknown job,
+   // we first create the unknown reports for all the pe tasks.
+   // Once they are all handled in sge_qmaster, it will repeat the ACK_SIGNAL_JOB for the master task,
+   // which will then call this function again with the master task.
+   // If there are no pe tasks running, we can create the job report for the master
+   lListElem *job = nullptr;
+   lListElem *ja_task = nullptr;
+   bool unknown_tasks = false;
+   if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task, false)) {
+      lListElem *pe_task;
+      for_each_rw(pe_task, lGetList(ja_task, JAT_task_list)) {
+         // create the unknown job report for this pe task
+         const char *pe_task_id = lGetString(pe_task, PET_id);
+         lListElem *jr = get_job_report(jobid, jataskid, pe_task_id);
+         if (jr == nullptr) {
+            jr = add_job_report(jobid, jataskid, pe_task_id, nullptr);
+         }
+         if (jr != nullptr) {
+            lSetString(jr, JR_queue_name, qname);
+            lSetUlong(jr, JR_failed, ESSTATE_UNKNOWN_JOB);
+            lSetUlong(jr, JR_state, JEXITING);
+            lSetString(jr, JR_err_str, MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
+         }
+         unknown_tasks = true;
+      }
+   }
+
+   // If there are no pe tasks running, we create the unknown job report for the master task.
+   if (!unknown_tasks) {
+      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
+      if (jr == nullptr) {
+         jr = add_job_report(jobid, jataskid, nullptr, nullptr);
+      }
+      if (jr != nullptr) {
+         lSetString(jr, JR_queue_name, qname);
+         lSetUlong(jr, JR_failed, ESSTATE_UNKNOWN_JOB);
+         lSetUlong(jr, JR_state, JEXITING);
+         lSetString(jr, JR_err_str, MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
+      }
    }
 
    DRETURN_VOID;
@@ -1252,7 +1283,6 @@ cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pi
             INFO("removed active jobs directory %s", path);
          }
       } else {
-
          // here we have a job and task that is still in the job list
          // check if shepherd is still running and handle state changes
          // by syncing state via job report with qmaster

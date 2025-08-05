@@ -353,8 +353,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
                jataskid = lGetUlong(ack, ACK_id2);
 
                if (signal_job(jobid, jataskid, signo)) {
-                  lListElem *jr;
-                  jr = get_job_report(jobid, jataskid, nullptr);
+                  lListElem *jr = get_job_report(jobid, jataskid, nullptr);
                   remove_acked_job_exit(jobid, jataskid, nullptr, jr);
                   job_unknown(jobid, jataskid, nullptr);
                }

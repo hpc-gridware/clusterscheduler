@@ -181,8 +181,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    /* If this is a queue signal 'found' now holds the number of a job
       running in this queue. */
    if (!found && aMsg->tag == ocs::gdi::ClientServerBase::TAG_SIGJOB) {
-      lListElem *jr;
-      jr = get_job_report(jobid, jataskid, nullptr);
+      lListElem *jr = get_job_report(jobid, jataskid, nullptr);
       remove_acked_job_exit(jobid, jataskid, nullptr, jr);
       job_unknown(jobid, jataskid, qname);
    }
@@ -456,8 +455,7 @@ int sge_kill(int pid, u_long32 sge_signal, u_long32 job_id, u_long32 ja_task_id,
       dstring fname = DSTRING_INIT;
       FILE *fp;
 
-      sge_get_active_job_file_path(&fname,
-                                   job_id, ja_task_id, pe_task_id, "signal");
+      sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "signal");
       if (!(fp = fopen(sge_dstring_get_string(&fname), "w"))) {
          ERROR(MSG_EXECD_WRITESIGNALFILE_S, sge_dstring_get_string(&fname));
          sge_dstring_free(&fname);
@@ -489,11 +487,10 @@ CheckShepherdStillRunning:
       dstring path = DSTRING_INIT;
       SGE_STRUCT_STAT statbuf;
 
-      sge_get_active_job_file_path(&path,
-                                   job_id, ja_task_id, pe_task_id, nullptr);
+      sge_get_active_job_file_path(&path, job_id, ja_task_id, pe_task_id, nullptr);
 
       if (!SGE_STAT(sge_dstring_get_string(&path), &statbuf) && S_ISDIR(statbuf.st_mode)) {
-         sge_sig_handler_dead_children = 1; /* may be we've lost a SIGCHLD */
+         sge_sig_handler_dead_children = 1; /* maybe we've lost a SIGCHLD */
          sge_dstring_free(&path);
          DRETURN(0);
       } else {

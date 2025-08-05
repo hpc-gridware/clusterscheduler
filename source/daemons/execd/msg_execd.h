@@ -109,7 +109,7 @@
 #define MSG_SHEPHERD_EXECDWENTDOWNDURINGJOBSTART            _MESSAGE(29062, _("execd went down during job start"))
 #define MSG_EXECD_ERRORREADINGPIDOFJOB_UU                   _MESSAGE(29063, _("error reading pid for job " sge_u32 "." sge_u32))
 #define MSG_SHEPHERD_CKECKINGFOROLDJOBSAFTER                _MESSAGE(29064, _("checking for old jobs after configuration change"))
-#define MSG_JR_ERRSTR_EXECDDONTKNOWJOB                      _MESSAGE(29068, _("execd doesn't know this job"))
+#define MSG_JR_ERRSTR_EXECDDONTKNOWJOB                      _MESSAGE(29068, _("execd doesn't know this job or pe task"))
 #define MSG_EXECD_GOTACKFORPETASKBUTISNOTINSTATEEXITING_S   _MESSAGE(29069, _("get exit ack for pe task " SFN " but task is not in state exiting"))
 
 #define MSG_PRIO_JOBXPIDYSETPRIORITYFAILURE_UUS             _MESSAGE(29072, _("job " sge_u32 " pid " sge_u32 " setpriority failure: " SFN))
