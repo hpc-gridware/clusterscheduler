@@ -1347,6 +1347,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
 
 static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *handler, lList **alpp) {
    DENTER(TOP_LAYER);
+
    char arch_string[80];
    const char *load_avg_str;
    char load_alarm_reason[MAX_STRING_SIZE];
@@ -1355,8 +1356,8 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    u_long32 interval;
    
    queue_summary_t summary;
-   dstring type_string = DSTRING_INIT;
-   dstring state_string = DSTRING_INIT;
+   DSTRING_STATIC(type_string, 32);
+   DSTRING_STATIC(state_string, 32);
    int ret = 0;
    
    memset(&summary, 0, sizeof(queue_summary_t));
@@ -1435,7 +1436,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       hide_data = !summary.has_access;
    }
    if (hide_data) {
-      return 0;
+      DRETURN(0);
    }
 
    if (handler->report_queue_summary && (ret=handler->report_queue_summary(handler, queue_name, &summary, alpp))) {
@@ -1549,9 +1550,6 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    }
 
 error:
-   sge_dstring_free(&type_string);
-   sge_dstring_free(&state_string);
-   
    DRETURN(ret);
 }
 
