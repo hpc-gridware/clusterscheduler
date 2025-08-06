@@ -18,6 +18,12 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
+# Suppression file for valgrind
+# This file is used to suppress known issues in the code base
+# that are false positives or not relevant for the current testing or development phase.
+# These issues have been identified while testing on Ubuntu 24.04 LTS.
+# On other OS versions, these issues may not be present or may manifest differently.
+
 {
    Thread Local Storage (TLS) is not cleaned up properly (CSP Path Class)
    Memcheck:Leak
