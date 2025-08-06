@@ -50,7 +50,7 @@ PATH=/bin:/usr/bin:/usr/sbin:/usr/bsd:/usr/ucb
 
 # Easy way to prevent clearing of screen
 #
-CLEAR=clear
+CLEAR=ClearScreen
 
 # The same as clear!
 #
