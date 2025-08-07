@@ -518,16 +518,16 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   // we do not output the parsed auth_info anyway, so we skip decoding and just output the raw auth_info
                   // string.
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
-                     ocs::gdi::Packet *packet = new ocs::gdi::Packet();
+                     ocs::gdi::Packet packet;
                
-                     if (packet->unpack(nullptr, &buf)) {
+                     if (packet.unpack(nullptr, &buf)) {
                         printf("      unpacked gdi request (binary buffer length %lu):\n", buffer_length );
                         printf("         packet:\n");
 
-                        printf("host   : %s\n", packet->host);
-                        printf("commproc   : %s\n", packet->commproc);
-                        if (packet->version) {
-                           printf("version   : " sge_u32 "\n", packet->version);
+                        printf("host   : %s\n", packet.host);
+                        printf("commproc   : %s\n", packet.commproc);
+                        if (packet.version) {
+                           printf("version   : " sge_u32 "\n", packet.version);
                         } else {
                            printf("version   : %s\n", "nullptr");
                         }
@@ -536,7 +536,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         } else {
                            printf("auth_info   : %s\n", "nullptr");
                         }
-                        for (auto *task : packet->tasks) {
+                        for (auto *task : packet.tasks) {
                            printf("         task:\n");
 
                            if (task->command) {
@@ -573,8 +573,6 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                               printf("enp   : %s\n", "nullptr");
                            }
                         }
-                     } else {
-                        delete packet;
                      }
 
                      clear_packbuffer(&buf);
