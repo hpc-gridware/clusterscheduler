@@ -123,7 +123,7 @@ void
 sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    lList *alp = nullptr;
    const lListElem *dep;
-   lListElem *jatask = nullptr, *job, *tmp_task;
+   lListElem *jatask = nullptr, *tmp_task;
    const lListElem *rn;
    bool found;
    u_long32 jobid;
@@ -197,7 +197,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
 
          /*
          ** We found no queue so look for a job. This only makes sense for
-         ** suspend, unsuspend and reschedule
+         ** suspend, unsuspend, reschedule, and clear
          */
          if (sge_strisint(lGetString(dep, ID_str)) &&
              (action == QI_DO_SUSPEND ||
@@ -228,8 +228,8 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                alltasks = 1;
             }
 
-            job = lGetElemUlongRW(master_job_list, JB_job_number, jobid);
-            if (job) {
+            lListElem *job = lGetElemUlongRW(master_job_list, JB_job_number, jobid);
+            if (job != nullptr) {
                jatask = lFirstRW(lGetList(job, JB_ja_tasks));
 
                while ((tmp_task = jatask)) {
@@ -507,7 +507,7 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
       }
    }
 
-   if (!jatep) {
+   if (jatep == nullptr) {
       /* unenrolled tasks always are not-running pending/hold */
       if (task_id) {
          WARNING(MSG_QMODJOB_NOTENROLLED_UU, job_id, task_id);
@@ -551,10 +551,11 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
          if (VALID(JERROR, lGetUlong(jatep, JAT_state))) {
             lSetUlong(jatep, JAT_state, lGetUlong(jatep, JAT_state) & ~JERROR);
             ja_task_message_trash_all_of_type_X(jatep, 1);
-/* lWriteElemTo(jatep, stderr); */
+
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             job_id, task_id, nullptr, nullptr, nullptr,
                             jep, jatep, nullptr, true, true, packet->gdi_session);
+
             if (job_is_array(jep)) {
                INFO(MSG_JOB_CLEARERRORTASK_SSUU, packet->user, packet->host, job_id, task_id);
             } else {
