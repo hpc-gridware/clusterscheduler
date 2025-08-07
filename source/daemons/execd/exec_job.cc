@@ -777,21 +777,22 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                }
                token = sge_strtok(nullptr, delim);
             }
-            var_list_set_string(&environmentList, var_name,
-                                sge_dstring_get_string(&new_qrsh_command));
+            var_list_set_string(&environmentList, var_name, sge_dstring_get_string(&new_qrsh_command));
+            sge_dstring_free(&new_qrsh_command);
          }
+         sge_dstring_free(&old_qrsh_command);
       } else {
          const char *sfile;
 
          sfile = var_list_get_string(environmentList, var_name);
          if (sfile != nullptr) {
-            DSTRING_STATIC(dstr_script_file_out, SGE_PATH_MAX);
+            dstring dstr_script_file_out = DSTRING_INIT;
 
             path_alias_list_get_path(lGetList(jep, JB_path_aliases), nullptr,
                                      sfile, qualified_hostname,
                                      &dstr_script_file_out);
-            var_list_set_string(&environmentList, var_name,
-                                sge_dstring_get_string(&dstr_script_file_out));
+            var_list_set_string(&environmentList, var_name, sge_dstring_get_string(&dstr_script_file_out));
+            sge_dstring_free(&dstr_script_file_out);
          }
       }
    }
