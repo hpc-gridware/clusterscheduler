@@ -1351,8 +1351,9 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    u_long32 interval;
    
    queue_summary_t summary;
-   dstring type_string = DSTRING_INIT;
-   dstring state_string = DSTRING_INIT;
+   DSTRING_STATIC(type_string, 32);
+   DSTRING_STATIC(state_string, 32);
+
    int ret = 0;
    
    memset(&summary, 0, sizeof(queue_summary_t));
@@ -1545,9 +1546,6 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    }
 
 error:
-   sge_dstring_free(&type_string);
-   sge_dstring_free(&state_string);
-   
    DRETURN(ret);
 }
 
