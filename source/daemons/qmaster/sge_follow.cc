@@ -589,8 +589,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             lSetObject(jatp, JAT_pe_object, lCopyElem(pe));
          }
 
-         // @todo: can this be summaized with the mod event that will set the job in t-state?
-         sge_add_event(0, sgeE_JATASK_ADD, job_number, task_number,
+         // @todo: can this be summarized with the mod event that will set the job in t-state?
+         sge_add_event(0, enrolled_task ? sgeE_JATASK_ADD : sgeE_JATASK_MOD, job_number, task_number,
                       nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
 
          if (sge_give_job(jep, jatp, master_qep, master_host, monitor, gdi_session)) {
@@ -604,7 +604,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             DRETURN(-3);
          }
 
-         /* job is now sent and goes into transfering state */
+         /* job is now sent and goes into transferring state */
          /* mode == COMMIT_ST_SENT -> really accept when execd acks */
          sge_commit_job(jep, jatp, nullptr, COMMIT_ST_SENT, COMMIT_DEFAULT, monitor, gdi_session);
 
