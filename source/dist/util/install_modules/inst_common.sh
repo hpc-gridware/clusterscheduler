@@ -964,11 +964,6 @@ CheckConfigFile()
          $INFOTEXT -log "Your >SET_FILE_PERMS< flag is wrong! Valid values are: 0, 1, true, false"
          is_valid="false" 
       fi
-      if [ "$SCHEDD_CONF" -ne 1 -a "$SCHEDD_CONF" -ne 2 -a "$SCHEDD_CONF" -ne 3 ]; then
-         $INFOTEXT -e "Your >SCHEDD_CONF< entry has a wrong value, allowed values are: 1,2 or 3"
-         $INFOTEXT -log "Your >SCHEDD_CONF< entry has a wrong value, allowed values are: 1,2 or 3"
-         is_valid="false"
-      fi 
    fi
 
    if [ "$QMASTER" = "install" -o "$EXECD" = "install" ]; then
@@ -1323,6 +1318,7 @@ CheckForLocalHostResolving()
    if [ $notok = true ]; then
       $INFOTEXT -u "\nUnsupported local hostname"
       $INFOTEXT "\nThe current hostname is resolved as follows:\n\n"
+      $INFOTEXT -log "\nThe current hostname is resolved as follows:\n\n"
       $SGE_UTILBIN/gethostname
       $INFOTEXT -wait -auto $AUTO -n \
                 "\nIt is not supported for a Cluster Scheduler installation that the local hostname\n" \
@@ -1333,17 +1329,14 @@ CheckForLocalHostResolving()
                 "physical or logical network interfaces of this machine.\n\n" \
                 "Installation failed.\n\n" \
                 "Press <RETURN> to exit the installation procedure >> "
-      $INFOTEXT -log "\nThe current hostname is resolved as follows:\n\n"
-      $SGE_UTILBIN/gethostname
-      $INFOTEXT -log -wait -auto $AUTO -n \
+      $INFOTEXT -log -auto $AUTO -n \
                 "\nIt is not supported for a Cluster Scheduler installation that the local hostname\n" \
                 "contains the hostname \"localhost\" and/or the IP address \"127.0.x.x\" of the\n" \
                 "loopback interface.\n" \
                 "The \"localhost\" hostname should be reserved for the loopback interface\n" \
                 "(\"127.0.0.1\") and the real hostname should be assigned to one of the\n" \
                 "physical or logical network interfaces of this machine.\n\n" \
-                "Installation failed.\n\n" \
-                "Press <RETURN> to exit the installation procedure >> "
+                "Installation failed.\n\n"
       exit 2
    fi
 }
@@ -2672,11 +2665,15 @@ else
    touch /tmp/$LOGSNAME
 fi
 
-if [ "$AUTOGUI" = true ]; then
-   $INFOTEXT "Install log can be found in: %s" /tmp/$LOGSNAME
-fi
+$INFOTEXT "Install log can be found in: %s" /tmp/$LOGSNAME
 }
 
+ClearScreen()
+{
+   if [ "$AUTO" = "false" ]; then
+      clear
+   fi
+}
 
 Stdout2Log()
 {
