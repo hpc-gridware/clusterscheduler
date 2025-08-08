@@ -39,6 +39,7 @@
 #include <fnmatch.h>
 #include <cerrno>
 #include <filesystem>
+#include <fstream>
 
 #include "rapidjson/document.h"
 
@@ -144,12 +145,8 @@ static bool get_qacct_lists(lList **alpp,
                             lList **ppcomplex, lList **ppqeues, lList **ppexechosts,
                             lList **hgrp_l);
 static void free_qacct_lists(lList **ppcomplex, lList **ppqeues, lList **ppexechosts, lList **hgrp_l);
-static int sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size);
-
-/*
-** statics
-*/
-static FILE *fp = nullptr;
+static int sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
+                           std::string &acct_file_line);
 
 /*
 ** NAME
@@ -170,6 +167,8 @@ static FILE *fp = nullptr;
 */
 int main(int argc, char **argv)
 {
+   DENTER_MAIN(TOP_LAYER, "qacct");
+
    int ret = 0;
    u_long32 days;
    sge_qacct_columns column_sizes;
@@ -197,11 +196,8 @@ int main(int argc, char **argv)
    const char *acct_file = nullptr;
    std::string filename{};
    lList *alp = nullptr;
-
-   char szLine[MAX_STRING_SIZE * 10];
-   size_t szLine_size = sizeof(szLine);
-
-   DENTER_MAIN(TOP_LAYER, "qacct");
+   std::ifstream acct_file_stream;
+   std::string acct_file_line{};
 
    log_state_set_log_gui(1);
 
@@ -685,8 +681,8 @@ int main(int argc, char **argv)
       lWriteListTo(hgrp_list, stdout);
    }
 
-   fp = fopen(acct_file, "r");
-   if (fp == nullptr) {
+   acct_file_stream.open(acct_file);
+   if (!acct_file_stream.is_open()) {
       ERROR(MSG_HISTORY_ERRORUNABLETOOPENX_S ,acct_file);
       printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
 
@@ -729,7 +725,7 @@ int main(int argc, char **argv)
       int i_ret;
       line++;
 
-      i_ret = sge_read_rusage(fp, &dusage, &options, szLine, szLine_size);
+      i_ret = sge_read_rusage(acct_file_stream, &dusage, &options, acct_file_line);
       if (i_ret == -2) {
          /* ignore, the line just doesn't match the command options */
          continue;
@@ -881,8 +877,7 @@ int main(int argc, char **argv)
    /*
    ** exit routine attempts to close file if not nullptr
    */
-   FCLOSE(fp);
-   fp = nullptr;
+   acct_file_stream.close();
 
    if (shut_me_down) {
       printf("%s\n", MSG_USER_ABORT);
@@ -1123,8 +1118,6 @@ int main(int argc, char **argv)
    sge_exit(0);
    DRETURN(0);
 
-FCLOSE_ERROR:
-   ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, acct_file, strerror(errno));
 QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
@@ -1636,33 +1629,36 @@ static int
 sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *options);
 
 static int
-sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size) {
+sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
+                std::string &acct_file_line) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
-   char *pc;
-   int len;
+   size_t len;
 
    do {
-      pc = fgets(szLine, size, f);
-      if (pc == nullptr) {
+      if (!std::getline(acct_file_stream, acct_file_line)) {
          DRETURN(2);
       }
-      len = strlen(szLine);
-      if (szLine[len] == '\n') {
-         szLine[len] = '\0';
+      len = acct_file_line.length();
+      if (acct_file_line[len] == '\n') {
+         acct_file_line[len] = '\0';
       }
-   } while (len <= 1 || szLine[0] == COMMENT_CHAR);
+   } while (len <= 1 || acct_file_line[0] == COMMENT_CHAR);
 
    /*
     * qname
     */
-   if (*pc == '{') {
+   if (acct_file_line[0] == '{') {
       // JSON @todo we could determine this once
-      ret = sge_read_rusage_json(szLine, d, options);
+      ret = sge_read_rusage_json(acct_file_line.c_str(), d, options);
    } else {
       // old colon separated file
-      ret = sge_read_rusage_classic(szLine, d, options);
+      // for parsing the old accounting file format we need a writable copy of the input data (one line)
+      // have it in memory once
+      static char old_acct_buffer[MAX_STRING_SIZE * 10];
+      sge_strlcpy(old_acct_buffer, acct_file_line.c_str(), sizeof(old_acct_buffer));
+      ret = sge_read_rusage_classic(old_acct_buffer, d, options);
    }
 
    DRETURN(ret);
