@@ -293,7 +293,7 @@ bool test_lCountWhat() {
                                TEST_object, TEST1_Type,
                                TEST_ref, TEST1_Type);
    lEnumeration *what2 = lWhat("%T(%I %I %I %I %I)", TEST_Type, TEST_int,
-                               TEST_list, TEST_object, TEST_ref);
+                               TEST_list, TEST_object, TEST_ref, TEST_host);
    int elements = lCountWhat(what1, TEST_Type);
 
    ret &= (elements == 5);
