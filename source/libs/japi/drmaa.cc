@@ -646,6 +646,11 @@ int drmaa_exit(char *error_diagnosis, size_t error_diag_len)
    }
 
    drmaa_errno = japi_exit(JAPI_EXIT_NO_FLAG, diagp);
+   // It should not be necessary to call cl_com_cleanup_commlib(),
+   // as it should be called by the gdi_default_exit_func() installed by the ocs::gdi::ClientBase.
+   // But valgrind reports it as Leak_PossiblyLost.
+   // Apparently the gdi_default_exit_func() is not called in case of libdrmaa.
+   cl_com_cleanup_commlib();
 
    DRETURN(drmaa_errno);
 }

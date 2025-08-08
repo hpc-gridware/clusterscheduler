@@ -981,11 +981,6 @@ int japi_exit(int flag, dstring *diag)
    if (cl_errno != CL_RETVAL_OK) {
       sge_dstring_sprintf(diag, MSG_JAPI_CANNOT_CLOSE_COMMLIB_S, cl_get_error_text(cl_errno));
    }
-   // @todo It should not be necessary to call cl_com_cleanup_commlib(),
-   //       as it should be called by the gdi_default_exit_func() installed by the ocs::gdi::ClientBase.
-   //       But valgrind reports it as Leak_PossiblyLost.
-   //       Calling it here solves the issue and it wouldn't do any harm calling it twice.
-   cl_com_cleanup_commlib();
    DPRINTF (("After commlib shutdown\n"));
 
    /* We have to wait to free the job list until any waiting or syncing threads
