@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -39,6 +39,7 @@
 #include <fnmatch.h>
 #include <cerrno>
 #include <filesystem>
+#include <fstream>
 
 #include "rapidjson/document.h"
 
@@ -133,19 +134,15 @@ typedef struct {
 
 static void qacct_usage(FILE *err_fp);
 static void print_full(int length, const char* string);
-static void print_full_ulong(int length, u_long32 value); 
+static void print_full_ulong(int length, u_long32 value);
 static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data );
 static void showjob(sge_rusage_type *dusage);
 static bool get_qacct_lists(lList **alpp,
                             lList **ppcomplex, lList **ppqeues, lList **ppexechosts,
                             lList **hgrp_l);
 static void free_qacct_lists(lList **ppcomplex, lList **ppqeues, lList **ppexechosts, lList **hgrp_l);
-static int sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size);
-
-/*
-** statics
-*/
-static FILE *fp = nullptr;
+static int sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
+                           std::string &acct_file_line);
 
 /*
 ** NAME
@@ -166,6 +163,7 @@ static FILE *fp = nullptr;
 */
 int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qacct");
+
    int ret = 0;
    u_long32 days;
    sge_qacct_columns column_sizes;
@@ -188,14 +186,14 @@ int main(int argc, char **argv) {
    lList *queueref_list = nullptr;
    lList *sorted_list = nullptr;
    lSortOrder *sort_order = nullptr;
-   int is_path_setup = 0;   
+   int is_path_setup = 0;
    u_long32 line = 0;
    const char *acct_file = nullptr;
    std::string filename{};
    lList *alp = nullptr;
 
-   char szLine[MAX_STRING_SIZE * 10];
-   size_t szLine_size = sizeof(szLine);
+   std::ifstream acct_file_stream;
+   std::string acct_file_line{};
 
    sge_setup_sig_handlers(QACCT);
 
@@ -217,7 +215,7 @@ int main(int argc, char **argv) {
    column_sizes.group      = strlen(MSG_HISTORY_GROUP)+1;
    column_sizes.owner      = strlen(MSG_HISTORY_OWNER)+1;
    column_sizes.project    = strlen(MSG_HISTORY_PROJECT)+1;
-   column_sizes.department = strlen(MSG_HISTORY_DEPARTMENT)+1;  
+   column_sizes.department = strlen(MSG_HISTORY_DEPARTMENT)+1;
    column_sizes.granted_pe = strlen(MSG_HISTORY_PE)+1;
    column_sizes.slots      = 5;
    column_sizes.arid       = 5;
@@ -252,7 +250,7 @@ int main(int argc, char **argv) {
                stringT buffer;
 
                if (sscanf(argv[++ii], sge_u32, &gid) == 1) {
-                  if (sge_gid2group((gid_t)gid, buffer, 
+                  if (sge_gid2group((gid_t)gid, buffer,
                                    MAX_STRING_SIZE, MAX_NIS_RETRIES) != 0) {
                      options.group = sge_strdup(options.group, argv[ii]);
                   } else {
@@ -324,7 +322,7 @@ int main(int argc, char **argv) {
       */
       else if (!strcmp("-t", argv[ii])) {
          if (!argv[ii+1] || *(argv[ii+1])=='-') {
-            fprintf(stderr, "%s\n", MSG_HISTORY_TOPTIONMUSTHAVELISTOFTASKIDRANGES ); 
+            fprintf(stderr, "%s\n", MSG_HISTORY_TOPTIONMUSTHAVELISTOFTASKIDRANGES );
             qacct_usage(stderr);
             DRETURN(1);
          } else {
@@ -367,7 +365,7 @@ int main(int argc, char **argv) {
             }
             options.begin_time = sge_gmt32_to_gmt64(tmp_begin_time);
             DPRINTF("begin is: " sge_u64 "\n", options.begin_time);
-            beginflag = 1; 
+            beginflag = 1;
          } else {
             qacct_usage(stderr);
          }
@@ -387,7 +385,7 @@ int main(int argc, char **argv) {
             }
             options.end_time = sge_gmt32_to_gmt64(tmp_end_time);
             DPRINTF("end is: " sge_u64 "\n", options.end_time);
-            endflag = 1; 
+            endflag = 1;
          } else {
             qacct_usage(stderr);
          }
@@ -404,7 +402,7 @@ int main(int argc, char **argv) {
                qacct_usage(stderr);
             }
             DPRINTF("days is: %d\n", days);
-            daysflag = 1; 
+            daysflag = 1;
          } else {
             qacct_usage(stderr);
          }
@@ -468,7 +466,7 @@ int main(int argc, char **argv) {
                if (sscanf(argv[++ii], sge_u32, &options.ar_number) != 1) {
                   fprintf(stderr, "%s\n", MSG_PARSE_INVALID_AR_MUSTBEUINT);
                   qacct_usage(stderr);
-                  DRETURN(1); 
+                  DRETURN(1);
                }
             }
          } else {
@@ -491,7 +489,7 @@ int main(int argc, char **argv) {
          } else {
             qacct_usage(stderr);
          }
-      } 
+      }
       /*
       ** alternative accounting file
       */
@@ -584,14 +582,14 @@ int main(int argc, char **argv) {
 
    {
       dstring cqueue_name = DSTRING_INIT;
-      dstring host_or_hgroup = DSTRING_INIT;      
+      dstring host_or_hgroup = DSTRING_INIT;
       const lListElem *qref_pattern = nullptr;
       const char *name = nullptr;
       bool has_hostname = false;
       bool has_domain = true;
 
       for_each_ep(qref_pattern, queueref_list) {
-         name = lGetString(qref_pattern, QR_name); 
+         name = lGetString(qref_pattern, QR_name);
          cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain);
          if (has_domain) {
@@ -600,7 +598,7 @@ int main(int argc, char **argv) {
       }
       sge_dstring_free(&cqueue_name);
       sge_dstring_free(&host_or_hgroup);
-      
+
       /* the user did not specify a queue domain, therefor we need no information
          from the qmaster, but we have to work on the user input and generate the
          same data structure, that we would have gotten with the qmaster functions*/
@@ -608,20 +606,20 @@ int main(int argc, char **argv) {
          for_each_ep(qref_pattern, queueref_list) {
             dstring qi_name = DSTRING_INIT;
             const char *tmp_str = nullptr;
-            name = lGetString(qref_pattern, QR_name); 
-           
-            sge_dstring_copy_string(&qi_name, name); 
-           
+            name = lGetString(qref_pattern, QR_name);
+
+            sge_dstring_copy_string(&qi_name, name);
+
             if ((tmp_str = strchr(name, '@')) == nullptr){
                sge_dstring_append(&qi_name, "@*");
             } else if (*(tmp_str+1) == '\0'){
                sge_dstring_append(&qi_name, "*");
             }
-            
+
             lAddElemStr(&options.queue_name_list, QR_name, sge_dstring_get_string(&qi_name), QR_Type);
 
             sge_dstring_free(&qi_name);
-         }   
+         }
       }
       if (options.complexflag || (queueref_list && has_domain)) {
          /*
@@ -646,11 +644,11 @@ int main(int argc, char **argv) {
             }
             is_path_setup = 1;
          }
-         if (queueref_list && has_domain){ 
+         if (queueref_list && has_domain){
             if (!get_qacct_lists(&alp, nullptr, &queue_list, nullptr, &hgrp_list)) {
                answer_list_output(&alp);
                goto QACCT_EXIT;
-            }   
+            }
 
             qref_list_resolve(queueref_list, nullptr, &options.queue_name_list,
                            &found_something, queue_list, hgrp_list, true, true);
@@ -658,13 +656,13 @@ int main(int argc, char **argv) {
                fprintf(stderr, "%s\n", MSG_QINSTANCE_NOQUEUES);
                goto QACCT_EXIT;
             }
-         }  
+         }
          if (options.complexflag) {
             if (!get_qacct_lists(&alp, &centry_list, &queue_list, &exechost_list, nullptr)) {
                answer_list_output(&alp);
                goto QACCT_EXIT;
-            }   
-         }   
+            }
+         }
       } /* endif complexflag */
    }
 
@@ -680,8 +678,8 @@ int main(int argc, char **argv) {
       lWriteListTo(hgrp_list, stdout);
    }
 
-   fp = fopen(acct_file, "r");
-   if (fp == nullptr) {
+   acct_file_stream.open(acct_file);
+   if (!acct_file_stream.is_open()) {
       ERROR(MSG_HISTORY_ERRORUNABLETOOPENX_S ,acct_file);
       printf("%s\n", MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP);
 
@@ -724,7 +722,7 @@ int main(int argc, char **argv) {
       int i_ret;
       line++;
 
-      i_ret = sge_read_rusage(fp, &dusage, &options, szLine, szLine_size);
+      i_ret = sge_read_rusage(acct_file_stream, &dusage, &options, acct_file_line);
       if (i_ret == -2) {
          /* ignore, the line just doesn't match the command options */
          continue;
@@ -739,20 +737,20 @@ int main(int argc, char **argv) {
          dstring qi = DSTRING_INIT;
          lListElem *queue;
          int selected;
-     
+
          sge_dstring_sprintf(&qi,"%s@%s", dusage.qname, dusage.hostname );
          queue = cqueue_list_locate_qinstance_msg(queue_list, sge_dstring_get_string(&qi), false);
-         sge_dstring_free(&qi); 
+         sge_dstring_free(&qi);
 
          if (!queue) {
-            /* 
-            * queue no longer exists, we can't get the complex attributes for this job, 
-            * we will ignore the job for accounting  and count the number of ignored jobs 
+            /*
+            * queue no longer exists, we can't get the complex attributes for this job,
+            * we will ignore the job for accounting  and count the number of ignored jobs
             */
             ignored_jobs++;
             continue;
          }
-   
+
          sconf_set_qs_state(QS_STATE_EMPTY);
 
          if (centry_list_fill_request(complex_options, &alp, centry_list, true, true, false)) {
@@ -762,7 +760,7 @@ int main(int argc, char **argv) {
 
          selected = sge_select_queue(complex_options, queue, nullptr, exechost_list,
                     centry_list, true, 1, nullptr, nullptr, nullptr);
-  
+
          if (!selected) {
             continue;
          }
@@ -791,12 +789,12 @@ int main(int argc, char **argv) {
          ** or the existing element to increase
          */
 
-         while (ep && ((options.slotsflag && (lGetUlong(ep, QAJ_slots) != dusage.slots)) || 
-                (options.granted_peflag && (sge_strnullcmp(lGetString(ep, QAJ_granted_pe), dusage.granted_pe))) || 
+         while (ep && ((options.slotsflag && (lGetUlong(ep, QAJ_slots) != dusage.slots)) ||
+                (options.granted_peflag && (sge_strnullcmp(lGetString(ep, QAJ_granted_pe), dusage.granted_pe))) ||
                 (options.departmentflag && (sge_strnullcmp(lGetString(ep, QAJ_department), dusage.department))) ||
                 (options.projectflag && (sge_strnullcmp(lGetString(ep, QAJ_project), dusage.project))) ||
                 (options.ownerflag && (sge_strnullcmp(lGetString(ep, QAJ_owner), dusage.owner))) ||
-                (options.hostflag && (sge_hostcmp(lGetHost(ep, QAJ_host), dusage.hostname))) || 
+                (options.hostflag && (sge_hostcmp(lGetHost(ep, QAJ_host), dusage.hostname))) ||
                 (options.queueflag && (sge_strnullcmp(lGetString(ep, QAJ_queue), dusage.qname))) ||
                 (options.groupflag && (sge_strnullcmp(lGetString(ep, QAJ_group) , dusage.group))) ||
                 (options.arflag && (lGetUlong(ep, QAJ_arid) != dusage.ar))
@@ -858,15 +856,15 @@ int main(int argc, char **argv) {
             lSetDouble(new_ep, QAJ_cpu, dusage.cpu);
             lSetDouble(new_ep, QAJ_mem, dusage.mem);
             lSetDouble(new_ep, QAJ_io,  dusage.io);
-            lSetDouble(new_ep, QAJ_iow, dusage.iow);                         
+            lSetDouble(new_ep, QAJ_iow, dusage.iow);
 
             lInsertSorted(sort_order, new_ep, sorted_list);
-         }        
+         }
       } /* endif sortflags */
    } /* end while sge_read_rusage */
 
    /*
-   * print the warning about the count of ignored jobs for accounting 
+   * print the warning about the count of ignored jobs for accounting
    */
    if (ignored_jobs > 0) {
       WARNING(MSG_HISTORY_IGNORINGJOBXFORACCOUNTINGMASTERQUEUEYNOTEXISTS_IS, ignored_jobs);
@@ -876,8 +874,7 @@ int main(int argc, char **argv) {
    /*
    ** exit routine attempts to close file if not nullptr
    */
-   FCLOSE(fp);
-   fp = nullptr;
+   acct_file_stream.close();
 
    if (shut_me_down) {
       printf("%s\n", MSG_USER_ABORT);
@@ -915,23 +912,23 @@ int main(int argc, char **argv) {
    */
    if (options.host != nullptr) {
       column_sizes.host = strlen(options.host) + 1;
-   } 
+   }
    if (options.group != nullptr) {
       column_sizes.group = strlen(options.group) + 1;
-   } 
+   }
    if (options.owner != nullptr) {
       column_sizes.owner = strlen(options.owner) + 1;
-   } 
+   }
    if (options.project != nullptr) {
       column_sizes.project = strlen(options.project) + 1;
-   } 
+   }
    if (options.department != nullptr) {
       column_sizes.department = strlen(options.department) + 1;
-   } 
+   }
    if (options.granted_pe != nullptr) {
       column_sizes.granted_pe = strlen(options.granted_pe) + 1;
    }
- 
+
    calc_column_sizes(lFirst(sorted_list), &column_sizes);
    {
       const lListElem *ep = nullptr;
@@ -965,7 +962,7 @@ int main(int argc, char **argv) {
       if (options.granted_pe != nullptr || options.granted_peflag) {
          print_full(column_sizes.granted_pe, MSG_HISTORY_PE);
          dashcnt += column_sizes.granted_pe;
-      }   
+      }
       if (options.slots > 0 || options.slotsflag) {
          print_full(column_sizes.slots, MSG_HISTORY_SLOTS);
          dashcnt += column_sizes.slots;
@@ -974,14 +971,14 @@ int main(int argc, char **argv) {
          print_full(column_sizes.slots, MSG_HISTORY_AR);
          dashcnt += column_sizes.slots;
       }
-         
+
       if (!dashcnt) {
          printf("%s\n", MSG_HISTORY_TOTSYSTEMUSAGE);
       }
 
       snprintf(title_array, sizeof(title_array), "%13.13s %13.13s %13.13s %13.13s %18.18s %18.18s %18.18s",
                "WALLCLOCK", "UTIME", "STIME", "CPU", "MEMORY", "IO", "IOW");
-                        
+
       printf("%s\n", title_array);
 
       dashcnt += strlen(title_array);
@@ -989,11 +986,11 @@ int main(int argc, char **argv) {
          printf("=");
       }
       printf("\n");
-   
+
       if (summary_view) {
          ep = lFirst(sorted_list);
       }
-      
+
       while (totals.ru_wallclock) {
          const char *cp;
 
@@ -1058,7 +1055,7 @@ int main(int argc, char **argv) {
                break;
             }
             print_full(column_sizes.granted_pe, ((cp = lGetString(ep, QAJ_granted_pe)) ? cp : ""));
-         }         
+         }
          if (options.slots > 0) {
             print_full_ulong(column_sizes.slots, options.slots);
          } else if (options.slotsflag) {
@@ -1075,8 +1072,8 @@ int main(int argc, char **argv) {
                break;
             }
             print_full_ulong(column_sizes.arid, lGetUlong(ep, QAJ_arid));
-         }         
-         
+         }
+
          if (summary_view) {
              printf("%13.0f %13.3f %13.3f %13.3f %18.3f %18.3f %18.3f\n",
                    lGetDouble(ep, QAJ_ru_wallclock),
@@ -1098,7 +1095,7 @@ int main(int argc, char **argv) {
                 totals.ru_stime,
                 totals.cpu,
                 totals.mem,
-                totals.io,                                                
+                totals.io,
                 totals.iow);
             break;
          }
@@ -1107,7 +1104,7 @@ int main(int argc, char **argv) {
 
    lFreeList(&sorted_list);
    lFreeSortOrder(&sort_order);
- 
+
    /*
    ** problem: other clients evaluate some status here
    */
@@ -1118,8 +1115,6 @@ int main(int argc, char **argv) {
    sge_exit(0);
    DRETURN(0);
 
-FCLOSE_ERROR:
-   ERROR(MSG_FILE_ERRORCLOSEINGXY_SS, acct_file, strerror(errno));
 QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
@@ -1138,7 +1133,7 @@ static void print_full_ulong(int full_length, u_long32 value) {
 
    DENTER(TOP_LAYER);
    snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, value);
-   print_full(full_length, tmp_buf); 
+   print_full(full_length, tmp_buf);
    DRETURN_VOID;
 }
 
@@ -1148,7 +1143,7 @@ static void print_full(int full_length, const char* string) {
 
    DENTER(TOP_LAYER);
    if ( string != nullptr) {
-      printf("%s",string); 
+      printf("%s",string);
       string_length = strlen(string);
    }
    while (full_length > string_length) {
@@ -1161,7 +1156,7 @@ static void print_full(int full_length, const char* string) {
 static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_size_data) {
    const lListElem* lep = nullptr;
    DENTER(TOP_LAYER);
-   
+
    if (column_size_data == nullptr) {
       DPRINTF("no column size data!\n");
       DRETURN_VOID;
@@ -1172,37 +1167,37 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
    column_size_data->group = 10;
    column_size_data->owner = 10;
    column_size_data->project = 17;
-   column_size_data->department = 20;  
+   column_size_data->department = 20;
    column_size_data->granted_pe = 15;
    column_size_data->slots = 6; */
 
    if (column_size_data->host < strlen(MSG_HISTORY_HOST)+1) {
       column_size_data->host = strlen(MSG_HISTORY_HOST)+1;
-   } 
+   }
    if (column_size_data->queue < strlen(MSG_HISTORY_QUEUE)+1) {
       column_size_data->queue = strlen(MSG_HISTORY_QUEUE)+1;
-   } 
+   }
    if (column_size_data->group < strlen(MSG_HISTORY_GROUP)+1) {
       column_size_data->group = strlen(MSG_HISTORY_GROUP)+1;
-   } 
+   }
    if (column_size_data->owner < strlen(MSG_HISTORY_OWNER)+1) {
       column_size_data->owner = strlen(MSG_HISTORY_OWNER)+1;
-   } 
+   }
    if (column_size_data->project < strlen(MSG_HISTORY_PROJECT)+1) {
       column_size_data->project = strlen(MSG_HISTORY_PROJECT)+1;
-   } 
+   }
    if (column_size_data->department < strlen(MSG_HISTORY_DEPARTMENT)+1) {
       column_size_data->department = strlen(MSG_HISTORY_DEPARTMENT)+1;
-   } 
+   }
    if (column_size_data->granted_pe < strlen(MSG_HISTORY_PE)+1) {
       column_size_data->granted_pe = strlen(MSG_HISTORY_PE)+1;
-   } 
+   }
    if (column_size_data->slots < 5) {
       column_size_data->slots = 5;
-   } 
+   }
    if (column_size_data->arid < 5) {
       column_size_data->arid = 5;
-   } 
+   }
 
    if (ep != nullptr) {
       char tmp_buf[100];
@@ -1217,7 +1212,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->host <= tmp_length) {
                column_size_data->host  = tmp_length + 1;
             }
-         } 
+         }
          /* queue */
          tmp_string = lGetString(lep, QAJ_queue);
          if (tmp_string != nullptr) {
@@ -1225,7 +1220,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->queue <= tmp_length) {
                column_size_data->queue  = tmp_length + 1;
             }
-         } 
+         }
          /* group */
          tmp_string = lGetString(lep, QAJ_group) ;
          if (tmp_string != nullptr) {
@@ -1233,7 +1228,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->group <= tmp_length) {
                column_size_data->group  = tmp_length + 1;
             }
-         } 
+         }
          /* owner */
          tmp_string = lGetString(lep, QAJ_owner);
          if (tmp_string != nullptr) {
@@ -1241,7 +1236,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->owner <= tmp_length) {
                column_size_data->owner  = tmp_length + 1;
             }
-         } 
+         }
          /* project */
          tmp_string = lGetString(lep, QAJ_project);
          if (tmp_string != nullptr) {
@@ -1249,7 +1244,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->project <= tmp_length) {
                column_size_data->project  = tmp_length + 1;
             }
-         } 
+         }
 
          /* department  */
          tmp_string = lGetString(lep, QAJ_department);
@@ -1258,7 +1253,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->department <= tmp_length) {
                column_size_data->department  = tmp_length + 1;
             }
-         } 
+         }
          /* granted_pe */
          tmp_string = lGetString(lep, QAJ_granted_pe) ;
          if ( tmp_string != nullptr ) {
@@ -1266,7 +1261,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
             if (column_size_data->granted_pe <= tmp_length) {
                column_size_data->granted_pe  = tmp_length + 1;
             }
-         } 
+         }
 
          /* slots */
          snprintf(tmp_buf, sizeof(tmp_buf), "%5" sge_fu32, lGetUlong(lep, QAJ_slots));
@@ -1287,7 +1282,7 @@ static void calc_column_sizes(const lListElem* ep, sge_qacct_columns* column_siz
    } else {
      DPRINTF("got nullptr list\n");
    }
-   
+
    DRETURN_VOID;
 }
 
@@ -1316,7 +1311,7 @@ static void qacct_usage(FILE *err_fp)
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
    fprintf(err_fp, "%s\n", feature_get_product_name(FS_SHORT_VERSION, &ds));
-         
+
    fprintf(err_fp, "%s qacct [options]\n", MSG_HISTORY_USAGE);
    fprintf(err_fp, " [-ar [ar_id]]                     %s\n", MSG_HISTORY_ar_OPT_USAGE);
    fprintf(err_fp, " [-A account_string]               %s\n", MSG_HISTORY_A_OPT_USAGE);
@@ -1336,7 +1331,7 @@ static void qacct_usage(FILE *err_fp)
    fprintf(err_fp, " [-slots [slots]]                  %s\n", MSG_HISTORY_slots_OPT_USAGE);
    fprintf(err_fp, " [-t taskid[-taskid[:step]]]       %s\n", MSG_HISTORY_t_OPT_USAGE );
    fprintf(err_fp, " [[-f] acctfile]                   %s\n", MSG_HISTORY_f_OPT_USAGE );
-   
+
    fprintf(err_fp, "\n");
    fprintf(err_fp, " begin_time, end_time              %s\n", MSG_HISTORY_beginend_OPT_USAGE );
    fprintf(err_fp, " queue                             [cluster_queue|queue_instance|queue_domain|pattern]\n");
@@ -1569,7 +1564,7 @@ lList **hgrp_l
    /* --- complex */
    if (ppcentries) {
       gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, ce_id, ppcentries);
-      if (answer_list_has_error(alpp)) { 
+      if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
    }
@@ -1577,7 +1572,7 @@ lList **hgrp_l
    /* --- exec host */
    if (ppexechosts) {
       gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_EH_LIST, eh_id, ppexechosts);
-      if (answer_list_has_error(alpp)) { 
+      if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
    }
@@ -1585,7 +1580,7 @@ lList **hgrp_l
    /* --- queue */
    if (ppqueues) {
       gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CQ_LIST, q_id, ppqueues);
-      if (answer_list_has_error(alpp)) { 
+      if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
    }
@@ -1593,7 +1588,7 @@ lList **hgrp_l
    /* --- hgrp */
    if (hgrp_l) {
       gdi_multi.get_response(alpp, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_HGRP_LIST, hgrp_id, hgrp_l);
-      if (answer_list_has_error(alpp)) { 
+      if (answer_list_has_error(alpp)) {
          DRETURN(false);
       }
    }
@@ -1616,33 +1611,36 @@ static int
 sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *options);
 
 static int
-sge_read_rusage(FILE *f, sge_rusage_type *d, sge_qacct_options *options, char *szLine, size_t size) {
+sge_read_rusage(std::ifstream &acct_file_stream, sge_rusage_type *d, sge_qacct_options *options,
+                std::string &acct_file_line) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
-   char *pc;
-   int len;
+   size_t len;
 
    do {
-      pc = fgets(szLine, size, f);
-      if (pc == nullptr) {
+      if (!std::getline(acct_file_stream, acct_file_line)) {
          DRETURN(2);
       }
-      len = strlen(szLine);
-      if (szLine[len] == '\n') {
-         szLine[len] = '\0';
+      len = acct_file_line.length();
+      if (acct_file_line[len] == '\n') {
+         acct_file_line[len] = '\0';
       }
-   } while (len <= 1 || szLine[0] == COMMENT_CHAR);
+   } while (len <= 1 || acct_file_line[0] == COMMENT_CHAR);
 
    /*
     * qname
     */
-   if (*pc == '{') {
+   if (acct_file_line[0] == '{') {
       // JSON @todo we could determine this once
-      ret = sge_read_rusage_json(szLine, d, options);
+      ret = sge_read_rusage_json(acct_file_line.c_str(), d, options);
    } else {
       // old colon separated file
-      ret = sge_read_rusage_classic(szLine, d, options);
+      // for parsing the old accounting file format we need a writable copy of the input data (one line)
+      // have it in memory once
+      static char old_acct_buffer[MAX_STRING_SIZE * 10];
+      sge_strlcpy(old_acct_buffer, acct_file_line.c_str(), sizeof(old_acct_buffer));
+      ret = sge_read_rusage_classic(old_acct_buffer, d, options);
    }
 
    DRETURN(ret);
@@ -1675,7 +1673,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-1);
    }
    d->qname = pc;
-   
+
    /*
     * hostname
     */
@@ -1705,7 +1703,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (options->group != nullptr && sge_strnullcmp(options->group, d->group)) {
       DRETURN(-2);
    }
-          
+
    /*
     * owner
     */
@@ -1734,7 +1732,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!pc) {
       DRETURN(-1);
    }
-   
+
    d->job_number = SGE_STRTOU_LONG32(pc);
    if (!options->jobflag && (options->job_number || options->job_name != nullptr)) {
       if (((d->job_number != options->job_number) && sge_patternnullcmp(d->job_name, options->job_name))) {
@@ -1892,7 +1890,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-1);
    }
    d->ru_isrss = SGE_STRTOU_LONG32(pc);
-   
+
    /*
     * ru_minflt
     */
@@ -2040,8 +2038,8 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    if (!options->jobflag) {
 
       if (options->taskstart && options->taskend && options->taskstep) {
-         if (d->task_number < options->taskstart || d->task_number > options->taskend || 
-             !(((d->task_number-options->taskstart)%options->taskstep) == 0)) { 
+         if (d->task_number < options->taskstart || d->task_number > options->taskend ||
+             !(((d->task_number-options->taskstart)%options->taskstep) == 0)) {
             DRETURN(-2);
          }
       }
@@ -2053,7 +2051,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
 
    /* skip job category */
    pc=strtok(nullptr, ":");
-#if 0   
+#if 0
    while ((pc=strtok(nullptr, ":")) &&
           strlen(pc) &&
           pc[strlen(pc)-1] != ' ' &&
@@ -2080,7 +2078,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    // we do not have wallclock but ru_wallclock
    d->wallclock = d->ru_wallclock;
 
-   /* ... */ 
+   /* ... */
    options->jobfound=1;
 
    DRETURN(0);
