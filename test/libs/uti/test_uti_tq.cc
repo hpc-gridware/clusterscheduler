@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2009 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -43,7 +43,7 @@
 #include "uti/sge_tq.h"
 
 /*
- * Producer and consumer maximum should be a multiple of 2 and 3 
+ * Producer and consumer maximum should be a multiple of 2 and 3
  */
 #define TEST_SL_MAX_CONSUMER 24
 #define TEST_SL_MAX_PRODUCER 24
@@ -216,20 +216,21 @@ test_mt_consumer_producer() {
       int min = max_possible_switches / 33;
       int max = max_possible_switches - max_possible_switches / 33;
 
-      /* 
+      /*
        * check thread type execution sequence:
-       * for this test we are happy if it is in min/max range 
+       * for this test we are happy if it is in min/max range
        * plus/minus ~3%
        */
       if (switches < min || switches > max) {
          fprintf(stderr, "switch of thread type is out of range in %s(). "
-                 "got %d but expected something in range [%d;%d]", 
+                 "got %d but expected something in range [%d;%d]",
                  __func__, switches, min, max);
       }
    }
 #endif
 
    /* cleanup */
+   sge_dstring_free(&global.sequence);
    pthread_mutex_destroy(&global.mutex);
    sge_tq_destroy(&global.queue);
 

@@ -30,7 +30,7 @@
  *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/                                   
+/*___INFO__MARK_END__*/
 
 #include <cstdio>
 
@@ -86,7 +86,7 @@ static conf_settings_t tests[] = {
 };
 
 static int
-test(conf_settings_t *setting, schedd_conf_t *test, int test_counter) 
+test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
 {
    lListElem *schedd_conf = sconf_create_default();
    lList *schedd_list = lCreateList("schedd_conf", SC_Type);
@@ -94,7 +94,7 @@ test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
    int ret = 0;
 
    if (schedd_conf != nullptr && schedd_list != nullptr) {
-      lAppendElem(schedd_list, schedd_conf); 
+      lAppendElem(schedd_list, schedd_conf);
 
       switch (test->type) {
          case lStringT :
@@ -109,7 +109,7 @@ test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
                ret = 1;
             break;
       }
-     
+
       if (sconf_validate_config(&answer_list, schedd_list) != setting->result ) {
          printf("ERROR: the test failed\n");
          printf("ERROR: expected that the validate function returns %s\n", setting->result?"TRUE":"FALSE");
@@ -120,7 +120,10 @@ test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
       printf("ERROR: failed to create the required elements\n");
       ret = 1;
    }
-            
+
+   lFreeList(&schedd_list);
+   lFreeList(&answer_list);
+
    return ret;
 }
 
@@ -130,13 +133,13 @@ test(conf_settings_t *setting, schedd_conf_t *test, int test_counter)
 *     main() -- calendar test
 *
 *  SYNOPSIS
-*     int main(int argc, char* argv[]) 
+*     int main(int argc, char* argv[])
 *
 *  FUNCTION
 *     calendar test
 *
 *  INPUTS
-*     int argc     - nr. of args 
+*     int argc     - nr. of args
 *     char* argv[] - args
 *
 *  RESULT
@@ -149,7 +152,7 @@ int main(int argc, char* argv[])
    int failed = 0;
    int past_test = -1;
    lInit(nmv);
-   
+
    printf("==> Scheduler config test <==\n");
 
    while (tests[test_counter].test_nr != -1) {
@@ -163,11 +166,11 @@ int main(int argc, char* argv[])
       }
       printf("Setting: %s\n", tests[test_counter].test_value);
       printf("Should be accepted: %s\n", tests[test_counter].result?"YES":"NO");
-      if (test(&(tests[test_counter]), 
-               &(conf_tests[tests[test_counter].test_nr]), 
+      if (test(&(tests[test_counter]),
+               &(conf_tests[tests[test_counter].test_nr]),
                test_counter) != 0) {
-         failed++; 
-      }   
+         failed++;
+      }
       test_counter++;
    }
    printf("\n-----------------------");
@@ -177,6 +180,6 @@ int main(int argc, char* argv[])
    else {
       printf("\n==> %d/%d test(s) failed <==\n", failed, test_counter);
    }
-   
+
    return failed;
 }

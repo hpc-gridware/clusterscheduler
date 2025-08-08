@@ -39,7 +39,7 @@
 
 #include "basis_types.h"
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
    lList *answer_list = nullptr;
 
@@ -85,7 +85,9 @@ int main(int argc, char *argv[])
    } else {
       printf("FAILED: test NOT solved!\n");
    }
-   
+
+   lFreeList(&answer_list);
+
    return ret;
 
 }
