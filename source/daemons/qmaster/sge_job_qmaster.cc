@@ -1317,6 +1317,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
                                                 master_userset_list, master_project_list, master_rqs_list,
                                                 true, packet->gdi_session);
             }
+
+            sge_dstring_free(&category_str);
          }
 
          /* all job modifications to be saved on disk must be made in new_job */

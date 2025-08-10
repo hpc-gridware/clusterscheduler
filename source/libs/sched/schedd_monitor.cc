@@ -105,13 +105,13 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
 
    const char *delis[] = {nullptr, " ", nullptr};
    const lListElem *ep = nullptr;
+   lList *lp_part = nullptr;
    for_each_ep(ep, lp) {
-      lList *lp_part = nullptr;
-      if (!lp_part) {
+      if (lp_part == nullptr) {
          lp_part = lCreateList("partial list", lGetListDescr(lp));
       }
       lAppendElem(lp_part, lCopyElem(ep));
-      if ((lGetNumberOfElem(lp_part) == NUM_ITEMS_ON_LINE) || !lNext(ep)) {
+      if (lGetNumberOfElem(lp_part) == NUM_ITEMS_ON_LINE || lNext(ep) == nullptr) {
          char log_string[2048];
 
          strcpy(log_string, logstr);
@@ -122,9 +122,10 @@ int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *log
                         fields, delis, 0);
          schedd_log(log_string, monitor_alpp, monitor_next_run);
          lFreeList(&lp_part);
-         lp_part = nullptr;
       }
    }
+
+   lFreeList(&lp_part);
 
    DRETURN(0);
 }
