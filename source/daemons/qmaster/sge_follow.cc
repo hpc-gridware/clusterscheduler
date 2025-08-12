@@ -617,13 +617,8 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          }
 
          // @todo: can this be summarized with the mod event that will set the job in t-state?
-<<<<<<< HEAD
          sge_add_event(now, enrolled_task ? sgeE_JATASK_ADD : sgeE_JATASK_MOD, job_number, task_number,
                        nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
-=======
-         sge_add_event(now, sgeE_JATASK_ADD, job_number, task_number,
-                      nullptr, nullptr, lGetString(jep, JB_session), jatp, gdi_session);
->>>>>>> 828cffed1 (CS-1187 add systemd and cgroups integration (#60))
 
          if (sge_give_job(jep, jatp, master_qep, master_host, monitor, gdi_session)) {
             /* setting of queues in state unheard is done by sge_give_job() */
