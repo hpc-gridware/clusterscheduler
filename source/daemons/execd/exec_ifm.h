@@ -38,18 +38,6 @@
 /* Structures. */
 
 /*
- * The following structures are used to transmit the process, job, and system
- * data gathered by the DC.  They are sent raw to the execd when requested.
- * These are not the internally-used structures.
- */
-
-struct pkt_hdr
-	{
-	uint64	len;
-	char pktype;	
-	char unused[7];
-	};
-/*
  * Process data.  An array of jd_proccount of these structures is sent
  * after each job structure, and represents the processes "owned" by a job.
  */
@@ -97,15 +85,9 @@ struct psJob_s
  */
 	double	jd_utime_a;		/* total user time used */
 	double	jd_stime_a;		/* total system time used */
-	double	jd_bwtime_a;		/* total time waiting for block I/O used */
-	double	jd_rwtime_a;		/* total time waiting for raw I/O used */
-	double	jd_srtime_a;		/* total srun-wait time used */
 	/* completed */
 	double	jd_utime_c;		/* total user time used */
 	double	jd_stime_c;		/* total system time used */
-	double	jd_bwtime_c;		/* total time waiting for block I/O used */
-	double	jd_rwtime_c;		/* total time waiting for raw I/O used */
-	double	jd_srtime_c;		/* total srun-wait time used */
 
 	uint64	jd_mem;			/* memory used (integral) in KB seconds */
 	uint64	jd_chars;		/* characters moved in bytes */
@@ -115,98 +97,4 @@ struct psJob_s
 	uint64	jd_rss;		   /* resident set size in bytes */
 	uint64	jd_himem;		/* high-water memory size in bytes */
    uint64   jd_maxrss;     /* maximum rss in bytes */
-	uint64	jd_fsblks;		/* file system blocks consumed */
 	};
-/*
- * System info
- * This is the statistical information for the system.  It is sent in
- * response to the psGetSysdata() call.  It includes two numbers for
- * some of the counters.  One is the system's total, and the other is the
- * "new" accrual for this sampling interval.
- */
-struct psSys_s
-	{
-	long	sys_length;		/* Length of struct (set@run-time) */
-	long	sys_ncpus;		/* Number of CPUs */
-	time_t	sys_tstamp;		/* Time of last snap */
-	double	sys_ttimet;		/* total cpu time avail (since start) */
-	double	sys_ttime;		/* total cpu time avail (this int) */
-	double	sys_utimet;		/* user time (since start) */
-	double	sys_utime;		/* user time this interval */
-	double	sys_stimet;		/* system time (since start) */
-	double	sys_stime;		/* system time this interval */
-	double	sys_itimet;		/* idle time (since start) */
-	double	sys_itime;		/* idle time this interval */
-	double	sys_srtimet;		/* srun wait (since start) */
-	double	sys_srtime;		/* srun wait this interval */
-	double	sys_wtimet;		/* I/O wait time (since start) */
-	double	sys_wtime;		/* I/O wait time this interval */
-	uint64	sys_swp_total;		/* Total Swap space available */
-	uint64	sys_swp_free;		/* Swap space free */
-	uint64	sys_swp_used;		/* Swap space in use (bytes) */
-	uint64	sys_swp_rsvd;		/* Swap space reserved (bytes) */
-	uint64	sys_swp_virt;		/* Virtual Swap space avail (bytes) */
-	double	sys_swp_rate;		/* Swap rate in bytes/second */
-	uint64	sys_mem_avail;		/* Memory available (unused, free) */
-	uint64	sys_mem_used;	        /* Memory in use (bytes) */
-	uint64	sys_mswp_avail;	        /* Memory + swap available (bytes) */
-	uint64	sys_mswp_used;	        /* Memory + swap in use (bytes) */
-
-/*
- *	The runque, runocc, swpque, swpocc numbers are already adjusted
- *	for number of CPUs.  A runocc value, of 1.0 for instance, means
- *	that there was a runnable process on every CPU at all times.
- *	A runque value of 2.0 means that *on average* there were 2 runnable
- *	procs on each CPU.  It is possible to have runocc of .5 and
- *	runque of 2.0 if the runqueue is about 4/CPU, but only
- *	half the time.  It is not possible to have runocc > runque.
- */
-	double	sys_swpocc;		/* Swap "Occ" delta */
-	double	sys_swpque;		/* Swap Queue delta */
-	double	sys_runocc;		/* Run "Occ" delta */
-	double	sys_runque;		/* Run Queue delta */
-
-	uint64	sys_readch;		/* characters read */
-	uint64	sys_writech;		/* characters written */
-	};
-
-struct psStat_s
-	{
-	long	stat_length;		/* Length of struct (set@run-time) */
-	time_t	stat_tstamp;		/* Time of last sample */
-					/* not necessarily complete */
-	pid_t	stat_ifmpid;		/* our pid */
-	pid_t	stat_DCpid;		/* DC pid */
-	pid_t	stat_IFMpid;		/* IFM pid */
-	long	stat_elapsed;		/* elapsed time (to *now*, not snap) */
-	double	stat_DCutime;		/* user CPU time used by DC */
-	double	stat_DCstime;		/* sys CPU time used by DC */
-	double	stat_IFMutime;		/* user CPU time used by IFM */
-	double	stat_IFMstime;		/* sys CPU time used by IFM */
-	long	stat_jobcount;		/* number of jobs tracked */
-	};
-
-/* Functions. */
-	/* None */
-
-/* Function macros. */
-	/* None */
-
-/* Macros. */
-
-/*
- * Commands to the IFM
- * To avoid sign extension and printf problems, all jobIDs are 16 chars
- * of Hex
- */
-#define	PS_IFM_START	's'
-#define	PS_IFM_QUIT	'q'	/* 'q'		Quit */
-#define	PS_IFM_TRACK	't'	/* 't ID'	track a job */
-#define	PS_IFM_IGNORE	'i'	/* 'i ID'	track a job */
-#define	PS_IFM_STATUS	'?'	/* '?'		Request DC status */
-#define	PS_IFM_1JOB	'1'	/* '1 ID'	Get info for 1 job */
-#define	PS_IFM_ALL	'a'	/* 'a'		get info for all jobs */
-#define	PS_IFM_SYSTEM	'l'	/* 'l'		get info (load) for system */
-
-#define	PS_IFM_ACK	'A'	/* ACK string (seldom used) */
-#define	PS_IFM_NACK	'N'	/* ACK string (seldom used) */

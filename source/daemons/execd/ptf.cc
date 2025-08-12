@@ -733,8 +733,10 @@ static void ptf_get_usage_from_data_collector()
                usage_list_set_double_usage(usage_list, USAGE_ATTR_IOOPS, jobs->jd_ioops, false);
 
                /* set I/O wait time */
+#if 0
                usage_list_set_double_usage(usage_list, USAGE_ATTR_IOW, jobs->jd_bwtime_c +
                                            jobs->jd_bwtime_a + jobs->jd_rwtime_c + jobs->jd_rwtime_a, false);
+#endif
 
                /* set vmem and maxvmem usage */
                usage_list_set_double_usage(usage_list, USAGE_ATTR_VMEM, jobs->jd_vmem, false);

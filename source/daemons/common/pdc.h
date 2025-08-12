@@ -151,7 +151,6 @@ typedef struct lnk_link_s {
 typedef struct psJob_s psJob_t;
 typedef struct psProc_s psProc_t;
 typedef struct psStat_s psStat_t;
-typedef struct psSys_s psSys_t;
 
 typedef struct {
    lnk_link_t link;
@@ -208,4 +207,3 @@ int		psIgnoreJob(JobID_t JobID);
 struct psStat_s	*psStatus();
 struct psJob_s *psGetOneJob(JobID_t JobID);
 struct psJob_s *psGetAllJobs();
-struct psSys_s *psGetSysdata();

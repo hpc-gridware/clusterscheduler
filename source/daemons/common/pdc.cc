@@ -293,17 +293,6 @@ psSetCollectionIntervals(int jobi, int prci, int sysi)
       ps_config.sys_collection_interval = sysi;
 }
 
-static int
-get_numjobs()
-{
-   lnk_link_t *curr;
-   int count = 0;
-   for (curr=job_list.next; curr != &job_list; curr=curr->next)
-      if (LNK_DATA(curr, job_elem_t, link)->precreated == 0)
-         count++;
-   return count;
-}
-
 static void
 free_process_list(job_elem_t *job_elem)
 {
@@ -753,56 +742,6 @@ int psIgnoreJob(JobID_t JobID) {
    return 0;
 }
 
-
-struct psStat_s *psStatus()
-{
-   psStat_t *pstat;
-   static time_t last_time_stamp;
-   time_t time_stamp = get_gmt();
-
-   if ((pstat = (psStat_t *)sge_malloc(sizeof(psStat_t)))==nullptr) {
-      return nullptr;
-   }
-
-   /* Length of struct (set@run-time) */
-   pstat->stat_length = sizeof(psStat_t);
-
-   /* Time of last sample */
-   pstat->stat_tstamp = last_time_stamp;
-
-   /* our pid */
-   pstat->stat_ifmpid = getpid();
-
-   /* DC pid */
-   pstat->stat_DCpid = getpid();
-
-   /* IFM pid */
-   pstat->stat_IFMpid = getpid();
-
-   /* elapsed time (to *now*, not snap) */
-   pstat->stat_elapsed = time_stamp - start_time;
-
-   /* user CPU time used by DC */
-   pstat->stat_DCutime = 0;
-
-   /* sys CPU time used by DC */
-   pstat->stat_DCstime = 0;
-
-   /* user CPU time used by IFM */
-   pstat->stat_IFMutime = 0;
-
-   /* sys CPU time used by IFM */
-   pstat->stat_IFMstime = 0;
-
-   /* number of jobs tracked */
-   pstat->stat_jobcount = get_numjobs();
-
-   last_time_stamp = time_stamp;
-
-   return pstat;
-}
-
-
 struct psJob_s *psGetOneJob(JobID_t JobID)
 {
    psJob_t *job;
@@ -912,28 +851,10 @@ struct psJob_s *psGetAllJobs()
    return rjob;
 }
 
-
-#ifdef PDC_STANDALONE
-struct psSys_s *psGetSysdata()
-{
-   psSys_t *sd;
-
-   /* go get system data */
-   psRetrieveSystemData();
-
-   if ((sd = (psSys_t *)sge_malloc(sizeof(psSys_t))) == nullptr) {
-      return nullptr;
-   }
-   memcpy(sd, &sysdata, sizeof(psSys_t));
-   return sd;
-}
-#endif
-
 int psVerify()
 {
    return 0;
 }
-
 
 #ifdef PDC_STANDALONE
 
@@ -1037,25 +958,6 @@ print_system_data(psSys_t *sys)
    printf("sys_writech="F64"\n", sys->sys_writech);
 }
 #endif
-
-
-static void
-print_status(psStat_t *stat)
-{
-   printf("%s\n", MSG_SGE_STATUS );
-   printf("stat_length=%d\n", (int)stat->stat_length);
-   printf("stat_tstamp=%s\n", ctime(&stat->stat_tstamp));
-   printf("stat_ifmpid=%d\n", (int)stat->stat_ifmpid);
-   printf("stat_DCpid=%d\n", (int)stat->stat_DCpid);
-   printf("stat_IFMpid=%d\n", (int)stat->stat_IFMpid);
-   printf("stat_elapsed=%d\n", (int)stat->stat_elapsed);
-   printf("stat_DCutime=%8.3f\n", stat->stat_DCutime);
-   printf("stat_DCstime=%8.3f\n", stat->stat_DCstime);
-   printf("stat_IFMutime=%8.3f\n", stat->stat_IFMutime);
-   printf("stat_IFMstime=%8.3f\n", stat->stat_IFMstime);
-   printf("stat_jobcount=%d\n", (int)stat->stat_jobcount);
-}
-
 
 int
 main(int argc, char **argv)
@@ -1243,17 +1145,6 @@ main(int argc, char **argv)
       sys = nullptr;
 
       if (!sgeview && system) {
-
-         if ((stat = psStatus()))
-            if (verbose)
-               print_status(stat);
-#if 0
-         if ((sys = psGetSysdata()))
-            if (verbose)
-               print_system_data(sys);
-#endif      
-      }
-
       ojob = jobs = psGetAllJobs();
       if (jobs) {
          jobcount = *(uint64 *)jobs;
