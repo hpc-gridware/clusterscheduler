@@ -428,6 +428,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    lDelSubStr(jr, UA_name, USAGE_ATTR_CPU, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_MEM, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_IO, JR_usage);
+   lDelSubStr(jr, UA_name, USAGE_ATTR_IOOPS, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_IOW, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_VMEM, JR_usage);
    lDelSubStr(jr, UA_name, USAGE_ATTR_MAXVMEM, JR_usage);
@@ -1741,7 +1742,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
    double ru_cpu, pdc_cpu;
    double cpu, r_cpu,
           mem, r_mem,
-          io, iow, r_io, r_iow, maxvmem, r_maxvmem, maxrss, r_maxrss;
+          io, ioops, iow, r_io, r_ioops, r_iow, maxvmem, r_maxvmem, maxrss, r_maxrss;
 
    lListElem *job = nullptr;
    lListElem *ja_task = nullptr;
@@ -1792,14 +1793,13 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
    /* io     = PDC "io" usage or zero */
    io = usage_list_get_double_usage(usage_list, USAGE_ATTR_IO, 0);
-
-   /* r_io   = 0 */
-   r_io = io;
-
-   /* iow     = PDC "io wait time" or zero */
+   /* ioops  = PDC "io operations" or zero */
+   ioops = usage_list_get_double_usage(usage_list, USAGE_ATTR_IOOPS, 0);
+   /* iow    = PDC "io wait time" or zero */
    iow = usage_list_get_double_usage(usage_list, USAGE_ATTR_IOW, 0);
 
-   /* r_iow  = 0 */
+   r_io = io;
+   r_ioops = ioops;
    r_iow = iow;
 
    /* maxvmem and maxrss*/
@@ -1818,6 +1818,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, r_cpu);
          add_usage(jr, USAGE_ATTR_MEM_ACCT, nullptr, r_mem);
          add_usage(jr, USAGE_ATTR_IO_ACCT,  nullptr, r_io);
+         add_usage(jr, USAGE_ATTR_IOOPS_ACCT,  nullptr, r_ioops);
          add_usage(jr, USAGE_ATTR_IOW_ACCT, nullptr, r_iow);
          if (r_maxvmem != DBL_MAX) {
             add_usage(jr, USAGE_ATTR_MAXVMEM_ACCT, nullptr, r_maxvmem);
@@ -1830,6 +1831,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
       add_usage(jr, USAGE_ATTR_CPU_ACCT, nullptr, cpu);
       add_usage(jr, USAGE_ATTR_MEM_ACCT, nullptr, mem);
       add_usage(jr, USAGE_ATTR_IO_ACCT,  nullptr, io);
+      add_usage(jr, USAGE_ATTR_IOOPS_ACCT,  nullptr, ioops);
       add_usage(jr, USAGE_ATTR_IOW_ACCT, nullptr, iow);
       if (maxvmem != DBL_MAX) {
          add_usage(jr, USAGE_ATTR_MAXVMEM_ACCT, nullptr, maxvmem);
@@ -1856,6 +1858,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
          add_usage(jr, USAGE_ATTR_CPU, nullptr, r_cpu);
          add_usage(jr, USAGE_ATTR_MEM, nullptr, r_mem);
          add_usage(jr, USAGE_ATTR_IO,  nullptr, r_io);
+         add_usage(jr, USAGE_ATTR_IOOPS,  nullptr, r_ioops);
          add_usage(jr, USAGE_ATTR_IOW, nullptr, r_iow);
          if (r_maxvmem != DBL_MAX) {
             add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, r_maxvmem);
@@ -1869,6 +1872,7 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
       add_usage(jr, USAGE_ATTR_CPU, nullptr, cpu);
       add_usage(jr, USAGE_ATTR_MEM, nullptr, mem);
       add_usage(jr, USAGE_ATTR_IO,  nullptr, io);
+      add_usage(jr, USAGE_ATTR_IOOPS,  nullptr, ioops);
       add_usage(jr, USAGE_ATTR_IOW, nullptr, iow);
       if (maxvmem != DBL_MAX) {
          add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, maxvmem);

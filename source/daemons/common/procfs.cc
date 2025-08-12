@@ -401,6 +401,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    int pos_rel = lGetPosInDescr(PRO_Type, PRO_rel);
    int pos_run = lGetPosInDescr(PRO_Type, PRO_run);
    int pos_io = lGetPosInDescr(PRO_Type, PRO_io);
+   int pos_ioops = lGetPosInDescr(PRO_Type, PRO_ioops);
    int pos_group = lGetPosInDescr(GR_Type, GR_group);
 #else
    prstatus_t pr;
@@ -539,6 +540,10 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
           * get prstatus
           * see https://www.man7.org/linux/man-pages/man5/proc.5.html
           */
+         // @todo CS-1450 we could possibly get iowait from the stat file
+         //       (42) delayacct_blkio_ticks  %llu  (since Linux 2.6.18)
+         //            Aggregated block I/O delays, measured in clock ticks
+         //            (centiseconds).
          ret = sscanf(buffer, "%lu %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %*u %lu %ld",
                       &pid,
                       &utime,
@@ -778,9 +783,11 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
     * I/O accounting
     */
    proc_elem->delta_chars    = 0UL;
+   proc_elem->delta_ioops    = 0UL;
    {
       char procnam[1024];
-      uint64 new_iochars = 0UL;
+      uint64 new_iochars{};
+      uint64 new_ioops{};
 
       sprintf(procnam, PROC_DIR "/%s/io", dent->d_name);
 
@@ -791,44 +798,58 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             FILE *fd;
             if ((fd = fopen(procnam, "r"))) {
                char buf[1024];
-            
+
                /*
                 * Trying to parse /proc/<pid>/io
                 */
 
-               while (fgets(buf, sizeof(buf), fd))
-               {
+               while (fgets(buf, sizeof(buf), fd)) {
                  char *label = strtok(buf, " \t\n");
                  char *token = strtok((char*) nullptr, " \t\n");
 
-                 if (label && token)
-                   if (!strcmp("rchar:", label) ||
-                       !strcmp("wchar:", label))
-                   {
-                      unsigned long long nchar = 0UL;
-                      if (sscanf(token, "%llu", &nchar) == 1)
-                         new_iochars += (uint64) nchar;
-                   }
+                 if (label != nullptr && token != nullptr) {
+                    if (strcmp("rchar:", label) == 0 ||
+                        strcmp("wchar:", label) == 0) {
+                       unsigned long long nchar = 0UL;
+                       if (sscanf(token, "%llu", &nchar) == 1) {
+                          new_iochars += (uint64) nchar;
+                       }
+                    } else if (strcmp("syscr:", label) == 0 ||
+                               strcmp("syscr:", label) == 0) {
+                       unsigned long long nops = 0UL;
+                       if (sscanf(token, "%llu", &nops) == 1) {
+                          new_ioops += (uint64) nops;
+                       }
+                    }
+                 }
                } /* while */
 
                fclose(fd);
                lSetPosUlong(pr, pos_io, new_iochars);
+               lSetPosUlong(pr, pos_ioops, new_ioops);
             }
          }
       } else {
          new_iochars = lGetPosUlong(pr, pos_io);
+         new_ioops = lGetPosUlong(pr, pos_ioops);
       }
       /*
        *  Update process I/O info
        */
-      if (new_iochars > 0UL)
-      {
+      if (new_iochars > 0UL) {
          uint64 old_iochars = proc_elem->iochars;
 
-         if (new_iochars > old_iochars)
-         {
-            proc_elem->delta_chars = (new_iochars - old_iochars);
+         if (new_iochars > old_iochars) {
+            proc_elem->delta_chars = new_iochars - old_iochars;
             proc_elem->iochars = new_iochars;
+         }
+      }
+      if (new_ioops > 0UL) {
+         uint64 old_ioops = proc_elem->ioops;
+
+         if (new_ioops > old_ioops) {
+            proc_elem->delta_ioops = new_ioops - old_ioops;
+            proc_elem->ioops = new_ioops;
          }
       }
    }

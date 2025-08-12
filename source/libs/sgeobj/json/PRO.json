@@ -81,7 +81,15 @@
 			"name":	"io",
 			"summary":	"IO",
 			"description":	[{
-					"line":	"IO statistic for the running process."
+				"line":	"IO characters for the running process."
+			}],
+			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"ioops",
+			"summary":	"IOOPS",
+			"description":	[{
+					"line":	"IO operations for the running process."
 				}],
 			"type":	"lUlongT",
 			"flags":	[]

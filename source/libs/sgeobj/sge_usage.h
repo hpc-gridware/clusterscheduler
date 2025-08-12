@@ -54,6 +54,7 @@ enum {
 /* integral memory usage */
 #define USAGE_ATTR_MEM "mem"
 #define USAGE_ATTR_IO "io"
+#define USAGE_ATTR_IOOPS "ioops"
 #define USAGE_ATTR_IOW "iow"
 
 #define USAGE_ATTR_CPU_ACCT "acct_cpu"
@@ -61,6 +62,7 @@ enum {
 /* these are used for accounting */
 #define USAGE_ATTR_MEM_ACCT "acct_mem"
 #define USAGE_ATTR_IO_ACCT "acct_io"
+#define USAGE_ATTR_IOOPS_ACCT "acct_ioops"
 #define USAGE_ATTR_IOW_ACCT "acct_iow"
 #define USAGE_ATTR_MAXVMEM_ACCT "acct_maxvmem"
 #define USAGE_ATTR_MAXRSS_ACCT "acct_maxrss"
@@ -85,7 +87,9 @@ usage_list_set_ulong_usage(lList *usage_list, const char *name, u_long32 value);
 void
 usage_list_set_ulong64_usage(lList *usage_list, const char *name, u_long64 value);
 void
-usage_list_set_double_usage(lList *usage_list, const char *name, double value);
+usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage = true);
+void
+usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage = true);
 
 void
 usage_list_sum(lList *usage_list, const lList *add_usage_list);

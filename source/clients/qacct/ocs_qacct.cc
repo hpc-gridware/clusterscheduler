@@ -1434,11 +1434,12 @@ static void showjob(sge_rusage_type *dusage) {
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
 
-   printf(SHOWJOB_FLOAT_3,   MSG_HISTORY_SHOWJOB_WALLCLOCK,      dusage->wallclock);
-   printf(SHOWJOB_FLOAT_3,   MSG_HISTORY_SHOWJOB_CPU,          dusage->cpu);
-   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_MEM,          dusage->mem);
-   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_IO,           dusage->io);
-   printf(SHOWJOB_FLOAT_18_3,   MSG_HISTORY_SHOWJOB_IOW,          dusage->iow);
+   printf(SHOWJOB_FLOAT_3,    MSG_HISTORY_SHOWJOB_WALLCLOCK,   dusage->wallclock);
+   printf(SHOWJOB_FLOAT_3,    MSG_HISTORY_SHOWJOB_CPU,         dusage->cpu);
+   printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_MEM,         dusage->mem);
+   printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_IO,          dusage->io);
+   printf(SHOWJOB_FLOAT_0,    MSG_HISTORY_SHOWJOB_IOOPS,       dusage->ioops);
+   printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_IOW,         dusage->iow);
 
 #if 0
    /* enable this to get unit of memory value (G,M,K) */
@@ -2256,6 +2257,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                d->cpu = read_json(json_usage, "cpu", 0.0);
                d->mem = read_json(json_usage, "mem", 0.0);
                d->io = read_json(json_usage, "io", 0.0);
+               d->ioops = read_json(json_usage, "ioops", 0.0);
                d->iow = read_json(json_usage, "iow", 0.0);
                d->maxvmem = read_json(json_usage, "maxvmem", 0.0);
                d->maxrss = read_json(json_usage, "maxrss", 0.0);

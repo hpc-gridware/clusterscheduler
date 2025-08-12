@@ -209,8 +209,7 @@ void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
       0 on success
       -1 on error
    ------------------------------------------------------------ */
-/* JG: TODO (397): move to libs/gdi/sge_usage.* */   
-int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val) 
+int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val)
 {
    lListElem *usage;
 
@@ -244,6 +243,43 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
    DRETURN(0);
 }
 
+/*!
+ * @brief Update job report value from usage list
+ *
+ * Updates a single usage value in a job report from a usage list.
+ *
+ * @param jr            - Pointer to the job report element to update.
+ * @param usage_list    - Pointer to the list of usage elements.
+ * @param name          - Name of the usage attribute to update.
+ */
+static void
+job_report_update_value_from_usage_list(lListElem *jr, const lList *usage_list, const char *name) {
+   const lListElem *usage = lGetElemStr(usage_list, UA_name, name);
+   if (usage != nullptr) {
+      add_usage(jr, name, nullptr, lGetDouble(usage, UA_value));
+   }
+}
+
+/*!
+ * @brief Update job report from usage list
+ *
+ * Update all default usage values in a job report from a usage list.
+ *
+ * @param jr Pointer to the job report element to update.
+ * @param usage_list Pointer to the list of usage elements.
+ */
+void
+job_report_update_from_usage_list(lListElem *jr, const lList *usage_list) {
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_CPU);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MEM);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_IO);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_IOOPS);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_IOW);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_VMEM);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MAXVMEM);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_RSS);
+   job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MAXRSS);
+}
 
 /* ------------------------------------------------------------
 

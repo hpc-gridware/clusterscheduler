@@ -642,14 +642,14 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
                printf("%-16s %11d:   ", "usage", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
 
-               double wallclock, cpu, mem, io, vmem, maxvmem, rss, maxrss;
-               wallclock = cpu = mem = io = vmem = maxvmem = rss = maxrss = 0.0;
+               double wallclock{}, cpu{}, mem{}, io{}, ioops{}, vmem{}, maxvmem{}, rss{}, maxrss{};
 
                /* master task */
                SUM_UP_JATASK_USAGE(jatep, wallclock, USAGE_ATTR_WALLCLOCK);
                SUM_UP_JATASK_USAGE(jatep, cpu, USAGE_ATTR_CPU);
                SUM_UP_JATASK_USAGE(jatep, mem, USAGE_ATTR_MEM);
                SUM_UP_JATASK_USAGE(jatep, io, USAGE_ATTR_IO);
+               SUM_UP_JATASK_USAGE(jatep, ioops, USAGE_ATTR_IOOPS);
                SUM_UP_JATASK_USAGE(jatep, vmem, USAGE_ATTR_VMEM);
                SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
                SUM_UP_JATASK_USAGE(jatep, rss, USAGE_ATTR_RSS);
@@ -661,6 +661,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                   SUM_UP_PETASK_USAGE(pe_task_ep, cpu, USAGE_ATTR_CPU);
                   SUM_UP_PETASK_USAGE(pe_task_ep, mem, USAGE_ATTR_MEM);
                   SUM_UP_PETASK_USAGE(pe_task_ep, io, USAGE_ATTR_IO);
+                  SUM_UP_PETASK_USAGE(pe_task_ep, ioops, USAGE_ATTR_IOOPS);
                   SUM_UP_PETASK_USAGE(pe_task_ep, vmem, USAGE_ATTR_VMEM);
                   SUM_UP_PETASK_USAGE(pe_task_ep, maxvmem, USAGE_ATTR_MAXVMEM);
                   SUM_UP_PETASK_USAGE(pe_task_ep, rss, USAGE_ATTR_RSS);
@@ -680,9 +681,9 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                double_print_memory_to_dstring(maxvmem, &maxvmem_string);
                double_print_memory_to_dstring(rss, &rss_string);
                double_print_memory_to_dstring(maxrss, &maxrss_string);
-               printf("wallclock=%s,cpu=%s,mem=%-5.5f GBs,io=%-5.5f,vmem=%s,maxvmem=%s,rss=%s,maxrss=%s\n",
+               printf("wallclock=%s,cpu=%s,mem=%-5.5f GBs,io=%-5.5f,ioops=%.0f,vmem=%s,maxvmem=%s,rss=%s,maxrss=%s\n",
                       sge_dstring_get_string(&wallclock_string), sge_dstring_get_string(&cpu_string),
-                      mem, io,
+                      mem, io, ioops,
                       (vmem == 0.0) ? "N/A" : sge_dstring_get_string(&vmem_string),
                       (maxvmem == 0.0) ? "N/A" : sge_dstring_get_string(&maxvmem_string),
                       (rss == 0.0) ? "N/A" : sge_dstring_get_string(&rss_string),

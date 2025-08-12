@@ -610,7 +610,8 @@ static int psRetrieveOSJobData() {
                job->jd_vmem += proc_elem->vmem;
                job->jd_mem += (proc_elem->mem/1024.0);
 #if defined(LINUX)
-               job->jd_chars += proc_elem->delta_chars;     
+               job->jd_chars += proc_elem->delta_chars;
+               job->jd_ioops += proc_elem->delta_ioops;
 #endif
             } else { 
                // most likely exited

@@ -182,6 +182,7 @@ usage_list_set_ulong64_usage(lList *usage_list, const char *name, u_long64 value
 *     lList *usage_list - list containing the usage record to update
 *     const char *name  - name of the usage record to update
 *     double value      - the new value
+*     bool create_usage - create the usage element if it does not exist? Default: yes.
 *
 *  NOTES
 *     MT-NOTE: usage_list_set_double_usage() is MT safe 
@@ -192,14 +193,42 @@ usage_list_set_ulong64_usage(lList *usage_list, const char *name, u_long64 value
 *     sgeobj/usage/usage_list_get_double_usage()
 *******************************************************************************/
 void
-usage_list_set_double_usage(lList *usage_list, const char *name, double value)
+usage_list_set_double_usage(lList *usage_list, const char *name, double value, bool create_usage)
 {
    lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
-   if (ep == nullptr) {
+   if (ep == nullptr && create_usage) {
       ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
    }
 
-   lSetDouble(ep, UA_value, value);
+   if (ep != nullptr) {
+      lSetDouble(ep, UA_value, value);
+   }
+}
+
+
+/**
+ * @brief Set the maximum value for a usage record.A
+ *
+ * For a usage record with the given name, this function sets the value to the maximum
+ * of the current value and the provided value. If no usage record exists with the
+ * given name, a new record is created with the provided value.
+ *
+ * @param usage_list    - the usage list to update
+ * @param name          - name of the usage record to update
+ * @param value         - the value to compare and set
+ * @param create_usage  - if true, create the usage element if it does not exist; default is true.
+ */
+void
+usage_list_max_double_usage(lList *usage_list, const char *name, double value, bool create_usage)
+{
+   lListElem *ep = lGetElemStrRW(usage_list, UA_name, name);
+   if (ep == nullptr && create_usage) {
+      ep = lAddElemStr(&usage_list, UA_name, name, UA_Type);
+   }
+
+   if (ep != nullptr) {
+      lSetDouble(ep, UA_value, MAX(value, lGetDouble(ep, UA_value)));
+   }
 }
 
 /****** sge_usage/usage_list_sum() *********************************************

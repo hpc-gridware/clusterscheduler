@@ -109,6 +109,7 @@ struct psJob_s
 
 	uint64	jd_mem;			/* memory used (integral) in KB seconds */
 	uint64	jd_chars;		/* characters moved in bytes */
+	uint64	jd_ioops;		/* characters moved in bytes */
 
 	uint64	jd_vmem;		   /* virtual memory size in bytes */
 	uint64	jd_rss;		   /* resident set size in bytes */

@@ -184,8 +184,10 @@ typedef struct {
    uint64 rss;             /* resident set size */
    uint64 ru_ioblock;      /* # of block input operations */
    uint64 delta_chars;     /* number of chars to be added to jd_chars this time step */
+   uint64 delta_ioops;     /* number of io operations to be added to jd_ioops this time step */
 #if defined(LINUX)
    uint64 iochars;         /* number of chars from previous load interval */
+   uint64 ioops;           /* number of operations from previous load interval */
 #endif
 } proc_elem_t;
 

@@ -287,6 +287,7 @@ lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collectio
 
    if (usage_collection != USAGE_COLLECTION_NONE) {
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IO, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IOOPS, UA_Type);
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_IOW, UA_Type);
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MEM, UA_Type);
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_CPU, UA_Type);
@@ -685,7 +686,6 @@ static void ptf_get_usage_from_data_collector()
 
       for (i = 0; i < (int)jobcount; i++) {
          lList *usage_list;
-         lListElem *usage;
          double cpu_usage_value;
 
          /* look up job in job list */
@@ -715,45 +715,30 @@ static void ptf_get_usage_from_data_collector()
 
                /* set CPU usage */
                if (ocs::common::use_pdc_for_usage_collection(usage_collection)) {
-                  cpu_usage_value = jobs->jd_utime_c + jobs->jd_utime_a +
-                     jobs->jd_stime_c + jobs->jd_stime_a;
-                  if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_CPU))) {
-                     lSetDouble(usage, UA_value, MAX(cpu_usage_value, lGetDouble(usage, UA_value)));
-                  }
+                  cpu_usage_value = jobs->jd_utime_c + jobs->jd_utime_a + jobs->jd_stime_c + jobs->jd_stime_a;
+                  usage_list_max_double_usage(usage_list, USAGE_ATTR_CPU, cpu_usage_value, false);
 
                   /* set rss and maxrss usage */
-                  if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS))) {
-                     lSetDouble(usage, UA_value, jobs->jd_rss);
-                  }
-                  if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS))) {
-                     lSetDouble(usage, UA_value, jobs->jd_maxrss);
-                  }
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_RSS, jobs->jd_rss, false);
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_MAXRSS, jobs->jd_maxrss, false);
                }
 
                /* set mem usage (in GB seconds) */
-               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MEM))) {
-                  lSetDouble(usage, UA_value, (double) jobs->jd_mem / 1048576.0);
-               }
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_MEM, jobs->jd_mem / 1048576.0, false);
 
                /* set I/O usage (in GB) */
-               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_IO))) {
-                  lSetDouble(usage, UA_value, (double) jobs->jd_chars / 1073741824.0);
-               }
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_IO, jobs->jd_chars / 1073741824.0, false);
+
+               /* set I/O ops */
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_IOOPS, jobs->jd_ioops, false);
 
                /* set I/O wait time */
-               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_IOW))) {
-                  lSetDouble(usage, UA_value,
-                             (double) jobs->jd_bwtime_c + jobs->jd_bwtime_a +
-                             jobs->jd_rwtime_c + jobs->jd_rwtime_a);
-               }
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_IOW, jobs->jd_bwtime_c +
+                                           jobs->jd_bwtime_a + jobs->jd_rwtime_c + jobs->jd_rwtime_a, false);
 
                /* set vmem and maxvmem usage */
-               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_VMEM))) {
-                  lSetDouble(usage, UA_value, jobs->jd_vmem);
-               }
-               if ((usage = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXVMEM))) {
-                  lSetDouble(usage, UA_value, jobs->jd_himem);
-               }
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_VMEM, jobs->jd_vmem, false);
+               usage_list_set_double_usage(usage_list, USAGE_ATTR_MAXVMEM, jobs->jd_himem, false);
 
                /* build new pid list */
                proccount = jobs->jd_proccount;

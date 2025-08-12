@@ -138,6 +138,7 @@ struct drusage {
    double cpu;
    double mem;
    double io;
+   double ioops;
    double iow;
    double maxvmem;
    double maxrss;

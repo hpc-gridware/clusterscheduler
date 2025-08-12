@@ -57,7 +57,10 @@
 *    Flag if this process is still running.
 *
 *    SGE_ULONG(PRO_io) - IO
-*    IO statistic for the running process.
+*    IO characters for the running process.
+*
+*    SGE_ULONG(PRO_ioops) - IOOPS
+*    IO operations for the running process.
 *
 */
 
@@ -70,7 +73,8 @@ enum {
    PRO_groups,
    PRO_rel,
    PRO_run,
-   PRO_io
+   PRO_io,
+   PRO_ioops
 };
 
 LISTDEF(PRO_Type)
@@ -83,6 +87,7 @@ LISTDEF(PRO_Type)
    SGE_BOOL(PRO_rel, CULL_DEFAULT)
    SGE_BOOL(PRO_run, CULL_DEFAULT)
    SGE_ULONG(PRO_io, CULL_DEFAULT)
+   SGE_ULONG(PRO_ioops, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PRON)
@@ -95,6 +100,7 @@ NAMEDEF(PRON)
    NAME("PRO_rel")
    NAME("PRO_run")
    NAME("PRO_io")
+   NAME("PRO_ioops")
 NAMEEND
 
 #define PRO_SIZE sizeof(PRON)/sizeof(char *)

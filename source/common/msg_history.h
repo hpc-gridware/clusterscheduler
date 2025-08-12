@@ -90,6 +90,7 @@
 #define MSG_HISTORY_SHOWJOB_CPU              "cpu"
 #define MSG_HISTORY_SHOWJOB_MEM              "mem"
 #define MSG_HISTORY_SHOWJOB_IO               "io"
+#define MSG_HISTORY_SHOWJOB_IOOPS            "ioops"
 #define MSG_HISTORY_SHOWJOB_IOW              "iow"
 #define MSG_HISTORY_SHOWJOB_MAXVMEM          "maxvmem"
 #define MSG_HISTORY_SHOWJOB_MAXRSS           "maxrss"
