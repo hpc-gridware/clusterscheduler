@@ -26,7 +26,8 @@ namespace ocs {
       BindingSort() = default; // prevent instantiation
    public:
       enum SortOrder{
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          SOCKET_LEAST_LOADED,
          SOCKET_MOST_LOADED,
          CCORE_LEAST_LOADED,

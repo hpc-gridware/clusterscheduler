@@ -43,6 +43,8 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
+#include "sgeobj/ocs_Binding.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/cull_parse_util.h"
@@ -328,7 +330,151 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_binding);
       }
-  
+
+      // -btype host | slot
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-btype"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_type, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bamount number
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bamount"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_amount, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -binstance set | env | pe
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binstance"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_instance, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bunit binding_unit
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bunit"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_unit, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bfilter topo_string
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bfilter"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetString(binding_elem, BN_new_filter, lGetString(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bsort sort_string
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bsort"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_filter, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bstart
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bstart"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_start, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bend
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bend"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_end, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
+      // -bstrategy
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bstrategy"))) {
+         // Create a binding element if it does not exist
+         lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(job, &answer);
+         if (binding_elem == nullptr) {
+            DRETURN(answer);
+         }
+
+         // Transfer the binding information from the command line to the job
+         lSetUlong(binding_elem, BN_new_strategy, lGetInt(ep, SPA_argval_lIntT));
+
+         // Get rid of the binding element from the command line
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_new_binding);
+      }
+
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-cwd"))) {
          char tmp_str[SGE_PATH_MAX + 1];
          char tmp_str2[SGE_PATH_MAX + 1];
@@ -903,6 +1049,9 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_ja_structure,
             JB_user_list,
             JB_binding,
+            NoName
+         };
+         static int object_nm[] = {
             JB_new_binding,
             NoName
          };
@@ -931,6 +1080,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          for (i=0; list_nm[i]!=NoName; i++)
             if (lGetPosViaElem(job, list_nm[i], SGE_NO_ABORT) != -1  && lGetPosViaElem(rep, list_nm[i], SGE_NO_ABORT) != -1)
                lSetList(rep, list_nm[i], lCopyList("", lGetList(job, list_nm[i])));
+
+         /* copy all objects */
+         for (i=0; object_nm[i]!=NoName; i++)
+            if (lGetPosViaElem(job, object_nm[i], SGE_NO_ABORT) != -1  && lGetPosViaElem(rep, object_nm[i], SGE_NO_ABORT) != -1)
+               lSetObject(rep, object_nm[i], lCopyElem(lGetObject(job, object_nm[i])));
 
       }
    }

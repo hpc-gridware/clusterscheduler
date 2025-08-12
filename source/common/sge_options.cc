@@ -533,7 +533,7 @@ unsigned short sge_options[][ALL_OPT + 1] =
 {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
    /* binstance - specifies who makes the binding */
 {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1}
- /*  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
+/*  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
     o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L
     n  l  o  e  o  a  o  e  l  e  h  s  o  t  u  e  v  s  d  s  n  L
     e  t  n  l  l  s  d  s  s  l     h  g  a  b  c  e  u  e  t  e  _
