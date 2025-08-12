@@ -62,6 +62,9 @@
 *    SGE_ULONG(PRO_ioops) - IOOPS
 *    IO operations for the running process.
 *
+*    SGE_ULONG64(PRO_iow) - IOW
+*    IO wait time in clock ticks for the running process.
+*
 */
 
 enum {
@@ -74,7 +77,8 @@ enum {
    PRO_rel,
    PRO_run,
    PRO_io,
-   PRO_ioops
+   PRO_ioops,
+   PRO_iow
 };
 
 LISTDEF(PRO_Type)
@@ -88,6 +92,7 @@ LISTDEF(PRO_Type)
    SGE_BOOL(PRO_run, CULL_DEFAULT)
    SGE_ULONG(PRO_io, CULL_DEFAULT)
    SGE_ULONG(PRO_ioops, CULL_DEFAULT)
+   SGE_ULONG64(PRO_iow, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PRON)
@@ -101,6 +106,7 @@ NAMEDEF(PRON)
    NAME("PRO_run")
    NAME("PRO_io")
    NAME("PRO_ioops")
+   NAME("PRO_iow")
 NAMEEND
 
 #define PRO_SIZE sizeof(PRON)/sizeof(char *)

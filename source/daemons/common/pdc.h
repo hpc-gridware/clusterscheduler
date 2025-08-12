@@ -163,9 +163,6 @@ typedef struct {
    time_t timeout;        /* completion timeout */
    double utime;          /* user time */
    double stime;          /* system time */
-   double srtime;         /* time waiting on run queue */
-   double bwtime;         /* time waiting for block I/O */
-   double rwtime;         /* time waiting for raw I/O */
    uint64 mem;
    uint64 chars;
 } job_elem_t;
@@ -174,9 +171,6 @@ typedef struct {
    lnk_link_t link;
    JobID_t jid;
    psProc_t proc;
-   double bwtime;
-   double rwtime;
-   double qwtime;
    uint64 chars;
    uint64 mem;             /* delta integral vmem */
    uint64 vmem;            /* virtual process size */
@@ -184,9 +178,11 @@ typedef struct {
    uint64 ru_ioblock;      /* # of block input operations */
    uint64 delta_chars;     /* number of chars to be added to jd_chars this time step */
    uint64 delta_ioops;     /* number of io operations to be added to jd_ioops this time step */
+   double delta_iow;       /* I/O wait time in seconds (with fractional part) to be added in this time step */
 #if defined(LINUX)
    uint64 iochars;         /* number of chars from previous load interval */
    uint64 ioops;           /* number of operations from previous load interval */
+   double iow;             /* I/O wait time in seconds (with fractional part) */
 #endif
 } proc_elem_t;
 

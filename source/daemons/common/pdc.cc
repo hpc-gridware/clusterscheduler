@@ -601,6 +601,7 @@ static int psRetrieveOSJobData() {
 #if defined(LINUX)
                job->jd_chars += proc_elem->delta_chars;
                job->jd_ioops += proc_elem->delta_ioops;
+               job->jd_iow += proc_elem->delta_iow;
 #endif
             } else { 
                // most likely exited
@@ -891,13 +892,10 @@ print_job_data(psJob_t *job)
    printf("jd_tstamp=%s\n", ctime(&job->jd_tstamp));
    printf("jd_proccount=%d\n", (int)job->jd_proccount);
    printf("jd_refcnt=%d\n", (int)job->jd_refcnt);
-   printf("jd_etime=%8.3f\n", job->jd_etime);
    printf("jd_utime_a=%8.3f\n", job->jd_utime_a);
    printf("jd_stime_a=%8.3f\n", job->jd_stime_a);
-   printf("jd_srtime_a=%8.3f\n", job->jd_srtime_a);
    printf("jd_utime_c=%8.3f\n", job->jd_utime_c);
    printf("jd_stime_c=%8.3f\n", job->jd_stime_c);
-   printf("jd_srtime_c=%8.3f\n", job->jd_srtime_c);
    printf("jd_mem=%lu\n", job->jd_mem);
    printf("jd_chars=%8.3fM\n", INTOMEGS(job->jd_chars));
    printf("jd_vmem=%8.3fM\n", INTOMEGS(job->jd_vmem));
@@ -913,51 +911,11 @@ print_process_data(psProc_t *proc)
    printf("\tpd_tstamp=%s\n", ctime(&proc->pd_tstamp));
    printf("\tpd_uid=" uid_t_fmt "\n", proc->pd_uid);
    printf("\tpd_gid=" uid_t_fmt "\n", proc->pd_gid);
-   printf("\tpd_acid=%lu\n", proc->pd_acid);
    printf("\tpd_state=%d\n", (int)proc->pd_state);
    printf("\tpd_pstart=%8.3f\n", proc->pd_pstart);
    printf("\tpd_utime=%8.3f\n", proc->pd_utime);
    printf("\tpd_stime=%8.3f\n", proc->pd_stime);
 }
-
-
-#if 0
-static void
-print_system_data(psSys_t *sys)
-{
-   printf("%s\n", MSG_SGE_SYSTEMDATA );
-   printf("sys_length=%d\n", (int)sys->sys_length);
-   printf("sys_ncpus=%d\n", (int)sys->sys_ncpus);
-   printf("sys_tstamp=%s\n", ctime(&sys->sys_tstamp));
-   printf("sys_ttimet=%8.3f\n", sys->sys_ttimet);
-   printf("sys_ttime=%8.3f\n", sys->sys_ttime);
-   printf("sys_utimet=%8.3f\n", sys->sys_utimet);
-   printf("sys_utime=%8.3f\n", sys->sys_utime);
-   printf("sys_stimet=%8.3f\n", sys->sys_stimet);
-   printf("sys_stime=%8.3f\n", sys->sys_stime);
-   printf("sys_itimet=%8.3f\n", sys->sys_itimet);
-   printf("sys_itime=%8.3f\n", sys->sys_itime);
-   printf("sys_srtimet=%8.3f\n", sys->sys_srtimet);
-   printf("sys_srtime=%8.3f\n", sys->sys_srtime);
-   printf("sys_wtimet=%8.3f\n", sys->sys_wtimet);
-   printf("sys_wtime=%8.3f\n", sys->sys_wtime);
-
-   printf("sys_swp_total=%8.3fM\n", INTOMEGS(sys->sys_swp_total));
-   printf("sys_swp_free=%8.3fM\n", INTOMEGS(sys->sys_swp_free));
-   printf("sys_swp_used=%8.3fM\n", INTOMEGS(sys->sys_swp_used));
-   printf("sys_swp_virt=%8.3fM\n", INTOMEGS(sys->sys_swp_virt));
-   printf("sys_swp_rate=%8.3f\n", sys->sys_swp_rate);
-   printf("sys_mem_avail=%8.3fM\n", INTOMEGS(sys->sys_mem_avail));
-   printf("sys_mem_used=%8.3fM\n", INTOMEGS(sys->sys_mem_used));
-
-   printf("sys_swpocc=%8.3f\n", sys->sys_swpocc);
-   printf("sys_swpque=%8.3f\n", sys->sys_swpque);
-   printf("sys_runocc=%8.3f\n", sys->sys_runocc);
-   printf("sys_runque=%8.3f\n", sys->sys_runque);
-   printf("sys_readch="F64"\n", sys->sys_readch);
-   printf("sys_writech="F64"\n", sys->sys_writech);
-}
-#endif
 
 int
 main(int argc, char **argv)

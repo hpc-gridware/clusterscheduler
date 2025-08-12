@@ -390,7 +390,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
    lListElem *pr = nullptr;
    SGE_STRUCT_STAT fst;
-   unsigned long utime = 0, stime = 0, vsize = 0, pid = 0;
+   unsigned long utime{}, stime{}, vsize{}, pid{};
+   unsigned long long iow{};
    long rss = 0;
    int pos_pid = lGetPosInDescr(PRO_Type, PRO_pid);
    int pos_utime = lGetPosInDescr(PRO_Type, PRO_utime);
@@ -402,6 +403,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    int pos_run = lGetPosInDescr(PRO_Type, PRO_run);
    int pos_io = lGetPosInDescr(PRO_Type, PRO_io);
    int pos_ioops = lGetPosInDescr(PRO_Type, PRO_ioops);
+   int pos_iow = lGetPosInDescr(PRO_Type, PRO_iow);
    int pos_group = lGetPosInDescr(GR_Type, GR_group);
 #else
    prstatus_t pr;
@@ -538,20 +540,22 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
          /* 
           * get prstatus
-          * see https://www.man7.org/linux/man-pages/man5/proc.5.html
+          * see https://www.man7.org/linux/man-pages/man5/proc_pid_stat.5.html
           */
-         // @todo CS-1450 we could possibly get iowait from the stat file
-         //       (42) delayacct_blkio_ticks  %llu  (since Linux 2.6.18)
-         //            Aggregated block I/O delays, measured in clock ticks
-         //            (centiseconds).
-         ret = sscanf(buffer, "%lu %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %*d %*d %*d %*u %lu %ld",
-                      &pid,
-                      &utime,
-                      &stime,
-                      &vsize,
-                      &rss);
+         ret = sscanf(buffer, "%lu %*s %*c %*d %*d %*d %*d %*d %*u %*u "
+                                "%*u %*u %*u %lu %lu %*d %*d %*d %*d %*d "
+                                "%*d %*u %lu %ld %*u %*u %*u %*u %*u %*u "
+                                "%*u %*u %*u %*u %*u %*u %*u %*d %*d "
+                                "%*u %*u %llu",
+                      &pid,   //  1
+                      &utime, // 14 (clock ticks)
+                      &stime, // 15 (clock ticks)
+                      &vsize, // 23 (bytes)
+                      &rss,   // 24 (pages)
+                      &iow    // 42 (clock ticks)
+                      );
 
-         if (ret != 5) {
+         if (ret != 6) {
             close(fd);
             continue;
          }
@@ -567,6 +571,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          lSetPosUlong(pr, pos_stime, stime);
          lSetPosUlong64(pr, pos_vsize, vsize);
          lSetPosUlong64(pr, pos_rss, rss * pagesize);
+         lSetPosUlong64(pr, pos_iow, static_cast<u_long64>(iow));
 
          close(fd);
       }
@@ -773,11 +778,20 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
 #if defined(LINUX)
    proc_elem->proc.pd_pid = lGetPosUlong(pr, pos_pid);
-   proc_elem->proc.pd_utime  = ((double)lGetPosUlong(pr, pos_utime))/HZ;
-   proc_elem->proc.pd_stime  = ((double)lGetPosUlong(pr, pos_stime))/HZ;
+   proc_elem->proc.pd_utime  = static_cast<double>(lGetPosUlong(pr, pos_utime)) / HZ;
+   proc_elem->proc.pd_stime  = static_cast<double>(lGetPosUlong(pr, pos_stime)) / HZ;
    /* could retrieve uid/gid using stat() on stat file */
    proc_elem->vmem           = lGetPosUlong64(pr, pos_vsize);
    proc_elem->rss            = lGetPosUlong64(pr, pos_rss);
+
+   // iow can go to 0 at job end, so we calculate a delta which we will add to iow reached so far
+   double new_iow = static_cast<double>(lGetPosUlong64(pr, pos_iow)) / HZ;
+   if (new_iow > 0 && new_iow > proc_elem->iow) {
+      proc_elem->delta_iow = new_iow - proc_elem->iow;
+      proc_elem->iow = new_iow;
+   } else {
+      proc_elem->delta_iow = 0;
+   }
 
    /*
     * I/O accounting

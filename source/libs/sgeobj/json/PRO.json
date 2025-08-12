@@ -89,9 +89,17 @@
 			"name":	"ioops",
 			"summary":	"IOOPS",
 			"description":	[{
-					"line":	"IO operations for the running process."
-				}],
+				"line":	"IO operations for the running process."
+			}],
 			"type":	"lUlongT",
+			"flags":	[]
+		}, {
+			"name":	"iow",
+			"summary":	"IOW",
+			"description":	[{
+					"line":	"IO wait time in clock ticks for the running process."
+				}],
+			"type":	"lUlong64T",
 			"flags":	[]
 		}]
 }
