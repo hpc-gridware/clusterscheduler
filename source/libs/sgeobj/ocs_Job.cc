@@ -56,6 +56,7 @@
 #include "cull/sge_eejob_SGEJ_L.h"
 
 #include "msg_common.h"
+#include "ocs_BindingInstance.h"
 
 /** @brief Sort jobs in the job list based on  prio, submit time and job number
  *
@@ -180,16 +181,16 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 }
 
 lListElem *
-ocs::Job::binding_get_or_create_elem(lListElem **pjob, lList**answer) {
+ocs::Job::binding_get_or_create_elem(lListElem *pjob, lList**answer) {
    DENTER(TOP_LAYER);
-   if (pjob == nullptr || *pjob == nullptr) {
+   if (pjob == nullptr) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_NULLPOINTERRECEIVED);
       answer_list_add(answer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(nullptr);
    }
 
    // Check if the binding element already exists
-   lListElem *binding_elem = lGetObject(*pjob, JB_new_binding);
+   lListElem *binding_elem = lGetObject(pjob, JB_new_binding);
    if (binding_elem != nullptr) {
       DRETURN(binding_elem);
    }
@@ -200,7 +201,19 @@ ocs::Job::binding_get_or_create_elem(lListElem **pjob, lList**answer) {
       answer_list_add(answer, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       DRETURN(nullptr);
    }
-   lSetObject(*pjob, JB_new_binding, binding_elem);
+
+   // Set defaults. If not changed job-modify (qalter)  will be able to detect what was not set.
+   lSetUlong(binding_elem, BN_new_type, BindingType::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_instance, BindingInstance::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_amount, -1);
+   lSetUlong(binding_elem, BN_new_unit, BindingUnit::UNINITIALIZED);
+   lSetString(binding_elem, BN_new_filter, nullptr);
+   lSetUlong(binding_elem, BN_new_sort, BindingSort::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_start, BindingStart::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_end, BindingEnd::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::UNINITIALIZED);
+
+   lSetObject(pjob, JB_new_binding, binding_elem);
    DRETURN(binding_elem);
 }
 
@@ -226,7 +239,7 @@ ocs::Job::binding_get_type(const lListElem *job) {
    }
 
    const auto binding_type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
-   if (binding_type == BindingType::NONE) {
+   if (binding_type == BindingType::NONE || binding_type == BindingType::UNINITIALIZED) {
       DRETURN(default_type);
    }
 
@@ -244,7 +257,7 @@ ocs::Job::binding_get_unit(const lListElem *job) {
    }
 
    const auto binding_unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
-   if (binding_unit == BindingUnit::NONE) {
+   if (binding_unit == BindingUnit::NONE || binding_unit == BindingUnit::UNINITIALIZED) {
       DRETURN(default_type);
    }
 
@@ -261,7 +274,10 @@ ocs::Job::binding_get_sort(const lListElem *job) {
       DRETURN(default_sort);
    }
 
-   const auto binding_sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
+   auto binding_sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
+   if (binding_sort == BindingSort::UNINITIALIZED) {
+      binding_sort = default_sort;
+   }
    DRETURN(binding_sort);
 }
 
@@ -276,7 +292,7 @@ ocs::Job::binding_get_start(const lListElem *job) {
    }
 
    const auto binding_start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_new_start));
-   if (binding_start == BindingStart::NONE) {
+   if (binding_start == BindingStart::NONE || binding_start == BindingStart::UNINITIALIZED) {
       DRETURN(default_start);
    }
    DRETURN(binding_start);
@@ -293,7 +309,7 @@ ocs::Job::binding_get_end(const lListElem *job) {
    }
 
    const auto binding_end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
-   if (binding_end == BindingEnd::NONE) {
+   if (binding_end == BindingEnd::NONE || binding_end == BindingEnd::UNINITIALIZED) {
       DRETURN(default_end);
    }
    DRETURN(binding_end);
@@ -310,10 +326,27 @@ ocs::Job::binding_get_strategy(const lListElem *job) {
    }
 
    const auto binding_strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
-   if (binding_strategy == BindingStrategy::NONE) {
+   if (binding_strategy == BindingStrategy::NONE || binding_strategy == BindingStrategy::UNINITIALIZED) {
       DRETURN(default_strategy);
    }
    DRETURN(binding_strategy);
+}
+
+ocs::BindingInstance::Instance
+ocs::Job::binding_get_instance(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingInstance::Instance default_instance = BindingInstance::SET; // default binding instance is SET
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_instance);
+   }
+
+   const auto binding_instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_new_instance));
+   if (binding_instance == BindingInstance::NONE || binding_instance == BindingInstance::UNINITIALIZED) {
+      DRETURN(default_instance);
+   }
+   DRETURN(binding_instance);
 }
 
 const char *
@@ -322,7 +355,19 @@ ocs::Job::binding_get_filter(const lListElem *job) {
 
    const lListElem *binding_elem = lGetObject(job, JB_new_binding);
    if (binding_elem == nullptr) {
-      DRETURN(nullptr);
+      DRETURN(NONE_STR);
    }
    DRETURN(lGetString(binding_elem, BN_new_filter));
+}
+
+u_long32
+ocs::Job::binding_get_amount(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   u_long32 amount = lGetUlong(binding_elem, BN_new_amount);
+   if (amount == static_cast<u_long32>(-1)) {
+      amount = 0;
+   }
+   DRETURN(amount);
 }

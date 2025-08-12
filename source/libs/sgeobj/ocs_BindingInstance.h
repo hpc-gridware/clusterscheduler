@@ -26,7 +26,8 @@ namespace ocs {
       BindingInstance() = default; // prevent instantiation
    public:
       enum Instance {
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          SET,
          ENV,
          PE,

@@ -332,7 +332,7 @@ lList *cull_parse_cmdline(
       }
 
       /*----------------------------------------------------------------------------*/
-      // -bstartegy linear | pack
+      // -bstrategy linear | pack
       if (strcmp("-bstrategy", *sp) == 0) {
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,

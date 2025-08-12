@@ -26,7 +26,8 @@ namespace ocs {
       BindingStrategy() = default; // prevent instantiation
    public:
       enum Strategy {
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          LINEAR,
          PACK
       };
