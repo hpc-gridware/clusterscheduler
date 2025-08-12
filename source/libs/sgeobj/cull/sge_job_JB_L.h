@@ -365,6 +365,9 @@
 *    SGE_LIST(JB_binding) - Binding Strategy
 *    Binding strategy for execution host (and later scheduler)
 *
+*    SGE_OBJECT(JB_new_binding) - Binding Strategy
+*    Binding strategy for the job
+*
 *    SGE_STRING(JB_submission_command_line) - Submission Command Line
 *    The submission command line as a string.
 *    Arguments which contain whitespace or wildcards are enclosed in single quotes,
@@ -468,6 +471,7 @@ enum {
    JB_pty,
    JB_ja_task_concurrency,
    JB_binding,
+   JB_new_binding,
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
@@ -557,6 +561,7 @@ LISTDEF(JB_Type)
    SGE_ULONG(JB_pty, CULL_SPOOL)
    SGE_ULONG(JB_ja_task_concurrency, CULL_SPOOL)
    SGE_LIST(JB_binding, BN_Type, CULL_SPOOL)
+   SGE_OBJECT(JB_new_binding, BN_Type, CULL_SPOOL)
    SGE_STRING(JB_submission_command_line, CULL_SPOOL)
    SGE_LIST(JB_grp_list, ST_Type, CULL_SPOOL)
    SGE_LIST(JB_joker, VA_Type, CULL_SPOOL)
@@ -646,6 +651,7 @@ NAMEDEF(JBN)
    NAME("JB_pty")
    NAME("JB_ja_task_concurrency")
    NAME("JB_binding")
+   NAME("JB_new_binding")
    NAME("JB_submission_command_line")
    NAME("JB_grp_list")
    NAME("JB_joker")

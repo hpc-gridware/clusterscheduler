@@ -45,6 +45,13 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_BindingStrategy.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingSort.h"
+#include "sgeobj/ocs_BindingInstance.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/parse.h"
@@ -317,6 +324,314 @@ lList *cull_parse_cmdline(
          DPRINTF("\"-b %s\"\n", *sp);
 
          if (set_yn_option(pcmdline, b_OPT, *(sp - 1), *sp, &answer) != STATUS_OK) {
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bstartegy linear | pack
+      if (strcmp("-bstrategy", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bstrategy");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bstrategy %s\"\n", *sp);
+         if (strcmp("linear", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::LINEAR);
+         } else if (strcmp("pack", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::PACK);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -binstance set | env | pe
+      if (strcmp("-binstance", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binstance");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-binstance %s\"\n", *sp);
+         if (strcmp("set", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::SET);
+         } else if (strcmp("env", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::ENV);
+         } else if (strcmp("pe", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::PE);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      /* "-bamount number */
+
+      if (!strcmp("-bamount", *sp)) {
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-bamount" );
+            DRETURN(answer);
+         }
+
+         int amount;
+         if (!ulong_parse_binding_amount(&answer, &amount, *sp)) {
+            DRETURN(answer);
+         }
+
+         ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, *(sp - 1), *sp);
+         lSetInt(ep_opt, SPA_argval_lIntT, amount);
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bfilter <filter_string>
+      if (strcmp("-bfilter", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bfilter");
+            DRETURN(answer);
+         }
+         DPRINTF("\"-bfilter %s\"\n", *sp);
+
+         ep_opt = sge_add_arg(pcmdline, bfilter_OPT, lStringT, *(sp - 1), *sp);
+         lSetString(ep_opt, SPA_argval_lStringT, *sp);
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bstart S | s | C | c | E | e
+      if (strcmp("-bstart", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bstart");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bstart %s\"\n", *sp);
+         if (strcmp("S", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_SOCKET);
+         } else if (strcmp("s", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_SOCKET);
+         } else if (strcmp("C", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
+         } else if (strcmp("c", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
+         } else if (strcmp("E", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
+         } else if (strcmp("e", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTART_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bend s | c | e
+      if (strcmp("-bend", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bend");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bend %s\"\n", *sp);
+         if (strcmp("s", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::SOCKET);
+         } else if (strcmp("c", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
+         } else if (strcmp("e", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BEND_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+
+      /*----------------------------------------------------------------------------*/
+      // -bsort S | s | C | c | E | e
+      if (strcmp("-bsort", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bsort");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bsort %s\"\n", *sp);
+         if (strcmp("S", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::SOCKET_LEAST_LOADED);
+         } else if (strcmp("s", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::SOCKET_MOST_LOADED);
+         } else if (strcmp("C", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::CCORE_LEAST_LOADED);
+         } else if (strcmp("c", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::CCORE_MOST_LOADED);
+         } else if (strcmp("E", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::ECORE_LEAST_LOADED);
+         } else if (strcmp("e", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::ECORE_MOST_LOADED);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      // -btype host | task
+      if (strcmp("-btype", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                     MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-btype");
+             DRETURN(answer);
+         }
+
+         DPRINTF("\"-btype %s\"\n", *sp);
+
+         if (strcmp("host", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingType::HOST);
+         } else if (strcmp("slot", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingType::SLOT);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BTYPE_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      // -bunit T|CT|ET|C|E|CS|ES
+      if (strcmp("-bunit", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bunit");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bunit %s\"\n", *sp);
+
+         if (strcmp("T", *sp) == 0 || strcmp("CT", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CTHREAD);
+         } else if (strcmp("ET", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ETHREAD);
+         } else if (strcmp("C", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CCORE);
+         } else if (strcmp("E", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ECORE);
+         } else if (strcmp("S", *sp) == 0 || strcmp("CS", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CSOCKET);
+         } else if (strcmp("ES", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ESOCKET);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BUNIT_INVALID_S, *sp);
             DRETURN(answer);
          }
 

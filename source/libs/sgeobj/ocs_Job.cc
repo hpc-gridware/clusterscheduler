@@ -34,18 +34,28 @@
 
 #include <cstring>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/sge_log.h"
 
+#include "ocs_Binding.h"
+#include "ocs_BindingType.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingSort.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStrategy.h"
 #include "ocs_Job.h"
 #include "sge_ja_task.h"
 #include "sge_job.h"
 #include "sge_pe.h"
 #include "sge_pe_task.h"
+#include "sge_answer.h"
 
 #include "cull/sge_eejob_SGEJ_L.h"
 
-#include "uti/ocs_Systemd.h"
+#include "msg_common.h"
 
 /** @brief Sort jobs in the job list based on  prio, submit time and job number
  *
@@ -167,4 +177,152 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 #endif
 
    DRETURN(ret);
+}
+
+lListElem *
+ocs::Job::binding_get_or_create_elem(lListElem **pjob, lList**answer) {
+   DENTER(TOP_LAYER);
+   if (pjob == nullptr || *pjob == nullptr) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_NULLPOINTERRECEIVED);
+      answer_list_add(answer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+
+   // Check if the binding element already exists
+   lListElem *binding_elem = lGetObject(*pjob, JB_new_binding);
+   if (binding_elem != nullptr) {
+      DRETURN(binding_elem);
+   }
+
+   binding_elem = lCreateElem(BN_Type);
+   if (binding_elem == nullptr) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
+      answer_list_add(answer, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
+   }
+   lSetObject(*pjob, JB_new_binding, binding_elem);
+   DRETURN(binding_elem);
+}
+
+bool
+ocs::Job::binding_was_requested(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+ocs::BindingType::Type
+ocs::Job::binding_get_type(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingType::Type default_type = BindingType::SLOT; // default binding type is slot
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_type);
+   }
+
+   const auto binding_type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   if (binding_type == BindingType::NONE) {
+      DRETURN(default_type);
+   }
+
+   DRETURN(binding_type);
+}
+
+ocs::BindingUnit::Unit
+ocs::Job::binding_get_unit(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingUnit::Unit default_type = BindingUnit::CCORE; // default binding type is slot
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_type);
+   }
+
+   const auto binding_unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
+   if (binding_unit == BindingUnit::NONE) {
+      DRETURN(default_type);
+   }
+
+   DRETURN(binding_unit);
+}
+
+ocs::BindingSort::SortOrder
+ocs::Job::binding_get_sort(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingSort::SortOrder default_sort = BindingSort::NONE; // default binding type is slot
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_sort);
+   }
+
+   const auto binding_sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
+   DRETURN(binding_sort);
+}
+
+ocs::BindingStart::Start
+ocs::Job::binding_get_start(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingStart::Start default_start = BindingStart::FIRST_FREE_CORE;
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_start);
+   }
+
+   const auto binding_start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_new_start));
+   if (binding_start == BindingStart::NONE) {
+      DRETURN(default_start);
+   }
+   DRETURN(binding_start);
+}
+
+ocs::BindingEnd::End
+ocs::Job::binding_get_end(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingEnd::End default_end = BindingEnd::NONE;
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_end);
+   }
+
+   const auto binding_end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
+   if (binding_end == BindingEnd::NONE) {
+      DRETURN(default_end);
+   }
+   DRETURN(binding_end);
+}
+
+ocs::BindingStrategy::Strategy
+ocs::Job::binding_get_strategy(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   constexpr BindingStrategy::Strategy default_strategy = BindingStrategy::PACK; // default binding strategy is slot
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(default_strategy);
+   }
+
+   const auto binding_strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
+   if (binding_strategy == BindingStrategy::NONE) {
+      DRETURN(default_strategy);
+   }
+   DRETURN(binding_strategy);
+}
+
+const char *
+ocs::Job::binding_get_filter(const lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN(nullptr);
+   }
+   DRETURN(lGetString(binding_elem, BN_new_filter));
 }

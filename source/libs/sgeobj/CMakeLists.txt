@@ -68,6 +68,13 @@ set(LIBRARY_SOURCES
       cull_parse_util.cc
       ocs_Binding.cc
       ocs_BindingIo.cc
+      ocs_BindingStart.cc
+      ocs_BindingEnd.cc
+      ocs_BindingSort.cc
+      ocs_BindingInstance.cc
+      ocs_BindingStrategy.cc
+      ocs_BindingType.cc
+      ocs_BindingUnit.cc
       ocs_BindingExecd2Shepherd.cc
       ocs_Category.cc
       ocs_DataStore.cc

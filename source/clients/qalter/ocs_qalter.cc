@@ -903,6 +903,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_ja_structure,
             JB_user_list,
             JB_binding,
+            JB_new_binding,
             NoName
          };
 
