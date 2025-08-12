@@ -150,6 +150,8 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
          return MSG_GDI_ARGUMENTSYNTAX_OA_STATES; 
      case OA_JOB_TASK_LIST:
          return MSG_GDI_ARGUMENTSYNTAX_OA_JOB_TASK_LIST; 
+     case OA_BINDING_FILTER:
+         return MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_FILTER_STR;
      case OA_JOB_TASKS:
          if (prog_number == QRESUB) {
             return MSG_GDI_ARGUMENTSYNTAX_OA_JOB_TASKS_RESUB;
@@ -457,7 +459,44 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
    if (VALID_OPT(b_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_b_OPT_YN, MSG_GDI_UTEXT_b_OPT_YN);
    }
-   
+
+   if (VALID_OPT(bamount_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BAMOUNT_OPT, MSG_GDI_UTEXT_BAMOUNT_OPT);
+   }
+
+   if (VALID_OPT(bend_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BEND_OPT, MSG_GDI_UTEXT_BEND_OPT);
+   }
+
+   if (VALID_OPT(bfilter_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BFILTER_OPT, MSG_GDI_UTEXT_BFILTER_OPT);
+      MARK(OA_BINDING_FILTER);
+   }
+
+   if (VALID_OPT(binstance_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BINSTANCE_OPT, MSG_GDI_UTEXT_BINSTANCE_OPT);
+   }
+
+   if (VALID_OPT(bsort_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BSORT_OPT, MSG_GDI_UTEXT_BSORT_OPT);
+   }
+
+   if (VALID_OPT(bstart_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BSTART_OPT, MSG_GDI_UTEXT_BSTART_OPT);
+   }
+
+   if (VALID_OPT(bstrategy_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BSTRATEGY_OPT, MSG_GDI_UTEXT_BSTRATEGY_OPT);
+   }
+
+   if (VALID_OPT(btype_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BTYPE_OPT, MSG_GDI_UTEXT_BTYPE_OPT);
+   }
+
+   if (VALID_OPT(bunit_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BUNIT_OPT, MSG_GDI_UTEXT_BUNIT_OPT);
+   }
+
    if (VALID_OPT(binding_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_binding_OPT_YN, MSG_GDI_UTEXT_binding_OPT_YN);
       MARK(OA_BINDING_EXPLICIT);

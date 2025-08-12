@@ -118,6 +118,9 @@ object_get_subtype(int nm)
       case JB_binding:
          ret = BN_Type;
          break;
+      case JB_new_binding:
+         ret = BN_Type;
+         break;
       case JB_grp_list:
          ret = ST_Type;
          break;

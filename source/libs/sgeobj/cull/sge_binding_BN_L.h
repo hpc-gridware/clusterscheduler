@@ -32,6 +32,33 @@
 *
 * @todo add description
 *
+*    SGE_ULONG(BN_new_type) - type of binding
+*    host or slot binding
+*
+*    SGE_ULONG(BN_new_instance) - Instance that applies the binding
+*    Set, PE or env
+*
+*    SGE_ULONG(BN_new_amount) - Amount of units
+*    Number of units to bind to
+*
+*    SGE_ULONG(BN_new_unit) - Unit type that should be bound
+*    Defines if threads, cores, sockets ... should be bound
+*
+*    SGE_STRING(BN_new_filter) - Mask that defines which parts of a topology should not be bound
+*    Masked parts have to be lowercase in the topology string.
+*
+*    SGE_ULONG(BN_new_sort) - Sort order of binding
+*    Defines how units within the topology string should be sorted before binding.
+*
+*    SGE_ULONG(BN_new_start) - Start position
+*    Defines the start position for binding within the topology string.
+*
+*    SGE_ULONG(BN_new_end) - End position
+*    Defines the end position for binding within the topology string.
+*
+*    SGE_ULONG(BN_new_strategy) - Binding strategy ...
+*    Defines the strategy for binding, like linear, striding, packed or explicit
+*
 *    SGE_STRING(BN_strategy) - Binding strategy ...
 *    ... like linear, striding or explicit
 *
@@ -71,7 +98,16 @@
 */
 
 enum {
-   BN_strategy = BN_LOWERBOUND,
+   BN_new_type = BN_LOWERBOUND,
+   BN_new_instance,
+   BN_new_amount,
+   BN_new_unit,
+   BN_new_filter,
+   BN_new_sort,
+   BN_new_start,
+   BN_new_end,
+   BN_new_strategy,
+   BN_strategy,
    BN_type,
    BN_parameter_n,
    BN_parameter_socket_offset,
@@ -85,6 +121,15 @@ enum {
 };
 
 LISTDEF(BN_Type)
+   SGE_ULONG(BN_new_type, CULL_SUBLIST)
+   SGE_ULONG(BN_new_instance, CULL_SUBLIST)
+   SGE_ULONG(BN_new_amount, CULL_SUBLIST)
+   SGE_ULONG(BN_new_unit, CULL_SUBLIST)
+   SGE_STRING(BN_new_filter, CULL_SUBLIST)
+   SGE_ULONG(BN_new_sort, CULL_SUBLIST)
+   SGE_ULONG(BN_new_start, CULL_SUBLIST)
+   SGE_ULONG(BN_new_end, CULL_SUBLIST)
+   SGE_ULONG(BN_new_strategy, CULL_SUBLIST)
    SGE_STRING(BN_strategy, CULL_PRIMARY_KEY | CULL_SUBLIST)
    SGE_ULONG(BN_type, CULL_SUBLIST)
    SGE_ULONG(BN_parameter_n, CULL_SUBLIST)
@@ -99,6 +144,15 @@ LISTDEF(BN_Type)
 LISTEND
 
 NAMEDEF(BNN)
+   NAME("BN_new_type")
+   NAME("BN_new_instance")
+   NAME("BN_new_amount")
+   NAME("BN_new_unit")
+   NAME("BN_new_filter")
+   NAME("BN_new_sort")
+   NAME("BN_new_start")
+   NAME("BN_new_end")
+   NAME("BN_new_strategy")
    NAME("BN_strategy")
    NAME("BN_type")
    NAME("BN_parameter_n")
