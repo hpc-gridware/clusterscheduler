@@ -299,6 +299,16 @@ enum {
    dept_OPT,  //< set department of job
    scatl_OPT, //< show category list
    scat_OPT,  //< show category
+
+   btype_OPT,  //< binding type
+   bunit_OPT,  //< binding unit
+   bfilter_OPT, //< binding filter
+   bsort_OPT, //< binding sort
+   bstart_OPT, //< binding start
+   bend_OPT, //< binding end
+   bstrategy_OPT, //< binding strategy
+   bamount_OPT, //< binding amount
+   binstance_OPT, //< binding instance
 };
 
 /* macros used in parsing */

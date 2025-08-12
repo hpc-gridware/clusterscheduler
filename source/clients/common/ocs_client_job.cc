@@ -44,6 +44,14 @@
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/ocs_BindingIo.h"
+#include "sgeobj/ocs_Binding.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingSort.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStrategy.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_job.h"
@@ -606,6 +614,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       dst += lGetDouble(uep, UA_value);                                                                                \
    }
 
+   // @todo CS-732: remove old binding code
+#if 1
    if (show_binding) {
       const lList *binding_list = lGetList(job, JB_binding);
 
@@ -617,6 +627,39 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          printf("binding:                        " SFN "\n", sge_dstring_get_string(&binding_param));
          sge_dstring_free(&binding_param);
       }
+   }
+#endif
+
+   if (show_binding) {
+
+      dstring binding_dstr = DSTRING_INIT;
+      if (!ocs::Job::binding_was_requested(job)) {
+         sge_dstring_sprintf_append(&binding_dstr, "%s", NONE_STR);
+      } else {
+         ocs::BindingType::Type binding_type = ocs::Job::binding_get_type(job);
+         ocs::BindingUnit::Unit binding_unit = ocs::Job::binding_get_unit(job);
+         ocs::BindingSort::SortOrder binding_sort = ocs::Job::binding_get_sort(job);
+         ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(job);
+         ocs::BindingEnd::End binding_end = ocs::Job::binding_get_end(job);
+         ocs::BindingStrategy::Strategy binding_strategy = ocs::Job::binding_get_strategy(job);
+         const char *binding_filter = ocs::Job::binding_get_filter(job);
+
+         if (binding_filter == nullptr) {
+            binding_filter = NONE_STR;
+         }
+         sge_dstring_sprintf_append(&binding_dstr,
+            "btype=%s,bunit=%s,bsort=%s,bstart=%s,bend=%s,bstrategy=%s,bfilter=%s",
+            ocs::BindingType::to_string(binding_type).c_str(),
+            ocs::BindingUnit::to_string(binding_unit).c_str(),
+            ocs::BindingSort::to_string(binding_sort).c_str(),
+            ocs::BindingStart::to_string(binding_start).c_str(),
+            ocs::BindingEnd::to_string(binding_end).c_str(),
+            ocs::BindingStrategy::to_string(binding_strategy).c_str(),
+            binding_filter);
+
+
+      }
+      printf("binding:                        " SFN "\n", sge_dstring_get_string(&binding_dstr));
    }
 
 

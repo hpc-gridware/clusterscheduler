@@ -31,6 +31,8 @@ namespace ocs {
 enum {
    JO_OS_job_ID = 5150,
    JO_OS_job_ID2,
+   JO_systemd_scope,
+   JO_usage_collection,
    JO_ja_task_ID,
    JO_task_id_str,
    JO_state,
@@ -41,6 +43,8 @@ enum {
 constexpr const int JO_Type[] = {
    JO_OS_job_ID,
    JO_OS_job_ID2,
+   JO_systemd_scope,
+   JO_usage_collection,
    JO_ja_task_ID,
    JO_task_id_str,
    JO_state,
@@ -52,6 +56,8 @@ constexpr const int JO_Type[] = {
 #define JO_ATTRIBUTES \
    {JO_OS_job_ID, "JO_OS_job_ID", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JO_OS_job_ID2, "JO_OS_job_ID2", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_systemd_scope, "JO_systemd_scope", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JO_usage_collection, "JO_usage_collection", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JO_ja_task_ID, "JO_ja_task_ID", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JO_task_id_str, "JO_task_id_str", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JO_state, "JO_state", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

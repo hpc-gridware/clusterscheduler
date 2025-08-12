@@ -3214,6 +3214,7 @@ void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
       JB_jid_request_list,
       JB_ja_ad_request_list,
       JB_binding,
+      JB_new_binding,
       NoName
    };
    const int nm_JAT_Type_template[] = {

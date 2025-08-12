@@ -6,6 +6,96 @@
 		}],
 	"cullPrefix":	"BN",
 	"attributes":	[{
+			"name":	"new_type",
+			"summary":	"type of binding",
+			"description":	[{
+				"line":	"host or slot binding"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_instance",
+			"summary":	"Instance that applies the binding",
+			"description":	[{
+				"line":	"Set, PE or env"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_amount",
+			"summary":	"Amount of units",
+			"description":	[{
+				"line":	"Number of units to bind to"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_unit",
+			"summary":	"Unit type that should be bound",
+			"description":	[{
+				"line":	"Defines if threads, cores, sockets ... should be bound"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_filter",
+			"summary":	"Mask that defines which parts of a topology should not be bound",
+			"description":	[{
+				"line":	"Masked parts have to be lowercase in the topology string."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_sort",
+			"summary":	"Sort order of binding",
+			"description":	[{
+				"line":	"Defines how units within the topology string should be sorted before binding."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_start",
+			"summary":	"Start position",
+			"description":	[{
+				"line":	"Defines the start position for binding within the topology string."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_end",
+			"summary":	"End position",
+			"description":	[{
+				"line":	"Defines the end position for binding within the topology string."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_strategy",
+			"summary":	"Binding strategy ...",
+			"description":	[{
+				"line":	"Defines the strategy for binding, like linear, striding, packed or explicit"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
 			"name":	"strategy",
 			"summary":	"Binding strategy ...",
 			"description":	[{
