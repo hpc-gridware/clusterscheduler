@@ -151,13 +151,17 @@ The integral memory usage in Gbytes cpu seconds.
 
 The amount of data transferred in input/output operations.
 
-## *category*
+## *ioops*
 
-A string specifying the job category.
+The number of input/output operations.
 
 ## *iow*
 
 The io wait time in seconds.
+
+## *category*
+
+A string specifying the job category.
 
 ## *pe_taskid*
 

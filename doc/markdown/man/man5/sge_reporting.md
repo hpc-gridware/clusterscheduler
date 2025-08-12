@@ -232,11 +232,14 @@ fine-grained resource usage monitoring over time. Accounting records comprise th
 * io  
   The amount of data transferred in input/output operations.
 
-* category  
-  A string specifying the job category.
+* ioops  
+  The number of input/output operations.
 
 * iow  
   The io wait time in seconds.
+
+* category  
+  A string specifying the job category.
 
 * pe_taskid  
   If this identifier is set the task was part of a parallel job and was passed to xxQS_NAMExx via the 
