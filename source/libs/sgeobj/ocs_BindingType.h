@@ -26,7 +26,8 @@ namespace ocs {
       BindingType() = default; // prevent instantiation
    public:
       enum Type {
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          HOST,
          SLOT
       };

@@ -26,7 +26,8 @@ namespace ocs {
       BindingEnd() = default; // prevent instantiation
    public:
       enum End{
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          SOCKET,
          CORE
       };

@@ -142,6 +142,7 @@ static bool forbid_apperror = false;
 static bool enable_forced_qdel = false;
 static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
+static bool enable_binding = true;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool ignore_ngroups_max_limit = false;
@@ -187,11 +188,6 @@ static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
 static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
 
 static u_long32 script_timeout = 120;
-#ifdef LINUX
-static bool enable_binding = true;
-#else
-static bool enable_binding = false;
-#endif
 static bool enable_addgrp_kill = false;
 static u_long64 pdc_interval = sge_gmt32_to_gmt64(1);
 static char s_descriptors[100];
@@ -680,6 +676,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_forced_qdel = false;
       enable_sup_grp_eval = false;
       enable_enforce_master_limit = false;
+      enable_binding = true;
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       ignore_ngroups_max_limit = false;
@@ -761,6 +758,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &enable_enforce_master_limit)) {
             continue;
          } 
+         if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
+            continue;
+         }
          if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &enable_test_sleep_after_request)) {
             continue;
          }
@@ -917,11 +917,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       keep_active = KEEP_ACTIVE_FALSE;
       usage_collection = USAGE_COLLECTION_DEFAULT;
       script_timeout = 120;
-#ifdef LINUX
-      enable_binding = true;
-#else
-      enable_binding = false;
-#endif
       enable_addgrp_kill = false;
       use_qsub_gid = false;
       prof_execd_thrd = false;
@@ -1001,9 +996,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
-            continue;
-         }
-         if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
             continue;
          }
          if (parse_bool_param(s, "ENABLE_ADDGRP_KILL", &enable_addgrp_kill)) {
@@ -2169,18 +2161,6 @@ usage_collection_t mconf_get_usage_collection() {
    DRETURN(ret);
 }
 
-bool mconf_get_enable_binding() {
-   bool ret;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = enable_binding;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(ret);
-}
-
 bool mconf_get_enable_addgrp_kill() {
    bool ret;
 
@@ -2703,6 +2683,17 @@ bool mconf_get_enable_enforce_master_limit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_enforce_master_limit;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+
+}
+
+bool mconf_get_enable_binding() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = enable_binding;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 

@@ -42,6 +42,7 @@
 #include "ocs_BindingStart.h"
 #include "ocs_BindingEnd.h"
 #include "ocs_BindingStrategy.h"
+#include "ocs_BindingInstance.h"
 
 namespace ocs {
    class Job {
@@ -50,7 +51,7 @@ namespace ocs {
       static bool job_get_systemd_slice_and_scope(const lListElem *job, const lListElem *ja_task, const lListElem *pe_task,
                                                   std::string &slice, std::string &scope, dstring *error_dstr);
 
-      static lListElem *binding_get_or_create_elem(lListElem **pjob, lList**answer);
+      static lListElem *binding_get_or_create_elem(lListElem *pjob, lList**answer);
       static bool binding_was_requested(const lListElem *job);
       static BindingType::Type binding_get_type(const lListElem *job);
       static BindingUnit::Unit binding_get_unit(const lListElem *job);
@@ -59,5 +60,7 @@ namespace ocs {
       static BindingEnd::End binding_get_end(const lListElem *job);
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
       static const char *binding_get_filter(const lListElem *job);
-   };
+      static u_long32 binding_get_amount(const lListElem *job);
+      static BindingInstance::Instance binding_get_instance(const lListElem *job);
+      };
 }

@@ -190,7 +190,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-btype");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -206,7 +206,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bamount");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -222,7 +222,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binstance");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -238,7 +238,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bunit");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -254,7 +254,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bfilter");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -270,7 +270,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bsort");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -286,7 +286,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bstart");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -302,7 +302,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bend");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }
@@ -318,7 +318,7 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bstrategy");
    if (ep != nullptr) {
       // Create a binding element if it does not exist
-      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(pjob, &answer);
+      lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
          DRETURN(answer);
       }

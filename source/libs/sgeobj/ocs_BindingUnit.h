@@ -26,7 +26,8 @@ namespace ocs {
       BindingUnit() = default; // prevent instantiation
    public:
       enum Unit {
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          CTHREAD,
          ETHREAD,
          CCORE,

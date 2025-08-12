@@ -26,7 +26,8 @@ namespace ocs {
       BindingStart() = default; // prevent instantiation
    public:
       enum Start {
-         NONE = 0,
+         UNINITIALIZED = 0,
+         NONE,
          FIRST_FREE_SOCKET,
          FIRST_USED_SOCKET,
          FIRST_FREE_CORE,
