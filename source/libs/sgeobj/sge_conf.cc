@@ -193,7 +193,7 @@ static bool enable_binding = true;
 static bool enable_binding = false;
 #endif
 static bool enable_addgrp_kill = false;
-static u_long64 pdc_interval = 1;
+static u_long64 pdc_interval = sge_gmt32_to_gmt64(1);
 static char s_descriptors[100];
 static char h_descriptors[100];
 static char s_maxproc[100];
