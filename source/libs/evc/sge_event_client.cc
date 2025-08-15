@@ -965,11 +965,15 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
    auto *sge_evc = (sge_evc_t*)thiz->sge_evc_handle;
    const char *master_name = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
 
-   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
-   if (handle != nullptr) {
-      cl_commlib_close_connection(handle, (char*)master_name, (char*)prognames[QMASTER], 1, false);
-      DPRINTF("closed old connection to qmaster\n");
+   // If the client is internal, we do not need to close the connection.
+   if (!component_is_qmaster_internal()) {
+      cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+      if (handle != nullptr) {
+         cl_commlib_close_connection(handle, (char*)master_name, (char*)prognames[QMASTER], 1, false);
+         DPRINTF("closed old connection to qmaster\n");
+      }
    }
+
    sge_evc->need_register = true;
    DPRINTF("*** Need new registration at qmaster ***\n");
    lSetBool(sge_evc->ec, EV_changed, true);
