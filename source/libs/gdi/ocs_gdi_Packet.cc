@@ -105,6 +105,35 @@ sge_gdi_map_pack_errors(int pack_ret, lList **answer_list) {
    DRETURN(pack_ret == PACK_SUCCESS);
 }
 
+static bool
+destroy_tq_task(sge_tq_task_t **task) {
+   if (task != nullptr && *task != nullptr) {
+      // check if the task is a GDI packet task and if so, destroy the packet
+      if ((*task)->type == SGE_TQ_GDI_PACKET) {
+         ocs::gdi::Packet *packet = (ocs::gdi::Packet *)(*task)->data;
+         if (packet != nullptr) {
+            // destroy the packet
+            delete packet;
+         }
+      }
+      // destroy the sge_tq_task_t structure
+      sge_tq_task_destroy(task);
+   }
+
+   return true;
+}
+
+static void
+destroy_task_queue(sge_tq_queue_t **queue) {
+   sge_tq_destroy(queue, (sge_sl_destroy_f)destroy_tq_task);
+}
+
+void
+ocs::gdi::destroy_task_queues() {
+   destroy_task_queue(&GlobalRequestQueue);
+   destroy_task_queue(&ReaderRequestQueue);
+   destroy_task_queue(&ReaderWaitingRequestQueue);
+}
 
 ocs::gdi::Packet::Packet()
        : mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), is_handled(false), is_intern_request(false),

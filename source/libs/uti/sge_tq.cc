@@ -171,7 +171,7 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
 *  NOTES
 *     MT-NOTE: sge_tq_task_destroy() is MT safe
 *******************************************************************************/
-static bool
+bool
 sge_tq_task_destroy(sge_tq_task_t **task) {
    bool ret = true;
 
@@ -239,11 +239,16 @@ sge_tq_create(sge_tq_queue_t **queue) {
 *     bool sge_tq_destroy(sge_tq_queue_t **queue)
 *
 *  FUNCTION
-*     This function destroys a queue. The queue must be empty otherwise
-*     this would produce a memory leak.
+*     This function destroys a queue.
+*     If data stored in the task queue has been dynamically allocated,
+*     a destroy func shall be given, which destroy the data and then calls
+*     sge_tq_destroy_task() to destroy the task data structure itself.
+*     If nullptr is given as destroy func (default), then sge_tq_destroy_task()
+*     is called as destroy func.
 *
 *  INPUTS
 *     sge_tq_queue_t **queue - task queue
+*     sge_sl_destroy_f destroy_func - destroy func which can destroy arbitrary data
 *
 *  RESULT
 *     bool - error state
@@ -257,11 +262,14 @@ sge_tq_create(sge_tq_queue_t **queue) {
 *     uti/tq/sge_tq_create()
 *******************************************************************************/
 void
-sge_tq_destroy(sge_tq_queue_t **queue) {
+sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func) {
    DENTER(TQ_LAYER);
+   if (destroy_func == nullptr) {
+      destroy_func = (sge_sl_destroy_f)sge_tq_task_destroy;
+   }
    if (queue != nullptr && *queue != nullptr) {
       pthread_cond_destroy(&(*queue)->cond);
-      sge_sl_destroy(&(*queue)->list, (sge_sl_destroy_f) sge_tq_task_destroy);
+      sge_sl_destroy(&(*queue)->list, destroy_func);
       sge_free(queue);
    }
    DRETURN_VOID;

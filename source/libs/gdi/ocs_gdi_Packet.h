@@ -40,8 +40,10 @@ typedef enum {
 } gdi_packet_request_type_t;
 
 namespace ocs::gdi {
-   // request types that can be encapsulated into packages/tasks
+   void
+   destroy_task_queues();
 
+   // request types that can be encapsulated into packages/tasks
 
    class Packet {
    public:

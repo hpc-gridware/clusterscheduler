@@ -68,7 +68,10 @@ bool
 sge_tq_create(sge_tq_queue_t **queue);
 
 void
-sge_tq_destroy(sge_tq_queue_t **queue);
+sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func = nullptr);
+
+bool
+sge_tq_task_destroy(sge_tq_task_t **task);
 
 u_long32
 sge_tq_get_task_count(sge_tq_queue_t *queue);

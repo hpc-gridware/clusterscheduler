@@ -336,9 +336,12 @@ int main(int argc, char *argv[]) {
     * Order is important!
     */
    sge_scheduler_terminate(nullptr);
+
    sge_listener_terminate();
    sge_reader_terminate();
    sge_worker_terminate();
+   ocs::gdi::destroy_task_queues();
+
    sge_timer_terminate();
    ocs::event_mirror_terminate();
    sge_event_master_terminate();
