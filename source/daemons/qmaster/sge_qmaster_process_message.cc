@@ -444,27 +444,28 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      init_packbuffer(&packet->pb, 0);
-
       if (packet != nullptr) {
+         init_packbuffer(&packet->pb, 0);
+
          lList *tmp_answer_list = nullptr;
          packet->pack_header(&tmp_answer_list, &packet->pb);
-      }
-      for (size_t i = 0; i < packet->tasks.size(); ++i) {
-         bool has_next = (i < packet->tasks.size() - 1);
-         ocs::gdi::Task *task = packet->tasks[i];
 
-         // data might still be that what client sent initially. no need to re-transfer that
-         lFreeList(&task->data_list);
+         for (size_t i = 0; i < packet->tasks.size(); ++i) {
+            bool has_next = (i < packet->tasks.size() - 1);
+            ocs::gdi::Task *task = packet->tasks[i];
 
-         // for all tasks we pack the answer of the first task which contains general errors
-         // like version mismatch, auth_info or security issues.
-         packet->pack_task(task, &packet->tasks[0]->answer_list, &packet->pb, has_next);
+            // data might still be that what client sent initially. no need to re-transfer that
+            lFreeList(&task->data_list);
+
+            // for all tasks we pack the answer of the first task which contains general errors
+            // like version mismatch, auth_info or security issues.
+            packet->pack_task(task, &packet->tasks[0]->answer_list, &packet->pb, has_next);
+         }
+         ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                                          &packet->pb, ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
+         clear_packbuffer(&packet->pb);
+         delete packet;
       }
-      ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                                                       &packet->pb, ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
-      clear_packbuffer(&packet->pb);
-      delete packet;
 
       DRETURN_VOID;
    }
@@ -516,11 +517,13 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       // Store the decision about the DS also in the packet
       packet->ds_type = ds_type;
       sge_tq_store_notify(queue, SGE_TQ_GDI_PACKET, packet);
+      packet = nullptr; // packet is now owned by the queue
    } else {
       DTRACE;
       // add to the worker request queue
       packet->ds_type = ds_type;
       sge_tq_store_notify(GlobalRequestQueue, SGE_TQ_GDI_PACKET, packet);
+      packet = nullptr; // packet is now owned by the queue
    }
 
    DRETURN_VOID;
