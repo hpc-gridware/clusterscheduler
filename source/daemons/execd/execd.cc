@@ -404,8 +404,6 @@ static void execd_exit_func(int i)
 {
    DENTER(TOP_LAYER);
 
-   ocs::gdi::ClientBase::shutdown();
-
    /* trigger load sensors shutdown */
    sge_ls_stop(0);
 
