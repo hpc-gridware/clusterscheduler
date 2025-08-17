@@ -350,12 +350,15 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
    sge_pack_buffer *pb_in = &(aMsg->buf);
    sge_gdi_packet_class_t *packet = nullptr;
    bool local_ret = sge_gdi_packet_unpack(&packet, nullptr, pb_in);
-   strcpy(packet->host, aMsg->snd_host);
-   strcpy(packet->commproc, aMsg->snd_name);
-   packet->commproc_id = aMsg->snd_id;
-   packet->response_id = aMsg->request_mid;
-   packet->is_intern_request = false;
-   packet->request_type = PACKET_GDI_REQUEST;
+
+   if (local_ret) {
+      strcpy(packet->host, aMsg->snd_host);
+      strcpy(packet->commproc, aMsg->snd_name);
+      packet->commproc_id = aMsg->snd_id;
+      packet->response_id = aMsg->request_mid;
+      packet->is_intern_request = false;
+      packet->request_type = PACKET_GDI_REQUEST;
+   }
 
    // check GDI version
    if (local_ret) {
@@ -402,22 +405,24 @@ do_gdi_packet(struct_msg_t *aMsg, monitoring_t *monitor) {
 
    // handle errors that might have happened above and then exit
    if (!local_ret) {
-      sge_gdi_task_class_t *task = packet->first_task;
+      if (packet != nullptr) {
+         sge_gdi_task_class_t *task = packet->first_task;
 
-      init_packbuffer(&packet->pb, 0, 0);
-      while(task) {
-         // data might still be that what client sent initially. no need to re-transfer that
-         lFreeList(&task->data_list);
+         init_packbuffer(&packet->pb, 0, 0);
+         while(task) {
+            // data might still be that what client sent initially. no need to re-transfer that
+            lFreeList(&task->data_list);
 
-         // for all tasks we pack the answer of the first task which contains general errors
-         // like version mismatch, auth_info or security issues.
-         sge_gdi_packet_pack_task(packet, task, &packet->first_task->answer_list, &packet->pb);
-         task = task->next;
+            // for all tasks we pack the answer of the first task which contains general errors
+            // like version mismatch, auth_info or security issues.
+            sge_gdi_packet_pack_task(packet, task, &packet->first_task->answer_list, &packet->pb);
+            task = task->next;
+         }
+         sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
+                                  &packet->pb, TAG_GDI_REQUEST, packet->response_id, nullptr);
+         clear_packbuffer(&packet->pb);
+         sge_gdi_packet_free(&packet);
       }
-      sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
-                               &packet->pb, TAG_GDI_REQUEST, packet->response_id, nullptr);
-      clear_packbuffer(&packet->pb);
-      sge_gdi_packet_free(&packet);
 
       DRETURN_VOID;
    }

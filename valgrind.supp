@@ -93,27 +93,6 @@
    fun:clone
 }
 
-#{
-#   @todo CS-633 (1) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
-#   Memcheck:Leak
-#   match-leak-kinds: possible
-#   fun:calloc
-#   fun:calloc
-#   fun:allocate_dtv
-#   fun:_dl_allocate_tls
-#   fun:allocate_stack
-#   fun:pthread_create@@GLIBC_2.34
-#   fun:_Z15cl_thread_setupP23cl_thread_settings_typeP16cl_raw_list_typePKciPFPvS5_EPFvS0_ES5_18cl_thread_type_def
-#   fun:_Z28cl_thread_list_create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_EPFvS2_ES6_18cl_thread_type_def
-#   fun:_Z20cl_com_setup_commlib18cl_thread_mode_def11cl_log_typePFiP16cl_raw_list_typeE
-#   fun:_Z25gdi_client_prepare_enrollPP6_lList
-#   fun:_Z27gdi_client_setup_and_enrollijPP6_lList
-#   fun:_Z12japi_init_mtP7dstring
-#   fun:_Z9japi_initPKcS0_P7dstringibPFvS0_ES2_
-#   fun:drmaa_init
-#   fun:main
-#}
-
 {
    @todo CS-633 (2) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
    Memcheck:Leak
