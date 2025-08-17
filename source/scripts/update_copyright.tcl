@@ -1,10 +1,27 @@
 #!/usr/bin/tclsh
 #___INFO__MARK_BEGIN_NEW__
+###########################################################################
+#
+#  Copyright 2025 HPC-Gridware GmbH
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+###########################################################################
 #___INFO__MARK_END_NEW__
 
-# 
+#
 # this scripts takes a list of file names and inserts or updates copyright headers
-# 
+#
 # we have the following markers for copyright sections:
 # - __INFO__MARK_BEGIN__         : existing file with SISSL header coming from the Grid Engine open source repository
 # - __INFO__MARK_BEGIN_NEW__     : new file in one of the cluster scheduler repositories which are open source
@@ -78,6 +95,10 @@ proc exclude_filename {filename} {
    set ret 0
 
    switch -glob $filename {
+      "source/scripts/update_copyright.tcl" {
+         # don't update ourselves - we have the copyright markers in many places
+         set ret 1
+      }
       "3rdparty/*" -
       "*/3rdparty/*" -
       "*cmake-build*" {
@@ -120,7 +141,7 @@ proc write_file {filename lines_var permissions} {
    upvar $lines_var lines
 
    puts "$filename: writing new version"
-   
+
    # make a backup
    file rename $filename "$filename.bak"
 
@@ -274,7 +295,7 @@ proc get_copyright_header {filename lines_var header_var copyright_type_var comm
       puts stderr "$filename: no end of copyright header found"
       set ret 0
    }
-   
+
    return $ret
 }
 
@@ -410,7 +431,7 @@ proc add_update_gridware_copyright {filename copyright_var copyright_type commen
       append line "  Portions of this software are Copyright (c) "
       append line $year_range
       append line " HPC-Gridware GmbH"
-      
+
       set header [linsert $header "end-1" $line $comment_start]
       set changed 1
    }
