@@ -121,14 +121,24 @@ proc read_file {filename lines_var permissions_var} {
 
    unset -nocomplain lines ; set lines {}
 
-   # @todo need to call open and close in a catch block and check for error
-   set f [open $filename "r"]
-   set num_lines 0
-   while {[gets $f line] >= 0} {
-      lappend lines $line
-      incr num_lines
+   # try to open and read the file
+   set f ""
+   if {[catch {
+      set f [open $filename "r"]
+      set num_lines 0
+      while {[gets $f line] >= 0} {
+         lappend lines $line
+         incr num_lines
+      }
+      close $f
+   } catch_message]} {
+      puts stderr "$filename: reading failed: $catch_message"
+      # if the open worked but reading failed, we still have the file handle
+      if {$f ne ""} {
+         catch {close $f}
+      }
+      return 0
    }
-   close $f
 
    set permissions [file attributes $filename -permissions]
 
@@ -307,11 +317,17 @@ proc check_copyright_header {filename header_var copyright_type_var comment_type
 
    set ret 1
 
-   # add missing Apache header
-   if {[llength $header] == 0 && $copyright_type == "NEW"} {
-      global apache_license
+   # add missing header
+   if {[llength $header] == 0} {
+      global apache_license closed_license
 
-      puts "$filename: adding Apache header"
+      if {$copyright_type == "NEW"} {
+         puts "$filename: adding Apache header"
+         set split_header [split $apache_license "\n"]
+      } else {
+         puts "$filename: adding Closed header"
+         set split_header [split $closed_license "\n"]
+      }
 
       if {$comment_type == "C"} {
          set header_start "/***************************************************************************"
@@ -322,7 +338,6 @@ proc check_copyright_header {filename header_var copyright_type_var comment_type
          set header_end "###########################################################################"
          set header_prefix "# "
       }
-      set split_header [split $apache_license "\n"]
 
       lappend header $header_start
       foreach line $split_header {
@@ -331,11 +346,8 @@ proc check_copyright_header {filename header_var copyright_type_var comment_type
       lappend header $header_end
 
       set added_new_header 1
-   }
-
-   # @todo remove once we have code adding a missing header
-   if {$copyright_type == "SISSL" || $copyright_type == "NEW"} {
-      # the last line of the header must be a line of '#' or '*'
+   } else {
+      # check existing header
       if {$comment_type == "script"} {
          set comment_line "##########"
       } elseif {$comment_type == "C"} {
@@ -390,7 +402,7 @@ proc add_update_gridware_copyright {filename copyright_var copyright_type commen
    set idx 0
    set found 0
    foreach line $header {
-      if {[string first "HPC-Gridware GmbH" $line] >= 0} {
+      if {[string match "*Copyright * HPC-Gridware*" $line]} {
          set backup $line
          set found 1
          break
@@ -428,7 +440,11 @@ proc add_update_gridware_copyright {filename copyright_var copyright_type commen
       }
    } else {
       # if not found: add it
-      append line "  Portions of this software are Copyright (c) "
+      if {$copyright_type == "SISSL"} {
+         append line "  Portions of this software are Copyright (c) "
+      } else {
+         append line "  Copyright "
+      }
       append line $year_range
       append line " HPC-Gridware GmbH"
 
@@ -487,6 +503,10 @@ distributed under the License is distributed on an \"AS IS\" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+"
+
+set closed_license "
+Copyright 2025 HPC-Gridware GmbH
 "
 
 ################################################################################
