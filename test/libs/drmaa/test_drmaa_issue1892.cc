@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
    }
    
 error:
+   drmaa_release_job_ids(jobids);
    if (drmaa_exit(diagnosis, DRMAA_ERROR_STRING_BUFFER) != DRMAA_ERRNO_SUCCESS) {
       fprintf(stderr, "drmaa_exit() failed: %s\n", diagnosis);
       exit_code = 1;

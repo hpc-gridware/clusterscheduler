@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
     char error[DRMAA_ERROR_STRING_BUFFER + 1];
     drmaa_job_template_t *jt = nullptr;
     char jobid[DRMAA_JOBNAME_BUFFER + 1];
+    int exit_code = 0;
 
     if (argc != 2) {
        printf("Usage: %s path_to_script\n", argv[0]);
@@ -58,39 +59,46 @@ int main(int argc, char **argv) {
     
     ret = drmaa_allocate_job_template(&jt, error, DRMAA_ERROR_STRING_BUFFER);
     if (handle_code(ret, error) == 1) {
-        return 1;
+        exit_code = 1;
+        goto error;
     }
     
     ret = drmaa_set_attribute(jt, DRMAA_REMOTE_COMMAND, argv[1], error,
     DRMAA_ERROR_STRING_BUFFER);
     if (handle_code(ret, error) == 1) {
-        return 1;
+        exit_code = 1;
+        goto error;
     }
     
     ret = drmaa_set_attribute(jt, DRMAA_WD, WD, error,
     DRMAA_ERROR_STRING_BUFFER);
     if (handle_code(ret, error) == 1) {
-        return 1;
+        exit_code = 1;
+        goto error;
     }
     
     ret = drmaa_set_attribute(jt, DRMAA_NATIVE_SPECIFICATION, "-b n -cwd", error,
     DRMAA_ERROR_STRING_BUFFER);
     if (handle_code(ret, error) == 1) {
-        return 1;
+        exit_code = 1;
+        goto error;
     }
     
     ret = drmaa_run_job(jobid, DRMAA_JOBNAME_BUFFER, jt, error,
     DRMAA_ERROR_STRING_BUFFER);
     if (handle_code(ret, error) == 1) {
-        return 1;
+        exit_code = 1;
+        goto error;
     }
-    
+
+error:
+    drmaa_delete_job_template(jt, error, DRMAA_ERROR_STRING_BUFFER);
     ret = drmaa_exit(error, DRMAA_ERROR_STRING_BUFFER);
     handle_code(ret, error);
     
     printf ("OK\n");
     
-    return 0;
+    return exit_code;
 }
 
 int handle_code(int code, char *msg) {
