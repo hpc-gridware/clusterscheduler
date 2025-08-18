@@ -48,8 +48,14 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingSort.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_HostTopology.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
@@ -305,6 +311,9 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       DRETURN(slots);
    }
 
+#ifdef WITH_EXTENSIONS
+#endif
+
 #if 1
    const lList *binding = lGetList(a->job, JB_binding);
    if (binding != nullptr) {
@@ -317,10 +326,8 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 #endif
 
    // @todo CS-732 we assume host binding here. implement task specific binding later
-   bool host_specific_binding = false;
-   bool task_specific_binding = true;
-
-   if (host_specific_binding) {
+   auto binding_type= ocs::Job::binding_get_type(a->job);
+   if (binding_type == ocs::BindingType::HOST) {
       const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
 
@@ -361,7 +368,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       lWriteListTo(a->binding_touse, stderr);
 #endif
       DRETURN(slots);
-   } else if (task_specific_binding) {
+   } else if (binding_type == ocs::BindingType::SLOT) {
       const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       u_long32 next_binding_id_for_task = 0;
@@ -442,6 +449,9 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       lWriteListTo(a->binding_touse, stderr);
 #endif
       DRETURN(slots);
+   } else {
+      // binding type not supported
+      DRETURN(0);
    }
 
    // no binding was requested => job gets what it wants => return with success for all slots

@@ -184,7 +184,7 @@ lListElem *
 ocs::Job::binding_get_or_create_elem(lListElem *pjob, lList**answer) {
    DENTER(TOP_LAYER);
    if (pjob == nullptr) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_PARSE_NULLPOINTERRECEIVED);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFN, MSG_PARSE_NULLPOINTERRECEIVED);
       answer_list_add(answer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(nullptr);
    }

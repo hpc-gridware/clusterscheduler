@@ -45,7 +45,8 @@ namespace ocs {
       static void assign_prop_if_not_exists(std::vector<TopologyNode> &nodes, const std::string &name, int value);
       static void print(const std::vector<TopologyNode> &nodes, int indent);
 
-      void parse();
+      void parse_to_tree();
+      [[nodiscard]] std::string tree_to_string() const;
 
       void print() const;
       void sort_by_characteristic(const std::string& characteristic, bool ascending);
