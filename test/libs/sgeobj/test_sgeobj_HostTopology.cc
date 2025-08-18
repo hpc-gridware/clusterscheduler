@@ -264,22 +264,6 @@ int main (int argc, char *argv[]) {
    ret &= test_remove_all_used_threads_scenarios();
    ret &= test_correct_topology_missing_threads_scenarios();
 
-   //ocs::TopologyString topo1("NXSYCtTYCTTYetETYETETNSYCTTYCTTYETETYETET");
-   //ocs::TopologyString topo1("SCttCTTETETETETSCTTCTTETETETET");
-   ocs::TopologyString topo1("SCTTTTCTTTTSCTTTTCTTTT");
-   topo1.parse();
-   topo1.print();
-   //topo1.sort_by_characteristic("ST", true);
-   //topo1.print();
-
-   std::string unit = "CT";
-   std::string strategy;
-   std::string filter;
-   std::string sort;
-   std::string start = "C";
-   std::string stop = "t";
-   std::cout << topo1.get_packed_binding(2, unit, strategy, filter, sort, start, stop) << std::endl;
-
    if (!ret) {
       std::cerr << "Test failed." << std::endl;
       DRETURN(1);

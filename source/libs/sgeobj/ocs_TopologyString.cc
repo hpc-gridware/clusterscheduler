@@ -71,7 +71,7 @@ ocs::TopologyString::initialize_logical_numbering() {
 
 
 void
-ocs::TopologyString::parse() {
+ocs::TopologyString::parse_to_tree() {
    DENTER(TOP_LAYER);
    std::vector<TopologyNode> cores;
    std::vector<TopologyNode> threads;
@@ -119,7 +119,7 @@ ocs::TopologyString::parse() {
 
             // Assign properties for the number of free and used threads on the core
             core.assign_prop_if_not_exists(is_power_core ? TopologyNode::NUMBER_OF_FREE_C_THREADS : TopologyNode::NUMBER_OF_FREE_E_THREADS, threads_free);
-            core.assign_prop_if_not_exists(is_power_core ? TopologyNode::NUMBER_OF_USED_C_THREADS: TopologyNode::NUMBER_OF_USED_E_THREADS, threads_used);
+            core.assign_prop_if_not_exists(is_power_core ? TopologyNode::NUMBER_OF_USED_C_THREADS : TopologyNode::NUMBER_OF_USED_E_THREADS, threads_used);
 
             // Add threads to the core counters and reset the thread counters
             if (is_power_core) {
@@ -204,6 +204,11 @@ ocs::TopologyString::parse() {
 #endif
 
    DRETURN_VOID;
+}
+
+std::string
+ocs::TopologyString::tree_to_string() const {
+   return "";
 }
 
 void ocs::TopologyString::sort_by_characteristic(const std::string& characteristic, bool ascending) {

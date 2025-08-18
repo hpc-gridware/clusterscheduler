@@ -46,7 +46,7 @@
 #  include <sys/statfs.h>
 #endif
 
-#include "uti/ocs_topology.h"
+#include "uti/ocs_Topo.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_Binding.h"
@@ -171,7 +171,7 @@ static void create_environment_string_solaris(const processorid_t* pid_list,
 *******************************************************************************/
 int get_execd_amount_of_threads() {
 #if defined(OCS_HWLOC)
-      return ocs::topo_get_total_amount_of_threads();
+      return ocs::Topo::get_total_amount_of_threads();
 #elif defined(BINDING_SOLARIS) 
       /* TODO implement this also for Solaris */
       return get_total_amount_of_cores_solaris();
@@ -200,7 +200,7 @@ int get_execd_amount_of_threads() {
 int get_execd_amount_of_cores() 
 {
 #if defined(OCS_HWLOC)
-      return ocs::topo_get_total_amount_of_cores();
+      return ocs::Topo::get_total_amount_of_cores();
 #elif defined(BINDING_SOLARIS) 
       return get_total_amount_of_cores_solaris();
 #else   
@@ -230,7 +230,7 @@ int get_execd_amount_of_cores()
 int get_execd_amount_of_sockets()
 {
 #if defined(OCS_HWLOC)
-   return ocs::topo_get_total_amount_of_sockets();
+   return ocs::Topo::get_total_amount_of_sockets();
 #elif defined(BINDING_SOLARIS) 
    return get_total_amount_of_sockets_solaris();
 #else
@@ -246,7 +246,7 @@ bool get_execd_topology(char** topology, int* length)
    /* topology must be a nullptr pointer */
    if (topology != nullptr && (*topology) == nullptr) {
 #if defined(OCS_HWLOC)
-      if (ocs::topo_get_topology(topology, length)) {
+      if (ocs::Topo::get_topology(topology, length)) {
          success = true;
       } else {
          success = false;
@@ -304,8 +304,7 @@ bool get_execd_topology_in_use(char** topology)
    if (logical_used_topology_length == 0 || logical_used_topology == nullptr) {
 #if defined(OCS_HWLOC)
       /* initialize without any usage */
-      ocs::topo_get_topology(&logical_used_topology,
-                             &logical_used_topology_length);
+      ocs::Topo::get_topology(&logical_used_topology, &logical_used_topology_length);
 #elif defined(BINDING_SOLARIS) 
       get_topology_solaris(&logical_used_topology, 
                &logical_used_topology_length);
@@ -1170,7 +1169,7 @@ bool account_job(const char* job_topology)
 
 #if defined(OCS_HWLOC)
       /* initialize without any usage */
-      ocs::topo_get_topology(&logical_used_topology,
+      ocs::Topo::get_topology(&logical_used_topology,
                              &logical_used_topology_length);
 #elif defined(BINDING_SOLARIS) 
       get_topology_solaris(&logical_used_topology, 

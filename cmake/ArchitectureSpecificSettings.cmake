@@ -20,6 +20,10 @@
 
 function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
+   set(OS_ID ${OS_ID} PARENT_SCOPE)
+   set(OS_VERSION ${OS_VERSION} PARENT_SCOPE)
+   set(OS_CODENAME ${OS_CODENAME} PARENT_SCOPE)
+
    message(STATUS "Build for Version: ${CMAKE_BUILD_ID}")
 
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")

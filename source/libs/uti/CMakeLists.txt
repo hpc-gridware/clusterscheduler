@@ -26,6 +26,7 @@ set(LIBRARY_SOURCES
       ocs_Munge.cc
       ocs_Systemd.cc
       ocs_TerminationManager.cc
+      ocs_Topo.cc
       ocs_cond.cc
       sge_afsutil.cc
       sge_arch.cc
@@ -73,7 +74,6 @@ set(LIBRARY_SOURCES
       sge_thread_ctrl.cc
       sge_time.cc
       sge_tmpnam.cc
-      ocs_topology.cc
       sge_tq.cc
       sge_uidgid.cc
       sge_unistd.cc)
