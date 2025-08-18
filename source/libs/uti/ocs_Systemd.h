@@ -19,10 +19,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <variant>
 #include <vector>
+
 
 #if defined(OCS_WITH_SYSTEMD)
 #include <systemd/sd-bus.h>
