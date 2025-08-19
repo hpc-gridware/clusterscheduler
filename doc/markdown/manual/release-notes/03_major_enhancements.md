@@ -1,10 +1,10 @@
 # Major Enhancements
 
-## v9.1.0
+## v9.1.0prealpha1
 
 ### Departments, Users and Jobs - Department View
 
-The Department View, a feature first introduced in the Gridware Cluster Scheduler v9.0.2 patch, has been further enhanced and is now fully supported in Gridware Cluster Scheduler v9.1.0.
+The Department View (-sdv), a feature first introduced in the Gridware Cluster Scheduler v9.0.2 patch, has been further enhanced and is now fully supported in Gridware Cluster Scheduler v9.1.0.
 
 Cluster administrators can now define whether a user can see the Classic View, where all hosts, queues or jobs... are visible to everyone, or the Department View, where users can see only those cluster objects to which their department(s) have access.
 Even if cluster administrators choose not to enforce the Department View, users can still use the functionality to reduce the number of visible objects, which can be useful in large clusters.
