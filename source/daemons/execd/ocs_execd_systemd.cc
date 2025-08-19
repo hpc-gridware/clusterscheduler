@@ -352,21 +352,14 @@ namespace ocs::execd {
                         // from systemd we do *not* get vmem / maxvmem
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "CPUUsageNSec", USAGE_ATTR_CPU, 1.0 / 1000000000.0); // convert nanoseconds to seconds
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "MemoryCurrent", USAGE_ATTR_RSS, 1.0);
-                        // With cgroup v2 we can get MemoryPeak, with cgroup v1 we need to calculate it ourselves.
-                        // But only with Systemd version >= 247.
-                        // And on Ubuntu-22.04 we have cgroup v2, Systemd version 249, but no MemoryPeak property.
-                        // @todo How to handle this?
-                        if (0 && ocs::uti::Systemd::get_cgroup_version() == 2 && ocs::uti::Systemd::get_systemd_version() >= 247) {
-                           // cgroup v2
+
+                        // maxrss - from Systemd if available or calculate from current RSS
+                        if (systemd.has_property("MemoryPeak", scope)) {
+                           // it is available
                            ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "MemoryPeak", USAGE_ATTR_MAXRSS, 1.0);
-                           // IO usage
-                           // @todo I don't really find information about it.
-                           //       IOReadBytes and IOWriteBytes are not shown by introspection,
-                           //       but exist e.g. on Ubuntu 24.04 according to `systemctl show <scope>`.
-                           //       The values delivered seem not to make sense.
-                           // ptf_get_usage_value_from_systemd2(systemd, scope, usage_list, "IOReadBytes", "IOWriteBytes", USAGE_ATTR_IO, 1.0);
                         } else {
                            // cgroup v1 or too old systemd version
+                           // calculate the maximum RSS from the current RSS
                            lListElem *usage_elem = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_RSS);
                            if (usage_elem != nullptr) {
                               double rss = lGetDouble(usage_elem, UA_value);
@@ -377,7 +370,13 @@ namespace ocs::execd {
                               }
                            }
                         }
-                     } else {
+                         // IO usage
+                         // @todo I don't really find information about it.
+                         //       IOReadBytes and IOWriteBytes are not shown by introspection,
+                         //       but exist e.g. on Ubuntu 24.04 according to `systemctl show <scope>`.
+                         //       The values delivered seem not to make sense.
+                         // ptf_get_usage_value_from_systemd2(systemd, scope, usage_list, "IOReadBytes", "IOWriteBytes", USAGE_ATTR_IO, 1.0);
+                      } else {
                         DPRINTF("==> Job is not active in systemd scope %s, state: %s", scope.c_str(), state.c_str());
                      }
                   } else {

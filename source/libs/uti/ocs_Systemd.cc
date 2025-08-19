@@ -67,6 +67,7 @@ namespace ocs::uti {
 
    const std::string Systemd::execd_service_name{"execd.service"};
    const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
+   std::map<std::string, bool> Systemd::unclear_properties;
 
    // @todo move somewhere else
    static std::string
@@ -406,6 +407,48 @@ namespace ocs::uti {
    bool
    Systemd::is_running_as_service() {
       return running_as_service;
+   }
+
+   /*!
+    * @brief Check if a property is available for a given scope
+    *
+    * This function checks if a specific property is available for a given scope.
+    * It caches the result to avoid repeated checks for the same property.
+    * We test on a job scope (of the first job running after sge_execd starts). So far all jobs
+    * have the same accounting settings, so we can cache the result.
+    *
+    * @param property_name The name of the property to check
+    * @param scope_name The name of the job scope to check the property against
+    * @return true if the property is available, false otherwise
+    */
+   bool
+   Systemd::has_property(const std::string &property_name, const std::string &scope_name) {
+      DENTER(TOP_LAYER);
+
+      // Check if the property is already cached
+      bool ret = false;
+      if (unclear_properties.contains(property_name)) {
+         ret = unclear_properties[property_name];
+      } else {
+         // we do not yet know if this property is available
+         uint64_t value;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         bool not_exists = false;
+         if (sd_bus_get_property("Scope", scope_name, property_name, value, &error_dstr, &not_exists)) {
+            DPRINTF("property %s is reported by systemd", property_name.c_str());
+            unclear_properties[property_name] = true;
+            ret = true;
+         } else if (not_exists) {
+            DPRINTF("property %s is not reported by systemd", property_name.c_str());
+            unclear_properties[property_name] = false;
+         } else {
+            DPRINTF("retrieving property %s for scope %s failed: %s",
+                    property_name.c_str(), scope_name.c_str(), sge_dstring_get_string(&error_dstr));
+            DPRINTF("we do not know if it would be available or not, so we assume it is unclear");
+         }
+      }
+
+      DRETURN(ret);
    }
 
    //================================================================================
@@ -1210,7 +1253,8 @@ namespace ocs::uti {
     * @return true if the operation was successful, false otherwise
     */
    bool
-   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, std::string &value, dstring *error_dstr) const {
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
+                                std::string &value, dstring *error_dstr, bool *not_exists) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1246,6 +1290,9 @@ namespace ocs::uti {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
+               if (-r == ENOENT && not_exists != nullptr) {
+                  *not_exists = true; // property does not exist
+               }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
@@ -1287,7 +1334,8 @@ namespace ocs::uti {
     * @return true if the operation was successful, false otherwise
     */
    bool
-   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property, uint64_t &value, dstring *error_dstr) const {
+   Systemd::sd_bus_get_property(const std::string &interface, const std::string &unit, const std::string &property,
+                                uint64_t &value, dstring *error_dstr, bool *not_exists) const {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1319,6 +1367,9 @@ namespace ocs::uti {
             if (-r == EINTR && retries++ < NUM_SD_BUS_RETRIES) {
                retry_on_interrupt = true;
             } else {
+               if (-r == ENOENT && not_exists != nullptr) {
+                  *not_exists = true; // property does not exist
+               }
                sge_dstring_sprintf(error_dstr, MSG_SYSTEMD_CANNOT_CALL_SSIS, "sd_bus_get_property", property.c_str(), r, error.message);
                if (retries > 0) {
                   sge_dstring_sprintf_append(error_dstr, MSG_SYSTEMD_AFTER_RETRIES_I, retries);
