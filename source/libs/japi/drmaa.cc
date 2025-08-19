@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -88,29 +88,29 @@
 
 /****** DRMAA/--DRMAA_Job_API ********************************************************
 *  NAME
-*     DRMAA_Job_API -- Cluster Scheduler's C/C++ binding for the DRMAA interface 
+*     DRMAA_Job_API -- Cluster Scheduler's C/C++ binding for the DRMAA interface
 *
 *  FUNCTION
-*     This libary gives a C/C++ binding for the DRMAA interface specification. 
-*     The DRMAA interface is independed of a DRM system and thus can be implememted 
+*     This libary gives a C/C++ binding for the DRMAA interface specification.
+*     The DRMAA interface is independed of a DRM system and thus can be implememted
 *     by not only for Cluster Scheduler. It's scope is job submission and control.
 *     Refer to www.drmaa.org for more about this interface.
 *
 *  SEE ALSO
 *     DRMAA/-DRMAA_Session_state
 *     DRMAA/-DRMAA_Implementation
-*     DRMAA/-DRMAA_Interface 
+*     DRMAA/-DRMAA_Interface
 *     DRMAA/-DRMAA_Global_Constants
 *******************************************************************************/
 
 /****** DRMAA/-DRMAA_Implementation *******************************************
 *  NAME
 *     DRMAA_Implementation -- Functions used to implement Cluster Scheduler DRMAA
-* 
+*
 *  FUNCTION
-*     These functions are used to implement DRMAA functions. Most of the 
+*     These functions are used to implement DRMAA functions. Most of the
 *     functionality of DRMAA is derived from Cluster Scheduler's Job API.
-*   
+*
 *  SEE ALSO
 *     DRMAA/drmaa_job2sge_job()
 *     DRMAA/japi_drmaa_path2sge_job()
@@ -128,7 +128,7 @@ extern char **environ;
 static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *diag);
 static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]);
 
-static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt, 
+static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
                              int is_bulk, int start, int end, int step, dstring *diag);
 static int drmaa_path2path_opt(const lList *attrs, lList **args,
                                int is_bulk, const char *attribute_key,
@@ -165,11 +165,11 @@ static char** sge_get_qtask_args(char *taskname, lList **answer_list);
 *  SYNOPSIS
 *     static const char *drmaa_supported_nonvector[];
 *     static const char *drmaa_supported_vector[];
-*     
+*
 *  FUNCTION
-*     drmaa_supported_nonvector - A string array containing all supported job 
+*     drmaa_supported_nonvector - A string array containing all supported job
 *                    template non-vector attributes.
-*     drmaa_supported_vector - A string array containing all supported job 
+*     drmaa_supported_vector - A string array containing all supported job
 *                    template vector attributes.
 *  SEE ALSO
 *******************************************************************************/
@@ -211,7 +211,7 @@ static const char *drmaa_supported_vector[] = {
 *
 *  SYNOPSIS
 *     #define ENABLE_CWD_ENV "SGE_DRMAA_ALLOW_CWD"
-*     
+*
 *  FUNCTION
 *     ENABLE_CWD_ENV - enables the parsing of the -cwd switch in the sge_request,
 *                      job category, and/or native specification.  Unless this
@@ -452,13 +452,13 @@ static char **sge_get_qtask_args(char *taskname, lList **answer_list)
 *     drmaa_init() -- Initialize DRMAA API library
 *
 *  SYNOPSIS
-*     int drmaa_init(const char *contact, char *error_diagnosis, 
+*     int drmaa_init(const char *contact, char *error_diagnosis,
 *               size_t error_diag_len)
 *
 *  FUNCTION
 *     Initialize DRMAA API library and create a new DRMAA Session. 'Contact'
 *     is an implementation dependent string which may be used to specify
-*     which DRM system to use. This routine must be called before any other 
+*     which DRM system to use. This routine must be called before any other
 *     DRMAA calls, except for drmaa_version(). If 'contact' is nullptr, the default
 *     DRM system will be used.  If 'contact' is not nullptr, it is parsed for a
 *     list of semi-colon separated name=value strings.  The currently supported
@@ -470,7 +470,7 @@ static char **sge_get_qtask_args(char *taskname, lList **answer_list)
 *        sge_cell -- the SGE_CELL to use
 #endif
 *
-*     Initializes internal data structures and registers 
+*     Initializes internal data structures and registers
 *     with qmaster using the event client mechanisms.
 *
 *  INPUTS
@@ -478,18 +478,18 @@ static char **sge_get_qtask_args(char *taskname, lList **answer_list)
 *     char *error_diagnosis                  - diagnosis buffer
 *     size_t error_diag_len                  - diagnosis buffer length
 *     env var SGE_SESSION_KEY - dirty input/output interface to parametrize
-*                    without actually changing DRMAA library link interface. 
+*                    without actually changing DRMAA library link interface.
 *                    The string passed before drmaa_init() will be used as session
 *                    key for restarting the former Cluster Scheduler JAPI session. After
 *                    drmaa_init() this env var contains the session key that is used
 *                    with this Cluster Scheduler JAPI session.
-*                    
+*
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success otherwise 
-*           DRMAA_ERRNO_INVALID_CONTACT_STRING, 
+*     int - DRMAA_ERRNO_SUCCESS on success otherwise
+*           DRMAA_ERRNO_INVALID_CONTACT_STRING,
 *           DRMAA_ERRNO_ALREADY_ACTIVE_SESSION, or
 *           DRMAA_ERRNO_DEFAULT_CONTACT_STRING_ERROR.
-* 
+*
 *  NOTES
 *      MT-NOTE: drmaa_init() is MT safe
 *******************************************************************************/
@@ -508,25 +508,25 @@ int drmaa_init(const char *contact, char *error_diagnosis,
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
- 
+
    /* Disable profiling for DRMAA clients. */
    sge_prof_set_enabled(false);
-   
+
    ret = drmaa_parse_contact_string(contact, &session_key_in);
-   
+
    if (ret != DRMAA_ERRNO_SUCCESS) {
       if (diagp != nullptr) {
          sge_dstring_copy_string(diagp, drmaa_strerror(ret));
       }
-      
+
       DRETURN(ret);
    }
-   
+
    ret = japi_init(contact, session_key_in, &session_key_out, DRMAA, true, nullptr,
                    diagp);
 
    sge_free(&session_key_in);
-   
+
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diag was set in japi_init() */
       DRETURN(ret);
@@ -563,14 +563,14 @@ static int drmaa_parse_contact_string(const char *contact, char **session)
    char *str = nullptr;
    struct saved_vars_s *context = nullptr;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   
+
    DENTER(TOP_LAYER);
 
    if (contact != nullptr) {
       /* First look for the = sign to find the name. */
       while ((token = sge_strtok_r(full_str, "=", &context)) != nullptr) {
          full_str = nullptr;
-         
+
          /* Then look for the ; to find the value. */
          str = sge_strtok_r(nullptr, ";", &context);
 
@@ -598,7 +598,7 @@ static int drmaa_parse_contact_string(const char *contact, char **session)
       sge_free_saved_vars(context);
       context = nullptr;
    }
-   
+
    DRETURN(drmaa_errno);
 }
 
@@ -619,14 +619,14 @@ static int drmaa_parse_contact_string(const char *contact, char **session)
 *  INPUTS
 *     char *error_diagnosis   - diagnosis buffer
 *     size_t error_diag_len   - diagnosis buffer length
-*     env var SGE_KEEP_SESSION 
-*                             - dirty input interface to make sessions restartable 
+*     env var SGE_KEEP_SESSION
+*                             - dirty input interface to make sessions restartable
 *                               without actually changing DRMAA library link interface.
-*                               If set the session is not cleaned up (default), otherwise 
+*                               If set the session is not cleaned up (default), otherwise
 *                               it is closed.
-*     
+*
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success, otherwise DRMAA_ERRNO_DRMS_EXIT_ERROR 
+*     int - DRMAA_ERRNO_SUCCESS on success, otherwise DRMAA_ERRNO_DRMS_EXIT_ERROR
 *           or DRMAA_ERRNO_NO_ACTIVE_SESSION.
 *
 *  NOTES
@@ -646,6 +646,7 @@ int drmaa_exit(char *error_diagnosis, size_t error_diag_len)
    }
 
    drmaa_errno = japi_exit(JAPI_EXIT_NO_FLAG, diagp);
+
    // It should not be necessary to call cl_com_cleanup_commlib(),
    // as it should be called by the gdi_default_exit_func() installed by the ocs::gdi::ClientBase.
    // But valgrind reports it as Leak_PossiblyLost.
@@ -657,24 +658,24 @@ int drmaa_exit(char *error_diagnosis, size_t error_diag_len)
 
 /****** DRMAA/drmaa_allocate_job_template() *************************************
 *  NAME
-*     drmaa_allocate_job_template() -- Allocate a new job template. 
+*     drmaa_allocate_job_template() -- Allocate a new job template.
 *
 *  SYNOPSIS
-*     int drmaa_allocate_job_template(drmaa_job_template_t **jtp, 
+*     int drmaa_allocate_job_template(drmaa_job_template_t **jtp,
 *                     char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
 *     Allocate a new job template.
 *
 *  OUTPUT
-*     drmaa_job_template_t **jtp             - The new job template 
+*     drmaa_job_template_t **jtp             - The new job template
 *     char *error_diagnosis                  - diagnosis buffer
 *     size_t error_diag_len                  - diagnosis buffer length
 *
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success, otherwise 
-*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE or 
-*           DRMAA_ERRNO_INTERNAL_ERROR. 
+*     int - DRMAA_ERRNO_SUCCESS on success, otherwise
+*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE or
+*           DRMAA_ERRNO_INTERNAL_ERROR.
 *
 *  NOTES
 *      MT-NOTE: drmaa_allocate_job_template() is MT safe
@@ -694,8 +695,8 @@ int drmaa_allocate_job_template(drmaa_job_template_t **jtp, char *error_diagnosi
    if (jtp == nullptr) {
       japi_standard_error(DRMAA_ERRNO_INVALID_ARGUMENT, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
-   } 
- 
+   }
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -713,7 +714,7 @@ int drmaa_allocate_job_template(drmaa_job_template_t **jtp, char *error_diagnosi
 *     drmaa_delete_job_template() -- Deallocate a job template
 *
 *  SYNOPSIS
-*     int drmaa_delete_job_template(drmaa_job_template_t *jt, 
+*     int drmaa_delete_job_template(drmaa_job_template_t *jt,
 *                    char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -721,14 +722,14 @@ int drmaa_allocate_job_template(drmaa_job_template_t **jtp, char *error_diagnosi
 *
 *  INPUTS
 *     drmaa_job_template_t *jt               - job template to be deleted
-* 
+*
 *  OUTPUTS
 *     char *error_diagnosis                  - diagnosis buffer
 *     size_t error_diag_len                  - diagnosis buffer length
 *
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success, otherwise 
-*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE or DRMAA_ERRNO_INTERNAL_ERROR. 
+*     int - DRMAA_ERRNO_SUCCESS on success, otherwise
+*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE or DRMAA_ERRNO_INTERNAL_ERROR.
 *
 *  NOTES
 *      MT-NOTE: drmaa_delete_job_template() is MT safe
@@ -748,11 +749,11 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
          japi_standard_error(DRMAA_ERRNO_INVALID_ARGUMENT, &diag);
       }
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
-   } 
+   }
 
    lFreeList(&(jt->strings));
    lFreeList(&(jt->string_vectors));
-   sge_free(&jt); 
+   sge_free(&jt);
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
@@ -762,7 +763,7 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
 *     drmaa_fill_string_vector() -- Returns values in 'name' as string vector
 *
 *  SYNOPSIS
-*     static drmaa_attr_names_t* drmaa_fill_string_vector(const char *name[]) 
+*     static drmaa_attr_names_t* drmaa_fill_string_vector(const char *name[])
 *
 *  FUNCTION
 *     Returns values in 'name' as string vector
@@ -793,7 +794,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[])
       if (!lAddElemStr(&(vector->it.si.strings), ST_name, name[i], ST_Type)) {
          japi_delete_string_vector((drmaa_attr_values_t *)vector);
          DRETURN(nullptr);
-      } 
+      }
    }
 
    /* initialize iterator */
@@ -815,7 +816,7 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[])
 *  INPUTS
 *     const char *name  - name of the attribute
 *     bool vector       - true:  attribute is a vector attribute.
-*                         false: attribute is a scalar attribute. 
+*                         false: attribute is a scalar attribute.
 *     dstring *diag     - error info
 *
 *  RESULT
@@ -831,7 +832,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
    drmaa_attr_names_t *p_attr;
 
    DENTER(TOP_LAYER);
-   
+
    if( vector ) {
       p_attr = drmaa_fill_supported_vector_attributes(diag);
    } else {
@@ -855,7 +856,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
 *     drmaa_set_attribute() -- Set non vector attribute in job template
 *
 *  SYNOPSIS
-*     int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, 
+*     int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name,
 *            const char *value, char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -864,7 +865,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
 *
 *  INPUTS
 *     drmaa_job_template_t *jt - job template
-*     const char *name         - name 
+*     const char *name         - name
 *     const char *value        - value
 *
 *  OUTPUTS
@@ -872,21 +873,21 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
-*         DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT, DRMAA_ERRNO_INVALID_ARGUMENT, 
-*         DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, or 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
+*         DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT, DRMAA_ERRNO_INVALID_ARGUMENT,
+*         DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, or
 *         DRMAA_ERRNO_CONFLICTING_ATTRIBUTE_VALUES
 *
 *  NOTES
 *      MT-NOTE: drmaa_set_attribute() is MT safe
 *******************************************************************************/
-int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *value, 
+int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *value,
       char *error_diagnosis, size_t error_diag_len)
 {
    lListElem *ep = nullptr;
    int       ret = DRMAA_ERRNO_SUCCESS;
    dstring   diag, *diagp = nullptr;
-   
+
    DENTER(TOP_LAYER);
 
    if (error_diagnosis != nullptr) {
@@ -930,11 +931,11 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
             DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
          }
       }
-  
+
       /* transfer files must contain only 'e', 'i', and 'o'. */
       if (strcmp(name, DRMAA_TRANSFER_FILES) == 0) {
          int count = 0;
-         
+
          for (count = 0; value[count] != '\0'; count++) {
             if ((value[count] != 'e') && (value[count] != 'i') &&
                 (value[count] != 'o')) {
@@ -945,8 +946,8 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
             }
          }
       }
-      
-      /* add or replace attribute */ 
+
+      /* add or replace attribute */
       if ((ep = lGetElemStrRW(jt->strings, VA_variable, name))) {
          lSetString(ep, VA_value, value);
       } else {
@@ -964,18 +965,18 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
 *     drmaa_get_attribute() -- Return job template attribute value.
 *
 *  SYNOPSIS
-*     int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value, 
+*     int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
 *        size_t value_len, char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     If 'name' is an existing non-vector attribute name in the job 
-*     template 'jt', then the value of 'name' is returned; otherwise, 
+*     If 'name' is an existing non-vector attribute name in the job
+*     template 'jt', then the value of 'name' is returned; otherwise,
 *     DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE is returned.
 *
 *  INPUTS
 *     drmaa_job_template_t *jt - the job template
 *     const char *name         - the attribute name
-*  
+*
 *  OUTPUTS
 *     char *value              - value buffer
 *     size_t value_len         - value buffer length
@@ -983,13 +984,13 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
 *           DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE.
 *
 *  NOTES
 *     MT-NOTE: drmaa_get_attribute() is MT safe
 *******************************************************************************/
-int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value, 
+int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    size_t value_len, char *error_diagnosis, size_t error_diag_len)
 {
    dstring val, diag, *diagp = nullptr;
@@ -1021,7 +1022,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
-  
+
    sge_dstring_copy_string(&val, lGetString(va, VA_value));
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -1032,12 +1033,12 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
 *     drmaa_set_vector_attribute() -- Set vector attribute in job template
 *
 *  SYNOPSIS
-*     int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name, 
+*     int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
 *           const char *value[], char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     Adds ('name', 'values') pair to list of vector attributes in job template 
-*     'jt'. Only vector attributes may be passed. 
+*     Adds ('name', 'values') pair to list of vector attributes in job template
+*     'jt'. Only vector attributes may be passed.
 *
 *  INPUTS
 *     drmaa_job_template_t *jt - job template
@@ -1049,15 +1050,15 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
-*          DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT, 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
+*          DRMAA_ERRNO_INVALID_ATTRIBUTE_FORMAT,
 *          DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE,
 *          DRMAA_ERRNO_CONFLICTING_ATTRIBUTE_VALUES.
 *
 *  NOTES
 *      MT-NOTE: drmaa_set_vector_attribute() is MT safe
 *******************************************************************************/
-int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name, 
+int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
       const char *value[], char *error_diagnosis, size_t error_diag_len)
 {
    lListElem *sep = nullptr, *ep = nullptr;
@@ -1096,7 +1097,7 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
    else {
       ep = lAddElemStr(&(jt->string_vectors), NSV_name, name, NSV_Type);
    }
- 
+
    lp = lCreateList(nullptr, ST_Type);
    for (i=0; value[i] != nullptr; i++) {
       sep = lCreateElem(ST_Type);
@@ -1114,31 +1115,31 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
 *     drmaa_get_vector_attribute() -- Return attributes values of a vector attribute.
 *
 *  SYNOPSIS
-*     int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name, 
+*     int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
 *         drmaa_attr_values_t **values, char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
 *     If 'name' is an existing vector attribute name in the job template 'jt',
-*     then the values of 'name' are returned; otherwise, DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE 
+*     then the values of 'name' are returned; otherwise, DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE
 *     is returned.
 *
 *  INPUTS
 *     drmaa_job_template_t *jt       - the job template
-*     const char *name               - the vector attribute name 
-*  
+*     const char *name               - the vector attribute name
+*
 *  OUTPUT
-*     drmaa_attr_values_t **values   - destination string vector 
+*     drmaa_attr_values_t **values   - destination string vector
 *     char *error_diagnosis          - diagnosis buffer
 *     size_t error_diag_len          - diagnosis buffer length
 *
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success, otherwise 
+*     int - DRMAA_ERRNO_SUCCESS on success, otherwise
 *           DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE.
 *
 *  NOTES
 *     MT-NOTE: drmaa_get_vector_attribute() is MT safe
 *******************************************************************************/
-int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name, 
+int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
          drmaa_attr_values_t **values, char *error_diagnosis, size_t error_diag_len)
 {
    const lListElem *nsv = nullptr;
@@ -1169,14 +1170,14 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
- 
+
    /* allocate iterator */
    if (!(iter=japi_allocate_string_vector(JAPI_ITERATOR_STRINGS))) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diagp);
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   /* copy job template attributes into iterator */ 
+   /* copy job template attributes into iterator */
    iter->it.si.strings = lCopyList(nullptr, lGetList(nsv, NSV_strings));
    if (!iter->it.si.strings) {
       japi_delete_string_vector(iter);
@@ -1198,16 +1199,16 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
 *     drmaa_get_attribute_names() -- Return supported job template attributes
 *
 *  SYNOPSIS
-*     int drmaa_get_attribute_names(drmaa_attr_names_t **values, char 
-*     *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_get_attribute_names(drmaa_attr_names_t **values, char
+*     *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     Returns the set of supported attribute names whose associated   
-*     value type is String. This set will include supported DRMAA reserved 
-*     attribute names and native attribute names. 
+*     Returns the set of supported attribute names whose associated
+*     value type is String. This set will include supported DRMAA reserved
+*     attribute names and native attribute names.
 *
 *  INPUTS
-*     drmaa_attr_names_t **values    - String vector containing names of supported 
+*     drmaa_attr_names_t **values    - String vector containing names of supported
 *                                      attributes
 *     char *error_diagnosis          - diagnosis buffer
 *     size_t error_diag_len          - diagnosis buffer length
@@ -1250,20 +1251,20 @@ int drmaa_get_attribute_names(drmaa_attr_names_t **values, char *error_diagnosis
 
 /****** DRMAA/drmaa_get_vector_attribute_names() *******************************
 *  NAME
-*     drmaa_get_vector_attribute_names() -- Return supported job template vector 
+*     drmaa_get_vector_attribute_names() -- Return supported job template vector
 *                                           attributes
 *
 *  SYNOPSIS
-*     int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values, char 
-*               *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values, char
+*               *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     Returns the set of supported attribute names whose associated 
-*     value type is String Vector.  This set will include supported DRMAA reserved 
-*     attribute names and native attribute names. 
+*     Returns the set of supported attribute names whose associated
+*     value type is String Vector.  This set will include supported DRMAA reserved
+*     attribute names and native attribute names.
 *
 *  INPUTS
-*     drmaa_attr_names_t **values    - String vector containing names of supported 
+*     drmaa_attr_names_t **values    - String vector containing names of supported
 *                                      vector attributes
 *     char *error_diagnosis          - diagnosis buffer
 *     size_t error_diag_len          - diagnosis buffer length
@@ -1308,7 +1309,7 @@ int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values, char *error_di
 *     drmaa_run_job() -- Submit a job
 *
 *  SYNOPSIS
-*     int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *jt, 
+*     int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *jt,
 *                char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1318,22 +1319,22 @@ int drmaa_get_vector_attribute_names(drmaa_attr_names_t **values, char *error_di
 *
 *  INPUTS
 *     drmaa_job_template_t *jt - the job template
-* 
+*
 *  OUTPUTS
-*     char *job_id             - buffer for resulting jobid 
+*     char *job_id             - buffer for resulting jobid
 *     size_t job_id_len        - size of job_id buffer
 *     char *error_diagnosis    - diagnosis buffer
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
-*           DRMAA_ERRNO_TRY_LATER, DRMAA_ERRNO_DENIED_BY_DRM, 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
+*           DRMAA_ERRNO_TRY_LATER, DRMAA_ERRNO_DENIED_BY_DRM,
 *           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, or DRMAA_ERRNO_AUTH_FAILURE.
 *
 *  NOTES
 *      MT-NOTE: drmaa_run_job() is MT safe
 *******************************************************************************/
-int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *jt, 
+int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *jt,
     char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag, *diagp = nullptr;
@@ -1363,13 +1364,13 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
    sge_dstring_init(&jobid, job_id, job_id_len+1);
 
    /* convert DRMAA job template into Cluster Scheduler job template */
-   if ((drmaa_errno=drmaa_job2sge_job(&sge_job_template, jt, 
+   if ((drmaa_errno=drmaa_job2sge_job(&sge_job_template, jt,
             0, 1, 1, 1, diagp))!=DRMAA_ERRNO_SUCCESS) {
       /* diag written by drmaa_job2sge_job() */
       DRETURN(drmaa_errno);
    }
 
-   drmaa_errno = japi_run_job(&jobid, &sge_job_template, diagp); 
+   drmaa_errno = japi_run_job(&jobid, &sge_job_template, diagp);
    lFreeElem(&sge_job_template);
 
    DRETURN(drmaa_errno);
@@ -1380,7 +1381,7 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
 *     drmaa_run_bulk_jobs() -- Submit a bulk of jobs
 *
 *  SYNOPSIS
-*     int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt, 
+*     int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt,
 *           int start, int end, int incr, char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1408,14 +1409,14 @@ int drmaa_run_job(char *job_id, size_t job_id_len, const drmaa_job_template_t *j
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise DRMAA_ERRNO_TRY_LATER, 
-*            DRMAA_ERRNO_DENIED_BY_DRM, DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, or 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise DRMAA_ERRNO_TRY_LATER,
+*            DRMAA_ERRNO_DENIED_BY_DRM, DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, or
 *            DRMAA_ERRNO_AUTH_FAILURE.
 *
 *  NOTES
 *      MT-NOTE: drmaa_run_bulk_jobs() is MT safe
 *******************************************************************************/
-int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt, 
+int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt,
       int start, int end, int incr, char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag, *diagp = nullptr;
@@ -1450,7 +1451,7 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
       DRETURN(drmaa_errno);
    }
 
-   drmaa_errno = japi_run_bulk_jobs((drmaa_attr_values_t **)jobids, &sge_job_template, 
+   drmaa_errno = japi_run_bulk_jobs((drmaa_attr_values_t **)jobids, &sge_job_template,
                                     start, end, incr, diagp);
    lFreeElem(&sge_job_template);
 
@@ -1462,7 +1463,7 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
 *     drmaa_control() -- Start, stop, restart, or kill jobs
 *
 *  SYNOPSIS
-*     int drmaa_control(const char *jobid, int action, 
+*     int drmaa_control(const char *jobid, int action,
 *                char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1492,10 +1493,10 @@ int drmaa_run_bulk_jobs(drmaa_job_ids_t **jobids, const drmaa_job_template_t *jt
 *        DRMAA_ERRNO_SUCCESS
 *        DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE
 *        DRMAA_ERRNO_AUTH_FAILURE
-*        DRMAA_ERRNO_RESUME_INCONSISTENT_STATE 
+*        DRMAA_ERRNO_RESUME_INCONSISTENT_STATE
 *        DRMAA_ERRNO_SUSPEND_INCONSISTENT_STATE
-*        DRMAA_ERRNO_HOLD_INCONSISTENT_STATE 
-*        DRMAA_ERRNO_RELEASE_INCONSISTENT_STATE 
+*        DRMAA_ERRNO_HOLD_INCONSISTENT_STATE
+*        DRMAA_ERRNO_RELEASE_INCONSISTENT_STATE
 *        DRMAA_ERRNO_INVALID_JOB
 *
 *  NOTES
@@ -1507,7 +1508,7 @@ int drmaa_control(const char *jobid, int action, char *error_diagnosis, size_t e
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
    }
-   
+
    return japi_control(jobid, action, error_diagnosis?&diag:nullptr);
 }
 
@@ -1516,7 +1517,7 @@ int drmaa_control(const char *jobid, int action, char *error_diagnosis, size_t e
 *     drmaa_synchronize() -- Synchronize with jobs to finish
 *
 *  SYNOPSIS
-*     int drmaa_synchronize(const char *job_ids[], signed long timeout, 
+*     int drmaa_synchronize(const char *job_ids[], signed long timeout,
 *             int dispose, char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1535,9 +1536,9 @@ int drmaa_control(const char *jobid, int action, char *error_diagnosis, size_t e
 *     False=0 do not reap
 *
 *  INPUTS
-*     const char *job_ids[]    - vector of jobids to synchronize or 
+*     const char *job_ids[]    - vector of jobids to synchronize or
 *                                DRMAA_JOB_IDS_SESSION_ALL
-*     signed long timeout      - timeout in seconds or 
+*     signed long timeout      - timeout in seconds or
 *                                DRMAA_TIMEOUT_WAIT_FOREVER for infinite waiting
 *                                DRMAA_TIMEOUT_NO_WAIT for immediate returning
 *     int dispose              - Whether job finish information shall be reaped (1) or not (0).
@@ -1547,23 +1548,23 @@ int drmaa_control(const char *jobid, int action, char *error_diagnosis, size_t e
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
 *           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, DRMAA_ERRNO_AUTH_FAILURE,
 *           DRMAA_ERRNO_EXIT_TIMEOUT, or DRMAA_ERRNO_INVALID_JOB.
 *
 *  NOTES
 *      MT-NOTE: drmaa_synchronize() is MT safe
 *******************************************************************************/
-int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose, 
+int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
       char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
    }
-   
-   return japi_synchronize(job_ids, timeout, dispose ? true : false, 
+
+   return japi_synchronize(job_ids, timeout, dispose ? true : false,
                            error_diagnosis?&diag:nullptr);
 }
 
@@ -1572,8 +1573,8 @@ int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
 *     drmaa_wait() -- Wait for job
 *
 *  SYNOPSIS
-*     int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len, 
-*           int *stat, signed long timeout, drmaa_attr_values_t **rusage, 
+*     int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len,
+*           int *stat, signed long timeout, drmaa_attr_values_t **rusage,
 *           char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1600,8 +1601,8 @@ int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
 *                                DRMAA_TIMEOUT_WAIT_FOREVER for infinite waiting
 *                                DRMAA_TIMEOUT_NO_WAIT for immediate returning
 *
-*     
-*     
+*
+*
 *  OUTPUTS
 *     char *job_id             - returns job id of waited job on success
 *     size_t job_id_out        - job id buffer size
@@ -1609,7 +1610,7 @@ int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
 *     size_t error_diag_len    - diagnosis buffer length on error
 *
 *  RESULT
-*     int - DRMAA_ERRNO_SUCCESS on success, otherwise 
+*     int - DRMAA_ERRNO_SUCCESS on success, otherwise
 *           DRMAA_ERRNO_EXIT_TIMEOUT
 *              No job end within specified time.
 *
@@ -1618,30 +1619,30 @@ int drmaa_synchronize(const char *job_ids[], signed long timeout, int dispose,
 *              and all jobs of this session have already finished.
 *
 *           DRMAA_ERRNO_NO_ACTIVE_SESSION
-*              No active session. 
-* 
+*              No active session.
+*
 *           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE
 *           DRMAA_ERRNO_AUTH_FAILURE
 *
 *  NOTES
 *      MT-NOTE: drmaa_wait() is MT safe
 *******************************************************************************/
-int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len, 
-      int *stat, signed long timeout, drmaa_attr_values_t **rusage, 
+int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len,
+      int *stat, signed long timeout, drmaa_attr_values_t **rusage,
       char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag;
    dstring waited_job;
    int ev;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
    }
-   
+
    if (job_id_out != nullptr) {
       sge_dstring_init(&waited_job, job_id_out, job_id_out_len+1);
    }
-   
+
    return japi_wait(job_id, job_id_out?&waited_job:nullptr, stat, timeout,
                     JAPI_JOB_FINISH, &ev, rusage, error_diagnosis?&diag:nullptr);
 }
@@ -1652,7 +1653,7 @@ int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len,
 *     drmaa_job_ps() -- Get job status
 *
 *  SYNOPSIS
-*     int drmaa_job_ps(const char *job_id, int *remote_ps, 
+*     int drmaa_job_ps(const char *job_id, int *remote_ps,
 *                 char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
@@ -1679,8 +1680,8 @@ int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len,
 *     size_t error_diag_len    - diagnosis buffer length
 *
 *  RESULT
-*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise 
-*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, DRMAA_ERRNO_AUTH_FAILURE, 
+*     int - returns DRMAA_ERRNO_SUCCESS on success, otherwise
+*           DRMAA_ERRNO_DRM_COMMUNICATION_FAILURE, DRMAA_ERRNO_AUTH_FAILURE,
 *           or DRMAA_ERRNO_INVALID_JOB.
 *
 *  NOTES
@@ -1689,11 +1690,11 @@ int drmaa_wait(const char *job_id, char *job_id_out, size_t job_id_out_len,
 int drmaa_job_ps(const char *job_id, int *remote_ps, char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
    }
-   
+
    return japi_job_ps(job_id, remote_ps, error_diagnosis?&diag:nullptr);
 }
 
@@ -1703,16 +1704,16 @@ int drmaa_job_ps(const char *job_id, int *remote_ps, char *error_diagnosis, size
 *     drmaa_wifexited() -- Has job terminated normally?
 *
 *  SYNOPSIS
-*     int drmaa_wifexited(int *exited, int stat, char *error_diagnosis, size_t 
-*     error_diag_len) 
+*     int drmaa_wifexited(int *exited, int stat, char *error_diagnosis, size_t
+*     error_diag_len)
 *
 *  FUNCTION
-*     Evaluates into 'exited' a non-zero value if stat was returned for a job 
-*     that terminated normally. A zero value can also indicate that altough the 
-*     job has terminated normally an exit status is not available or that it is 
-*     not known whether the job terminated normally. In both cases drmaa_wexitstatus() 
-*     will not provide exit status information. A non-zero 'exited' value indicates 
-*     more detailed diagnosis can be provided by means of drmaa_wifsignaled(), 
+*     Evaluates into 'exited' a non-zero value if stat was returned for a job
+*     that terminated normally. A zero value can also indicate that altough the
+*     job has terminated normally an exit status is not available or that it is
+*     not known whether the job terminated normally. In both cases drmaa_wexitstatus()
+*     will not provide exit status information. A non-zero 'exited' value indicates
+*     more detailed diagnosis can be provided by means of drmaa_wifsignaled(),
 *     drmaa_wtermsig() and drmaa_wcoredump().
 *
 *  INPUTS
@@ -1734,12 +1735,12 @@ int drmaa_wifexited(int *exited, int stat, char *error_diagnosis, size_t error_d
    dstring diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -1751,15 +1752,15 @@ int drmaa_wifexited(int *exited, int stat, char *error_diagnosis, size_t error_d
 
 /****** DRMAA/drmaa_wexitstatus() **********************************************
 *  NAME
-*     drmaa_wexitstatus() -- Return job exit status 
+*     drmaa_wexitstatus() -- Return job exit status
 *
 *  SYNOPSIS
-*     int drmaa_wexitstatus(int *exit_status, int stat, char *error_diagnosis, 
-*     size_t error_diag_len) 
+*     int drmaa_wexitstatus(int *exit_status, int stat, char *error_diagnosis,
+*     size_t error_diag_len)
 *
 *  FUNCTION
-*     If the OUT parameter 'exited' of drmaa_wifexited() is non-zero, this function 
-*     evaluates into 'exit_code' the exit code that the job passed to _exit() 
+*     If the OUT parameter 'exited' of drmaa_wifexited() is non-zero, this function
+*     evaluates into 'exit_code' the exit code that the job passed to _exit()
 *     (see exit(2)) or exit(3C), or the value that the child process returned from main.
 *
 *  INPUTS
@@ -1781,12 +1782,12 @@ int drmaa_wexitstatus(int *exit_status, int stat, char *error_diagnosis, size_t 
    dstring diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -1801,20 +1802,20 @@ int drmaa_wexitstatus(int *exit_status, int stat, char *error_diagnosis, size_t 
 *     drmaa_wifsignaled() -- Has job terminated due to a signal?
 *
 *  SYNOPSIS
-*     int drmaa_wifsignaled(int *signaled, int stat, char *error_diagnosis, 
-*     size_t error_diag_len) 
+*     int drmaa_wifsignaled(int *signaled, int stat, char *error_diagnosis,
+*     size_t error_diag_len)
 *
 *  FUNCTION
-*     Evaluates into 'signaled' a non-zero value if status was returned for a job 
-*     that terminated due to the receipt of a signal. A zero value can also indicate 
-*     that altough the job has terminated due to the receipt of a signal the signal 
-*     is not available or that it is not known whether the job terminated due to the 
+*     Evaluates into 'signaled' a non-zero value if status was returned for a job
+*     that terminated due to the receipt of a signal. A zero value can also indicate
+*     that altough the job has terminated due to the receipt of a signal the signal
+*     is not available or that it is not known whether the job terminated due to the
 *     receipt of a signal. In both cases drmaa_wtermsig() will not provide signal
 *     information.
 *
 *  INPUTS
 *     int stat              - The stat value returned by drmaa_wait()
-* 
+*
 *  OUTPUTS
 *     int *signaled         - Returns 0 or 1.
 *     char *error_diagnosis - diagnosis buffer
@@ -1831,12 +1832,12 @@ int drmaa_wifsignaled(int *signaled, int stat, char *error_diagnosis, size_t err
    dstring diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -1851,14 +1852,14 @@ int drmaa_wifsignaled(int *signaled, int stat, char *error_diagnosis, size_t err
 *     drmaa_wtermsig() -- Return signal that caused job termination.
 *
 *  SYNOPSIS
-*     int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char 
-*     *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char
+*     *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     If the OUT parameter 'signaled' of drmaa_wifsignaled(stat) is non-zero, 
-*     this function evaluates into signal a string representation of the signal that 
-*     caused the termination of the job. For signals declared by POSIX, the symbolic 
-*     names are returned (e.g., SIGABRT, SIGALRM). For signals not declared by POSIX, 
+*     If the OUT parameter 'signaled' of drmaa_wifsignaled(stat) is non-zero,
+*     this function evaluates into signal a string representation of the signal that
+*     caused the termination of the job. For signals declared by POSIX, the symbolic
+*     names are returned (e.g., SIGABRT, SIGALRM). For signals not declared by POSIX,
 *     any other string may be returned.
 *
 *  INPUTS
@@ -1881,12 +1882,12 @@ int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char *error_diagno
    dstring sig, diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -1896,7 +1897,7 @@ int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char *error_diagno
    if (signal != nullptr) {
       sge_dstring_init(&sig, signal, signal_len+1);
    }
-   
+
    return japi_wtermsig(signal?&sig:nullptr, stat, error_diagnosis?&diag:nullptr);
 }
 
@@ -1906,12 +1907,12 @@ int drmaa_wtermsig(char *signal, size_t signal_len, int stat, char *error_diagno
 *     drmaa_wcoredump() -- Was a core image created.
 *
 *  SYNOPSIS
-*     int drmaa_wcoredump(int *core_dumped, int stat, char *error_diagnosis, 
-*     size_t error_diag_len) 
+*     int drmaa_wcoredump(int *core_dumped, int stat, char *error_diagnosis,
+*     size_t error_diag_len)
 *
 *  FUNCTION
-*     If the OUT parameter 'signaled' of drmaa_wifsignaled(stat) is non-zero, 
-*     this function evaluates into 'core_dumped' a non-zero value if a core image 
+*     If the OUT parameter 'signaled' of drmaa_wifsignaled(stat) is non-zero,
+*     this function evaluates into 'core_dumped' a non-zero value if a core image
 *     of the terminated job was created.
 *
 *  INPUTS
@@ -1933,12 +1934,12 @@ int drmaa_wcoredump(int *core_dumped, int stat, char *error_diagnosis, size_t er
    dstring diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -1954,16 +1955,16 @@ int drmaa_wcoredump(int *core_dumped, int stat, char *error_diagnosis, size_t er
 *     drmaa_wifaborted() -- Did the job ever run?
 *
 *  SYNOPSIS
-*     int drmaa_wifaborted(int *aborted, int stat, char *error_diagnosis, 
-*     size_t error_diag_len) 
+*     int drmaa_wifaborted(int *aborted, int stat, char *error_diagnosis,
+*     size_t error_diag_len)
 *
 *  FUNCTION
-*     Evaluates into 'aborted' a non-zero value if 'stat' was returned for 
+*     Evaluates into 'aborted' a non-zero value if 'stat' was returned for
 *     a job that ended before entering the running state.
 *
 *  INPUTS
 *     int stat              - The stat value returned by drmaa_wait()
-* 
+*
 *  OUTPUTS
 *     int *aborted          - Returns 0 or 1.
 *     char *error_diagnosis - diagnosis buffer
@@ -1980,12 +1981,12 @@ int drmaa_wifaborted(int *aborted, int stat, char *error_diagnosis, size_t error
    dstring diag;
    dstring *diagp = nullptr;
    int ret = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
    }
-   
+
    ret = japi_was_init_called(diagp);
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diagp written by japi_was_init_called() */
@@ -2007,7 +2008,7 @@ int drmaa_wifaborted(int *aborted, int stat, char *error_diagnosis, size_t error
 *
 *  INPUTS
 *     int drmaa_errno - DRMAA errno number.
-*  
+*
 *  RESULT
 *     const char * - Returns string representation of errno.
 *
@@ -2025,8 +2026,8 @@ const char *drmaa_strerror(int drmaa_errno)
 *     drmaa_get_next_attr_value() -- Get next entry from attribute name vector.
 *
 *  SYNOPSIS
-*     int drmaa_get_next_attr_value(drmaa_attr_values_t* values, char *value, size_t 
-*     value_len) 
+*     int drmaa_get_next_attr_value(drmaa_attr_values_t* values, char *value, size_t
+*     value_len)
 *
 *  FUNCTION
 *     Returns the next entry from attribute value vector.
@@ -2048,11 +2049,11 @@ const char *drmaa_strerror(int drmaa_errno)
 int drmaa_get_next_attr_value(drmaa_attr_values_t* values, char *value, size_t value_len)
 {
    dstring val;
-   
+
    if (value != nullptr) {
       sge_dstring_init(&val, value, value_len+1);
    }
-   
+
    return japi_string_vector_get_next(values, value?&val:nullptr);
 }
 
@@ -2062,8 +2063,8 @@ int drmaa_get_next_attr_value(drmaa_attr_values_t* values, char *value, size_t v
 *     drmaa_get_next_attr_name() -- Get next entry from attribute name vector.
 *
 *  SYNOPSIS
-*     int drmaa_get_next_attr_name(drmaa_attr_names_t* values, char *value, size_t 
-*     value_len) 
+*     int drmaa_get_next_attr_name(drmaa_attr_names_t* values, char *value, size_t
+*     value_len)
 *
 *  FUNCTION
 *     Returns the next entry from attribute name vector.
@@ -2085,11 +2086,11 @@ int drmaa_get_next_attr_value(drmaa_attr_values_t* values, char *value, size_t v
 int drmaa_get_next_attr_name(drmaa_attr_names_t* values, char *value, size_t value_len)
 {
    dstring val;
-   
+
    if (value != nullptr) {
       sge_dstring_init(&val, value, value_len+1);
    }
-   
+
    return japi_string_vector_get_next((drmaa_attr_values_t*)values, value?&val:nullptr);
 }
 
@@ -2099,8 +2100,8 @@ int drmaa_get_next_attr_name(drmaa_attr_names_t* values, char *value, size_t val
 *     drmaa_get_next_job_id() -- Get next entry from job id vector.
 *
 *  SYNOPSIS
-*     int drmaa_get_next_job_id(drmaa_job_ids_t* values, char *value, size_t 
-*     value_len) 
+*     int drmaa_get_next_job_id(drmaa_job_ids_t* values, char *value, size_t
+*     value_len)
 *
 *  FUNCTION
 *     Returns the next entry from job id vector.
@@ -2122,11 +2123,11 @@ int drmaa_get_next_attr_name(drmaa_attr_names_t* values, char *value, size_t val
 int drmaa_get_next_job_id(drmaa_job_ids_t* values, char *value, size_t value_len)
 {
    dstring val;
-   
+
    if (value != nullptr) {
       sge_dstring_init(&val, value, value_len+1);
    }
-   
+
    return japi_string_vector_get_next((drmaa_attr_values_t*)values, value?&val:nullptr);
 }
 
@@ -2135,7 +2136,7 @@ int drmaa_get_next_job_id(drmaa_job_ids_t* values, char *value, size_t value_len
 *     drmaa_get_num_attr_names() -- Get the number of entries in the vector
 *
 *  SYNOPSIS
-*     void drmaa_get_num_attr_names(drmaa_attr_values_t* values, int *size) 
+*     void drmaa_get_num_attr_names(drmaa_attr_values_t* values, int *size)
 *
 *  FUNCTION
 *     Get the number of entries in the name vector.
@@ -2158,7 +2159,7 @@ int drmaa_get_num_attr_names(drmaa_attr_names_t* values, int *size)
 *     drmaa_get_num_attr_values() -- Get the number of entries in the vector
 *
 *  SYNOPSIS
-*     void drmaa_get_num_attr_values(drmaa_attr_values_t* values, int *size) 
+*     void drmaa_get_num_attr_values(drmaa_attr_values_t* values, int *size)
 *
 *  FUNCTION
 *     Get the number of entries in the value vector.
@@ -2181,7 +2182,7 @@ int drmaa_get_num_attr_values(drmaa_attr_values_t* values, int *size)
 *     drmaa_get_num_job_ids() -- Get the number of entries in the vector
 *
 *  SYNOPSIS
-*     void drmaa_get_num_job_ids(drmaa_attr_values_t* values, int *size) 
+*     void drmaa_get_num_job_ids(drmaa_attr_values_t* values, int *size)
 *
 *  FUNCTION
 *     Get the number of entries in the id vector.
@@ -2204,7 +2205,7 @@ int drmaa_get_num_job_ids(drmaa_job_ids_t* values, int *size)
 *     drmaa_release_attr_values() -- Release attribute value vector
 *
 *  SYNOPSIS
-*     void drmaa_release_attr_values(drmaa_attr_values_t* values) 
+*     void drmaa_release_attr_values(drmaa_attr_values_t* values)
 *
 *  FUNCTION
 *     Release resources used by attribute value vector.
@@ -2225,7 +2226,7 @@ void drmaa_release_attr_values(drmaa_attr_values_t* values)
 *     drmaa_release_attr_names() -- Release attribute name vector
 *
 *  SYNOPSIS
-*     void drmaa_release_attr_names(drmaa_attr_names_t* values) 
+*     void drmaa_release_attr_names(drmaa_attr_names_t* values)
 *
 *  FUNCTION
 *     Release resources used by attribute name vector.
@@ -2246,7 +2247,7 @@ void drmaa_release_attr_names(drmaa_attr_names_t* values)
 *     drmaa_release_job_ids() -- Release job id vector
 *
 *  SYNOPSIS
-*     void drmaa_release_job_ids(drmaa_job_ids_t* values) 
+*     void drmaa_release_job_ids(drmaa_job_ids_t* values)
 *
 *  FUNCTION
 *     Release resources used by job id vector.
@@ -2267,11 +2268,11 @@ void drmaa_release_job_ids(drmaa_job_ids_t* values)
 *     drmaa_get_DRM_system() -- Return DRM system information
 *
 *  SYNOPSIS
-*     int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len, char 
-*     *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len, char
+*     *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
-*     Returns SGE system information. The output contains the 
+*     Returns SGE system information. The output contains the
 *     DRM name and release information.
 *
 *  OUTPUTS
@@ -2286,7 +2287,7 @@ void drmaa_release_job_ids(drmaa_job_ids_t* values)
 *  NOTES
 *     MT-NOTE: drmaa_get_DRM_system() is MT safe
 *******************************************************************************/
-int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len, 
+int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len,
                          char *error_diagnosis, size_t error_diag_len)
 {
    /* Since we will only ever support one DRM, namely SGE, it doesn't make any
@@ -2296,15 +2297,15 @@ int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len,
    dstring diag;
    dstring *diagp = nullptr;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len + 1);
       diagp = &diag;
    }
-   
+
    if (drm_system != nullptr) {
       sge_dstring_init(&drm, drm_system, drm_system_len + 1);
-      drmaa_errno = japi_get_drm_system(&drm, diagp, DRMAA); 
+      drmaa_errno = japi_get_drm_system(&drm, diagp, DRMAA);
    }
 /* This will change the previous behavior for this method, so we have to make it
  * specific to the new library version. */
@@ -2312,7 +2313,7 @@ int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len,
       drmaa_errno = DRMAA_ERRNO_INVALID_ARGUMENT;
       japi_standard_error(drmaa_errno, diagp);
    }
-   
+
    return drmaa_errno;
 }
 
@@ -2322,7 +2323,7 @@ int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len,
 *
 *  SYNOPSIS
 *     int drmaa_get_DRMAA_implementation(char *drm_impl, size_t drm_impl_len,
-*     char *error_diagnosis, size_t error_diag_len) 
+*     char *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
 *     Returns SGE implementation information. The output is the same as that of
@@ -2340,14 +2341,14 @@ int drmaa_get_DRM_system(char *drm_system, size_t drm_system_len,
 *  NOTES
 *     MT-NOTE: drmaa_get_DRMAA_implementation() is MT safe
 *******************************************************************************/
-int drmaa_get_DRMAA_implementation(char *drmaa_impl, size_t drmaa_impl_len, 
+int drmaa_get_DRMAA_implementation(char *drmaa_impl, size_t drmaa_impl_len,
                                    char *error_diagnosis, size_t error_diag_len)
 {
    /* Since we will only ever support one DRM, namely SGE, it doesn't make any
     * difference whether drmaa_get_DRM_system() is called before or after
     * drmaa_init().  We will always return the same string. */
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   
+
    /* Because the DRMAA implementation is inherently bound to the DRM version,
     * there is no need to distinguish between them. Version information can be
     * gotten from drmaa_version() and language information is self-evident. */
@@ -2362,8 +2363,8 @@ int drmaa_get_DRMAA_implementation(char *drmaa_impl, size_t drmaa_impl_len,
 *     drmaa_get_contact() -- Return current (session) contact information.
 *
 *  SYNOPSIS
-*     int drmaa_get_contact(char *contact, size_t contact_len, char 
-*     *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_get_contact(char *contact, size_t contact_len, char
+*     *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
 *     Return current (session) contact information.
@@ -2380,14 +2381,14 @@ int drmaa_get_DRMAA_implementation(char *drmaa_impl, size_t drmaa_impl_len,
 *  NOTES
 *     MT-NOTE: drmaa_get_contact() is MT safe
 *******************************************************************************/
-int drmaa_get_contact(char *contact, size_t contact_len, 
+int drmaa_get_contact(char *contact, size_t contact_len,
                       char *error_diagnosis, size_t error_diag_len)
 {
    dstring con;
    dstring diag;
    dstring *diagp = nullptr;
    int drmaa_errno = DRMAA_ERRNO_SUCCESS;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
       diagp = &diag;
@@ -2414,16 +2415,16 @@ int drmaa_get_contact(char *contact, size_t contact_len,
 *     drmaa_version() -- Return DRMAA version information.
 *
 *  SYNOPSIS
-*     int drmaa_version(unsigned int *major, unsigned int *minor, char 
-*     *error_diagnosis, size_t error_diag_len) 
+*     int drmaa_version(unsigned int *major, unsigned int *minor, char
+*     *error_diagnosis, size_t error_diag_len)
 *
 *  FUNCTION
 *     Returns the major and minor version numbers of the DRMAA library.
 *
 *  INPUTS
 *     unsigned int *major   - Major number.
-*     unsigned int *minor   - Minor number. 
-* 
+*     unsigned int *minor   - Minor number.
+*
 *  OUTPUTS
 *     char *error_diagnosis - Buffer for error diagnosis information.
 *     size_t error_diag_len - Buffer length.
@@ -2434,11 +2435,11 @@ int drmaa_get_contact(char *contact, size_t contact_len,
 *  NOTES
 *     MT-NOTE: drmaa_version() is MT safe
 *******************************************************************************/
-int drmaa_version(unsigned int *major, unsigned int *minor, 
+int drmaa_version(unsigned int *major, unsigned int *minor,
       char *error_diagnosis, size_t error_diag_len)
 {
    dstring diag;
-   
+
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
    }
@@ -2446,7 +2447,7 @@ int drmaa_version(unsigned int *major, unsigned int *minor,
    if (major != nullptr) {
       *major = 1;
    }
-   
+
    if (minor != nullptr) {
       *minor = 0;
    }
@@ -2456,7 +2457,7 @@ int drmaa_version(unsigned int *major, unsigned int *minor,
 
 /****** DRMAA/drmaa_path2wd_opt() **********************************************
 *  NAME
-*     drmaa_path2wd_opt() -- Transform a DRMAA job path into SGE 
+*     drmaa_path2wd_opt() -- Transform a DRMAA job path into SGE
 *                            qsub style -wd option
 *
 *  SYNOPSIS
@@ -2464,11 +2465,11 @@ int drmaa_version(unsigned int *major, unsigned int *minor,
 *                                        dstring *diag)
 *
 *  FUNCTION
-*     Transform a DRMAA job path into SGE qsub style -wd option. The following 
+*     Transform a DRMAA job path into SGE qsub style -wd option. The following
 *     substitutions are performed
-*         
+*
 *        $drmaa_hd_ph$     --> $HOME
-*        $drmaa_incr_ph$   --> $TASK_ID   
+*        $drmaa_incr_ph$   --> $TASK_ID
 *
 *     The $drmaa_incr_ph$ substitutions are performed only for bulk jobs
 *     otherwise submission fails.
@@ -2491,9 +2492,9 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
 {
    const char *new_path = nullptr;
    int drmaa_errno;
-   
+
    DENTER(TOP_LAYER);
-   
+
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
                                            DRMAA_WD, 0, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
@@ -2511,7 +2512,7 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
          drmaa_errno = DRMAA_ERRNO_SUCCESS;
       }
    }
-   
+
    DRETURN(drmaa_errno);
 }
 
@@ -2526,12 +2527,12 @@ static int drmaa_path2wd_opt(const lList *attrs, lList **args, int is_bulk,
 *                                     const char *sw, int opt, dstring *diag)
 *
 *  FUNCTION
-*     Transform a DRMAA job path into SGE qsub style path option. The following 
+*     Transform a DRMAA job path into SGE qsub style path option. The following
 *     substitutions are performed
-*         
+*
 *        $drmaa_hd_ph$     --> $HOME
 *        $drmaa_wd_ph$     --> $CWD
-*        $drmaa_incr_ph$   --> $TASK_ID   
+*        $drmaa_incr_ph$   --> $TASK_ID
 *
 *     The $drmaa_incr_ph$ substitutions are performed only for bulk jobs
 *     otherwise submission fails.
@@ -2560,14 +2561,14 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
    int drmaa_errno;
    lList *path_list = lCreateList("path_list", PN_Type);
    const char *unqualified_hostname = component_get_unqualified_hostname();
-   
+
    DENTER(TOP_LAYER);
 
    if (path_list == nullptr) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
    }
-   
+
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
                                            attribute_key, 1, &new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
@@ -2576,7 +2577,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
          const char *value = lGetString(ep, VA_value);
          char *cell = nullptr;
          char *path = nullptr;
-   
+
          /* We must accept an empty path. This must be set to the default
           * path later.
           * A empty path means that the drmaa attribute is not set, so it
@@ -2596,7 +2597,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
             sge_dstring_sprintf(diag, MSG_DRMAA_PATH_NEEDS_COLON_S, attribute_key);
             DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
          }
-   
+
          ep = lCreateElem(PN_Type);
          lAppendElem(path_list, ep);
          DPRINTF("PN_path = \"%s\"\n", path);
@@ -2616,15 +2617,15 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
             /* No host was given, so we use this host we are running on.*/
             lSetHost( ep, PN_file_host, unqualified_hostname);
          }
-         
+
 
          DPRINTF("FileStaging = %d\n", bFileStaging);
          lSetBool(ep, PN_file_staging, bFileStaging);
-         
+
          DPRINTF("Adding args\n");
          ep = sge_add_arg(args, opt, lListT, sw, value);
          DPRINTF("Setting List\n");
-         lSetList(ep, SPA_argval_lListT, path_list); 
+         lSetList(ep, SPA_argval_lListT, path_list);
          path_list = nullptr; /* must not free it later */
          DPRINTF("Freeing Path\n");
          sge_free(&new_path);
@@ -2640,7 +2641,7 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
 
 /****** DRMAA/drmaa_path2sge_path() ********************************************
 *  NAME
-*     drmaa_path2sge_path() -- Transform a DRMAA job path into SGE 
+*     drmaa_path2sge_path() -- Transform a DRMAA job path into SGE
 *                             counterpart
 *
 *  SYNOPSIS
@@ -2649,12 +2650,12 @@ static int drmaa_path2path_opt(const lList *attrs, lList **args, int is_bulk,
 *                                          const char **new_path, dstring *diag)
 *
 *  FUNCTION
-*     Transform a DRMAA job path into SGE counterpart. The following 
+*     Transform a DRMAA job path into SGE counterpart. The following
 *     substitutions are performed
-*         
+*
 *        $drmaa_hd_ph$     --> $HOME
 *        $drmaa_wd_ph$     --> $CWD
-*        $drmaa_incr_ph$   --> $TASK_ID   
+*        $drmaa_incr_ph$   --> $TASK_ID
 *
 *     The $drmaa_incr_ph$ substitutions are performed only for bulk jobs
 *     otherwise submission fails.
@@ -2686,7 +2687,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
       dstring ds = DSTRING_INIT;
       const char *p = nullptr;
       const char *value = lGetString(ep, VA_value);
-      
+
       /* Only look for a hostname if the WD placeholder is being processed, i.e.
        * if we're processing a working directory path. */
       if (do_wd) {
@@ -2699,11 +2700,11 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
             value = p + 1;
          }
       }
-      
+
       /* If there is no colon, we assume that the calling function will deal
        * with the problem since we can't know who's doing the calling and
        * whether there has to be a colon or not. */
-      
+
       /* home directory and working directory placeholder only recognized at the
        * begin */
       if (strncmp(value, DRMAA_PLACEHOLDER_HD,
@@ -2727,7 +2728,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 
       /* bulk job index placeholder recognized at any position */
       if ((p=strstr(value, DRMAA_PLACEHOLDER_INCR))) {
-         
+
          if (!is_bulk) {
             /* reject incr placeholder for non-array jobs */
             sge_dstring_free(&ds);
@@ -2743,7 +2744,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
          sge_dstring_append(&ds, "$TASK_ID");
          value += strlen(DRMAA_PLACEHOLDER_INCR);
       }
-   
+
       /* rest of the path */
       sge_dstring_append(&ds, value);
       *new_path = strdup(sge_dstring_get_string(&ds));
@@ -2755,15 +2756,15 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 
 /****** DRMAA/drmaa_job2sge_job() **********************************************
 *  NAME
-*     drmaa_job2sge_job() -- convert a DRMAA job template into the Grid 
-*                                 Engine counterpart 
+*     drmaa_job2sge_job() -- convert a DRMAA job template into the Grid
+*                                 Engine counterpart
 *
 *  SYNOPSIS
-*     int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t 
-*     *drmaa_jt, int is_bulk, int start, int end, int step, dstring *diag) 
+*     int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t
+*     *drmaa_jt, int is_bulk, int start, int end, int step, dstring *diag)
 *
 *  FUNCTION
-*     All DRMAA job template attributes are translated into Cluster Scheduler 
+*     All DRMAA job template attributes are translated into Cluster Scheduler
 *     job attributes.
 *
 *  INPUTS
@@ -2773,7 +2774,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 *     int end                        - end index for bulk jobs
 *     int step                       - increment for bulk jobs
 *     dstring *diag                  - diagnosis information
-*     lListElem **jtp                - returns Cluster Scheduler JB_Type job 
+*     lListElem **jtp                - returns Cluster Scheduler JB_Type job
 *
 *  RESULT
 *     static int - DRMAA error codes
@@ -2783,7 +2784,7 @@ static int drmaa_path2sge_path(const lList *attrs, int is_bulk,
 *              restrictions imposed by sge_get_qtask_args().
 *
 *******************************************************************************/
-static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt, 
+static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_jt,
                              int is_bulk, int start, int end, int step,
                              dstring *diag)
 {
@@ -2809,7 +2810,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
-   
+
    /* make JB_Type job description out of DRMAA job template */
    if (!(jt = lCreateElem(JB_Type))) {
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diag);
@@ -2841,12 +2842,12 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
    }
 
    lSetUlong(jt, JB_type, jb_now);
-   
+
    /*
     * read switches from the various defaults files
     */
    opt_list_append_opts_from_default_files(prog_number, cell_root, username, &opts_defaults, &alp, environ);
-   
+
    if (answer_list_has_error(&alp)) {
       answer_list_to_dstring(alp, diag);
       lFreeList(&opts_defaults);
@@ -2875,7 +2876,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
 
       DPRINTF("processing %s, count %d = \"%s\"\n", DRMAA_NATIVE_SPECIFICATION, num_args, value);
 
-      if (num_args != 0) { 
+      if (num_args != 0) {
          sge_parse_args(value, args);
          opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_native, &alp,
                                                 (const char **)args, environ);
@@ -2889,7 +2890,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
             DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
          }
       }
- 
+
      /* Free the args. */
      while (num_args >= 0) {
          sge_free(&(args[num_args]));
@@ -2899,10 +2900,10 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       /* Free the args array. */
       sge_free(&args);
    }
-   
+
    lFreeList(&alp);
 
-   if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(&opts_drmaa, 
+   if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(&opts_drmaa,
                            drmaa_jt->strings, drmaa_jt->string_vectors,
                            is_bulk, diag)) != DRMAA_ERRNO_SUCCESS) {
       lFreeList(&opts_defaults);
@@ -2927,7 +2928,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
     * thing.  If it doesn't the only way we'll find out is the path to the
     * script doesn't exist.  If it just points to the wrong script, we have no
     * way of knowing it.
-    */   
+    */
    if (opt_list_is_X_true(opts_native, "-b") ||
        (!opt_list_has_X(opts_native, "-b") &&
         (opt_list_is_X_true(opts_defaults, "-b") ||
@@ -2941,7 +2942,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          ep = lGetElemStr(opts_drmaa, SPA_switch_val, "-wd");
          path = lGetString(ep, SPA_argval_lStringT);
          path = drmaa_expand_wd_path(username, path, &alp);
-         
+
          if (path == nullptr) {
             answer_list_to_dstring(alp, diag);
             lFreeList(&opts_defaults);
@@ -2972,7 +2973,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp, opts_drmaa,
                                            environ);
       }
-      
+
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
          lFreeList(&opts_defaults);
@@ -2985,7 +2986,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
       lFreeList(&alp);
-      
+
       /* Note that we parsed the script file for command line options so that
        * we can reneg on it later if we need to. */
       read_scriptfile = 1;
@@ -3004,9 +3005,9 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       char *job_cat = nullptr;
       const char **args = nullptr;
       lListElem *ep = nullptr;
-      
+
       DPRINTF("Processing job category\n");
-      
+
       /* This long series of ifs is really pointless since opts_drmaa is the
        * only one that can contain -cat.  However, I expect that at some point
        * -cat will be added as a normal switch to qsub et al, at which point
@@ -3042,7 +3043,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
        * they don't conflict with command names.  I think something like
        * <cat_name>.cat would work fine. */
       args = (const char **)sge_get_qtask_args(job_cat, &alp);
-      
+
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
          lFreeList(&opts_defaults);
@@ -3057,7 +3058,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
       lFreeList(&alp);
 
       sge_free(&job_cat);
-      
+
       if (args != nullptr) {
          opt_list_append_opts_from_qsub_cmdline(prog_number, &opts_job_cat, &alp,
                                                 args, environ);
@@ -3078,7 +3079,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
             DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
          }
          lFreeList(&alp);
-         
+
          /* Now, since the job category can affect whether the script files
           * get parsed for options, we have to step back a bit and make sure
           * that if the job category contained a -b option, that it's effect
@@ -3107,7 +3108,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
                 * point will probably be to parse the job category before the
                 * script file and simply not allow the script file to set the
                 * job category.) */
-               opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp, 
+               opt_list_append_opts_from_script(prog_number, &opts_scriptfile, &alp,
                                                  opts_drmaa, environ);
 
                if (answer_list_has_error(&alp)) {
@@ -3138,7 +3139,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
    }
-   
+
    /*
     * Merge all commandline options and interpret them.
     */
@@ -3172,7 +3173,7 @@ static int drmaa_job2sge_job(lListElem **jtp, const drmaa_job_template_t *drmaa_
 
    *jtp = jt;
    lFreeList(&opts_all);
-   
+
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
@@ -3219,33 +3220,33 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    DENTER(TOP_LAYER);
    DPRINTF("%d DRMAA attributes\n", lGetNumberOfElem(attrs));
    DPRINTF("%d DRMAA vector attributes\n", lGetNumberOfElem(vattrs));
-   
+
    /* job name -- -N <name>*/
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_NAME))) {
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_NAME, lGetString(ep, VA_value));
-      
+
       ep_opt = sge_add_arg(args, N_OPT, lStringT, "-N", lGetString(ep, VA_value));
       lSetString(ep_opt, SPA_argval_lStringT, lGetString(ep, VA_value));
    }
-   
+
    /* job category -- -cat (not exposed in qsub) */
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOB_CATEGORY))) {
       const char *value = lGetString(ep, VA_value);
-      
+
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value);
-      
+
       DPRINTF("%d args before adding job cat\n", lGetNumberOfElem(*args));
       ep_opt = sge_add_arg(args, cat_OPT, lStringT, "-cat", value);
       lSetString(ep_opt, SPA_argval_lStringT, value);
       DPRINTF("%d args after adding job cat\n", lGetNumberOfElem(*args));
    }
-   
+
    /* join files -- -j "y|n" */
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JOIN_FILES))) {
       const char *value = lGetString(ep, VA_value);
-      
+
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOIN_FILES, value);
-      
+
       if (value[0] == 'y') {
          ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "y");
          lSetInt(ep_opt, SPA_argval_lIntT, TRUE);
@@ -3266,9 +3267,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    {
       const char* strvalue="";
       if( (ep=lGetElemStr( attrs, VA_variable, DRMAA_TRANSFER_FILES ))) {
-         strvalue = lGetString( ep, VA_value );   
+         strvalue = lGetString( ep, VA_value );
       }
-      
+
       if((drmaa_errno = drmaa_path2path_opt(attrs, args, is_bulk,
                DRMAA_OUTPUT_PATH, "-o", o_OPT, diag, strchr( strvalue, 'o')?true:false))
          != DRMAA_ERRNO_SUCCESS) {
@@ -3290,9 +3291,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    /* user hold state -- -h */
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_JS_STATE))) {
       const char *value = lGetString(ep, VA_value);
-      
+
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JS_STATE, value);
-      
+
       if (!strcmp(value, DRMAA_SUBMISSION_STATE_HOLD)) {
          ep_opt = sge_add_arg(args, h_OPT, lIntT, "-h", "");
          lSetInt(ep_opt, SPA_argval_lIntT, MINUS_H_TGT_USER);
@@ -3309,9 +3310,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       lListElem *nep = nullptr;
       lList *nlp = lCreateList("variable list", VA_Type);
       int first_time = 1;
-      
+
       DPRINTF("processing %s\n", DRMAA_V_ENV);
-      
+
       for_each_ep(oep, olp) {
          struct saved_vars_s *context = nullptr;
          const char *str = lGetString(oep, ST_name);
@@ -3323,15 +3324,15 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
             sge_dstring_append_char(&env, ',');
          }
          sge_dstring_append(&env, str);
-         
+
          nep = lCreateElem(VA_Type);
          lAppendElem(nlp, nep);
-         
+
          variable = sge_strtok_r(str, "=", &context);
          lSetString(nep, VA_variable, variable);
-         
+
          value = sge_strtok_r((char *)nullptr, "=", &context);
-         
+
          if (value)
             lSetString(nep, VA_value, value);
          else
@@ -3339,9 +3340,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
 
          sge_free_saved_vars(context);
       }
-      
+
       DPRINTF("\"%s\"\n", sge_dstring_get_string(&env));
-      
+
       ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
       lSetList(ep_opt, SPA_argval_lListT, nlp);
@@ -3358,13 +3359,13 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
       lList *nlp = lCreateList("mail list", MR_Type);
       const lListElem *tmp = nullptr;
       int first_time = 1;
-      
+
       DPRINTF("processing %s = ", DRMAA_V_EMAIL);
-      
+
       for_each_ep(oep, olp) {
          struct saved_vars_s *context = nullptr;
          const char *str = lGetString(oep, ST_name);
-         
+
          if (first_time) {
             first_time = 0;
          }
@@ -3372,10 +3373,10 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
             sge_dstring_append_char(&email, ',');
          }
          sge_dstring_append(&email, str);
-         
+
          user = sge_strtok_r(str, "@", &context);
          host = sge_strtok_r(nullptr, "@", &context);
-         
+
          if ((tmp=lGetElemStr(nlp, MR_user, user))) {
             if (!sge_strnullcmp(host, lGetHost(tmp, MR_host))) {
                /* got this mail adress twice */
@@ -3387,16 +3388,16 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          /* got a new adress - add it */
          nep = lCreateElem(MR_Type);
          lSetString(nep, MR_user, user);
-         if (host) 
+         if (host)
             lSetHost(nep, MR_host, host);
          lAppendElem(nlp, nep);
 
          sge_free_saved_vars(context);
       }
 
-      
+
       DPRINTF("\"%s\"\n", sge_dstring_get_string(&email));
-      
+
       ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
       lSetList(ep_opt, SPA_argval_lListT, nlp);
@@ -3405,9 +3406,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    /* email supression -- -m */
    if ((ep=lGetElemStr(attrs, VA_variable, DRMAA_BLOCK_EMAIL))) {
       const char *value = lGetString(ep, VA_value);
-      
+
       DPRINTF("processing %s = \"%s\"\n", DRMAA_BLOCK_EMAIL, value);
-      
+
       if (value[0] == '1') {
          ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "n");
          lSetInt(ep_opt, SPA_argval_lIntT, NO_MAIL);
@@ -3435,9 +3436,9 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
          /* diag is set by drmma_time2sge_time */
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
-      
+
       DPRINTF("processing %s = \"%s\"\n", DRMAA_START_TIME, value);
-      
+
       if (!ulong_parse_date_time_from_string(&timeval, nullptr, value)) {
          sge_dstring_copy_string(diag, MSG_DRMAA_INVALID_TIME_STRING);
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
@@ -3448,14 +3449,14 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
 
    /* remote command -- last thing on the command line before the job args */
-   if (!(ep=lGetElemStr(attrs, VA_variable, DRMAA_REMOTE_COMMAND))) {      
+   if (!(ep=lGetElemStr(attrs, VA_variable, DRMAA_REMOTE_COMMAND))) {
       DPRINTF("no remote command given\n");
-      
+
       sge_dstring_copy_string(diag, "job template must have \"" DRMAA_REMOTE_COMMAND "\" attribute set");
-      
+
       DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
    }
-   
+
    if ((scriptname = lGetString(ep, VA_value)) != nullptr) {
       DPRINTF("remote command is \"%s\"\n", scriptname);
       ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
@@ -3477,7 +3478,7 @@ static int opt_list_append_opts_from_drmaa_attr(lList **args, const lList *attrs
    }
 
    DPRINTF("%d args at end of method\n", lGetNumberOfElem(*args));
-   
+
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
@@ -3508,12 +3509,12 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
 {
    lListElem *ep_opt;
    DENTER(TOP_LAYER);
-   
+
    /* average priority of 0 -- -p 0 */
    DPRINTF("setting default priority to 0\n");
    ep_opt = sge_add_arg(opts, p_OPT, lIntT, "-p", "0");
    lSetInt(ep_opt, SPA_argval_lIntT, 0);
-   
+
    /* We always use binary submission mode by default. A native spec, job
     * category, or default file attribute can use -b n to reenable script
     * attributes.
@@ -3521,7 +3522,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
    DPRINTF("enabling binary mode\n");
    ep_opt = sge_add_arg(opts, b_OPT, lIntT, "-b", "y");
    lSetInt(ep_opt, SPA_argval_lIntT, 1);
-   
+
    /* Bugfix: Issuezilla #658
     * In order to work around Bug #476, I set DRMAA to not spawn an exec
     * shell. */
@@ -3544,7 +3545,7 @@ static void opt_list_append_default_drmaa_opts(lList **opts)
    DPRINTF("disabling submission of unschedulable jobs\n");
    ep_opt = sge_add_arg(opts, w_OPT, lIntT, "-w", "e");
    lSetInt(ep_opt, SPA_argval_lIntT, ERROR_VERIFY);
-   
+
    DRETURN_VOID;
 }
 
@@ -3582,14 +3583,14 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
                                 lList **opts_drmaa)
 {
    DENTER(TOP_LAYER);
-   
+
    /*
     * Order is very important here
     */
    if (*opts_default != nullptr) {
       DPRINTF("Adding default options\n");
       prune_arg_list(*opts_default);
-      
+
       if (*opts_all == nullptr) {
          *opts_all = *opts_default;
          *opts_default = nullptr;
@@ -3597,11 +3598,11 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
          lAddList(*opts_all, opts_default);
       }
    }
-   
+
    if (*opts_defaults != nullptr) {
       DPRINTF("Adding defaults options\n");
       prune_arg_list(*opts_defaults);
-      
+
       if (*opts_all == nullptr) {
          *opts_all = *opts_defaults;
       } else {
@@ -3609,11 +3610,11 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       }
       *opts_defaults = nullptr;
    }
-   
+
    if (*opts_scriptfile != nullptr) {
       DPRINTF("Adding scriptfile options\n");
       prune_arg_list(*opts_scriptfile);
-      
+
       if (*opts_all == nullptr) {
          *opts_all = *opts_scriptfile;
       } else {
@@ -3621,11 +3622,11 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       }
       *opts_scriptfile = nullptr;
    }
-   
+
    if (*opts_job_cat != nullptr) {
       DPRINTF("Adding job cat options\n");
       prune_arg_list(*opts_job_cat);
-      
+
       if (*opts_all == nullptr) {
          *opts_all = *opts_job_cat;
       } else {
@@ -3633,11 +3634,11 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       }
       *opts_job_cat = nullptr;
    }
-   
+
    if (*opts_native != nullptr) {
       DPRINTF("Adding native options\n");
       prune_arg_list(*opts_native);
-      
+
       if (*opts_all == nullptr) {
          *opts_all = *opts_native;
       } else {
@@ -3645,7 +3646,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       }
       *opts_native = nullptr;
    }
-   
+
    if (*opts_drmaa != nullptr) {
       DPRINTF("Adding drmaa options\n");
       /* No need to prune since options are already bounded by DRMAA */
@@ -3656,7 +3657,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       }
       *opts_drmaa = nullptr;
    }
-   
+
    DRETURN_VOID;
 }
 
@@ -3683,7 +3684,7 @@ static void prune_arg_list(lList *args)
 o   -a date_time                           request a job start time
 +   -ac context_list                       add context variable(s)
 +   -A account_string                      use account at host
-+   -b y|n                                 handle command as binary  
++   -b y|n                                 handle command as binary
 +   -binding                               core binding
 +   -c ckpt_selector                       define type of checkpointing for job
 +   -ckpt ckpt-name                        request checkpoint method
@@ -3727,32 +3728,32 @@ o   -V                                     export all environment variables
    */
    lListElem *element = nullptr;
    const void *i = nullptr;
-   
+
    DENTER(TOP_LAYER);
-   
+
    /* skip arguments that aren't supported */
    while ((element = lGetElemStrRW(args, SPA_switch_val, "-help"))) {
       lRemoveElem(args, &element);
    }
-   
+
    /* This one isn't supported because bulk jobs are handled through the
     * drmaa_run_bulk_jobs() method. */
    while ((element = lGetElemStrRW(args, SPA_switch_val, "-t"))) {
       lRemoveElem(args, &element);
    }
-   
+
    while ((element = lGetElemStrRW(args, SPA_switch_val, "-verify"))) {
       lRemoveElem(args, &element);
    }
-   
+
    while ((element = lGetElemStrNextRW(args, SPA_switch_val, "-w", &i))) {
       int argval = lGetInt(element, SPA_argval_lIntT);
-      
-      if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {      
+
+      if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {
          lRemoveElem(args, &element);
       }
    }
-  
+
    if (sge_getenv(ENABLE_CWD_ENV) == nullptr) {
       while ((element = lGetElemStrRW(args, SPA_switch_val, "-cwd"))) {
          lRemoveElem(args, &element);
@@ -3762,7 +3763,7 @@ o   -V                                     export all environment variables
    while ((element = lGetElemStrRW(args, SPA_switch_val, "-sync"))) {
       lRemoveElem(args, &element);
    }
-   
+
    DRETURN_VOID;
 }
 
@@ -3804,7 +3805,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    time_t now;
    struct tm gmnow;
    struct tm herenow;
-   
+
    DENTER(TOP_LAYER);
 
    /* Get default times */
@@ -3825,7 +3826,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    start = strdup(drmaa_time);
    p1 = start;
    p2 = strchr(p1, '/');
-   
+
    /* Look for year */
    if (p2 != nullptr) {
       /* If we found a /, we know we have either a month or year */
@@ -3859,9 +3860,9 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
        * have to subtract 100 now. */
       year = gmnow.tm_year - 100;
    }
-   
+
    p2 = strchr(p1, '/');
-   
+
    /* If we found a second slash, that means the year, month, and day were
     * specified. */
    if (p2 != nullptr) {
@@ -3888,9 +3889,9 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
          month = gmnow.tm_mon + 1;
       }
    }
-   
+
    p2 = strchr(p1, ' ');
-   
+
    /* If we find a space that's 2 characters from the last slash, we've found
     * the day. */
    if ((p2 != nullptr) && ((p2 - p1)/sizeof(char) == 2)) {
@@ -3914,14 +3915,14 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
       sge_dstring_copy_string(diag, MSG_DRMAA_TIME_PARSE_ERROR);
       DRETURN(nullptr);
    }
-   
+
    /* Rather than trying to figure out how much whitespace the sscanf skipped
     * before getting to the hour and minute, we just find the colon between the
     * hour and minute and add 2 to get past the minutes. */
    p2 = strchr(p1, ':');
    p1 = p2 + 1;
    p2 += 3;
-   
+
    /* If the character after the minutes is a :, we've found the seconds. */
    if (*p2 == ':') {
       /* 2 digit seconds given */
@@ -3938,14 +3939,14 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
       /* Set our pointer to the end of the minutes. */
       p1 = p2;
    }
-   
+
    /* Check that if a day and month were given that they are a valid
     * combination.  Also check that the hour, minute, and second are ok.  We're
     * making the assumption here that gmtime() isn't going to return out of
     * range values.  We deal with the case of setting a day and getting a month
     * from gmtime that don't work together later. */
    if ((day_set && (day > 31)) ||
-       (month_set && (day > 30) && 
+       (month_set && (day > 30) &&
         ((month == 4) || (month == 6) || (month == 9) || (month == 11))) ||
        (month_set && (day > 29) &&
         ((month == 2) && (year % 4 == 0))) ||
@@ -3964,7 +3965,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
            ((minute < gmnow.tm_min) ||
             ((minute == gmnow.tm_min) && (second < gmnow.tm_sec))))) {
          day++;
-         
+
          if ((day > 31) ||
              ((day > 30) &&
               ((month == 4) || (month == 6) || (month == 9) || (month == 11))) ||
@@ -3973,7 +3974,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
              ((day > 28) && (month == 2))) {
             day = 1;
             month++;
-             
+
             if (month > 12) {
                month = 1;
                year++;
@@ -4001,7 +4002,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
             year++;
          }
       }
-      
+
       /* Now make sure that the month and day make sense together. */
       if ((day > 30) && ((month == 4) || (month == 6) || (month == 9) || (month == 11))) {
          day -= 30;
@@ -4039,7 +4040,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag)
    if (!century_set) {
       year += 2000;
    }
-   
+
    /* It's ok to deal with the timezone after doing all the math to validate the
     * date because timezone only affects hours and minutes, and we never
     * increment or get defaults for hours or minutes; they're required to be
@@ -4112,18 +4113,18 @@ static char *drmaa_expand_wd_path(const char*username, const char *path, lList *
 {
    char *file = nullptr;
    char str[MAX_STRING_SIZE];
-   
+
    DENTER(TOP_LAYER);
    DPRINTF("Expanding \"%s\"\n", path);
 
    /* First look for the job index placeholder.  It is illegal. */
    if (strstr(path, "$TASK_ID") != nullptr) {
          snprintf(str, sizeof(str), SFNMAX, MSG_DRMAA_INC_NOT_ALLOWED);
-         answer_list_add(answer_list, str, STATUS_ENOSUCHUSER, 
+         answer_list_add(answer_list, str, STATUS_ENOSUCHUSER,
                          ANSWER_QUALITY_ERROR);
          DRETURN(nullptr);
    }
-   
+
    /* If the home directory placeholder is found at the beginning of the
     * path, replace it with the user's home directory on the current
     * machine in hopes that it's the same home directory as on the exec
@@ -4135,13 +4136,13 @@ static char *drmaa_expand_wd_path(const char*username, const char *path, lList *
       if (homedir == nullptr) {
          DRETURN(nullptr);
       }
-      
+
       length = strlen(path) - 5 + strlen(homedir) + 1;
-      
+
       file = sge_malloc(sizeof(char) * length);
       strcpy(file, homedir);
       file = strcat(file, path + 5);
-      
+
       sge_free(&homedir);
    }
    else {
@@ -4183,7 +4184,7 @@ static char *drmaa_get_home_directory(const char* username, lList **answer_list)
    int size;
 
    DENTER(TOP_LAYER);
-   
+
    size = get_pw_buffer_size();
    buffer = sge_malloc(size);
    pwd = sge_getpwnam_r(username, &pw_struct, buffer, size);
@@ -4239,7 +4240,7 @@ static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
    lList *task_id_range_list = nullptr;
 
    DENTER(TOP_LAYER);
-   
+
    snprintf(str, sizeof(str), "%d-%d:%d", start, end, step);
 
    range_list_parse_from_string(&task_id_range_list, alp, str,
@@ -4248,7 +4249,7 @@ static int drmaa_set_bulk_range(lList **opts, int start, int end, int step,
    if (task_id_range_list) {
       ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
       lSetList(ep_opt, SPA_argval_lListT, task_id_range_list);
-      
+
       DRETURN(0);
    }
    else {
@@ -4264,19 +4265,19 @@ static drmaa_attr_names_t *drmaa_fill_supported_vector_attributes(dstring *diag)
 static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *diag)
 {
    drmaa_attr_names_t *p = nullptr;
-   
+
    DENTER(TOP_LAYER);
-   
+
    p = drmaa_fill_string_vector(drmaa_supported_nonvector);
-   
+
    if (japi_is_delegated_file_staging_enabled(diag)) {
       DPRINTF("adding \"%s\"\n", DRMAA_TRANSFER_FILES);
       if (!lAddElemStr(&(p->it.si.strings),
                        ST_name, DRMAA_TRANSFER_FILES, ST_Type)) {
          japi_delete_string_vector((drmaa_attr_values_t *)p);
          DRETURN(nullptr);
-      } 
+      }
    }
-   
+
    DRETURN(p);
 }
