@@ -45,7 +45,9 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
@@ -60,7 +62,6 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/msg_sgeobjlib.h"
-#include "sgeobj/ocs_DataStore.h"
 
 #include "comm/commlib.h"
 
@@ -762,6 +763,21 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
          }
+      }
+
+      // The topology string that we receive from execd contains more information than we need
+      // Filter the information and only keep the topology string as load value
+      // Store the full string in the host element
+      if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
+         ocs::TopologyString topology(value);
+         topology.remove_attributes();
+         topology.remove_structure();
+         topology.remove_single_threads();
+
+         DPRINTF("Load Value: %s=%s", name, value);
+         lSetString(*hepp, EH_internal_topology, value);
+         lSetString(ep, LR_value, topology.to_string().c_str());
+         value = lGetString(ep, LR_value);
       }
 
       if (is_static == 2) {

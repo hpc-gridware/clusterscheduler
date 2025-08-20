@@ -63,7 +63,8 @@ enum {
    EH_report_seqno,
    EH_report_variables,
    EH_merged_report_variables,
-   EH_joker
+   EH_joker,
+   EH_internal_topology
 };
 
 constexpr const int EH_Type[] = {
@@ -102,6 +103,7 @@ constexpr const int EH_Type[] = {
    EH_report_variables,
    EH_merged_report_variables,
    EH_joker,
+   EH_internal_topology,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -140,7 +142,8 @@ constexpr const int EH_Type[] = {
    {EH_report_seqno, "EH_report_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_report_variables, "EH_report_variables", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {EH_merged_report_variables, "EH_merged_report_variables", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_joker, "EH_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {EH_joker, "EH_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {EH_internal_topology, "EH_internal_topology", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 
