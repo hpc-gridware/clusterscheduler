@@ -44,18 +44,30 @@ CheckFetchUpdateCopyrightScript()
    fi
 }
 
+echo ""
 
 # MAIN
-echo "pre-commit hook called"
-
 CheckFetchUpdateCopyrightScript
 
-FILES=`git diff --cached --name-only`
+# if individual files are specified, use them
+# if no files are specified, or if no options are given at all,
+# use all files that have been changed
+if [ $# -eq 0 ]; then
+   #echo "no files specified, using all files marked to be committed"
+   FILES=`git diff --cached --name-only`
+elif [ $# -gt 0 -a $1 = "-a" ]; then
+   #echo "using all files to be committed"
+   FILES=`git diff --name-only`
+else
+   #echo "using specified files to update copyright header"
+   FILES="$@"
+fi
+
 $UPDATE_COPYRIGHT --with-now $FILES
 if [ $? -ne 0 ]; then
    echo "update_copyright.tcl failed"
    exit 1
 fi
 
-# for cancel commit
-exit 0
+exec git commit "$@"
+
