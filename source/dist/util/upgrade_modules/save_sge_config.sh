@@ -318,14 +318,6 @@ if [ $? -ne 0 ]; then
 m_topology          topo       RESTRING    ==    YES         NO         NONE     0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
    rm -f "$DEST_DIR/centry.bak"
 fi
-#add m_topology_inuse if missing (new in 62u5)
-cat  "$DEST_DIR/centry" | grep "^m_topology_inuse " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-m_topology_inuse    utopo      RESTRING    ==    YES         NO         NONE     0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
 
 #     -sel                          <show execution hosts>
 list=`$QCONF -sel 2>/dev/null`
