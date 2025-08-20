@@ -1012,7 +1012,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // The usage_collection mode.
    {
       usage_collection_t usage_collection = mconf_get_usage_collection();
-      fprintf(fp, "usage_collection= " sge_u32 "\n", usage_collection);
+      fprintf(fp, "usage_collection=" sge_u32 "\n", usage_collection);
       if (petep == nullptr) {
          lSetUlong(jatep, JAT_usage_collection, usage_collection);
       } else {
