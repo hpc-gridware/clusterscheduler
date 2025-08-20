@@ -55,6 +55,8 @@
 
 #include <TestClass.h>
 
+#include "ocs_TopologyString.h"
+
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 #include <sys/utsname.h>
 #endif
@@ -297,8 +299,6 @@ void check_core_binding()
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 void test_hwloc()
 {
-   char* topology = nullptr;
-   int length     = 0;
    int s, c;
    struct utsname name;
 
@@ -320,10 +320,23 @@ void test_hwloc()
       printf("Amount of cores:\t\t%d\n", ocs::Topo::get_total_amount_of_cores());
       /* the amount of threads must be shown as well */
       printf("Amount of threads:\t\t%d\n", ocs::Topo::get_total_amount_of_threads());
-      /* get topology */
-      ocs::Topo::get_topology(&topology, &length);
-      printf("Topology:\t\t\t%s\n", topology);
-      sge_free(&topology); 
+
+      // Get internal topology (with structure and memory information)
+      std::string topology;
+      ocs::Topo::get_new_topology(topology, true);
+      printf("Topology (Internal):\t\t%s\n", topology.c_str());
+
+      // Strip attributes and structure
+      ocs::TopologyString topology_string(topology);
+      topology_string.remove_attributes();
+      topology_string.remove_structure();
+      topology_string.remove_single_threads();
+      printf("Topology (GCS):\t\t\t%s\n", topology_string.to_string().c_str());
+
+      // Strip memory information
+      topology_string.remove_memory_info();
+      printf("Topology (OCS):\t\t\t%s\n", topology_string.to_string().c_str());
+
       printf("Mapping of logical socket and core numbers to internal\n");
 
       /* for each socket,core pair get the internal processor number */

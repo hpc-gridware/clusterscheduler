@@ -36,7 +36,6 @@
 ocs::TopologyString::TopologyString() = default;
 
 ocs::TopologyString::TopologyString(std::string  topology) : topology_(std::move(topology)) {
-   correct();
 }
 
 void
@@ -393,8 +392,78 @@ ocs::TopologyString::correct_upper_lower() {
 
 void
 ocs::TopologyString::correct() {
-    correct_missing_threads();
-    correct_upper_lower();
+   correct_missing_threads();
+   correct_upper_lower();
+}
+
+void ocs::TopologyString::remove_attributes() {
+   // Remove all text between square brackets including the brackets
+   std::string result;
+   bool inside_square_brackets = false;
+   for (char c : topology_) {
+      if (c == '[') {
+         inside_square_brackets = true;
+         continue;
+      }
+
+      if (c == ']' && inside_square_brackets) {
+         inside_square_brackets = false;
+         continue;
+      }
+
+      if (!inside_square_brackets) {
+         result.push_back(c);
+      }
+   }
+   topology_ = result;
+}
+
+void ocs::TopologyString::remove_structure() {
+   // Remove all bracket characters from topology_ that show the structure
+   const std::string brackets = "()";
+   topology_.erase(std::remove_if(topology_.begin(), topology_.end(),
+                  [&brackets](char c) {
+                     return brackets.find(c) != std::string::npos;
+                  }),
+                  topology_.end());
+
+}
+
+void ocs::TopologyString::remove_memory_info() {
+   // Remove all bracket characters from topology_ that show the structure
+   const std::string brackets = "NXY";
+   topology_.erase(std::remove_if(topology_.begin(), topology_.end(),
+                  [&brackets](char c) {
+                     return brackets.find(c) != std::string::npos;
+                  }),
+                  topology_.end());
+
+}
+
+void ocs::TopologyString::remove_single_threads() {
+   std::string result;
+   size_t i = 0;
+
+   while (i < topology_.length()) {
+      // If current character is a thread
+      if (topology_[i] == 'T' || topology_[i] == 't') {
+         // Check if it's part of a sequence (has adjacent thread before or after)
+         bool has_prev_thread = (i > 0 && (topology_[i - 1] == 'T' || topology_[i - 1] == 't'));
+         bool has_next_thread = (i + 1 < topology_.length() && (topology_[i + 1] == 'T' || topology_[i + 1] == 't'));
+
+         // Only keep it if it's part of a sequence
+         if (has_prev_thread || has_next_thread) {
+            result.push_back(topology_[i]);
+         }
+         // Skip it if isolated
+      } else {
+         // Non-thread character, keep it
+         result.push_back(topology_[i]);
+      }
+      i++;
+   }
+
+   topology_ = result;
 }
 
 // Accessors

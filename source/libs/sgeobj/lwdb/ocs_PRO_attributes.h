@@ -37,7 +37,8 @@ enum {
    PRO_groups,
    PRO_rel,
    PRO_run,
-   PRO_io
+   PRO_io,
+   PRO_ioops
 };
 
 constexpr const int PRO_Type[] = {
@@ -50,6 +51,7 @@ constexpr const int PRO_Type[] = {
    PRO_rel,
    PRO_run,
    PRO_io,
+   PRO_ioops,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -62,7 +64,8 @@ constexpr const int PRO_Type[] = {
    {PRO_groups, "PRO_groups", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PRO_rel, "PRO_rel", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PRO_run, "PRO_run", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {PRO_io, "PRO_io", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {PRO_io, "PRO_io", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_ioops, "PRO_ioops", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 
