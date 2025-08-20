@@ -865,7 +865,6 @@ setup_qmaster() {
               {"m_core",           "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {"m_socket",         "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {"m_topology",       "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
-              {"m_topology_inuse", "utopo",  9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
               {nullptr,            nullptr,  0, 0,          0,             nullptr, 0,        nullptr}
       };
       int i;
