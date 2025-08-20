@@ -151,6 +151,12 @@
 *    Its purpose is to be able to add new attributes without changing the spooling format.
 *    It is a list of arbitrary type and it is spooled.
 *
+*    SGE_STRING(EH_internal_topology) - topology string stored internally
+*    topology string stored internally, used by qmaster
+*    contains hardware information (socket, cores, threads),
+*    memory information (numa nodes and caches),
+*    and attributes for those nodes (size, speed etc.)
+*
 */
 
 enum {
@@ -188,7 +194,8 @@ enum {
    EH_report_seqno,
    EH_report_variables,
    EH_merged_report_variables,
-   EH_joker
+   EH_joker,
+   EH_internal_topology
 };
 
 LISTDEF(EH_Type)
@@ -227,6 +234,7 @@ LISTDEF(EH_Type)
    SGE_LIST(EH_report_variables, STU_Type, CULL_SPOOL)
    SGE_LIST(EH_merged_report_variables, STU_Type, CULL_DEFAULT)
    SGE_LIST(EH_joker, VA_Type, CULL_SPOOL)
+   SGE_STRING(EH_internal_topology, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(EHN)
@@ -265,6 +273,7 @@ NAMEDEF(EHN)
    NAME("EH_report_variables")
    NAME("EH_merged_report_variables")
    NAME("EH_joker")
+   NAME("EH_internal_topology")
 NAMEEND
 
 #define EH_SIZE sizeof(EHN)/sizeof(char *)

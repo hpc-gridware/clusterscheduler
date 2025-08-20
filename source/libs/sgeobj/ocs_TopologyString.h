@@ -54,10 +54,14 @@ namespace ocs {
 
       static constexpr size_t MAX_LENGTH = 2560;
 
-
       void correct_missing_threads();
       void correct_upper_lower();
       void correct();
+
+      void remove_attributes();
+      void remove_structure();
+      void remove_memory_info();
+      void remove_single_threads();
 
       // Accessors
       [[nodiscard]] std::string to_string() const;
