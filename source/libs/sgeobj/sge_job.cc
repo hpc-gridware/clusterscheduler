@@ -4470,11 +4470,14 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type))) {
       job_add_opt_to_comand_line(dstr, "-b", "yes");
    }
-   // -binding
-   const lListElem *binding;
-   for_each_ep(binding, lGetList(job, JB_binding)) {
-      sge_dstring_append(dstr, " -binding ");
-      ocs::BindingIo::binding_print_to_string(binding, dstr);
+
+   // -btype, -bunit, -bstrategy, -bstart, -bend, -bamount ...
+   const lListElem *binding = lGetObject(job, JB_new_binding);
+   if (binding != nullptr) {
+      std::string binding_str;
+      ocs::BindingIo::binding_print_to_string(binding, binding_str, true);
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, binding_str.c_str());
    }
 
    job_add_str_opt_to_command_line(job, dstr, "-C", JB_directive_prefix);

@@ -2739,6 +2739,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          }
       }
 
+      lListElem *binding_elem = lGetObject(new_job, JB_new_binding);
+      if (binding_elem != nullptr) {
+         ocs::Job::binding_set_missing_defaults(new_job);
+
+         // new binding set
+         *trigger |= MOD_EVENT;
+      }
+
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_BINDING, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }

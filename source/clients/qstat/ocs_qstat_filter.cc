@@ -2549,7 +2549,10 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
             const lListElem *binding_elem = lFirst(binding_list);
             dstring binding_param = DSTRING_INIT;
 
-            ocs::BindingIo::binding_print_to_string(binding_elem, &binding_param);
+            std::string binding_str;
+            ocs::BindingIo::binding_print_to_string(binding_elem, binding_str);
+            sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
+
             if (handler->report_binding_started && 
                 (ret=handler->report_binding_started(handler, alpp))) {
                DPRINTF("handler->report_binding_started failed\n");
