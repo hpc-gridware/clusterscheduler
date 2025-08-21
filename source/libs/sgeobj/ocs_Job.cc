@@ -371,3 +371,63 @@ ocs::Job::binding_get_amount(const lListElem *job) {
    }
    DRETURN(amount);
 }
+
+void ocs::Job::binding_set_missing_defaults(lListElem *job) {
+   DENTER(TOP_LAYER);
+
+   // if the job has no new binding, we do not need to set defaults
+   if (job == nullptr) {
+      DRETURN_VOID;
+   }
+
+   // no binding element, so we do not need to set defaults for binding
+   lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (binding_elem == nullptr) {
+      DRETURN_VOID;
+   }
+
+   // ensure that binding element is set to nullptr if binding amount is 0
+   if (binding_elem == nullptr || lGetUlong(binding_elem, BN_new_amount) == 0) {
+      lSetObject(job, JB_new_binding, nullptr);
+      DRETURN_VOID;
+   }
+
+   // ensure that the binding element is initialized with default values
+   auto instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_new_instance));
+   if (instance == BindingInstance::Instance::UNINITIALIZED ||
+       instance == BindingInstance::Instance::NONE) {
+      lSetUlong(binding_elem, BN_new_instance, BindingInstance::Instance::SET);
+   }
+   auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
+   if (unit == BindingUnit::Unit::UNINITIALIZED ||
+       unit == BindingUnit::Unit::NONE) {
+      lSetUlong(binding_elem, BN_new_unit, BindingUnit::Unit::CCORE);
+   }
+   auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   if (type == BindingType::Type::UNINITIALIZED ||
+       type == BindingType::Type::NONE) {
+      lSetUlong(binding_elem, BN_new_type, BindingType::Type::SLOT);
+   }
+   const char *filter = lGetString(binding_elem, BN_new_filter);
+   if (filter == nullptr) {
+      lSetString(binding_elem, BN_new_filter, NONE_STR);
+   }
+   auto sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
+   if (sort == BindingSort::SortOrder::UNINITIALIZED) {
+      lSetUlong(binding_elem, BN_new_sort, BindingSort::SortOrder::NONE);
+   }
+   auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_new_start));
+   if (start == BindingStart::Start::UNINITIALIZED) {
+      lSetUlong(binding_elem, BN_new_start, BindingStart::Start::NONE);
+   }
+   auto end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
+   if (end == BindingEnd::End::UNINITIALIZED) {
+      lSetUlong(binding_elem, BN_new_end, BindingEnd::End::NONE);
+   }
+   auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
+   if (strategy == BindingStrategy::Strategy::UNINITIALIZED ||
+       strategy == BindingStrategy::Strategy::NONE) {
+      lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::Strategy::PACK);
+   }
+}
+
