@@ -32,6 +32,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_binding_parse.h"
 #include "uti/sge_rmon_macros.h"
@@ -41,6 +43,13 @@
 #include "sgeobj/cull/sge_binding_BN_L.h"
 
 #include "msg_common.h"
+#include "ocs_BindingType.h"
+#include "ocs_BindingUnit.h"
+#include "ocs_BindingSort.h"
+#include "ocs_BindingStart.h"
+#include "ocs_BindingEnd.h"
+#include "ocs_BindingInstance.h"
+#include "ocs_BindingStrategy.h"
 
 /****** sge_binding/binding_print_to_string() **********************************
 *  NAME
@@ -66,50 +75,128 @@
 *     MT-NOTE: is_starting_point() is MT safe
 *
 *******************************************************************************/
-bool
-ocs::BindingIo::binding_print_to_string(const lListElem *this_elem, dstring *string) { bool ret = true;
+void
+ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::string &binding_string, bool as_switches) {
    DENTER(TOP_LAYER);
-   if (this_elem != nullptr && string != nullptr) {
-      const char *const strategy = lGetString(this_elem, BN_strategy);
-      binding_type_t type = (binding_type_t)lGetUlong(this_elem, BN_type);
 
-      switch (type) {
-         case BINDING_TYPE_SET:
-            sge_dstring_append(string, "set ");
-            break;
-         case BINDING_TYPE_PE:
-            sge_dstring_append(string, "pe ");
-            break;
-         case BINDING_TYPE_ENV:
-            sge_dstring_append(string, "env ");
-            break;
-         case BINDING_TYPE_NONE:
-            sge_dstring_append(string, "NONE");
+   // no binding
+   if (binding_elem == nullptr) {
+      if (!as_switches) {
+         binding_string = NONE_STR;
       }
-
-      if (strcmp(strategy, "linear_automatic") == 0) {
-         sge_dstring_sprintf_append(string, "%s:" sge_u32,
-                                    "linear", lGetUlong(this_elem, BN_parameter_n));
-      } else if (strcmp(strategy, "linear") == 0) {
-         sge_dstring_sprintf_append(string, "%s:" sge_u32 ":" sge_u32 "," sge_u32,
-                                    "linear", lGetUlong(this_elem, BN_parameter_n),
-                                    lGetUlong(this_elem, BN_parameter_socket_offset),
-                                    lGetUlong(this_elem, BN_parameter_core_offset));
-      } else if (strcmp(strategy, "striding_automatic") == 0) {
-         sge_dstring_sprintf_append(string, "%s:" sge_u32 ":" sge_u32,
-                                    "striding", lGetUlong(this_elem, BN_parameter_n),
-                                    lGetUlong(this_elem, BN_parameter_striding_step_size));
-      } else if (strcmp(strategy, "striding") == 0) {
-         sge_dstring_sprintf_append(string, "%s:" sge_u32 ":" sge_u32 ":" sge_u32 "," sge_u32,
-                                    "striding", lGetUlong(this_elem, BN_parameter_n),
-                                    lGetUlong(this_elem, BN_parameter_striding_step_size),
-                                    lGetUlong(this_elem, BN_parameter_socket_offset),
-                                    lGetUlong(this_elem, BN_parameter_core_offset));
-      } else if (strcmp(strategy, "explicit") == 0) {
-         sge_dstring_sprintf_append(string, "%s", lGetString(this_elem, BN_parameter_explicit));
-      }
+      DRETURN_VOID;
    }
-   DRETURN(ret);
+
+   // no amount or strategy also causes to hide all other binding parameters because binding will not be done
+   auto amount = lGetUlong(binding_elem, BN_new_amount);
+   if (amount == 0) {
+      if (!as_switches) {
+         binding_string = NONE_STR;;
+      }
+      DRETURN_VOID;
+   }
+
+   // -bamount <number>
+   if (amount != 0) {
+      if (as_switches) {
+         binding_string += "-bamount ";
+      } else {
+         binding_string += "bamount=";
+      }
+      binding_string += std::to_string(amount);
+   }
+
+   // -bend s|c|...
+   auto end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
+   if (end != BindingEnd::End::UNINITIALIZED && end != BindingEnd::End::NONE) {
+      if (as_switches) {
+         binding_string += " -bend ";
+      } else {
+         binding_string += ",bend=";
+      }
+      binding_string += BindingEnd::to_string(end);
+   }
+
+   // -binstance set|pe|env
+   auto instance_type = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_new_instance));
+   if (instance_type != BindingInstance::Instance::UNINITIALIZED && instance_type != BindingInstance::Instance::NONE) {
+      if (as_switches) {
+         binding_string += " -binstance ";
+      } else {
+         binding_string += ",binstance=";
+      }
+      binding_string += BindingInstance::to_string(instance_type);
+   }
+
+   // -bsort S|C|...
+   auto sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
+   if (sort != BindingSort::SortOrder::UNINITIALIZED && sort != BindingSort::SortOrder::NONE) {
+      if (as_switches) {
+         binding_string += " -bsort ";
+      } else {
+         binding_string += ",bsort=";
+      }
+
+      binding_string += BindingSort::to_string(sort);
+   }
+
+   // -bstart S|C|...
+   auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_new_start));
+   if (start != BindingStart::Start::UNINITIALIZED && start != BindingStart::Start::NONE) {
+      if (as_switches) {
+         binding_string += " -bstart ";
+      } else {
+         binding_string += ",bstart=";
+      }
+      binding_string += BindingStart::to_string(start);
+   }
+
+   // -bstrategy pack|linear
+   auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
+   if (strategy != BindingStrategy::Strategy::UNINITIALIZED && strategy != BindingStrategy::Strategy::NONE) {
+      if (as_switches) {
+         binding_string += " -bstrategy ";
+      } else {
+         binding_string += ",bstrategy=";
+      }
+      binding_string += BindingStrategy::to_string(strategy);
+   }
+
+   // -btype host|slot
+   auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   if (type != BindingType::Type::UNINITIALIZED && type != BindingType::Type::NONE) {
+      if (as_switches) {
+         binding_string += " -btype ";
+      } else {
+         binding_string += ",btype=";
+      }
+      binding_string += BindingType::to_string(type);
+   }
+
+   // -bunit S|C|T|...
+   auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
+   if (unit != BindingUnit::Unit::UNINITIALIZED && unit != BindingUnit::Unit::NONE) {
+      if (as_switches) {
+         binding_string += " -bunit ";
+      } else {
+         binding_string += ",bunit=";
+      }
+      binding_string += BindingUnit::to_string(unit);
+   }
+
+   // -bfilter <topo_string>
+   auto filter = lGetString(binding_elem, BN_new_filter);
+   if (filter != nullptr && strcasecmp(filter, NONE_STR) != 0) {
+      if (as_switches) {
+         binding_string += " -bfilter ";
+      } else {
+         binding_string += ",bfilter=";
+
+      }
+      binding_string += filter;
+   }
+
+   DRETURN_VOID;
 }
 
 bool

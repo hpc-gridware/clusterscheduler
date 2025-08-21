@@ -50,6 +50,8 @@
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_security.h"
 
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
@@ -67,7 +69,6 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/ocs_DataStore.h"
 
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
@@ -358,6 +359,9 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          ret = STATUS_EUNKNOWN;
       }
    }
+
+   // Check if there are binding parameters that are required but unset
+   ocs::Job::binding_set_missing_defaults(jep);
 
    /*
     * fill name and shortcut for all requests

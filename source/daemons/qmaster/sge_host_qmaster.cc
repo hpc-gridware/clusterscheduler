@@ -769,12 +769,15 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
       // Filter the information and only keep the topology string as load value
       // Store the full string in the host element
       if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
+
+         // The value reported in the user interface should not contain all information
+         // Strip attributes, structure and single threads
          ocs::TopologyString topology(value);
          topology.remove_attributes();
          topology.remove_structure();
          topology.remove_single_threads();
 
-         DPRINTF("Load Value: %s=%s", name, value);
+         // Keep the original value in the host element
          lSetString(*hepp, EH_internal_topology, value);
          lSetString(ep, LR_value, topology.to_string().c_str());
          value = lGetString(ep, LR_value);
