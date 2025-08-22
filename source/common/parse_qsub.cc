@@ -50,8 +50,8 @@
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingEnd.h"
 #include "sgeobj/ocs_BindingUnit.h"
-#include "sgeobj/ocs_BindingSort.h"
 #include "sgeobj/ocs_BindingInstance.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/parse.h"
@@ -459,22 +459,22 @@ lList *cull_parse_cmdline(
 
          DPRINTF("\"-bstart %s\"\n", *sp);
          if (strcmp("S", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_SOCKET);
          } else if (strcmp("s", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_SOCKET);
          } else if (strcmp("C", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
          } else if (strcmp("c", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
          } else if (strcmp("E", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
          } else if (strcmp("e", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTART_INVALID_S, *sp);
@@ -505,10 +505,10 @@ lList *cull_parse_cmdline(
             ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::SOCKET);
          } else if (strcmp("c", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
          } else if (strcmp("e", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BEND_INVALID_S, *sp);
@@ -536,24 +536,10 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-bsort %s\"\n", *sp);
-         if (strcmp("S", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::SOCKET_LEAST_LOADED);
-         } else if (strcmp("s", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::SOCKET_MOST_LOADED);
-         } else if (strcmp("C", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::CCORE_LEAST_LOADED);
-         } else if (strcmp("c", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::CCORE_MOST_LOADED);
-         } else if (strcmp("E", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::ECORE_LEAST_LOADED);
-         } else if (strcmp("e", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingSort::ECORE_MOST_LOADED);
+         std::string sort_arg = *sp;
+         if (ocs::TopologyString::contains_valid_node_names(sort_arg)) {
+            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lStringT, *(sp - 1), *sp);
+            lSetString(ep_opt, SPA_argval_lStringT, *sp);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_INVALID_S, *sp);
             DRETURN(answer);

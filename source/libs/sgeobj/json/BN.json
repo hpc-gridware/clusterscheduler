@@ -61,7 +61,7 @@
 			"description":	[{
 				"line":	"Defines how units within the topology string should be sorted before binding."
 			}],
-			"type":	"lUlongT",
+			"type":	"lStringT",
 			"flags":	[{
 				"name":	"SPOOL_SUBLIST"
 			}]

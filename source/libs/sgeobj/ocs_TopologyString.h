@@ -54,13 +54,15 @@ namespace ocs {
       void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
    public:
       static constexpr size_t MAX_LENGTH = 2560;
-      static constexpr std::string DATA_NODE_CHARACTERS = "NABUVWXYZ";
-      static constexpr std::string HARDWARE_NODE_CHARACTERS = "SCEFGHT";
-      static constexpr std::string STRUCTURE_CHARACTERS = "()";
-      static constexpr std::string PREFIX = "#";
-      static constexpr std::string FREE_PREFIX = PREFIX + "f";
-      static constexpr std::string BOUND_PREFIX = PREFIX + "b";
-      static constexpr std::string ID_PREFIX = PREFIX + "i";
+      static const std::string DATA_NODE_CHARACTERS;
+      static const std::string HARDWARE_NODE_CHARACTERS;
+      static const std::string STRUCTURE_CHARACTERS;
+      static const std::string PREFIX;
+      static const std::string FREE_PREFIX;
+      static const std::string BOUND_PREFIX;
+      static const std::string ID_PREFIX;
+
+      static bool contains_valid_node_names(std::string& sequence);
 
       // Constructors
       explicit TopologyString(std::string internal_topology);
