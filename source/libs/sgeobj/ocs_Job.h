@@ -38,7 +38,6 @@
 #include "cull/cull.h"
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
-#include "ocs_BindingSort.h"
 #include "ocs_BindingStart.h"
 #include "ocs_BindingEnd.h"
 #include "ocs_BindingStrategy.h"
@@ -55,7 +54,7 @@ namespace ocs {
       static bool binding_was_requested(const lListElem *job);
       static BindingType::Type binding_get_type(const lListElem *job);
       static BindingUnit::Unit binding_get_unit(const lListElem *job);
-      static BindingSort::SortOrder binding_get_sort(const lListElem *job);
+      static std::string binding_get_sort(const lListElem *job);
       static BindingStart::Start binding_get_start(const lListElem *job);
       static BindingEnd::End binding_get_end(const lListElem *job);
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);

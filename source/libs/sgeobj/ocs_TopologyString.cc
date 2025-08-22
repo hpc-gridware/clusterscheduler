@@ -37,6 +37,14 @@
 
 #include "sgeobj/ocs_TopologyString.h"
 
+const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = "NABUVWXYZ";
+const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = "SCEFGHT";
+const std::string ocs::TopologyString::STRUCTURE_CHARACTERS = "()";
+const std::string ocs::TopologyString::PREFIX = "#";
+const std::string ocs::TopologyString::FREE_PREFIX = PREFIX + "f";
+const std::string ocs::TopologyString::BOUND_PREFIX = PREFIX + "b";
+const std::string ocs::TopologyString::ID_PREFIX = PREFIX + "i";
+
 ocs::TopologyString::TopologyString(std::string internal_topology) : topology_(std::move(internal_topology)) {
    parse_to_tree();
 }
@@ -107,6 +115,17 @@ void ocs::TopologyString::remove_single_threads() {
    }
 
    topology_ = result;
+}
+
+bool
+ocs::TopologyString::contains_valid_node_names(std::string& sequence) {
+   for (char c : sequence) {
+      if (DATA_NODE_CHARACTERS.find(c) == std::string::npos &&
+          HARDWARE_NODE_CHARACTERS.find(c) == std::string::npos) {
+         return false;
+          }
+   }
+   return true;
 }
 
 std::string

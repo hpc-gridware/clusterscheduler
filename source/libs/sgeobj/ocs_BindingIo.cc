@@ -45,7 +45,6 @@
 #include "msg_common.h"
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
-#include "ocs_BindingSort.h"
 #include "ocs_BindingStart.h"
 #include "ocs_BindingEnd.h"
 #include "ocs_BindingInstance.h"
@@ -129,15 +128,15 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
    }
 
    // -bsort S|C|...
-   auto sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
-   if (sort != BindingSort::SortOrder::UNINITIALIZED && sort != BindingSort::SortOrder::NONE) {
+   const char *sort = lGetString(binding_elem, BN_new_sort);
+   if (sort != nullptr && strcmp(sort, NONE_STR) != 0) {
       if (as_switches) {
          binding_string += " -bsort ";
       } else {
          binding_string += ",bsort=";
       }
 
-      binding_string += BindingSort::to_string(sort);
+      binding_string += sort;
    }
 
    // -bstart S|C|...

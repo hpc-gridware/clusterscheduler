@@ -52,8 +52,6 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_BindingUnit.h"
-#include "sgeobj/ocs_BindingSort.h"
-#include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingEnd.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_BindingInstance.h"
@@ -2692,11 +2690,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             }
 
             // copy new sort but only if it is not UNINITIALIZED and different from the old one
-            auto new_sort = static_cast<ocs::BindingSort::SortOrder>(lGetUlong(new_binding_elem, BN_new_sort));
-            if (new_sort != ocs::BindingSort::SortOrder::UNINITIALIZED) {
-               ocs::BindingSort::SortOrder old_sort = ocs::Job::binding_get_sort(new_job);
+            const char *new_sort = lGetString(new_binding_elem, BN_new_sort);
+            if (new_sort != nullptr) {
+               std::string old_sort = ocs::Job::binding_get_sort(new_job);
                if (old_sort != new_sort) {
-                  lSetUlong(old_binding_elem, BN_new_sort, new_sort);
+                  lSetString(old_binding_elem, BN_new_sort, new_sort);
                   *trigger |= MOD_EVENT;
                }
             }

@@ -42,7 +42,6 @@
 #include "ocs_Binding.h"
 #include "ocs_BindingType.h"
 #include "sgeobj/ocs_BindingUnit.h"
-#include "sgeobj/ocs_BindingSort.h"
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingEnd.h"
 #include "sgeobj/ocs_BindingStrategy.h"
@@ -208,7 +207,7 @@ ocs::Job::binding_get_or_create_elem(lListElem *pjob, lList**answer) {
    lSetUlong(binding_elem, BN_new_amount, -1);
    lSetUlong(binding_elem, BN_new_unit, BindingUnit::UNINITIALIZED);
    lSetString(binding_elem, BN_new_filter, nullptr);
-   lSetUlong(binding_elem, BN_new_sort, BindingSort::UNINITIALIZED);
+   lSetString(binding_elem, BN_new_sort, nullptr);
    lSetUlong(binding_elem, BN_new_start, BindingStart::UNINITIALIZED);
    lSetUlong(binding_elem, BN_new_end, BindingEnd::UNINITIALIZED);
    lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::UNINITIALIZED);
@@ -264,20 +263,20 @@ ocs::Job::binding_get_unit(const lListElem *job) {
    DRETURN(binding_unit);
 }
 
-ocs::BindingSort::SortOrder
+std::string
 ocs::Job::binding_get_sort(const lListElem *job) {
    DENTER(TOP_LAYER);
 
-   constexpr BindingSort::SortOrder default_sort = BindingSort::NONE; // default binding type is slot
    const lListElem *binding_elem = lGetObject(job, JB_new_binding);
    if (binding_elem == nullptr) {
-      DRETURN(default_sort);
+      DRETURN(NONE_STR);
    }
 
-   auto binding_sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
-   if (binding_sort == BindingSort::UNINITIALIZED) {
-      binding_sort = default_sort;
+   const char *binding_sort = lGetString(binding_elem, BN_new_sort);
+   if (binding_sort == nullptr) {
+      DRETURN(NONE_STR);
    }
+
    DRETURN(binding_sort);
 }
 
@@ -412,9 +411,9 @@ void ocs::Job::binding_set_missing_defaults(lListElem *job) {
    if (filter == nullptr) {
       lSetString(binding_elem, BN_new_filter, NONE_STR);
    }
-   auto sort = static_cast<BindingSort::SortOrder>(lGetUlong(binding_elem, BN_new_sort));
-   if (sort == BindingSort::SortOrder::UNINITIALIZED) {
-      lSetUlong(binding_elem, BN_new_sort, BindingSort::SortOrder::NONE);
+   const char *sort = lGetString(binding_elem, BN_new_sort);
+   if (sort == nullptr) {
+      lSetString(binding_elem, BN_new_sort, NONE_STR);
    }
    auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_new_start));
    if (start == BindingStart::Start::UNINITIALIZED) {

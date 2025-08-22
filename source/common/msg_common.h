@@ -1091,8 +1091,8 @@
 #define MSG_GDI_USAGE_BFILTER_OPT         "[-bfilter topology_string]"
 #define MSG_GDI_UTEXT_BFILTER_OPT         _MESSAGE(60732, _("specifies binding filter to mask out units from binding"))
 
-#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid binding sort " SFQ ", must be one of: [S|s|C|c|E|e]"))
-#define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [S|s|C|c|E|e]]"
+#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid binding sort " SFQ ", must be one or more of: [ACESTNXY]"))
+#define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [ACESTNXY]]"
 #define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
 
 #define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e]"))

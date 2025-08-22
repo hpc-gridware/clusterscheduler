@@ -70,8 +70,7 @@ set(LIBRARY_SOURCES
       ocs_BindingIo.cc
       ocs_BindingStart.cc
       ocs_BindingEnd.cc
-      ocs_BindingSort.cc
-      ocs_BindingInstance.cc
+        ocs_BindingInstance.cc
       ocs_BindingStrategy.cc
       ocs_BindingType.cc
       ocs_BindingUnit.cc
