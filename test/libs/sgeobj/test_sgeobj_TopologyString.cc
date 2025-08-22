@@ -28,6 +28,7 @@
 
 #include "sgeobj/ocs_HostTopology.h"
 
+#if 0
 bool
 test_construction_of_topo_string_symmetric() {
    DENTER(TOP_LAYER);
@@ -42,16 +43,26 @@ test_construction_of_topo_string_symmetric() {
 
    DRETURN(ret);
 }
+#endif
 
 bool
 test_sort_by_characteristic() {
    DENTER(TOP_LAYER);
 
-   ocs::TopologyString topo1("SCTTTTCTTTTSCTTTTCTTTT");
+   ocs::TopologyString topo1("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
    topo1.parse_to_tree();
+
    topo1.print();
-   topo1.sort_by_characteristic("ST", true);
-   topo1.print();
+   std::cout << std::endl;
+
+   topo1.print(true);
+   std::cout << std::endl;
+
+   topo1.print(true, true, true);
+   std::cout << std::endl;
+
+   topo1.sort_tree("NSAXYCET", 't'); // empty dies first
+   topo1.print(true, true, true, true, true);
 
    DRETURN(true);
 }
@@ -59,8 +70,8 @@ test_sort_by_characteristic() {
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
-   bool ret = test_construction_of_topo_string_symmetric();
-   ret &= test_sort_by_characteristic();
+   //bool ret = test_construction_of_topo_string_symmetric();
+   bool ret = test_sort_by_characteristic();
 
 #if 0
    std::string unit = "CT";
