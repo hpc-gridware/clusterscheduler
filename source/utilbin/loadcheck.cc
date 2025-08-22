@@ -331,11 +331,11 @@ void test_hwloc()
       topology_string.remove_attributes();
       topology_string.remove_structure();
       topology_string.remove_single_threads();
-      printf("Topology (GCS):\t\t\t%s\n", topology_string.to_string().c_str());
+      printf("Topology (GCS):\t\t\t%s\n", topology_string.to_string(true, false, false, false, false).c_str());
 
       // Strip memory information
       topology_string.remove_memory_info();
-      printf("Topology (OCS):\t\t\t%s\n", topology_string.to_string().c_str());
+      printf("Topology (OCS):\t\t\t%s\n", topology_string.to_string(false, false, false, false, false).c_str());
 
       printf("Mapping of logical socket and core numbers to internal\n");
 

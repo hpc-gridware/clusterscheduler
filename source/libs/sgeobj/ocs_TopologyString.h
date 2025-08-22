@@ -50,8 +50,8 @@ namespace ocs {
       // Tree structure representing the topology
       std::vector<Node> nodes;
 
+      void parse_to_tree();
       void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
-
    public:
       static constexpr size_t MAX_LENGTH = 2560;
       static constexpr std::string DATA_NODE_CHARACTERS = "NABUVWXYZ";
@@ -63,15 +63,15 @@ namespace ocs {
       static constexpr std::string ID_PREFIX = PREFIX + "i";
 
       // Constructors
-      TopologyString();
-      explicit TopologyString(std::string topology);
+      explicit TopologyString(std::string internal_topology);
 
       // String to Tree and Tree to String conversion
-      void parse_to_tree();
-      [[nodiscard]] std::string to_string() const;
-      [[nodiscard]] std::string from_tree_to_string(bool with_data_nodes, bool with_structure, bool with_characteristics,
-                                                    bool with_internal_characteristics, bool with_tree_format) const;
+      [[nodiscard]] std::string to_string(bool with_data_nodes = false, bool with_structure = false,
+                                          bool with_characteristics = false, bool with_internal_characteristics = false,
+                                          bool with_tree_format = false) const;
+      [[nodiscard]] std::string to_product_topology_string() const;
 
+      // Sorting
       void sort_tree(const std::string& sort_criteria, char sort_characteristic);
 
       void remove_attributes();
@@ -79,7 +79,5 @@ namespace ocs {
       void remove_memory_info();
       void remove_single_threads();
 
-      void print(bool with_data_nodes = false, bool with_structure = false, bool with_characteristics = false,
-                 bool with_internal_characteristics = false, bool with_tree_format = false) const;
    };
 } // namespace ocs

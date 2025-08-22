@@ -37,9 +37,8 @@
 
 #include "sgeobj/ocs_TopologyString.h"
 
-ocs::TopologyString::TopologyString() = default;
-
-ocs::TopologyString::TopologyString(std::string  topology) : topology_(std::move(topology)) {
+ocs::TopologyString::TopologyString(std::string internal_topology) : topology_(std::move(internal_topology)) {
+   parse_to_tree();
 }
 
 void ocs::TopologyString::remove_attributes() {
@@ -111,13 +110,8 @@ void ocs::TopologyString::remove_single_threads() {
 }
 
 std::string
-ocs::TopologyString::to_string() const {
-   return topology_;
-}
-
-std::string
-ocs::TopologyString::from_tree_to_string(bool with_data_nodes, bool with_structure,
-                                         bool with_characteristics, bool with_internal_characteristics, bool with_tree_format) const {
+ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
+                               bool with_characteristics, bool with_internal_characteristics, bool with_tree_format) const {
    std::ostringstream oss;
 
    if (with_tree_format) {
@@ -202,14 +196,12 @@ ocs::TopologyString::from_tree_to_string(bool with_data_nodes, bool with_structu
    return oss.str();
 }
 
-void ocs::TopologyString::print(bool with_data_nodes, bool with_structure,
-                                bool with_characteristics, bool with_internal_characteristics, bool with_tree_format) const {
-   DENTER(TOP_LAYER);
-   if (nodes.empty()) {
-      return;
-   }
-
-      std::cout << from_tree_to_string(with_data_nodes, with_structure, with_characteristics, with_internal_characteristics, with_tree_format);
+std::string ocs::TopologyString::to_product_topology_string() const {
+#ifdef WITH_EXTENSIONS
+   return to_string(true, false, false, false, false);
+#else
+   return to_string(false, false, false, false, false);
+#endif
 }
 
 void ocs::TopologyString::parse_to_tree() {
