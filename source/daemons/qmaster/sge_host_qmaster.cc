@@ -779,7 +779,7 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
 
          // Keep the original value in the host element
          lSetString(*hepp, EH_internal_topology, value);
-         lSetString(ep, LR_value, topology.to_string().c_str());
+         lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
          value = lGetString(ep, LR_value);
       }
 

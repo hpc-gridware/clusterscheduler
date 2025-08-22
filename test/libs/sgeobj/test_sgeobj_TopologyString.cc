@@ -50,19 +50,12 @@ test_sort_by_characteristic() {
    DENTER(TOP_LAYER);
 
    ocs::TopologyString topo1("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
-   topo1.parse_to_tree();
 
-   topo1.print();
-   std::cout << std::endl;
-
-   topo1.print(true);
-   std::cout << std::endl;
-
-   topo1.print(true, true, true);
-   std::cout << std::endl;
+   std::cout << topo1.to_product_topology_string() <<  std::endl;
+   std::cout << topo1.to_string(true, true, true) << std::endl;
 
    topo1.sort_tree("NSAXYCET", 't'); // empty dies first
-   topo1.print(true, true, true, true, true);
+   std::cout << topo1.to_string(true, true, true, true, true) << std::endl;
 
    DRETURN(true);
 }
