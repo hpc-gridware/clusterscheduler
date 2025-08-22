@@ -47,7 +47,6 @@
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_BindingType.h"
 #include "sgeobj/ocs_BindingUnit.h"
-#include "sgeobj/ocs_BindingSort.h"
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingEnd.h"
 #include "sgeobj/ocs_BindingStrategy.h"

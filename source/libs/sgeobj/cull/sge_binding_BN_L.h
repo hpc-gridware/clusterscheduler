@@ -47,7 +47,7 @@
 *    SGE_STRING(BN_new_filter) - Mask that defines which parts of a topology should not be bound
 *    Masked parts have to be lowercase in the topology string.
 *
-*    SGE_ULONG(BN_new_sort) - Sort order of binding
+*    SGE_STRING(BN_new_sort) - Sort order of binding
 *    Defines how units within the topology string should be sorted before binding.
 *
 *    SGE_ULONG(BN_new_start) - Start position
@@ -126,7 +126,7 @@ LISTDEF(BN_Type)
    SGE_ULONG(BN_new_amount, CULL_SUBLIST)
    SGE_ULONG(BN_new_unit, CULL_SUBLIST)
    SGE_STRING(BN_new_filter, CULL_SUBLIST)
-   SGE_ULONG(BN_new_sort, CULL_SUBLIST)
+   SGE_STRING(BN_new_sort, CULL_SUBLIST)
    SGE_ULONG(BN_new_start, CULL_SUBLIST)
    SGE_ULONG(BN_new_end, CULL_SUBLIST)
    SGE_ULONG(BN_new_strategy, CULL_SUBLIST)
