@@ -30,44 +30,56 @@
 
 namespace ocs {
    class TopologyString {
-      std::string topology_;
-      std::vector<TopologyNode> sockets_;
-
-      [[nodiscard]] std::string from_tree_to_string() const;
-
-      void initialize_logical_numbering();
    public:
+      struct Node {
+         // Character representing the node type
+         char c;
+
+         // Child nodes
+         std::vector<Node> nodes;
+
+         // Characteristics of the node, e.g., size, status
+         std::unordered_map<std::string, std::string> characteristics;
+      };
+
+   private:
+      // Product internal topology string representation
+      // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
+      std::string topology_;
+
+      // Tree structure representing the topology
+      std::vector<Node> nodes;
+
+      void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
+
+   public:
+      static constexpr size_t MAX_LENGTH = 2560;
+      static constexpr std::string DATA_NODE_CHARACTERS = "NABUVWXYZ";
+      static constexpr std::string HARDWARE_NODE_CHARACTERS = "SCEFGHT";
+      static constexpr std::string STRUCTURE_CHARACTERS = "()";
+      static constexpr std::string PREFIX = "#";
+      static constexpr std::string FREE_PREFIX = PREFIX + "f";
+      static constexpr std::string BOUND_PREFIX = PREFIX + "b";
+      static constexpr std::string ID_PREFIX = PREFIX + "i";
+
       // Constructors
       TopologyString();
       explicit TopologyString(std::string topology);
 
-      // Utility methods
-      static void assign_prop_if_not_exists(std::vector<TopologyNode> &nodes, const std::string &name, int value);
-      static void print(const std::vector<TopologyNode> &nodes, int indent);
-
+      // String to Tree and Tree to String conversion
       void parse_to_tree();
-      [[nodiscard]] std::string tree_to_string() const;
+      [[nodiscard]] std::string to_string() const;
+      [[nodiscard]] std::string from_tree_to_string(bool with_data_nodes, bool with_structure, bool with_characteristics,
+                                                    bool with_internal_characteristics, bool with_tree_format) const;
 
-      void print() const;
-      void sort_by_characteristic(const std::string& characteristic, bool ascending);
-
-
-      static constexpr size_t MAX_LENGTH = 2560;
-
-      void correct_missing_threads();
-      void correct_upper_lower();
-      void correct();
+      void sort_tree(const std::string& sort_criteria, char sort_characteristic);
 
       void remove_attributes();
       void remove_structure();
       void remove_memory_info();
       void remove_single_threads();
 
-      // Accessors
-      [[nodiscard]] std::string to_string() const;
-
-
-      std::string
-      get_packed_binding(int units, std::string &unit, std::string &strategy, std::string &filter, std::string &sort, std::string &start, std::string &stop);
+      void print(bool with_data_nodes = false, bool with_structure = false, bool with_characteristics = false,
+                 bool with_internal_characteristics = false, bool with_tree_format = false) const;
    };
 } // namespace ocs
