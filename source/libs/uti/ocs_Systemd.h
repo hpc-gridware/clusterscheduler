@@ -23,6 +23,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <cstdint>
 
 #if defined(OCS_WITH_SYSTEMD)
 #include <systemd/sd-bus.h>
