@@ -90,6 +90,23 @@ apt-get install -y tcsh xterm expect tcl gnuplot
 apt-get install y openjdk-17-jdk maven
 ```
 
+### Debian 13
+
+```
+apt-get install -y git binutils autoconf automake gettext build-essential manpages-dev patchelf 
+apt-get install -y expect tcl tdom gnuplot xterm
+apt-get install -y doxygen graphviz pandoc 
+apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
+apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y libudev-dev libmunge-dev libtirpc-dev
+apt-get install -y pandoc texlive*
+```
+
+#### for repository drmaa-java
+```
+apt-get install -y openjdk-21-jdk maven
+```
+
 ### FreeBSD 13/14
 
 ```
