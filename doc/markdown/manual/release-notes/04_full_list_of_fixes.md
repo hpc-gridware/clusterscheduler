@@ -1,6 +1,62 @@
 # Full List of Fixes
 
-# Release notes - Cluster Scheduler
+## v9.0.8
+
+### Improvement
+
+[CS-739](https://hpc-gridware.atlassian.net/browse/CS-739) qstat -j output should contain job state, start time, queue name, and host names
+
+### Task
+
+[CS-1407](https://hpc-gridware.atlassian.net/browse/CS-1407) Add SUSE SLES 15 support in support matrix of release notes
+
+[CS-1440](https://hpc-gridware.atlassian.net/browse/CS-1440) Add qtelemetry licenses to GCS 3rdparty licenses directory
+
+[CS-1470](https://hpc-gridware.atlassian.net/browse/CS-1470) do memory testing on V90\_BRANCH for the 9.0.8 release
+
+### Sub-task
+
+[CS-1394](https://hpc-gridware.atlassian.net/browse/CS-1394) Add start\_time of array jobs tasks to qstat -j <jid>
+
+[CS-1395](https://hpc-gridware.atlassian.net/browse/CS-1395) Cleanup of job states and show states also in qstat -j <jid> output
+
+[CS-1396](https://hpc-gridware.atlassian.net/browse/CS-1396) Show granted host information in qstat -j <jid> output
+
+[CS-1404](https://hpc-gridware.atlassian.net/browse/CS-1404) Show granted queues in qstat -j <jid> output
+
+[CS-1410](https://hpc-gridware.atlassian.net/browse/CS-1410) Show priority in qstat -j <jid> output even if it is the base priority
+
+### Bug
+
+[CS-671](https://hpc-gridware.atlassian.net/browse/CS-671) qrsh truncates the command line and/or output at 927 characters
+
+[CS-1019](https://hpc-gridware.atlassian.net/browse/CS-1019) sge\_execd logs errors when running tightly integrated parallel jobs
+
+[CS-1270](https://hpc-gridware.atlassian.net/browse/CS-1270) Installation script clears screen in case of an error which make issues harder to debug
+
+[CS-1381](https://hpc-gridware.atlassian.net/browse/CS-1381) qacct complains "error: ignoring invalid entry in line 436" for accounting records with huge command line entry
+
+[CS-1386](https://hpc-gridware.atlassian.net/browse/CS-1386) man page for sge\_share\_mon is missing
+
+[CS-1403](https://hpc-gridware.atlassian.net/browse/CS-1403) sge\_ckpt man-page is in wrong section \(1 instead of 5\)
+
+[CS-1422](https://hpc-gridware.atlassian.net/browse/CS-1422) endless loop in protocol between sge\_qmaster and sge\_execd in certain job failure situations
+
+[CS-1424](https://hpc-gridware.atlassian.net/browse/CS-1424) qmod -sj on own job fails on submit only host
+
+[CS-1429](https://hpc-gridware.atlassian.net/browse/CS-1429) sge\_qmaster can segfault on qdel -f
+
+[CS-1434](https://hpc-gridware.atlassian.net/browse/CS-1434) clearing error state of a job leads to event callback error logging in qmaster messages file
+
+[CS-1435](https://hpc-gridware.atlassian.net/browse/CS-1435) rescheduling of jobs requires manager rights, documented is "manager or operator rights"
+
+[CS-1436](https://hpc-gridware.atlassian.net/browse/CS-1436) qmod man pages says it requires manager or operator privileges to rerun a job, but a job owner may rerun his own jobs as well
+
+[CS-1451](https://hpc-gridware.atlassian.net/browse/CS-1451) option -out of examples/jobsbin/<arch>/work is broken
+
+[CS-1476](https://hpc-gridware.atlassian.net/browse/CS-1476) Go DRMAA does not set JoinFiles\(\) correctly
+
+[CS-1477](https://hpc-gridware.atlassian.net/browse/CS-1477) In Go DRMAA TransferFiles\(\) does not set all values
 
 ## v9.0.7
 
