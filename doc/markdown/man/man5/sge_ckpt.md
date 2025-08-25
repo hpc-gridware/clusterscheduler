@@ -1,6 +1,6 @@
 ---
 title: sge_ckpt
-section: 1
+section: 5
 header: Reference Manual
 footer: __RELEASE__
 date: __DATE__
