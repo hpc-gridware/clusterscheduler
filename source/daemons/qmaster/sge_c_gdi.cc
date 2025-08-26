@@ -1439,7 +1439,7 @@ sge_chck_mod_perm_host(const sge_gdi_packet_class_t *packet, lList **alpp, u_lon
                // trigger on cluster queue list is qmod (e.g., -s),
                // must be submit or admin host
                if (host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST), packet->host) == nullptr &&
-                   host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST), packet->host) == nullptr) {
+                   host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST), packet->host) == nullptr) {
                   ERROR(MSG_SGETEXT_NOSUBMITORADMINHOST_S, packet->host);
                   answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
                   DRETURN(false);
