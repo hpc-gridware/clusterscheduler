@@ -49,6 +49,7 @@
 
 #include "gdi/sge_gdi.h"
 
+#include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_ack.h"
@@ -1363,6 +1364,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          sge_gdi_packet_class_t pseudo_packet;
          strcpy(pseudo_packet.user, bootstrap_get_admin_user());
          strcpy(pseudo_packet.host, gdi_get_act_master_host(false));
+         pseudo_packet.gdi_session = ocs::SessionManager::GDI_SESSION_NONE;
 
          /*
          ** set busy handling, sets EV_changed to true if it is really changed
