@@ -42,6 +42,8 @@
 
 #include "cull/cull.h"
 
+#include "sgeobj/ocs_HostTopology.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_job.h"
@@ -56,7 +58,6 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/ocs_HostTopology.h"
 
 #include "debit.h"
 #include "sge_job_schedd.h"
@@ -325,14 +326,14 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    // @todo CS-731: DONE: add all entries in the list instead of just the first
    bool handle_binding = false;
-   DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
    if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0) {
       handle_binding = true;
 
       // we have at least one binding_to_use element. copy the first one to the binding_touse_dstr
       const lListElem *to_use_elem = lFirst(binding_touse);
       sge_dstring_copy_string(&binding_to_use_dstr, lGetString(to_use_elem, ST_name));
-      DSTRING_STATIC(next_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(next_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
 
       // add all cores/threads of additional elements to the binding_to_use_dstr
       to_use_elem = lNext(to_use_elem);

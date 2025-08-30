@@ -54,6 +54,7 @@
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_HostTopology.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
@@ -255,7 +256,7 @@ host_get_topology_in_use(const lListElem *host, dstring *topology_in_use) {
    }
 
    // Check if the host has a resource utilization element that contains the binding in use
-   DSTRING_STATIC(topology_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(topology_dstr, ocs::TopologyString::MAX_LENGTH);
    const lListElem *utilization_slots = lGetSubStr(host, RUE_name, SGE_ATTR_SLOTS, EH_resource_utilization);
    if (utilization_slots != nullptr) {
       const char *src = lGetString(utilization_slots, RUE_utilized_now_binding_inuse);
@@ -337,7 +338,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       }
 
       // find currently used cores/threads
-      DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
       bool ret = host_get_topology_in_use(host, &binding_to_use_dstr);
       if (!ret) {
          DPRINTF("binding: no topology in use and also no topology found for host %s\n", hostname);
@@ -378,7 +379,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       }
 
       // find currently used cores/threads
-      DSTRING_STATIC(binding_in_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(binding_in_use_dstr, ocs::TopologyString::MAX_LENGTH);
       bool ret = host_get_topology_in_use(host, &binding_in_use_dstr);
       if (!ret) {
          DPRINTF("binding: no topology in use and also no topology found for host %s\n", hostname);
@@ -387,7 +388,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
       // prepare host binding mask ether by reusing the host binding that was already done in a previous step
       // or by using the binding from the host as starting point for the first task
-      DSTRING_STATIC(host_binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(host_binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
       if (binding_elem == nullptr) {
          sge_dstring_copy_dstring(&host_binding_to_use_dstr, &binding_in_use_dstr);
       } else {
@@ -395,7 +396,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       }
 
       // find binding for each slot
-      DSTRING_STATIC(task_binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(task_binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
       int max_slots = 0;
       for (max_slots = 0; max_slots < slots; max_slots++) {
 

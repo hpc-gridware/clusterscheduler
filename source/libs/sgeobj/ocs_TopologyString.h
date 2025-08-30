@@ -29,45 +29,44 @@
 #include "sgeobj/ocs_TopologyNode.h"
 
 namespace ocs {
+   // Product internal topology string representation
+   // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
    class TopologyString {
-   public:
       struct Node {
-         // Character representing the node type
-         char c;
-
-         // Child nodes
-         std::vector<Node> nodes;
-
-         // Characteristics of the node, e.g., size, status
-         std::unordered_map<std::string, std::string> characteristics;
+         char c; //< Character representing the node type
+         std::vector<Node> nodes; //< Child nodes
+         std::unordered_map<std::string, std::string> characteristics; //< Characteristics of the node, e.g., size, status
       };
 
-   private:
-      // Product internal topology string representation
-      // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
-      std::string topology_;
-
-      // Tree structure representing the topology
-      std::vector<Node> nodes;
-
-      void parse_to_tree();
-      void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
-   public:
-      static constexpr size_t MAX_LENGTH = 2560;
-      static const std::string DATA_NODE_CHARACTERS;
-      static const std::string HARDWARE_NODE_CHARACTERS;
-      static const std::string STRUCTURE_CHARACTERS;
+      // Prefixes for characteristics
       static const std::string PREFIX;
       static const std::string FREE_PREFIX;
       static const std::string BOUND_PREFIX;
       static const std::string ID_PREFIX;
 
+      // Tree structure representing the topology
+      std::vector<Node> nodes;
+
+      // Some internal service methods
+      void parse_to_tree(const std::string &topology);
+      void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
+   public:
+      // Maximum length of a topology string
+      static constexpr size_t MAX_LENGTH = 2560;
+      static constexpr int NO_POS = -1;
+
+      // Static constants for node characters
+      static const std::string DATA_NODE_CHARACTERS;
+      static const std::string HARDWARE_NODE_CHARACTERS;
+      static const std::string STRUCTURE_CHARACTERS;
+
+      // Check if a string contains valid node characters
       static bool contains_valid_node_names(std::string& sequence);
 
       // Constructors
-      explicit TopologyString(std::string internal_topology);
+      explicit TopologyString(const std::string &internal_topology);
 
-      // String to Tree and Tree to String conversion
+      // String to tree and tree to string conversion
       [[nodiscard]] std::string to_string(bool with_data_nodes = false, bool with_structure = false,
                                           bool with_characteristics = false, bool with_internal_characteristics = false,
                                           bool with_tree_format = false) const;
@@ -76,10 +75,8 @@ namespace ocs {
       // Sorting
       void sort_tree(const std::string& sort_criteria, char sort_characteristic);
 
-      void remove_attributes();
-      void remove_structure();
-      void remove_memory_info();
-      void remove_single_threads();
-
+      // Service functions
+      bool find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const;
+      void correct_topology_upper_lower();
    };
 } // namespace ocs

@@ -28,6 +28,7 @@
 
 #include <cctype>
 
+#include "ocs_TopologyString.h"
 #include "cull/cull_list.h"
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
@@ -208,7 +209,7 @@ void
 ocs::HostTopology::add_used_threads(lListElem *elem, const int topology_nm, dstring *topology_in_use_dstr) {
    DENTER(TOP_LAYER);
 
-   DSTRING_STATIC(topology_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(topology_dstr, ocs::TopologyString::MAX_LENGTH);
    const char *topology_str = lGetString(elem, topology_nm);
    if (topology_str != nullptr) {
       sge_dstring_copy_string(&topology_dstr, topology_str);
@@ -236,10 +237,10 @@ ocs::HostTopology::elem_add_binding(lListElem *elem, const int nm, const char *b
            binding_now != nullptr ? binding_now : "nullptr",
            binding_to_use != nullptr ? binding_to_use : "nullptr");
 #endif
-   DSTRING_STATIC(topology_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(topology_dstr, ocs::TopologyString::MAX_LENGTH);
    if (binding_now != nullptr) {
       sge_dstring_copy_string(&topology_dstr, binding_now);
-      DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+      DSTRING_STATIC(binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
       sge_dstring_copy_string(&binding_to_use_dstr, binding_to_use);
       add_used_threads(&topology_dstr, &binding_to_use_dstr);
    } else {
@@ -266,9 +267,9 @@ void
 ocs::HostTopology::elem_remove_binding(lListElem *elem, const int nm, const char *binding_now, const char *binding_to_use) {
    DENTER(TOP_LAYER);
 
-   DSTRING_STATIC(topology_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(topology_dstr, ocs::TopologyString::MAX_LENGTH);
    sge_dstring_copy_string(&topology_dstr, binding_now != nullptr ? binding_now : binding_to_use);
-   DSTRING_STATIC(binding_to_use_dstr, ocs::HostTopology::MAX_TOPOLOGY_LENGTH);
+   DSTRING_STATIC(binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
    sge_dstring_copy_string(&binding_to_use_dstr, binding_to_use);
    remove_used_threads(&topology_dstr, &binding_to_use_dstr);
    lSetString(elem, nm, sge_dstring_get_string(&topology_dstr));
@@ -333,7 +334,7 @@ ocs::HostTopology::remove_used_thread(dstring *topology_dstr, const int pos) {
 void
 ocs::HostTopology::correct_topology_missing_threads(dstring *topology_dstr) {
    DENTER(TOP_LAYER);
-   char new_topo[MAX_TOPOLOGY_LENGTH];
+   char new_topo[TopologyString::MAX_LENGTH];
 
    // Correct the topology string by adding missing (single) threads
    char *topology = sge_dstring_get_string_rw(topology_dstr);

@@ -27,8 +27,6 @@ namespace ocs {
    class HostTopology {
       static void add_or_remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr, bool do_add);
    public:
-      constexpr static int MAX_TOPOLOGY_LENGTH = 2560;
-
       static void correct_topology_upper_lower(dstring *topology_dstr);
       static void correct_topology_missing_threads(dstring *topology_dstr);
       static bool find_first_unused_thread(const dstring *topology_dstr, int *pos, int *socket, int *core, int *thread);
