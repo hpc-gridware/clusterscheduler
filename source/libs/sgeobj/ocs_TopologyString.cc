@@ -45,76 +45,9 @@ const std::string ocs::TopologyString::FREE_PREFIX = PREFIX + "f";
 const std::string ocs::TopologyString::BOUND_PREFIX = PREFIX + "b";
 const std::string ocs::TopologyString::ID_PREFIX = PREFIX + "i";
 
-ocs::TopologyString::TopologyString(std::string internal_topology) : topology_(std::move(internal_topology)) {
-   parse_to_tree();
-}
-
-void ocs::TopologyString::remove_attributes() {
-   // Remove all text between square brackets including the brackets
-   std::string result;
-   bool inside_square_brackets = false;
-   for (char c : topology_) {
-      if (c == '[') {
-         inside_square_brackets = true;
-         continue;
-      }
-
-      if (c == ']' && inside_square_brackets) {
-         inside_square_brackets = false;
-         continue;
-      }
-
-      if (!inside_square_brackets) {
-         result.push_back(c);
-      }
-   }
-   topology_ = result;
-}
-
-void ocs::TopologyString::remove_structure() {
-   // Remove all bracket characters from topology_ that show the structure
-   topology_.erase(std::remove_if(topology_.begin(), topology_.end(),
-                  [&](char c) {
-                     return STRUCTURE_CHARACTERS.find(c) != std::string::npos;
-                  }),
-                  topology_.end());
-
-}
-
-void ocs::TopologyString::remove_memory_info() {
-   // Remove all bracket characters from topology_ that show the structure
-   topology_.erase(std::remove_if(topology_.begin(), topology_.end(),
-                  [&](char c) {
-                     return DATA_NODE_CHARACTERS.find(c) != std::string::npos;
-                  }),
-                  topology_.end());
-
-}
-
-void ocs::TopologyString::remove_single_threads() {
-   std::string result;
-   size_t i = 0;
-
-   while (i < topology_.length()) {
-      // If current character is a thread
-      if (topology_[i] == 'T' || topology_[i] == 't') {
-         // Check if it's part of a sequence (has adjacent thread before or after)
-         bool has_prev_thread = (i > 0 && (topology_[i - 1] == 'T' || topology_[i - 1] == 't'));
-         bool has_next_thread = (i + 1 < topology_.length() && (topology_[i + 1] == 'T' || topology_[i + 1] == 't'));
-
-         // Only keep it if it's part of a sequence
-         if (has_prev_thread || has_next_thread) {
-            result.push_back(topology_[i]);
-         }
-         // Skip it if isolated
-      } else {
-         // Non-thread character, keep it
-         result.push_back(topology_[i]);
-      }
-      i++;
-   }
-
-   topology_ = result;
+// e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
+ocs::TopologyString::TopologyString(const std::string& topology) {
+   parse_to_tree(topology);
 }
 
 bool
@@ -223,18 +156,18 @@ std::string ocs::TopologyString::to_product_topology_string() const {
 #endif
 }
 
-void ocs::TopologyString::parse_to_tree() {
+void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    nodes.clear();
 
-   if (topology_.empty()) {
+   if (topology.empty()) {
       return;
    }
 
    // First, scan the topology to identify all unique node types
    std::set<char> all_node_types;
-   for (size_t i = 0; i < topology_.size(); i++) {
-      if (i > 0 && topology_[i-1] == '(' && topology_[i] != '(' && topology_[i] != ')' && topology_[i] != '[') {
-         all_node_types.insert(std::tolower(topology_[i]));
+   for (size_t i = 0; i < topology.size(); i++) {
+      if (i > 0 && topology[i-1] == '(' && topology[i] != '(' && topology[i] != ')' && topology[i] != '[') {
+         all_node_types.insert(std::tolower(topology[i]));
       }
    }
 
@@ -246,11 +179,11 @@ void ocs::TopologyString::parse_to_tree() {
       std::unordered_map<std::string, std::string> result;
 
       std::string chars_str;
-      while (pos < topology_.size() && topology_[pos] != ']') {
-         chars_str += topology_[pos++];
+      while (pos < topology.size() && topology[pos] != ']') {
+         chars_str += topology[pos++];
       }
 
-      if (pos < topology_.size() && topology_[pos] == ']') {
+      if (pos < topology.size() && topology[pos] == ']') {
          pos++; // Skip the closing bracket
       }
 
@@ -285,17 +218,17 @@ void ocs::TopologyString::parse_to_tree() {
    std::function<std::vector<Node>(void)> parse_nodes = [&]() -> std::vector<Node> {
       std::vector<Node> result;
 
-      while (pos < topology_.size()) {
-         char c = topology_[pos++];
+      while (pos < topology.size()) {
+         char c = topology[pos++];
 
          if (c == '(') {
             // Start of a new node
-            if (pos < topology_.size()) {
+            if (pos < topology.size()) {
                Node node;
-               node.c = topology_[pos++]; // Read the node type
+               node.c = topology[pos++]; // Read the node type
 
                // Check if the next character is '[' (start of characteristics)
-               if (pos < topology_.size() && topology_[pos] == '[') {
+               if (pos < topology.size() && topology[pos] == '[') {
                   pos++; // Skip the opening bracket
                   node.characteristics = parse_characteristics();
                } else {
@@ -468,4 +401,144 @@ void ocs::TopologyString::sort_tree(const std::string& node_types, char sort_cha
       bool ascending = std::islower(node_type);
       sort_tree_nodes(node_type, sort_characteristic, ascending);
    }
+}
+
+/** @brief Find the first unused thread in a topology string
+ *
+ * This function searches for the first occurrence of an unused thread (uppercase 'T') in the
+ * given topology string. It also returns the position of the character in the string
+ * as well as the logical socket/core/thread ID.
+ *
+ * Passed topology strings can be asymmetric or symmetric, and they may contain
+ * other characters representing different hardware components. Letters for threads must be present even
+ * if the cores do not support hyperthreading. (e.g. "SCTSCT" instead of "SCSC").
+ *
+ * Numbering of logical sockets, cores, and threads starts at 0.
+ *
+ * If the topology string is malformed or does not contain a thread, the function
+ * returns false and sets the position, socket, core, and thread to -1.
+ *
+ * @param topology_dstr The topology string to search in.
+ * @param pos Pointer to store the position of the found thread.
+ * @param socket Pointer to store the socket number of the found thread.
+ * @param core Pointer to store the core number of the found thread.
+ * @param thread Pointer to store the thread number of the found thread.
+ * @return true if a thread was found, false otherwise.
+ */
+bool
+ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const {
+   DENTER(TOP_LAYER);
+   constexpr int no_pos = -1;
+
+   // nothing to search and find
+   if (pos == nullptr || socket == nullptr || core == nullptr || thread == nullptr) {
+      DRETURN(false);
+   }
+
+   // Initialize counters
+   int s = no_pos;
+   int c = no_pos;
+   int t = no_pos;
+
+   // Define a recursive function to traverse the tree
+   std::function<bool(const std::vector<Node>&)> find_thread;
+   find_thread = [&](const std::vector<Node>& current_nodes) -> bool {
+      for (const auto& node : current_nodes) {
+         // Check node type and update counters
+         char upper_c = std::toupper(node.c);
+         if (upper_c == 'S') {
+            s++;
+            c = no_pos; // reset core when a new socket is found
+            t = no_pos; // reset thread when a new socket is found
+         } else if (upper_c == 'C' || upper_c == 'E') {
+            c++;
+            t = no_pos; // reset thread when a new core is found
+         } else if (upper_c == 'T') {
+            t++;
+            if (node.c == 'T') { // Uppercase T means unused thread
+               // Found an unused thread
+               *socket = s;
+               *core = c;
+               *thread = t;
+
+               // For position, use the node ID
+               auto it = node.characteristics.find(ID_PREFIX);
+               if (it != node.characteristics.end()) {
+                  *pos = std::stoi(it->second);
+               } else {
+                  *pos = NO_POS;
+               }
+
+               return true; // Thread found
+            }
+         }
+
+         // Continue search in child nodes
+         if (!node.nodes.empty()) {
+            if (find_thread(node.nodes)) {
+               return true; // Thread found in child nodes
+            }
+         }
+      }
+
+      return false; // No thread found in this subtree
+   };
+
+   // Start the search from the root
+   bool found = find_thread(nodes);
+
+   if (!found) {
+      // No thread found
+      *pos = *socket = *core = *thread = -1;
+   }
+
+   DRETURN(found);
+}
+
+/** @brief Correct the topology string by adjusting the case of threads, cores, and sockets
+ *
+ * This function modifies the topology string by ensuring that:
+ *
+ * - Threads are represented as lowercase 't' if they are used, or uppercase 'T' if they are unused.
+ * - Cores are represented as lowercase 'c' or 'e' if all threads on the core are used, or uppercase 'C' or 'E' if not.
+ * - Sockets are represented as lowercase 's' if all cores on sockets are used, or uppercase 'S' if not.
+ * - It also ensures that memory/cache letters remain uppercase.
+ *
+ * @param topology_dstr The topology string to modify.
+ */
+void ocs::TopologyString::correct_topology_upper_lower() {
+    DENTER(TOP_LAYER);
+
+    // Define a recursive function to update node cases
+    // Returns true if all children are "used" (lowercase)
+    std::function<bool(Node&)> update_node_case = [&](Node& node) -> bool {
+       // We keep leaf nodes as they are (threads)
+       if (node.nodes.empty()) {
+          return std::islower(node.c);
+       }
+
+       // Process children first (bottom-up approach)
+       bool all_children_used = true;
+       for (auto& child_node : node.nodes) {
+          bool child_used = update_node_case(child_node);
+          all_children_used = all_children_used && child_used;
+       }
+
+       // Update current node case based on children
+       if (all_children_used) {
+          node.c = std::tolower(node.c);
+       } else {
+          node.c = std::toupper(node.c);
+       }
+
+       // Return whether all children are used
+       return all_children_used;
+    };
+
+    // Process each root node
+    for (auto& root_node : nodes) {
+        update_node_case(root_node);
+    }
+
+    DRETURN_VOID;
 }

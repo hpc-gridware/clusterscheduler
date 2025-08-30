@@ -773,9 +773,6 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
          // The value reported in the user interface should not contain all information
          // Strip attributes, structure and single threads
          ocs::TopologyString topology(value);
-         topology.remove_attributes();
-         topology.remove_structure();
-         topology.remove_single_threads();
 
          // Keep the original value in the host element
          lSetString(*hepp, EH_internal_topology, value);

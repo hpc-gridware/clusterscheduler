@@ -28,6 +28,89 @@
 
 #include "sgeobj/ocs_HostTopology.h"
 
+bool
+test_find_first_unused_thread(const char *topology, int expected_pos, int expected_socket, int expected_core, int expected_thread) {
+   DENTER(TOP_LAYER);
+
+   int p, s, c, t;
+   ocs::TopologyString topo(topology);
+   bool ret = topo.find_first_unused_thread(&p, &s, &c, &t);
+   if (expected_pos >= 0) {
+      if (ret != true) {
+         std::cerr << "Expected to find a thread in " << topology << ", but did not." << std::endl;
+         return false;
+      }
+   }
+
+   if (p != expected_pos) {
+      std::cerr << "Expected to find a thread in " << topology << " at pos " << expected_pos << ", but got " << p << "." << std::endl;
+   }
+   if (s != expected_socket || c != expected_core || t != expected_thread) {
+      std::cerr << "Expected to find a thread in " << topology << "at " << expected_socket << "," << expected_core << "," << expected_thread <<
+         ", but got " << s << "," << c << "," << t << "." << std::endl;
+   }
+   DRETURN(true);
+}
+
+bool
+test_find_first_unused_scenarios() {
+   DENTER(TOP_LAYER);
+
+   // Symmetric without other information
+   bool ret = test_find_first_unused_thread("(S(c(t)(t))(C(T)(t)))(S(C(t)(T))(c(t)(t)))", 6, 0, 1, 0);
+   ret &= test_find_first_unused_thread("(s(c(t)(t)))(S(C(t)(T)))", 8, 1, 0, 1);
+
+   // Asymmetric and additional letters for NUMA nodes and caches
+   ret &= test_find_first_unused_thread("(n(s(x(c(t))(C(t)(T)))))(n(s(x(c(t)))))", 8, 0, 1, 1);
+
+   // No threads available
+   ret &= test_find_first_unused_thread("(s(c(t)(t)))(s(c(t)(t)))", -1, -1, -1, -1);
+   DRETURN(ret);
+}
+
+bool
+test_correct_topology_string(const std::string &name, char *topology, const char *expected_topology) {
+   DENTER(TOP_LAYER);
+
+   ocs::TopologyString topo(topology);
+   topo.correct_topology_upper_lower();
+   std::string topology_str = topo.to_string(true, true);
+   if (strcmp(expected_topology, topology_str.c_str()) != 0) {
+      std::cerr << name <<  ": Expected corrected topology string " << expected_topology << ", but got " << topology_str << "." << std::endl;
+      DRETURN(false);
+   }
+
+   DRETURN(true);
+}
+
+bool
+test_correct_topology_scenarios() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   char topology1[] = "(S(c(t)(t))(C(T)(t)))(S(C(t)(T))(c(t)(t)))";
+   char topologyA[] = "(S(c(t)(t))(C(T)(t)))(S(C(t)(T))(c(t)(t)))";
+   ret &= test_correct_topology_string("A", topology1, topologyA);
+
+   char topology2[] = "(n(s(X(c(t))(C(t)(T)))))(n(s(x(c(t)))))";
+   char topologyB[] = "(N(S(X(c(t))(C(t)(T)))))(n(s(x(c(t)))))";
+   ret &= test_correct_topology_string("B", topology2, topologyB);
+
+   char topology3[] = "(n(s(X(c(t)(T))(C(t)))))(N(s(x(C(t)))))";
+   char topologyC[] = "(N(S(X(C(t)(T))(c(t)))))(n(s(x(c(t)))))";
+   ret &= test_correct_topology_string("C", topology3, topologyC);
+
+   char topology4[] = "(n(s(c(t)(t))))(n(s(c(T)(T))))";
+   char topologyD[] = "(n(s(c(t)(t))))(N(S(C(T)(T))))";
+   ret &= test_correct_topology_string("D", topology4, topologyD);
+
+   char topology5[] = "(s(c(t)(t))(c(T)(t)))(s(c(t)(T))(c(t)(t)))";
+   char topologyE[] = "(S(c(t)(t))(C(T)(t)))(S(C(t)(T))(c(t)(t)))";
+   ret &= test_correct_topology_string("E", topology5, topologyE);
+
+   DRETURN(ret);
+}
+
 #if 0
 bool
 test_construction_of_topo_string_symmetric() {
@@ -63,8 +146,12 @@ test_sort_by_characteristic() {
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
+   bool ret = test_find_first_unused_scenarios();
+   ret &= test_correct_topology_scenarios();
+
+
    //bool ret = test_construction_of_topo_string_symmetric();
-   bool ret = test_sort_by_characteristic();
+   //bool ret = test_sort_by_characteristic();
 
 #if 0
    std::string unit = "CT";
