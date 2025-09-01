@@ -111,36 +111,60 @@ test_correct_topology_scenarios() {
    DRETURN(ret);
 }
 
-#if 0
 bool
-test_construction_of_topo_string_symmetric() {
+test_sort_by_characteristic_test(const std::string &name, ocs::TopologyString &topo,
+                                 const std::string &sort_criteria, char sort_characteristic,
+                                 const std::string &expected_after) {
    DENTER(TOP_LAYER);
 
-   bool ret = true;
-
-   ocs::TopologyString topo1("NXSYCtTYCTTYetETYETETNSYCTTYCTTYETETYETET");
-   //ocs::TopologyString topo1("SCttCTTETETETETSCTTCTTETETETET");
-   //ocs::TopologyString topo1("SCTTTTCTTTTSCTTTTCTTTT");
-   topo1.parse_to_tree();
-   topo1.print();
-
-   DRETURN(ret);
-}
+#if 0
+   std::string before = topo.to_string(true, false, false, false);
 #endif
 
-bool
-test_sort_by_characteristic() {
-   DENTER(TOP_LAYER);
+   topo.sort_tree(sort_criteria, sort_characteristic); // empty dies first
+   std::string after = topo.to_string(true, false, false, false);
 
-   ocs::TopologyString topo1("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
+#if 0
+   std::cout << topo.to_string(true, true, true, true, true) << std::endl;
+   std::cout << before << std::endl;
+   std::cout << after << std::endl;
+#endif
 
-   std::cout << topo1.to_product_topology_string() <<  std::endl;
-   std::cout << topo1.to_string(true, true, true) << std::endl;
-
-   topo1.sort_tree("NSAXYCET", 't'); // empty dies first
-   std::cout << topo1.to_string(true, true, true, true, true) << std::endl;
-
+   if (after != expected_after) {
+      std::cerr << "test_sort_by_characteristic_scenario " << name << " failed: got " << after << " instead of " << expected_after << std::endl;
+      DRETURN(false);
+   }
    DRETURN(true);
+}
+
+bool
+test_sort_by_characteristic_scenarios() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   // topo string with C-cores that are partially or completely used and one E core that is completely used
+   // NSXYCTTYCtTycttYCTtYCTTYCTTYETETetETYETETETET
+   ocs::TopologyString topoA("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
+   std::string sort_criteria = "NSAXYCET"; // all empty nodes first
+   std::string expected_after = "NSXYETETETETYETETETetYCTTYCTTYCTTYCTtYCTtyctt";
+   char sort_characteristic = 't';
+   ret &= test_sort_by_characteristic_test("A" , topoA,  sort_criteria, sort_characteristic, expected_after);
+
+   // nodes with the most utilized threads first
+   ocs::TopologyString topoB("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
+   sort_criteria = "nsaxycet"; // all "full" nodes frist
+   expected_after = "NSXycttYCtTYCtTYCTTYCTTYCTTYetETETETYETETETET";
+   sort_characteristic = 't';
+   ret &= test_sort_by_characteristic_test("B" , topoB,  sort_criteria, sort_characteristic, expected_after);
+
+   // sorted all according to utilized threads except of Y caches
+   ocs::TopologyString topoC("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
+   sort_criteria = "nsaxYcet"; // all "full" nodes frist
+   expected_after = "NSXYETETETETYetETETETYCTTYCTTYCTTYCtTYCtTyctt";
+   sort_characteristic = 't';
+   ret &= test_sort_by_characteristic_test("C" , topoC,  sort_criteria, sort_characteristic, expected_after);
+
+   DRETURN(ret);
 }
 
 int main (int argc, char *argv[]) {
@@ -148,10 +172,7 @@ int main (int argc, char *argv[]) {
 
    bool ret = test_find_first_unused_scenarios();
    ret &= test_correct_topology_scenarios();
-
-
-   //bool ret = test_construction_of_topo_string_symmetric();
-   //bool ret = test_sort_by_characteristic();
+   ret &= test_sort_by_characteristic_scenarios();
 
 #if 0
    std::string unit = "CT";
