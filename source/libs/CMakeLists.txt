@@ -37,3 +37,7 @@ add_subdirectory(sched)
 add_subdirectory(spool)
 add_subdirectory(uti)
 # add_subdirectory(wingrid)
+
+if (PROJECT_FEATURES MATCHES "gcs-extensions")
+    add_subdirectory(juti)
+endif()
