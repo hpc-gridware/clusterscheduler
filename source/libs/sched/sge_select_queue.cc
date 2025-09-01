@@ -265,7 +265,7 @@ host_get_topology_in_use(const lListElem *host, dstring *topology_in_use) {
       }
    }
 
-   // If nothing is in use so far then start with the topology string from the host
+   // If nothing is in use so far, then start with the topology string from the host
    if (sge_dstring_get_string(&topology_dstr)[0] == '\0') {
       const lListElem *topology_elem = lGetSubStr(host, HL_name, "m_topology", EH_load_list);
       if (topology_elem != nullptr) {

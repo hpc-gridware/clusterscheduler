@@ -248,6 +248,7 @@ static const int eh_nm[] = {
         EH_seq_no,
         EH_resource_utilization,
         EH_reschedule_unknown_list,
+        EH_internal_topology,
         NoName
 };
 

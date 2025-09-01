@@ -77,7 +77,7 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
 
           for (const auto& node : current_nodes) {
              // Skip data nodes if requested
-             if (!with_data_nodes && DATA_NODE_CHARACTERS.find(node.c) != std::string::npos) {
+             if (!with_data_nodes && DATA_NODE_CHARACTERS.find(std::toupper(node.c)) != std::string::npos) {
                 show_data_nodes = false;
              }
 
@@ -193,7 +193,10 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
       while (std::getline(iss, pair, ',')) {
          // Trim whitespace
          pair.erase(0, pair.find_first_not_of(" \t"));
-         pair.erase(pair.find_last_not_of(" \t") + 1);
+         auto last_pos = pair.find_last_not_of(" \t");
+         if (last_pos != std::string::npos) {
+            pair.erase(last_pos + 1);
+         }
 
          // Find the equals sign
          size_t equals_pos = pair.find('=');
@@ -227,7 +230,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                Node node;
                node.c = topology[pos++]; // Read the node type
 
-               // Check if the next character is '[' (start of characteristics)
+               // Check if the next character is '[' which indicates the start of characteristics
                if (pos < topology.size() && topology[pos] == '[') {
                   pos++; // Skip the opening bracket
                   node.characteristics = parse_characteristics();
@@ -238,15 +241,10 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                // Add the sequential ID as a characteristic
                node.characteristics[ID_PREFIX] = std::to_string(id_counter++);
 
-               // Add the "bound" characteristic if the letter is lowercase
-               bool is_bound = std::islower(node.c);
-               if (is_bound) {
-                  node.characteristics[BOUND_PREFIX] = "1";
-               }
+               // Parse all child nodes
+               node.nodes = parse_nodes();
 
-               node.nodes = parse_nodes(); // Parse child nodes recursively
-
-               // Count bound children
+               // Count bound children and store as characteristic #b
                int bound_children = 0;
                for (const auto& child : node.nodes) {
                   if (std::islower(child.c)) {
@@ -258,8 +256,6 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                // Initialize counters for ALL node types in the tree
                std::unordered_map<char, int> bound_type_counts;
                std::unordered_map<char, int> free_type_counts;
-
-               // Initialize counters for all identified node types to 0
                for (char type : all_node_types) {
                   bound_type_counts[type] = 0;
                   free_type_counts[type] = 0;
@@ -267,7 +263,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
 
                // If this node is bound/free, count it for its type
                char lowercase_type = std::tolower(node.c);
-               if (is_bound) {
+               if (std::islower(node.c)) {
                   bound_type_counts[lowercase_type] = 1;
                } else {
                   free_type_counts[lowercase_type] = 1;
@@ -325,8 +321,7 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
    std::string sort_key = FREE_PREFIX + std::string(1, sort_type_lower);
 
    // Define a recursive function to sort nodes at each level
-   std::function<void(std::vector<Node>&)> sort_nodes;
-   sort_nodes = [&](std::vector<Node>& current_nodes) {
+   std::function<void(std::vector<Node>&)> sort_nodes = [&](std::vector<Node>& current_nodes) {
       // Check if any child nodes match the target type
       bool has_matching_nodes = false;
       for (const auto& node : current_nodes) {
@@ -428,7 +423,6 @@ void ocs::TopologyString::sort_tree(const std::string& node_types, char sort_cha
 bool
 ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const {
    DENTER(TOP_LAYER);
-   constexpr int no_pos = -1;
 
    // nothing to search and find
    if (pos == nullptr || socket == nullptr || core == nullptr || thread == nullptr) {
@@ -436,9 +430,9 @@ ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, 
    }
 
    // Initialize counters
-   int s = no_pos;
-   int c = no_pos;
-   int t = no_pos;
+   int s = NO_POS;
+   int c = NO_POS;
+   int t = NO_POS;
 
    // Define a recursive function to traverse the tree
    std::function<bool(const std::vector<Node>&)> find_thread;
@@ -448,11 +442,11 @@ ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, 
          char upper_c = std::toupper(node.c);
          if (upper_c == 'S') {
             s++;
-            c = no_pos; // reset core when a new socket is found
-            t = no_pos; // reset thread when a new socket is found
+            c = NO_POS; // reset core when a new socket is found
+            t = NO_POS; // reset thread when a new socket is found
          } else if (upper_c == 'C' || upper_c == 'E') {
             c++;
-            t = no_pos; // reset thread when a new core is found
+            t = NO_POS; // reset thread when a new core is found
          } else if (upper_c == 'T') {
             t++;
             if (node.c == 'T') { // Uppercase T means unused thread
@@ -502,9 +496,6 @@ ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, 
  * - Threads are represented as lowercase 't' if they are used, or uppercase 'T' if they are unused.
  * - Cores are represented as lowercase 'c' or 'e' if all threads on the core are used, or uppercase 'C' or 'E' if not.
  * - Sockets are represented as lowercase 's' if all cores on sockets are used, or uppercase 'S' if not.
- * - It also ensures that memory/cache letters remain uppercase.
- *
- * @param topology_dstr The topology string to modify.
  */
 void ocs::TopologyString::correct_topology_upper_lower() {
     DENTER(TOP_LAYER);
