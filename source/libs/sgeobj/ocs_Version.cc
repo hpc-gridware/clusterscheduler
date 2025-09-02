@@ -38,8 +38,8 @@
 // CMakeLists.txt and dist/inst_sge have to be be updated too.
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 0
-#define OCS_VERSION_PATCH 8
-#define OCS_VERSION_SUFFIX ""
+#define OCS_VERSION_PATCH 9
+#define OCS_VERSION_SUFFIX "prealpha"
 
 static const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
