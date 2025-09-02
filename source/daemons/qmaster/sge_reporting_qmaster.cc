@@ -383,7 +383,7 @@ ocs::ClassicReportingFileWriter::create_new_job_record(lList **answer_list, cons
 
       job_number = lGetUlong(job, JB_job_number);
       priority = lGetUlong(job, JB_priority);
-      submission_time = lGetUlong64(job, JB_submission_time);
+      submission_time = sge_gmt64_to_time_t(lGetUlong64(job, JB_submission_time));
       job_name = lGetStringNotNull(job, JB_job_name);
       owner = lGetStringNotNull(job, JB_owner);
       group = lGetStringNotNull(job, JB_group);
@@ -481,7 +481,7 @@ ocs::ClassicReportingFileWriter::create_job_log(lList **answer_list, u_long64 ev
       }
 
       priority = lGetUlong(job, JB_priority);
-      submission_time = lGetUlong64(job, JB_submission_time);
+      submission_time = sge_gmt64_to_time_t(lGetUlong64(job, JB_submission_time));
       job_name = lGetStringNotNull(job, JB_job_name);
       owner = lGetStringNotNull(job, JB_owner);
       group = lGetStringNotNull(job, JB_group);
@@ -991,10 +991,10 @@ bool
 ocs::ClassicReportingFileWriter::create_new_ar_record(lList **answer_list,
                                                  const lListElem *ar,
                                                  u_long64 report_time) {
+   DENTER(TOP_LAYER);
+
    bool ret = true;
    const char *owner = lGetString(ar, AR_owner);
-
-   DENTER(TOP_LAYER);
 
    dstring dstr = DSTRING_INIT;
    sge_dstring_sprintf_append(&dstr,
