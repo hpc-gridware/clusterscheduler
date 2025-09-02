@@ -57,6 +57,8 @@ proc main {} {
       exit 1
    }
 
+   set exit_code 0
+
    foreach filename $argv {
       if {$filename eq "-n"} {
          set do_dryrun 1
@@ -72,13 +74,16 @@ proc main {} {
       }
       if {![file exists $filename]} {
          puts stderr "$filename: does not exist"
+         set exit_code 1
          continue
       }
       if {![file isfile $filename]} {
          puts stderr "$filename: is not a regular file"
+         set exit_code 1
          continue
       }
       if {![read_file $filename lines permissions]} {
+         set exit_code 1
          continue
       }
       set new_lines [process_file $filename lines]
@@ -89,6 +94,8 @@ proc main {} {
       }
       unset -nocomplain lines new_lines
    }
+
+   exit $exit_code
 }
 
 proc exclude_filename {filename} {
