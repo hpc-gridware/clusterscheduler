@@ -167,12 +167,146 @@ test_sort_by_characteristic_scenarios() {
    DRETURN(ret);
 }
 
+bool
+test_find_first_unused_thread(const char name, const std::string &topo_string,
+                              const int expected_id, const int expected_socket, const int expected_core, const int expected_thread) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   ocs::TopologyString topo(topo_string);
+   int id, socket, core, thread;
+   if (topo.find_first_unused_thread(&id, &socket, &core, &thread)) {
+      if (id != expected_id || socket != expected_socket || core != expected_core || thread != expected_thread) {
+         std::cerr << "Scenario " << name << ": Expected to find unused thread at " << expected_id << ", " << expected_socket << ", " << expected_core << ", " << expected_thread <<
+            ", but got " << id << ", " << socket << ", " << core << ", " << thread << "." << std::endl;
+         ret = false;
+      }
+   } else {
+      if (id != expected_id || socket != expected_socket || core != expected_core || thread != expected_thread) {
+         std::cerr << "Scenario " << name << ": Expected not to find unused thread at " << expected_id << ", " << expected_socket << ", " << expected_core << ", " << expected_thread <<
+            ", but got " << id << ", " << socket << ", " << core << ", " << thread << "." << std::endl;
+         ret = false;
+      }
+   }
+   DRETURN(ret);
+}
+
+bool test_find_first_unused_thread_scenarios() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   std::string topoA("(N(S(X(Y(C(T)(T)))(Y(C(t)(T)))(y(c(t)(t)))(Y(C(T)(t)))(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(e(t))(E(T)))(Y(E(T))(E(T))(E(T))(E(T))))))");
+   ret &= test_find_first_unused_thread('A', topoA, 6, 0, 0, 0);
+
+   std::string topoB("(N(S(X(y(c(t)(t)))(Y(C(t)(T)))(y(c(t)(t)))(Y(C(T)(t)))(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(e(t))(E(T)))(Y(E(T))(E(T))(E(T))(E(T))))))");
+   ret &= test_find_first_unused_thread('B', topoB, 11, 0, 1, 1);
+
+   std::string topoC("(n(s(x(y(c(t)(t)))(y(c(t)(t)))))(S(X(y(c(t)(t)))(Y(C(T)(t))))))");
+   ret &= test_find_first_unused_thread('C', topoC, 20, 1, 1, 0);
+
+   std::string topoD("(n(s(x(y(c(t)(t)))(y(c(t)(t)))))(s(x(y(c(t)(t)))(y(c(t)(t))))))");
+   ret &= test_find_first_unused_thread('D', topoD, -1, -1, -1, -1);
+   DRETURN(ret);
+}
+
+bool test_to_unused_internal_topoloy_string_scenario(char name, const std::string &topo_string, const std::string &expected_result) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   ocs::TopologyString topo(topo_string);
+   std::string result = topo.to_unused_internal_topology_string();
+   if (result != expected_result) {
+      std::cerr << "Scenario " << name << ": Expected to get " << expected_result << ", but got " << result << "." << std::endl;
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+bool test_to_unused_internal_topoloy_string() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   std::string topo_A("(n(S(X(y(c(t)(t)))(Y(C(T)(t)))))(S(X(y(c(t)(t)))(Y(C(T)(t))))))");
+   std::string exp_A = "(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))";
+   ret &= test_to_unused_internal_topoloy_string_scenario('A', topo_A, exp_A);
+
+   DRETURN(ret);
+}
+
+bool test_mark_as_used_scenario(char name, const std::string &topo_string, const int id, bool mark_used, const std::string expected_result) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   ocs::TopologyString topo(topo_string);
+   topo.mark_node_as_used_or_unused(id, mark_used);
+   std::string result = topo.to_string(true, true, true, false, false, false);
+   if (result != expected_result) {
+      std::cerr << "Scenario " << name << ": Expected to get " << expected_result << ", but got " << result << "." << std::endl;
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+bool test_mark_as_used_scenarios() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   std::string topo_A("(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   std::string exp_A( "(N(S(X(y(c(t)(t)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   ret &=test_mark_as_used_scenario('A', topo_A, 4, true, exp_A);
+
+   std::string topo_B( "(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   std::string exp_B(  "(N(S(X(Y(C(t)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   ret &=test_mark_as_used_scenario('B', topo_B, 6, true, exp_B);
+
+   std::string topo_C( "(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(y(c(t)(t))))))");
+   std::string exp_C(  "(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(s(x(y(c(t)(t)))(y(c(t)(t))))))");
+   ret &=test_mark_as_used_scenario('C', topo_C, 14, true, exp_C);
+   DRETURN(ret);
+}
+
+bool test_mark_nodes_as_used_scenario(const std::string &name, const std::string &topo_string_A, const std::string &topo_string_B, const std::string &expected_result, bool mark_used) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   ocs::TopologyString topo_A(topo_string_A);
+   ocs::TopologyString topo_B(topo_string_B);
+
+   topo_A.mark_nodes_as_used_or_unused(topo_B, mark_used);
+   std::string result_A = topo_A.to_string(true, true, true, false, false, false);
+   if (result_A != expected_result) {
+      std::cerr << "Scenario " << name << ": Expected to get " << expected_result << ", but got " << result_A << "." << std::endl;
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
+bool test_mark_nodes_as_unused() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   std::string topo1_A("(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   std::string topo2_A( "(N(S(X(y(c(t)(t)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   std::string exp_A1( "(N(S(X(y(c(t)(t)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   std::string exp_A2("(N(S(X(Y(C(T)(T)))(Y(C(T)(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T))))))");
+   // add used as used to another topo mask
+   ret &= test_mark_nodes_as_used_scenario("A1a", topo1_A, topo2_A, exp_A1, true);
+
+   // add used to a topo mask where the same is already marked as used
+   ret &= test_mark_nodes_as_used_scenario("A1b", topo1_A, topo2_A, exp_A1, true);
+
+   // remove used from a topo mask
+   ret &= test_mark_nodes_as_used_scenario("A2", topo1_A, topo2_A, exp_A2, false);
+
+   DRETURN(ret);
+}
+
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
    bool ret = test_find_first_unused_scenarios();
    ret &= test_correct_topology_scenarios();
    ret &= test_sort_by_characteristic_scenarios();
+   ret &= test_find_first_unused_thread_scenarios();
+   ret &= test_to_unused_internal_topoloy_string();
+   ret &= test_mark_as_used_scenarios();
+   ret &= test_mark_nodes_as_unused();
 
 #if 0
    std::string unit = "CT";

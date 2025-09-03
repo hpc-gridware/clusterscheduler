@@ -326,20 +326,20 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    // @todo CS-731: DONE: add all entries in the list instead of just the first
    bool handle_binding = false;
-   DSTRING_STATIC(binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
+   ocs::TopologyString binding_to_use_obj;
    if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0) {
       handle_binding = true;
 
       // we have at least one binding_to_use element. copy the first one to the binding_touse_dstr
       const lListElem *to_use_elem = lFirst(binding_touse);
-      sge_dstring_copy_string(&binding_to_use_dstr, lGetString(to_use_elem, ST_name));
-      DSTRING_STATIC(next_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
+      ocs::TopologyString binding_to_add(lGetString(to_use_elem, ST_name));
+      binding_to_use_obj.mark_nodes_as_used_or_unused(binding_to_add, true);
 
       // add all cores/threads of additional elements to the binding_to_use_dstr
       to_use_elem = lNext(to_use_elem);
       while (to_use_elem) {
-         sge_dstring_copy_string(&next_to_use_dstr, lGetString(to_use_elem, ST_name));
-         ocs::HostTopology::add_used_threads(&binding_to_use_dstr, &next_to_use_dstr);
+         binding_to_add.reset_topology(lGetString(to_use_elem, ST_name));
+         binding_to_use_obj.mark_nodes_as_used_or_unused(binding_to_add, true);
          to_use_elem = lNext(to_use_elem);
       }
    }
@@ -359,9 +359,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lAddDouble(start, RDE_amount, utilization);
       // @todo CS-731: DONE: add binding_inuse information to the start element
       if (handle_binding) {
-         ocs::HostTopology::elem_add_binding(start, RDE_binding_inuse,
-                                 lGetString(start, RDE_binding_inuse),
-                                sge_dstring_get_string(&binding_to_use_dstr));
+         ocs::TopologyString topo_binding_now(lGetString(start, RDE_binding_inuse));
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
+                                                                binding_to_use_obj, true);
       }
    } else {
       // no start element found, so we need to create one
@@ -378,8 +378,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lSetDouble(start, RDE_amount, utilization + util_prev);
       // @todo CS-731: DONE: add binding_inuse information to the start element
       if (handle_binding) {
-         ocs::HostTopology::elem_add_binding(start, RDE_binding_inuse, binding_prev,
-                                sge_dstring_get_string(&binding_to_use_dstr));
+         ocs::TopologyString topo_binding_now(binding_prev);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
+                                                                binding_to_use_obj, true);
       }
 
       // Insert the new element with our start time after the previous element that has an earlier start time
@@ -403,9 +404,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lAddDouble(thiz, RDE_amount, utilization);
       // @todo CS-731: DONE: add binding_inuse information to the thiz element
       if (handle_binding) {
-         ocs::HostTopology::elem_add_binding(thiz, RDE_binding_inuse,
-                                 lGetString(thiz, RDE_binding_inuse),
-                                sge_dstring_get_string(&binding_to_use_dstr));
+         ocs::TopologyString topo_binding_now(lGetString(start, RDE_binding_inuse));
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
+                                                                binding_to_use_obj, true);
       }
       prev = thiz;
       thiz = lNextRW(thiz);
@@ -419,8 +420,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lSetUlong64(end, RDE_time, end_time);
       lSetDouble(end, RDE_amount, util_prev - utilization);
       if (handle_binding) {
-         ocs::HostTopology::elem_remove_binding(end, RDE_binding_inuse, binding_prev,
-                                                sge_dstring_get_string(&binding_to_use_dstr));
+         ocs::TopologyString topo_binding_now(binding_prev);
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
+                                                                binding_to_use_obj, true);
       }
 
       lInsertElem(resource_diagram, prev, end);

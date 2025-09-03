@@ -58,6 +58,8 @@
 
 #include "sge_host.h"
 
+#include "ocs_TopologyString.h"
+
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) {
    lListElem *ret = nullptr;
@@ -556,8 +558,17 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
 
 #if 1
-   DPRINTF("host_debit_binding: in-use: %s, to-use: %s, slots: %d\n",
-           binding_in_use ? binding_in_use : "null", binding_to_use ? binding_to_use : "null", slots);
+   if (binding_in_use != nullptr) {
+      ocs::TopologyString topo_in_use(binding_in_use);
+      DPRINTF("host_debit_binding: in_use: %s\n", topo_in_use.to_product_topology_string().c_str());
+   } else {
+      DPRINTF("host_debit_binding: in_use: NONE\n");
+   }
+   if (binding_to_use != nullptr) {
+      ocs::TopologyString topo_to_use(binding_to_use);
+      DPRINTF("host_debit_binding: to_use: %s\n", topo_to_use.to_product_topology_string().c_str());
+      DPRINTF("host_debit_binding: slots: %d\n", slots);
+   }
 #endif
 
    // just check if the requested change makes sense then return
@@ -575,15 +586,19 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
 
    // @todo CS-731: DONE: add or remove binding_in_use from resource->RUE_utilized_now_binding_inuse
    // add/remove all cores/threads that are set in binding_to_use to binding_in_use
-   if (slots > 0) {
-      ocs::HostTopology::elem_add_binding(resource, RUE_utilized_now_binding_inuse,
-                              lGetString(resource, RUE_utilized_now_binding_inuse), binding_to_use);
+   ocs::TopologyString topo_now;
+   const char *now_str = lGetString(resource, RUE_utilized_now_binding_inuse);
+   if (now_str) {
+      topo_now = ocs::TopologyString(now_str);
+      ocs::TopologyString topo_to_use(binding_to_use);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
+                                                            topo_now, topo_to_use, slots > 0);
    } else {
-      ocs::HostTopology::elem_remove_binding(resource, RUE_utilized_now_binding_inuse,
-                                 lGetString(resource, RUE_utilized_now_binding_inuse), binding_to_use);
+      // @todo CS-732: do cleanup. allow the second topo string to be empty
+      topo_now = ocs::TopologyString(binding_to_use);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
+                                                            topo_now, topo_now, slots > 0);
    }
-
-   DPRINTF("host_debit_binding: utilized-now-binding: %s\n", lGetString(resource, RUE_utilized_now_binding_inuse));
 
    mods++;
    DRETURN(mods);

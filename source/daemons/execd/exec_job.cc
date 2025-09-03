@@ -455,7 +455,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    // @todo: CS-731: find the binding decision for the job that needs to be written to the config file
-   DSTRING_STATIC(binding_to_use, ocs::TopologyString::MAX_LENGTH);
+   ocs::TopologyString binding_to_use;
+   bool binding_to_use_is_initialized = false;
    // @todo: CS-731: support other binding strategies than set also in shepherd
    int binding_instance = BINDING_TYPE_SET;
    if (mconf_get_enable_binding()) {
@@ -474,13 +475,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          const lListElem *be;
          for_each_ep(be, binding_list) {
             // we have a binding entry, append it to the binding_to_use dstring
-            if (sge_dstring_get_string(&binding_to_use)[0] == '\0') {
-               sge_dstring_append(&binding_to_use, lGetString(be, ST_name));
+            if (!binding_to_use_is_initialized) {
+               binding_to_use.reset_topology(lGetString(be, ST_name));
+               binding_to_use_is_initialized = true;
             } else {
-               DSTRING_STATIC(binding_to_add, ocs::TopologyString::MAX_LENGTH);
-               sge_dstring_append(&binding_to_add, lGetString(be, ST_name));
+               ocs::TopologyString binding_to_add(lGetString(be, ST_name));
 
-               ocs::HostTopology::add_used_threads(&binding_to_use, &binding_to_add);
+               binding_to_use.mark_nodes_as_used_or_unused(binding_to_add, true);
             }
          }
       }
@@ -1486,8 +1487,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    // @todo CS-731: write the binding to the config file.
    {
-      const char *binding_to_use_str = sge_dstring_get_string(&binding_to_use);
-      fprintf(fp, "binding_to_use=%s\n", binding_to_use_str[0] == '\0' ? "none" : binding_to_use_str);
+      fprintf(fp, "binding_to_use=%s\n", binding_to_use_is_initialized ? binding_to_use.to_product_topology_string().c_str() : "none");
       fprintf(fp, "binding_instance=%d\n", binding_instance);
    }
 
