@@ -575,11 +575,15 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    if (lGetPosViaElem(job, JB_ja_structure, SGE_NO_ABORT) >= 0) {
-      u_long32 start, end, step;
-
-      job_get_submit_task_ids(job, &start, &end, &step);
-      if (job_is_array(job))
+      if (job_is_array(job)) {
+         u_long32 start, end, step;
+         job_get_submit_task_ids(job, &start, &end, &step);
          printf("job-array tasks:                " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
+         u_long32 task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
+         if (task_concurrency > 0) {
+            printf("task_concurrency:               " sge_u32 "\n", task_concurrency);
+         }
+      }
    }
 
    if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0)
