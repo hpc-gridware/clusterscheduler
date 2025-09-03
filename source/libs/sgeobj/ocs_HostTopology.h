@@ -23,14 +23,13 @@
 #include "uti/sge_dstring.h"
 #include "cull/cull.h"
 
+#if 0
 namespace ocs {
    class HostTopology {
       static void add_or_remove_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr, bool do_add);
    public:
       static void correct_topology_upper_lower(dstring *topology_dstr);
       static void correct_topology_missing_threads(dstring *topology_dstr);
-      static bool find_first_unused_thread(const dstring *topology_dstr, int *pos, int *socket, int *core, int *thread);
-      static bool find_first_unused_thread(const dstring *topology_dstr, int *pos);
 
       static void add_used_threads(dstring *topology_dstr, const dstring *topology_in_use_dstr);
       static void add_used_threads(lListElem *elem, int topology_nm, dstring *topology_in_use_dstr);
@@ -44,3 +43,4 @@ namespace ocs {
       static void elem_remove_binding(lListElem *elem, int nm, const char *binding_now, const char *binding_to_use);
       };
 }
+#endif

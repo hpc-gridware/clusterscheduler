@@ -33,98 +33,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 
-/** @brief Find the first unused thread in a topology string
- *
- * This function searches for the first occurrence of an unused thread (uppercase 'T') in the
- * given topology string. It also returns the position of the character in the string
- * as well as the logical socket/core/thread ID.
- *
- * Passed topology strings can be asymmetric or symmetric, and they may contain
- * other characters representing different hardware components. Letters for threads must be present even
- * if the cores do not support hyperthreading. (e.g. "SCTSCT" instead of "SCSC").
- *
- * Numbering of logical sockets, cores, and threads starts at 0.
- *
- * If the topology string is malformed or does not contain a thread, the function
- * returns false and sets the position, socket, core, and thread to -1.
- *
- * @param topology_dstr The topology string to search in.
- * @param pos Pointer to store the position of the found thread.
- * @param socket Pointer to store the socket number of the found thread.
- * @param core Pointer to store the core number of the found thread.
- * @param thread Pointer to store the thread number of the found thread.
- * @return true if a thread was found, false otherwise.
- */
-bool
-ocs::HostTopology::find_first_unused_thread(const dstring *topology_dstr, int *pos, int *socket, int *core, int *thread) {
-   DENTER(TOP_LAYER);
-   constexpr int no_pos = -1;
-
-   // nothing to search and find
-   if (topology_dstr == nullptr || pos == nullptr || socket == nullptr || core == nullptr || thread == nullptr) {
-      DRETURN(false);
-   }
-
-   const char *topology = sge_dstring_get_string(topology_dstr);
-   int s = no_pos;
-   int c = no_pos;
-   int t = no_pos;
-   for (size_t i = 0; topology[i] != '\0'; i++) {
-      switch (topology[i]) {
-         case 'S':
-         case 's':
-            s++;
-            c = no_pos; // reset core when a new socket is found
-            t = no_pos; // reset thread when a new socket is found
-            break;
-         case 'C':
-         case 'c':
-         case 'E':
-         case 'e':
-            c++;
-            t = no_pos; // reset thread when a new core is found
-            break;
-         case 't':
-            t++;
-            break;
-         case 'T':
-            // found it
-            t++;
-            *pos = static_cast<int>(i);
-            *socket = s;
-            *core = c;
-            *thread = t;
-
-            // 't' in front of socket or core should not happen
-            SGE_ASSERT(*socket != no_pos && *core != no_pos);
-
-            DRETURN(true);
-         default:
-            // ignore other characters (like N for NUMA nodes or letters for caches)
-            break;
-      }
-   }
-
-   // no 't' found in topology string
-   *pos = *socket = *core = *thread = -1;
-   DRETURN(false);
-}
-
-/** @brief Find the first unused thread in a topology string
- *
- * This function is a convenience wrapper that only returns the position of the first unused thread.
- * It does not provide socket, core, or thread information.
- *
- * @param topology_dstr The topology string to search in.
- * @param pos Pointer to store the position of the found thread.
- * @return true if a thread was found, false otherwise.
- */
-bool
-ocs::HostTopology::find_first_unused_thread(const dstring *topology_dstr, int *pos) {
-   int socket, core, thread;
-
-   return find_first_unused_thread(topology_dstr, pos, &socket, &core, &thread);
-}
+#if 0
 
 /** @brief Add or remove used threads in a topology string
  *
@@ -472,4 +381,6 @@ ocs::HostTopology::remove_all_used_threads(dstring *topology_dstr) {
    }
    DRETURN_VOID;
 }
+
+#endif
 

@@ -24,6 +24,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "cull/cull.h"
+
 #include "uti/sge_dstring.h"
 
 #include "sgeobj/ocs_TopologyNode.h"
@@ -63,20 +65,30 @@ namespace ocs {
       // Check if a string contains valid node characters
       static bool contains_valid_node_names(std::string& sequence);
 
+      static void elem_mark_nodes_as_used_or_unused(lListElem *elem, int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used);
+
       // Constructors
+      TopologyString() = default;
       explicit TopologyString(const std::string &internal_topology);
 
       // String to tree and tree to string conversion
       [[nodiscard]] std::string to_string(bool with_data_nodes = false, bool with_structure = false,
                                           bool with_characteristics = false, bool with_internal_characteristics = false,
-                                          bool with_tree_format = false) const;
+                                          bool with_tree_format = false, bool show_as_unused = false) const;
       [[nodiscard]] std::string to_product_topology_string() const;
+      [[nodiscard]] std::string to_unused_internal_topology_string() const;
 
       // Sorting
       void sort_tree(const std::string& sort_criteria, char sort_characteristic);
 
       // Service functions
-      bool find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const;
       void correct_topology_upper_lower();
+
+      bool find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const;
+      [[nodiscard]] int find_first_unused_thread() const;
+      void mark_node_as_used_or_unused(int id, bool mark_used);
+      void reset_topology(const std::string &topology);
+
+      void mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used);
    };
 } // namespace ocs

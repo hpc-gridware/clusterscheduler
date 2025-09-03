@@ -47,7 +47,7 @@ const std::string ocs::TopologyString::ID_PREFIX = PREFIX + "i";
 
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
 ocs::TopologyString::TopologyString(const std::string& topology) {
-   parse_to_tree(topology);
+   reset_topology(topology);
 }
 
 bool
@@ -63,7 +63,8 @@ ocs::TopologyString::contains_valid_node_names(std::string& sequence) {
 
 std::string
 ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
-                               bool with_characteristics, bool with_internal_characteristics, bool with_tree_format) const {
+                               bool with_characteristics, bool with_internal_characteristics,
+                               bool with_tree_format, bool show_as_unused) const {
    std::ostringstream oss;
 
    if (with_tree_format) {
@@ -94,7 +95,11 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
              if (show_data_nodes) {
                 // Print structure if requested
 
-                oss << node.c;
+                if (show_as_unused) {
+                   oss << static_cast<char>(std::toupper(node.c));
+                } else {
+                   oss << node.c;
+                }
 
                 // Print characteristics if requested
                 if (with_characteristics && !node.characteristics.empty()) {
@@ -150,10 +155,14 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
 
 std::string ocs::TopologyString::to_product_topology_string() const {
 #ifdef WITH_EXTENSIONS
-   return to_string(true, false, false, false, false);
+   return to_string(true, false, false, false, false, false);
 #else
    return to_string(false, false, false, false, false);
 #endif
+}
+
+std::string ocs::TopologyString::to_unused_internal_topology_string() const {
+   return to_string(true, true, false, false, false, true);
 }
 
 void ocs::TopologyString::parse_to_tree(const std::string& topology) {
@@ -421,11 +430,11 @@ void ocs::TopologyString::sort_tree(const std::string& node_types, char sort_cha
  * @return true if a thread was found, false otherwise.
  */
 bool
-ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const {
+ocs::TopologyString::find_first_unused_thread(int *id, int *socket, int *core, int *thread) const {
    DENTER(TOP_LAYER);
 
    // nothing to search and find
-   if (pos == nullptr || socket == nullptr || core == nullptr || thread == nullptr) {
+   if (id == nullptr || socket == nullptr || core == nullptr || thread == nullptr) {
       DRETURN(false);
    }
 
@@ -458,9 +467,9 @@ ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, 
                // For position, use the node ID
                auto it = node.characteristics.find(ID_PREFIX);
                if (it != node.characteristics.end()) {
-                  *pos = std::stoi(it->second);
+                  *id = std::stoi(it->second);
                } else {
-                  *pos = NO_POS;
+                  *id = NO_POS;
                }
 
                return true; // Thread found
@@ -483,7 +492,7 @@ ocs::TopologyString::find_first_unused_thread(int *pos, int *socket, int *core, 
 
    if (!found) {
       // No thread found
-      *pos = *socket = *core = *thread = -1;
+      *id = *socket = *core = *thread = NO_POS;
    }
 
    DRETURN(found);
@@ -532,4 +541,259 @@ void ocs::TopologyString::correct_topology_upper_lower() {
     }
 
     DRETURN_VOID;
+}
+
+// Return the ID of the first unused thread in the topology tree or NO_POS if none exists.
+int
+ocs::TopologyString::find_first_unused_thread() const {
+   int id, s, c, t;
+
+   if (find_first_unused_thread(&id, &s, &c, &t)) {
+      return id;
+   }
+   return NO_POS;
+}
+
+/** @brief marks the given node and all children as used
+ *
+ */
+void
+ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mark_used) {
+   DENTER(TOP_LAYER);
+
+   if (id <= 0) {
+      DRETURN_VOID;
+   }
+
+   // Helper: lower-case this node and its subtree
+   std::function<void(Node&)> mark_used = [&](Node& n) {
+      if (do_mark_used) {
+         n.c = static_cast<char>(std::tolower(n.c));
+      } else {
+         n.c = static_cast<char>(std::toupper(n.c));
+      }
+      for (auto& ch : n.nodes) {
+         mark_used(ch);
+      }
+   };
+
+   // Helper: find node by ID and mark it
+   bool found = false;
+   std::function<void(std::vector<Node>&)> find_and_mark = [&](std::vector<Node>& current_nodes) {
+      for (auto& n : current_nodes) {
+         auto it = n.characteristics.find(ID_PREFIX);
+         if (it != n.characteristics.end()) {
+            int nid = 0;
+            try {
+               nid = std::stoi(it->second);
+            } catch (...) {
+               nid = 0;
+            }
+            if (nid == id) {
+               mark_used(n);
+               found = true;
+               return;
+            }
+         }
+         if (!n.nodes.empty()) {
+            find_and_mark(n.nodes);
+            if (found) return;
+         }
+      }
+   };
+
+   find_and_mark(nodes);
+
+   if (!found) {
+      DRETURN_VOID;
+   }
+
+   // Normalize parent node cases after marking children
+   correct_topology_upper_lower();
+
+   // Refresh internal characteristics (#b/#fX/#i) by serializing the full structured tree (with internals) and parsing it again.
+   std::string rebuilt = to_string(true, true, true,
+            false, false, false);
+   parse_to_tree(rebuilt);
+
+   DRETURN_VOID;
+}
+
+void ocs::TopologyString::reset_topology(const std::string &topology) {
+   DENTER(TOP_LAYER);
+   parse_to_tree(topology);
+   DRETURN_VOID;
+}
+
+#if 0
+void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &topo, const bool mark_used) {
+   DENTER(TOP_LAYER);
+
+   // Collect IDs of nodes that should be marked based on the given mask 'topo'.
+   // Convention: in the mask, lowercase means "used", uppercase means "unused".
+   // We mark only nodes that are lowercase in the mask to allow selective updates.
+   std::vector<int> ids_to_mark;
+   ids_to_mark.reserve(128);
+
+   std::function<void(const std::vector<Node>&)> collect_ids = [&](const std::vector<Node>& current_nodes) {
+      for (const auto &n : current_nodes) {
+         if (std::islower(static_cast<unsigned char>(n.c))) {
+            auto it = n.characteristics.find(ID_PREFIX);
+            if (it != n.characteristics.end()) {
+               try {
+                  ids_to_mark.push_back(std::stoi(it->second));
+               } catch (...) {
+                  // ignore invalid ids
+               }
+            }
+         }
+         if (!n.nodes.empty()) {
+            collect_ids(n.nodes);
+         }
+      }
+   };
+
+   collect_ids(topo.nodes);
+
+   if (ids_to_mark.empty()) {
+      DRETURN_VOID;
+   }
+
+   // Local helper to mark a node subtree without rebuilding characteristics each time
+   std::function<bool(std::vector<Node>&, int)> mark_by_id = [&](std::vector<Node>& current_nodes, int id) -> bool {
+      for (auto &n : current_nodes) {
+         auto it = n.characteristics.find(ID_PREFIX);
+         if (it != n.characteristics.end()) {
+            int nid = 0;
+            try { nid = std::stoi(it->second); } catch (...) { nid = 0; }
+            if (nid == id) {
+               // Mark this node and all its subtree
+               std::function<void(Node&)> apply_mark = [&](Node& nn) {
+                  nn.c = mark_used ? static_cast<char>(std::tolower(static_cast<unsigned char>(nn.c)))
+                                   : static_cast<char>(std::toupper(static_cast<unsigned char>(nn.c)));
+                  for (auto &ch : nn.nodes) {
+                     apply_mark(ch);
+                  }
+               };
+               apply_mark(n);
+               return true;
+            }
+         }
+         if (!n.nodes.empty() && mark_by_id(n.nodes, id)) {
+            return true;
+         }
+      }
+      return false;
+   };
+
+   // Apply marks for all collected IDs
+   for (int id : ids_to_mark) {
+      (void)mark_by_id(nodes, id);
+   }
+
+   // Normalize parent/ancestor cases after modifications
+   correct_topology_upper_lower();
+
+   // Refresh internal characteristics (#b/#fX/#i aggregates) by rebuilding from a full structured string
+   std::string rebuilt = to_string( true, true, true, false, false, false);
+   parse_to_tree(rebuilt);
+
+   DRETURN_VOID;
+}
+
+#else
+
+void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used) {
+   DENTER(TOP_LAYER);
+
+   // Should the current topology be empty, then we can set our structure correctly
+   if (topo.nodes.empty()) {
+      reset_topology(topo.to_string(true, true, true, false, false, false));
+      if (mark_used) {
+         // no need to continue because marked nodes are already correct
+         DRETURN_VOID;
+      } else {
+         // we need to continue because to unmark maked nodes
+      }
+   }
+
+   // Fast-path assuming identical shapes: traverse both trees in lockstep.
+   auto apply_mark = [&](auto&& self, Node& n) -> void {
+      n.c = mark_used ? static_cast<char>(std::tolower(static_cast<unsigned char>(n.c)))
+                      : static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      for (auto &ch : n.nodes) {
+         self(self, ch);
+      }
+   };
+
+   std::function<void(std::vector<Node>&, const std::vector<Node>&)> walk_pair =
+      [&](std::vector<Node>& tgt_nodes, const std::vector<Node>& mask_nodes) {
+         // Assumption: same structure (same sizes/order)
+         const size_t sz = tgt_nodes.size();
+         // If shapes diverge unexpectedly, operate on the min common prefix to stay safe.
+         const size_t lim = std::min(sz, mask_nodes.size());
+         for (size_t i = 0; i < lim; ++i) {
+            Node& tgt = tgt_nodes[i];
+            const Node& m = mask_nodes[i];
+
+            // If mask node is lowercase, mark this whole subtree according to mark_used
+            if (std::islower(static_cast<unsigned char>(m.c))) {
+               apply_mark(apply_mark, tgt);
+               // No need to descend further; the whole subtree is already processed.
+               continue;
+            }
+
+            // Otherwise descend in lockstep
+            if (!tgt.nodes.empty() && !m.nodes.empty()) {
+               walk_pair(tgt.nodes, m.nodes);
+            }
+         }
+      };
+
+   walk_pair(this->nodes, topo.nodes);
+
+   // Normalize ancestor casing based on children
+   correct_topology_upper_lower();
+
+   // Refresh internal counters/characteristics by rebuilding from a full structured representation
+   std::string rebuilt = to_string(
+      /*with_data_nodes=*/true,
+      /*with_structure=*/true,
+      /*with_characteristics=*/true,
+      /*with_internal_characteristics=*/true,
+      /*with_tree_format=*/false,
+      /*show_as_unused=*/false
+   );
+   parse_to_tree(rebuilt);
+
+   DRETURN_VOID;
+}
+
+#endif
+
+void
+ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used) {
+   DENTER(TOP_LAYER);
+
+   // nothing to add or to remove
+   if (binding_to_use.nodes.empty()) {
+      DRETURN_VOID;
+   }
+
+   // If there is a binding_now than add/remove corresponding nodes
+   if (!binding_now.nodes.empty()) {
+      DPRINTF("elem_mark_nodes_as_used_or_unused: now   %s\n", binding_now.to_product_topology_string().c_str());
+      binding_now.mark_nodes_as_used_or_unused(binding_to_use, mark_used);
+      lSetString(elem, nm, binding_now.to_string(true, true, true, false, false, false).c_str());
+      DPRINTF("elem_mark_nodes_as_used_or_unused: added %s\n", binding_to_use.to_product_topology_string().c_str());
+      DPRINTF("elem_mark_nodes_as_used_or_unused: after %s\n", binding_now.to_product_topology_string().c_str());
+   } else {
+      DPRINTF("elem_mark_nodes_as_used_or_unused: now   NONE\n");
+      if (mark_used) {
+         lSetString(elem, nm, binding_to_use.to_string(true, true, true, false, false, false).c_str());
+      }
+      DPRINTF("elem_mark_nodes_as_used_or_unused: after %s\n", binding_to_use.to_product_topology_string().c_str());
+   }
+
+   DRETURN_VOID;
 }
