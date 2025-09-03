@@ -438,7 +438,8 @@ static void execd_exit_func(int i)
          sge_smf_temporary_disable_instance();
       }
    }
-#endif  
+#endif
+   component_ts0_destroy();
    DRETURN_VOID;
 }
 

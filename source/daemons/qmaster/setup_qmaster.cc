@@ -783,6 +783,7 @@ qmaster_lock_and_shutdown(int anExitValue) {
       }
    }
    gdi_client_shutdown();
+   component_ts0_destroy();
 
    DRETURN_VOID;
 } /* qmaster_lock_and_shutdown() */

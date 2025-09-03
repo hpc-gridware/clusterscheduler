@@ -453,6 +453,7 @@ shadowd_exit_func(int i) {
       }
    }
 #endif
+   component_ts0_destroy();
    exit(i);
 }
 

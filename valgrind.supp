@@ -58,28 +58,6 @@
 }
 
 {
-   Component is not cleaned up properly (3) (really? possibly an issue in resolving lib?)
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:__libc_alloc_buffer_allocate
-   fun:alloc_buffer_allocate
-   fun:__resolv_conf_allocate
-   fun:__resolv_conf_load
-   fun:__resolv_conf_get_current
-   fun:__res_vinit
-   fun:maybe_init
-   fun:context_get
-   fun:context_get
-   fun:__resolv_context_get
-   fun:gethostbyname_r@@GLIBC_2.2.5
-   fun:_Z17sge_gethostbynamePKcPi
-   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-   fun:_Z26component_set_component_idi
-   fun:_Z16gdi_client_setupijPP6_lListb
-}
-
-{
    @todo CS-631 Packet auth info is not cleaned up properly
    Memcheck:Leak
    match-leak-kinds: definite

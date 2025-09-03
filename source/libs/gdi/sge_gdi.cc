@@ -1465,6 +1465,7 @@ int gdi_get_merged_configuration(lList **conf_list) {
 void gdi_default_exit_func(int i) {
    sge_security_exit(i);
    cl_com_cleanup_commlib();
+   component_ts0_destroy();
 }
 
 

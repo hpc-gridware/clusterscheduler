@@ -85,6 +85,9 @@ extern const char *threadnames[];
 
 typedef void (*sge_exit_func_t)(int);
 
+void component_ts0_init();
+void component_ts0_destroy();
+
 void
 component_do_log();
 

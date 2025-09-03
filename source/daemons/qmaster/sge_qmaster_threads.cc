@@ -274,7 +274,9 @@ sge_become_admin_user(const char *admin_user) {
 void
 sge_exit_func(int anExitValue) {
    DENTER(TOP_LAYER);
+
    gdi_client_shutdown();
+   component_ts0_destroy();
 
    DRETURN_VOID;
 }

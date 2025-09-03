@@ -23,6 +23,7 @@
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
+#include "uti/sge_mtutil.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_rmon_macros.h"
@@ -33,6 +34,17 @@
 #define MAX_COMP_NAME 32
 #define MAX_USER_GROUP 512
 #define MAX_HOSTNAME (2*1024)
+
+#define COMPONENT_MUTEX_NAME "component_mutex"
+
+typedef struct component_ts0_t {
+   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; ///< mutex protecting the thread shared data
+   bool hosts_initialized = false;
+   char qualified_hostname[MAX_HOSTNAME]; ///< Qualified hostname.
+   char unqualified_hostname[MAX_HOSTNAME]; ///< Unqualified hostname.
+} sge_component_ts0_t;
+
+sge_component_ts0_t component_ts0_data{};
 
 typedef struct {
    char log_buffer[MAX_LOG_BUFFER]; ///< Log buffer for storing log messages.
@@ -53,14 +65,11 @@ typedef struct {
 
    bool qmaster_internal; ///< Flag indicating if the component is qmaster internal.
    bool daemonized; ///< Flag indicating if the component is daemonized.
-   char qualified_hostname[MAX_HOSTNAME]; ///< Qualified hostname.
-   char unqualified_hostname[MAX_HOSTNAME]; ///< Unqualified hostname.
    sge_exit_func_t exit_func; ///< Exit function.
 } sge_component_tl0_t;
 
 static pthread_once_t component_once = PTHREAD_ONCE_INIT;
 static pthread_key_t sge_component_tl0_key;
-
 
 /**
  * \brief Set the component ID.
@@ -127,12 +136,12 @@ static void set_group_name(sge_component_tl0_t *tl, const char *group_name) {
 /**
  * \brief Set the qualified hostname.
  *
- * \param[in] tl Pointer to the thread-local component structure.
  * \param[in] qualified_hostname Qualified hostname to set.
+ * \note expects the component_ts0_data mutex to be locked
  */
-static void set_qualified_hostname(sge_component_tl0_t *tl, const char *qualified_hostname) {
+static void set_qualified_hostname(const char *qualified_hostname) {
    if (qualified_hostname != nullptr) {
-      strncpy(tl->qualified_hostname, qualified_hostname, sizeof(tl->qualified_hostname)-1);
+      sge_strlcpy(component_ts0_data.qualified_hostname, qualified_hostname, sizeof(component_ts0_data.qualified_hostname));
    }
 }
 
@@ -183,12 +192,12 @@ static void set_uid(sge_component_tl0_t *tl, uid_t uid) {
 /**
  * \brief Set the unqualified hostname.
  *
- * \param[in] tl Pointer to the thread-local component structure.
  * \param[in] unqualified_hostname Unqualified hostname to set.
+ * \note expects the component_ts0_data mutex to be locked
  */
-static void set_unqualified_hostname(sge_component_tl0_t *tl, const char *unqualified_hostname) {
+static void set_unqualified_hostname(const char *unqualified_hostname) {
    if (unqualified_hostname != nullptr) {
-      strncpy(tl->unqualified_hostname, unqualified_hostname, sizeof(tl->unqualified_hostname)-1);
+      strncpy(component_ts0_data.unqualified_hostname, unqualified_hostname, sizeof(component_ts0_data.unqualified_hostname));
    }
 }
 
@@ -201,6 +210,69 @@ static void set_unqualified_hostname(sge_component_tl0_t *tl, const char *unqual
 static void set_username(sge_component_tl0_t *tl, const char *username) {
    strncpy(tl->username, username, sizeof(tl->username)-1);
 }
+/**
+ * \brief Initialize the component hosts
+ *
+ * Figures out the hostname where the component is running
+ * and resolves it into qualified and unqualified hostnames.
+ *
+ * \note expects the component_ts0_data mutex to be locked
+ */
+static void
+component_ts0_init_hosts() {
+   // setup short and long hostnames
+   char *s = nullptr;
+   char tmp_str[CL_MAXHOSTNAMELEN + 1];
+   struct hostent *hent = nullptr;
+   /* Fetch hostnames */
+   SGE_ASSERT((gethostname(tmp_str, CL_MAXHOSTNAMELEN) == 0));
+   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
+   set_qualified_hostname(hent->h_name);
+   s = sge_dirname(hent->h_name, '.');
+   set_unqualified_hostname(s);
+   sge_free(&s);
+   /* Bad resolving in some networks leads to short qualified host names */
+   if (strcmp(component_ts0_data.qualified_hostname, component_ts0_data.unqualified_hostname) == 0) {
+      char tmp_addr[8];
+      struct hostent *hent2 = nullptr;
+      memcpy(tmp_addr, hent->h_addr, hent->h_length);
+      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
+
+      set_qualified_hostname(hent2->h_name);
+      s = sge_dirname(hent2->h_name, '.');
+      set_unqualified_hostname(s);
+      sge_free(&s);
+      sge_free_hostent(&hent2);
+   }
+   sge_free_hostent(&hent);
+   component_ts0_data.hosts_initialized = true;
+}
+
+/**
+ * \brief Initialize the thread shared data.
+ *
+ * The function can be called during a component's initialization.
+ * Otherwise, data is initialized on demand.
+ */
+void component_ts0_init() {
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   if (!component_ts0_data.hosts_initialized) {
+      component_ts0_init_hosts();
+   }
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+}
+
+/**
+ * \brief Destroy the thread shared data.
+ *
+ * The function shall be called in the component's exit function.
+ */
+void component_ts0_destroy() {
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   // nothing to be done so far
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+}
+
 
 /**
  * \brief Destroy the thread-local component structure.
@@ -251,32 +323,6 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
    // supplementary groups are lazy initialized in component_get
    tl->supplementary_grp_initialized = false;
    set_supplementray_groups(tl, 0, nullptr);
-
-   // setup short and long hostnames
-   char *s = nullptr;
-   char tmp_str[CL_MAXHOSTNAMELEN + 1];
-   struct hostent *hent = nullptr;
-   /* Fetch hostnames */
-   SGE_ASSERT((gethostname(tmp_str, CL_MAXHOSTNAMELEN) == 0));
-   SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
-   set_qualified_hostname(tl, hent->h_name);
-   s = sge_dirname(hent->h_name, '.');
-   set_unqualified_hostname(tl, s);
-   sge_free(&s);
-   /* Bad resolving in some networks leads to short qualified host names */
-   if (!strcmp(tl->qualified_hostname, tl->unqualified_hostname)) {
-      char tmp_addr[8];
-      struct hostent *hent2 = nullptr;
-      memcpy(tmp_addr, hent->h_addr, hent->h_length);
-      SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
-
-      set_qualified_hostname(tl, hent2->h_name);
-      s = sge_dirname(hent2->h_name, '.');
-      set_unqualified_hostname(tl, s);
-      sge_free(&s);
-      sge_free_hostent(&hent2);
-   }
-   sge_free_hostent(&hent);
 
    if (!already_shown) {
       //component_component_log(tl);
@@ -406,8 +452,16 @@ size_t component_get_log_buffer_size() {
  * \return The qualified hostname.
  */
 const char *component_get_qualified_hostname() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->qualified_hostname;
+   const char *qualified_hostname;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   if (!component_ts0_data.hosts_initialized) {
+      component_ts0_init_hosts();
+   }
+   qualified_hostname = component_ts0_data.qualified_hostname;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return qualified_hostname;
 }
 
 /**
@@ -473,8 +527,16 @@ uid_t component_get_uid() {
  * \return The unqualified hostname.
  */
 const char *component_get_unqualified_hostname() {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   return tl->unqualified_hostname;
+   const char *unqualified_hostname;
+
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   if (!component_ts0_data.hosts_initialized) {
+      component_ts0_init_hosts();
+   }
+   unqualified_hostname = component_ts0_data.unqualified_hostname;
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+
+   return unqualified_hostname;
 }
 
 /**
@@ -544,8 +606,12 @@ void component_set_qmaster_internal(bool qmaster_internal) {
  * \param[in] qualified_hostname Qualified hostname to set.
  */
 void component_set_qualified_hostname(const char *qualified_hostname) {
-   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
-   set_qualified_hostname(tl, qualified_hostname);
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
+   if (!component_ts0_data.hosts_initialized) {
+      component_ts0_init_hosts();
+   }
+   set_qualified_hostname(qualified_hostname);
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
 }
 
 /**
@@ -595,8 +661,11 @@ void component_do_log() {
          DPRINTF("      grp_array               >%s< >%d<\n", tl->grp_array[i].name, tl->grp_array[i].id);
       }
    }
+   // thread shared info
+   sge_mutex_lock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
    DPRINTF("HOST ===\n");
-   DPRINTF("   qualified_hostname               >%s<\n", tl->qualified_hostname);
-   DPRINTF("   unqualified_hostname             >%s<\n", tl->unqualified_hostname);
+   DPRINTF("   qualified_hostname               >%s<\n", component_ts0_data.qualified_hostname);
+   DPRINTF("   unqualified_hostname             >%s<\n", component_ts0_data.unqualified_hostname);
+   sge_mutex_unlock(COMPONENT_MUTEX_NAME, __func__, __LINE__, &component_ts0_data.mutex);
    DRETURN_VOID;
 }
