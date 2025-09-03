@@ -36,18 +36,6 @@
 }
 
 {
-   Component is not cleaned up properly (1)
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z25component_get_thread_namev
-   fun:_Z17sge_gethostbyaddrPK7in_addrPi
-   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-   fun:_Z25component_set_thread_namePKc
-   ...
-}
-
-{
    Component is not cleaned up properly (2)
    Memcheck:Leak
    match-leak-kinds: definite
@@ -57,28 +45,6 @@
    fun:_ZL39component_ts0_init_supplementary_groupsv
    fun:_Z34component_get_supplementray_groupsPiPP14ocs_grp_elem_t
    ...
-}
-
-{
-   Component is not cleaned up properly (3) (really? possibly an issue in resolving lib?)
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:__libc_alloc_buffer_allocate
-   fun:alloc_buffer_allocate
-   fun:__resolv_conf_allocate
-   fun:__resolv_conf_load
-   fun:__resolv_conf_get_current
-   fun:__res_vinit
-   fun:maybe_init
-   fun:context_get
-   fun:context_get
-   fun:__resolv_context_get
-   fun:gethostbyname_r@@GLIBC_2.2.5
-   fun:_Z17sge_gethostbynamePKcPi
-   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-   fun:_Z26component_set_component_idi
-   fun:_Z16gdi_client_setupijPP6_lListb
 }
 
 {
@@ -134,20 +100,6 @@
    fun:_Z23component_get_auth_infov
    ...
 }
-
-{
-   Component is not cleaned up properly (6) (log buffer)
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z24component_get_log_bufferv
-   fun:_Z17sge_gethostbynamePKcPi
-   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-   fun:_Z24component_get_log_bufferv
-   fun:_Z17sge_gethostbynamePKcPi
-   ...
-}
-
 
 {
    @todo CS-631 Packet auth info is not cleaned up properly
@@ -384,24 +336,3 @@
    fun:__txn_checkpoint_pp
    ...
 }
-
-
-# @todo here we have some sort of recursion:
-#{
-#   <insert_a_suppression_name_here>
-#   Memcheck:Leak
-#   match-leak-kinds: definite
-#   fun:malloc
-#   fun:_Z24component_get_log_bufferv
-#   fun:_Z17sge_gethostbynamePKcPi
-#   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-#   fun:_Z24component_get_log_bufferv
-#   fun:_Z17sge_gethostbynamePKcPi
-#   fun:_ZL18component_tl0_initP19sge_component_tl0_t
-#   fun:_Z24component_get_log_bufferv
-#   fun:_Z17sge_gethostbynamePKcPi
-#   fun:_ZL20cl_com_gethostbynamePKcPP14cl_com_hostentPi
-#   fun:_Z24cl_com_host_list_refreshP16cl_raw_list_type
-#   fun:_ZL21cl_com_trigger_threadPv
-#}
-
