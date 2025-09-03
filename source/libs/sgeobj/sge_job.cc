@@ -3528,7 +3528,7 @@ job_verify_submitted_job(const lListElem *job, lList **answer_list)
    if (ret) {
       ret = object_verify_double_null(job, answer_list, JB_wtcontr);
     }
-   /* JB_ja_task_concurrency must be nullptr */
+   // JB_ja_task_concurrency may only be given for array jobs
    if (ret) {
       u_long32 task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
       if (task_concurrency > 0 && !job_is_array(job)) {
