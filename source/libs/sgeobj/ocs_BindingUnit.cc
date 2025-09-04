@@ -25,12 +25,18 @@
 std::string ocs::BindingUnit::to_string(const Unit mode) {
    switch (mode) {
       case NONE: return "NONE";
-      case CTHREAD: return "T";
+      case CTHREAD: return "CT";
       case ETHREAD: return "ET";
-      case CCORE: return "C";
+      case CCORE: return "CC";
       case ECORE: return "EC";
       case CSOCKET: return "CS";
-      case ESOCKET: return  "S";
+      case ESOCKET: return  "ES";
+      case CCACHE2: return "CY";
+      case ECACHE2: return "EY";
+      case CCACHE3: return "CX";
+      case ECACHE3: return "EX";
+      case CNUMA: return "CN";
+      case ENUMA: return "EN";
       default: return "???";
    }
 }

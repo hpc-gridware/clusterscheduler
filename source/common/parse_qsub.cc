@@ -503,13 +503,16 @@ lList *cull_parse_cmdline(
          DPRINTF("\"-bend %s\"\n", *sp);
          if (strcmp("s", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::SOCKET);
-         } else if (strcmp("c", *sp) == 0) {
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_USED_SOCKET);
+         } else if (strcmp("S", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
-         } else if (strcmp("e", *sp) == 0) {
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_FREE_SOCKET);
+         } else if (strcmp("c", *sp) == 0 || strcmp("e", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::CORE);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_USED_CORE);
+         } else if (strcmp("C", *sp) == 0 || strcmp("E", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_FREE_CORE);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BEND_INVALID_S, *sp);
             DRETURN(answer);
