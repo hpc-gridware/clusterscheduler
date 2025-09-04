@@ -37,6 +37,10 @@
 
 #include "sgeobj/ocs_TopologyString.h"
 
+#include "ocs_BindingEnd.h"
+#include "ocs_BindingStart.h"
+#include "ocs_BindingUnit.h"
+
 const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = "NABUVWXYZ";
 const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = "SCEFGHT";
 const std::string ocs::TopologyString::STRUCTURE_CHARACTERS = "()";
@@ -797,3 +801,209 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
 
    DRETURN_VOID;
 }
+
+
+std::vector<int>
+ocs::TopologyString::find_n_packed_nodes_of_unit(int bamount,
+                                                 BindingUnit::Unit bunit,
+                                                 BindingStart::Start bstart,
+                                                 BindingEnd::End bend) {
+
+   // ensure bamount cannot be 0
+   SGE_ASSERT(bamount > 0);
+
+   // no topology => nothing to bind
+   std::vector<int> ids;
+   if (nodes.empty()) {
+      return ids;
+   }
+
+   // Helpers to read subtree counters for predicates
+   auto get_counter = [&](const std::unordered_map<std::string, std::string>& ch, const std::string& prefix, char node_letter) -> int {
+      char node_letter_down = static_cast<char>(std::tolower(static_cast<unsigned char>(node_letter)));
+      std::string key = prefix + std::string(1, node_letter_down);
+      auto it = ch.find(key);
+      if (it == ch.end()) {
+         return 0;
+      }
+      try {
+         return std::stoi(it->second);
+      } catch (...) {
+         return 0;
+      }
+   };
+
+   auto is_free_X_socket = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'S') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
+             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
+             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+   };
+   auto is_free_X_cache2 = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'Y') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
+             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
+             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+   };
+   auto is_free_X_cache3 = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'X') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
+             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
+             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+   };
+   auto is_free_X_numa = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'N') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
+             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
+             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+   };
+   auto is_used_socket = [&](const Node& n) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'S') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+   };
+   auto is_free_X_core = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      char core_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(core_letter)));
+      if (up != core_letter_up) return false;
+      // free core: no bound threads in its subtree
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0;
+   };
+   auto is_used_X_core = [&](const Node& n, char core_letter) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      char core_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(core_letter)));
+      if (up != core_letter_up) return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+   };
+   auto is_free_thread = [&](const Node& n) -> bool {
+      return n.c == 'T';
+   };
+
+   const Node* start_node = nullptr; // node that satisfies bstart or first node if NONE
+   const Node* end_node = nullptr;   // node that satisfies bend or nullptr if NONE.
+
+   // walk forward from root-node in pre-order DFS
+   // - visit node, then children
+   // - and for each child fully traverse the entire subtree before moving to the next sibling
+   std::function<void(const std::vector<Node>&, char core_letter)> process_node = [&](const std::vector<Node>& list, char core_letter) {
+      for (const auto& n : list) {
+         bool skip_end_detection = false;
+
+         // try to find start-position
+         if (start_node == nullptr) {
+
+            // Do we search C or E units
+            char start_letter;
+            if (bunit == BindingUnit::Unit::CSOCKET || bunit == BindingUnit::Unit::CCORE || bunit == BindingUnit::Unit::CTHREAD
+                || bunit == BindingUnit::Unit::CCACHE2 || bunit == BindingUnit::Unit::CCACHE3 || bunit == BindingUnit::Unit::CNUMA) {
+               start_letter = 'C';
+            } else {
+               start_letter = 'E';
+            }
+
+            // The starting point will be either the first node (NONE) or the first node that matches the predicate
+            // Cores have to fit to the searched unit. A socket is considered as free if all unit_type-threads are free,
+            // but it is considered as used as soon as any thread type is in use.
+            if (bstart == BindingStart::Start::NONE
+               || (bstart == BindingStart::Start::FIRST_FREE_SOCKET && is_free_X_socket(n, start_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_SOCKET && is_used_socket(n))
+               || (bstart == BindingStart::Start::FIRST_FREE_CORE && is_free_X_core(n, start_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_CORE && is_used_X_core(n, start_letter))) {
+               start_node = &n;
+               skip_end_detection = true;
+            }
+         }
+
+         // try to find end-position
+         if (!skip_end_detection && start_node != nullptr
+            && end_node == nullptr && bend != BindingEnd::End::NONE) {
+
+            char end_letter;
+            if (bunit == BindingUnit::Unit::CSOCKET || bunit == BindingUnit::Unit::CCORE || bunit == BindingUnit::Unit::CTHREAD
+                || bunit == BindingUnit::Unit::CCACHE2 || bunit == BindingUnit::Unit::CCACHE3 || bunit == BindingUnit::Unit::CNUMA) {
+               end_letter = 'C';
+            } else {
+               end_letter = 'E';
+            }
+
+            // same logic as above: socket is used if C or E threads are in use
+            if ((bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, end_letter))
+               || (bend == BindingEnd::End::FIRST_USED_SOCKET && is_used_socket(n))
+               || (bend == BindingEnd::End::FIRST_FREE_CORE && is_free_X_core(n, end_letter))
+               || (bend == BindingEnd::End::FIRST_USED_CORE && is_used_X_core(n, end_letter))) {
+               end_node = &n;
+            }
+         }
+
+         // we are between start and end => collect IDs
+         if (start_node != nullptr && end_node == nullptr) {
+            bool add_id = false;
+
+            if (bunit == BindingUnit::Unit::CSOCKET && is_free_X_socket(n, 'C')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ESOCKET && is_free_X_socket(n, 'E')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::CCORE && is_free_X_core(n, 'C')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ECORE && is_free_X_core(n, 'E')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::CTHREAD && is_free_thread(n) && core_letter == 'C') {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ETHREAD && is_free_thread(n) && core_letter == 'E') {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::CCACHE2 && is_free_X_cache2(n, 'C')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ECACHE2 && is_free_X_cache2(n, 'E')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::CCACHE3 && is_free_X_cache3(n, 'C')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ECACHE3 && is_free_X_cache3(n, 'E')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::CNUMA && is_free_X_numa(n, 'C')) {
+               add_id = true;
+            } else if (bunit == BindingUnit::Unit::ENUMA && is_free_X_numa(n, 'E')) {
+               add_id = true;
+            }
+
+            if (add_id) {
+               auto it = n.characteristics.find(ID_PREFIX);
+               if (it != n.characteristics.end()) {
+                  try {
+                     ids.push_back(std::stoi(it->second));
+                  } catch (...) {
+                     // malformed id, keep empty
+                  }
+               }
+            }
+         }
+
+         // end already reached => exit
+         if (start_node != nullptr && end_node != nullptr) {
+            return;
+         }
+
+         // process subtree
+         if (!n.nodes.empty()) {
+
+            // remember core-type
+            if (core_letter == '\0') {
+               char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+               if (up == 'C' || up == 'E') {
+                  core_letter = up;
+               }
+            }
+
+            process_node(n.nodes, core_letter);
+         }
+      }
+   };
+
+   process_node(nodes, '\0');
+
+   return ids;
+}
+

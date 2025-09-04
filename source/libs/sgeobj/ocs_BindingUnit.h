@@ -33,7 +33,14 @@ namespace ocs {
          CCORE,
          ECORE,
          CSOCKET,
-         ESOCKET
+         ESOCKET,
+
+         CCACHE2,
+         ECACHE2,
+         CCACHE3,
+         ECACHE3,
+         CNUMA,
+         ENUMA,
       };
 
       static std::string to_string(Unit mode);

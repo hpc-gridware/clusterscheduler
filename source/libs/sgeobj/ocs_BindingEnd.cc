@@ -25,8 +25,10 @@
 std::string ocs::BindingEnd::to_string(const End mode) {
    switch (mode) {
       case NONE: return "NONE";
-      case SOCKET: return "S";
-      case CORE: return "C";
+      case FIRST_FREE_SOCKET: return "S";
+      case FIRST_USED_SOCKET: return "s";
+      case FIRST_FREE_CORE: return "C";
+      case FIRST_USED_CORE: return "c";
       default: return "???";
    }
 }

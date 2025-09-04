@@ -26,9 +26,9 @@
 
 #include "cull/cull.h"
 
-#include "uti/sge_dstring.h"
-
-#include "sgeobj/ocs_TopologyNode.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
 
 namespace ocs {
    // Product internal topology string representation
@@ -90,5 +90,8 @@ namespace ocs {
       void reset_topology(const std::string &topology);
 
       void mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used);
-   };
+
+      std::vector<int>
+      find_n_packed_nodes_of_unit(int bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingEnd::End end);
+      };
 } // namespace ocs

@@ -28,8 +28,10 @@ namespace ocs {
       enum End{
          UNINITIALIZED = 0,
          NONE,
-         SOCKET,
-         CORE
+         FIRST_FREE_SOCKET,
+         FIRST_USED_SOCKET,
+         FIRST_FREE_CORE,
+         FIRST_USED_CORE
       };
 
       static std::string to_string(End mode);
