@@ -1190,7 +1190,7 @@ result of this is undefined.
 
 If this option is specified then this value will be passed to defined JSV instances as parameters with
 the name *t_min*, *t_max* and *t_step* (see `-jsv` option above or find more information concerning JSV in
-xxqs_name_sxx_jsv(1))
+xxqs_name_sxx_jsv(1)).
 
 ## -tc *max_running_tasks*
 
@@ -1201,6 +1201,13 @@ of concurrently running tasks per job.
 
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
 *tc*. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
+If the task concurrency limit is increased with `qalter` then additional tasks can be started in the next scheduling interval.
+If it is decreased below the number of currently running tasks, no tasks will be stopped. The new limit will be effective
+when tasks complete or are deleted.
+
+The task concurrency can also be limited by the administrator using the *max_aj_tasks* parameter in the global configuration
+(see xxqs_name_sxx_conf(5)).
 
 ## -terse 
 
