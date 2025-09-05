@@ -778,19 +778,23 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
       DRETURN_VOID;
    }
 
-   // If there is a binding_now than add/remove corresponding nodes
-   if (!binding_now.nodes.empty()) {
-      DPRINTF("elem_mark_nodes_as_used_or_unused: now   %s\n", binding_now.to_product_topology_string().c_str());
-      binding_now.mark_nodes_as_used_or_unused(binding_to_use, mark_used);
-      lSetString(elem, nm, binding_now.to_string(true, true, true, false, false, false).c_str());
-      DPRINTF("elem_mark_nodes_as_used_or_unused: added %s\n", binding_to_use.to_product_topology_string().c_str());
-      DPRINTF("elem_mark_nodes_as_used_or_unused: after %s\n", binding_now.to_product_topology_string().c_str());
-   } else {
-      DPRINTF("elem_mark_nodes_as_used_or_unused: now   NONE\n");
+   // If there is a binding_now then add/remove corresponding nodes
+   const char *action_str = mark_used ? "add" : "del";
+   if (binding_now.nodes.empty()) {
+
+      // binding_now does not contain anything yet, so we can just copy binding_to_use, but only if we want to add them
+      // if we do not want to mark them as used then we can skip the 'reset' because the binding mask is already empty
       if (mark_used) {
          lSetString(elem, nm, binding_to_use.to_string(true, true, true, false, false, false).c_str());
       }
-      DPRINTF("elem_mark_nodes_as_used_or_unused: after %s\n", binding_to_use.to_product_topology_string().c_str());
+
+      DPRINTF("utilization_add:    %s    %s\n", action_str, binding_to_use.to_product_topology_string().c_str());
+      DPRINTF("utilization_add:    after %s\n", binding_to_use.to_product_topology_string().c_str());
+   } else {
+      binding_now.mark_nodes_as_used_or_unused(binding_to_use, mark_used);
+      lSetString(elem, nm, binding_now.to_string(true, true, true, false, false, false).c_str());
+      DPRINTF("utilization_add:    %s    %s\n", action_str, binding_to_use.to_product_topology_string().c_str());
+      DPRINTF("utilization_add:    after  %s\n", binding_now.to_product_topology_string().c_str());
    }
 
    DRETURN_VOID;
@@ -951,6 +955,11 @@ ocs::TopologyString::find_n_packed_units(const int bamount, const BindingUnit::U
                   }
                }
             }
+         }
+
+         // have enough ids => exit
+         if (ids.size() >= static_cast<size_t>(bamount)) {
+            return;
          }
 
          // end already reached => exit

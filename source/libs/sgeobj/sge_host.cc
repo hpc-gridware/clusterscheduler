@@ -558,16 +558,16 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
 
 #if 1
+   const char *action = slots > 0 ? "add" : "del";
    if (binding_in_use != nullptr) {
       ocs::TopologyString topo_in_use(binding_in_use);
-      DPRINTF("host_debit_binding: in_use: %s\n", topo_in_use.to_product_topology_string().c_str());
+      DPRINTF("host_debit_binding: before %s\n", topo_in_use.to_product_topology_string().c_str());
    } else {
-      DPRINTF("host_debit_binding: in_use: NONE\n");
+      DPRINTF("host_debit_binding: before NONE\n");
    }
    if (binding_to_use != nullptr) {
       ocs::TopologyString topo_to_use(binding_to_use);
-      DPRINTF("host_debit_binding: to_use: %s\n", topo_to_use.to_product_topology_string().c_str());
-      DPRINTF("host_debit_binding: slots: %d\n", slots);
+      DPRINTF("host_debit_binding: %s    %s\n", action, topo_to_use.to_product_topology_string().c_str());
    }
 #endif
 
@@ -599,6 +599,7 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
       ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
                                                             topo_now, topo_now, slots > 0);
    }
+   DPRINTF("host_debit_binding: after  %s\n", topo_now.to_product_topology_string().c_str());
 
    mods++;
    DRETURN(mods);
