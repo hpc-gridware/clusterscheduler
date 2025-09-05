@@ -40,3 +40,10 @@ std::string ocs::BindingUnit::to_string(const Unit mode) {
       default: return "???";
    }
 }
+
+bool ocs::BindingUnit::is_power_unit(const Unit unit) {
+   if (unit == CSOCKET || unit == CCORE || unit == CTHREAD || unit == CCACHE2 || unit == CCACHE3 || unit == CNUMA) {
+      return true;
+   }
+   return false;
+}
