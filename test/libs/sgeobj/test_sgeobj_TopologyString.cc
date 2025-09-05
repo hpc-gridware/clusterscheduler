@@ -389,7 +389,7 @@ test_find_n_packed_nodes_of_unit_scenario_collection(std::string &topo_str, std:
    DRETURN(ret);
 }
 
-bool test_find_n_packed_nodes_of_unit_scenarios() {
+bool test_find_n_packed_units_scenarios() {
    DENTER(TOP_LAYER);
    //                       1       5             0               5              0             5               0
    //                                             1               1              2             2               3
@@ -749,6 +749,46 @@ bool test_find_n_packed_nodes_of_unit_scenarios() {
    DRETURN(ret);
 }
 
+bool test_find_n_packed_units_stop() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   //                        1       5             0               5              0             5               0
+   //                                             1               1              2             2               3
+   std::string topo_str("(N(S(X(Y(C(T)(t)))(Y(C(T)(T)))(Y(e(t))(E(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))))))");
+   std::vector<BindingSelectionTuple> scenarios_A1 = {
+   {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
+   };
+
+   ocs::TopologyString topo = ocs::TopologyString(topo_str);
+   ocs::BindingUnit::Unit unit = ocs::BindingUnit::CTHREAD;
+   ocs::BindingStart::Start start = ocs::BindingStart::NONE;
+   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+
+   // We expect 7 elements (one ID for each available power-core) if amount>=7
+   std::vector<int> ids = topo.find_n_packed_units(99, unit, start, end);
+   if (ids.size() != 7) {
+      std::cout << "ERROR: expected 7 units but found " << ids.size() << std::endl;
+      ret = false;
+   }
+
+   // We expect 6 elements (early exist)
+   ids = topo.find_n_packed_units(6, unit, start, end);
+   if (ids.size() != 6) {
+      std::cout << "ERROR: expected 6 units but found " << ids.size() << std::endl;
+      ret = false;
+   }
+
+   // We expect 3 elements (early exist)
+   ids = topo.find_n_packed_units(3, unit, start, end);
+   if (ids.size() != 3) {
+      std::cout << "ERROR: expected 3 units but found " << ids.size() << std::endl;
+      ret = false;
+   }
+
+   DRETURN(ret);
+}
+
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
@@ -759,7 +799,9 @@ int main (int argc, char *argv[]) {
    ret &= test_to_unused_internal_topoloy_string();
    ret &= test_mark_as_used_scenarios();
    ret &= test_mark_nodes_as_unused();
-   ret &= test_find_n_packed_nodes_of_unit_scenarios();
+   ret &= test_find_n_packed_units_scenarios();
+   ret &= test_find_n_packed_units_stop();
+
 
    if (!ret) {
       std::cerr << "Test failed." << std::endl;

@@ -377,7 +377,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 #endif
       DRETURN(slots);
    } else if (binding_type == ocs::BindingType::SLOT) {
-#if 0
+#if 1
       const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       u_long32 next_binding_id_for_task = 0;
@@ -388,29 +388,29 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       }
 
       // find currently used cores/threads
-      DSTRING_STATIC(binding_in_use_dstr, ocs::TopologyString::MAX_LENGTH);
-      bool ret = host_get_topology_in_use(host, &binding_in_use_dstr);
+      ocs::TopologyString binding_in_use;
+      bool ret = host_get_topology_in_use(host, binding_in_use);
       if (!ret) {
          DPRINTF("binding: no topology in use and also no topology found for host %s\n", hostname);
          DRETURN(0);
       }
 
-      // prepare host binding mask ether by reusing the host binding that was already done in a previous step
+      // prepare a host binding mask either by reusing the host binding that was already done in a previous step
       // or by using the binding from the host as starting point for the first task
-      DSTRING_STATIC(host_binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
+      ocs::TopologyString host_binding_to_use;
       if (binding_done == nullptr) {
-         sge_dstring_copy_dstring(&host_binding_to_use_dstr, &binding_in_use_dstr);
+         host_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, false));
       } else {
-         sge_dstring_copy_string(&host_binding_to_use_dstr, lGetString(binding_done, BN_specific_binding));
+         host_binding_to_use.reset_topology(lGetString(binding_done, BN_specific_binding));
       }
 
       // find binding for each slot
-      DSTRING_STATIC(task_binding_to_use_dstr, ocs::TopologyString::MAX_LENGTH);
+      ocs::TopologyString task_binding_to_use;
       int max_slots = 0;
       for (max_slots = 0; max_slots < slots; max_slots++) {
 
          // find binding for one slot
-         ocs::TopologyString topo_in_use(sge_dstring_get_string(&binding_in_use_dstr));
+         ocs::TopologyString topo_in_use(binding_in_use.to_string(true, true, true, false, false, false));
          int pos = topo_in_use.find_first_unused_thread();
          if (pos == ocs::TopologyString::NO_POS) {
             DPRINTF("binding: no unused thread found in topology %s for slot %d\n", topo_in_use.to_string(true).c_str(), max_slots);
@@ -418,22 +418,21 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
          }
 
          // create a binding mask containing only the found core binding
-         sge_dstring_copy_dstring(&task_binding_to_use_dstr, &binding_in_use_dstr);
-         ocs::HostTopology::remove_all_used_threads(&task_binding_to_use_dstr);
-         ocs::HostTopology::add_used_thread(&task_binding_to_use_dstr, pos);
+         task_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, true));
+         task_binding_to_use.mark_node_as_used_or_unused(pos, true);
 
          // add the task binding to the host binding mask
-         ocs::HostTopology::add_used_thread(&host_binding_to_use_dstr, pos);
+         host_binding_to_use.mark_node_as_used_or_unused(pos, true);
 
          // add the task binding to the binding list for the host
-         ocs::HostTopology::add_used_thread(&binding_in_use_dstr, pos);
+         binding_in_use.mark_node_as_used_or_unused(pos, true);
 
          // store the binding decision for the task
          if (binding_done == nullptr) {
             binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
          }
          lListElem *binding_for_task = lAddSubUlong(binding_done, ST_id, next_binding_id_for_task, BN_specific_binding_list, ST_Type);
-         lSetString(binding_for_task, ST_name, sge_dstring_get_string(&task_binding_to_use_dstr));
+         lSetString(binding_for_task, ST_name, task_binding_to_use.to_string(true, true, true, false, false, false).c_str());
 
          // continue with the next task
          next_binding_id_for_task++;
@@ -449,8 +448,8 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
       // store the binding decision in the assignment structure
       if (binding_done) {
-         lSetString(binding_done, BN_specific_binding, sge_dstring_get_string(&host_binding_to_use_dstr));
-         DPRINTF("binding: host binding for all tasks on host %s would give us binding %s\n", hostname, sge_dstring_get_string(&host_binding_to_use_dstr));
+         lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, true, false, false, false).c_str());
+         DPRINTF("binding: host binding for all tasks on host %s would give us binding %s\n", hostname, host_binding_to_use.to_string().c_str());
       }
 
 #if 0
@@ -2337,8 +2336,8 @@ sge_host_match_static(const sge_assignment_t *a, const lListElem *host)
    // check if host was reserved for AR job
    if (a->ar_id != 0) {
       if (a->ar != nullptr) {
-         const lListElem *host = lGetSubHost(a->ar, EH_name, eh_name, AR_reserved_hosts);
-         if (host == nullptr) {
+         const lListElem *res_host = lGetSubHost(a->ar, EH_name, eh_name, AR_reserved_hosts);
+         if (res_host == nullptr) {
             DPRINTF("Host \"%s\" was not reserved by advance reservation %d\n", eh_name, a->ar_id);
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                            SCHEDD_INFO_HNOTARRESERVED_SI, eh_name, a->ar_id);
