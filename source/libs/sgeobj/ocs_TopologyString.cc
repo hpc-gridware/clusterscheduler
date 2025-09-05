@@ -760,14 +760,8 @@ void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &top
    correct_topology_upper_lower();
 
    // Refresh internal counters/characteristics by rebuilding from a full structured representation
-   std::string rebuilt = to_string(
-      /*with_data_nodes=*/true,
-      /*with_structure=*/true,
-      /*with_characteristics=*/true,
-      /*with_internal_characteristics=*/true,
-      /*with_tree_format=*/false,
-      /*show_as_unused=*/false
-   );
+   std::string rebuilt = to_string( true, true, true,
+                                    false, false, false);
    parse_to_tree(rebuilt);
 
    DRETURN_VOID;
@@ -804,10 +798,7 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
 
 
 std::vector<int>
-ocs::TopologyString::find_n_packed_nodes_of_unit(int bamount,
-                                                 BindingUnit::Unit bunit,
-                                                 BindingStart::Start bstart,
-                                                 BindingEnd::End bend) {
+ocs::TopologyString::find_n_packed_units(const int bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingEnd::End bend) const {
 
    // ensure bamount cannot be 0
    SGE_ASSERT(bamount > 0);
@@ -883,6 +874,7 @@ ocs::TopologyString::find_n_packed_nodes_of_unit(int bamount,
       return n.c == 'T';
    };
 
+   const char unit_letter = BindingUnit::is_power_unit(bunit) ? 'C' : 'E';
    const Node* start_node = nullptr; // node that satisfies bstart or first node if NONE
    const Node* end_node = nullptr;   // node that satisfies bend or nullptr if NONE.
 
@@ -896,45 +888,25 @@ ocs::TopologyString::find_n_packed_nodes_of_unit(int bamount,
          // try to find start-position
          if (start_node == nullptr) {
 
-            // Do we search C or E units
-            char start_letter;
-            if (bunit == BindingUnit::Unit::CSOCKET || bunit == BindingUnit::Unit::CCORE || bunit == BindingUnit::Unit::CTHREAD
-                || bunit == BindingUnit::Unit::CCACHE2 || bunit == BindingUnit::Unit::CCACHE3 || bunit == BindingUnit::Unit::CNUMA) {
-               start_letter = 'C';
-            } else {
-               start_letter = 'E';
-            }
-
             // The starting point will be either the first node (NONE) or the first node that matches the predicate
             // Cores have to fit to the searched unit. A socket is considered as free if all unit_type-threads are free,
             // but it is considered as used as soon as any thread type is in use.
             if (bstart == BindingStart::Start::NONE
-               || (bstart == BindingStart::Start::FIRST_FREE_SOCKET && is_free_X_socket(n, start_letter))
+               || (bstart == BindingStart::Start::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
                || (bstart == BindingStart::Start::FIRST_USED_SOCKET && is_used_socket(n))
-               || (bstart == BindingStart::Start::FIRST_FREE_CORE && is_free_X_core(n, start_letter))
-               || (bstart == BindingStart::Start::FIRST_USED_CORE && is_used_X_core(n, start_letter))) {
+               || (bstart == BindingStart::Start::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_CORE && is_used_X_core(n, unit_letter))) {
                start_node = &n;
                skip_end_detection = true;
             }
          }
 
          // try to find end-position
-         if (!skip_end_detection && start_node != nullptr
-            && end_node == nullptr && bend != BindingEnd::End::NONE) {
-
-            char end_letter;
-            if (bunit == BindingUnit::Unit::CSOCKET || bunit == BindingUnit::Unit::CCORE || bunit == BindingUnit::Unit::CTHREAD
-                || bunit == BindingUnit::Unit::CCACHE2 || bunit == BindingUnit::Unit::CCACHE3 || bunit == BindingUnit::Unit::CNUMA) {
-               end_letter = 'C';
-            } else {
-               end_letter = 'E';
-            }
-
-            // same logic as above: socket is used if C or E threads are in use
-            if ((bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, end_letter))
+         if (!skip_end_detection && start_node != nullptr && end_node == nullptr && bend != BindingEnd::End::NONE) {
+            if ((bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
                || (bend == BindingEnd::End::FIRST_USED_SOCKET && is_used_socket(n))
-               || (bend == BindingEnd::End::FIRST_FREE_CORE && is_free_X_core(n, end_letter))
-               || (bend == BindingEnd::End::FIRST_USED_CORE && is_used_X_core(n, end_letter))) {
+               || (bend == BindingEnd::End::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
+               || (bend == BindingEnd::End::FIRST_USED_CORE && is_used_X_core(n, unit_letter))) {
                end_node = &n;
             }
          }
@@ -1006,4 +978,79 @@ ocs::TopologyString::find_n_packed_nodes_of_unit(int bamount,
 
    return ids;
 }
+
+void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used) {
+   DENTER(TOP_LAYER);
+
+   if (ids.empty() || nodes.empty()) {
+      DRETURN_VOID;
+   }
+
+   size_t pos = 0;
+   char unit_letter = BindingUnit::is_power_unit(unit) ? 'C' : 'E';
+
+   std::function<void(std::vector<Node>&, bool, char)> process_node = [&](std::vector<Node>& list, bool ancestor_was_marked, char parent_letter) {
+      for (auto& n : list) {
+         int id = NO_POS;
+         auto it = n.characteristics.find(ID_PREFIX);
+         if (it != n.characteristics.end()) {
+            try {
+               id = std::stoi(it->second);
+            } catch (...) {
+               // malformed id, keep empty
+            }
+         }
+
+         // tag node if id is in vector of ids
+         bool do_mark = false;
+         if (pos < ids.size() && id != NO_POS && id == ids[pos]) {
+            do_mark = true;
+            ++pos;
+         }
+
+         // tag node if it is a child node of a core where the node type fits
+         if (!do_mark && ancestor_was_marked && parent_letter == unit_letter) {
+            do_mark = true;
+         }
+
+         // tag node if a node in hierarchy was tagged and the node type (power or efficiency) fits
+         if (!do_mark && ancestor_was_marked) {
+            char node_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+
+            if (node_letter_up == unit_letter) {
+               do_mark = true;
+            }
+         }
+
+         // mark a node as used or unused
+         if (do_mark) {
+            if (mark_used) {
+               n.c = static_cast<char>(std::tolower(static_cast<unsigned char>(n.c)));
+            } else {
+               n.c = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+            }
+         }
+
+         // process subtree
+         if (!n.nodes.empty()) {
+            char parent_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+            process_node(n.nodes, do_mark || ancestor_was_marked, parent_letter_up);
+         }
+      }
+   };
+
+   // Process all nodes
+   process_node(nodes, false, '\0');
+
+   // Normalize ancestor casing based on children
+   correct_topology_upper_lower();
+
+   // Refresh internal counters/characteristics by rebuilding from a full structured representation
+   std::string rebuilt = to_string( true, true, true,
+                                    false, false, false);
+   parse_to_tree(rebuilt);
+
+   DRETURN_VOID;
+}
+
 

@@ -44,5 +44,6 @@ namespace ocs {
       };
 
       static std::string to_string(Unit mode);
+      static bool is_power_unit(Unit unit);
    };
 }

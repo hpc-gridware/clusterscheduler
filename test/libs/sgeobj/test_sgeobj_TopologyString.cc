@@ -307,7 +307,10 @@ test_find_n_packed_nodes_of_unit_test(const std::string &name, const std::string
 
    ocs::TopologyString topo(topo_string);
 
-   std::vector<int> ids = topo.find_n_packed_nodes_of_unit(bamount, unit, start, end);
+   std::vector<int> ids = topo.find_n_packed_units(bamount, unit, start, end);
+
+   topo.mark_units_as_used_or_unused(ids, unit, true);
+   std::cout << "   ==> " << topo.to_product_topology_string();
 
    // Compare size of vectors
    if (ids.size() != expected_ids.size()) {
@@ -390,7 +393,7 @@ bool test_find_n_packed_nodes_of_unit_scenarios() {
    DENTER(TOP_LAYER);
    //                       1       5             0               5              0             5               0
    //                                             1               1              2             2               3
-   std::string topo_A1("(N(S(X(Y(C(T)(t)))(Y(C(T)(T)))(Y(E(t))(E(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))))))");
+   std::string topo_A1("(N(S(X(Y(C(T)(t)))(Y(C(T)(T)))(Y(e(t))(E(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))))))");
    std::vector<BindingSelectionTuple> scenarios_A1 = {
       // All unit tests without start or stop position
       {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
@@ -407,7 +410,7 @@ bool test_find_n_packed_nodes_of_unit_scenarios() {
       {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {}},
 
       // All unit tests with start position FIRST_USED_SOCKET
-      // scenarios are identical to scenarios without start position because match can start at first node
+      // scenarios are identical to scenarios without starting position because the match can start at the first node
       {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
       {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {9, 20, 24}},
       {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {17}},
@@ -436,7 +439,7 @@ bool test_find_n_packed_nodes_of_unit_scenarios() {
       {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {}},
 
       // All unit tests with start position FIRST_USED_CORE
-      // scenarios are identical to scenarios without start-position because matching would anyways not before 5
+      // scenarios are identical to scenarios without starting position because matching would anyways not before 5
       {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
       {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {9, 20, 24}},
       {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {17}},
@@ -758,15 +761,6 @@ int main (int argc, char *argv[]) {
    ret &= test_mark_nodes_as_unused();
    ret &= test_find_n_packed_nodes_of_unit_scenarios();
 
-#if 0
-   std::string unit = "CT";
-   std::string strategy;
-   std::string filter;
-   std::string sort;
-   std::string start = "C";
-   std::string stop = "t";
-   std::cout << "Result: " << topo1.get_packed_binding(2, unit, strategy, filter, sort, start, stop) << std::endl;
-#endif
    if (!ret) {
       std::cerr << "Test failed." << std::endl;
       DRETURN(1);
