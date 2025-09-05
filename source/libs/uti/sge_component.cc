@@ -212,7 +212,7 @@ static void set_uid(sge_component_user_t *user, uid_t uid) {
  */
 static void set_unqualified_hostname(const char *unqualified_hostname) {
    if (unqualified_hostname != nullptr) {
-      strncpy(component_ts0_data.unqualified_hostname, unqualified_hostname, sizeof(component_ts0_data.unqualified_hostname));
+      sge_strlcpy(component_ts0_data.unqualified_hostname, unqualified_hostname, sizeof(component_ts0_data.unqualified_hostname));
    }
 }
 
