@@ -284,7 +284,6 @@ enum {
 
    tc_OPT,        /* task concurrency */
 
-   binding_OPT,          /* requests job binding strategy */
    suspend_remote_OPT,   /* parameter for qrsh to toggle the suspend behavior */
 
    ace_OPT, /* add ce object */

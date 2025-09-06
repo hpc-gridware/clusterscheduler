@@ -30,3 +30,16 @@ std::string ocs::BindingStrategy::to_string(const Strategy mode) {
       default: return "???";
    }
 }
+
+ocs::BindingStrategy::Strategy
+ocs::BindingStrategy::from_string(const std::string& mode) {
+   if (mode == "NONE") {
+      return NONE;
+   } else if (mode == "linear") {
+      return LINEAR;
+   } else if (mode == "pack") {
+      return PACK;
+   } else {
+      return UNINITIALIZED;
+   }
+}

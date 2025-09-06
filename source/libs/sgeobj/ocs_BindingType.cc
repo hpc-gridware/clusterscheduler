@@ -30,3 +30,16 @@ std::string ocs::BindingType::to_string(const Type mode) {
       default: return "???";
    }
 }
+
+ocs::BindingType::Type
+ocs::BindingType::from_string(const std::string& mode) {
+   if (mode == "NONE") {
+      return NONE;
+   } else if (mode == "host") {
+      return HOST;
+   } else if (mode == "slot") {
+      return SLOT;
+   } else {
+      return UNINITIALIZED;
+   }
+}

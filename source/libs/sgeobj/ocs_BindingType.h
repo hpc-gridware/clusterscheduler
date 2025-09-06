@@ -33,5 +33,6 @@ namespace ocs {
       };
 
       static std::string to_string(Type mode);
+      static Type from_string(const std::string& mode);
    };
 }

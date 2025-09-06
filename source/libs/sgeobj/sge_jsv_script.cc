@@ -68,6 +68,14 @@
 #include <tuple>
 #include <sched/sgeee.h>
 
+#include "ocs_BindingEnd.h"
+#include "ocs_BindingInstance.h"
+#include "ocs_BindingStart.h"
+#include "ocs_BindingStrategy.h"
+#include "ocs_BindingType.h"
+#include "ocs_BindingUnit.h"
+#include "ocs_Job.h"
+
 /*
  * defines the timeout how long a client/qmaster would wait maximally for
  * a response from a JSV script after a command string has been send
@@ -686,19 +694,85 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
          }
       }
 
-      /*    
-       * -binding 
-       *    <type> linear_automatic:<amount>
-       *    <type> linear:<amount>:<socket>,<core>
-       *    <type> striding_automatic:<amount>:<step>
-       *    <type> striding:<amount>:<step>:<socket>,<core>
-       *    <type> explicit:<socket_core_list>
-       * 
-       * <type> := set | env | pe
-       * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
+      // @todo: CS-732: handle binding parameters in JSV
+      /*
+       * -bamount
+       * and all other -b...-switches that are also related to -binding
        */
       {
-         // @todo: CS-732: handle binding parameters in JSV
+         lListElem *binding_elem = lGetObject(new_job, JB_new_binding);
+
+         if (ret && strcmp("bamount", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_amount, std::atoi(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_amount, 0);
+            }
+         }
+
+         if (ret && strcmp("bstrategy", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_strategy, ocs::BindingStrategy::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_strategy, ocs::BindingStrategy::Strategy::NONE);
+            }
+         }
+
+         if (ret && strcmp("btype", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_type, ocs::BindingType::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_type, ocs::BindingType::Type::NONE);
+            }
+         }
+
+         if (ret && strcmp("bunit", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_unit, ocs::BindingUnit::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_unit, ocs::BindingUnit::Unit::NONE);
+            }
+         }
+
+         if (ret && strcmp("bstart", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_start, ocs::BindingStart::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_start, ocs::BindingStart::Start::NONE);
+            }
+         }
+
+         if (ret && strcmp("bend", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_start, ocs::BindingEnd::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_start, ocs::BindingEnd::End::NONE);
+            }
+         }
+
+         if (ret && strcmp("bsort", param) == 0) {
+            if (value != nullptr) {
+               lSetString(binding_elem, BN_new_sort, value);
+            } else {
+               lSetString(binding_elem, BN_new_sort, nullptr);
+            }
+         }
+
+         if (ret && strcmp("bfilter", param) == 0) {
+            if (value != nullptr) {
+               lSetString(binding_elem, BN_new_filter, value);
+            } else {
+               lSetString(binding_elem, BN_new_filter, nullptr);
+            }
+         }
+
+         if (ret && strcmp("binstance", param) == 0) {
+            if (value != nullptr) {
+               lSetUlong(binding_elem, BN_new_instance, ocs::BindingInstance::from_string(value));
+            } else {
+               lSetUlong(binding_elem, BN_new_instance, ocs::BindingInstance::Instance::NONE);
+            }
+         }
 #if 0
          lListElem *binding_elem = lGetObject(new_job, JB_new_binding);
 
@@ -1587,113 +1661,67 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
+   // @todo: CS-732: Handle binding in JSV
    /*
-    * -binding 
-    *    <type> linear_automatic:<amount>
-    *    <type> linear:<amount>:<socket>,<core>
-    *    <type> striding_automatic:<amount>:<step>
-    *    <type> striding:<amount>:<step>:<socket>,<core>
-    *    <type> explicit:<socket_core_list>
-    *
-    * <type> := set | env | pe
-    * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
+    * -bamount <number>
+    * and all other binding information specified with -b...-switches at the command line
     */
    {
-      // @todo: CS-732: Handle binding in JSV
-#if 0
-      const lListElem *binding = lGetObject(old_job, JB_new_binding);
+      const lListElem *binding_elem = lGetObject(old_job, JB_new_binding);
 
+      // -bamount
+      u_long32 amount = lGetUlong(binding_elem, BN_new_amount);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bamount " sge_u32, prefix, amount);
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-      if (const char *strategy = ((binding != nullptr) ? lGetString(binding, BN_strategy) : nullptr);
-          strategy != nullptr && strcmp(strategy, "no_job_binding") != 0) {
-         const char *strategy_without_automatic = strategy;
+      // -btype
+      ocs::BindingType::Type type = ocs::Job::binding_get_type(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s btype %s", prefix, ocs::BindingType::to_string(type).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         /* binding_strategy */
-         if (strcmp(strategy, "linear_automatic") == 0) {
-            strategy_without_automatic = "linear";
-         } else if (strcmp(strategy, "striding_automatic") == 0) {
-            strategy_without_automatic = "striding";
-         }
-         sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s binding_strategy %s", 
-                             prefix, strategy_without_automatic);
-         jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
+      // -bunit
+      ocs::BindingUnit::Unit unit = ocs::Job::binding_get_unit(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bunit %s", prefix, ocs::BindingUnit::to_string(unit).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         /* binding_type */
-         sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s binding_type ", prefix);
-         binding_type_to_string(static_cast<binding_type_t>(lGetUlong(binding, BN_type)), &buffer);
-         jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
+      // -bstrategy
+      ocs::BindingStrategy::Strategy strategy = ocs::Job::binding_get_strategy(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bstrategy %s", prefix, ocs::BindingStrategy::to_string(strategy).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         if (strcmp("linear", strategy_without_automatic) == 0 || strcmp("striding", strategy_without_automatic) == 0) {
-            /* binding_amount */
-            sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_amount " sge_u32, prefix,
-                                lGetUlong(binding, BN_parameter_n));
-            jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-         }
+      // -bstart
+      ocs::BindingStart::Start start = ocs::Job::binding_get_start(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bstart %s", prefix, ocs::BindingStart::to_string(start).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         /*
-          * socket and core will only be sent for linear and striding strategy
-          */
-         if (strcmp("linear", strategy) == 0 || strcmp("striding", strategy) == 0) {
-            /* binding_socket */
-            sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_socket " sge_u32, prefix,
-                                lGetUlong(binding, BN_parameter_socket_offset));
-            jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
+      // -bend
+      ocs::BindingEnd::End end = ocs::Job::binding_get_end(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bend %s", prefix, ocs::BindingEnd::to_string(end).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-            /* binding_core */
-            sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_core " sge_u32, prefix,
-                                lGetUlong(binding, BN_parameter_core_offset));
-            jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-         }
+      // -binstance
+      ocs::BindingInstance::Instance instance = ocs::Job::binding_get_instance(old_job);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s binstance %s", prefix, ocs::BindingInstance::to_string(instance).c_str());
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         /*
-          * Only within striding strategy step size parameter is allowed
-          */ 
-         if (strcmp("striding", strategy_without_automatic) == 0) {
-            /* binding_step */
-            sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_step " sge_u32, prefix,
-                                lGetUlong(binding, BN_parameter_striding_step_size));
-            jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-         }
+      // -bfilter
+      const char *filter = lGetString(binding_elem, BN_new_filter);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bfilter %s", prefix, filter != nullptr ? filter : NONE_STR);
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         /*
-          * "explicit" strategy requires a socket/core list
-          */
-         if (strcmp("explicit", strategy) == 0) {
-            int *socket_array = nullptr;
-            int *core_array = nullptr;
-            int socket = 0;
-            int core = 0;
-            int i;
-
-            binding_explicit_extract_sockets_cores(
-               lGetString(binding, BN_parameter_explicit), 
-               &socket_array, &socket, &core_array, &core);    
-
-            /* binding_strategy */
-            sge_dstring_clear(&buffer);
-            sge_dstring_sprintf(&buffer, "%s binding_exp_n " sge_u32, prefix, socket);
-            jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-
-            for (i = 0; i < socket; i++) {
-               sge_dstring_clear(&buffer);
-               sge_dstring_sprintf(&buffer, "%s binding_exp_socket%d %d", prefix, i, socket_array[i]);
-               jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-               sge_dstring_clear(&buffer);
-               sge_dstring_sprintf(&buffer, "%s binding_exp_core%d %d", prefix, i, core_array[i]);
-               jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
-            }
-
-            sge_free(&socket_array);
-            sge_free(&core_array);
-         }
-      }
-#endif
+      // -bsort
+      const char *sort = lGetString(binding_elem, BN_new_sort);
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s bsort %s", prefix, sort != nullptr ? sort : NONE_STR);
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
    /* 

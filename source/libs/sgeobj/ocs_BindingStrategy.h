@@ -34,5 +34,6 @@ namespace ocs {
 
 
       static std::string to_string(Strategy mode);
+      static Strategy from_string(const std::string& mode);
    };
 }

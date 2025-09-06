@@ -31,3 +31,18 @@ std::string ocs::BindingInstance::to_string(const Instance mode) {
       default: return "???";
    }
 }
+
+ocs::BindingInstance::Instance
+ocs::BindingInstance::from_string(const std::string& mode) {
+   if (mode == "NONE") {
+      return NONE;
+   } else if (mode == "set" || mode == "SET") {
+      return SET;
+   } else if (mode == "env" || mode == "ENV") {
+      return ENV;
+   } else if (mode == "pe" || mode == "PE") {
+      return PE;
+   } else {
+      return UNINITIALIZED;
+   }
+}

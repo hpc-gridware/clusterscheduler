@@ -34,5 +34,6 @@ namespace ocs {
       };
 
       static std::string to_string(Instance mode);
+      static Instance from_string(const std::string& mode);
    };
 }
