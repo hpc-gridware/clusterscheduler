@@ -2682,8 +2682,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             // copy new filter but only if it is not UNINITIALIZED and different from the old one
             const char *new_filter = lGetString(new_binding_elem, BN_new_filter);
             if (new_filter != nullptr) {
-               const char *old_filter = ocs::Job::binding_get_filter(new_job);
-               if (strcmp(old_filter, new_filter) != 0) {
+               std::string old_filter = ocs::Job::binding_get_filter(new_job);
+               if (strcmp(old_filter.c_str(), new_filter) != 0) {
                   lSetString(old_binding_elem, BN_new_filter, new_filter);
                   *trigger |= MOD_EVENT;
                }
