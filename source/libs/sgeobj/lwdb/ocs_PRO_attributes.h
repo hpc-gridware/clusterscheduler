@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ enum {
    PRO_rel,
    PRO_run,
    PRO_io,
-   PRO_ioops
+   PRO_ioops,
+   PRO_iow
 };
 
 constexpr const int PRO_Type[] = {
@@ -52,6 +53,7 @@ constexpr const int PRO_Type[] = {
    PRO_run,
    PRO_io,
    PRO_ioops,
+   PRO_iow,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -65,7 +67,8 @@ constexpr const int PRO_Type[] = {
    {PRO_rel, "PRO_rel", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PRO_run, "PRO_run", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PRO_io, "PRO_io", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {PRO_ioops, "PRO_ioops", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {PRO_ioops, "PRO_ioops", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PRO_iow, "PRO_iow", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -698,24 +698,11 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
        * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
        */
       {
-         const lList *binding_list = lGetList(new_job, JB_binding);
-         lListElem *binding_elem = lFirstRW(binding_list);
-  
-         /* 
-          * initialize binding CULL structure as if there was no binding
-          * specified if there is none till now
-          */ 
-         if (binding_elem == nullptr) {
-            ret &= job_init_binding_elem(new_job);
-            if (!ret) {
-               answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, 
-                                       ANSWER_QUALITY_ERROR, MSG_JSV_MEMBINDING);
-               ret = false;
-            }
-            binding_list = lGetList(new_job, JB_binding);
-            binding_elem = lFirstRW(binding_list);
-         }
-         /* 
+         // @todo: CS-732: handle binding parameters in JSV
+#if 0
+         lListElem *binding_elem = lGetObject(new_job, JB_new_binding);
+
+         /*
           * parse JSV binding parameter and overwite previous setting
           */
          if (ret && strcmp("binding_strategy", param) == 0) {
@@ -936,6 +923,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                sge_free(&core_array);
             }
          }
+#endif
       }
 
       /*
@@ -1611,8 +1599,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
     * <socket_core_list> := <socket>,<core>[:<socket>,<core>]
     */
    {
-      const lList *list = lGetList(old_job, JB_binding);
-      const lListElem *binding = ((list != nullptr) ? lFirst(list) : nullptr);
+      // @todo: CS-732: Handle binding in JSV
+#if 0
+      const lListElem *binding = lGetObject(old_job, JB_new_binding);
+
 
       if (const char *strategy = ((binding != nullptr) ? lGetString(binding, BN_strategy) : nullptr);
           strategy != nullptr && strcmp(strategy, "no_job_binding") != 0) {
@@ -1703,6 +1693,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
             sge_free(&core_array);
          }
       }
+#endif
    }
 
    /* 
@@ -2273,7 +2264,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const lListElem *job) {
       ret = "ar";
    } else if (cull_attr == JB_account) {
       ret = "A";
-   } else if (cull_attr == JB_binding) {
+   } else if (cull_attr == JB_new_binding) {
       ret = "binding";
    } else if (cull_attr == JB_checkpoint_interval) {
       ret = "c_interval";

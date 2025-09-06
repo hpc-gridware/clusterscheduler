@@ -303,26 +303,18 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
    // @todo CS-732: handle finding for jobs and in future also ARs
    // if we have no job or binding request within the job then
    // we have no binding request, are in qselect-mode, or we are handling an AR
-   if (a == nullptr || host == nullptr || a->job == nullptr || lGetList(a->job, JB_binding) == nullptr) {
+   if (a == nullptr || host == nullptr || a->job == nullptr || lGetObject(a->job, JB_new_binding) == nullptr) {
       DRETURN(slots);
    }
 
 #ifdef WITH_EXTENSIONS
 #endif
 
-#if 1
+   // @todo: CS-732: should we add an implicit binding request
    const lListElem *binding_request = lGetObject(a->job, JB_new_binding);
-   if (binding_request != nullptr) {
-      DPRINTF("Job requested binding\n");
-      lWriteElemTo(binding_request, stderr);
-      DPRINTF("Argument binding_to_use_schedule_dstr: %s\n", sge_dstring_get_string(binding_to_use_schedule_dstr));
-      DPRINTF("We are handling host:\n");
-      lWriteElemTo(host, stderr);
-   } else {
-      // There are no binding constraints that mean that we can handle all slots
+   if (binding_request == nullptr) {
       DRETURN(slots);
    }
-#endif
 
    // find all parameter related to binding
    ocs::BindingType::Type binding_type= ocs::Job::binding_get_type(a->job);

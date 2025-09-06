@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -114,9 +114,6 @@ object_get_subtype(int nm)
          break;
       case JB_path_aliases:
          ret = PA_Type;
-         break;
-      case JB_binding:
-         ret = BN_Type;
          break;
       case JB_new_binding:
          ret = BN_Type;

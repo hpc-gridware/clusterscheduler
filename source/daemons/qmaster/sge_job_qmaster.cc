@@ -2613,18 +2613,6 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
    }
 
-   /* ---- JB_binding */
-   if ((pos = lGetPosViaElem(jep, JB_binding, SGE_NO_ABORT)) >= 0) {
-      DPRINTF("got new JB_binding\n");
-
-      lSetList(new_job, JB_binding,
-               lCopyList("", lGetList(jep, JB_binding)));
-
-      *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_BINDING, jobid);
-      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   }
-
    /* ---- JB_new_binding */
    if ((pos = lGetPosViaElem(jep, JB_new_binding, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_new_binding\n");

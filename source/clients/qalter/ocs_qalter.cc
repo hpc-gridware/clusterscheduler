@@ -325,12 +325,6 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_ar);
       }
 
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binding"))) {
-         lSwapList(ep, SPA_argval_lListT, job, JB_binding);
-         lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_binding);
-      }
-
       // -btype host | slot
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-btype"))) {
          // Create a binding element if it does not exist
@@ -1048,7 +1042,6 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_ja_tasks,
             JB_ja_structure,
             JB_user_list,
-            JB_binding,
             NoName
          };
          static int object_nm[] = {

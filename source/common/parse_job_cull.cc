@@ -171,21 +171,6 @@ lList *cull_parse_job_parameter(u_long32 uid, const char *username, const char *
       lRemoveElem(cmdline, &ep);
    }
    
-   /* 
-    * -binding : when using "-binding linear" overwrite previous 
-    *      DG:TODO      but not in with "-binding one_per_socket x" 
-    *      DG:TODO      or "-binding striding offset x"
-    *  binding n offset <- how should the error handling be done?
-    */
-   ep = lGetElemStrRW(cmdline, SPA_switch_val, "-binding");
-   if (ep != nullptr) {
-      const lList *binding_list = lGetList(ep, SPA_argval_lListT);
-      lList *new_binding_list = lCopyList("binding",  binding_list);
-      
-      lSetList(*pjob, JB_binding, new_binding_list);
-      lRemoveElem(cmdline, &ep);
-   }
-
    // -btype host | slot
    ep = lGetElemStrRW(cmdline, SPA_switch_val, "-btype");
    if (ep != nullptr) {
