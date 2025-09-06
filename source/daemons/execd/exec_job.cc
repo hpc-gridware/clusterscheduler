@@ -102,7 +102,6 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
-#include "ocs_HostTopology.h"
 #include "ocs_TopologyString.h"
 
 #if defined(SOLARIS)

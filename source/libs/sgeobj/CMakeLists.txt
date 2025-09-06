@@ -70,14 +70,13 @@ set(LIBRARY_SOURCES
       ocs_BindingIo.cc
       ocs_BindingStart.cc
       ocs_BindingEnd.cc
-        ocs_BindingInstance.cc
+      ocs_BindingInstance.cc
       ocs_BindingStrategy.cc
       ocs_BindingType.cc
       ocs_BindingUnit.cc
       ocs_BindingExecd2Shepherd.cc
       ocs_Category.cc
       ocs_DataStore.cc
-      ocs_HostTopology.cc
       ocs_Job.cc
       ocs_Session.cc
       ocs_ShareTree.cc

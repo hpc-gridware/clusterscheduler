@@ -36,17 +36,13 @@
 #include "comm/commlib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/ocs_HostTopology.h"
 
 #include "uti/sge.h"
 #include "uti/sge_log.h"

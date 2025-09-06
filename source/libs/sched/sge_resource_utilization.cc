@@ -42,7 +42,6 @@
 
 #include "cull/cull.h"
 
-#include "sgeobj/ocs_HostTopology.h"
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_pe.h"
