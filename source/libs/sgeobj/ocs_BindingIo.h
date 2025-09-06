@@ -42,8 +42,5 @@ namespace ocs {
    public:
       static void
       binding_print_to_string(const lListElem *this_list, std::string &binding_string, bool as_switches = false);
-
-      static bool
-      binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string);
    };
 }

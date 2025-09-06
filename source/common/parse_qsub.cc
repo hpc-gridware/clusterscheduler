@@ -628,57 +628,6 @@ lList *cull_parse_cmdline(
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      /* "-binding [set|env|pe] linear:<amount>[:<socket>,<core>] 
-            | striding:<amount>:<stepsize>[:<socket>,<core>] 
-            | explicit:<socket>,<core>[:<socket>,<core>]* " */
-
-      if (!strcmp("-binding", *sp)) {
-         lListElem *binding_elem = lCreateElem(BN_Type);
-         dstring argument_string = DSTRING_INIT;
-         const char *switch_name = "-binding";
-         const char *switch_argument = nullptr;
-
-         /* next field is [set|env|pe] "linear" or "striding" or "explicit" */
-         sp++;
-         if (*sp == nullptr) {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
-            DRETURN(answer);
-         }
-         if (strcmp(*sp, "set") == 0 || strcmp(*sp, "env") == 0 || strcmp(*sp, "pe") == 0) {
-
-            sge_dstring_append(&argument_string, *sp);
-            sge_dstring_append_char(&argument_string, ' ');
-            sp++;
-            if (*sp == nullptr) {
-               answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                        MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
-               sge_dstring_free(&argument_string);
-               DRETURN(answer);
-            }
-         }
-         sge_dstring_append(&argument_string, *sp);
-         switch_argument = sge_dstring_get_string(&argument_string);
-
-         if (ocs::BindingIo::binding_parse_from_string(binding_elem, &answer, &argument_string)) {
-            lList *binding_list = lCreateList("binding", BN_Type);
-
-            lAppendElem(binding_list, binding_elem);
-            ep_opt = sge_add_arg(pcmdline, binding_OPT, lListT, switch_name, switch_argument);
-            lSetList(ep_opt, SPA_argval_lListT, binding_list);
-         } else {
-            /* answer has ween written by binding_parse_from_string() */
-            sge_dstring_free(&argument_string);
-            DRETURN(answer);
-         }
-         sge_dstring_free(&argument_string);
-         sp++;
-         continue;
-      }
-
-/*-----------------------------------------------------------------------------*/
-
 /*-----------------------------------------------------------------------------*/
       /* "-c [op] interval */
 

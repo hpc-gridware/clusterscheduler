@@ -71,6 +71,8 @@
 #include "parse_qsub.h"
 
 #include "msg_clients_common.h"
+#include "sgeobj/ocs_TopologyString.h"
+#include "uti/sge.h"
 
 static void sge_show_checkpoint(int how, int op);
 
@@ -701,24 +703,30 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
          // show binding information
          if (show_binding) {
-            const lListElem *usage_elem;
-            const char *binding_inuse = nullptr;
-
             if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
-               for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
-                  const char *binding_name = "binding_inuse";
-                  const char *usage_name = lGetString(usage_elem, UA_name);
+               dstring output = DSTRING_INIT;
 
-                  if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
-                     binding_inuse = strstr(usage_name, "!");
-                     if (binding_inuse != nullptr) {
-                        binding_inuse++;
-                     }
-                     break;
+               // Find the host or slot binding in the granted resource list of the slots entry
+               const lListElem *granted_slots = lGetSubStr(jatep, GRU_name, SGE_ATTR_SLOTS, JAT_granted_resources_list);
+               const lList *binding_in_use_list = granted_slots != nullptr ? lGetList(granted_slots, GRU_binding_inuse) : nullptr;
+               if (binding_in_use_list != nullptr) {
+                  const lListElem *binding_in_use;
+                  constexpr int start = 1;
+                  int i = start;
+                  for_each_ep(binding_in_use, binding_in_use_list) {
+                     ocs::TopologyString topo_in_use(lGetString(binding_in_use, ST_name));
+
+                     sge_dstring_sprintf_append(&output, "%s%d=%s", (i == start) ? "" : ",", i, topo_in_use.to_product_topology_string().c_str());
+                     i++;
                   }
+               } else {
+                  sge_dstring_sprintf_append(&output, "NONE");
                }
+
+               // Show the binding(s)
                printf("%-16s %11d:   %s\n", "binding",
-                      static_cast<int>(lGetUlong(jatep, JAT_task_number)), binding_inuse != nullptr ? binding_inuse : "NONE");
+                      static_cast<int>(lGetUlong(jatep, JAT_task_number)), sge_dstring_get_string(&output));
+               sge_dstring_free(&output);
             }
          }
 

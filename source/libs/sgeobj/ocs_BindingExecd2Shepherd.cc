@@ -28,6 +28,8 @@
 
 #include "sgeobj/ocs_BindingExecd2Shepherd.h"
 
+#include "ocs_BindingInstance.h"
+
 #if defined(BINDING_SOLARIS) || defined(OCS_HWLOC)
 
 /****** exec_job/parse_job_accounting_and_create_logical_list() ****************
@@ -151,87 +153,34 @@ ocs::BindingExecd2Shepherd::parse_job_accounting_and_create_logical_list(const c
 *
 *******************************************************************************/
 bool
-ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(dstring *result, lListElem *jep, char **rankfileinput) {
+ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(lListElem *jep, char **rankfileinput) {
    DENTER(TOP_LAYER);
 
-   /* temporary result string with or without "env:" prefix (when environment
-      variable for binding should be set or not) */
-   dstring tmp_result = DSTRING_INIT;
-   bool retval;
-
-   /* binding strategy */
    const lListElem *binding_elem = lGetObject(jep, JB_new_binding);
-   if (binding_elem != nullptr) {
 
-      /* re-create the binding string (<strategy>:<parameter>:<parameter>) */
+   // nothing to do
+   if (binding_elem == nullptr) {
+      DRETURN(false);
+   }
 
-      /* check if a leading "env_" or "pe_" is needed */
-      if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_ENV) {
-         /* we have just to set the environment variable SGE_BINDING for the
-            job */
-         sge_dstring_append(result, "env_");
-
-      } else if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
-         /* we have to attach settings to the pe_hostfile */
-         sge_dstring_append(result, "pe_");
-      }
-
-      if (strcmp(lGetString(binding_elem, BN_strategy), "linear") == 0) {
-
-         retval = linear_linux(&tmp_result, binding_elem, false);
-
-      } else if (strcmp(lGetString(binding_elem, BN_strategy), "linear_automatic") == 0) {
-
-         retval = linear_linux(&tmp_result, binding_elem, true);
-
-      } else if (strcmp(lGetString(binding_elem, BN_strategy), "striding") == 0) {
-
-         retval = striding_linux(&tmp_result, binding_elem, false);
-
-      } else if (strcmp(lGetString(binding_elem, BN_strategy), "striding_automatic") == 0) {
-
-         retval = striding_linux(&tmp_result, binding_elem, true);
-
-      } else if (strcmp(lGetString(binding_elem, BN_strategy), "explicit") == 0) {
-
-         retval = explicit_linux(&tmp_result, binding_elem);
-
-      } else {
-
-         /* BN_strategy does not contain anything usefull */
+   // @todo: CS-732: create rankfile
+   // old binding created a string like "<socket>,<core>:<socket>,<core>:..."
+   // according to some MPI documetations also a list of PU-IDs (==thread) should work
+   auto instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_new_instance));
+   if (instance == BindingInstance::Instance::PE) {
+#if 0
+      /* generate pe_host file input */
+      if (!parse_job_accounting_and_create_logical_list( sge_dstring_get_string(&tmp_result), rankfileinput)) {
+         WARNING("Core binding: Couldn't create input for pe_hostfile");
          retval = false;
       }
-
-     if (retval != false) {
-        /* parse the topology used by the job out of the string (it is at the
-           end) and convert it to "<socket>,<core>:<socket>,<core>:..." but just
-           when config binding element has prefix "pe_" */
-        if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
-           /* generate pe_hostfile input */
-           if (!parse_job_accounting_and_create_logical_list(
-                  sge_dstring_get_string(&tmp_result), rankfileinput)) {
-              WARNING("Core binding: Couldn't create input for pe_hostfile");
-              retval = false;
-           }
-        }
-        /* append result to the prefix */
-        sge_dstring_append_dstring(result, &tmp_result);
-     }
-   } else {
-      INFO("Core binding: No CULL sublist for binding found!");
-      retval = false;
+#endif
    }
 
-   if (!retval) {
-      sge_dstring_clear(result);
-      sge_dstring_append(result, "nullptr");
-   }
-
-   sge_dstring_free(&tmp_result);
-
-   DRETURN(retval);
+   DRETURN(true);
 }
 
+#if 0
 /****** exec_job/linear_linux() ************************************************
 *  NAME
 *     linear_linux() -- Creates a binding request string from request (CULL list).
@@ -545,6 +494,7 @@ ocs::BindingExecd2Shepherd::explicit_linux(dstring *result, const lListElem *bin
 
    DRETURN(retval);
 }
+#endif
 
 #endif
 
