@@ -32,3 +32,20 @@ std::string ocs::BindingStart::to_string(const Start mode) {
       default: return "???";
    }
 }
+
+ocs::BindingStart::Start
+ocs::BindingStart::from_string(const std::string& mode) {
+   if (mode == "NONE") {
+      return NONE;
+   } else if (mode == "S" || mode == "CS" || mode == "ES") {
+      return FIRST_FREE_SOCKET;
+   } else if (mode == "s" || mode == "cs" || mode == "es") {
+      return FIRST_USED_SOCKET;
+   } else if (mode == "C" || mode == "E" || mode == "CC" || mode == "EC") {
+      return FIRST_FREE_CORE;
+   } else if (mode == "c" || mode == "e" || mode == "cc" || mode == "ec") {
+      return FIRST_USED_CORE;
+   } else {
+      return UNINITIALIZED;
+   }
+}

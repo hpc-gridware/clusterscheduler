@@ -2326,7 +2326,6 @@ static void remove_unknown_opts(lList *lp, u_long32 jb_now, int tightly_integrat
          }
 
          if (strcmp(cp, "jobarg") && strcmp(cp, "script") && strcmp(cp, "-ar") &&
-            strcmp(cp, "-binding") &&
             strcmp(cp, "-bamount") && strcmp(cp, "-bstrategy") && strcmp(cp, "-binstance") &&
             strcmp(cp, "-bfilter") && strcmp(cp, "-bstart") && strcmp(cp, "-bend") && strcmp(cp, "-bsort") &&
             strcmp(cp, "-btype") && strcmp(cp, "-bunit") &&

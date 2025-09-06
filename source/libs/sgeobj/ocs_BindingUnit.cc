@@ -41,6 +41,39 @@ std::string ocs::BindingUnit::to_string(const Unit mode) {
    }
 }
 
+ocs::BindingUnit::Unit
+ocs::BindingUnit::from_string(const std::string& mode) {
+   if (mode == "NONE") {
+      return NONE;
+   } else if (mode == "T" || mode == "CT") {
+      return CTHREAD;
+   } else if (mode == "ET") {
+      return ETHREAD;
+   } else if (mode == "C" || mode == "CC") {
+      return CCORE;
+   } else if (mode == "E" || mode == "EC") {
+      return ECORE;
+   } else if (mode == "S" || mode == "CS") {
+      return CSOCKET;
+   } else if (mode == "ES") {
+      return ESOCKET;
+   } else if (mode == "Y" || mode == "CY") {
+      return CCACHE2;
+   } else if (mode == "EY") {
+      return ECACHE2;
+   } else if (mode == "X" || mode == "CX") {
+      return CCACHE3;
+   } else if (mode == "EX") {
+      return ECACHE3;
+   } else if (mode == "N" || mode == "CN") {
+      return CNUMA;
+   } else if (mode == "EN") {
+      return ENUMA;
+   } else {
+      return UNINITIALIZED;
+   }
+}
+
 bool ocs::BindingUnit::is_power_unit(const Unit unit) {
    if (unit == CSOCKET || unit == CCORE || unit == CTHREAD || unit == CCACHE2 || unit == CCACHE3 || unit == CNUMA) {
       return true;

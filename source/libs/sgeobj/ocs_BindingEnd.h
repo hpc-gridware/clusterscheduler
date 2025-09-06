@@ -35,5 +35,6 @@ namespace ocs {
       };
 
       static std::string to_string(End mode);
-   };
+      static End from_string(const std::string& mode);
+      };
 }
