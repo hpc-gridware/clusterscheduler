@@ -177,7 +177,7 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
 static int qstat_xml_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
-static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp);
+static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
 
 static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp);
 static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
@@ -1115,7 +1115,7 @@ static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, 
    DRETURN(0);
 }
 
-static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp) {
+static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = nullptr;
    lListElem *xml_elem = nullptr;
@@ -1125,7 +1125,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
    attribute_list = lGetListRW(xml_elem, XMLE_List);
    
-   DPRINTF("queue resource: %s, %s, %s\n", dom, name, value);
+   DPRINTF("queue resource: %s, %s, %s, %s\n", dom, name, value, details);
    xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
    xml_addAttribute(xml_elem, "name", name);  
    xml_addAttribute(xml_elem, "type", dom);

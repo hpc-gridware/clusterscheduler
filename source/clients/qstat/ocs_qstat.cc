@@ -116,7 +116,7 @@ static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char* qna
 static int qstat_stdout_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
-static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp);
+static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char * details, lList **alpp);
 static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp);
 static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp);
 static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp);
@@ -1809,10 +1809,14 @@ static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char *qna
 }
 
 static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, 
-                                       const char* name, const char* value, lList **alpp) 
+                                       const char* name, const char* value, const char *details, lList **alpp)
 {
    DENTER(TOP_LAYER);
-   printf("\t%s:%s=%s\n", dom, name, value);
+   if (details != nullptr && strlen(details) > 0) {
+      printf("\t%s:%s=%s (%s)\n", dom, name, value, details);
+   } else {
+      printf("\t%s:%s=%s\n", dom, name, value);
+   }
    DRETURN(0);
 }
 

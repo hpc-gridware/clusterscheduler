@@ -83,6 +83,7 @@
 #include "sge.h"
 
 #include "msg_qstat.h"
+#include "ocs_TopologyString.h"
 
 static int qstat_env_get_all_lists(qstat_env_t *qstat_env, bool need_job_list, lList** alpp);
 
@@ -1536,9 +1537,26 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
          }
          sge_dstring_clear(&resource_string);
          s = sge_get_dominant_stringval(rep, &dominant, &resource_string);
-         monitor_dominance(dom, dominant); 
-         
-         if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, alpp))) {
+         monitor_dominance(dom, dominant);
+
+         std::string details;
+         if (strcmp(lGetString(rep, CE_name), "m_topology") == 0) {
+            ocs::TopologyString topo_in_use;
+            const char *hostname = lGetHost(q, QU_qhostname);
+            const lListElem *host = lGetElemHost(qstat_env->exechost_list, EH_name, hostname);
+            if (host) {
+               const lList *resource_utilization = lGetList(host, EH_resource_utilization);
+               if (resource_utilization != nullptr) {
+                  const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
+                  if (slots_utilization != nullptr) {
+                     topo_in_use.reset_topology(lGetString(slots_utilization, RUE_utilized_now_binding_inuse));
+                  }
+               }
+            }
+            details = topo_in_use.to_product_topology_string();
+         }
+
+         if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, details.c_str(), alpp))) {
             DPRINTF("report_queue_resource failed\n");
             break;
          }
