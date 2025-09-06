@@ -91,7 +91,7 @@ namespace ocs {
 
       void mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used);
 
-      [[nodiscard]] std::vector<int> find_n_packed_units(int bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingEnd::End end) const;
+      [[nodiscard]] std::vector<int> find_n_packed_units(unsigned bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingEnd::End end) const;
       void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used);
    };
 } // namespace ocs

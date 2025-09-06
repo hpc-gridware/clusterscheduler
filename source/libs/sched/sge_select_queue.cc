@@ -291,17 +291,6 @@ host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_i
       DRETURN(false);
    }
 
-   // @todo CS-732: Here we should remove all threads that are masked by an admin manually
-
-   // @todo CS-732: If a job also requests RSMAPS and when those have a topology mask set then
-   // we can remove all threads that can never match in case certain RSMAPS are already in use by others
-
-   // @todo CS-732: If affinity information is available and also enforced we can remove all threads
-   // where the affinity mask will prevent scheduling
-
-   // @todo CS-732: If memory binding is active and constrains for NUMA memory (or caches) apply then
-   // we can remove those threads belonging to NUMA nodes not having enough memory vaialable
-
    // Copy the topology string to the output buffer
    host_topo_in_use.reset_topology(topology_in_use.to_string(true, true, true, false, false, false));
    DRETURN(true);
@@ -313,7 +302,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
    // @todo CS-732: handle finding for jobs and in future also ARs
    // if we have no job or binding request within the job then
-   // we have no binding request, are in qselect mode, or we are handling an AR
+   // we have no binding request, are in qselect-mode, or we are handling an AR
    if (a == nullptr || host == nullptr || a->job == nullptr || lGetList(a->job, JB_binding) == nullptr) {
       DRETURN(slots);
    }
@@ -329,55 +318,86 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       DPRINTF("Argument binding_to_use_schedule_dstr: %s\n", sge_dstring_get_string(binding_to_use_schedule_dstr));
       DPRINTF("We are handling host:\n");
       lWriteElemTo(host, stderr);
+   } else {
+      // There are no binding constraints that mean that we can handle all slots
+      DRETURN(slots);
    }
 #endif
 
-   // @todo CS-732 we assume host binding here. implement task specific binding later
-   auto binding_type= ocs::Job::binding_get_type(a->job);
+   // find all parameter related to binding
+   ocs::BindingType::Type binding_type= ocs::Job::binding_get_type(a->job);
+   ocs::BindingUnit::Unit binding_unit = ocs::Job::binding_get_unit(a->job);
+   ocs::BindingStrategy::Strategy binding_strategy = ocs::Job::binding_get_strategy(a->job);
+   ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(a->job);
+   ocs::BindingEnd::End binding_end = ocs::Job::binding_get_end(a->job);
+   std::string binding_filter = ocs::Job::binding_get_filter(a->job);
+   std::string binding_sort = ocs::Job::binding_get_sort(a->job);
+   unsigned binding_amount = ocs::Job::binding_get_amount(a->job);
+
+   // show parameter in debug output
+   DPRINTF("binding: type: %s\n", ocs::BindingType::to_string(binding_type).c_str());
+   DPRINTF("binding: unit: %s\n", ocs::BindingUnit::to_string(binding_unit).c_str());
+   DPRINTF("binding: amount: %d\n", binding_amount);
+   DPRINTF("binding: strategy: %s\n", ocs::BindingStrategy::to_string(binding_strategy).c_str());
+   DPRINTF("binding: start: %s\n", ocs::BindingStart::to_string(binding_start).c_str());
+   DPRINTF("binding: end: %s\n", ocs::BindingEnd::to_string(binding_end).c_str());
+   DPRINTF("binding: filter: %s\n", binding_filter.c_str());
+   DPRINTF("binding: sort: %s\n", binding_sort.c_str());
+
+   // distinguish between host and slot based binding
    if (binding_type == ocs::BindingType::HOST) {
       const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
 
-      // early exit if we already have a host-specific binding
+      // early exit; have a host-specific binding, no need to repeat because we know that slots can be handled
       if (binding_done != nullptr) {
          DPRINTF("binding: already done for host %s\n", hostname);
          DRETURN(slots);
       }
 
-      // find currently used cores/threads
+      // find current binding on that host
       ocs::TopologyString topo_in_use;
       bool ret = host_get_topology_in_use(host, topo_in_use);
       if (!ret) {
-         DPRINTF("binding: no topology in use and also no topology found for host %s\n", hostname);
+         DPRINTF("binding: did neither find topology information nor active binding information for host %s\n", hostname);
          DRETURN(0);
       }
 
-      // try to find a binding for the host (e.g find one unused thread in the topology)
-      int pos = topo_in_use.find_first_unused_thread();
-      if (pos == ocs::TopologyString::NO_POS) {
-         DPRINTF("binding: no unused thread found in topology %s for host %s\n", topo_in_use.to_product_topology_string().c_str());
-         DRETURN(0);
-      }
-      DPRINTF("binding: found unused thread at pos %d\n", pos);
+      // @todo CS-732: Here we should remove all threads that are masked by an admin manually
 
-      // create a binding mask containing only the found core binding
+      // @todo CS-732: If a job also requests RSMAPS and when those have a topology mask set then
+      // we can remove all threads that can never match in case certain RSMAPS are already in use by others
+
+      // @todo CS-732: If affinity information is available and also enforced we can remove all threads
+      // where the affinity mask will prevent scheduling
+
+      // @todo CS-732: If memory binding is active and constrains for NUMA memory (or caches) apply them
+      // we can remove those threads belonging to NUMA nodes not having enough memory available
+
+      // find the requested binding
+      auto ids = topo_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+      if (ids.size() < binding_amount) {
+         DPRINTF("binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
+         DRETURN(0); // host binding cannot be fulfilled
+      }
+
+      DPRINTF("binding: found %zu units for binding request\n", ids.size());
+
+      // create a binding mask that only contains those units that we will bind for this host binding
       ocs::TopologyString binding_to_use(topo_in_use.to_string(true, true, true, false, false, true));
-      binding_to_use.mark_node_as_used_or_unused(pos, true);
+      binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+      for (auto id : ids) {
+         binding_to_use.mark_node_as_used_or_unused(id, true);
+      }
       DPRINTF("binding: host binding for this job an host %s will be %s\n", hostname, binding_to_use.to_product_topology_string().c_str());
 
       // store the binding decision in the assignment structure
       binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
       lSetString(binding_done, BN_specific_binding, binding_to_use.to_string(true, true, true, false, false, false).c_str());
       lSetList(binding_done, BN_specific_binding_list, nullptr);
-
-
-#if 0
-      DPRINTF("binding: assignment binding_touse\n");
-      lWriteListTo(a->binding_touse, stderr);
-#endif
       DRETURN(slots);
+
    } else if (binding_type == ocs::BindingType::SLOT) {
-#if 1
       const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       u_long32 next_binding_id_for_task = 0;
@@ -395,6 +415,17 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
          DRETURN(0);
       }
 
+      // @todo CS-732: Here we should remove all threads that are masked by an admin manually
+
+      // @todo CS-732: If a job also requests RSMAPS and when those have a topology mask set then
+      // we can remove all threads that can never match in case certain RSMAPS are already in use by others
+
+      // @todo CS-732: If affinity information is available and also enforced we can remove all threads
+      // where the affinity mask will prevent scheduling
+
+      // @todo CS-732: If memory binding is active and constrains for NUMA memory (or caches) apply then
+      // we can remove those threads belonging to NUMA nodes not having enough memory vaialable
+
       // prepare a host binding mask either by reusing the host binding that was already done in a previous step
       // or by using the binding from the host as starting point for the first task
       ocs::TopologyString host_binding_to_use;
@@ -409,23 +440,29 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       int max_slots = 0;
       for (max_slots = 0; max_slots < slots; max_slots++) {
 
-         // find binding for one slot
-         ocs::TopologyString topo_in_use(binding_in_use.to_string(true, true, true, false, false, false));
-         int pos = topo_in_use.find_first_unused_thread();
-         if (pos == ocs::TopologyString::NO_POS) {
-            DPRINTF("binding: no unused thread found in topology %s for slot %d\n", topo_in_use.to_string(true).c_str(), max_slots);
+         // find the requested binding
+         auto ids = binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+         if (ids.size() < binding_amount) {
+            DPRINTF("binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
             break;
          }
 
-         // create a binding mask containing only the found core binding
+         DPRINTF("binding: found %zu units for binding request of task %d\n", ids.size(), max_slots);
+
+         // create a binding mask that only contains those units that we will bind for this slot binding on the host
          task_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, true));
-         task_binding_to_use.mark_node_as_used_or_unused(pos, true);
+         task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+         for (auto id : ids) {
+            task_binding_to_use.mark_node_as_used_or_unused(id, true);
+         }
+
+         DPRINTF("binding: slot binding for this task %d an host %s will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());
 
          // add the task binding to the host binding mask
-         host_binding_to_use.mark_node_as_used_or_unused(pos, true);
+         host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
          // add the task binding to the binding list for the host
-         binding_in_use.mark_node_as_used_or_unused(pos, true);
+         binding_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
          // store the binding decision for the task
          if (binding_done == nullptr) {
@@ -449,15 +486,10 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       // store the binding decision in the assignment structure
       if (binding_done) {
          lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, true, false, false, false).c_str());
-         DPRINTF("binding: host binding for all tasks on host %s would give us binding %s\n", hostname, host_binding_to_use.to_string().c_str());
+         DPRINTF("binding: slot binding for all tasks on host %s would give us binding %s\n", hostname, host_binding_to_use.to_string().c_str());
       }
 
-#if 0
-      DPRINTF("binding: assignment binding_touse\n");
-      lWriteListTo(a->binding_touse, stderr);
-#endif
-      DRETURN(slots);
-#endif
+      DRETURN(max_slots);
    } else {
       // binding type not supported
       DRETURN(0);
@@ -523,7 +555,8 @@ copy_binding(const sge_assignment_t *a) {
             }
 
             // move the element from the task binding list to the granted element
-            DPRINTF("binding-copy: moved task binding %s for slot %d\n", lGetString(task_binding_elem, ST_name), slots);
+            ocs::TopologyString task_binding(lGetString(task_binding_elem, ST_name));
+            DPRINTF("binding-copy: moved task binding %s for slot %d\n", task_binding.to_product_topology_string().c_str(), slots);
             lDechainElem(task_binding_list, task_binding_elem);
             lAppendElem(jg_binding_list, task_binding_elem);
 

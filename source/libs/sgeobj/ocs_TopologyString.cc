@@ -802,7 +802,7 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
 
 
 std::vector<int>
-ocs::TopologyString::find_n_packed_units(const int bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingEnd::End bend) const {
+ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingEnd::End bend) const {
 
    // ensure bamount cannot be 0
    SGE_ASSERT(bamount > 0);

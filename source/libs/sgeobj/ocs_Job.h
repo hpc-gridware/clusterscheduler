@@ -58,7 +58,7 @@ namespace ocs {
       static BindingStart::Start binding_get_start(const lListElem *job);
       static BindingEnd::End binding_get_end(const lListElem *job);
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
-      static const char *binding_get_filter(const lListElem *job);
+      static std::string binding_get_filter(const lListElem *job);
       static u_long32 binding_get_amount(const lListElem *job);
       static BindingInstance::Instance binding_get_instance(const lListElem *job);
       static void binding_set_missing_defaults(lListElem *job);

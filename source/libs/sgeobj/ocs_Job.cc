@@ -348,7 +348,7 @@ ocs::Job::binding_get_instance(const lListElem *job) {
    DRETURN(binding_instance);
 }
 
-const char *
+std::string
 ocs::Job::binding_get_filter(const lListElem *job) {
    DENTER(TOP_LAYER);
 
