@@ -53,7 +53,6 @@
 #include "sgeobj/ocs_BindingEnd.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_DataStore.h"
-#include "sgeobj/ocs_HostTopology.h"
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_range.h"
