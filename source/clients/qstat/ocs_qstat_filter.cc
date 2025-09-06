@@ -2543,10 +2543,9 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
       }
       if (handler->report_binding && (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) != 0) {
-         const lList *binding_list = lGetList(job, JB_binding);
+         const lListElem *binding_elem = lGetObject(job, JB_new_binding);
 
-         if (binding_list != nullptr) {
-            const lListElem *binding_elem = lFirst(binding_list);
+         if (binding_elem != nullptr) {
             dstring binding_param = DSTRING_INIT;
 
             std::string binding_str;
@@ -3216,7 +3215,6 @@ void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
       JB_request_set_list,
       JB_jid_request_list,
       JB_ja_ad_request_list,
-      JB_binding,
       JB_new_binding,
       NoName
    };
