@@ -502,28 +502,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    if (mconf_get_enable_binding()) {
 
 #if defined(OCS_HWLOC)
-      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(&core_binding_strategy_string, jep, &rankfileinput);
+      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(jep, &rankfileinput);
 #elif defined(BINDING_SOLARIS)
       ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(&core_binding_strategy_string, jep, err_str, err_length, &sge_binding_environment, &rankfileinput);
       if (sge_binding_environment != nullptr) {
          INFO("SGE_BINDING variable set: %s", sge_binding_environment);
-      }
-#endif
-
-      // @todo: CS-731: no need to send jobs binding back to the master
-#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-      if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
-          && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
-         INFO("core binding: %s", sge_dstring_get_string(&core_binding_strategy_string));
-
-         dstring pseudo_usage = DSTRING_INIT;
-         sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s",
-                             binding_get_topology_for_job(sge_dstring_get_string(&core_binding_strategy_string)));
-
-         lListElem *jr = get_job_report(job_id, ja_task_id, pe_task_id);
-         add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-         flush_job_report(jr);
-         sge_dstring_free(&pseudo_usage);
       }
 #endif
    }

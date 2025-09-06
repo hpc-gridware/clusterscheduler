@@ -38,13 +38,6 @@ enum {
    BN_new_start,
    BN_new_end,
    BN_new_strategy,
-   BN_strategy,
-   BN_type,
-   BN_parameter_n,
-   BN_parameter_socket_offset,
-   BN_parameter_core_offset,
-   BN_parameter_striding_step_size,
-   BN_parameter_explicit,
    BN_specific_hostname,
    BN_specific_binding,
    BN_specific_binding_list,
@@ -61,13 +54,6 @@ constexpr const int BN_Type[] = {
    BN_new_start,
    BN_new_end,
    BN_new_strategy,
-   BN_strategy,
-   BN_type,
-   BN_parameter_n,
-   BN_parameter_socket_offset,
-   BN_parameter_core_offset,
-   BN_parameter_striding_step_size,
-   BN_parameter_explicit,
    BN_specific_hostname,
    BN_specific_binding,
    BN_specific_binding_list,
@@ -85,13 +71,6 @@ constexpr const int BN_Type[] = {
    {BN_new_start, "BN_new_start", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_new_end, "BN_new_end", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_new_strategy, "BN_new_strategy", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_strategy, "BN_strategy", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, true, false}, \
-   {BN_type, "BN_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_parameter_n, "BN_parameter_n", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_parameter_socket_offset, "BN_parameter_socket_offset", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_parameter_core_offset, "BN_parameter_core_offset", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_parameter_striding_step_size, "BN_parameter_striding_step_size", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_parameter_explicit, "BN_parameter_explicit", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_specific_hostname, "BN_specific_hostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_specific_binding, "BN_specific_binding", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_specific_binding_list, "BN_specific_binding_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
