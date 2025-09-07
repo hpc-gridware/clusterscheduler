@@ -443,9 +443,6 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
          // create a binding mask that only contains those units that we will bind for this slot binding on the host
          task_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, true));
          task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
-         for (auto id : ids) {
-            task_binding_to_use.mark_node_as_used_or_unused(id, true);
-         }
 
          DPRINTF("binding: slot binding for this task %d an host %s will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());
 

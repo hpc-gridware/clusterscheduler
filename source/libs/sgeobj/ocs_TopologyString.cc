@@ -629,83 +629,6 @@ void ocs::TopologyString::reset_topology(const std::string &topology) {
    DRETURN_VOID;
 }
 
-#if 0
-void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &topo, const bool mark_used) {
-   DENTER(TOP_LAYER);
-
-   // Collect IDs of nodes that should be marked based on the given mask 'topo'.
-   // Convention: in the mask, lowercase means "used", uppercase means "unused".
-   // We mark only nodes that are lowercase in the mask to allow selective updates.
-   std::vector<int> ids_to_mark;
-   ids_to_mark.reserve(128);
-
-   std::function<void(const std::vector<Node>&)> collect_ids = [&](const std::vector<Node>& current_nodes) {
-      for (const auto &n : current_nodes) {
-         if (std::islower(static_cast<unsigned char>(n.c))) {
-            auto it = n.characteristics.find(ID_PREFIX);
-            if (it != n.characteristics.end()) {
-               try {
-                  ids_to_mark.push_back(std::stoi(it->second));
-               } catch (...) {
-                  // ignore invalid ids
-               }
-            }
-         }
-         if (!n.nodes.empty()) {
-            collect_ids(n.nodes);
-         }
-      }
-   };
-
-   collect_ids(topo.nodes);
-
-   if (ids_to_mark.empty()) {
-      DRETURN_VOID;
-   }
-
-   // Local helper to mark a node subtree without rebuilding characteristics each time
-   std::function<bool(std::vector<Node>&, int)> mark_by_id = [&](std::vector<Node>& current_nodes, int id) -> bool {
-      for (auto &n : current_nodes) {
-         auto it = n.characteristics.find(ID_PREFIX);
-         if (it != n.characteristics.end()) {
-            int nid = 0;
-            try { nid = std::stoi(it->second); } catch (...) { nid = 0; }
-            if (nid == id) {
-               // Mark this node and all its subtree
-               std::function<void(Node&)> apply_mark = [&](Node& nn) {
-                  nn.c = mark_used ? static_cast<char>(std::tolower(static_cast<unsigned char>(nn.c)))
-                                   : static_cast<char>(std::toupper(static_cast<unsigned char>(nn.c)));
-                  for (auto &ch : nn.nodes) {
-                     apply_mark(ch);
-                  }
-               };
-               apply_mark(n);
-               return true;
-            }
-         }
-         if (!n.nodes.empty() && mark_by_id(n.nodes, id)) {
-            return true;
-         }
-      }
-      return false;
-   };
-
-   // Apply marks for all collected IDs
-   for (int id : ids_to_mark) {
-      (void)mark_by_id(nodes, id);
-   }
-
-   // Normalize parent/ancestor cases after modifications
-   correct_topology_upper_lower();
-
-   // Refresh internal characteristics (#b/#fX/#i aggregates) by rebuilding from a full structured string
-   std::string rebuilt = to_string( true, true, true, false, false, false);
-   parse_to_tree(rebuilt);
-
-   DRETURN_VOID;
-}
-
-#else
 
 void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used) {
    DENTER(TOP_LAYER);
@@ -766,8 +689,6 @@ void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &top
 
    DRETURN_VOID;
 }
-
-#endif
 
 void
 ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used) {
@@ -996,7 +917,13 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
    }
 
    size_t pos = 0;
-   char unit_letter = BindingUnit::is_power_unit(unit) ? 'C' : 'E';
+
+   // we mark only those core/thread types (power or efficiency) that were requested
+   // only if NONE is specified then we mark all types
+   char unit_letter = '\0';
+   if (unit != BindingUnit::Unit::NONE) {
+      unit_letter = BindingUnit::is_power_unit(unit) ? 'C' : 'E';
+   }
 
    std::function<void(std::vector<Node>&, bool, char)> process_node = [&](std::vector<Node>& list, bool ancestor_was_marked, char parent_letter) {
       for (auto& n : list) {
@@ -1018,7 +945,7 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
          }
 
          // tag node if it is a child node of a core where the node type fits
-         if (!do_mark && ancestor_was_marked && parent_letter == unit_letter) {
+         if (!do_mark && ancestor_was_marked && (unit_letter == '\0' || parent_letter == unit_letter)) {
             do_mark = true;
          }
 
@@ -1026,7 +953,7 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
          if (!do_mark && ancestor_was_marked) {
             char node_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
 
-            if (node_letter_up == unit_letter) {
+            if (unit_letter == '\0' || node_letter_up == unit_letter) {
                do_mark = true;
             }
          }

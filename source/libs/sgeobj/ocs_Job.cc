@@ -284,7 +284,7 @@ ocs::BindingStart::Start
 ocs::Job::binding_get_start(const lListElem *job) {
    DENTER(TOP_LAYER);
 
-   constexpr BindingStart::Start default_start = BindingStart::FIRST_FREE_CORE;
+   constexpr BindingStart::Start default_start = BindingStart::NONE;
    const lListElem *binding_elem = lGetObject(job, JB_new_binding);
    if (binding_elem == nullptr) {
       DRETURN(default_start);

@@ -787,6 +787,87 @@ bool test_find_n_packed_units_stop() {
    DRETURN(ret);
 }
 
+bool test_prevent_socket_binding_twice() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   std::string topo_str("(N[size=67146534912](S(X[size=37748736](Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))))");
+   ocs::TopologyString topo = ocs::TopologyString(topo_str);
+   ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
+   ocs::BindingStart::Start start = ocs::BindingStart::NONE;
+   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+   std::string expected_topo_str = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTyetetetetyetetetetyetetetetyetetetet";
+
+   // bind the socket but only the ecores
+   auto ids = topo.find_n_packed_units(1, unit, start, end);
+   if (ids.size() != 1) {
+      ret = false;
+      for (auto id : ids) {
+         std::cerr << "got id: " << id << std::endl;
+      }
+      std::cout << "ERROR: expected 1 unit but found " << ids.size() << std::endl;
+   }
+   topo.mark_units_as_used_or_unused(ids, unit, true);
+   std::string topo_res_str = topo.to_product_topology_string();
+   if (topo_res_str != expected_topo_str) {
+      std::cout << "ERROR: expected topology string " << expected_topo_str << " but found " << topo_res_str << std::endl;
+      ret = false;
+   }
+
+   // now try to bind socket again but only the C-cores. this has to fail
+   unit = ocs::BindingUnit::CSOCKET;
+   ids = topo.find_n_packed_units(1, unit, start, end);
+   if (ids.size() != 0) {
+      ret = false;
+      for (auto id : ids) {
+         std::cerr << "got id: " << id << std::endl;
+      }
+      std::cout << "ERROR: for a socket binding where already C/E cores are bound another socket binding is not allowed" << std::endl;
+   }
+   topo.mark_units_as_used_or_unused(ids, unit, true);
+   topo_res_str = topo.to_product_topology_string();
+   if (topo_res_str != expected_topo_str) {
+      std::cout << "ERROR: expected topology string " << expected_topo_str << " but found " << topo_res_str << std::endl;
+      ret = false;
+   }
+
+   //std::cout << topo.to_string(true, true, true, true, true, false) << std::endl;
+   DRETURN(ret);
+}
+
+bool test_do_full_socket_binding() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   std::string topo_str("(N[size=67146534912](S(X[size=37748736](Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=2097152](C(T)(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))(Y[size=4194304](E(T))(E(T))(E(T))(E(T)))))");
+   ocs::TopologyString topo = ocs::TopologyString(topo_str);
+   ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
+   ocs::BindingStart::Start start = ocs::BindingStart::NONE;
+   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+   std::string expected_topo_str = "nsxycttycttycttycttycttycttycttycttyetetetetyetetetetyetetetetyetetetet";
+
+   // bind the socket; selection will return only E-cores but all core types will be marked
+   auto ids = topo.find_n_packed_units(1, unit, start, end);
+   if (ids.size() != 1) {
+      ret = false;
+      for (auto id : ids) {
+         std::cerr << "got id: " << id << std::endl;
+      }
+      std::cout << "ERROR: expected 1 unit but found " << ids.size() << std::endl;
+   }
+
+   // NONE will cause all core types to get tagged
+   topo.mark_units_as_used_or_unused(ids, ocs::BindingUnit::NONE, true);
+   std::string topo_res_str = topo.to_product_topology_string();
+   if (topo_res_str != expected_topo_str) {
+      std::cout << "ERROR: expected topology string " << expected_topo_str << " but found " << topo_res_str << std::endl;
+      ret = false;
+   }
+
+   //std::cout << topo.to_string(true, true, true, true, true, false) << std::endl;
+   DRETURN(ret);
+}
+
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
@@ -799,7 +880,8 @@ int main (int argc, char *argv[]) {
    ret &= test_mark_nodes_as_unused();
    ret &= test_find_n_packed_units_scenarios();
    ret &= test_find_n_packed_units_stop();
-
+   ret &= test_prevent_socket_binding_twice();
+   ret &= test_do_full_socket_binding();
 
    if (!ret) {
       std::cerr << "Test failed." << std::endl;

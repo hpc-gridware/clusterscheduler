@@ -52,6 +52,7 @@
 #include "ocs_shepherd_systemd.h"
 #include "shepherd_binding.h"
 #include "err_trace.h"
+#include "ocs_BindingInstance.h"
 
 #if defined(BINDING_SOLARIS)
 #  include "sge_uidgid.h"
@@ -104,15 +105,8 @@ namespace ocs {
       }
 
       // determine binding instance type
-      int binding_instance = BINDING_TYPE_NONE;
-      if (strcmp(binding_instance_str, "3") == 0) {
-         binding_instance = BINDING_TYPE_SET;
-      } else if (strcmp(binding_instance_str, "2") == 0) {
-         binding_instance = BINDING_TYPE_ENV;
-      } else if (strcmp(binding_instance_str, "1") == 0) {
-         binding_instance = BINDING_TYPE_PE;
-      }
-      if (binding_instance == BINDING_TYPE_NONE) {
+      BindingInstance::Instance binding_instance = BindingInstance::from_string(binding_instance_str);
+      if (binding_instance == BindingInstance::Instance::NONE) {
          shepherd_trace("do_thread_binding: invalid binding instance specified");
          return -1;
       }
@@ -150,6 +144,7 @@ namespace ocs {
                break;
             }
             default:
+               thread_id++;
                break;
          }
       }
