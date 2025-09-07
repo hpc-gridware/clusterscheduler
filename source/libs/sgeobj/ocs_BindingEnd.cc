@@ -29,6 +29,12 @@ std::string ocs::BindingEnd::to_string(const End mode) {
       case FIRST_USED_SOCKET: return "s";
       case FIRST_FREE_CORE: return "C";
       case FIRST_USED_CORE: return "c";
+      case FIRST_FREE_NUMA: return "N";
+      case FIRST_USED_NUMA: return "n";
+      case FIRST_FREE_CACHE3: return "X";
+      case FIRST_USED_CACHE3: return "x";
+      case FIRST_FREE_CACHE2: return "Y";
+      case FIRST_USED_CACHE2: return "y";
       default: return "???";
    }
 }
@@ -45,6 +51,18 @@ ocs::BindingEnd::from_string(const std::string& mode) {
       return FIRST_FREE_CORE;
    } else if (mode == "c" || mode == "e") {
       return FIRST_USED_CORE;
+   } else if (mode == "N") {
+      return FIRST_FREE_NUMA;
+   } else if (mode == "n") {
+      return FIRST_USED_NUMA;
+   } else if (mode == "X") {
+      return FIRST_FREE_CACHE3;
+   } else if (mode == "x") {
+      return FIRST_USED_CACHE3;
+   } else if (mode == "Y") {
+      return FIRST_FREE_CACHE2;
+   } else if (mode == "y") {
+      return FIRST_USED_CACHE2;
    } else {
       return UNINITIALIZED;
    }

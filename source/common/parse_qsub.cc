@@ -458,24 +458,10 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-bstart %s\"\n", *sp);
-         if (strcmp("S", *sp) == 0) {
+         ocs::BindingStart::Start bstart = ocs::BindingStart::from_string(*sp);
+         if (bstart != ocs::BindingStart::UNINITIALIZED) {
             ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_SOCKET);
-         } else if (strcmp("s", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_SOCKET);
-         } else if (strcmp("C", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
-         } else if (strcmp("c", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
-         } else if (strcmp("E", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_FREE_CORE);
-         } else if (strcmp("e", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStart::FIRST_USED_CORE);
+            lSetInt(ep_opt, SPA_argval_lIntT, bstart);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTART_INVALID_S, *sp);
             DRETURN(answer);
@@ -501,18 +487,10 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-bend %s\"\n", *sp);
-         if (strcmp("s", *sp) == 0) {
+         ocs::BindingEnd::End bend = ocs::BindingEnd::from_string(*sp);
+         if (bend != ocs::BindingEnd::UNINITIALIZED) {
             ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_USED_SOCKET);
-         } else if (strcmp("S", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_FREE_SOCKET);
-         } else if (strcmp("c", *sp) == 0 || strcmp("e", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_USED_CORE);
-         } else if (strcmp("C", *sp) == 0 || strcmp("E", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingEnd::FIRST_FREE_CORE);
+            lSetInt(ep_opt, SPA_argval_lIntT, bend);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BEND_INVALID_S, *sp);
             DRETURN(answer);
