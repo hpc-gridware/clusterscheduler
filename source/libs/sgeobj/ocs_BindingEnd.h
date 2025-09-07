@@ -31,7 +31,13 @@ namespace ocs {
          FIRST_FREE_SOCKET,
          FIRST_USED_SOCKET,
          FIRST_FREE_CORE,
-         FIRST_USED_CORE
+         FIRST_USED_CORE,
+         FIRST_FREE_NUMA,
+         FIRST_USED_NUMA,
+         FIRST_FREE_CACHE3,
+         FIRST_USED_CACHE3,
+         FIRST_FREE_CACHE2,
+         FIRST_USED_CACHE2,
       };
 
       static std::string to_string(End mode);

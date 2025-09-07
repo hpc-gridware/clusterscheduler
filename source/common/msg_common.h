@@ -1089,12 +1089,12 @@
 #define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [ACESTNXY]]"
 #define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
 
-#define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e]"))
-#define MSG_GDI_USAGE_BSTART_OPT          "[-bstart [S|s|C|c|E|e]]"
+#define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
+#define MSG_GDI_USAGE_BSTART_OPT          "[-bstart [S|s|C|c|E|e|N|n|X|x|Y|y]]"
 #define MSG_GDI_UTEXT_BSTART_OPT          _MESSAGE(60736, _("defines the start position for binding"))
 
-#define MSG_PARSE_BEND_INVALID_S          _MESSAGE(60737, _("invalid binding end " SFQ ", must be one of: [S|s|C|c|E|e]"))
-#define MSG_GDI_USAGE_BEND_OPT            "[-bend [S|s|C|c|E|e]]"
+#define MSG_PARSE_BEND_INVALID_S          _MESSAGE(60737, _("invalid binding end " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
+#define MSG_GDI_USAGE_BEND_OPT            "[-bend [S|s|C|c|E|e|N|n|X|x|Y|y]]"
 #define MSG_GDI_UTEXT_BEND_OPT            _MESSAGE(60738, _("defines the end position for binding"))
 
 #define MSG_GDI_USAGE_BAMOUNT_OPT         "[-bamount number]"

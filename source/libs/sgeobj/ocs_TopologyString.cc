@@ -782,6 +782,21 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
       if (up != 'S') return false;
       return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
    };
+   auto is_used_numa = [&](const Node& n) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'N') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+   };
+   auto is_used_cache3 = [&](const Node& n) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'X') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+   };
+   auto is_used_cache2 = [&](const Node& n) -> bool {
+      char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+      if (up != 'Y') return false;
+      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+   };
    auto is_free_X_core = [&](const Node& n, char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       char core_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(core_letter)));
@@ -817,6 +832,12 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
             // Cores have to fit to the searched unit. A socket is considered as free if all unit_type-threads are free,
             // but it is considered as used as soon as any thread type is in use.
             if (bstart == BindingStart::Start::NONE
+               || (bstart == BindingStart::Start::FIRST_FREE_NUMA && is_free_X_numa(n, unit_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_NUMA && is_used_numa(n))
+               || (bstart == BindingStart::Start::FIRST_FREE_CACHE3 && is_free_X_cache3(n, unit_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_CACHE3 && is_used_cache3(n))
+               || (bstart == BindingStart::Start::FIRST_FREE_CACHE2 && is_free_X_cache2(n, unit_letter))
+               || (bstart == BindingStart::Start::FIRST_USED_CACHE2 && is_used_cache2(n))
                || (bstart == BindingStart::Start::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
                || (bstart == BindingStart::Start::FIRST_USED_SOCKET && is_used_socket(n))
                || (bstart == BindingStart::Start::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
@@ -828,7 +849,14 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
 
          // try to find end-position
          if (!skip_end_detection && start_node != nullptr && end_node == nullptr && bend != BindingEnd::End::NONE) {
-            if ((bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
+            if (
+               (bend == BindingEnd::End::FIRST_FREE_NUMA && is_free_X_numa(n, unit_letter))
+               || (bend == BindingEnd::End::FIRST_USED_NUMA && is_used_numa(n))
+               || (bend == BindingEnd::End::FIRST_FREE_CACHE3 && is_free_X_cache3(n, unit_letter))
+               || (bend == BindingEnd::End::FIRST_USED_CACHE3 && is_used_cache3(n))
+               || (bend == BindingEnd::End::FIRST_FREE_CACHE2 && is_free_X_cache2(n, unit_letter))
+               || (bend == BindingEnd::End::FIRST_USED_CACHE2 && is_used_cache2(n))
+               || (bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
                || (bend == BindingEnd::End::FIRST_USED_SOCKET && is_used_socket(n))
                || (bend == BindingEnd::End::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
                || (bend == BindingEnd::End::FIRST_USED_CORE && is_used_X_core(n, unit_letter))) {
