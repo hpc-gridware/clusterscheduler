@@ -37,13 +37,13 @@ ocs::BindingStart::Start
 ocs::BindingStart::from_string(const std::string& mode) {
    if (mode == "NONE") {
       return NONE;
-   } else if (mode == "S" || mode == "CS" || mode == "ES") {
+   } else if (mode == "S") {
       return FIRST_FREE_SOCKET;
-   } else if (mode == "s" || mode == "cs" || mode == "es") {
+   } else if (mode == "s") {
       return FIRST_USED_SOCKET;
-   } else if (mode == "C" || mode == "E" || mode == "CC" || mode == "EC") {
+   } else if (mode == "C" || mode == "E") {
       return FIRST_FREE_CORE;
-   } else if (mode == "c" || mode == "e" || mode == "cc" || mode == "ec") {
+   } else if (mode == "c" || mode == "e") {
       return FIRST_USED_CORE;
    } else {
       return UNINITIALIZED;

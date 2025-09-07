@@ -457,7 +457,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    ocs::TopologyString binding_to_use;
    bool binding_to_use_is_initialized = false;
    // @todo: CS-731: support other binding strategies than set also in shepherd
-   int binding_instance = BINDING_TYPE_SET;
+   ocs::BindingInstance::Instance binding_instance = ocs::BindingInstance::SET;
    if (mconf_get_enable_binding()) {
       const lListElem *gr;
       for_each_ep(gr, lGetList(jatep, JAT_granted_resources_list)) {
@@ -1468,9 +1468,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
 
    // @todo CS-731: write the binding to the config file.
-   {
-      fprintf(fp, "binding_to_use=%s\n", binding_to_use_is_initialized ? binding_to_use.to_product_topology_string().c_str() : "none");
-      fprintf(fp, "binding_instance=%d\n", binding_instance);
+   if (binding_to_use_is_initialized) {
+      fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
+      fprintf(fp, "binding_instance=%s\n", ocs::BindingInstance::to_string(binding_instance).c_str());
+   } else {
+      fprintf(fp, "binding_to_use=%s\n", "none");
+      fprintf(fp, "binding_instance=%s\n", "none");
    }
 
 

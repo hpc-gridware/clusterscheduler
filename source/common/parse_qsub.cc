@@ -600,25 +600,11 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-bunit %s\"\n", *sp);
+         ocs::BindingUnit::Unit bunit = ocs::BindingUnit::from_string(*sp);
 
-         if (strcmp("T", *sp) == 0 || strcmp("CT", *sp) == 0) {
+         if (bunit != ocs::BindingUnit::UNINITIALIZED && bunit != ocs::BindingUnit::NONE) {
             ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CTHREAD);
-         } else if (strcmp("ET", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ETHREAD);
-         } else if (strcmp("C", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CCORE);
-         } else if (strcmp("E", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ECORE);
-         } else if (strcmp("S", *sp) == 0 || strcmp("CS", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::CSOCKET);
-         } else if (strcmp("ES", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingUnit::ESOCKET);
+            lSetInt(ep_opt, SPA_argval_lIntT, bunit);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BUNIT_INVALID_S, *sp);
             DRETURN(answer);
