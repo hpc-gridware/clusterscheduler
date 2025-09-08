@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ set(HOSTNAME_PAGES gethostbyaddr gethostbyname gethostname getservbyname sge_hos
 build_markdown_man_from_template("1" "gethost.include" HOSTNAME_PAGES "0")
 
 # build all other man pages from section 1
-set(PAGES qacct qconf qdel qhold qhost qmake qmod qping qquota qrdel qrls qrstat qrsub qselect qstat sge_intro sge_jsv sge_types sge_share_mon)
+set(PAGES qacct qconf qdel qhold qhost qmake qmod qping qquota qrdel qrls qrstat qrsub qselect qstat sge_diagnostics sge_intro sge_jsv sge_types sge_share_mon)
 build_markdown_man("1" PAGES "0")
 
 # target for building all troff man pages from section 1
@@ -66,6 +66,7 @@ add_custom_target(troffman1 ALL DEPENDS
       ${CMAKE_CURRENT_BINARY_DIR}/qrsub.1
       ${CMAKE_CURRENT_BINARY_DIR}/qselect.1
       ${CMAKE_CURRENT_BINARY_DIR}/qstat.1
+      ${CMAKE_CURRENT_BINARY_DIR}/sge_diagnostics.1
       ${CMAKE_CURRENT_BINARY_DIR}/sge_intro.1
       ${CMAKE_CURRENT_BINARY_DIR}/sge_jsv.1
       ${CMAKE_CURRENT_BINARY_DIR}/sge_share_mon.1
