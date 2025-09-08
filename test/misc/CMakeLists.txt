@@ -20,7 +20,7 @@
 
 # test/misc
 
-add_subdirectory(openssl)
+#add_subdirectory(openssl)
 
 #add_executable(test_valgrind test_valgrind.cc)
 #add_compile_options(test_valgrind PRIVATE "-no-pedantic -Wno-error")
