@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void son(const char *childname, char *script_file, int truncate_stderr_out);
+void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job);
 int sge_set_environment();
 char** sge_get_environment();
 int sge_set_env_value(const char *name, const char* value);

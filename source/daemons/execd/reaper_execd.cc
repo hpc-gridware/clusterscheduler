@@ -567,8 +567,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
          ERROR(MSG_JOB_CANTREADERRORFILEFORJOBXY_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
       }      
       FCLOSE_IGNORE_ERROR(fp);
-   }
-   else {
+   } else {
       ERROR(MSG_FILE_NOOPEN_SS, sge_dstring_get_string(&fname), strerror(errno));
       /* There is no error file. */
    }
@@ -656,8 +655,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
             if (!fscanf(fp, sge_u32 , &job_pid))
                job_pid = 0;
             FCLOSE_IGNORE_ERROR(fp);
-         }
-         else {
+         } else {
             job_pid = 0;
             ERROR(MSG_JOB_CANTOPENJOBPIDFILEFORJOBXY_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
          }
