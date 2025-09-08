@@ -549,8 +549,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    }
 
    /* look for error file this overrules errors found yet */
-   sge_get_active_job_file_path(&fname,
-                                job_id, ja_task_id, pe_task_id, "error");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "error");
    if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
       int n;
       char *new_line;
@@ -570,8 +569,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
          ERROR(MSG_JOB_CANTREADERRORFILEFORJOBXY_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
       }      
       FCLOSE_IGNORE_ERROR(fp);
-   }
-   else {
+   } else {
       ERROR(MSG_FILE_NOOPEN_SS, sge_dstring_get_string(&fname), strerror(errno));
       /* There is no error file. */
    }
@@ -637,8 +635,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
     * If the job finishes, the shepherd must remove the "checkpointed" file
     */  
 
-   sge_get_active_job_file_path(&fname,
-                                job_id, ja_task_id, pe_task_id, "checkpointed");
+   sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "checkpointed");
    ckpt_arena = 1;   /* 1 job will be restarted in case of failure *
                       * 2 job will be restarted from ckpt arena    */
    if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
@@ -654,15 +651,13 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
          FCLOSE_IGNORE_ERROR(fp);
       }   
 
-      sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, 
-                                "job_pid");
+      sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "job_pid");
       if (!SGE_STAT(sge_dstring_get_string(&fname), &statbuf)) {
          if ((fp = fopen(sge_dstring_get_string(&fname), "r"))) {
             if (!fscanf(fp, sge_uu32 , &job_pid))
                job_pid = 0;
             FCLOSE_IGNORE_ERROR(fp);
-         }
-         else {
+         } else {
             job_pid = 0;
             ERROR(MSG_JOB_CANTOPENJOBPIDFILEFORJOBXY_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
          }

@@ -40,6 +40,8 @@
 #include <pwd.h>
 #include <cerrno>
 
+#include "sgeobj/sge_job.h"
+
 #include "uti/sge_string.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -120,7 +122,7 @@ static int count_command(char *command) {
 
  It is also used to start the external starter command .. 
  ************************************************************************/
-void son(const char *childname, char *script_file, int truncate_stderr_out)
+void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job)
 {
    int   in, out, err;          /* hold fds */
    int   i;
@@ -193,17 +195,14 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    /*
    ** login or rsh or rlogin jobs have the qlogin_starter as their job script
    */
-   
-   if( !strcasecmp(script_file, "QLOGIN") 
-    || !strcasecmp(script_file, "QRSH")
-    || !strcasecmp(script_file, "QRLOGIN")) {
+   if (is_interactive_job && strcmp(childname, "job") == 0) {
       shepherd_trace("processing qlogin job");
       is_qlogin_starter = 1;
       is_qlogin = 1;
 
-      if(!strcasecmp(script_file, "QRSH")) {
+      if (strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0) {
          is_rsh = 1;
-      } else if(!strcasecmp(script_file, "QRLOGIN")) {
+      } else if(strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
          is_rlogin = 1;
       }
       /* must force to run the qlogin starter as root, since it needs
@@ -217,6 +216,13 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
           */
          target_user = nullptr;
       }
+   }
+
+   // for qlogin, qrsh and qrlogin jobs we must not close the first three fds,
+   // even if what we are just executing is not the job (script_file), but e.g., the prolog
+   bool close_first_three_fds = true;
+   if (is_interactive_job) {
+      close_first_three_fds = false;
    }
 
    pid = getpid();
@@ -254,9 +260,9 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       target_user = parse_script_params(&script_file);
    }
 
-   if (!target_user)
+   if (target_user == nullptr) {
       target_user = get_conf_val("job_owner");
-   else {
+   } else {
       /* 
        *  The reason for using the job owner as intermediate user
        *  is that for output of prolog/epilog the same files are
@@ -340,7 +346,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* --- switch to intermediate user */
    shepherd_trace("switching to intermediate/target user");
-   if(is_qlogin_starter && !g_new_interactive_job_support) {
+   if (is_qlogin_starter && !g_new_interactive_job_support) {
       /* 
        * In the old IJS, we didn't have to set the additional group id,
        * because our custom rshd did it for us.
@@ -395,12 +401,17 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
        * stdout and stderr open, they are already connected to the pty 
        * and/or the pipes.
        */
-      if ((g_new_interactive_job_support && is_qlogin_starter)
-            || (!g_new_interactive_job_support && pty == 1)) {
+      if ((g_new_interactive_job_support && is_qlogin_starter) || (!g_new_interactive_job_support && pty == 1)) {
          i=3;
       } else {
-         i=0;
+         if (close_first_three_fds) {
+            i=0;
+         } else {
+            // we have a qlogin type job, but are starting e.g. the prolog
+            i=3;
+         }
       }
+      shepherd_trace("closing fd's from %d to %d", i, fdmax-1);
       for ( ; i < fdmax; i++) {
          if (!is_shepherd_trace_fd(i)) {
          	SGE_CLOSE(i);
@@ -409,7 +420,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    }
    foreground = 0;
 
-   /* We have different possiblities to start the job script:
+   /* We have different possibilities to start the job script:
     * - We can start it as login shell or not
     *   Login shell start means that argv[0] starts with a '-'
     * - We can try to be posix compliant and not to evaluate #!/bin/sh
@@ -439,7 +450,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       /* unix_behaviour */
       shell_start_mode = "unix_behaviour";
 
-      if (!strcmp(childname, "prolog") || !strcmp(childname, "epilog")) {
+      if (strcmp(childname, "prolog") == 0 || strcmp(childname, "epilog") == 0) {
          stdin_path = strdup("/dev/null");
          if (fs_stdin) {
             /* we need the jobs stdin_path here in prolog,
@@ -599,8 +610,9 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
    /*
    ** for interactive jobs, we disregard the current shell_start_mode
    */
-   if (is_interactive || is_qlogin)
-      shell_start_mode = "unix_behaviour";
+   if (is_interactive || is_qlogin) {
+      shell_start_mode = "unix_behaviour"; // @todo it is "unix_behavior" - does this do any harm?
+   }
 
    in = 0;
    if (!strcasecmp(shell_start_mode, "script_from_stdin")) {
@@ -630,7 +642,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
       shepherd_error(1, "error: fd for in is not 0");
    }
 
-   if(!is_qlogin_starter) {
+   if (!is_qlogin_starter) {
       /* -cwd or from pw->pw_dir */
       if (sge_chdir(cwd)) {
          shepherd_state = SSTATE_NO_CWD;
@@ -707,10 +719,11 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
 
    /* get basename of shell for building argv[0] */
    cp = strrchr(shell_path, '/');
-   if (!cp)
+   if (!cp) {
       shell_basename = shell_path;
-   else
+   } else {
       shell_basename = cp+1;
+   }
 
    {
       SGE_STRUCT_STAT sbuf;
@@ -769,7 +782,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
                   (int)getuid(), (int)geteuid());
 
    /*
-   ** if we dont check if the script_file exists, then in case of
+   ** if we don't check if the script_file exists, then in case of
    ** "start_as_command" the result is an error report
    ** saying that the script exited with 1
    */
@@ -807,7 +820,6 @@ void son(const char *childname, char *script_file, int truncate_stderr_out)
                  use_starter_method);
 
    sge_free(&buffer);
-   return;
 }
 
 /****** Shepherd/sge_set_environment() *****************************************
@@ -1453,7 +1465,7 @@ check_configured_method(const char *method, const char *name, char *err_str, siz
    struct saved_vars_s *context = nullptr;
 
    /*
-    * The configured method can include some pameters, e.g.
+    * The configured method can include some parameters, e.g.
     * qlogin_daemon                /usr/sbin/in.telnetd -i
     * Only the command itself must be checked.
     */
@@ -1523,7 +1535,7 @@ build_path(int type) {
    base = get_conf_val(name);
 
    /* Try to get information about 'base' */
-   if( SGE_STAT(base, &statbuf)) {
+   if (SGE_STAT(base, &statbuf)) {
       /* An error occurred */
       if (errno != ENOENT) {
          char *t;
@@ -1545,10 +1557,10 @@ build_path(int type) {
       return base; /* does not exist - must be path of file to be created */
    }
 
-   if( !(S_ISDIR(statbuf.st_mode))) {
+   if (!(S_ISDIR(statbuf.st_mode))) {
       return base;
    } else {
-      /* 'base' is a existing directory, but not a file! */
+      /* 'base' is an existing directory, but not a file! */
       if (type == SGE_STDIN) {
          shepherd_state = SSTATE_OPEN_OUTPUT; /* job's failure */
          shepherd_error(1, SFQ " is a directory not a file", base);

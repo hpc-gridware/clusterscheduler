@@ -28,12 +28,12 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void son(const char *childname, char *script_file, int truncate_stderr_out);
+void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job);
 int sge_set_environment();
 char** sge_get_environment();
 int sge_set_env_value(const char *, const char *);

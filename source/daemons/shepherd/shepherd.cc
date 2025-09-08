@@ -152,8 +152,8 @@ static int signalled_ckpt_job = 0; /* marker if signalled a ckpt job */
 
 /* function forward declarations */
 static int notify_tasker(u_long32 exit_status);
-static int start_child(const char *childname, char *script_file, pid_t *pidp, 
-                       int timeout, int ckpt_type);
+static int start_child(const char *childname, char *script_file, pid_t *pidp,
+                       int timeout, int ckpt_type, bool is_interactive_job);
 static int wait_my_builtin_ijs_child(int pid, const char *childname, int timeout,
    ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds, struct rusage *rusage,
    dstring *dstr_error);
@@ -195,10 +195,10 @@ static void shepconf_deliver_signal_or_method(int sig, int pid, pid_t *ctrl_pid)
 static void forward_signal_to_job(int pid, int timeout, int *postponed_signal, 
                        int remaining_alarm, pid_t ctrl_pid[3]);
 
-static int do_prolog(int timeout, int ckpt_type);
-static int do_epilog(int timeout, int ckpt_type);
-static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid);
-static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid);
+static int do_prolog(int timeout, int ckpt_type, bool is_interactive);
+static int do_epilog(int timeout, int ckpt_type, bool is_interactive_job);
+static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job);
+static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job);
 
 /****** shepherd/handle_io_file() ********************************************
 *  NAME
@@ -385,7 +385,7 @@ FCLOSE_ERROR:
    return ret;
 }
 
-static int do_prolog(int timeout, int ckpt_type)
+static int do_prolog(int timeout, int ckpt_type, bool is_interactive)
 {
    char *prolog;
    char command[10000];
@@ -399,7 +399,7 @@ static int do_prolog(int timeout, int ckpt_type)
       int i, n_exit_status = count_exit_status();
 
       replace_params(prolog, command, sizeof(command)-1, prolog_epilog_variables);
-      exit_status = start_child("prolog", command, nullptr, timeout, ckpt_type);
+      exit_status = start_child("prolog", command, nullptr, timeout, ckpt_type, is_interactive);
 
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
@@ -436,7 +436,7 @@ static int do_prolog(int timeout, int ckpt_type)
    return 0;
 }
 
-static int do_epilog(int timeout, int ckpt_type)
+static int do_epilog(int timeout, int ckpt_type, bool is_interactive_job)
 {
    char *epilog;
    char command[10000];
@@ -451,7 +451,7 @@ static int do_epilog(int timeout, int ckpt_type)
       /* start epilog */
       replace_params(epilog, command, sizeof(command)-1, 
                      prolog_epilog_variables);
-      exit_status = start_child("epilog", command, nullptr, timeout, ckpt_type);
+      exit_status = start_child("epilog", command, nullptr, timeout, ckpt_type, is_interactive_job);
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
@@ -484,7 +484,7 @@ static int do_epilog(int timeout, int ckpt_type)
    return 0;
 }
 
-static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
+static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job)
 {
    char *pe_start;
    char command[10000];
@@ -506,7 +506,7 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
          starters of parallel environments may not get killed 
          in case of success - so we save their pid for later use
       */
-      exit_status = start_child("pe_start", command, pe_pid, timeout, ckpt_type);
+      exit_status = start_child("pe_start", command, pe_pid, timeout, ckpt_type, is_interactive_job);
       if (n_exit_status<(i=count_exit_status())) {
          shepherd_trace("exit states increased from %d to %d", n_exit_status, i);
          /*
@@ -546,7 +546,7 @@ static int do_pe_start(int timeout, int ckpt_type, pid_t *pe_pid)
    return 0;
 }
 
-static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
+static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid, bool is_interactive_job)
 {
    char *pe_stop;
    char command[10000];
@@ -562,7 +562,7 @@ static int do_pe_stop(int timeout, int ckpt_type, pid_t *pe_pid)
       replace_params(pe_stop, command, sizeof(command)-1, 
          pe_variables);
       shepherd_trace(command);
-      exit_status = start_child("pe_stop", command, nullptr, timeout, ckpt_type);
+      exit_status = start_child("pe_stop", command, nullptr, timeout, ckpt_type, is_interactive_job);
 
       /* send a kill to pe_start process
        *
@@ -697,6 +697,7 @@ int main(int argc, char **argv)
    int run_epilog, run_pe_stop;
    dstring ds;
    char buffer[256];
+   bool is_interactive_job = false; // is a qrsh/qlogin/qrlogin job
 
    if (argc >= 2) {
       if ( strcmp(argv[1],"-help") == 0) {
@@ -763,8 +764,8 @@ int main(int argc, char **argv)
        */
       config_errfunc = nullptr;
       script_file = get_conf_val("script_file");
-      if (script_file != nullptr
-          && strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0) {
+      if (script_file != nullptr && strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0) {
+         is_interactive_job = true;
          tmp_rsh_daemon = get_conf_val("rsh_daemon");
          if (tmp_rsh_daemon != nullptr
              && strcasecmp(tmp_rsh_daemon, "builtin") == 0) {
@@ -773,8 +774,8 @@ int main(int argc, char **argv)
          }
       }
 
-      if (script_file != nullptr
-          && strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
+      if (script_file != nullptr && strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
+         is_interactive_job = true;
          tmp_rlogin_daemon = get_conf_val("rlogin_daemon");
          if (tmp_rlogin_daemon != nullptr
              && strcasecmp(tmp_rlogin_daemon, "builtin") == 0) {
@@ -783,8 +784,8 @@ int main(int argc, char **argv)
          }
       }
 
-      if (script_file != nullptr
-          && strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0) {
+      if (script_file != nullptr && strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0) {
+         is_interactive_job = true;
          tmp_qlogin_daemon = get_conf_val("qlogin_daemon");
          if (tmp_qlogin_daemon != nullptr
              && strcasecmp(tmp_qlogin_daemon, "builtin") == 0) {
@@ -822,8 +823,7 @@ int main(int argc, char **argv)
       shepherd_error(1, "can't write to \"trace\" file");
    }
  
-   /* do not start job in cases of wrong 
-      configuration of job control methods */
+   /* do not start job in cases of wrong configuration of job control methods */
    verify_method("terminate_method");
    verify_method("suspend_method");
    verify_method("resume_method");
@@ -917,7 +917,7 @@ int main(int argc, char **argv)
    }
 
    run_epilog = 1;
-   if ((exit_status = do_prolog(script_timeout, ckpt_type))) {
+   if ((exit_status = do_prolog(script_timeout, ckpt_type, is_interactive_job))) {
       if (exit_status == SSTATE_BEFORE_PROLOG)
          run_epilog = 0;
    } else if (pending_sig(SIGTTOU)) {
@@ -932,7 +932,7 @@ int main(int argc, char **argv)
    } else {
       /* start pe_start */
       run_pe_stop = 1;
-      if (pe && (exit_status = do_pe_start(script_timeout, ckpt_type, &pe_pid))) {
+      if (pe && (exit_status = do_pe_start(script_timeout, ckpt_type, &pe_pid, is_interactive_job))) {
          if (exit_status == SSTATE_BEFORE_PESTART) {
             run_pe_stop = 0;
          }
@@ -949,7 +949,7 @@ int main(int argc, char **argv)
                create_checkpointed_file(0);
                exit_status = 0; /* no error */
             } else {
-               exit_status = start_child("job", script_file, nullptr, 0, ckpt_type);
+               exit_status = start_child("job", script_file, nullptr, 0, ckpt_type, is_interactive_job);
 
                if (count_exit_status()>0) {
                   /*
@@ -993,12 +993,12 @@ int main(int argc, char **argv)
 
       /* start pe_stop */
       if (pe && run_pe_stop) {
-         do_pe_stop(script_timeout, ckpt_type, &pe_pid);
+         do_pe_stop(script_timeout, ckpt_type, &pe_pid, is_interactive_job);
       }
    }
 
    if (run_epilog) {
-      do_epilog(script_timeout, ckpt_type);
+      do_epilog(script_timeout, ckpt_type, is_interactive_job);
    }
 
    /*
@@ -1052,11 +1052,12 @@ PARAMETER
 
  *******************************************************************/
 static int start_child(
-const char *childname,        /* prolog, job, epilog */
-char *script_file,
-pid_t *pidp,
-int timeout,
-int ckpt_type 
+   const char *childname,
+   /* prolog, job, epilog */
+   char *script_file,
+   pid_t *pidp,
+   int timeout,
+   int ckpt_type, bool is_interactive_job
 ) {
    SGE_STRUCT_STAT buf;
    struct rusage rusage;
@@ -1078,11 +1079,10 @@ int ckpt_type
 
    ckpt_info.type = ckpt_type;
 
-   /* Do we have an interactive job? */
-   if (strcasecmp(script_file, JOB_TYPE_STR_QLOGIN) == 0 ||
-       strcasecmp(script_file, JOB_TYPE_STR_QRSH) == 0 ||
-       strcasecmp(script_file, JOB_TYPE_STR_QRLOGIN) == 0) {
-      is_interactive = true;
+   // Is what we are starting an interactive job?
+   // It could also be e.g a prolog/epilog script of an interactive job
+   if (strcmp(childname, "job") == 0) {
+      is_interactive = is_interactive_job;
    }
 
    /* Try to read "pty" from config, if it is not there or set to "2", use default */
@@ -1114,8 +1114,7 @@ int ckpt_type
 
       shepherd_trace("restarting job from checkpoint arena");
       pid = start_async_command("restart", rest_command);
-   }
-   else { /* not job or job and not checkpointing */
+   } else { /* not job or job and not checkpointing */
       if (!g_new_interactive_job_support || !is_interactive) {
          if (use_pty == YES && strcasecmp(script_file, JOB_TYPE_STR_QSH) != 0) {
             shepherd_trace("calling fork_pty()");
@@ -1159,7 +1158,7 @@ int ckpt_type
             }
          }
          shepherd_trace("child: starting son(%s, %s, 0);", childname, script_file);
-         son(childname, script_file, 0);
+         son(childname, script_file, 0, is_interactive_job);
       }
    }
 
