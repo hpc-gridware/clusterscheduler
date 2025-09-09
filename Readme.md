@@ -42,7 +42,7 @@ To further improve usability and maintainability, we plan to remove outdated or 
 - **GUI Modernization**: Discontinue the old Motif-based GUI.
 - **Shell Simplification**: Remove qtcsh, aligning with other commercial schedulers.
 - **Code Simplification**: Phase out complex components like the JGDI interface and its associated services.
-- **CSP Mode**: Temporarily suspend CSP mode due to low user adoption.
+- **CSP Mode**: Temporarily suspend CSP mode due to low user adoption and implement a simpler encryption scheme instead.
 
 This roadmap outlines our strategic goals to modernize, expand, and streamline the Open Cluster Scheduler, setting the stage for future innovations and enhanced performance.
 
