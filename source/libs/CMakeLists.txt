@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -30,14 +30,8 @@ add_subdirectory(evm)
 add_subdirectory(gdi)
 add_subdirectory(ijs)
 add_subdirectory(japi)
-# add_subdirectory(jdrmaa) add_subdirectory(juti)
 add_subdirectory(lck)
 add_subdirectory(mir)
 add_subdirectory(sched)
 add_subdirectory(spool)
 add_subdirectory(uti)
-# add_subdirectory(wingrid)
-
-if (PROJECT_FEATURES MATCHES "gcs-extensions")
-    add_subdirectory(juti)
-endif()
