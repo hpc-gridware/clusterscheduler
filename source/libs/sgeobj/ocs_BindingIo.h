@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 

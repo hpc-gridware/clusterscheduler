@@ -1549,7 +1549,10 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
                if (resource_utilization != nullptr) {
                   const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
                   if (slots_utilization != nullptr) {
-                     topo_in_use.reset_topology(lGetString(slots_utilization, RUE_utilized_now_binding_inuse));
+                     const char *binding_inuse = lGetString(slots_utilization, RUE_utilized_now_binding_inuse);
+                     if (binding_inuse) {
+                        topo_in_use.reset_topology(binding_inuse);
+                     }
                   }
                }
             }

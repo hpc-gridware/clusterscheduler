@@ -3088,6 +3088,18 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
    DRETURN(true);
 }
 
+bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, const int pos) {
+   DENTER(TOP_LAYER);
+   lListElem *binding_elem = lGetPosObject(job, pos);
+   if (binding_elem != nullptr) {
+      std::string binding_switches_str;
+      ocs::BindingIo::binding_print_to_string(binding_elem, binding_switches_str, true);
+      sge_dstring_append(category_str, binding_switches_str.c_str());
+      sge_dstring_append_char(category_str, ' ');
+   }
+   DRETURN(true);
+}
+
 /****** sge_job/job_verify() ***************************************************
 *  NAME
 *     job_verify() -- verify a job object

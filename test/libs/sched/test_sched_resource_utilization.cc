@@ -80,7 +80,8 @@ static int do_utilization_test(lListElem *cr, test_array_t *ta)
    int i;
 
    for (i = 0; ta[i].start_time != 0; i++) {
-      uti = utilization_max(cr, ta[i].start_time, ta[i].duration, false, nullptr);
+      ocs::TopologyString binding_inuse;
+      uti = utilization_max(nullptr, nullptr, cr, ta[i].start_time, ta[i].duration, 0.0, 0.0, 0.0, false, binding_inuse);
       if (uti != ta[i].uti) {
          printf("failed: utilization(cr, " sge_u64 ", " sge_u64 ") returned %f, expected %f\n",
                 ta[i].start_time, ta[i].duration, uti, ta[i].uti);

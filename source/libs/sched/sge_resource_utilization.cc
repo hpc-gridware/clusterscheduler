@@ -225,11 +225,13 @@ void utilization_print(const lListElem *cr, const char *object_name, bool show_b
 
       if (show_binding_inuse) {
          const char *binding_inuse_str = lGetString(rde, RDE_binding_inuse);
-         if (binding_inuse_str == nullptr) {
-            binding_inuse_str = "nothing-bound";
+         if (binding_inuse_str != nullptr) {
+            ocs::TopologyString binding_in_use_obj(binding_inuse_str);
+            DPRINTF("\t%s %f (%s)\n", time_str, amount, binding_in_use_obj.to_product_topology_string().c_str());
+         } else {
+            DPRINTF("\t%s %f\n", time_str, amount);
          }
 
-         DPRINTF("\t%s %f (%s)\n", time_str, amount, binding_inuse_str);
       } else {
          DPRINTF("\t%s %f\n", time_str, amount);
       }
@@ -326,7 +328,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    // @todo CS-731: DONE: add all entries in the list instead of just the first
    bool handle_binding = false;
    ocs::TopologyString binding_to_use_obj;
-   if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0) {
+   if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0 && binding_touse != nullptr) {
       handle_binding = true;
 
       // we have at least one binding_to_use element. copy the first one to the binding_touse_dstr
@@ -342,8 +344,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
          to_use_elem = lNext(to_use_elem);
       }
    }
+   DPRINTF("utilization_add: binding to add is %s\n", binding_to_use_obj.to_product_topology_string().c_str());
 
-   /* ensure resource diagram is initialized */
+   /* ensure the resource diagram is initialized */
    if (resource_diagram == nullptr) {
       resource_diagram = lCreateList(name, RDE_Type);
       lSetList(cr, nm, resource_diagram);
@@ -354,15 +357,20 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    double util_prev = 0.0;
    const char *binding_prev = nullptr;
    if (start) {
+      DPRINTF("utilization_add: A\n");
       // if the start element is already there, we can just add the utilization to it
       lAddDouble(start, RDE_amount, utilization);
       // @todo CS-731: DONE: add binding_inuse information to the start element
       if (handle_binding) {
-         ocs::TopologyString topo_binding_now(lGetString(start, RDE_binding_inuse));
+         ocs::TopologyString topo_binding_now;
+         if (lGetString(start, RDE_binding_inuse) != nullptr) {
+            topo_binding_now.reset_topology(lGetString(start, RDE_binding_inuse));
+         }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
       }
    } else {
+      DPRINTF("utilization_add: B\n");
       // no start element found, so we need to create one
       // if there is a previous element, we can add its amount and binding_inuse to the new element
       // otherwise we just create a new element with the utilization. it is the new list beginning
@@ -377,7 +385,10 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lSetDouble(start, RDE_amount, utilization + util_prev);
       // @todo CS-731: DONE: add binding_inuse information to the start element
       if (handle_binding) {
-         ocs::TopologyString topo_binding_now(binding_prev);
+         ocs::TopologyString topo_binding_now;
+         if (prev != nullptr) {
+            topo_binding_now.reset_topology(binding_prev);
+         }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
       }
@@ -399,12 +410,18 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       if (end_time < lGetUlong64(thiz, RDE_time)) {
          break;
       }
+
+      DPRINTF("utilization_add: C\n");
+
       /* increment amount of elements in-between */
       lAddDouble(thiz, RDE_amount, utilization);
       // @todo CS-731: DONE: add binding_inuse information to the thiz element
       if (handle_binding) {
-         ocs::TopologyString topo_binding_now(lGetString(start, RDE_binding_inuse));
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
+         ocs::TopologyString topo_binding_now;
+         if (lGetString(thiz, RDE_binding_inuse) != nullptr) {
+            topo_binding_now.reset_topology(lGetString(thiz, RDE_binding_inuse));
+         }
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(thiz, RDE_binding_inuse, topo_binding_now,
                                                                 binding_to_use_obj, true);
       }
       prev = thiz;
@@ -412,6 +429,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    }
 
    if (!end) {
+      DPRINTF("utilization_add: D\n");
       util_prev = lGetDouble(prev, RDE_amount);
       binding_prev = lGetString(prev, RDE_binding_inuse);
 
@@ -419,23 +437,26 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       lSetUlong64(end, RDE_time, end_time);
       lSetDouble(end, RDE_amount, util_prev - utilization);
       if (handle_binding) {
-         ocs::TopologyString topo_binding_now(binding_prev);
-         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,
-                                                                binding_to_use_obj, true);
+         ocs::TopologyString topo_binding_now;
+         if (binding_prev != nullptr) {
+            topo_binding_now.reset_topology(binding_prev);
+         }
+         ocs::TopologyString::elem_mark_nodes_as_used_or_unused(end, RDE_binding_inuse, topo_binding_now,
+                                                                binding_to_use_obj, false);
       }
 
       lInsertElem(resource_diagram, prev, end);
    }
 
+   utilization_normalize(resource_diagram);
+
+   DPRINTF("utilization_add: E\n");
    // @todo CS-731: disable when finished
 #if 1
-   dstring combined_name = DSTRING_INIT;
-   sge_dstring_sprintf(&combined_name, "%s-%s", object_name, name);
+   DSTRING_STATIC(combined_name, 1024);
+   sge_dstring_sprintf(&combined_name, "after normalize %s-%s", object_name, name);
    utilization_print(cr, sge_dstring_get_string(&combined_name), handle_binding);
-   sge_dstring_free(&combined_name);
 #endif
-
-   utilization_normalize(resource_diagram);
 
    DRETURN(0);
 }
@@ -456,11 +477,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
  */
 static void
 utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long64 time, lListElem **hit, lListElem **before) {
-   lListElem *start, *thiz, *prev;
-
-   start = nullptr;
-   thiz = lFirstRW(diagram); 
-   prev = nullptr;
+   lListElem *start = nullptr;
+   lListElem *thiz = lFirstRW(diagram);
+   lListElem *prev = nullptr;
 
    while (thiz) {
       u_long64 rde_time = lGetUlong64(thiz, RDE_time);
@@ -475,7 +494,7 @@ utilization_find_time_or_prevstart_or_prev(const lList *diagram, u_long64 time, 
       thiz = lNextRW(thiz);
    }
 
-   *hit    = start;
+   *hit = start;
    *before = prev;
 }
 
@@ -488,6 +507,7 @@ static void utilization_normalize(lList *diagram)
 {
    lListElem *thiz, *next;
    double util_prev;
+   const char *bind_prev;
 
    thiz = lFirstRW(diagram);
 
@@ -505,16 +525,34 @@ static void utilization_normalize(lList *diagram)
    }
 
    util_prev = lGetDouble(thiz, RDE_amount);
+   bind_prev = lGetString(thiz, RDE_binding_inuse);
 
-   while ((thiz=next)) {
+   while ((thiz = next) != nullptr) {
       next = lNextRW(thiz);
-      if (util_prev == lGetDouble(thiz, RDE_amount))
+
+      double util = lGetDouble(thiz, RDE_amount);
+      const char *bind = lGetString(thiz, RDE_binding_inuse);
+
+      // values need to be the same, and binding also needs to be the same so that we can remove an entry
+      if (util_prev == util &&
+          ((bind_prev == nullptr && bind == nullptr) || (bind_prev != nullptr && bind != nullptr && strcmp(bind_prev, bind) == 0))) {
          lRemoveElem(diagram, &thiz);
-      else
-         util_prev = lGetDouble(thiz, RDE_amount);
+      } else {
+         util_prev = util;
+         bind_prev = bind;
+      }
    }
 
    return;
+}
+
+double increase_util_depending_on_binding(const sge_assignment_t *a, const lListElem *host, ocs::TopologyString &binding_inuse, double util, double total, double slots) {
+   // no binding string => no util change
+   if (a != nullptr && host != nullptr) {
+      double util_candidate = total - max_binding_idleness(a, host, slots, binding_inuse);
+      util = MAX(util, util_candidate);
+   }
+   return util;
 }
 
 /****** sge_resource_utilization/utilization_queue_end() ***********************
@@ -538,7 +576,7 @@ static void utilization_normalize(lList *diagram)
 *  NOTES
 *     MT-NOTE: utilization_queue_end() is MT safe 
 *******************************************************************************/
-double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
+double utilization_queue_end(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, double total, double request, double slots, bool for_excl_request, ocs::TopologyString& binding_inuse) {
    DENTER(TOP_LAYER);
 
 #if 1
@@ -546,29 +584,63 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
 #endif
 
    double max = 0.0;
+   const char *binding_inuse_str = nullptr;
    const lListElem *ep = lLast(lGetList(cr, RUE_utilized));
    if (ep) {
       if (lGetUlong64(ep, RDE_time) != U_LONG64_MAX) {
          max = lGetDouble(ep, RDE_amount);
+         binding_inuse_str = lGetString(ep, RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
+            max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
+         }
       } else {
          max = lGetDouble(lPrev(ep), RDE_amount);
+         binding_inuse_str = lGetString(lPrev(ep), RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
+            max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
+         }
       }
    }
 
    if (for_excl_request) {
       double max_nonexclusive;
+      const char *binding_inuse_nonexclusive_str = nullptr;
       ep = lLast(lGetList(cr, RUE_utilized_nonexclusive));
       if (ep) {
          if (lGetUlong64(ep, RDE_time) != U_LONG64_MAX) {
             max_nonexclusive = lGetDouble(ep, RDE_amount);
+            binding_inuse_nonexclusive_str = lGetString(ep, RDE_binding_inuse);
+            if (binding_inuse_nonexclusive_str != nullptr) {
+               ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_nonexclusive_str);
+               max_nonexclusive = increase_util_depending_on_binding(a, host, tmp_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
+            }
          } else {
             max_nonexclusive = lGetDouble(lPrev(ep), RDE_amount);
+            binding_inuse_nonexclusive_str = lGetString(lPrev(ep), RDE_binding_inuse);
+            if (binding_inuse_nonexclusive_str != nullptr) {
+               ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_nonexclusive_str);
+               max_nonexclusive = increase_util_depending_on_binding(a, host, tmp_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
+            }
          }
-         max = MAX(max, max_nonexclusive);
+         if (max_nonexclusive > max) {
+            max = max_nonexclusive;
+            binding_inuse_str = binding_inuse_nonexclusive_str;
+         }
       }
    }
 
-   DPRINTF("returning %f\n", max);
+   // the caller is interested in the binding of the entry
+   if (binding_inuse_str != nullptr) {
+      binding_inuse.reset_topology(binding_inuse_str);
+   }
+
+   if (binding_inuse.is_empty()) {
+      DPRINTF("utilization_queue_end: current utilization is %f\n", max);
+   } else {
+      DPRINTF("utilization_queue_end: current utilization is %f %s\n", max, binding_inuse.to_product_topology_string().c_str());
+   }
    DRETURN(max);
 }
 
@@ -582,139 +654,337 @@ double utilization_queue_end(const lListElem *cr, bool for_excl_request) {
  * @return Maximum utilization value
  */
 double
-utilization_max(const lListElem *cr, u_long64 start_time, u_long64 duration, bool for_excl_request, dstring *binding_inuse)
+utilization_max(const sge_assignment_t *a, const lListElem *host, const lListElem *cr,
+                u_long64 start_time, u_long64 duration, double total, double request, double slots,
+                bool for_excl_request, ocs::TopologyString& combined_binding_inuse)
 {
+   DENTER(TOP_LAYER);
+
    const lListElem *rde;
    lListElem *start, *prev;
    double max = 0.0;
    u_long64 end_time = utilization_endtime(start_time, duration);
+   const char *binding_inuse_str = nullptr;
+   bool found_requested_max = false;
 
-   DENTER(TOP_LAYER);
-
-   /* someone is asking for the current utilization */
+   // ----------------------------------------------------------------------------------------------------------------
+   // find current utilization
    if (start_time == DISPATCH_TIME_NOW) {
       max = lGetDouble(cr, RUE_utilized_now);
+      binding_inuse_str = lGetString(cr, RUE_utilized_now_binding_inuse);
+      if (binding_inuse_str != nullptr) {
+         ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
+         max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
+      }
 
       if (for_excl_request) {
          max = MAX(lGetDouble(cr, RUE_utilized_now_nonexclusive), max);
       }
 
-      DPRINTF("returning(1) %f\n", max);
-      DRETURN(max);
+      if (combined_binding_inuse.is_empty()) {
+         DPRINTF("utilization_max: current utilization is %f\n", max);
+      } else {
+         DPRINTF("utilization_max: current utilization is %f %s\n", max, combined_binding_inuse.to_product_topology_string().c_str());
+      }
+      found_requested_max = true;
    }
 
-   /* someone is asking for queue end utilization */
-   if (start_time == DISPATCH_TIME_QUEUE_END) {
-      DRETURN(utilization_queue_end(cr, for_excl_request));
+   // ----------------------------------------------------------------------------------------------------------------
+   // find utilization at the queue end
+   if (!found_requested_max && start_time == DISPATCH_TIME_QUEUE_END) {
+      max = utilization_queue_end(a, host, cr, total, request, slots, for_excl_request, combined_binding_inuse);
+      // increase_util_depending_on_binding was done in utilization_queue_end()
+      DPRINTF("utilization_max: queue end utilization is %f\n", max);
+      found_requested_max = true;
    }
-   
+
+   // ----------------------------------------------------------------------------------------------------------------
+   // find max utilization before queue end
+   if (!found_requested_max) {
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF("utilization_max: before queue end with start time  %s (" sge_u32 ")\n", sge_ctime64(start_time, &dstr), start_time);
 #if 1
-   utilization_print(cr, "the object", false);
+      utilization_print(cr, "the object", true);
 #endif
 
-   utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized), start_time, &start, &prev);
+      utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized), start_time, &start, &prev);
+      u_long64 time = 0;
+      if (start) {
+         rde = lNext(start);
+         max = lGetDouble(start, RDE_amount);
+         time = lGetUlong64(start, RDE_time);
+         DPRINTF("utilization_max: found entry with exact start time  %s (" sge_u32 ")\n", sge_ctime64(time, &dstr), time);
 
-   if (start) {
-      max = lGetDouble(start, RDE_amount);
-      rde = lNext(start);
-   } else {
-      if (prev) {
-         max = lGetDouble(prev, RDE_amount);
+         binding_inuse_str = lGetString(start, RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            combined_binding_inuse.reset_topology(binding_inuse_str);
+            max = increase_util_depending_on_binding(a, host, combined_binding_inuse, max, total, slots);
+         }
+      } else if (prev) {
          rde = lNext(prev);
+         max = lGetDouble(prev, RDE_amount);
+         time = lGetUlong64(prev, RDE_time);
+         DPRINTF("utilization_max: found entry before start time  %s (" sge_u32 ")\n", sge_ctime64(time, &dstr), time);
+
+         binding_inuse_str = lGetString(prev, RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            combined_binding_inuse.reset_topology(binding_inuse_str);
+            max = increase_util_depending_on_binding(a, host, combined_binding_inuse, max, total, slots);
+         }
       } else {
          rde = lFirst(lGetList(cr, RUE_utilized));
       }
-   }
 
-   /* now watch out for the maximum before end time */
-   while (rde && end_time > lGetUlong64(rde, RDE_time)) {
-      max = MAX(max, lGetDouble(rde, RDE_amount));
-      rde = lNext(rde);
-   }
-   
-   if (for_excl_request) {
-      double max_nonexclusive = 0.0;
-      utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized_nonexclusive), start_time, &start, &prev);
+      /* now watch out for the maximum before end time */
+      while (rde != nullptr && end_time > lGetUlong64(rde, RDE_time)) {
+         double candidate_max = lGetDouble(rde, RDE_amount);
+         u_long64 candidate_time = lGetUlong64(rde, RDE_time);
 
-      if (start) {
-         max_nonexclusive = lGetDouble(start, RDE_amount);
-         rde = lNext(start);
-      } else {
-         if (prev) {
-            max_nonexclusive = lGetDouble(prev, RDE_amount);
+         binding_inuse_str = lGetString(rde, RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
+            combined_binding_inuse.mark_nodes_as_used_or_unused(tmp_binding_inuse, true);
+            candidate_max = increase_util_depending_on_binding(a, host, combined_binding_inuse, candidate_max, total, slots);
+
+            DPRINTF("utilization_max: end not reached. looking at %s (" sge_u32 ") with combined binding %s\n",
+                    sge_ctime64(candidate_time, &dstr), candidate_time, combined_binding_inuse.to_product_topology_string().c_str());
+         }
+
+         if (candidate_max > max) {
+            max = candidate_max;
+            time = candidate_time;
+         }
+         rde = lNext(rde);
+      }
+
+      if (for_excl_request) {
+         double max_nonexclusive = 0.0;
+         u_long64 time_nonexclusive = 0;
+         ocs::TopologyString combined_binding_inuse_nonexclusive;
+
+         utilization_find_time_or_prevstart_or_prev(lGetList(cr, RUE_utilized_nonexclusive), start_time, &start, &prev);
+         if (start) {
+            rde = lNext(start);
+            max_nonexclusive = lGetDouble(start, RDE_amount);
+            time_nonexclusive = lGetUlong64(start, RDE_time);
+            binding_inuse_str = lGetString(start, RDE_binding_inuse);
+            if (binding_inuse_str != nullptr) {
+               combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str);
+               max_nonexclusive = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
+            }
+         } else if (prev) {
             rde = lNext(prev);
+
+            max_nonexclusive = lGetDouble(prev, RDE_amount);
+            time_nonexclusive = lGetUlong64(prev, RDE_time);
+            binding_inuse_str = lGetString(prev, RDE_binding_inuse);
+            if (binding_inuse_str != nullptr) {
+               combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str);
+               max_nonexclusive = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
+            }
          } else {
             rde = lFirst(lGetList(cr, RUE_utilized_nonexclusive));
          }
+
+         /* now watch out for the maximum before end time */
+         while (rde != nullptr && end_time > lGetUlong64(rde, RDE_time)) {
+            double candidate_max_nonexclusive = lGetDouble(rde, RDE_amount);
+
+            binding_inuse_str = lGetString(rde, RDE_binding_inuse);
+            if (binding_inuse_str != nullptr) {
+               ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_str);
+               combined_binding_inuse_nonexclusive.mark_nodes_as_used_or_unused(tmp_binding_inuse_nonexclusive, true);
+               candidate_max_nonexclusive = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, candidate_max_nonexclusive, total, slots);
+            }
+
+            if (candidate_max_nonexclusive > max_nonexclusive) {
+               max_nonexclusive = candidate_max_nonexclusive;
+               time_nonexclusive = lGetUlong64(rde, RDE_time);
+            }
+            rde = lNext(rde);
+         }
+         if (max_nonexclusive > max) {
+            max = max_nonexclusive;
+            time = time_nonexclusive;
+            combined_binding_inuse.reset_topology(combined_binding_inuse_nonexclusive.to_string(true, true, true));
+         }
       }
 
-      /* now watch out for the maximum before end time */ 
-      while (rde != nullptr && end_time > lGetUlong64(rde, RDE_time)) {
-         max_nonexclusive = MAX(max_nonexclusive, lGetDouble(rde, RDE_amount));
-         rde = lNext(rde);
+      if (combined_binding_inuse.is_empty()) {
+         DPRINTF("utilization_max: before end time with max %f at %s (" sge_u64 ")\n", max, sge_ctime64(time, &dstr), time);
+      } else {
+         DPRINTF("utilization_max: before end time with max %f at %s (" sge_u64 ") and combined binding of %s\n", max, sge_ctime64(time, &dstr), time, combined_binding_inuse.to_product_topology_string().c_str());
       }
-      max = MAX(max, max_nonexclusive);
    }
 
-   DPRINTF("returning(2) %f\n", max);
-   DRETURN(max); 
+   DRETURN(max);
 }
 
-/** @brief Determine earliest time utilization is below max_util.
+/** @brief Determine first time before diagrams end where utilization is below max_util.
  *
+ * Searches the resource utilization diagram for the first time before the end of the diagram
+ * where the utilization is below max_util. If such a time is found, it is returned. If no such time is found,
+ * DISPATCH_TIME_NOW is returned.
+ *
+ * Considers only the utilization of regular resources (excl and non-excl requests).
+ * For binding (slots on host level) the utilization and the binding pattern are considered.
+ * This means that the returned time is the earliest time when additionally a binding pattern can be found that
+ * allows the request to be scheduled between that time and the diagrams end.
+ *
+ * @note The current implementation does not consider that the utilization can go down again after it has gone up.
+ * As a consequence, the returned time is not necessarily the earliest time when the utilization is below max_util.
+ * It does also not consider the duration of the request. Therefore, there might be an earlier time before the
+ * returned time.
+ * However, it is guaranteed that between the returned time and the end of the diagram, the utilization
+ * is below max_util and additionally for slots binding on hosts, one binding pattern will fit between the returned
+ * time and diagrams end.
+ *
+ * @param a Assignment structure (required for binding consideration)
+ * @param host The host element (required for binding consideration)
  * @param cr Resource utilization entry (RUE_utilized)
  * @param max_util The maximum utilization we're asking
+ * @param total Total amount of the resource (required for binding considerations)
+ * @param slots The number of slots on the host (required for binding consideration)
  * @param object_name Name of the queue/host/global for monitoring purposes.
  * @param for_excl_request match for exclusive request
- * @param binding_inuse Only available for slots on host level.
+ * @param combined_binding_inuse Only available for slots on the host level.
+ *                               Show the combined binding of all entries below the earliest time
  * @return The earliest time or DISPATCH_TIME_NOW.
  */
 u_long64
-utilization_below(const lListElem *cr, double max_util, const char *object_name, bool for_excl_request, dstring *binding_inuse) {
+utilization_below(const sge_assignment_t *a, const lListElem *host, const lListElem *cr, double max_util, double total,
+                  double slots, const char *object_name, bool for_excl_request, ocs::TopologyString& combined_binding_inuse) {
    DENTER(TOP_LAYER);
    const lListElem *rde;
    double util = 0;
    u_long64 when = DISPATCH_TIME_NOW;
+   const char *binding_inuse_str = nullptr;
+   DSTRING_STATIC(dstr, 64);
 
-#if 0
-   utilization_print(cr, object_name);
+#if 1
+   DPRINTF("utilization_below:\n");
+   utilization_print(cr, object_name, true);
 #endif
 
-   /* search backward starting at the diagrams end */
+   // search backward starting from the diagram's end
+   bool reuse_prev_util = false;
    for_each_rev (rde, lGetList(cr, RUE_utilized)) {
-      util = lGetDouble(rde, RDE_amount);
-      if (util <= max_util) {
-         const lListElem *p = lPrev(rde);
-         if (p && lGetDouble(p, RDE_amount) > max_util) {
-            when = lGetUlong64(rde, RDE_time);
-            break;
+
+      // avoid doing work twice: reuse fetched data once and look at each binding pattern also only once
+      if (!reuse_prev_util) {
+         util = lGetDouble(rde, RDE_amount);
+         binding_inuse_str = lGetString(rde, RDE_binding_inuse);
+         if (binding_inuse_str != nullptr) {
+            combined_binding_inuse.reset_topology(binding_inuse_str);
+            DPRINTF("XXX combined_binding_inuse: %s\n", combined_binding_inuse.to_product_topology_string().c_str());
+            util = increase_util_depending_on_binding(a, host, combined_binding_inuse, util, total, slots);
+         }
+      } else {
+
+         // going upward, we need to combine the binding utilization. If a gap is found, it needs to
+         // reach from the earliest time found to the end of the diagram (tetris-like)
+         if (binding_inuse_str != nullptr) {
+            ocs::TopologyString combined_binding_to_add(binding_inuse_str);
+            combined_binding_inuse.mark_nodes_as_used_or_unused(combined_binding_to_add, true);
+            DPRINTF("XXX combined_binding_inuse: %s\n", combined_binding_inuse.to_product_topology_string().c_str());
          }
       }
-   }
-   if (for_excl_request) {
-      u_long64 when_nonexclusive = DISPATCH_TIME_NOW;
-      for_each_rev (rde, lGetList(cr, RUE_utilized_nonexclusive)) {
-         util = lGetDouble(rde, RDE_amount);
-         if (util <= max_util) {
-            const lListElem *p = lPrev(rde);
-            if (p && lGetDouble(p, RDE_amount) > max_util) {
-               when_nonexclusive = lGetUlong64(rde, RDE_time);
+
+      // if jobs fits then look at the diagram's entry before that.
+      if (util <= max_util) {
+         const lListElem *p = lPrev(rde);
+         if (p != nullptr) {
+
+            util = lGetDouble(p, RDE_amount);
+            binding_inuse_str = lGetString(p, RDE_binding_inuse);
+            if (binding_inuse_str != nullptr) {
+               ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
+               tmp_binding_inuse.mark_nodes_as_used_or_unused(combined_binding_inuse, true);
+               util = increase_util_depending_on_binding(a, host, tmp_binding_inuse, util, total, slots);
+            }
+            reuse_prev_util = true;
+
+            // if the previous entry does not fit, then we found the time when the utilization goes above max_util
+            // and the current entry is the first one below max_util. if the previous entry also fits,
+            // we continue with the next entry
+            if (util > max_util) {
+               DPRINTF("utilization_below: found max utilization at due to combined binding in resource diagram %s\n", sge_ctime64(lGetUlong64(p, RDE_time), &dstr));
+               when = lGetUlong64(rde, RDE_time);
                break;
             }
          }
       }
-      when = MAX(when, when_nonexclusive);
+   }
+
+   // repeat the same from above for non-exclusive entries if requested
+   ocs::TopologyString combined_binding_inuse_nonexclusive;
+   reuse_prev_util = false;
+   if (for_excl_request) {
+      u_long64 when_nonexclusive = DISPATCH_TIME_NOW;
+      const char *binding_inuse_str_nonexclusive = nullptr;
+
+      for_each_rev (rde, lGetList(cr, RUE_utilized_nonexclusive)) {
+         if (!reuse_prev_util) {
+            util = lGetDouble(rde, RDE_amount);
+            binding_inuse_str_nonexclusive = lGetString(rde, RDE_binding_inuse);
+            if (binding_inuse_str_nonexclusive != nullptr) {
+               combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str_nonexclusive);
+               DPRINTF("XXX combined_binding_inuse: %s\n", combined_binding_inuse_nonexclusive.to_product_topology_string().c_str());
+               util = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, util, total, slots);
+            }
+         } else {
+            if (binding_inuse_str_nonexclusive != nullptr) {
+               ocs::TopologyString combined_binding_to_add(binding_inuse_str_nonexclusive);
+               combined_binding_inuse_nonexclusive.mark_nodes_as_used_or_unused(combined_binding_to_add, true);
+               DPRINTF("XXX combined_binding_inuse: %s\n", combined_binding_inuse_nonexclusive.to_product_topology_string().c_str());
+            }
+         }
+
+         if (util <= max_util) {
+            const lListElem *p = lPrev(rde);
+            if (p != nullptr) {
+
+               util = lGetDouble(p, RDE_amount);
+               binding_inuse_str_nonexclusive = lGetString(p, RDE_binding_inuse);
+               if (binding_inuse_str_nonexclusive != nullptr) {
+                  ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_str_nonexclusive);
+                  tmp_binding_inuse_nonexclusive.mark_nodes_as_used_or_unused(combined_binding_inuse_nonexclusive, true);
+                  util = increase_util_depending_on_binding(a, host, tmp_binding_inuse_nonexclusive, util, total, slots);
+               }
+               reuse_prev_util = true;
+
+               if (util > max_util) {
+                  DPRINTF("utilization_below: found max utilization-nonexclusive at due to combined binding in resource diagram %s\n", sge_ctime64(lGetUlong64(p, RDE_time), &dstr));
+                  when_nonexclusive = lGetUlong64(rde, RDE_time);
+                  break;
+               }
+            }
+         }
+      }
+
+      // When the time found for non-exclusive entries is later
+      if (when_nonexclusive > when) {
+         when = when_nonexclusive;
+         combined_binding_inuse.reset_topology(combined_binding_inuse_nonexclusive.to_string(true, true, true));
+      }
    }
 
    if (when == DISPATCH_TIME_NOW) {
-      DPRINTF("no utilization\n");
+      if (host == nullptr) {
+         DPRINTF("utilization_below: no utilization\n");
+      } else {
+         DPRINTF("utilization_below: no utilization. binding is %s\n", combined_binding_inuse.to_product_topology_string().c_str());
+      }
    } else {
-      DPRINTF("utilization below %f (%f) starting at " sge_u64 "\n", max_util, util, when);
+      if (binding_inuse_str == nullptr) {
+         DPRINTF("utilization_below: found %f (%f) starting at " sge_u64 "\n", max_util, util, when);
+      } else {
+         DPRINTF("utilization_below: found %f (%f) starting at %s (" sge_u64 ") with binding %s\n", max_util, util, sge_ctime64(when, &dstr), when, combined_binding_inuse.to_product_topology_string().c_str());
+      }
    }
 
    DRETURN(when); 
 }
-
 
 /****** sge_resource_utilization/add_job_utilization() *************************
 *  NAME

@@ -97,6 +97,7 @@
 
 #include "msg_common.h"
 #include "msg_schedd.h"
+#include "sgeobj/ocs_BindingIo.h"
 
 /* -- these implement helpers for the category optimization -------- */
 
@@ -213,7 +214,7 @@ static dispatch_t
 ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
                  const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
                  u_long32 layer, double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry,
-                 const char *object_name, dstring *binding_inuse);
+                 const char *object_name, ocs::TopologyString& binding_inuse);
 
 static dispatch_t
 match_static_resource(int slots, lListElem *req_cplx, lListElem *src_cplx, dstring *reason, bool allow_non_requestable);
@@ -246,7 +247,7 @@ load_check_alarm(char *reason, size_t reason_size, const char *name, const char 
 static int
 load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction);
 
-static bool
+bool
 host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_in_use) {
    DENTER(TOP_LAYER);
 
@@ -264,13 +265,12 @@ host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_i
       if (src != nullptr) {
          topology_in_use.reset_topology(src);
          found_utilization = true;
-         DPRINTF("Host's %s binding utilization is: %s\n", lGetHost(host, EH_name),
-                 topology_in_use.to_product_topology_string().c_str());
+         //DPRINTF("Host's %s binding utilization is: %s\n", lGetHost(host, EH_name), topology_in_use.to_product_topology_string().c_str());
       } else {
-         DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
+         //DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
       }
    } else {
-      DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
+      //DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
    }
 
    // If nothing is in use so far, then start with the internal topology string from the host
@@ -279,14 +279,13 @@ host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_i
       if (internal_topo != nullptr) {
          topology_in_use.reset_topology(internal_topo);
          found_utilization = true;
-         DPRINTF("Using internal topology string as starting point for host %s: %s\n", lGetHost(host, EH_name),
-                 topology_in_use.to_product_topology_string().c_str());
+         //DPRINTF("Using internal topology string as starting point for host %s: %s\n", lGetHost(host, EH_name), topology_in_use.to_product_topology_string().c_str());
       }
    }
 
    // Still nothing found? Then binding cannot be applied
    if (!found_utilization) {
-      DPRINTF("Host %s does not provide binding information - cannot be used for binding\n", lGetHost(host, EH_name));
+      //DPRINTF("Host %s does not provide binding information - cannot be used for binding\n", lGetHost(host, EH_name));
       DRETURN(false);
    }
 
@@ -295,8 +294,84 @@ host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_i
    DRETURN(true);
 }
 
+// @brief Tries a binding for `slots` and returns the amount of slots where a binding could be found
+double
+max_binding_idleness(const sge_assignment_t *a, const lListElem *host, double slots, const ocs::TopologyString &binding_in_use) {
+   DENTER(TOP_LAYER);
+
+   // if no slots are specified (e.g. PE scheduling), then we try to maximize slots.
+   if (slots == 0.0) {
+      slots = static_cast<double>(std::numeric_limits<int>::max());
+      DPRINTF("max_binding_idleness: try to find binding for estimated %f slots with binding %s\n", slots, binding_in_use.to_product_topology_string().c_str());
+   } else {
+      DPRINTF("max_binding_idleness: try to find binding for requested %f slots with binding %s\n", slots, binding_in_use.to_product_topology_string().c_str());
+   }
+
+
+   // find all parameter related to binding
+   ocs::BindingType::Type binding_type= ocs::Job::binding_get_type(a->job);
+   ocs::BindingUnit::Unit binding_unit = ocs::Job::binding_get_unit(a->job);
+   //ocs::BindingStrategy::Strategy binding_strategy = ocs::Job::binding_get_strategy(a->job);
+   ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(a->job);
+   ocs::BindingEnd::End binding_end = ocs::Job::binding_get_end(a->job);
+   std::string binding_filter = ocs::Job::binding_get_filter(a->job);
+   std::string binding_sort = ocs::Job::binding_get_sort(a->job);
+   unsigned binding_amount = ocs::Job::binding_get_amount(a->job);
+
+   // @todo CS-732: Here we should remove all threads that are masked by an admin manually
+
+   // @todo CS-732: If a job also requests RSMAPS and when those have a topology mask set then
+   // we can remove all threads that can never match in case certain RSMAPS are already in use by others
+
+   // @todo CS-732: If affinity information is available and also enforced we can remove all threads
+   // where the affinity mask will prevent scheduling
+
+   // @todo CS-732: If memory binding is active and constrains for NUMA memory (or caches) apply them
+   // we can remove those threads belonging to NUMA nodes not having enough memory available
+
+   // handle different binding types
+   if (binding_type == ocs::BindingType::HOST) {
+
+      // host binding can handle all slots per definition
+      auto ids = binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+      if (ids.size() >= binding_amount) {
+         // enough units found -> report that requested slots are idle
+         DPRINTF("max_binding_idleness: enough units found for host-binding of %f slots\n", slots);
+         DRETURN(slots);
+      }
+
+   } else if (binding_type == ocs::BindingType::SLOT) {
+      ocs::TopologyString tmp_binding_in_use(binding_in_use.to_string(true, true, true, false, false, false));
+
+      int max_slots = 0;
+      for (max_slots = 0; max_slots < slots; max_slots++) {
+
+         // find the requested binding
+         auto ids = tmp_binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+         if (ids.size() < binding_amount) {
+            break;
+         }
+
+
+         // add the task binding to the binding mask
+         tmp_binding_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+      }
+
+      if (max_slots > 0) {
+         double min = std::min<double>(max_slots, slots);
+         DPRINTF("max_binding_idleness: units found for slots-binding of %f/%f slots\n", min, slots);
+         DRETURN(min);
+      }
+   } else {
+      // new binding type?
+   }
+
+   DPRINTF("max_binding_idleness: no binding found for %s\n", lGetHost(host, EH_name));
+   DRETURN(0.0);
+}
+
 static int
-find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *binding_to_use_schedule_dstr) {
+find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::TopologyString& binding_inuse) {
    DENTER(TOP_LAYER);
 
    // @todo CS-732: handle finding for jobs and in future also ARs
@@ -318,41 +393,38 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
    // find all parameter related to binding
    ocs::BindingType::Type binding_type= ocs::Job::binding_get_type(a->job);
    ocs::BindingUnit::Unit binding_unit = ocs::Job::binding_get_unit(a->job);
-   ocs::BindingStrategy::Strategy binding_strategy = ocs::Job::binding_get_strategy(a->job);
+   //ocs::BindingStrategy::Strategy binding_strategy = ocs::Job::binding_get_strategy(a->job);
    ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(a->job);
    ocs::BindingEnd::End binding_end = ocs::Job::binding_get_end(a->job);
    std::string binding_filter = ocs::Job::binding_get_filter(a->job);
    std::string binding_sort = ocs::Job::binding_get_sort(a->job);
    unsigned binding_amount = ocs::Job::binding_get_amount(a->job);
 
-   // show parameter in debug output
-   DPRINTF("binding: type: %s\n", ocs::BindingType::to_string(binding_type).c_str());
-   DPRINTF("binding: unit: %s\n", ocs::BindingUnit::to_string(binding_unit).c_str());
-   DPRINTF("binding: amount: %d\n", binding_amount);
-   DPRINTF("binding: strategy: %s\n", ocs::BindingStrategy::to_string(binding_strategy).c_str());
-   DPRINTF("binding: start: %s\n", ocs::BindingStart::to_string(binding_start).c_str());
-   DPRINTF("binding: end: %s\n", ocs::BindingEnd::to_string(binding_end).c_str());
-   DPRINTF("binding: filter: %s\n", binding_filter.c_str());
-   DPRINTF("binding: sort: %s\n", binding_sort.c_str());
+   // find current binding on that host
+   const char *hostname = lGetHost(host, EH_name);
+   ocs::TopologyString topo_in_use;
+   if (binding_inuse.is_empty()) {
+      bool ret = host_get_topology_in_use(host, topo_in_use);
+      if (!ret) {
+         DPRINTF("find_binding: failed to find current binding of host %s\n", hostname);
+         DRETURN(0);
+      }
+      DPRINTF("find_binding: current binding of host %s is %s\n", hostname, binding_inuse.to_product_topology_string().c_str());
+   } else {
+      DPRINTF("find_binding: reservation schedules's binding of host %s is %s\n", hostname , binding_inuse.to_product_topology_string().c_str());
+      topo_in_use.reset_topology(binding_inuse.to_string(true, true, true, false, false, false));
+   }
 
    // distinguish between host and slot based binding
    if (binding_type == ocs::BindingType::HOST) {
-      const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
 
       // early exit; have a host-specific binding, no need to repeat because we know that slots can be handled
       if (binding_done != nullptr) {
-         DPRINTF("binding: already done for host %s\n", hostname);
+         DPRINTF("find_binding: host binding already done for host %s\n", hostname);
          DRETURN(slots);
       }
 
-      // find current binding on that host
-      ocs::TopologyString topo_in_use;
-      bool ret = host_get_topology_in_use(host, topo_in_use);
-      if (!ret) {
-         DPRINTF("binding: did neither find topology information nor active binding information for host %s\n", hostname);
-         DRETURN(0);
-      }
 
       // @todo CS-732: Here we should remove all threads that are masked by an admin manually
 
@@ -368,11 +440,9 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       // find the requested binding
       auto ids = topo_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
       if (ids.size() < binding_amount) {
-         DPRINTF("binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
+         DPRINTF("find_binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
          DRETURN(0); // host binding cannot be fulfilled
       }
-
-      DPRINTF("binding: found %zu units for binding request\n", ids.size());
 
       // create a binding mask that only contains those units that we will bind for this host binding
       ocs::TopologyString binding_to_use(topo_in_use.to_string(true, true, true, false, false, true));
@@ -380,7 +450,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       for (auto id : ids) {
          binding_to_use.mark_node_as_used_or_unused(id, true);
       }
-      DPRINTF("binding: host binding for this job an host %s will be %s\n", hostname, binding_to_use.to_product_topology_string().c_str());
+      DPRINTF("find_binding: host binding for this job on host %s will be %s\n", hostname, binding_to_use.to_product_topology_string().c_str());
 
       // store the binding decision in the assignment structure
       binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
@@ -398,13 +468,6 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
          next_binding_id_for_task = lGetNumberOfElem(lGetList(binding_done, BN_specific_binding_list));
       }
 
-      // find currently used cores/threads
-      ocs::TopologyString binding_in_use;
-      bool ret = host_get_topology_in_use(host, binding_in_use);
-      if (!ret) {
-         DPRINTF("binding: no topology in use and also no topology found for host %s\n", hostname);
-         DRETURN(0);
-      }
 
       // @todo CS-732: Here we should remove all threads that are masked by an admin manually
 
@@ -421,7 +484,7 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       // or by using the binding from the host as starting point for the first task
       ocs::TopologyString host_binding_to_use;
       if (binding_done == nullptr) {
-         host_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, false));
+         host_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, false));
       } else {
          host_binding_to_use.reset_topology(lGetString(binding_done, BN_specific_binding));
       }
@@ -432,25 +495,23 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
       for (max_slots = 0; max_slots < slots; max_slots++) {
 
          // find the requested binding
-         auto ids = binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+         auto ids = topo_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
          if (ids.size() < binding_amount) {
-            DPRINTF("binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
+            DPRINTF("find_binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
             break;
          }
 
-         DPRINTF("binding: found %zu units for binding request of task %d\n", ids.size(), max_slots);
-
          // create a binding mask that only contains those units that we will bind for this slot binding on the host
-         task_binding_to_use.reset_topology(binding_in_use.to_string(true, true, true, false, false, true));
+         task_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, true));
          task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
-         DPRINTF("binding: slot binding for this task %d an host %s will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());
+         DPRINTF("find_binding: slot binding for task %d on host %s will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());
 
          // add the task binding to the host binding mask
          host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
          // add the task binding to the binding list for the host
-         binding_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+         topo_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
          // store the binding decision for the task
          if (binding_done == nullptr) {
@@ -465,16 +526,14 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, dstring *bin
 
       // exit if no binding was found
       if (max_slots == 0) {
-         DPRINTF("binding: no binding possible for all %d tasks on host %s\n", slots, hostname);
+         DPRINTF("find_binding: no binding possible for all %d tasks on host %s\n", slots, hostname);
          DRETURN(0);
-      } else {
-         DPRINTF("binding: found binding for %d/%d tasks on host %s\n", max_slots, slots, hostname);
       }
 
       // store the binding decision in the assignment structure
       if (binding_done) {
          lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, true, false, false, false).c_str());
-         DPRINTF("binding: slot binding for all tasks on host %s would give us binding %s\n", hostname, host_binding_to_use.to_string().c_str());
+         DPRINTF("find_binding: slot binding for all tasks on host %s will give us binding %s\n", hostname, host_binding_to_use.to_product_topology_string().c_str());
       }
 
       DRETURN(max_slots);
@@ -501,7 +560,7 @@ copy_binding(const sge_assignment_t *a) {
       // try to find a binding for the host
       lListElem *binding_elem = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       if (binding_elem == nullptr) {
-         DPRINTF("binding-copy: no binding found for host %s\n", hostname);
+         DPRINTF("copy_binding: no binding found for host %s\n", hostname);
          DRETURN(true);
       }
 
@@ -514,14 +573,14 @@ copy_binding(const sge_assignment_t *a) {
       }
 
       if (host_specific_binding) {
-         DPRINTF("binding-copy: host specific binding for host %s\n", hostname);
+         DPRINTF("copy_binding: host specific binding for host %s\n", hostname);
 
          // copy the binding decision for the host (either for one task or for all tasks share the same binding)
          const char *binding_str = lGetString(binding_elem, BN_specific_binding);
          lListElem *jg_to_use = lAddSubUlong(jg_elem, ST_id, 0, JG_binding_to_use, ST_Type);
          lSetString(jg_to_use, ST_name, binding_str);
       } else if (task_specific_binding) {
-         DPRINTF("binding-copy: task specific binding for host %s\n", hostname);
+         DPRINTF("copy_binding: task specific binding for host %s\n", hostname);
 
          u_long32 slots = lGetUlong(jg_elem, JG_slots);
 
@@ -538,13 +597,13 @@ copy_binding(const sge_assignment_t *a) {
             // get the first binding for a task
             lListElem *task_binding_elem = lFirstRW(task_binding_list);
             if (task_binding_elem == nullptr) {
-               DPRINTF("binding-copy: something went wrong, no task binding found for slot %d\n", slots);
+               DPRINTF("copy_binding: something went wrong, no task binding found for slot %d\n", slots);
                DRETURN(false);
             }
 
             // move the element from the task binding list to the granted element
             ocs::TopologyString task_binding(lGetString(task_binding_elem, ST_name));
-            DPRINTF("binding-copy: moved task binding %s for slot %d\n", task_binding.to_product_topology_string().c_str(), slots);
+            DPRINTF("copy_binding: moved task binding %s for slot %d\n", task_binding.to_product_topology_string().c_str(), slots);
             lDechainElem(task_binding_list, task_binding_elem);
             lAppendElem(jg_binding_list, task_binding_elem);
 
@@ -985,10 +1044,11 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
       best_result = DISPATCH_OK;
    }
 
+   DSTRING_STATIC(dstr, 64);
    switch (best_result) {
    case DISPATCH_OK:
       DPRINTF("SELECT PE(" sge_u32 "." sge_u32 ") returns PE %s %d slots at " sge_u64 ")\n",
-              best->job_id, best->ja_task_id, best->pe_name, best->slots, best->start);
+              best->job_id, best->ja_task_id, best->pe_name, best->slots, sge_ctime64(best->start, &dstr));
       break;
    case DISPATCH_NEVER_CAT:
       DPRINTF("SELECT PE(" sge_u32 "." sge_u32 ") returns <category_never>\n", best->job_id, best->ja_task_id);
@@ -1691,8 +1751,8 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    u_long64 tmp_start;
    dispatch_t ret;
    bool is_not_found = false;
-   DSTRING_STATIC(binding_inuse, 2048);
-   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
+   //bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
+   ocs::TopologyString binding_inuse;
 
    clear_resource_tags(requested, QUEUE_TAG);
 
@@ -1708,11 +1768,14 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    if (slots != -1) {
       tmp_start = *start_time;
       ret = ri_time_by_slots(a, implicit_slots_request, load_attr, config_attr, actual_attr, host, queue,
-                             reason, allow_non_requestable, slots, layer, lc_factor, &tmp_start, object_name, slots_on_host_layer ? &binding_inuse : nullptr);
+                             reason, allow_non_requestable, slots, layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
       if (ret == DISPATCH_OK && *start_time == DISPATCH_TIME_QUEUE_END) {
-         DPRINTF("%s: \"slot\" request delays start time from " sge_u64
-           " to " sge_u64 "\n", object_name, latest_time, MAX(latest_time, tmp_start));
+         DSTRING_STATIC(dstr1, 64);
+         DSTRING_STATIC(dstr2, 64);
+         u_long64 max_time = MAX(latest_time, tmp_start);
+         DPRINTF("%s: \"slot\" request delays start time from %s (" sge_u64 ") to %s (" sge_u64 ")\n", object_name,
+                 sge_ctime64(latest_time, &dstr1), latest_time, sge_ctime64(max_time, &dstr2), max_time, &dstr2);
          latest_time = MAX(latest_time, tmp_start);
       }
 
@@ -1758,8 +1821,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                   tmp_start = *start_time;
                   ff = ri_time_by_slots(a, default_request, load_attr, config_attr, actual_attr,
                                         host, queue, &tmp_reason, true, slots,
-                                        layer, lc_factor, &tmp_start, object_name,
-                                        slots_on_host_layer ? &binding_inuse : nullptr);
+                                        layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
                   if (ff != DISPATCH_OK) {
                      /* useless to continue in these cases */
@@ -1787,8 +1849,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
       tmp_start = *start_time;
       ret = ri_time_by_slots(a, attr, load_attr, config_attr, actual_attr,
                              host, queue, reason, allow_non_requestable, slots,
-                             layer, lc_factor, &tmp_start, object_name,
-                             slots_on_host_layer ? &binding_inuse : nullptr);
+                             layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
       switch (ret) {
          case DISPATCH_NEVER_CAT : /* will never match */
@@ -1825,8 +1886,9 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
    }
 
    // @todo CS-731: DONE: for DOMINANT_LAYER_HOST place for additional binding specific checks
+   //if (layer == DOMINANT_LAYER_HOST && *start_time != DISPATCH_TIME_QUEUE_END) {
    if (layer == DOMINANT_LAYER_HOST) {
-      int slots_with_binding = find_binding(a, 1, host, slots_on_host_layer ? &binding_inuse : nullptr);
+      int slots_with_binding = find_binding(a, 1, host, binding_inuse);
 
       if (slots_with_binding == 0) {
          DRETURN(DISPATCH_NEVER_CAT);
@@ -2269,8 +2331,9 @@ compute_soft_violations(const sge_assignment_t *a, const lListElem *host, lListE
    /* count number of soft violations for _one_ slot of this job */
    lListElem *attr;
    for_each_rw (attr, soft_requests) {
+      ocs::TopologyString binding_inuse;
       switch (ri_time_by_slots(a, attr, load_attr, config_attr, actual_attr, host, queue, &reason, false, 1, layer,
-                               lc_factor, &start_time, queue_name?queue_name:"no queue", nullptr)) {
+                               lc_factor, &start_time, queue_name?queue_name:"no queue", binding_inuse)) {
             /* no match */
             case DISPATCH_NEVER_CAT:
                soft_violation++;
@@ -5483,7 +5546,8 @@ sequential_queue_time(u_long64 *start, sge_assignment_t *a, int *violations, lLi
 
    if (a->is_reservation && result == DISPATCH_OK) {
       *start = tmp_time;
-      DPRINTF("queue_time_by_slots(%s) returns earliest start time " sge_u64"\n", qname, *start);
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF("queue_time_by_slots(%s) returns earliest start time %s(" sge_u64 ")\n", qname, sge_ctime64(*start, &dstr), *start);
    } else if (result == DISPATCH_OK) {
       DPRINTF("queue_time_by_slots(%s) returns <at specified time>\n", qname);
    } else {
@@ -5587,11 +5651,12 @@ sequential_host_time(u_long64 *start, sge_assignment_t *a, int *violations, cons
 
    if (a->is_reservation && (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR)) {
       *start = tmp_time;
-      DPRINTF("sequential_host_time(%s) returns earliest start time " sge_u64"\n", eh_name, *start);
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF("sequential_host_time(%s) returns earliest start time %s (" sge_u64 ")\n", eh_name, sge_ctime64(*start, &dstr), *start);
    } else if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       DPRINTF("sequential_host_time(%s) returns <at specified time>\n", eh_name);
    } else {
-      DPRINTF("sequential_host_time(%s) returns <later>\n", eh_name);
+      DPRINTF("sequential_host_time(%s) returns <later> (%d) \n", eh_name, result);
    }
 
    DRETURN(result);
@@ -5657,7 +5722,8 @@ sequential_global_time(u_long64 *start, sge_assignment_t *a, int *violations)
 
    if (a->is_reservation && (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR)) {
       *start = tmp_time;
-      DPRINTF("global_time_by_slots() returns earliest start time " sge_u64"\n", *start);
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF("global_time_by_slots() returns earliest start time %s(" sge_u64 ")\n", sge_ctime64(*start, &dstr), *start);
    }
    else if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
       DPRINTF("global_time_by_slots() returns <at specified time>\n");
@@ -5782,8 +5848,10 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
    sge_dstring_sprintf(&slots_as_str, "%d", total);
    lSetString(tep, CE_stringval, strbuf);
 
+   ocs::TopologyString binding_inuse;
    if (ri_slots_by_time(a, slots, lGetList(a->pe, PE_resource_utilization), implicit_slots_request,
-                        nullptr, implicit_total_list, nullptr, nullptr, nullptr, 0, 0, &reason, true, true, a->pe_name, nullptr) != DISPATCH_OK) {
+                        nullptr, implicit_total_list, nullptr, nullptr, nullptr,
+                        0, 0, &reason, true, true, a->pe_name, binding_inuse) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
 
@@ -5934,7 +6002,7 @@ const lList *centry_list
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name, dstring *binding_inuse)
+                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name, ocs::TopologyString& binding_inuse)
 {
    DENTER(TOP_LAYER);
 
@@ -6019,7 +6087,7 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          ret = DISPATCH_NEVER_CAT;
       } else {
          /* seek for the time near queue end where resources are sufficient */
-         u_long64 when = utilization_below(actual_el, threshold, object_name, is_exclusive, binding_inuse);
+         u_long64 when = utilization_below(a, host, actual_el, threshold, total, slots, object_name, is_exclusive, binding_inuse);
          if (when == 0) {
             /* may happen only if scheduler code is run outside scheduler with
                DISPATCH_TIME_QUEUE_END time spec */
@@ -6031,8 +6099,8 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          ret = DISPATCH_OK;
       }
 
-      DPRINTF("\t\t%s: time_by_slots: %d of %s=%f can be served %s\n", object_name, slots, attrname, request,
-               ret == DISPATCH_OK ? "at time" : "never");
+
+      DPRINTF("\t\t%s: time_by_slots: %d of %s=%f can be served %s\n", object_name, slots, attrname, request, ret == DISPATCH_OK ? "at time" : "never");
 
       lFreeElem(&cplx_el);
 
@@ -6047,12 +6115,12 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
       /* here we handle DISPATCH_TIME_NOW + any other time */
       ready_time = *start_time;
 
-      util = utilization_max(actual_el, ready_time, a->duration, is_exclusive, binding_inuse);
+      util = utilization_max(a, host, actual_el, ready_time, a->duration, total, request, slots, is_exclusive, binding_inuse);
       if (util == 0.0) {
          if (schedule_based || utilized != 0) {
             /* check for reservations */
             ready_time = now;
-            util = utilization_max(actual_el, ready_time, a->duration, is_exclusive, binding_inuse);
+            util = utilization_max(a, host, actual_el, ready_time, a->duration, total, request, slots, is_exclusive, binding_inuse);
             if (util == 0.0) {
                ret = DISPATCH_OK;
             } else {
@@ -6077,10 +6145,11 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          ready_time = *start_time;
       }
 
-      util = utilization_max(actual_el, ready_time, a->duration, false, binding_inuse);
+      util = utilization_max(a, host, actual_el, ready_time, a->duration, total, request, slots, false, binding_inuse);
 
-      DPRINTF("\t\t%s: time_by_slots: %s total = %f util = %f from " sge_u64 " plus " sge_u64 " microseconds\n",
-              object_name, attrname, total, util, ready_time, a->duration);
+      DSTRING_STATIC(dstr, 64);
+      DPRINTF("\t\t%s: time_by_slots: %s total = %f util = %f from %s (" sge_u64 ") plus " sge_u64 " microseconds\n",
+              object_name, attrname, total, util, sge_ctime64(ready_time, &dstr), ready_time, a->duration);
 
       /* ensure resource is sufficient from now until finish */
       if (request * slots > total - util) {
@@ -6097,7 +6166,7 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
          sge_dstring_append(reason, availability_text);
 
          if ((a->duration != DISPATCH_TIME_NOW) &&
-             (request * slots <= total - utilization_max(actual_el, ready_time, DISPATCH_TIME_NOW, false, binding_inuse))) {
+             (request * slots <= total - utilization_max(a, host, actual_el, ready_time, DISPATCH_TIME_NOW, total, request, slots, false, binding_inuse))) {
             sge_dstring_append(reason, MSG_SCHEDD_DUETORR);
          }
       } else {
@@ -6106,7 +6175,6 @@ ri_time_by_slots(const sge_assignment_t *a, lListElem *rep, const lList *load_at
    }
 
    DPRINTF("\t\t%s: time_by_slots: %d of %s=%f can be served %s\n", object_name, slots, attrname, request, ret == DISPATCH_OK ? "at time" : "never");
-
    DRETURN(ret);
 }
 
@@ -6153,7 +6221,7 @@ static dispatch_t
 ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, lListElem *request,
                  const lList *load_attr, const lList *total_list, const lList *additional_usage, lListElem *host, lListElem *queue,
                  u_long32 layer, double lc_factor, dstring *reason, bool allow_non_requestable, bool no_centry,
-                 const char *object_name, dstring *binding_inuse)
+                 const char *object_name, ocs::TopologyString& binding_inuse)
 {
    DENTER(TOP_LAYER);
 
@@ -6210,6 +6278,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
    if (!tep && !(tep=lGetElemStr(total_list, CE_name, name))) {
       DRETURN(DISPATCH_NEVER_CAT);
    }
+   total = lGetDouble(tep, CE_doubleval);
 
    request_val = lGetDouble(request, CE_doubleval);
    DPRINTF("\t\t%s: ri_slots_by_time: REQUESTED: %s=%f\n", object_name, name, request_val);
@@ -6228,7 +6297,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
          start = a->now;
       }
 
-      used = utilization_max(uep, start, a->duration, exclusive_request, binding_inuse);
+      used = utilization_max(a, host, uep, start, a->duration, total, request_val, *slots, exclusive_request, binding_inuse);
       if (used == 0.0) {
          ret = DISPATCH_OK;
          *slots = INT_MAX;
@@ -6242,7 +6311,6 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
       }
    } else {
       DPRINTF("\t\t%s: ri_slots_by_time: non exclusive request %s\n", object_name, name);
-      total = lGetDouble(tep, CE_doubleval);
 
       if (uep != nullptr) {
          utilized = lGetNumberOfElem(lGetList(uep, RUE_utilized));
@@ -6256,7 +6324,7 @@ ri_slots_by_time(const sge_assignment_t *a, int *slots, const lList *rue_list, l
          if (!a->is_reservation) {
             start = a->now;
          }
-         used = utilization_max(uep, start, a->duration, false, binding_inuse);
+         used = utilization_max(a, host, uep, start, a->duration, total, request_val, *slots, false, binding_inuse);
          DPRINTF("\t\t%s: ri_slots_by_time: utilization_max(%s, " sge_u64") returns %f\n",
                object_name, sge_ctime64(start, &time_str), a->duration, used);
          // we have to consider additional usage (e.g. of the master task which has already been matched earlier)
@@ -6354,7 +6422,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    const lListElem *actual;
    lListElem *cep, *req;
    dispatch_t result, ret = DISPATCH_OK;
-   DSTRING_STATIC(binding_inuse, 2048);
+   ocs::TopologyString binding_inuse;
    bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
 
    clear_resource_tags(a->job, QUEUE_TAG);
@@ -6397,8 +6465,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
       result = ri_slots_by_time(a, &avail, rue_list, implicit_slots_request, load_attr, total_list,
                                 nullptr, host, queue, layer, lc_factor,
-                                &reason, allow_non_requestable, false, object_name,
-                                slots_on_host_layer ? &binding_inuse : nullptr);
+                                &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {
          /* If the request is made from the resource quota module, this error message
           * is not informative and should not be displayed */
@@ -6452,8 +6519,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
                result = ri_slots_by_time(a, &avail, rue_list, cep, load_attr, total_list, nullptr,
                                          host, queue, layer, lc_factor,
-                                         &reason, allow_non_requestable, false, object_name,
-                                         slots_on_host_layer ? &binding_inuse : nullptr);
+                                         &reason, allow_non_requestable, false, object_name, binding_inuse);
                if (result != DISPATCH_OK) {
                   if (!isRQ) {
                      DSTRING_STATIC(dstr, 1024);
@@ -6560,8 +6626,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
          DPRINTF("    ==> %s: %s = %s = %f\n", object_name, name, lGetString(req, CE_stringval), lGetDouble(req, CE_doubleval));
          result = ri_slots_by_time(a, &avail, rue_list, req, load_attr, total_list, master_usage,
                                    host, queue, layer, lc_factor,
-                                   &reason, allow_non_requestable, false, object_name,
-                                   slots_on_host_layer ? &binding_inuse : nullptr);
+                                   &reason, allow_non_requestable, false, object_name, binding_inuse);
          DPRINTF("  -> ri_slots_by_time returned %d\n", result);
          if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
             // if we are checking global requests, and it is a CONSUMABLE_JOB:
@@ -6710,7 +6775,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
    // @todo CS-731: DONE: PE - for DOMINANT_LAYER_HOST place for additional binding specific checks
    if (layer == DOMINANT_LAYER_HOST) {
-      int slots_with_binding = find_binding(a, max_slots, host, slots_on_host_layer ? &binding_inuse : nullptr);
+      int slots_with_binding = find_binding(a, max_slots, host, binding_inuse);
 
       if (slots_with_binding == 0) {
          DRETURN(DISPATCH_NEVER_CAT);
