@@ -25,6 +25,8 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_Category.h"
+
+#include "ocs_BindingIo.h"
 #include "sge_job.h"
 #include "sge_resource_quota_service.h"
 #include "sge_userprj.h"
@@ -94,6 +96,9 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    // -scope global -soft -l <resource_list>
    sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -l");
 #endif
+
+   // -btype -bunit -bamount -bsort -bstart -bend
+   sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_new_binding, SGE_NO_ABORT));
 
    // -pe pe_name pe_range
    sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT), lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");

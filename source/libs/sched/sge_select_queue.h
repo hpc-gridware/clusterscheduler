@@ -38,6 +38,7 @@
 #endif
 
 #include "sge_orders.h"
+#include "sgeobj/ocs_TopologyString.h"
 
 /* min number of jobs in a category to use
  *    the skip host, queue and the soft violations */
@@ -220,7 +221,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
                  const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name, dstring *binding_inuse);
+                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name, ocs::TopologyString& binding_inuse);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);
 
@@ -231,3 +232,9 @@ dispatch_t
 parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue);
+
+double
+max_binding_idleness(const sge_assignment_t *a, const lListElem *host, double slots, const ocs::TopologyString &binding_in_use);
+
+bool
+host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_in_use);

@@ -634,7 +634,7 @@ void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &top
    DENTER(TOP_LAYER);
 
    // Should the current topology be empty, then we can set our structure correctly
-   if (topo.nodes.empty()) {
+   if (nodes.empty()) {
       reset_topology(topo.to_string(true, true, true, false, false, false));
       if (mark_used) {
          // no need to continue because marked nodes are already correct
@@ -700,27 +700,28 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
    }
 
    // If there is a binding_now then add/remove corresponding nodes
-   const char *action_str = mark_used ? "add" : "del";
    if (binding_now.nodes.empty()) {
 
       // binding_now does not contain anything yet, so we can just copy binding_to_use, but only if we want to add them
       // if we do not want to mark them as used then we can skip the 'reset' because the binding mask is already empty
       if (mark_used) {
-         lSetString(elem, nm, binding_to_use.to_string(true, true, true, false, false, false).c_str());
+         binding_now.reset_topology(binding_to_use.to_string(true, true, true, false, false, false));
+      } else {
+         binding_now.reset_topology(binding_to_use.to_string(true, true, true, false, false, true));
       }
-
-      DPRINTF("utilization_add:    %s    %s\n", action_str, binding_to_use.to_product_topology_string().c_str());
-      DPRINTF("utilization_add:    after %s\n", binding_to_use.to_product_topology_string().c_str());
    } else {
       binding_now.mark_nodes_as_used_or_unused(binding_to_use, mark_used);
-      lSetString(elem, nm, binding_now.to_string(true, true, true, false, false, false).c_str());
-      DPRINTF("utilization_add:    %s    %s\n", action_str, binding_to_use.to_product_topology_string().c_str());
-      DPRINTF("utilization_add:    after  %s\n", binding_now.to_product_topology_string().c_str());
    }
+   lSetString(elem, nm, binding_now.to_string(true, true, true, false, false, false).c_str());
 
    DRETURN_VOID;
 }
 
+bool
+ocs::TopologyString::is_empty() {
+   DENTER(TOP_LAYER);
+   DRETURN(nodes.empty());
+}
 
 std::vector<int>
 ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingEnd::End bend) const {

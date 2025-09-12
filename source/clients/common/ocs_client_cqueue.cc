@@ -703,7 +703,8 @@ int qinstance_slots_reserved_now(const lListElem *this_elem) {
    const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization);
    if (slots != nullptr) {
       u_long64 now = sge_get_gmt64();
-      ret = utilization_max(slots, now, 0, false, nullptr);
+      ocs::TopologyString binding_in_use;
+      ret = utilization_max(nullptr, nullptr, slots, now, 0, 0.0, 0.0, 0.0, false, binding_in_use);
    }
    DRETURN(ret);
 }
