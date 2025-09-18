@@ -140,6 +140,12 @@
 *    Its purpose is to be able to add new attributes without changing the spooling format.
 *    It is a list of arbitrary type and it is spooled.
 *
+*    SGE_LIST(AR_granted_resources_list) - Granted Resources
+*    List of granted resources, currently these are granted bindings only.
+*
+*    SGE_OBJECT(AR_binding) - Binding Strategy
+*    Binding strategy for the advance reservation
+*
 */
 
 enum {
@@ -173,7 +179,9 @@ enum {
    AR_type,
    AR_qi_errors,
    AR_request_set_list,
-   AR_joker
+   AR_joker,
+   AR_granted_resources_list,
+   AR_binding
 };
 
 LISTDEF(AR_Type)
@@ -208,6 +216,8 @@ LISTDEF(AR_Type)
    SGE_ULONG(AR_qi_errors, CULL_DEFAULT)
    SGE_LIST(AR_request_set_list, JRS_Type, CULL_SPOOL)
    SGE_LIST(AR_joker, VA_Type, CULL_SPOOL)
+   SGE_LIST(AR_granted_resources_list, GRU_Type, CULL_SPOOL)
+   SGE_OBJECT(AR_binding, BN_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(ARN)
@@ -242,6 +252,8 @@ NAMEDEF(ARN)
    NAME("AR_qi_errors")
    NAME("AR_request_set_list")
    NAME("AR_joker")
+   NAME("AR_granted_resources_list")
+   NAME("AR_binding")
 NAMEEND
 
 #define AR_SIZE sizeof(ARN)/sizeof(char *)

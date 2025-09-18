@@ -59,7 +59,9 @@ enum {
    AR_type,
    AR_qi_errors,
    AR_request_set_list,
-   AR_joker
+   AR_joker,
+   AR_granted_resources_list,
+   AR_binding
 };
 
 constexpr const int AR_Type[] = {
@@ -94,6 +96,8 @@ constexpr const int AR_Type[] = {
    AR_qi_errors,
    AR_request_set_list,
    AR_joker,
+   AR_granted_resources_list,
+   AR_binding,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -128,7 +132,9 @@ constexpr const int AR_Type[] = {
    {AR_type, "AR_type", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {AR_qi_errors, "AR_qi_errors", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {AR_request_set_list, "AR_request_set_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {AR_joker, "AR_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {AR_joker, "AR_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {AR_granted_resources_list, "AR_granted_resources_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {AR_binding, "AR_binding", AttributeStatic::OBJECT, BN_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

@@ -162,6 +162,8 @@
 			"type":	"lListT",
 			"subClassName":	"ST",
 			"subCullPrefix":	"ST",
-			"flags":	[]
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
 		}]
 }

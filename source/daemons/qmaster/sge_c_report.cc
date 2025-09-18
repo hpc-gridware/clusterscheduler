@@ -332,7 +332,26 @@ update_license_data(lListElem *hep, lList *lp_lic, u_long64 gdi_session) {
    if (processors != lGetUlong(hep, EH_processors)) {
       lList *answer_list = nullptr;
 
+      // set the processors attribute
       lSetUlong(hep, EH_processors, processors);
+
+      // adapt slots value but do this only if it was not set by a manager already
+      host_ensure_slots_are_defined(hep, processors);
+
+      lListElem *slots_complex = lGetSubStrRW(hep, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list);
+      if (slots_complex == nullptr) {
+         slots_complex = lAddSubStr(hep, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list, CE_Type);
+         lSetDouble(slots_complex, CE_doubleval, processors);
+         lSetString(slots_complex, CE_stringval, std::to_string(processors).c_str());
+      } else {
+         double val_uninitialized = std::numeric_limits<int>::max();
+         double val = lGetDouble(slots_complex, CE_doubleval);
+
+         if (val == val_uninitialized) {
+            lSetDouble(slots_complex, CE_doubleval, processors);
+            lSetString(slots_complex, CE_stringval, std::to_string(processors).c_str());
+         }
+      }
 
       DPRINTF("%s has " sge_u32 " processors\n", lGetHost(hep, EH_name), processors);
       sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, lGetHost(hep, EH_name), nullptr, nullptr,

@@ -98,6 +98,9 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
+#include "ocs_AdvanceReservation.h"
+#include "ocs_GrantedResources.h"
+#include "sge_sched_thread_rsmap.h"
 
 typedef struct {
    u_long32 ar_id;
@@ -236,7 +239,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
 
    if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list,
                     master_pe_list, master_userset_list)) {
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    if (add) {
@@ -254,7 +257,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    } else {
       ERROR(MSG_NOTYETIMPLEMENTED_S, "advance reservation modification");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    if (max_advance_reservations > 0 &&
@@ -285,8 +288,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
-                     nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0, nullptr);
    /*   AR_queue_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_mail_options, SGE_ULONG   */
@@ -296,8 +298,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    /*   AR_pe, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
-                     nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe_range, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_acl_list, SGE_LIST */
@@ -306,17 +307,19 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_type, SGE_ULONG     */
    attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
+   // AR_binding
+   attr_mod_obj_binding(alpp, new_ar, ar);
 
    /* try to reserve the queues */
    if (!ar_reserve_queues(alpp, new_ar, packet->gdi_session)) {
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    INFO(MSG_AR_GRANTED_U, ar_id);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(0);
 
-   ERROR:
+   AR_MOD_ERROR:
 DRETURN(STATUS_EUNKNOWN);
    DOITAGAIN:
 DRETURN(STATUS_NOTOK_DOAGAIN);
@@ -1019,7 +1022,6 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    const lListElem *cqueue = nullptr;
    bool ret = true;
    int i = 0;
-   lListElem *dummy_job = lCreateElem(JB_Type);
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -1036,6 +1038,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
 
    DENTER(TOP_LAYER);
 
+   lListElem *dummy_job = lCreateElem(JB_Type);
    if (lGetList(ar, AR_acl_list) != nullptr) {
       lSetString(dummy_job, JB_owner, "*");
       lSetString(dummy_job, JB_group, "*");
@@ -1183,7 +1186,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
    lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
    lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
-
+   lSetObject(dummy_job, JB_new_binding, lCopyElem(lGetObject(ar, AR_binding)));
 
    if (lGetString(ar, AR_pe)) {
       lSetString(dummy_job, JB_pe, lGetString(ar, AR_pe));
@@ -1227,6 +1230,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
          ar_do_reservation(ar, true, gdi_session);
       }
    }
+
 
    /* stop dreaming */
    sconf_set_qs_state(QS_STATE_FULL);
@@ -1708,12 +1712,17 @@ ar_initialize_resource_booking(lListElem *ar) {
    lListElem *global_host = lAddElemHost(&host_list, EH_name, SGE_GLOBAL_NAME, host_descr);
    const lListElem *master_global_host = lGetElemHost(master_exechost_list, EH_name, SGE_GLOBAL_NAME);
 
+   lList *granted_resources_list = nullptr;
    bool is_master_queue = true;
    const char *last_hostname = nullptr;
    for_each_ep(gep, gdil) {
       const char *queue_name = lGetString(gep, JG_qname);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
       const char *host_name = lGetHost(gep, JG_qhostname);
+
+      // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
+      const lList *binding_to_use_list = lGetList(gep, JG_binding_to_use);
+      ocs::GrantedResources::add_binding_touse(&granted_resources_list, host_name, binding_to_use_list);
 
       // create queue with slot booking
       lListElem *queue = lAddElemStr(&queue_list, QU_full_name, queue_name, queue_descr);
@@ -1838,6 +1847,7 @@ ar_initialize_resource_booking(lListElem *ar) {
 
    lSetList(ar, AR_reserved_queues, queue_list);
    lSetList(ar, AR_reserved_hosts, host_list);
+   lSetList(ar, AR_granted_resources_list, granted_resources_list);
 
    sge_free(&queue_descr);
    sge_free(&host_descr);

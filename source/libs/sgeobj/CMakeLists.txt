@@ -66,7 +66,9 @@ set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
       config.cc
       cull_parse_util.cc
+      ocs_AdvanceReservation.cc
       ocs_Binding.cc
+      ocs_BindingObj.cc
       ocs_BindingIo.cc
       ocs_BindingStart.cc
       ocs_BindingEnd.cc
@@ -77,6 +79,7 @@ set(LIBRARY_SOURCES
       ocs_BindingExecd2Shepherd.cc
       ocs_Category.cc
       ocs_DataStore.cc
+      ocs_GrantedResources.cc
       ocs_Job.cc
       ocs_Session.cc
       ocs_ShareTree.cc

@@ -63,7 +63,8 @@ ___INFO__MARK_END__-->
             <xs:element name="message" type="xs:string" minOccurs="0"/>
 
             <xs:element name="resource_list" type="resource_list_t"/>
-            <xs:element name="granted_slots" type="granted_slots_list_t"/>
+            <xs:element name="exec_binding" type="exec_binding_list_t"/>
+            <xs:element name="exec_queue" type="exec_queue_list_t"/>
             <xs:element name="granted_parallel_environment" type="granted_pe_t" minOccurs="0"/>
             <xs:element name="checkpoint_name" type="xs:string" minOccurs="0"/>
 
@@ -88,15 +89,30 @@ ___INFO__MARK_END__-->
         <xs:attribute name="type" type="xs:string" use="required"/>
     </xs:complexType>
 
-    <xs:complexType name="granted_slots_list_t">
+    <xs:complexType name="exec_binding_list_t">
         <xs:sequence>
-            <xs:element name="granted_slots_list" type="granted_slots_t" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="exec_binding_list" type="exec_binding_t" minOccurs="1" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="granted_slots_t">
-        <xs:attribute name="queue_instance" type="xs:string" use="required"/>
-        <xs:attribute name="slots" type="xs:unsignedInt" use="required"/>
+    <xs:complexType name="exec_queue_list_t">
+        <xs:sequence>
+            <xs:element name="exec_queue_list" type="exec_queue_t" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="exec_binding_t">
+        <xs:sequence>
+            <xs:element name="exec_host" type="xs:string" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="binding" type="xs:string" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="exec_queue_t">
+        <xs:sequence>
+            <xs:element name="queue_instance" type="xs:string" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="slots" type="xs:unsignedInt" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
     </xs:complexType>
 
     <xs:complexType name="granted_pe_t">

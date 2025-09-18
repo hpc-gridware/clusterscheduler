@@ -113,7 +113,7 @@ LISTDEF(JG_Type)
    SGE_DOUBLE(JG_jcoticket, CULL_DEFAULT)
    SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT)
    SGE_STRING(JG_processors, CULL_DEFAULT)
-   SGE_LIST(JG_binding_to_use, ST_Type, CULL_DEFAULT)
+   SGE_LIST(JG_binding_to_use, ST_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(JGN)

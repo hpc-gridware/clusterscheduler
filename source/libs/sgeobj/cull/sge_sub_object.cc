@@ -634,6 +634,12 @@ object_get_subtype(int nm)
       case AR_joker:
          ret = VA_Type;
          break;
+      case AR_granted_resources_list:
+         ret = GRU_Type;
+         break;
+      case AR_binding:
+         ret = BN_Type;
+         break;
       case EVR_event_list:
          ret = ET_Type;
          break;

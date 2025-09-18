@@ -410,5 +410,29 @@
 			"subClassName": "Variable",
 			"subCullPrefix": "VA",
 			"flags":	[{ "name":  "SPOOL" }]
+		}, {
+			"name":	"granted_resources_list",
+			"summary":	"Granted Resources",
+			"description":	[{
+				"line":	"List of granted resources, currently these are granted bindings only."
+			}],
+			"type":	"lListT",
+			"subClassName":	"GrantedResource",
+			"subCullPrefix": "GRU",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
+		}, {
+			"name":	"binding",
+			"summary":	"Binding Strategy",
+			"description":	[{
+				"line":	"Binding strategy for the advance reservation"
+			}],
+			"type":	"lObjectT",
+			"subClassName":	"BN",
+			"subCullPrefix":	"BN",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
 		}]
 }

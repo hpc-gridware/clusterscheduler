@@ -157,7 +157,47 @@ const spool_flatfile_instr qconf_name_value_list_sfi =
    }
 };
 
-const spool_flatfile_instr qconf_sub_name_value_comma_sfi = 
+const spool_flatfile_instr qconf_sub_name_list_sfi =
+{
+   nullptr,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   true,
+   false,
+   '\0',
+   '%',
+   ':',
+   '\0',
+   '\0',
+   nullptr,
+   { NoName, NoName, NoName }
+};
+
+const spool_flatfile_instr qconf_sub_sub_name_value_comma_sfi =
+{
+   nullptr,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   true,
+   false,
+   '\0',
+   '%',
+   ':',
+   '{',
+   '}',
+   nullptr,
+   { NoName, NoName, NoName }
+};
+
+const spool_flatfile_instr qconf_sub_name_value_comma_sfi =
 {
    nullptr,
    false,

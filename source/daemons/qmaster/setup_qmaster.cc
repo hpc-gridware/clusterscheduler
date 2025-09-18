@@ -933,6 +933,14 @@ setup_qmaster() {
       }
    }
 
+   // ensure that all exec hosts have defined slots
+   lListElem *ehost;
+   for_each_rw(ehost, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
+      u_long32 processors = lGetUlong(ehost, EH_processors);
+
+      host_ensure_slots_are_defined(ehost, processors);
+   }
+
    DPRINTF("manager_list----------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER), SGE_TYPE_MANAGER);
    answer_list_output(&answer_list);
@@ -1068,6 +1076,8 @@ setup_qmaster() {
    DPRINTF("advance reservation list -----------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
+
+//   lWriteListTo(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), stderr);
 
    /* initialize cached advance reservations structures */
    {

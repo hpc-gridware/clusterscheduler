@@ -68,3 +68,6 @@ void normalize_sublist(lListElem *ep, int nm);
 bool attr_mod_sub_list(lList **alpp, lListElem *this_elem, int this_elem_name, int this_elem_primary_key,
                        const lListElem *delta_elem, ocs::gdi::Command::Cmd, ocs::gdi::SubCommand::SubCmd sub_command,
                        const char *sub_list_name, const char *object_name, int no_info, bool *changed);
+
+bool
+attr_mod_obj_binding(lList **alpp, lListElem *this_elem, const lListElem *delta_elem);

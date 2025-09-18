@@ -1367,8 +1367,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
 
          if (centry == nullptr) {
             ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
-            answer_list_add(alpp, SGE_EVENT, 
-                            STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
             break;
          } else {
@@ -1384,6 +1383,39 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
       }
    }
    DRETURN(ret);
+}
+
+/** @brief Adds the slot complex to the complex values makes the m_thread amount its value
+ *
+ * @param ehost Host object
+ * @param load_list List of load values
+ * returns error status or 0 on success
+ */
+int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
+   DENTER(TOP_LAYER);
+
+   // Input argument incorrect
+   if (ehost == nullptr) {
+      DRETURN(STATUS_EUNKNOWN);
+   }
+
+   // Complex is already there.
+   const lListElem *slots_complex = lGetSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list);
+   if (slots_complex != nullptr) {
+      DPRINTF("slots complex is already there\n");
+      return 0;
+   }
+
+   if (processors == 0) {
+      processors = std::numeric_limits<int>::max();
+   }
+
+   // Add the slot complex and use the given processors as value
+   lListElem *new_entry = lAddSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list, CE_Type);
+   lSetString(new_entry, CE_stringval, std::to_string(processors).c_str());
+   lSetDouble(new_entry, CE_doubleval, processors);
+
+   DRETURN(0);
 }
 
 /****** sge_centry/validate_load_formula() ********************

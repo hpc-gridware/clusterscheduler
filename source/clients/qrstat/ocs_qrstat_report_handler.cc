@@ -33,9 +33,13 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
+#include <string>
 
 #include "uti/sge_rmon_macros.h"
 
+#include "sgeobj/ocs_BindingIo.h"
+#include "sgeobj/ocs_TopologyString.h"
+#include "sgeobj/ocs_GrantedResources.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
@@ -46,6 +50,8 @@
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/cull_parse_util.h"
+#include "sgeobj/sge_str.h"
+
 
 #include "basis_types.h"
 #include "ocs_qrstat_report_handler.h"
@@ -98,6 +104,12 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                handler->report_ar_node_string(handler, answer_list, "group", lGetString(ar, AR_group));
                handler->report_ar_node_string(handler, answer_list, "account", lGetString(ar, AR_account));
 
+               if (const lListElem *binding = lGetObject(ar, AR_binding); binding != nullptr) {
+                  std::string binding_string;
+                  ocs::BindingIo::binding_print_to_string(binding, binding_string, false);
+                  handler->report_ar_node_string(handler, answer_list, "binding", binding_string.c_str());
+               }
+
                if (lGetList(ar, AR_resource_list) != nullptr) {
                   const lListElem *resource = nullptr;
 
@@ -122,17 +134,37 @@ qrstat_print(lList **answer_list, qrstat_report_handler_t *handler, qrstat_env_t
                if (lGetUlong(ar, AR_error_handling) != 0) {
                   handler->report_ar_node_boolean(handler, answer_list, "error_handling", true);
                }
-               
+
+               if (lGetList(ar, AR_granted_resources_list) != nullptr) {
+                  handler->report_start_exec_binding_list(handler, answer_list);
+                  const lListElem *resource = nullptr;
+
+                  for_each_ep(resource, lGetList(ar, AR_granted_resources_list)) {
+                     const char *hostname = lGetHost(resource, GRU_host);
+                     const lListElem *binding_str = nullptr;
+                     for_each_ep(binding_str, lGetList(resource, GRU_binding_inuse)) {
+                        ocs::TopologyString binding;
+                        const char *binding_touse = lGetString(binding_str, ST_name);
+                        if (binding_touse != nullptr) {
+                           binding.reset_topology(binding_touse);
+                        }
+
+                        handler->report_exec_binding_list_node(handler, answer_list, hostname, binding.to_product_topology_string().c_str());
+                     }
+                  }
+                  handler->report_finish_exec_binding_list(handler, answer_list);
+               }
+
                if (lGetList(ar, AR_granted_slots) != nullptr) {
                   const lListElem *resource = nullptr;
 
-                  handler->report_start_granted_slots_list(handler, answer_list);
+                  handler->report_start_exec_queue_list(handler, answer_list);
                   for_each_ep(resource, lGetList(ar, AR_granted_slots)) {
-                     handler->report_granted_slots_list_node(handler, answer_list,
-                                                             lGetString(resource, JG_qname),
-                                                             lGetUlong(resource, JG_slots));
+                     handler->report_exec_queue_list_node(handler, answer_list,
+                                                         lGetString(resource, JG_qname),
+                                                          lGetUlong(resource, JG_slots));
                   }
-                  handler->report_finish_granted_slots_list(handler, answer_list);
+                  handler->report_finish_exec_queue_list(handler, answer_list);
                }
                if (lGetString(ar, AR_pe) != nullptr) {
                   dstring pe_range_string = DSTRING_INIT;

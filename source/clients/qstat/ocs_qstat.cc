@@ -2210,7 +2210,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             /* global schduling info */
             for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
                if (first_run) {
-                  printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+                  printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                   first_run = 0;
                } else {
                   printf("%s", "                                ");
@@ -2225,7 +2225,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
                for_each_ep(mes_jid, lGetList(mes, MES_job_number_list)) {
                   if (lGetUlong(mes_jid, ULNG_value) == jid) {
                      if (first_run) {
-                        printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+                        printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                         first_run = 0;
                      } else {
                         printf("%s", "                                ");
@@ -2289,7 +2289,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
          first_run = 1;
          for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
             if (first_run) {
-               printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+               printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                first_run = 0;
             }
             else

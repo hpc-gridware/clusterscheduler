@@ -386,7 +386,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       // @todo CS-731: DONE: add binding_inuse information to the start element
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
-         if (prev != nullptr) {
+         if (binding_prev != nullptr) {
             topo_binding_now.reset_topology(binding_prev);
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused(start, RDE_binding_inuse, topo_binding_now,

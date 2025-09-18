@@ -128,6 +128,8 @@
 #define SGE_ATTR_S_RSS                 "s_rss"
 #define SGE_ATTR_H_VMEM                "h_vmem"
 #define SGE_ATTR_S_VMEM                "s_vmem"
+#define SGE_ATTR_M_THREAD              "m_thread"
+#define SGE_ATTR_M_CORE                "m_core"
 
 /* attribute values for certain object attributes */
 #define SGE_ATTRVAL_MIN                "min"

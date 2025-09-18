@@ -1484,6 +1484,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
       DPRINTF("got new %s\n", attr_name);
 
+      // ensure that slots-attribute is part of the list
+      if (host_ensure_slots_are_defined(ep, lGetUlong(new_ep, EH_processors))) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+
       /* check if corresponding complex attributes exist */
       if (ensure_attrib_available(alpp, ep, EH_consumable_config_list, master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
