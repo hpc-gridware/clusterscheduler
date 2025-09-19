@@ -291,7 +291,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    }
 
    // CS-731: add the granted binding
-#if 1
+#if 0
    DPRINTF("add_granted_resource_list: after adding binding information\n");
    lWriteElemTo(ja_task, stderr);
 #endif

@@ -1520,7 +1520,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
          // initialize booking
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
+         debit_host_consumable(nullptr, nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
 
          // do the resource booking
          for_each_rw (jep, master_job_list) {
@@ -1532,6 +1532,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                bool is_master_task = false;
                const void *iterator = nullptr;
                const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+               const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
 
                if (global_host || (lFirst(gdil) == lGetElemHostFirst(gdil, JG_qhostname, host, &iterator))) {
                   is_master_task = true;
@@ -1541,7 +1542,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
                if (slots > 0) {
                   // do_per_host_booking is true, we book on one host once
-                  debit_host_consumable(jep, jatep, pe, tmp_elem, master_centry_list, slots, is_master_task, true, nullptr);
+                  debit_host_consumable(jep, jatep, granted_resources_list, pe, tmp_elem, master_centry_list, slots, is_master_task, true, nullptr);
                }
             }
          }

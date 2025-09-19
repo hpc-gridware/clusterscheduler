@@ -1842,12 +1842,12 @@ ar_initialize_resource_booking(lListElem *ar) {
    for_each_rw(host, host_list) {
       // make sure all complex attributes are properly filled in
       centry_list_fill_config(lGetListRW(host, EH_consumable_config_list), master_centry_list);
-      debit_host_consumable(nullptr, nullptr, nullptr, host, master_centry_list, 0, true, true, nullptr);
+      debit_host_consumable(nullptr, nullptr, granted_resources_list, nullptr, host, master_centry_list, 0, true, true, nullptr);
    }
 
+   lSetList(ar, AR_granted_resources_list, granted_resources_list);
    lSetList(ar, AR_reserved_queues, queue_list);
    lSetList(ar, AR_reserved_hosts, host_list);
-   lSetList(ar, AR_granted_resources_list, granted_resources_list);
 
    sge_free(&queue_descr);
    sge_free(&host_descr);

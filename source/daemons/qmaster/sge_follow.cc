@@ -537,6 +537,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             const char *host_name = nullptr;
             lListElem *gdil_ep;
             lListElem *next_gdil_ep = lFirstRW(gdil);
+            const lList *granted_resources_list = lGetList(jatp, JAT_granted_resources_list);
 
             /* loop over gdil */
             host_name = lGetHost(next_gdil_ep, JG_qhostname);
@@ -567,7 +568,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                next_gdil_ep = lNextRW(gdil_ep);
                if (next_gdil_ep == nullptr || strcmp(host_name, lGetHost(next_gdil_ep, JG_qhostname)) != 0) {
                   hep = host_list_locate(exec_host_list, host_name);
-                  debit_host_consumable(jep, jatp, pe, hep, master_centry_list, host_slots, is_master,
+                  debit_host_consumable(jep, jatp, granted_resources_list, pe, hep, master_centry_list, host_slots, is_master,
                                         do_per_host_booking,
                                         &consumables_ok);
                   if (!consumables_ok) {
@@ -592,7 +593,7 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             /* Per host checks were OK? Then check global host. */
             if (consumables_ok) {
                lListElem *global_hep = host_list_locate(exec_host_list, SGE_GLOBAL_NAME);
-               debit_host_consumable(jep, jatp, pe, global_hep, master_centry_list, total_slots, true, true,
+               debit_host_consumable(jep, jatp, granted_resources_list, pe, global_hep, master_centry_list, total_slots, true, true,
                                      &consumables_ok);
             }
 

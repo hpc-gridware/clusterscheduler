@@ -737,15 +737,14 @@ ja_task_debit_host_rsmap(const lListElem *granted_resource, lListElem *host, int
  * @param just_check if != nullptr then do not do booking but just check if the job would fit on the resources and return the result here
  * @return the number of modifications done
  */
-int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slots, bool *just_check) {
+int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);
-   const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
    const void *iterator;
 
-   for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
+   for (auto granted_resource = lGetElemHostFirst(granted_resources_list, GRU_host, host_name, &iterator);
         granted_resource != nullptr;
-        granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
+        granted_resource = lGetElemHostNext(granted_resources_list, GRU_host, host_name, &iterator)) {
 
       // only debit RSMAPs here
       if (lGetUlong(granted_resource, GRU_type) != GRU_RESOURCE_MAP_TYPE) {
@@ -778,14 +777,13 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
 }
 
 // @todo CS-731: DONE: debit bindings
-int ja_task_debit_host_bindings(const lListElem *ja_task, lListElem *host, int slots, bool *just_check) {
+int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);
-   const lList *granted_resources = lGetList(ja_task, JAT_granted_resources_list);
    const void *iterator;
-   for (auto granted_resource = lGetElemHostFirst(granted_resources, GRU_host, host_name, &iterator);
+   for (auto granted_resource = lGetElemHostFirst(granted_resources_list, GRU_host, host_name, &iterator);
         granted_resource != nullptr;
-        granted_resource = lGetElemHostNext(granted_resources, GRU_host, host_name, &iterator)) {
+        granted_resource = lGetElemHostNext(granted_resources_list, GRU_host, host_name, &iterator)) {
 
       // only debit binding information here
       if (lGetUlong(granted_resource, GRU_type) != GRU_BINDING_TYPE) {

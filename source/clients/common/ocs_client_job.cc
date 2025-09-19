@@ -295,7 +295,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_resource_list:", str_scope);
             }
-            printf("%-32s", str_attrib);
+            printf("%-33s", str_attrib);
             sge_show_ce_type_list(lp);
             printf("\n");
          }
@@ -307,7 +307,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_resource_list:", str_scope);
             }
-            printf("%-32s", str_attrib);
+            printf("%-33s", str_attrib);
             sge_show_ce_type_list(lp);
             printf("\n");
          }
@@ -321,7 +321,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_queue_list:", str_scope);
             }
-            printf("%-32s", str_attrib);
+            printf("%-33s", str_attrib);
             uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
          }
 
@@ -334,7 +334,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_queue_list:", str_scope);
             }
-            printf("%-32s", str_attrib);
+            printf("%-33s", str_attrib);
             uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
          }
       }

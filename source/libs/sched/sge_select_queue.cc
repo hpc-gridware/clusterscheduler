@@ -248,49 +248,110 @@ static int
 load_np_value_adjustment(const char* name, lListElem *hep, double *load_correction);
 
 bool
-host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_in_use) {
+find_initial_binding_in_use(lListElem *ar, const lListElem *host, ocs::TopologyString &host_in_use) {
    DENTER(TOP_LAYER);
 
-   // Argument missing
+   // Argument missing - ar is optional
    if (host == nullptr) {
       DRETURN(false);
    }
 
-   // Check if the host has a resource utilization element that contains the binding in use
-   bool found_utilization = false;
-   ocs::TopologyString topology_in_use;
-   const lListElem *utilization_slots = lGetSubStr(host, RUE_name, SGE_ATTR_SLOTS, EH_resource_utilization);
-   if (utilization_slots != nullptr) {
-      const char *src = lGetString(utilization_slots, RUE_utilized_now_binding_inuse);
-      if (src != nullptr) {
-         topology_in_use.reset_topology(src);
-         found_utilization = true;
-         //DPRINTF("Host's %s binding utilization is: %s\n", lGetHost(host, EH_name), topology_in_use.to_product_topology_string().c_str());
-      } else {
-         //DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
-      }
+   bool in_reservation_mode = !host_in_use.is_empty();
+
+   // multiple things come together in this function
+   // - reservation or now scheduling
+   // - scheduling within an AR or not
+   // - initialize and uninitialized utilized_now_binding
+   // independent of that we try to find out what is currently in use on the host for the specific scanrio
+
+   bool found_now_utilization = false;
+
+   // If we have no binding utilization from a resource schedule as input, then we will try to find
+   // the utilization from the host itself. This might still be uninitialized.
+   if (in_reservation_mode) {
+      DPRINTF("Host's %s reservation binding util. is:  %s\n", lGetHost(host, EH_name), host_in_use.to_product_topology_string().c_str());
    } else {
-      //DPRINTF("Host %s has still no binding utilization\n", lGetHost(host, EH_name));
+      const lListElem *utilization_slots = lGetSubStr(host, RUE_name, SGE_ATTR_SLOTS, EH_resource_utilization);
+      if (utilization_slots != nullptr) {
+         const char *src = lGetString(utilization_slots, RUE_utilized_now_binding_inuse);
+         if (src != nullptr) {
+            host_in_use.reset_topology(src);
+            found_now_utilization = true;
+            DPRINTF("Host's %s binding now utilization is:    %s\n", lGetHost(host, EH_name), host_in_use.to_product_topology_string().c_str());
+         } else {
+            DPRINTF("Host %s has still no binding now utilization\n", lGetHost(host, EH_name));
+         }
+      } else {
+         DPRINTF("Host %s has still no binding now utilization\n", lGetHost(host, EH_name));
+      }
    }
 
-   // If nothing is in use so far, then start with the internal topology string from the host
-   if (!found_utilization) {
+   // now assigment + now utilization not initialized + no AR scheduling: use the topology string as starting point for binding
+   if (!in_reservation_mode && !found_now_utilization) {
       const char *internal_topo = lGetString(host, EH_internal_topology);
       if (internal_topo != nullptr) {
-         topology_in_use.reset_topology(internal_topo);
-         found_utilization = true;
-         //DPRINTF("Using internal topology string as starting point for host %s: %s\n", lGetHost(host, EH_name), topology_in_use.to_product_topology_string().c_str());
+         host_in_use.reset_topology(internal_topo);
+         found_now_utilization = true;
+         DPRINTF("Internal topology of host %s:            %s\n", lGetHost(host, EH_name), host_in_use.to_product_topology_string().c_str());
       }
    }
 
-   // Still nothing found? Then binding cannot be applied
-   if (!found_utilization) {
-      //DPRINTF("Host %s does not provide binding information - cannot be used for binding\n", lGetHost(host, EH_name));
-      DRETURN(false);
+   // For non-AR scheduling we are done
+   if (ar == nullptr) {
+      if (found_now_utilization) {
+         DRETURN(true);
+      } else {
+         DPRINTF("Host %s has no initial now utilization (should not be possible)\n", lGetHost(host, EH_name));
+         DRETURN(false);
+      }
    }
 
-   // Copy the topology string to the output buffer
-   host_topo_in_use.reset_topology(topology_in_use.to_string(true, true, true, false, false, false));
+   // For AR scheduling we have to mask those parts of the topology that where not granted to the AR
+   // this is independent of reservation or now scheduling
+   ocs::TopologyString ar_in_use;
+   const char *hostname = lGetHost(host, EH_name);
+   const lListElem *granted_resource;
+   bool first_entry = true;
+   for_each_ep(granted_resource, lGetList(ar, AR_granted_resources_list)) {
+      // skip resources that do not contain binding information
+      if (lGetUlong(granted_resource, GRU_type) != GRU_BINDING_TYPE) {
+         continue;
+      }
+      // skip resources that do not belong to the host
+      if (sge_hostcmp(hostname, lGetHost(granted_resource, GRU_host)) != 0) {
+         continue;
+      }
+
+      // accumulate binding information of the AR
+      const lListElem *binding_in_use_elem;
+      for_each_ep(binding_in_use_elem, lGetList(granted_resource, GRU_binding_inuse)) {
+         const char *bind_str = lGetString(binding_in_use_elem, ST_name);
+         if (bind_str != nullptr) {
+            if (first_entry) {
+               ar_in_use.reset_topology(bind_str);
+               first_entry = false;
+            } else {
+               ocs::TopologyString binding_to_add(bind_str);
+               ar_in_use.mark_nodes_as_used_or_unused(binding_to_add, true);
+            }
+            found_now_utilization = true;
+         }
+      }
+   }
+   DPRINTF("Granted binding for AR on %s:            %s\n", lGetHost(host, EH_name), ar_in_use.to_product_topology_string().c_str());
+
+   // Invert the binding string. The AR binds what can be used by jobs.
+   ar_in_use.invert_binding();
+   DPRINTF("Inverted granted binding for AR on %s:   %s\n", lGetHost(host, EH_name), ar_in_use.to_product_topology_string().c_str());
+
+   // Remove the non-granted parts from the binding mask
+   if (found_now_utilization) {
+      host_in_use.mark_nodes_as_used_or_unused(ar_in_use, true);
+   } else {
+      host_in_use.reset_topology(ar_in_use.to_string(true, true, true, false, false, false));
+   }
+   DPRINTF("Final binding used for AR scheduling %s: %s\n", lGetHost(host, EH_name), host_in_use.to_product_topology_string().c_str());
+
    DRETURN(true);
 }
 
@@ -371,7 +432,7 @@ max_binding_idleness(const sge_assignment_t *a, const lListElem *host, double sl
 }
 
 static int
-find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::TopologyString& binding_inuse) {
+find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::TopologyString& topo_in_use) {
    DENTER(TOP_LAYER);
 
    // @todo CS-732: handle finding for jobs and in future also ARs
@@ -379,6 +440,10 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::Topolog
    // we have no binding request, are in qselect-mode, or we are handling an AR
    if (a == nullptr || host == nullptr || a->job == nullptr || lGetObject(a->job, JB_new_binding) == nullptr) {
       DRETURN(slots);
+   }
+
+   if (a->ar_id) {
+      DPRINTF("find_binding: AR in assignment is " sge_u32 "\n", a->ar_id);
    }
 
 #ifdef WITH_EXTENSIONS
@@ -400,22 +465,11 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::Topolog
    std::string binding_sort = ocs::Job::binding_get_sort(a->job);
    unsigned binding_amount = ocs::Job::binding_get_amount(a->job);
 
-   // find current binding on that host
+   // find current binding on that host.
    const char *hostname = lGetHost(host, EH_name);
-   ocs::TopologyString topo_in_use;
-   if (binding_inuse.is_empty()) {
-      bool ret = host_get_topology_in_use(host, topo_in_use);
-      if (!ret) {
-         DPRINTF("find_binding: failed to find current binding of host %s\n", hostname);
-         DRETURN(0);
-      }
-      DPRINTF("find_binding: current binding of host %s is %s\n", hostname, binding_inuse.to_product_topology_string().c_str());
-   } else {
-      DPRINTF("find_binding: reservation schedules's binding of host %s is %s\n", hostname , binding_inuse.to_product_topology_string().c_str());
-      topo_in_use.reset_topology(binding_inuse.to_string(true, true, true, false, false, false));
-   }
+   find_initial_binding_in_use(a->ar, host, topo_in_use);
 
-   // distinguish between host and slot based binding
+   // distinguish between host and slot-based binding
    if (binding_type == ocs::BindingType::HOST) {
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
 
@@ -459,7 +513,6 @@ find_binding(sge_assignment_t *a, int slots, const lListElem *host, ocs::Topolog
       DRETURN(slots);
 
    } else if (binding_type == ocs::BindingType::SLOT) {
-      const char *hostname = lGetHost(host, EH_name);
       lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
       u_long32 next_binding_id_for_task = 0;
 
@@ -7288,6 +7341,8 @@ sge_ar_swap_resource_lists(sge_assignment_t &a) {
    DENTER(TOP_LAYER);
 
    if (a.ar != nullptr) {
+      DPRINTF("SWAP RESOURCE LIST FOR AR %d\n", a.ar_id);
+
       // swap host resources
       lListElem *host;
       for_each_rw(host, lGetList(a.ar, AR_reserved_hosts)) {

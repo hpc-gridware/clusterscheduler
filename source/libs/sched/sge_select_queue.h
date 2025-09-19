@@ -235,6 +235,3 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
 
 double
 max_binding_idleness(const sge_assignment_t *a, const lListElem *host, double slots, const ocs::TopologyString &binding_in_use);
-
-bool
-host_get_topology_in_use(const lListElem *host, ocs::TopologyString &host_topo_in_use);

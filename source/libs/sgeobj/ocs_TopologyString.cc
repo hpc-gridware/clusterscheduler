@@ -1018,4 +1018,30 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
    DRETURN_VOID;
 }
 
+void ocs::TopologyString::invert_binding() {
+   DENTER(TOP_LAYER);
+
+   // Recursively invert the case of each node character in the tree
+   std::function<void(std::vector<Node>&)> invert_nodes = [&](std::vector<Node>& list) {
+      for (auto& n : list) {
+         if (std::islower(static_cast<unsigned char>(n.c))) {
+            n.c = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+         } else {
+            n.c = static_cast<char>(std::tolower(static_cast<unsigned char>(n.c)));
+         }
+         if (!n.nodes.empty()) {
+            invert_nodes(n.nodes);
+         }
+      }
+   };
+
+   invert_nodes(nodes);
+   correct_topology_upper_lower();
+
+   // Rebuild tree
+   parse_to_tree(to_string(true, true, true, false, false, false));
+
+   DRETURN_VOID;
+}
+
 

@@ -93,6 +93,7 @@ namespace ocs {
 
       [[nodiscard]] std::vector<int> find_n_packed_units(unsigned bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingEnd::End end) const;
       void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used);
+      void invert_binding();
 
       bool is_empty();
    };
