@@ -221,9 +221,10 @@ static std::string usage_patterns;
 // Binding specific parameters
 static bool is_binding_enabled = true;
 static bool do_implicit_binding = true;
-static bool do_binding_on_all_hosts = true;
+static bool schedule_on_any_host = true;
 static binding_mode_t binding_mode = BINDING_MODE_DEFAULT;
 static ocs::BindingUnit::Unit default_binding_unit = ocs::BindingUnit::CCORE;
+static std::string binding_filter = NONE_STR;
 
 /* generally simulate all execd's */
 static bool simulate_execds = false;
@@ -1194,7 +1195,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "implicit", &do_implicit_binding)) {
             continue;
          }
-         if (parse_bool_param(s, "on_all_hosts", &do_binding_on_all_hosts)) {
+         if (parse_bool_param(s, "on_any_host", &schedule_on_any_host)) {
             continue;
          }
          std::string binding_mode_str;
@@ -1220,6 +1221,16 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "binding_params", "default_unit", -1);
                default_binding_unit = ocs::BindingUnit::CCORE;
+               continue;
+            }
+
+            continue;
+         }
+         if (parse_string_param(s, "filter", binding_filter)) {
+            if (binding_filter != NONE_STR && binding_filter != FIRST_CORE) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "binding_params", "filter", -1);
+               binding_filter = NONE_STR;
                continue;
             }
 
@@ -2992,6 +3003,14 @@ bool mconf_do_implicit_binding() {
    DRETURN(ret);
 }
 
+bool mconf_schedule_on_any_host() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = schedule_on_any_host;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
 binding_mode_t mconf_get_binding_mode() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -3004,6 +3023,14 @@ ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ocs::BindingUnit::Unit ret = default_binding_unit;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::string mconf_get_binding_filter() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = binding_filter;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

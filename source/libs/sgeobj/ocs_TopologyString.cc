@@ -165,7 +165,7 @@ std::string ocs::TopologyString::to_product_topology_string() const {
       return to_string(true, false, false, false, false, false);
    }
 #endif
-   return to_string(false, true, false, false, false);
+   return to_string(false, false, false, false, false);
 }
 
 std::string ocs::TopologyString::to_unused_internal_topology_string() const {
@@ -559,6 +559,42 @@ ocs::TopologyString::find_first_unused_thread() const {
       return id;
    }
    return NO_POS;
+}
+
+// Return the ID of the first core in the topology tree.
+int
+ocs::TopologyString::find_first_core() const {
+   int id = NO_POS;
+
+   // Depth-first pre-order traversal to find the first core node (C/E in any case)
+   std::function<bool(const std::vector<Node>&)> find_core = [&](const std::vector<Node>& list) -> bool {
+      for (const auto& n : list) {
+         char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
+         if (up == 'C' || up == 'E') {
+            auto it = n.characteristics.find(ID_PREFIX);
+            if (it != n.characteristics.end()) {
+               try {
+                  id = std::stoi(it->second);
+               } catch (...) {
+                  id = NO_POS;
+               }
+            }
+            return true;
+         }
+         if (!n.nodes.empty()) {
+            if (find_core(n.nodes)) {
+               return true;
+            }
+         }
+      }
+      return false;
+   };
+
+   if (!nodes.empty()) {
+      find_core(nodes);
+   }
+
+   return id;
 }
 
 /** @brief marks the given node and all children as used

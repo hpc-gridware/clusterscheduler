@@ -31,6 +31,8 @@ namespace ocs {
       static void
       find_final_in_use(const sge_assignment_t *a, TopologyString &binding_in_use);
 
+      static bool
+      ignore_binding(const sge_assignment_t *a, const lListElem *host);
    public:
 
       static double

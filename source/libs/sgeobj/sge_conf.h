@@ -48,7 +48,7 @@
 
 #define PDC_DISABLED U_LONG64_MAX
 
-#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_all_hosts=false"
+#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_hosts=true,filter=NONE"
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
 
 typedef enum {
@@ -214,5 +214,7 @@ std::tuple<u_long32, bool, bool> mconf_get_monitoring_options();
 // getter for binding specific configuration parameters
 bool mconf_is_binding_enabled();
 bool mconf_do_implicit_binding();
+bool mconf_schedule_on_any_host();
+std::string mconf_get_binding_filter();
 binding_mode_t mconf_get_binding_mode();
 ocs::BindingUnit::Unit mconf_get_default_binding_unit();

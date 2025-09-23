@@ -378,23 +378,20 @@ void test_hwloc()
 *     void - nothing 
 *
 *******************************************************************************/
-void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology)
-{
-   int ms, mc, mt;
-   char* topo = nullptr;
-   int length = 0;
-
-   ms = get_execd_amount_of_sockets();
-   mc = get_execd_amount_of_cores();
-   mt = get_execd_amount_of_threads();
-   if (!get_execd_topology(&topo, &length) || topo == nullptr) {
-      topo = sge_strdup(nullptr, "-");
-   }
+void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology) {
+   int ms = get_execd_amount_of_sockets();
    sge_dstring_sprintf(msocket, "%d", ms);
+
+   int mc = get_execd_amount_of_cores();
    sge_dstring_sprintf(mcore, "%d", mc);
+
+   int mt = get_execd_amount_of_threads();
    sge_dstring_sprintf(mthread, "%d", mt);
-   sge_dstring_append(mtopology, topo);
-   sge_free(&topo);
+
+   std::string topology;
+   ocs::Topo::get_new_topology(topology, true);
+   ocs::TopologyString topology_string(topology);
+   sge_dstring_append(mtopology, topology_string.to_product_topology_string().c_str());
 }
 
 #endif

@@ -140,6 +140,7 @@ typedef struct {
    bool       is_soft;            /* true, if job has soft requests                 */
    u_long64   now;                /* now time for immediate jobs                    */
    bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
+   bool do_binding_on_any_hosts;  //< cached value of the corresponding configuration parameter
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
@@ -160,7 +161,7 @@ typedef struct {
 
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
-   false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
+   false, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);

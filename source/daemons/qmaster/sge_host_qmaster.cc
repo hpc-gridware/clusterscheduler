@@ -769,13 +769,19 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
       // Filter the information and only keep the topology string as load value
       // Store the full string in the host element
       if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
-
-         // The value reported in the user interface should not contain all information
-         // Strip attributes, structure and single threads
          ocs::TopologyString topology(value);
 
-         // Keep the original value in the host element
-         lSetString(*hepp, EH_internal_topology, value);
+         // The first core can be 'disabled' for binding globally
+         std::string global_binding_filter = mconf_get_binding_filter();
+         if (global_binding_filter == FIRST_CORE) {
+            int node_id = topology.find_first_core();
+            if (node_id != ocs::TopologyString::NO_POS) {
+               topology.mark_node_as_used_or_unused(node_id, true);
+            }
+         }
+
+         // Keep the original value in the host element and a product-specific version as load value
+         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
          lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
          value = lGetString(ep, LR_value);
       }

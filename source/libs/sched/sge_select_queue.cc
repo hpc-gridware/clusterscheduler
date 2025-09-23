@@ -293,7 +293,10 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lL
    }
 
    a->load_adjustments = load_adjustments;
+
+   // initialize binding specific cached values
    a->is_binding_enabled = mconf_is_binding_enabled();
+   a->do_binding_on_any_hosts = mconf_schedule_on_any_host();
 }
 
 /**

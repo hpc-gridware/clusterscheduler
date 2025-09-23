@@ -86,6 +86,8 @@ namespace ocs {
 
       bool find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const;
       [[nodiscard]] int find_first_unused_thread() const;
+      [[nodiscard]] int find_first_core() const;
+
       void mark_node_as_used_or_unused(int id, bool mark_used);
       void reset_topology(const std::string &topology);
 

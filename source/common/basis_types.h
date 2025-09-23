@@ -68,6 +68,8 @@
 
 #define NONE_STR  "NONE"
 
+#define FIRST_CORE "first_core"
+
 #if defined(TARGET_64BIT)
 #  define SGE_STRTOU_LONG32(S) strtoul(S, nullptr, 10)
 #else

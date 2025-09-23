@@ -31,7 +31,9 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_str.h"
 
-#include "ocs_BindingSchedd.h"
+#include "../../libs/sched/ocs_BindingSchedd.h"
+
+#include "sgeobj/sge_conf.h"
 
 /** @brief Find the binding in use (either now, reservation, within AR or for reservation within AR
  */
@@ -148,6 +150,7 @@ ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString 
    std::string binding_filter = Job::binding_get_filter(a->job);
    std::string binding_sort = Job::binding_get_sort(a->job);
 
+
    // @todo CS-732: Here we should remove all threads that are masked by an admin manually
    // e.g binding_params or m_topology set in complex values
 
@@ -163,6 +166,37 @@ ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString 
    DRETURN_VOID;
 }
 
+/** @brief Returns true if binding checks and binding should not be done
+ *
+ * Binding is disabled if:
+ *    - binding is disabled in the assignment structure (binding params of the configuration)
+ *    - binding code would be called on other places than on host level
+ *    - job is not requesting binding
+ *    - job is requesting binding, but host does not provide binding information
+ *      and configuration allows to schedule binding jobs to such hosts
+ *
+ * @params a     Assignment data structure
+ * @params host  Object where binding should be checked
+ * @returns      true if a binding request can be ignored
+ */
+bool
+ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const lListElem *host) {
+   DENTER(TOP_LAYER);
+
+   if (a == nullptr || !a->is_binding_enabled
+      || host == nullptr
+      || a->job == nullptr || lGetObject(a->job, JB_new_binding) == nullptr) {
+      DRETURN(true);
+   }
+
+   // We have a binding request + host does not report topology + admin wants to allow binding job on such hosts
+   if (a->do_binding_on_any_hosts && lGetString(host, EH_internal_topology) == nullptr) {
+      DRETURN(true);
+   }
+
+   DRETURN(false);
+}
+
 // @brief Tries a binding for `slots` and returns the number of slots where a binding could be found
 double
 ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use) {
@@ -176,13 +210,8 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
       DPRINTF("max_binding_idleness: try to find binding for requested %f slots with binding %s\n", slots, binding_in_use.to_product_topology_string().c_str());
    }
 
-   // We return as if we can handle all slots if:
-   // - binding is disabled.
-   // - in case this method should be called not on host-level
-   // - the job has no binding requests.
-   if (a == nullptr || !a->is_binding_enabled
-      || host == nullptr
-      || a->job == nullptr || lGetObject(a->job, JB_new_binding) == nullptr) {
+   // We can handle all slots (with respect to binding) if binding can or has to be ignored
+   if (ignore_binding(a, host)) {
       DRETURN(slots);
    }
 
@@ -234,19 +263,15 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    DRETURN(0.0);
 }
 
+
 /** @brief Apply the binding strategy and store the decision in the assignment structure
  */
 int
 ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListElem *host, TopologyString& topo_in_use) {
    DENTER(TOP_LAYER);
 
-   // We return as if we can handle all slots if:
-   // - binding is disabled.
-   // - in case this method should be called not on host-level
-   // - the job has no binding requests.
-   if (a == nullptr || !a->is_binding_enabled
-      || host == nullptr
-      || a->job == nullptr || lGetObject(a->job, JB_new_binding) == nullptr) {
+   // We can handle all slots (with respect to binding) if binding can or has to be ignored
+   if (ignore_binding(a, host)) {
       DRETURN(slots);
    }
 
@@ -361,7 +386,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
       DRETURN(max_slots);
    } else {
-      // binding type not supported
+      // binding type isn't supported
       DRETURN(0);
    }
 
