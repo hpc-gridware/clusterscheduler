@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -149,16 +149,22 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         endif ()
 
         if (WITH_OPENSSL)
-            message(STATUS "adding 3rdparty openssl")
-            if (WITH_OS_3RDPARTY)
-                if (EXISTS "/usr/include/openssl")
-                    add_compile_definitions("SECURE")
-                    add_compile_definitions("LOAD_OPENSSL")
+            # for openssl we rely on the OS packages only
+            if (EXISTS "/usr/include/openssl" OR EXISTS "/usr/include/openssl3")
+                # this is the old CSP mode
+                #add_compile_definitions("SECURE")
+                #add_compile_definitions("LOAD_OPENSSL")
+                add_compile_definitions("OCS_WITH_OPENSSL")
+                if (EXISTS "/usr/include/openssl3")
+                    # e.g., Rocky-8 with openssl-3.x.x installed
+                    # add_compile_definitions("OCS_WITH_OPENSSL3_HEADERS")
+                    include_directories(BEFORE SYSTEM "/usr/include/openssl3")
                 else()
-                    message(FATAL_ERROR "openssl header files seem not to be installed")
+                    # e.g., Ubuntu 24.04 with openssl-3.x being default (usr/include/openssl)
                 endif()
-            else ()
-                message(FATAL_ERROR "can build with openssl only with os packages")
+            else()
+                message(FATAL_ERROR "openssl header files seem not to be installed")
+                set(WITH_OPENSSL OFF PARENT_SCOPE CACHE STRING "" FORCE)
             endif()
         endif()
 

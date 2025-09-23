@@ -50,6 +50,7 @@
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
@@ -351,6 +352,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const char *admin_user = bootstrap_get_admin_user();
    const char *masterhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    bool csp_mode = false;
+   bool tls_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;
    char *pw_buffer;
@@ -582,8 +584,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 
    /* write environment of job */
-   var_list_copy_env_vars_and_value(&environmentList,
-                                    lGetList(jep, JB_env_list));
+   var_list_copy_env_vars_and_value(&environmentList, lGetList(jep, JB_env_list));
 
    /* write environment of petask */
    if (petep != nullptr) {
@@ -1711,6 +1712,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       csp_mode = true;
    }
    fprintf(fp, "csp=%d\n", (int) csp_mode);
+   if (strcasecmp(bootstrap_get_security_mode(), "tls") == 0) {
+      tls_mode = true;
+   }
+   fprintf(fp, "tls=%d\n", (int) tls_mode);
 
    /* with new interactive job support, shepherd needs ignore_fqdn and default_domain */
    fprintf(fp, "ignore_fqdn=%d\n", bootstrap_get_ignore_fqdn());
@@ -1722,6 +1727,28 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    sge_dstring_free(&core_binding_strategy_string);
 
    /********************** finished writing config ************************/
+
+#if defined(OCS_WITH_OPENSSL)
+   if (tls_mode) {
+      // for qrsh type jobs sge_shepherd needs the tls certificate of the qrsh commlib server
+      // @todo we need a better way to identify qrsh type jobs
+      const char *cert;
+      if (petep == nullptr) {
+         cert = lGetString(jep, JB_cred);
+      } else {
+         cert = lGetString(petep, PET_cred);
+      }
+      if (cert != nullptr) {
+         DSTRING_STATIC(dstr_certfilename, MAXPATHLEN);
+         const char *str_certfilename = sge_dstring_sprintf(&dstr_certfilename, "%s/%s/%s", execd_spool_dir,
+                                                            active_dir_buffer, "cert.pem");
+         if (sge_string2file(cert, 0, str_certfilename) != 0) {
+            snprintf(err_str, err_length, MSG_EXECD_UNABLETOCREATECERTFILE_S, str_certfilename);
+            DRETURN(-2);
+         }
+      }
+   }
+#endif
 
    /* test whether we can access scriptfile */
    /*

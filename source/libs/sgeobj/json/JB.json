@@ -651,10 +651,11 @@
 			"flags":	[]
 		}, {
 			"name":	"cred",
-			"summary":	"DCE/Kerberos Credentials",
-			"description":	[{
-					"line":	"DCE/Kerberos credentials"
-				}],
+			"summary":	"DCE/Kerberos/TLS Credentials",
+			"description":	[
+				{	"line":	"DCE/Kerberos credentials. Also used for TLS encryption to transport the credentials" },
+				{   "line":	"from qrsh to the sge_execd, which will store it in the job's active_jobs directory." }
+			],
 			"type":	"lStringT",
 			"flags":	[]
 		}, {

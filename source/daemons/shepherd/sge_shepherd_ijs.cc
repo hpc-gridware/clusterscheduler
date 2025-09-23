@@ -758,9 +758,9 @@ static void* commlib_to_pty(void *t_conf)
 
 int
 parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt_info,
-   ijs_fds_t *p_ijs_fds, const char *job_owner, const char *remote_host,
-   int remote_port, bool csp_mode, int *exit_status, struct rusage *rusage,
-   dstring *err_msg)
+            ijs_fds_t *p_ijs_fds, const char *job_owner, const char *remote_host,
+            int remote_port, cl_framework_t communication_framework, int *exit_status, struct rusage *rusage,
+            dstring *err_msg)
 {
    int               ret;
    THREAD_LIB_HANDLE *thread_lib_handle     = nullptr;
@@ -819,13 +819,15 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
     * Open the connection port so we can connect to our server
     */
    shepherd_trace("parent: opening connection to qrsh/qlogin client");
-   ret = comm_open_connection(false, csp_mode, COMM_CLIENT, remote_port,
+   ret = comm_open_connection(false, communication_framework, COMM_CLIENT, remote_port,
                               COMM_SERVER, g_hostname, job_owner,
                               &g_comm_handle, err_msg);
    if (ret != COMM_RETVAL_OK) {
       shepherd_trace("parent: can't open commlib stream, err_msg = %s", 
                      sge_dstring_get_string(err_msg));
       return 1;
+   } else {
+      shepherd_trace("parent: successfully opened connection to qrsh/qlogin client on host %s", g_hostname);
    }
 
    /*

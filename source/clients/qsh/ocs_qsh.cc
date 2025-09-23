@@ -43,6 +43,7 @@
 #include <cstring>
 #include <cstdlib>    /* need prototype for malloc */
 #include <cerrno>
+#include <sge_io.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -1235,15 +1236,15 @@ static void set_builtin_ijs_signals_and_handlers()
 *     MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
 *******************************************************************************/
 static void write_builtin_ijs_connection_data_to_job_object(
-const char* qualified_hostname,
-int port,
-lListElem *job,
-lList *opts_qrsh)
+   const char* qualified_hostname,
+   cl_com_handle *com_handle,
+   lListElem *job,
+   lList *opts_qrsh)
 {
    dstring connection_params = DSTRING_INIT;
    lList *envlp = nullptr;
 
-   sge_dstring_sprintf(&connection_params, "%s:%d", qualified_hostname, port);
+   sge_dstring_sprintf(&connection_params, "%s:%d", qualified_hostname, com_handle->service_port);
 
    /*
     * Get environment from job object. If there is no environment yet,
@@ -1259,14 +1260,25 @@ lList *opts_qrsh)
     *       JB_qrsh_port field.
     * HP: Do this in the next minor release, not in a patch update.
     */
-   var_list_set_string(&envlp, "QRSH_PORT",
-                       sge_dstring_get_string(&connection_params));
+   var_list_set_string(&envlp, "QRSH_PORT", sge_dstring_get_string(&connection_params));
 
    /* TODO: write the command in JB_job_args field
     * HP: Do this in the next minor release, not in a patch update.
     */
    set_command_to_env(envlp, opts_qrsh);
    sge_dstring_free(&connection_params);
+
+   // In case of TLS encryption send the credentials to the shepherd
+#if defined(OCS_WITH_OPENSSL)
+   int len = 0;
+   if (com_handle->ssl_server_context != nullptr) {
+      const char *cert_file_name = com_handle->ssl_server_context->get_cert_file();
+      const char *cred = sge_file2string(cert_file_name, &len);
+      if (cred != nullptr) {
+         lSetString(job, JB_cred, cred);
+      }
+   }
+#endif
 }
 
 /****** qsh/block_notification_signals() ***************************************
@@ -1370,7 +1382,6 @@ int main(int argc, const char **argv)
    char *port = nullptr;
    char *job_dir = nullptr;
    char *utilbin_dir = nullptr;
-   bool csp_mode = false;
    int alp_error;
    lListElem *ep = nullptr;
    int sock = 0;
@@ -1418,8 +1429,14 @@ int main(int argc, const char **argv)
    username = component_get_username();
    mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
 
-   if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
-      csp_mode = true;
+   cl_framework_t communication_framework;
+   const char *security_mode = bootstrap_get_security_mode();
+   if (strcasecmp("csp", security_mode) == 0) {
+      communication_framework = CL_CT_SSL;
+   } else if (strcasecmp("tls", security_mode) == 0) {
+      communication_framework = CL_CT_SSL_TLS;
+   } else {
+      communication_framework = CL_CT_TCP;
    }
 
    /*
@@ -1742,7 +1759,7 @@ int main(int argc, const char **argv)
       set_builtin_ijs_signals_and_handlers();
 
       /* then start the commlib server */
-      ret = start_ijs_server(csp_mode, username, &comm_handle, &err_msg);
+      ret = start_ijs_server(communication_framework, qualified_hostname, username, &comm_handle, &err_msg);
       if (ret != 0) {
          if (ret == 1) {
             ERROR(MSG_QSH_CREATINGCOMMLIBSERVER_S, sge_dstring_get_string(&err_msg));
@@ -1755,8 +1772,9 @@ int main(int argc, const char **argv)
       /* if it started successfully, write the connection data to the job object,
        * so it can be sent over the QMaster to the execution host.
        */
-      write_builtin_ijs_connection_data_to_job_object(qualified_hostname,
-         comm_handle->service_port, job, opts_qrsh);
+      // Also for qrsh -inherit we set variables in the environment and in the job object.
+      // They will be used in sge_qexecve().
+      write_builtin_ijs_connection_data_to_job_object(qualified_hostname, comm_handle, job, opts_qrsh);
    }
 
    /*
@@ -1797,7 +1815,7 @@ int main(int argc, const char **argv)
       tid = sge_qexecve(host, nullptr,
                         lGetString(job, JB_cwd),
                         lGetList(job, JB_env_list),
-                        lGetList(job, JB_path_aliases), feature_get_active_featureset_id());
+                        lGetList(job, JB_path_aliases), lGetString(job, JB_cred), feature_get_active_featureset_id());
       if (tid == nullptr) {
          const char *qexec_lasterror = qexec_last_err();
 

@@ -740,6 +740,9 @@ static int handle_task(lListElem *petrep, char *commproc, char *host, u_short id
             lCopyList("petask environment", lGetList(petrep, PETR_environment)));
    lSetList(petep, PET_path_aliases,
             lCopyList("petask path_aliases", lGetList(petrep, PETR_path_aliases)));
+#if defined(OCS_WITH_OPENSSL)
+   lSetString(petep, PET_cred, lGetString(petrep, PETR_cred));
+#endif
 
    requested_queue = lGetString(petrep, PETR_queuename);
 

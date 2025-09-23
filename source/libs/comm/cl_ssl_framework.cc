@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #ifdef SECURE
+#include <cl_data_types.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
@@ -2566,7 +2567,8 @@ int cl_com_ssl_setup_connection(cl_com_connection_t**          connection,
       case CL_CT_SSL:
          break;
       case CL_CT_UNDEFINED:
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          CL_LOG_STR(CL_LOG_ERROR,"unexpected framework:", cl_com_get_framework_type(*connection));
          cl_com_close_connection(connection);
          return CL_RETVAL_WRONG_FRAMEWORK;
@@ -4045,7 +4047,8 @@ int cl_com_ssl_open_connection_request_handler(cl_com_poll_t* poll_handle, cl_co
                break;
             }
             case CL_CT_UNDEFINED:
-            case CL_CT_TCP: {
+            case CL_CT_TCP:
+            case CL_CT_SSL_TLS: {
                CL_LOG_STR(CL_LOG_WARNING,"ignoring unexpected connection type:",
                           cl_com_get_framework_type(connection));
             }

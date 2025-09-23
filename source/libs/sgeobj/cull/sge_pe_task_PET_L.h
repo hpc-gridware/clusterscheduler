@@ -99,6 +99,10 @@
 *    Used in limit enforcement to remember whether to contact the host where a task is running.
 *    Is set to false when the host is down/unknown.
 *
+*    SGE_STRING(PET_cred) - TLS Credentials
+*    Used with the TLS encryption to transport the credentials
+*    from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory.
+*
 *    SGE_LIST(PET_joker) - Joker
 *    Placeholder which can be used for arbitrary data.
 *    Its purpose is to be able to add new attributes without changing the spooling format.
@@ -126,6 +130,7 @@ enum {
    PET_path_aliases,
    PET_environment,
    PET_do_contact,
+   PET_cred,
    PET_joker
 };
 
@@ -149,6 +154,7 @@ LISTDEF(PET_Type)
    SGE_LIST(PET_path_aliases, PA_Type, CULL_DEFAULT)
    SGE_LIST(PET_environment, VA_Type, CULL_DEFAULT)
    SGE_BOOL(PET_do_contact, CULL_SUBLIST)
+   SGE_STRING(PET_cred, CULL_DEFAULT)
    SGE_LIST(PET_joker, VA_Type, CULL_SPOOL)
 LISTEND
 
@@ -172,6 +178,7 @@ NAMEDEF(PETN)
    NAME("PET_path_aliases")
    NAME("PET_environment")
    NAME("PET_do_contact")
+   NAME("PET_cred")
    NAME("PET_joker")
 NAMEEND
 

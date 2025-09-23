@@ -103,7 +103,7 @@ const char *qexec_last_err() {
 ******************************************************************************/
 sge_tid_t
 sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
-            const lList *path_aliases, int feature_set_id) {
+            const lList *path_aliases, const char *cert, int feature_set_id) {
    char myname[256];
    const char *s;
    int ret;
@@ -172,6 +172,11 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       lSetList(petrep, PETR_path_aliases, lCopyList("path_aliases", path_aliases));
    }
 
+#if defined(OCS_WITH_OPENSSL)
+   if (cert != nullptr) {
+      lSetString(petrep, PETR_cred, cert);
+   }
+#endif
 
    if (queuename != nullptr) {
       lSetString(petrep, PETR_queuename, queuename);

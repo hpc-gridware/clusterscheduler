@@ -52,6 +52,7 @@
 #include "uti/sge.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
 
 #include "comm/cl_commlib.h"
@@ -237,7 +238,9 @@ int main(int argc, char *argv[]) {
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
-      ocs::gdi::ClientBase::prepare_enroll(&alp);
+      if (ocs::gdi::ClientBase::prepare_enroll(&alp) != CL_RETVAL_OK) {
+         answer_list_output(&alp);
+      }
       max_enroll_tries--;
       if (max_enroll_tries <= 0) {
          /* exit after 30 seconds */

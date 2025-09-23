@@ -28,17 +28,19 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
+#include "comm/cl_data_types.h"
 
 #include "shepherd.h"
 
 int
 parent_loop(int job_pid, const char *childname, int timeout,
             ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds,
-            const char *job_owner, const char *remote_host, int remote_port, bool csp_mode,
+            const char *job_owner, const char *remote_host, int remote_port, cl_framework_t communication_framework,
             int *exit_status, struct rusage *rusage, dstring *err_msg);
  
 int

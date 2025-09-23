@@ -237,8 +237,9 @@
 *    SGE_STRING(JB_tgt) - Kerberos Client TGB
 *    Kerberos client TGT
 *
-*    SGE_STRING(JB_cred) - DCE/Kerberos Credentials
-*    DCE/Kerberos credentials
+*    SGE_STRING(JB_cred) - DCE/Kerberos/TLS Credentials
+*    DCE/Kerberos credentials. Also used for TLS encryption to transport the credentials
+*    from qrsh to the sge_execd, which will store it in the job's active_jobs directory.
 *
 *    SGE_LIST(JB_ja_structure) - Array Job Structure
 *    Elements describe task id range structure during the

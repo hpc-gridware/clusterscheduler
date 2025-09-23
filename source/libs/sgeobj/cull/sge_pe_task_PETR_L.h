@@ -57,6 +57,10 @@
 *    SGE_ULONG64(PETR_submission_time) - Submission Time
 *    Time when qrsh -inherit was started in microseconds since epoch.
 *
+*    SGE_STRING(PETR_cred) - TLS Credentials
+*    Used with the TLS encryption to transport the credentials
+*    from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory.
+*
 */
 
 enum {
@@ -67,7 +71,8 @@ enum {
    PETR_cwd,
    PETR_path_aliases,
    PETR_environment,
-   PETR_submission_time
+   PETR_submission_time,
+   PETR_cred
 };
 
 LISTDEF(PETR_Type)
@@ -79,6 +84,7 @@ LISTDEF(PETR_Type)
    SGE_LIST(PETR_path_aliases, PA_Type, CULL_DEFAULT)
    SGE_LIST(PETR_environment, VA_Type, CULL_DEFAULT)
    SGE_ULONG64(PETR_submission_time, CULL_DEFAULT)
+   SGE_STRING(PETR_cred, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(PETRN)
@@ -90,6 +96,7 @@ NAMEDEF(PETRN)
    NAME("PETR_path_aliases")
    NAME("PETR_environment")
    NAME("PETR_submission_time")
+   NAME("PETR_cred")
 NAMEEND
 
 #define PETR_SIZE sizeof(PETRN)/sizeof(char *)

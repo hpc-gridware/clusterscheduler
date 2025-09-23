@@ -957,6 +957,7 @@ int main(int argc, char *argv[]) {
    int   option_info       = 0;
    int   option_noalias    = 0;
    int   option_ssl        = 0;
+   int   option_tls        = 0;
    int   option_tcp        = 0;
    int   option_dump       = 0;
    int   option_nonewline  = 1;
@@ -1016,7 +1017,12 @@ int main(int argc, char *argv[]) {
              parameter_start++;
          }
          if (strcmp( argv[i] , "-ssl") == 0) {
-             option_ssl = 1;
+            option_ssl = 1;
+            parameter_count++;
+            parameter_start++;
+         }
+         if (strcmp( argv[i] , "-tls") == 0) {
+             option_tls = 1;
              parameter_count++;
              parameter_start++;
          }
@@ -1169,23 +1175,22 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   if ( option_ssl != 0 && option_tcp != 0) {
-      fprintf(stderr,"using of option -ssl and option -tcp not supported\n");
+   if (option_ssl + option_tcp + option_tls > 1) {
+      fprintf(stderr,"only one option of -ssl, -tls,  and -tcp may be used\n");
       exit(1);
    }
    
 
    /* find out the framework type to use */
-   if ( option_ssl == 0 && option_tcp == 0 ) {
-      char buffer[2*1024];
-      dstring bw;
-      sge_dstring_init(&bw, buffer, sizeof(buffer));
-
+   if (option_ssl == 0 && option_tcp == 0 && option_tls == 0) {
+      const char *security_mode = bootstrap_get_security_mode();
 #ifdef SECURE
       got_no_framework = 1;
 #endif
-      if ( strcmp( "csp", bootstrap_get_security_mode()) == 0) {
+      if (strcmp("csp", security_mode) == 0) {
          option_ssl = 1;
+      } else if (strcmp("tls", security_mode) == 0) {
+         option_tls = 1;
       } else {
          option_tcp = 1;
       }
@@ -1227,6 +1232,37 @@ int main(int argc, char *argv[]) {
    }
    if (option_tcp != 0) {
       communication_framework = CL_CT_TCP;
+   }
+   if (option_tls != 0) {
+      communication_framework = CL_CT_SSL_TLS;
+#if defined(OCS_WITH_OPENSSL)
+         DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+         if (!ocs::uti::OpenSSL::is_openssl_available() && !ocs::uti::OpenSSL::initialize(&dstr_error)) {
+            fprintf(stderr, "initializing OpenSSL failed: %s", sge_dstring_get_string(&dstr_error)); // @todo i18n
+            exit(EXIT_FAILURE);
+         }
+         // pass the client certificate of the component to connect to (identified by hostname)
+         cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
+         std::string client_cert_path;
+         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, comp_host); // @todo need to resolve first?
+         int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
+                                          CL_SSL_PEM_FILE,
+                                          CL_SSL_TLS,
+                                          client_cert_path.c_str(),
+                                          "",
+                                          "");
+         if (cl_ret != CL_RETVAL_OK) {
+            fprintf(stderr, "cannot create ssl setup");
+            exit(EXIT_FAILURE);
+         }
+         cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+         if (cl_ret != CL_RETVAL_OK) {
+            fprintf(stderr,"cannot set ssl configuration: %s\n", cl_get_error_text(cl_ret));
+            exit(EXIT_FAILURE);
+         }
+#else
+      fprintf(stderr, "SSL support is not built in\n");
+#endif
    }
 
    if (option_dump != 0) {

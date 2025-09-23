@@ -75,5 +75,15 @@
 				}],
 			"type":	"lTimestampT",
 			"flags":	[]
-		}]
+		}, {
+			"name":	"cred",
+			"summary":	"TLS Credentials",
+			"description":	[
+				{	"line":	"Used with the TLS encryption to transport the credentials" },
+				{   "line":	"from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory." }
+			],
+			"type":	"lStringT",
+			"flags":	[]
+		}
+	]
 }

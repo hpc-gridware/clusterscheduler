@@ -1544,7 +1544,6 @@ dstring       *dstr_error       /* OUT: error message - if any */
 ) {
    char    *job_owner;
    char    *remote_host = nullptr;
-   bool    csp_mode     = false;
    int     ret;
    int     remote_port  = 0;
    int     exit_status  = -1;
@@ -1555,8 +1554,7 @@ dstring       *dstr_error       /* OUT: error message - if any */
    /* read destination host and port from config */
    ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, dstr_error);
    if (ret != 0 || remote_host == nullptr || remote_port == 0) {
-      shepherd_error(1, "startup of qrsh job failed: " SFN,
-                     sge_dstring_get_string(dstr_error));
+      shepherd_error(1, "startup of qrsh job failed: " SFN, sge_dstring_get_string(dstr_error));
    }
    job_owner = get_conf_val("job_owner");
 
@@ -1565,18 +1563,22 @@ dstring       *dstr_error       /* OUT: error message - if any */
     * not from the bootstrap file. The bootstrap file might reside on
     * a very, very slow drive.
     */
+   cl_framework_t communication_mode = CL_CT_TCP;
    if (strcasecmp(get_conf_val("csp"), "true") == 0 ||
        strcasecmp(get_conf_val("csp"), "1") == 0) {
-      csp_mode = true;
+      communication_mode = CL_CT_SSL;
+      shepherd_trace("using csp mode");
+   } else if (strcasecmp(get_conf_val("tls"), "true") == 0 ||
+              strcasecmp(get_conf_val("tls"), "1") == 0) {
+      communication_mode = CL_CT_SSL_TLS;
+      shepherd_trace("using tls encryption");
    }
-   shepherd_trace("csp = %d", csp_mode);
 
    ret = parent_loop(pid, childname, timeout, p_ckpt_info, p_ijs_fds, job_owner,
-            remote_host, remote_port, csp_mode, &exit_status, rusage, dstr_error);
+                     remote_host, remote_port, communication_mode, &exit_status, rusage, dstr_error);
    sge_free(&remote_host);
    if (ret != 0) {
-      shepherd_error(1, "startup of qrsh job failed: " SFN,
-                     sge_dstring_get_string(dstr_error));
+      shepherd_error(1, "startup of qrsh job failed: " SFN, sge_dstring_get_string(dstr_error));
    }
 
    /*shepherd_signal_job(-pid, SIGKILL);*/
