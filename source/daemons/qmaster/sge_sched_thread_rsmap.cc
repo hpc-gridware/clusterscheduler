@@ -198,10 +198,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
       // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
       const lList *binding_to_use_list = lGetList(gdil_ep, JG_binding_to_use);
-      ret = ocs::GrantedResources::add_binding_touse(&granted_resources_list, host_name, binding_to_use_list);
-      if (!ret) {
-         break;
-      }
+      ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources
       const lListElem *request;

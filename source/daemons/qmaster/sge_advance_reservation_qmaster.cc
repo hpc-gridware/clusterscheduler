@@ -1722,7 +1722,7 @@ ar_initialize_resource_booking(lListElem *ar) {
 
       // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
       const lList *binding_to_use_list = lGetList(gep, JG_binding_to_use);
-      ocs::GrantedResources::add_binding_touse(&granted_resources_list, host_name, binding_to_use_list);
+      ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // create queue with slot booking
       lListElem *queue = lAddElemStr(&queue_list, QU_full_name, queue_name, queue_descr);

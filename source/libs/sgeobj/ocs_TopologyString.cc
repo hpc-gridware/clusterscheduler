@@ -40,6 +40,7 @@
 #include "ocs_BindingEnd.h"
 #include "ocs_BindingStart.h"
 #include "ocs_BindingUnit.h"
+#include "sge_conf.h"
 
 const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = "NABUVWXYZ";
 const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = "SCEFGHT";
@@ -159,10 +160,12 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
 
 std::string ocs::TopologyString::to_product_topology_string() const {
 #ifdef WITH_EXTENSIONS
-   return to_string(true, false, false, false, false, false);
-#else
-   return to_string(false, false, false, false, false);
+   binding_mode_t mode = mconf_get_binding_mode();
+   if (mode == BINDING_MODE_DEFAULT || mode == BINDING_MODE_GCS) {
+      return to_string(true, false, false, false, false, false);
+   }
 #endif
+   return to_string(false, true, false, false, false);
 }
 
 std::string ocs::TopologyString::to_unused_internal_topology_string() const {

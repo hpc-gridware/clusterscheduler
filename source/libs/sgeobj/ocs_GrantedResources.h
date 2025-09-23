@@ -43,6 +43,6 @@ namespace ocs {
    class GrantedResources {
    public:
       static std::string to_string(const lList *granted_resources);
-      static bool add_binding_touse(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list);
+      static void add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list);
    };
 }

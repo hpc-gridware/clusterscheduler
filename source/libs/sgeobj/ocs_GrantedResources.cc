@@ -36,17 +36,18 @@
 #include <sstream>
 
 #include "uti/ocs_Systemd.h"
+#include "uti/sge.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 #include "uti/sge_log.h"
 
 #include "ocs_GrantedResources.h"
 #include "ocs_TopologyString.h"
-#include "sgeobj/sge_grantedres.h"
-#include "sgeobj/sge_str.h"
+#include "sge_grantedres.h"
+#include "sge_str.h"
 
-#include "uti/sge.h"
-
+/** @brief Convert granted resources to a comma-separated string
+ */
 std::string
 ocs::GrantedResources::to_string(const lList *granted_resources) {
    DENTER(TOP_LAYER);
@@ -77,19 +78,20 @@ ocs::GrantedResources::to_string(const lList *granted_resources) {
    DRETURN(ss.str());
 }
 
-bool
-ocs::GrantedResources::add_binding_touse(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list) {
+/** @brief Add binding-to-use for a specific host as granted binding information
+ */
+void
+ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list) {
    DENTER(TOP_LAYER);
-   if (binding_touse_list != nullptr) {
-      DPRINTF("  ==> gru_list_add_binding_touse:\n");
-      DPRINTF("   -> adding new GRU with binding information: %d element(s)\n", lGetNumberOfElem(binding_touse_list));
 
-      // @todo CS-731: is the GRU_name correct here? can we use slots? JG suggests a new complex "binding"
-      lListElem *gru = lAddElemStr(granted_resources_list, GRU_name, SGE_ATTR_SLOTS, GRU_Type);
-      lSetHost(gru, GRU_host, host_name);
-      lSetUlong(gru, GRU_type, GRU_BINDING_TYPE);
-      lSetList(gru, GRU_binding_inuse, lCopyList("binding_to_use", binding_touse_list));
+   if (binding_touse_list == nullptr || host_name == nullptr) {
+      DRETURN_VOID;
    }
-   DRETURN(true);
+
+   lListElem *gru = lAddElemStr(granted_resources_list, GRU_name, SGE_ATTR_SLOTS, GRU_Type);
+   lSetHost(gru, GRU_host, host_name);
+   lSetUlong(gru, GRU_type, GRU_BINDING_TYPE);
+   lSetList(gru, GRU_binding_inuse, lCopyList("binding_to_use", binding_touse_list));
+   DRETURN_VOID;
 }
 

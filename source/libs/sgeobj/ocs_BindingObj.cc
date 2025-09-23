@@ -51,6 +51,7 @@
 #include "sge_answer.h"
 
 #include "msg_common.h"
+#include "sge_conf.h"
 
 lListElem *
 ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList**answer) {
@@ -122,15 +123,15 @@ ocs::BindingUnit::Unit
 ocs::Binding::binding_get_unit(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
 
-   constexpr BindingUnit::Unit default_type = BindingUnit::CCORE; // default binding type is slot
+   const BindingUnit::Unit default_binding_unit = mconf_get_default_binding_unit();
    const lListElem *binding_elem = lGetObject(parent, nm);
    if (binding_elem == nullptr) {
-      DRETURN(default_type);
+      DRETURN(default_binding_unit);
    }
 
    const auto binding_unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
    if (binding_unit == BindingUnit::NONE || binding_unit == BindingUnit::UNINITIALIZED) {
-      DRETURN(default_type);
+      DRETURN(default_binding_unit);
    }
 
    DRETURN(binding_unit);
@@ -273,7 +274,8 @@ void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm)
    auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_new_unit));
    if (unit == BindingUnit::Unit::UNINITIALIZED ||
        unit == BindingUnit::Unit::NONE) {
-      lSetUlong(binding_elem, BN_new_unit, BindingUnit::Unit::CCORE);
+      const BindingUnit::Unit default_binding_unit = mconf_get_default_binding_unit();
+      lSetUlong(binding_elem, BN_new_unit, default_binding_unit);
    }
    auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
    if (type == BindingType::Type::UNINITIALIZED ||

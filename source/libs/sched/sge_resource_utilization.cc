@@ -71,6 +71,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "msg_schedd.h"
+#include "ocs_BindingSchedd.h"
 
 static void utilization_normalize(lList *diagram);
 static u_long64 utilization_endtime(u_long64 start, u_long64 duration);
@@ -258,7 +259,6 @@ static u_long64 utilization_endtime(u_long64 start, u_long64 duration)
 
    DRETURN(end_time);
 }
-
 
 /****** sge_resource_utilization/utilization_add() *****************************
 *  NAME
@@ -549,7 +549,7 @@ static void utilization_normalize(lList *diagram)
 double increase_util_depending_on_binding(const sge_assignment_t *a, const lListElem *host, ocs::TopologyString &binding_inuse, double util, double total, double slots) {
    // no binding string => no util change
    if (a != nullptr && host != nullptr) {
-      double util_candidate = total - max_binding_idleness(a, host, slots, binding_inuse);
+      double util_candidate = total - ocs::BindingSchedd::test_strategy(a, host, slots, binding_inuse);
       util = MAX(util, util_candidate);
    }
    return util;

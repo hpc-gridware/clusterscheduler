@@ -139,6 +139,7 @@ typedef struct {
    bool       is_schedule_based;  /* true, if resource reservation is enabled       */
    bool       is_soft;            /* true, if job has soft requests                 */
    u_long64   now;                /* now time for immediate jobs                    */
+   bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
@@ -157,8 +158,9 @@ typedef struct {
    sched_prof_t *pi;
 } sge_assignment_t;
 
-#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
+#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
+   0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
+   false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
@@ -232,6 +234,3 @@ dispatch_t
 parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue);
-
-double
-max_binding_idleness(const sge_assignment_t *a, const lListElem *host, double slots, const ocs::TopologyString &binding_in_use);
