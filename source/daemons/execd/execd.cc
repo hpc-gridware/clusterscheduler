@@ -200,7 +200,6 @@ int main(int argc, char **argv)
    sge_setup_sig_handlers(EXECD);
 
    ocs::TerminationManager::install_signal_handler();
-   ocs::TerminationManager::install_signal_handler();
 
    if (ocs::gdi::ClientBase::setup(EXECD, MAIN_THREAD, &alp, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
@@ -231,6 +230,14 @@ int main(int argc, char **argv)
    }
 
    parse_cmdline_execd(argv);
+
+   // initialize the admin user
+   char err_str[MAX_STRING_SIZE];
+   const char *admin_user = bootstrap_get_admin_user();
+   if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
+      CRITICAL(SFNMAX, err_str);
+      sge_exit(1);
+   }
 
    /* exit if we can't get communication handle (bind port) */
    max_enroll_tries = 30;

@@ -569,6 +569,16 @@ namespace ocs::uti {
    bool OpenSSL::OpenSSLContext::verify_create_certificate_and_key(std::string &cert_path, std::string &key_path, dstring *error_dstr) {
       bool ret = true;
 
+      // when we are starting as root and creating a daemon certificate
+      // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/private
+      // we need to be root to write the key
+      // but as root we might not be able to create directories or files in $SGE_ROOT
+      // OTOH when running qrsh as root, we write the certificate and key in $HOME/.ocs
+      // and need to be root to write there.
+      bool called_as_root = geteuid() == SGE_SUPERUSER_UID;
+      int component = component_get_component_id();
+      bool switch_user = called_as_root && (component == QMASTER || component == EXECD);
+
       if (!std::filesystem::exists(cert_path.c_str()) ||
           !std::filesystem::exists(key_path.c_str())) {
          char buffer[MAXPATHLEN];
@@ -577,11 +587,19 @@ namespace ocs::uti {
             sge_strlcpy(buffer, cert_path.c_str(), MAXPATHLEN);
             const char *dir = dirname(buffer);
             if (!std::filesystem::exists(dir)) {
+               // need to switch to admin user if we are root
+               // SGE_ROOT might be on a filesystem where root has no write permissions
+               if (switch_user) {
+                  sge_switch2admin_user();
+               }
                if (!std::filesystem::create_directories(dir)) {
                   sge_dstring_sprintf(error_dstr, "Unable to create certificate directory %s: %s", dir, strerror(errno));
                   ret = false;
                } else {
                   chmod(dir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); // 755
+               }
+               if (switch_user) {
+                  sge_switch2start_user();
                }
             }
          }
@@ -628,10 +646,18 @@ namespace ocs::uti {
             // @todo in theory we have a very short time window here where the file is created but not yet protected
             chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
 
+            // need to switch to admin user if we are root
+            // SGE_ROOT might be on a filesystem where root has no write permissions
+            if (switch_user) {
+               sge_switch2admin_user();
+            }
             f = fopen(cert_path.c_str(), "wb");
             PEM_write_X509_func(f, x509);
             fclose(f);
             chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
+            if (switch_user) {
+               sge_switch2start_user();
+            }
 
             X509_free_func(x509);
             EVP_PKEY_free_func(pkey);
