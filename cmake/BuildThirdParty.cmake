@@ -150,24 +150,34 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
 
         if (WITH_OPENSSL)
             # for openssl we rely on the OS packages only
+            message(STATUS "checking for openssl")
             if (EXISTS "/usr/include/openssl" OR EXISTS "/usr/include/openssl3")
                 # this is the old CSP mode
                 #add_compile_definitions("SECURE")
                 #add_compile_definitions("LOAD_OPENSSL")
-                add_compile_definitions("OCS_WITH_OPENSSL")
                 if (EXISTS "/usr/include/openssl3")
                     # e.g., Rocky-8 with openssl-3.x.x installed
                     # add_compile_definitions("OCS_WITH_OPENSSL3_HEADERS")
+                    message(STATUS "Found openssl3 header files")
                     include_directories(BEFORE SYSTEM "/usr/include/openssl3")
+                    add_compile_definitions("OCS_WITH_OPENSSL")
                 else()
+                    file(STRINGS "/usr/include/openssl/opensslv.h" OPENSSL_MAJOR REGEX "^#.*define OPENSSL_VERSION_MAJOR ")
+                    string(REGEX REPLACE "#.*define OPENSSL_VERSION_MAJOR ([0-9]*)" "\\1" OPENSSL_MAJOR "${OPENSSL_MAJOR}")
+                    message(STATUS, "Found openssl version: ${OPENSSL_MAJOR}")
+                    if (NOT OPENSSL_MAJOR EQUAL "3")
+                        message(STATUS "Will not use OpenSSL version != 3")
+                        set(WITH_OPENSSL OFF CACHE BOOL "" FORCE)
+                    else()
+                        add_compile_definitions("OCS_WITH_OPENSSL")
+                    endif()
                     # e.g., Ubuntu 24.04 with openssl-3.x being default (usr/include/openssl)
                 endif()
             else()
                 message(FATAL_ERROR "openssl header files seem not to be installed")
-                set(WITH_OPENSSL OFF PARENT_SCOPE CACHE STRING "" FORCE)
+                set(WITH_OPENSSL OFF CACHE BOOL "" FORCE)
             endif()
         endif()
-
     endif ()
 
     # add a target containing all 3rdparty libs which need to be built once
