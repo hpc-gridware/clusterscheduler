@@ -1120,7 +1120,7 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   if (argc != parameter_count + 1 ) {
+   if (argc != parameter_count + 1) {
       usage(1);
    }
 
@@ -1133,20 +1133,20 @@ int main(int argc, char *argv[]) {
       comp_id   = atoi(argv[parameter_start + 3]);
    }
 
-   if ( comp_host == nullptr  ) {
+   if (comp_host == nullptr) {
       fprintf(stderr,"please enter a host name\n");
       exit(1);
    }
 
-   if ( comp_name == nullptr  ) {
+   if (comp_name == nullptr) {
       fprintf(stderr,"please enter a component name\n");
       exit(1);
    }
-   if ( comp_port < 0  ) {
+   if (comp_port < 0) {
       fprintf(stderr,"please enter a correct port number\n");
       exit(1);
    }
-   if ( comp_id <= 0 ) {
+   if (comp_id <= 0) {
       fprintf(stderr,"please enter a component id larger than 0\n");
       exit(1);
    }
@@ -1164,7 +1164,7 @@ int main(int argc, char *argv[]) {
 
 
    /* set alias file */
-   if ( !option_noalias ) {
+   if (!option_noalias) {
       const char *alias_path = sge_get_alias_path();
       if (alias_path != nullptr) {
          retval = cl_com_set_alias_file(alias_path);
@@ -1194,6 +1194,13 @@ int main(int argc, char *argv[]) {
       } else {
          option_tcp = 1;
       }
+   }
+
+   retval = cl_com_cached_gethostbyname(comp_host, &resolved_comp_host,nullptr, nullptr, nullptr);
+   if (retval != CL_RETVAL_OK) {
+      fprintf(stderr, "could not resolve hostname %s\n", comp_host);
+      cl_com_cleanup_commlib();
+      exit(1);
    }
 
    if (option_ssl != 0) {
@@ -1244,7 +1251,7 @@ int main(int argc, char *argv[]) {
          // pass the client certificate of the component to connect to (identified by hostname)
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
          std::string client_cert_path;
-         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, comp_host); // @todo need to resolve first?
+         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, resolved_comp_host);
          int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
                                           CL_SSL_PEM_FILE,
                                           CL_SSL_TLS,
@@ -1288,14 +1295,6 @@ int main(int argc, char *argv[]) {
    if (option_dump == 0) {
       /* enable auto close of application */
       cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED );
-   }
-
-
-   retval = cl_com_cached_gethostbyname(comp_host, &resolved_comp_host,nullptr, nullptr, nullptr);
-   if (retval != CL_RETVAL_OK) {
-      fprintf(stderr, "could not resolve hostname %s\n", comp_host);
-      cl_com_cleanup_commlib();
-      exit(1);
    }
 
    if (option_dump == 0) {
