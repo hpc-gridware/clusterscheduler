@@ -630,7 +630,7 @@ namespace ocs::uti {
 
             X509_set_version_func(x509, 2);
             ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
-            X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0);
+            X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
             X509_gmtime_adj_func(X509_getm_notAfter_func(x509), 31536000L); // 1 Jahr
             X509_set_pubkey_func(x509, pkey);
 

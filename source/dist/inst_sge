@@ -33,7 +33,7 @@
 #  All Rights Reserved.
 #
 #  Portions of this code are Copyright 2011 Univa Corp.
-#  Portions of this code are Copyright 2025 HPC-Gridware GmbH.
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #
 ##########################################################################
 #___INFO__MARK_END__
@@ -75,6 +75,7 @@ RESCHEDULE=true
 RESPORT=false
 AFS=false
 CSP=false
+TLS=false
 MUNGE=false
 NOREMOTE=false
 START_RPC_SERVICE=false
@@ -255,6 +256,9 @@ while [ $ARGC != 0 ]; do
      ;;
    -csp)
      CSP=true
+     ;;
+   -tls)
+     TLS=true
      ;;
    -munge)
      MUNGE=true
@@ -480,6 +484,9 @@ if [ "$UPDATE" = true ]; then
          csp)
             CSP=true
             ;;
+         tls)
+            TLS=true
+            ;;
          munge)
             MUNGE=true
             ;;
@@ -489,6 +496,7 @@ if [ "$UPDATE" = true ]; then
       #We don't care about switches, setup is going to be reused
       AFS=false
       CSP=false
+      TLS=false
       MUNGE=false
    fi
    #Load and upgrade old cell

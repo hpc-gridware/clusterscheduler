@@ -469,8 +469,6 @@ bootstrap_get_security_mode() {
    }
    pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
    const char *security_mode = sge_bootstrap_tl1.security_mode;
-   // @todo add to bootstrap file during installation
-   security_mode = "tls";
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    // this is thread safe because the string will never change after initialized
    return security_mode;
