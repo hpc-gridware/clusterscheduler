@@ -69,17 +69,28 @@ ocs::TopologyString::contains_valid_node_names(std::string& sequence) {
 std::string
 ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                                bool with_characteristics, bool with_internal_characteristics,
-                               bool with_tree_format, bool show_as_unused) const {
+                               bool with_tree_format, bool show_as_unused, bool show_single_threads) const {
    std::ostringstream oss;
 
+   // In tree format we will not show the structure
    if (with_tree_format) {
       with_structure = false;
+   }
+
+   // Enforce to show single threads if structure or characteristics should be shown
+   if (with_structure || with_characteristics || with_internal_characteristics || with_tree_format) {
+      show_single_threads = true;
    }
 
    // Helper function to convert nodes to string recursively
    std::function<void(const std::vector<Node>&, int)> nodes_to_string =
        [&](const std::vector<Node>& current_nodes, int indent) {
           bool show_data_nodes = true;
+
+          // If there is only one node, and it is a thread, and we are not showing single threads then return
+          if (current_nodes.size() == 1 && std::toupper(current_nodes[0].c) == 'T' && !show_single_threads) {
+             return;
+          }
 
           for (const auto& node : current_nodes) {
              // Skip data nodes if requested

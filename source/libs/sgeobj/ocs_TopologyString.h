@@ -74,7 +74,8 @@ namespace ocs {
       // String to tree and tree to string conversion
       [[nodiscard]] std::string to_string(bool with_data_nodes = false, bool with_structure = false,
                                           bool with_characteristics = false, bool with_internal_characteristics = false,
-                                          bool with_tree_format = false, bool show_as_unused = false) const;
+                                          bool with_tree_format = false, bool show_as_unused = false,
+                                          bool show_single_threads = false) const;
       [[nodiscard]] std::string to_product_topology_string() const;
       [[nodiscard]] std::string to_unused_internal_topology_string() const;
 
