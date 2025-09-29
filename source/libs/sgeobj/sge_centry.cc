@@ -1385,7 +1385,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
    DRETURN(ret);
 }
 
-/** @brief Adds the slot complex to the complex values makes the m_thread amount its value
+/** @brief Adds the slot complex to the complex values
  *
  * @param ehost Host object
  * @param load_list List of load values
@@ -1397,6 +1397,12 @@ int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
    // Input argument incorrect
    if (ehost == nullptr) {
       DRETURN(STATUS_EUNKNOWN);
+   }
+
+   // No need to add slots to global host
+   const char *name = lGetHost(ehost, EH_name);
+   if (strcmp(name, SGE_GLOBAL_NAME) == 0) {
+      DRETURN(0);
    }
 
    // Complex is already there.
