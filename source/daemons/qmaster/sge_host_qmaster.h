@@ -38,8 +38,6 @@
 #include "sgeobj/sge_daemonize.h"
 #include "gdi/ocs_gdi_Packet.h"
 
-#include "sgeobj/sge_feature.h"
-
 #include "sge_c_gdi.h"
 #include "sge_qmaster_timed_event.h"
 

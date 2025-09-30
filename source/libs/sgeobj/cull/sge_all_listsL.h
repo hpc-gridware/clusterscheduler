@@ -100,7 +100,6 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 #include "sgeobj/cull/sge_loadsensor_LS_L.h"
 #include "sgeobj/cull/sge_host_RU_L.h"
-#include "sgeobj/cull/sge_feature_FES_L.h"
 #include "sgeobj/cull/sge_suser_SU_L.h"
 #include "sgeobj/cull/sge_spooling_SPC_L.h"
 #include "sgeobj/cull/sge_spooling_SPR_L.h"
@@ -245,7 +244,6 @@ lNameSpace nmv[] = {
    {PERM_LOWERBOUND, PERM_SIZE, PERMN, PERM_Type},
    {LS_LOWERBOUND, LS_SIZE, LSN, LS_Type},
    {RU_LOWERBOUND, RU_SIZE, RUN, RU_Type},
-   {FES_LOWERBOUND, FES_SIZE, FESN, FES_Type},
    {SU_LOWERBOUND, SU_SIZE, SUN, SU_Type},
    {SPC_LOWERBOUND, SPC_SIZE, SPCN, SPC_Type},
    {SPR_LOWERBOUND, SPR_SIZE, SPRN, SPR_Type},

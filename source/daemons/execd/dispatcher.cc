@@ -121,7 +121,7 @@ int sge_execd_process_messages() {
             bool from_qmaster = (strcmp(msg.snd_name, prognames[QMASTER]) == 0);
             bool authentication_ok = true;
             // in case of Munge authentication check and optionally re-resolve the user
-            if (bootstrap_get_use_munge()) {
+            if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
                if (from_qmaster) {
                   // Message from qmaster? Check if it is coming from the admin user.
                   if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, true, false, false)) {
@@ -131,7 +131,7 @@ int sge_execd_process_messages() {
                   // Messages from non qmaster are pe-task start orders,
                   // re-resolve and check the user
                   // no need to re-resolve the supplementary groups - they are not used in starting tasks
-                  if (bootstrap_get_use_munge()) {
+                  if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
                      if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, false, true, false)) {
                         authentication_ok = false;
                      }

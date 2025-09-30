@@ -103,7 +103,7 @@ const char *qexec_last_err() {
 ******************************************************************************/
 sge_tid_t
 sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const lList *environment,
-            const lList *path_aliases, const char *cert, int feature_set_id) {
+            const lList *path_aliases, const char *cert) {
    char myname[256];
    const char *s;
    int ret;
@@ -188,7 +188,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       DRETURN(nullptr);
    }
 
-   pack_job_delivery(&pb, petrep, feature_set_id);
+   pack_job_delivery(&pb, petrep);
 
    ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, prognames[EXECD], 1, hostname,
                                                      ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);

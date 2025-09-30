@@ -581,22 +581,34 @@ SetProductMode()
    fi
 
    # @todo CS-1523 allow multiple security options, at least munge and tls
-   if [ "$AFS" = "false" ]; then
-      if [ "$CSP" = "false" ]; then
-         if [ "$MUNGE" = "false" ]; then
-            if [ "$TLS" = "false" ]; then
-               PRODUCT_MODE="none"
-            else
-               PRODUCT_MODE="${TLS_PREFIX}"
-            fi
-         else
-            PRODUCT_MODE="${MUNGE_PREFIX}"
-         fi
+   if [ "$AFS" = "true" ]; then
+      if [ "$CSP" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
+         $INFOTEXT "\nAFS security can't be combined with other security options!\n"
+         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
+         exit 1
       else
-         PRODUCT_MODE="${CSP_PREFIX}"
+         PRODUCT_MODE="${AFS_PREFIX}"
       fi
    else
-      PRODUCT_MODE="${AFS_PREFIX}"
+      if [ "$CSP" = "true" ]; then
+         if [ "$AFS" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
+            $INFOTEXT "\nCSP security can't be combined with other security options!\n"
+            $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
+            exit 1
+         else
+            PRODUCT_MODE="${CSP_PREFIX}"
+         fi
+      else
+         if [ "$TLS" = "true" -a "$MUNGE" = "true" ]; then
+            PRODUCT_MODE="${MUNGE_PREFIX},${TLS_PREFIX}"
+         elif [ "$TLS" = "true" ]; then
+            PRODUCT_MODE="${TLS_PREFIX}"
+         elif [ "$MUNGE" = "true" ]; then
+            PRODUCT_MODE="${MUNGE_PREFIX}"
+         else
+            PRODUCT_MODE="none"
+         fi
+      fi
    fi
 }
 

@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
+#include <vector>
 
 #include <pthread.h>
 
@@ -102,7 +103,6 @@ const char *threadnames[] = {
         nullptr
 };
 
-
 // thread local storage (level 1)
 // initialization depends on data of level 0 (e.g. logging)
 // TODO: data can partially be shared between threads. cleanup required.
@@ -118,13 +118,13 @@ typedef struct {
    char *binary_path;
    char *qmaster_spool_dir;
    char *security_mode;
+   std::vector<bool> security_modes;
    int listener_thread_count;
    int worker_thread_count;
    int reader_thread_count;
    int scheduler_thread_count;
    bool job_spooling;
    bool ignore_fqdn;
-   bool use_munge;
 } sge_bootstrap_ts1_t;
 
 static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
@@ -138,13 +138,13 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         nullptr, // binary_path
         nullptr, // qmaster_spool_dir
         nullptr, // security_mode
+        std::vector(BS_SEC_MODE_NUM_ENTRIES, false),
         0, // listener_thread_count
         0, // worker_thread_count
         0, // reader_thread_count
         0, // scheduler_thread_count
         false, // job_spooling
         false, // ignore_fqdn
-        false, // use_munge
 };
 
 static void
@@ -189,10 +189,33 @@ set_qmaster_spool_dir(const char *qmaster_spool_dir) {
 
 static void
 set_security_mode(const char *security_mode) {
+   DENTER(TOP_LAYER);
+
    sge_bootstrap_tl1.security_mode = sge_strdup(sge_bootstrap_tl1.security_mode, security_mode);
-#if defined(OCS_WITH_MUNGE)
-   sge_bootstrap_tl1.use_munge = strcasecmp(sge_bootstrap_tl1.security_mode, "munge") == 0;
-#endif
+   saved_vars_s *context = nullptr;
+   const char *mode = sge_strtok_r(sge_bootstrap_tl1.security_mode, ",", &context);
+   while (mode != nullptr) {
+      if (strcmp(mode, "tls") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_TLS] = true;
+      } else if (strcmp(mode, "munge") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_MUNGE] = true;
+      } else if (strcmp(mode, "afs") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_AFS] = true;
+      } else if (strcmp(mode, "csp") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_CSP] = true;
+      } else if (strcmp(mode, "dce") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_DCE] = true;
+      } else if (strcmp(mode, "kerberos") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_KERBEROS] = true;
+      } else {
+         DPRINTF("invalid security mode %s\n", mode);
+      }
+      // next mode
+      mode = sge_strtok_r(nullptr, ",", &context);
+   }
+   sge_free_saved_vars(context);
+
+   DRETURN_VOID;
 }
 
 // FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 32 threads
@@ -474,6 +497,22 @@ bootstrap_get_security_mode() {
    return security_mode;
 }
 
+bool
+bootstrap_has_security_mode(bs_sec_mode_t mode) {
+   bool ret = false;
+
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   if (mode > BS_SECMODE_NONE && mode < BS_SEC_MODE_NUM_ENTRIES) {
+      ret = sge_bootstrap_tl1.security_modes[mode];
+   }
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+
+   return ret;
+}
+
 int
 bootstrap_get_listener_thread_count() {
    if (!bootstrap_is_initialized()) {
@@ -515,14 +554,4 @@ int bootstrap_get_scheduler_thread_count() {
    int scheduler_thread_count = sge_bootstrap_tl1.scheduler_thread_count;
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return scheduler_thread_count;
-}
-
-bool bootstrap_get_use_munge() {
-   if (!bootstrap_is_initialized()) {
-      bootstrap_ts1_init();
-   }
-   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
-   bool use_munge = sge_bootstrap_tl1.use_munge;
-   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
-   return use_munge;
 }

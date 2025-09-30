@@ -105,9 +105,8 @@
 #include "uti/sge_signal.h"
 
 #include "sgeobj/cull_parse_util.h"
+#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_jsv.h"
-
-#include <sge_feature.h>
 
 /* module variables */
 static bool g_new_interactive_job_support = false;
@@ -1430,10 +1429,9 @@ int main(int argc, const char **argv)
    mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
 
    cl_framework_t communication_framework;
-   const char *security_mode = bootstrap_get_security_mode();
-   if (strcasecmp("csp", security_mode) == 0) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
       communication_framework = CL_CT_SSL;
-   } else if (strcasecmp("tls", security_mode) == 0) {
+   } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
       communication_framework = CL_CT_SSL_TLS;
    } else {
       communication_framework = CL_CT_TCP;
@@ -1815,7 +1813,7 @@ int main(int argc, const char **argv)
       tid = sge_qexecve(host, nullptr,
                         lGetString(job, JB_cwd),
                         lGetList(job, JB_env_list),
-                        lGetList(job, JB_path_aliases), lGetString(job, JB_cred), feature_get_active_featureset_id());
+                        lGetList(job, JB_path_aliases), lGetString(job, JB_cred));
       if (tid == nullptr) {
          const char *qexec_lasterror = qexec_last_err();
 

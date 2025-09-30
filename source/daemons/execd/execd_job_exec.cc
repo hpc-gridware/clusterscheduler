@@ -89,13 +89,6 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
 
    int ret = 1;
 
-   u_long32 feature_set;
-   /* ------- featureset */
-   if (unpackint(&(aMsg->buf), &feature_set)) {
-      ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
-      DRETURN(0);
-   }
-
    /* if request comes from qmaster: start a job
     * else it is a request to start a pe task
     */
@@ -176,16 +169,9 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 {
    int ret = 1;
    lListElem *jelem, *ja_task;
-   u_long32 feature_set;
    lList *answer_list = nullptr;
 
    DENTER(TOP_LAYER);
-
-   /* ------- featureset */
-   if (unpackint(&(aMsg->buf), &feature_set)) {
-      ERROR(SFNMAX, MSG_COM_UNPACKFEATURESET);
-      DRETURN(0);
-   }
 
    /*
    ** the check if the request has admin/root credentials is done by

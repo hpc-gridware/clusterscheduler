@@ -76,7 +76,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_ckpt.h"
@@ -1582,7 +1581,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* if "pag_cmd" is not set, do not use AFS setup for this host */
    pag_cmd = mconf_get_pag_cmd();
-   if (feature_is_enabled(FEATURE_AFS_SECURITY) && pag_cmd &&
+   if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
        strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       fprintf(fp, "use_afs=1\n");
 
@@ -1708,11 +1707,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* should the addgrp-id be used to kill processes */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int) mconf_get_enable_addgrp_kill());
 
-   if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
       csp_mode = true;
    }
    fprintf(fp, "csp=%d\n", (int) csp_mode);
-   if (strcasecmp(bootstrap_get_security_mode(), "tls") == 0) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
       tls_mode = true;
    }
    fprintf(fp, "tls=%d\n", (int) tls_mode);
@@ -1789,7 +1788,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DRETURN(-2);
       }
    }
-   else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+   else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
       snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
       if (SGE_STAT(dce_wrapper_cmd, &buf)) {
          snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
@@ -1797,7 +1796,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
-   } else if (feature_is_enabled(FEATURE_AFS_SECURITY) && pag_cmd &&
+   } else if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
               strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       int fd, len;
       const char *cp;
@@ -1980,8 +1979,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
     * access to DFS or AFS file systems
     */
    if (starting_shepherd_ok) {
-      if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-           feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+      if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+           bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
           lGetString(jep, JB_cred)) {
 
          char ccname[1024];
@@ -2003,12 +2002,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(shepherd_cmd, ps_name, nullptr);
-      } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+      } else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
          DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(dce_wrapper_cmd, ps_name, nullptr);
-      } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
+      } else if (!bootstrap_has_security_mode(BS_SEC_MODE_AFS) || !pag_cmd ||
                  !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
          DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),

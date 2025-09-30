@@ -51,7 +51,6 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_uidgid.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
@@ -128,7 +127,7 @@ int sge_security_initialize(const char *progname, const char *username)
          DPRINTF("secure dummy string not available\n");
       }
 
-      if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
          if (sge_ssl_setup_security_path(progname, username)) {
             DRETURN(-1);
          }
@@ -185,7 +184,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
 
    DENTER(TOP_LAYER);
    
-   if (feature_is_enabled(FEATURE_AFS_SECURITY)) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_AFS)) {
       snprintf(binary, sizeof(binary), "%s/util/get_token_cmd", sge_root);
 
       if (sge_get_token_cmd(binary, nullptr, 0) != 0) {
@@ -216,8 +215,8 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
     *  be nice if there was a generic job submittal function.
     */
 
-   if (feature_is_enabled(FEATURE_DCE_SECURITY) ||
-       feature_is_enabled(FEATURE_KERBEROS_SECURITY)) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+       bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) {
       snprintf(binary, sizeof(binary), "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, nullptr, 0) != 0) {
@@ -297,8 +296,8 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
     *
     */
 
-   if (feature_is_enabled(FEATURE_DCE_SECURITY) ||
-       feature_is_enabled(FEATURE_KERBEROS_SECURITY)) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+       bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) {
 
       pid_t command_pid=-1;
       FILE *fp_in, *fp_out, *fp_err;
@@ -364,8 +363,8 @@ void delete_credentials(const char *sge_root, lListElem *jep)
    /* 
     * Execute command to delete the client's DCE or Kerberos credentials.
     */
-   if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
         lGetString(jep, JB_cred)) {
 
       pid_t command_pid=-1;
@@ -437,8 +436,8 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
 
    DENTER(TOP_LAYER);
 
-   if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
        (do_authentication || lGetString(jep, JB_cred))) {
 
       pid_t command_pid;
@@ -548,8 +547,8 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
    
    DENTER(TOP_LAYER);
 
-   if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-        feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
        (cred = lGetString(jelem, JB_cred)) && cred[0]) {
 
       pid_t command_pid;

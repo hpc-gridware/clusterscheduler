@@ -52,7 +52,6 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
@@ -473,7 +472,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
-      lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
       lAppendElem(hlp, hep);
 
       /* register at qmaster */

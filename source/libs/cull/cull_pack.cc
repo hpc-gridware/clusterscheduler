@@ -1608,13 +1608,10 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
 *  NOTES
 *     MT-NOTE: pack_job_delivery() is MT safe
 *******************************************************************************/
-int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep, int feature_set_id)
+int pack_job_delivery(sge_pack_buffer *pb, lListElem *jep)
 {
    int ret;
 
-   if ((ret=packint(pb, feature_set_id))) {
-      return ret;
-   }
    if ((ret=cull_pack_elem(pb, jep)) != PACK_SUCCESS) {
       return ret;
    }

@@ -649,12 +649,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      if (strcmp(sender_comp_name, "qmaster") == 0) {
-                        u_long32 feature_set;
                         lListElem *job = nullptr;
-                        if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
-                           printf("      unpacked %s (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_u32 "\n", feature_set);
-                        }
                         if (cull_unpack_elem(&buf, &job, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(job, stdout); /* job */
                         } else {
@@ -662,12 +657,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                         lFreeElem(&job);
                      } else {
-                        u_long32 feature_set;
                         lListElem *petr = nullptr;
-                        if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
-                           printf("      unpacked %s - PE TASK REQUEST (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_u32 "\n", feature_set);
-                        }
                         if (cull_unpack_elem(&buf, &petr, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(petr, stdout);
                         } else {
@@ -1183,13 +1173,12 @@ int main(int argc, char *argv[]) {
 
    /* find out the framework type to use */
    if (option_ssl == 0 && option_tcp == 0 && option_tls == 0) {
-      const char *security_mode = bootstrap_get_security_mode();
 #ifdef SECURE
       got_no_framework = 1;
 #endif
-      if (strcmp("csp", security_mode) == 0) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
          option_ssl = 1;
-      } else if (strcmp("tls", security_mode) == 0) {
+      } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
          option_tls = 1;
       } else {
          option_tcp = 1;

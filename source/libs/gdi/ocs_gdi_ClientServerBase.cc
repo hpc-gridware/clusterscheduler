@@ -42,7 +42,6 @@
 #include "gdi/sge_gdi_data.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_feature.h"
 
 #include "ocs_gdi_ClientServerBase.h"
 
@@ -107,11 +106,12 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", tocomproc);
-         if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
-         } else if (strcmp(bootstrap_get_security_mode(), "tls") == 0) {
+         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
 #if defined(OCS_WITH_OPENSSL)
+            DPRINTF("using communication lib with TLS framework (execd_handle)\n");
             communication_framework = CL_CT_SSL_TLS;
             lList *answer_list = nullptr;
             commlib_error = gdi_setup_tls_config(false, &answer_list, component_get_qualified_hostname(),
@@ -240,10 +240,10 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", fromcommproc);
-         if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
-         } else if (strcmp(bootstrap_get_security_mode(), "tls") == 0) {
+         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
 #if defined (OCS_WITH_OPENSSL)
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL_TLS;

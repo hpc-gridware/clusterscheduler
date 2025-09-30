@@ -134,7 +134,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
    // in case of Munge authentication: re-resolve and check user and groups
    // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
    //       but e.g. for event client ack we should pass the user information to the event master
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
       if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&message->buf, false, true, false)) {
          DRETURN_VOID;
       }
@@ -152,7 +152,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       // check the tag and the sender
       u_long32 ack_tag = lGetUlong(ack, ACK_type);
       if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
-         if (bootstrap_get_use_munge()) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
             // messages needs to come from execd running as same admin user or root
             if (message->buf.uid != component_get_uid() && message->buf.uid != 0) {
                ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
@@ -383,7 +383,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    }
 
    // in case of Munge authentication: re-resolve and check user and groups
-   if (local_ret && bootstrap_get_use_munge()) {
+   if (local_ret && bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
       local_ret = ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(pb_in, false, true, true);
    }
 
@@ -553,7 +553,7 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    DENTER(TOP_LAYER);
 
    // in case of Munge authentication: we only accept reports from the admin user (the same user we are running under)
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
       if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, true, false, false)) {
          DRETURN_VOID;
       }
@@ -615,7 +615,7 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
    // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
    //       but we should verify the user information below, better, create an event master request instead of
    //       accessing event client data here in listener thread
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
       if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&aMsg->buf, false, true, false)) {
          DRETURN_VOID;
       }

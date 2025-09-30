@@ -66,7 +66,6 @@
 #include "gdi/sge_gdi_data.h"
 #include "gdi/msg_gdilib.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -502,7 +501,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       DRETURN(cl_ret);
    }
 
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
 #if defined (OCS_WITH_MUNGE)
       if (!ocs::uti::Munge::is_initialized()) {
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
@@ -537,7 +536,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       /*
       ** CSP initialize
       */
-      if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
          communication_framework = CL_CT_SSL;
 #ifdef SECURE
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
@@ -591,7 +590,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       }
 
       // new SSL encryption mode
-      if (strcasecmp(bootstrap_get_security_mode(), "tls") == 0) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
          communication_framework = CL_CT_SSL_TLS;
 #if defined(OCS_WITH_OPENSSL)
          cl_ret = gdi_setup_tls_config(is_server, answer_list, qualified_hostname, master, sge_qmaster_port);
@@ -763,11 +762,6 @@ ocs::gdi::ClientBase::setup(int component_id, u_long32 thread_id, lList **answer
    char group[128] = "";
    if (sge_gid2group(getegid(), group, sizeof(group), MAX_NIS_RETRIES)) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_SYSTEM_RESOLVEGROUP);
-      DRETURN(AE_ERROR);
-   }
-
-   if (feature_initialize_from_string(bootstrap_get_security_mode(), answer_list)) {
-      // answer was set by feature_initialize_from_string()
       DRETURN(AE_ERROR);
    }
 

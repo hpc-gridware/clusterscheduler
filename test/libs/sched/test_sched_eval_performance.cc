@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -49,8 +49,6 @@
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
-
-#include "sgeobj/sge_feature.h"
 
 #include "sge_complex_schedd.h"
 

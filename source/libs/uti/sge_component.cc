@@ -854,7 +854,7 @@ component_get_auth_info() {
       }
    }
 
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
 #if defined(OCS_WITH_MUNGE)
       // we need to encode the auth info in every call to this function
       // even if the user information and the payload will never change
@@ -923,7 +923,7 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
    // decrypt received auth_info
    uid_t munge_uid{0};
    gid_t munge_gid{0};
-   bool use_munge = bootstrap_get_use_munge();
+   bool use_munge = bootstrap_has_security_mode(BS_SEC_MODE_MUNGE);
    if (use_munge) {
 #if defined(OCS_WITH_MUNGE)
       munge_err_t err;
