@@ -250,5 +250,9 @@
 #define MSG_SSL_ACCEPT_CALLED_ON_CLIENT            _MESSAGE(59294, _("SSL accept called on client connection"))
 #define MSG_SSL_CONNECT_CALLED_ON_SERVER           _MESSAGE(59295, _("SSL connect called on server connection"))
 #define MSG_SSL_NOT_BUILT_IN                       _MESSAGE(59296, _("SSL support is not built in"))
+#define MSG_OPENSSL_CANNOT_CREATE_CERT_DIR_SS      _MESSAGE(59297, _("cannot create certificate directory " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_CREATE_KEY_DIR_SS       _MESSAGE(59298, _("cannot create key directory " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_PERM_CERT_DIR_SS        _MESSAGE(59299, _("cannot set permissions on certificate directory " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_PERM_KEY_DIR_SS         _MESSAGE(59300, _("cannot set permissions on key directory " SFQ ": " SFN4))
 
 // clang-format on

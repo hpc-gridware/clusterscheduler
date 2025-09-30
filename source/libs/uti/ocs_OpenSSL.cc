@@ -20,6 +20,7 @@
 
 #include <filesystem>
 #include <string>
+#include <system_error>
 
 #include <dlfcn.h>
 #include <libgen.h>
@@ -566,7 +567,63 @@ namespace ocs::uti {
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::verify_create_certificate_and_key(std::string &cert_path, std::string &key_path, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, dstring *error_dstr) {
+      bool ret = true;
+
+      if (ret) {
+         std::filesystem::path cert_dir = cert_path.parent_path();
+         if (!std::filesystem::exists(cert_dir)) {
+            // need to switch to admin user if we are root
+            // SGE_ROOT might be on a filesystem where root has no write permissions
+            if (switch_user) {
+               sge_switch2admin_user();
+            }
+            std::error_code ec;
+            if (!std::filesystem::create_directories(cert_dir, ec)) {
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_CREATE_CERT_DIR_SS, cert_dir.c_str(), ec.message().c_str());
+               ret = false;
+            } else {
+               // chmod 755
+               std::filesystem::permissions(cert_dir, std::filesystem::perms::owner_all |
+                                            std::filesystem::perms::group_read | std::filesystem::perms::group_exec |
+                                            std::filesystem::perms::others_read | std::filesystem::perms::others_exec,
+                                            ec);
+               if (ec) {
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_PERM_CERT_DIR_SS, cert_dir.c_str(), ec.message().c_str());
+                  ret = false;
+               }
+            }
+            if (switch_user) {
+               sge_switch2start_user();
+            }
+         }
+      }
+      if (ret) {
+         std::filesystem::path key_dir = key_path.parent_path();
+         if (!std::filesystem::exists(key_dir)) {
+            std::error_code ec;
+            if (!std::filesystem::create_directories(key_dir, ec)) {
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_CREATE_KEY_DIR_SS, key_dir.c_str(), ec.message().c_str());
+               ret = false;
+            } else {
+               // chmod 700
+               std::filesystem::permissions(key_dir, std::filesystem::perms::owner_all, ec);
+               if (ec) {
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_PERM_KEY_DIR_SS, key_dir.c_str(), ec.message().c_str());
+                  ret = false;
+               }
+            }
+         }
+      }
+
+      return ret;
+   }
+
+   bool OpenSSL::OpenSSLContext::certificate_recreate_required() {
+      return false;
+   }
+
+   bool OpenSSL::OpenSSLContext::verify_create_certificate_and_key(dstring *error_dstr) {
       bool ret = true;
 
       // when we are starting as root and creating a daemon certificate
@@ -578,115 +635,91 @@ namespace ocs::uti {
       bool called_as_root = geteuid() == SGE_SUPERUSER_UID;
       int component = component_get_component_id();
       bool switch_user = called_as_root && (component == QMASTER || component == EXECD);
+      bool create_certificate_and_key = false;
 
-      if (!std::filesystem::exists(cert_path.c_str()) ||
-          !std::filesystem::exists(key_path.c_str())) {
-         char buffer[MAXPATHLEN];
+      if (!std::filesystem::exists(cert_path) ||
+          !std::filesystem::exists(key_path)) {
+         ret = verify_create_directories(switch_user, error_dstr);
          if (ret) {
-            // @todo instead of std::string use filesystem::path, instead of dirname use path.parent_path()
-            sge_strlcpy(buffer, cert_path.c_str(), MAXPATHLEN);
-            const char *dir = dirname(buffer);
-            if (!std::filesystem::exists(dir)) {
-               // need to switch to admin user if we are root
-               // SGE_ROOT might be on a filesystem where root has no write permissions
-               if (switch_user) {
-                  sge_switch2admin_user();
-               }
-               if (!std::filesystem::create_directories(dir)) {
-                  sge_dstring_sprintf(error_dstr, "Unable to create certificate directory %s: %s", dir, strerror(errno));
-                  ret = false;
-               } else {
-                  chmod(dir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); // 755
-               }
-               if (switch_user) {
-                  sge_switch2start_user();
-               }
-            }
+            create_certificate_and_key = true;
          }
-         if (ret) {
-            sge_strlcpy(buffer, key_path.c_str(), MAXPATHLEN);
-            const char *dir = dirname(buffer);
-            if (!std::filesystem::exists(dir)) {
-               if (!std::filesystem::create_directories(dir)) {
-                  sge_dstring_sprintf(error_dstr, "Unable to create key directory %s: %s", dir, strerror(errno));
-                  ret = false;
-               } else {
-                  chmod(dir, S_IRUSR | S_IWUSR | S_IXUSR); // 700
-               }
-            }
+      } else {
+         // @todo also check how long the certificate/key are still valid
+         if (certificate_recreate_required()) {
+            create_certificate_and_key = true;
          }
-         if (ret) {
-            // @todo also check how long the certificate/key are still valid
-            // @todo can we create the certificate from some template?
-            // @todo need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
-            EVP_PKEY *pkey = EVP_PKEY_new_func();
-            RSA *rsa = RSA_new_func();
-            BIGNUM *bn = BN_new_func();
-            X509 *x509 = X509_new_func();
+      }
 
-            BN_set_word_func(bn, RSA_F4);
-            RSA_generate_key_ex_func(rsa, 2048, bn, nullptr);
-            EVP_PKEY_assign_func(pkey, EVP_PKEY_RSA, rsa);
+      if (ret && create_certificate_and_key) {
+         // @todo can we create the certificate from some template?
+         // @todo need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
+         EVP_PKEY *pkey = EVP_PKEY_new_func();
+         RSA *rsa = RSA_new_func();
+         BIGNUM *bn = BN_new_func();
+         X509 *x509 = X509_new_func();
 
-            X509_set_version_func(x509, 2);
-            ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
-            X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
-            X509_gmtime_adj_func(X509_getm_notAfter_func(x509), 31536000L); // 1 Jahr
-            X509_set_pubkey_func(x509, pkey);
+         BN_set_word_func(bn, RSA_F4);
+         RSA_generate_key_ex_func(rsa, 2048, bn, nullptr);
+         EVP_PKEY_assign_func(pkey, EVP_PKEY_RSA, rsa);
 
-            X509_NAME *name = X509_get_subject_name_func(x509);
-            X509_NAME_add_entry_by_txt_func(name, "CN", MBSTRING_ASC, (unsigned char *)component_get_qualified_hostname(), -1, -1, 0);
-            X509_set_issuer_name_func(x509, name);
+         X509_set_version_func(x509, 2);
+         ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
+         X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
+         X509_gmtime_adj_func(X509_getm_notAfter_func(x509), 31536000L); // 1 Jahr
+         X509_set_pubkey_func(x509, pkey);
 
-            X509_sign_func(x509, pkey, EVP_sha256_func());
+         X509_NAME *name = X509_get_subject_name_func(x509);
+         X509_NAME_add_entry_by_txt_func(name, "CN", MBSTRING_ASC, (unsigned char *)component_get_qualified_hostname(), -1, -1, 0);
+         X509_set_issuer_name_func(x509, name);
 
-            FILE *f = fopen(key_path.c_str(), "wb");
-            PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
-            fclose(f);
-            // @todo in theory we have a very short time window here where the file is created but not yet protected
-            chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
+         X509_sign_func(x509, pkey, EVP_sha256_func());
 
-            // need to switch to admin user if we are root
-            // SGE_ROOT might be on a filesystem where root has no write permissions
-            if (switch_user) {
-               sge_switch2admin_user();
-            }
-            f = fopen(cert_path.c_str(), "wb");
-            PEM_write_X509_func(f, x509);
-            fclose(f);
-            chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
-            if (switch_user) {
-               sge_switch2start_user();
-            }
+         FILE *f = fopen(key_path.c_str(), "wb");
+         PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
+         fclose(f);
+         // @todo in theory we have a very short time window here where the file is created but not yet protected
+         chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
 
-            X509_free_func(x509);
-            EVP_PKEY_free_func(pkey);
-            // rsa is freed with pkey
-            BN_free_func(bn);
+         // need to switch to admin user if we are root
+         // SGE_ROOT might be on a filesystem where root has no write permissions
+         if (switch_user) {
+            sge_switch2admin_user();
          }
+         f = fopen(cert_path.c_str(), "wb");
+         PEM_write_X509_func(f, x509);
+         fclose(f);
+         chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
+         if (switch_user) {
+            sge_switch2start_user();
+         }
+
+         X509_free_func(x509);
+         EVP_PKEY_free_func(pkey);
+         // rsa is freed with pkey
+         BN_free_func(bn);
       }
 
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::configure_server_context(SSL_CTX *ctx, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {
       bool ret = true;
 
       // verify if certificate and key files exist, otherwise create them
       if (ret) {
-         ret = verify_create_certificate_and_key(cert_path, key_path, error_dstr);
+         ret = verify_create_certificate_and_key(error_dstr);
       }
 
       /* Set the key and cert */
       if (ret) {
-         if (SSL_CTX_use_certificate_chain_file_func(ctx, cert_path.c_str()) <= 0) {
+         if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
             sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", cert_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
             ret = false;
          }
       }
 
       if (ret) {
-         if (SSL_CTX_use_PrivateKey_file_func(ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
+         if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
             sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", key_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
             ret = false;
          }
@@ -695,25 +728,23 @@ namespace ocs::uti {
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::configure_client_context(SSL_CTX *ctx, std::string &cert_path, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::configure_client_context(dstring *error_dstr) {
       bool ret = true;
       if (cert_path.empty()) {
-         // We use this for now for the interactive job support (sge_shepherd connecting as client to qrsh being server).
-         // @todo Need to transfer the certificate with the job from qrsh to sge_qmaster to sge_execd, there write
-         //       it to a file in the active_jobs directory and pass the path in the sge_shepherd config file.
-         SSL_CTX_set_verify_func(ctx, SSL_VERIFY_NONE, nullptr);
+         // We do not use this, consider handling it an error.
+         SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_NONE, nullptr);
       } else {
          /*
           * Configure the client to abort the handshake if certificate verification
           * fails
           */
-         SSL_CTX_set_verify_func(ctx, SSL_VERIFY_PEER, nullptr);
+         SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_PEER, nullptr);
          /*
           * In a real application you would probably just use the default system certificate trust store and call:
           *     SSL_CTX_set_default_verify_paths(ctx);
           * In this demo though we are using a self-signed certificate, so the client must trust it directly.
           */
-         if (!SSL_CTX_load_verify_locations_func(ctx, cert_path.c_str(), nullptr)) {
+         if (!SSL_CTX_load_verify_locations_func(ssl_ctx, cert_path.c_str(), nullptr)) {
             sge_dstring_sprintf(error_dstr, "Unable to load verify location %s: %s", cert_path.c_str(), ocs::uti::OpenSSL::ERR_reason_error_string_func(ocs::uti::OpenSSL::ERR_get_error_func()));
             ret = false;
          }
@@ -735,6 +766,7 @@ namespace ocs::uti {
 
       bool ok = true;
 
+      // prepare object parameters
       SSL_CTX *ssl_ctx;
       if (ok) {
          const SSL_METHOD *method;
@@ -749,16 +781,25 @@ namespace ocs::uti {
             ok = false;
          }
       }
+
+      // create object
+      if (ok) {
+         ret = new OpenSSLContext(is_server, ssl_ctx, cert_path, key_path);
+      }
+
+      // configure the SSL context
       if (ok) {
          if (is_server) {
-            ok = configure_server_context(ssl_ctx, cert_path, key_path, error_dstr);
+            ok = ret->configure_server_context(error_dstr);
          } else {
-            ok = configure_client_context(ssl_ctx, cert_path, error_dstr);
+            ok = ret->configure_client_context(error_dstr);
          }
       }
 
-      if (ok) {
-         ret = new OpenSSLContext(is_server, ssl_ctx, cert_path, key_path);
+      // if something failed, free the object again and return nullptr
+      if (!ok && ret != nullptr) {
+         delete ret;
+         ret = nullptr;
       }
 
       return ret;
@@ -782,7 +823,7 @@ namespace ocs::uti {
       if (ok) {
          // make sure that protocol handshakes are automatically restarted when interrupted
          //SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
-         SSL_ctrl_func(ssl,SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY,NULL);
+         SSL_ctrl_func(ssl,SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY,nullptr);
       }
 
       if (ok) {

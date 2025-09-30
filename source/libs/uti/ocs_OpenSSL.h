@@ -27,6 +27,7 @@
 #error "Only OpenSSL version 3 is supported"
 #endif
 
+#include <filesystem>
 #include <string>
 #include "uti/sge_dstring.h"
 
@@ -149,23 +150,26 @@ namespace ocs::uti {
       class OpenSSLContext {
          bool is_server;
          SSL_CTX *ssl_ctx;
-         std::string cert_file;
-         std::string key_file;
+         std::filesystem::path cert_path;
+         std::filesystem::path key_path;
 
          // private constructor, use the create() method
-         OpenSSLContext(bool is_server, SSL_CTX *ssl_ctx, std::string(cert_path), std::string(key_path))
-         : is_server(is_server), ssl_ctx(ssl_ctx), cert_file{cert_path}, key_file {key_path} {}
+         OpenSSLContext(bool is_server, SSL_CTX *ssl_ctx, std::filesystem::path(cert_path), std::filesystem::path(key_path))
+         : is_server(is_server), ssl_ctx(ssl_ctx), cert_path{cert_path}, key_path {key_path} {}
 
-         static bool verify_create_certificate_and_key(std::string &cert_path, std::string &key_path, dstring *error_dstr);
-         static bool configure_server_context(SSL_CTX *ctx, std::string &cert_path, std::string &key_path, dstring *error_dstr);
-         static bool configure_client_context(SSL_CTX *ctx, std::string &cert_path, dstring *error_dstr);
+         bool verify_create_directories(bool switch_user, dstring *error_dstr);
+         bool verify_create_certificate_and_key(dstring *error_dstr);
+         bool certificate_recreate_required();
+
+         bool configure_server_context(dstring *error_dstr);
+         bool configure_client_context(dstring *error_dstr);
 
       public:
          static OpenSSLContext *create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr);
          ~OpenSSLContext();
 
          bool get_is_server() { return is_server; }
-         const char *get_cert_file() { return cert_file.c_str(); }
+         const char *get_cert_file() { return cert_path.c_str(); }
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
       };
 
@@ -190,14 +194,6 @@ namespace ocs::uti {
          int read(char *buffer, size_t max_len, dstring *error_dstr);
          int write(char *buffer, size_t len, dstring *error_dstr);
       };
-
-      // @todo Somewhere we need to set paths to certificate and key
-      //       - Daemons:
-      //          - Certificates in $SGE_ROOT/$SGE_CELL/common/certs/<component_name>_<hostname>.pem
-      //          - Key in /var/ocs|gcs/private/<component_name>_<hostname>.key with 600 permissions
-      // @todo Have a boolean option to skip certificate verification?
-      //       For sge_shepherd connecting to qrsh?
-      //       Or, better: Send it in the job, have a method for setting it from string.
    };
 } // namespace ocs::uti
 #endif
