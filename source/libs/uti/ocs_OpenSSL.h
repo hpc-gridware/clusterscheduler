@@ -84,6 +84,9 @@ namespace ocs::uti {
    using X509_getm_notAfter_func_t = ASN1_TIME *(*)(X509 *x);
    using SSL_get_error_func_t = int (*)(SSL *ssl, int ret);
    using ERR_clear_error_func_t = void (*)();
+   using PEM_read_X509_func_t = X509 *(*)(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
+   using X509_get0_notAfter_func_t = const ASN1_TIME *(*)(const X509 *x);
+   using ASN1_TIME_diff_func_t = int (*)(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to);
 
    class OpenSSL {
       // static data
@@ -137,6 +140,9 @@ namespace ocs::uti {
       static X509_getm_notAfter_func_t X509_getm_notAfter_func;
       static SSL_get_error_func_t SSL_get_error_func;
       static ERR_clear_error_func_t ERR_clear_error_func;
+      static PEM_read_X509_func_t PEM_read_X509_func;
+      static X509_get0_notAfter_func_t X509_get0_notAfter_func;
+      static ASN1_TIME_diff_func_t ASN1_TIME_diff_func;
 
    public:
       // static methods
@@ -159,7 +165,7 @@ namespace ocs::uti {
 
          bool verify_create_directories(bool switch_user, dstring *error_dstr);
          bool verify_create_certificate_and_key(dstring *error_dstr);
-         bool certificate_recreate_required();
+         bool certificate_recreate_required(dstring *error_dstr);
 
          bool configure_server_context(dstring *error_dstr);
          bool configure_client_context(dstring *error_dstr);

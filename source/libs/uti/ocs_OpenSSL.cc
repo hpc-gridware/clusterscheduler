@@ -91,6 +91,9 @@ namespace ocs::uti {
    X509_getm_notAfter_func_t OpenSSL::X509_getm_notAfter_func = nullptr;
    SSL_get_error_func_t OpenSSL::SSL_get_error_func = nullptr;
    ERR_clear_error_func_t OpenSSL::ERR_clear_error_func = nullptr;
+   PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
+   X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
+   ASN1_TIME_diff_func_t OpenSSL::ASN1_TIME_diff_func = nullptr;
 
    // static methods
    bool OpenSSL::initialize(dstring *error_dstr) {
@@ -510,6 +513,30 @@ namespace ocs::uti {
             ret = false;
          }
       }
+      if (ret) {
+         func = "PEM_read_X509";
+         PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(lib_handle, func));
+         if (PEM_read_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_get0_notAfter";
+         X509_get0_notAfter_func = reinterpret_cast<X509_get0_notAfter_func_t>(dlsym(lib_handle, func));
+         if (X509_get0_notAfter_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "ASN1_TIME_diff";
+         ASN1_TIME_diff_func = reinterpret_cast<ASN1_TIME_diff_func_t>(dlsym(lib_handle, func));
+         if (ASN1_TIME_diff_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
 
       // if the initialization failed, free everything again
       if (!ret) {
@@ -619,11 +646,66 @@ namespace ocs::uti {
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::certificate_recreate_required() {
-      return false;
+   bool OpenSSL::OpenSSLContext::certificate_recreate_required(dstring *error_dstr) {
+      bool ret = false;
+      bool ok = true;
+      X509 *cert = nullptr;
+
+      FILE *fp = fopen(cert_path.c_str(), "r");
+      if (fp == nullptr) {
+         sge_dstring_sprintf(error_dstr, "cannot open certificate file %s: %s", cert_path.c_str(), strerror(errno));
+         ok = false;
+         ret = true; // we cannot read the cert file - try to recreate it
+      }
+
+      if (ok) {
+         cert = PEM_read_X509_func(fp, nullptr, nullptr, nullptr);
+         fclose(fp);
+         if (cert == nullptr) {
+            // @todo Do this and the following functions set some error code? No info in the man page.
+            sge_dstring_sprintf(error_dstr, "cannot read certificate from file %s", cert_path.c_str());
+            ok = false;
+            ret = true; // we cannot read the cert file - try to recreate it
+         }
+      }
+
+      int days_left, secs_left;
+      if (ok) {
+         const ASN1_TIME *notAfter = X509_get0_notAfter_func(cert);
+
+         // diff between notAfter and current time
+         // ==> If from or to is NULL the current time is used.
+         if (ASN1_TIME_diff_func(&days_left, &secs_left, nullptr, notAfter) != 1) {
+            sge_dstring_sprintf(error_dstr, "cannot calculate difference between current time and certificate notAfter time");
+            ok = false;
+            ret = true; // we cannot calculate a diff, try to recreate the certificate
+         }
+      }
+      if (ok) {
+         if (days_left < 0 || secs_left < 0) {
+            // certificate is already expired
+            ret = true;
+         } else {
+            int sec_total = days_left * 86400 + secs_left;
+            int certificate_lifetime = bootstrap_get_cert_lifetime();
+            // renew when only 25% of the lifetime is left
+            if (sec_total  < certificate_lifetime / 4) {
+               ret = true;
+            }
+         }
+      }
+
+      if (cert != nullptr) {
+         X509_free_func(cert);
+         cert = nullptr;
+      }
+
+      return ret;
    }
 
    bool OpenSSL::OpenSSLContext::verify_create_certificate_and_key(dstring *error_dstr) {
+      DENTER(TOP_LAYER);
+
       bool ret = true;
 
       // when we are starting as root and creating a daemon certificate
@@ -644,8 +726,12 @@ namespace ocs::uti {
             create_certificate_and_key = true;
          }
       } else {
-         // @todo also check how long the certificate/key are still valid
-         if (certificate_recreate_required()) {
+         if (certificate_recreate_required(error_dstr)) {
+            if (sge_dstring_strlen(error_dstr) > 0) {
+               // when there were errors we renew the certificate
+               // no way to report this except some debug output
+               DPRINTF("checking certificate lifetime had errors: %s\n", sge_dstring_get_string(error_dstr));
+            }
             create_certificate_and_key = true;
          }
       }
@@ -665,7 +751,8 @@ namespace ocs::uti {
          X509_set_version_func(x509, 2);
          ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
          X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
-         X509_gmtime_adj_func(X509_getm_notAfter_func(x509), 31536000L); // 1 Jahr
+         int certificate_lifetime = bootstrap_get_cert_lifetime();
+         X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
          X509_NAME *name = X509_get_subject_name_func(x509);
@@ -699,7 +786,7 @@ namespace ocs::uti {
          BN_free_func(bn);
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {

@@ -514,6 +514,11 @@ bootstrap_has_security_mode(bs_sec_mode_t mode) {
 }
 
 int
+bootstrap_get_cert_lifetime() {
+   return 365 * 24 * 60 * 60; // 1 year
+}
+
+int
 bootstrap_get_listener_thread_count() {
    if (!bootstrap_is_initialized()) {
       bootstrap_ts1_init();
