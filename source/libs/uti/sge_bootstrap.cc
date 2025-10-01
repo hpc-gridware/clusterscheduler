@@ -119,6 +119,8 @@ typedef struct {
    char *qmaster_spool_dir;
    char *security_mode;
    std::vector<bool> security_modes;
+   char *security_params;
+   int certificate_lifetime;
    int listener_thread_count;
    int worker_thread_count;
    int reader_thread_count;
@@ -139,6 +141,8 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         nullptr, // qmaster_spool_dir
         nullptr, // security_mode
         std::vector(BS_SEC_MODE_NUM_ENTRIES, false),
+        nullptr, // security_params
+        365 * 24 * 60 * 60, // default certificate lifetime one year
         0, // listener_thread_count
         0, // worker_thread_count
         0, // reader_thread_count
@@ -218,6 +222,38 @@ set_security_mode(const char *security_mode) {
    DRETURN_VOID;
 }
 
+#define MIN_CERTIFICATE_LIFETIME (120)
+#define MAX_CERTIFICATE_LIFETIME (365 * 24 * 60 * 60)
+static void
+set_security_params(const char *security_params) {
+   DENTER(TOP_LAYER);
+
+   sge_bootstrap_tl1.security_params = sge_strdup(sge_bootstrap_tl1.security_params, security_params);
+   saved_vars_s *context = nullptr;
+   const char *param = sge_strtok_r(sge_bootstrap_tl1.security_params, ",", &context);
+   while (param != nullptr) {
+      if (strncasecmp(param, "certificate_lifetime=", strlen("certificate_lifetime=")) == 0) {
+         const char *str_value = strchr(param, '=');
+         if (str_value != nullptr) {
+            int value = atoi(str_value + 1);
+            if (value < MIN_CERTIFICATE_LIFETIME) {
+               value = MIN_CERTIFICATE_LIFETIME;
+            }
+            if (value > MAX_CERTIFICATE_LIFETIME) {
+               value = MAX_CERTIFICATE_LIFETIME;
+            }
+            sge_bootstrap_tl1.certificate_lifetime = value;
+         }
+      } else {
+         DPRINTF("invalid security parameter %s\n", param);
+      }
+      // next param
+      param = sge_strtok_r(nullptr, ",", &context);
+   }
+   sge_free_saved_vars(context);
+}
+
+
 // FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 32 threads
 #define MAX_THREADS_PER_POOL (32)
 
@@ -281,6 +317,7 @@ bootstrap_log_ts1_parameter() {
    DPRINTF("   binary_path          >%s<\n", sge_bootstrap_tl1.binary_path);
    DPRINTF("   qmaster_spool_dir    >%s<\n", sge_bootstrap_tl1.qmaster_spool_dir);
    DPRINTF("   security_mode        >%s<\n", sge_bootstrap_tl1.security_mode);
+   DPRINTF("   security_params      >%s<\n", sge_bootstrap_tl1.security_params);
    DPRINTF("   job_spooling         >%s<\n", sge_bootstrap_tl1.job_spooling ? "true" : "false");
    DPRINTF("   listener_threads     >%d<\n", sge_bootstrap_tl1.listener_thread_count);
    DPRINTF("   worker_threads       >%d<\n", sge_bootstrap_tl1.worker_thread_count);
@@ -292,7 +329,7 @@ bootstrap_log_ts1_parameter() {
 
 static void
 bootstrap_init_from_file() {
-#define NUM_BOOTSTRAP 14
+#define NUM_BOOTSTRAP 15
 #define NUM_REQ_BOOTSTRAP 9
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
            {"admin_user",        true},
@@ -305,6 +342,7 @@ bootstrap_init_from_file() {
            {"binary_path",       true},
            {"qmaster_spool_dir", true},
            {"security_mode",     true},
+           {"security_params",   false},
            {"job_spooling",      false},
 
            {"listener_threads",  false},
@@ -348,20 +386,21 @@ bootstrap_init_from_file() {
       set_binary_path(value[6]);
       set_qmaster_spool_dir(value[7]);
       set_security_mode(value[8]);
-      if (strcmp(value[9], "") != 0) {
-         parse_ulong_val(nullptr, &val, TYPE_BOO, value[9], nullptr, 0);
+      set_security_params(value[9]);
+      if (strcmp(value[10], "") != 0) {
+         parse_ulong_val(nullptr, &val, TYPE_BOO, value[10], nullptr, 0);
          set_job_spooling(val != 0);
       } else {
          set_job_spooling(true);
       }
 
-      parse_ulong_val(nullptr, &val, TYPE_INT, value[10], nullptr, 0);
-      set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
-      set_worker_thread_count((int) val);
+      set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[12], nullptr, 0);
-      set_reader_thread_count((int) val);
+      set_worker_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[13], nullptr, 0);
+      set_reader_thread_count((int) val);
+      parse_ulong_val(nullptr, &val, TYPE_INT, value[14], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
 
@@ -515,7 +554,13 @@ bootstrap_has_security_mode(bs_sec_mode_t mode) {
 
 int
 bootstrap_get_cert_lifetime() {
-   return 365 * 24 * 60 * 60; // 1 year
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   int cert_lifetime = sge_bootstrap_tl1.certificate_lifetime;
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+   return cert_lifetime;
 }
 
 int
