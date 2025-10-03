@@ -1754,8 +1754,7 @@ static void start_qlogin_job(const char *shell_path)
 *  SEE ALSO
 *     builtin_starter/start_qlogin_job()
 *******************************************************************************/
-static void start_qrsh_job()
-{
+static void start_qrsh_job() {
    /* TODO: RFE: Make a minimal qrsh_starter for new IJS */
    const char *sge_root = nullptr;
    const char *arch = nullptr;
@@ -1795,6 +1794,6 @@ static void start_qrsh_job()
       shepherd_trace("args[%d] = \"%s\"", i, args[i]);
    }
 
-   shepherd_trace("execvp(%s, ...);", args[0]);
-   execvp(args[0], args);
+   shepherd_trace("execve(%s, ...);", args[0]);
+   execve(args[0], args, sge_get_environment());
 }
