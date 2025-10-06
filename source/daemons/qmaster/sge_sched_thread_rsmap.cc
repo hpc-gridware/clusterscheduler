@@ -196,7 +196,7 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
 
       DPRINTF("gdil_ep: %s, %d slots%s\n", host_name, slots, is_master_task ? ", master task" : "");
 
-      // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
+      // add the binding_touse information (copy from JG to GRU)
       const lList *binding_to_use_list = lGetList(gdil_ep, JG_binding_to_use);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
@@ -287,7 +287,6 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
       lFreeList(&granted_resources_list);
    }
 
-   // CS-731: add the granted binding
 #if 0
    DPRINTF("add_granted_resource_list: after adding binding information\n");
    lWriteElemTo(ja_task, stderr);

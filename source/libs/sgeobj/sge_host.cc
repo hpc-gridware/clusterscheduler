@@ -570,7 +570,6 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
    // just check if the requested change makes sense then return
    int mods = 0;
    if (just_check != nullptr) {
-      // @todo CS-731: check that threads to be added are not already in use
       if (binding_in_use == nullptr || strcmp(binding_to_use, binding_in_use) != 0) {
          *just_check = true;
          mods++;
@@ -580,7 +579,6 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
       DRETURN(mods);
    }
 
-   // @todo CS-731: DONE: add or remove binding_in_use from resource->RUE_utilized_now_binding_inuse
    // add/remove all cores/threads that are set in binding_to_use to binding_in_use
    ocs::TopologyString topo_now;
    const char *now_str = lGetString(resource, RUE_utilized_now_binding_inuse);
@@ -590,7 +588,6 @@ host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, 
       ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
                                                             topo_now, topo_to_use, slots > 0);
    } else {
-      // @todo CS-732: do cleanup. allow the second topo string to be empty
       topo_now = ocs::TopologyString(binding_to_use);
       ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
                                                             topo_now, topo_now, slots > 0);

@@ -325,7 +325,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    serf_record_entry(job_id, ja_taskid, (type!=nullptr)?type:"<unknown>", start_time, end_time, level, object_name, name, utilization);
 
-   // @todo CS-731: DONE: add all entries in the list instead of just the first
    bool handle_binding = false;
    ocs::TopologyString binding_to_use_obj;
    if (level == HOST_TAG && strcmp(name, SGE_ATTR_SLOTS) == 0 && binding_touse != nullptr) {
@@ -357,10 +356,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    double util_prev = 0.0;
    const char *binding_prev = nullptr;
    if (start) {
-      DPRINTF("utilization_add: A\n");
       // if the start element is already there, we can just add the utilization to it
       lAddDouble(start, RDE_amount, utilization);
-      // @todo CS-731: DONE: add binding_inuse information to the start element
+
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
          if (lGetString(start, RDE_binding_inuse) != nullptr) {
@@ -370,7 +368,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
                                                                 binding_to_use_obj, true);
       }
    } else {
-      DPRINTF("utilization_add: B\n");
       // no start element found, so we need to create one
       // if there is a previous element, we can add its amount and binding_inuse to the new element
       // otherwise we just create a new element with the utilization. it is the new list beginning
@@ -383,7 +380,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
       start = lCreateElem(RDE_Type);
       lSetUlong64(start, RDE_time, start_time);
       lSetDouble(start, RDE_amount, utilization + util_prev);
-      // @todo CS-731: DONE: add binding_inuse information to the start element
+
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
          if (binding_prev != nullptr) {
@@ -411,11 +408,9 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
          break;
       }
 
-      DPRINTF("utilization_add: C\n");
-
       /* increment amount of elements in-between */
       lAddDouble(thiz, RDE_amount, utilization);
-      // @todo CS-731: DONE: add binding_inuse information to the thiz element
+
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
          if (lGetString(thiz, RDE_binding_inuse) != nullptr) {
@@ -429,7 +424,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
    }
 
    if (!end) {
-      DPRINTF("utilization_add: D\n");
       util_prev = lGetDouble(prev, RDE_amount);
       binding_prev = lGetString(prev, RDE_binding_inuse);
 
@@ -450,7 +444,6 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    utilization_normalize(resource_diagram);
 
-   DPRINTF("utilization_add: E\n");
    // @todo CS-731: disable when finished
 #if 1
    DSTRING_STATIC(combined_name, 1024);

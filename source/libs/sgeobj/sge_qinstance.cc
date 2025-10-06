@@ -1046,6 +1046,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       *just_check = true;
    }
 
+#if 0
    // @todo: CS-731: only required for binding if user has not defined a capacity for slots
    // if we debit EH_consumable_config_list, we need to ensure that the slots complex is available for the binding booking
    // We need to add it if the admin did not add it on host level
@@ -1062,6 +1063,7 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       lSetString(auto_slots, CE_stringval, str.c_str());
       lAppendElem(lGetListRW(ep, config_nm), auto_slots);
    }
+#endif
 
    // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
    const lListElem *cr_config;
@@ -1071,11 +1073,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
 
       // search complex definition (with default request)
       if (!(dcep = centry_list_locate(centry_list, name))) {
+#if 0
          if (auto_slots != nullptr) {
             // remove the auto_slots element, if it was created
             lDechainElem(lGetListRW(ep, config_nm), auto_slots);
             lFreeElem(&auto_slots);
          }
+#endif
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
       }
@@ -1188,11 +1192,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
       }
    }
 
+#if 0
    if (auto_slots != nullptr) {
       // remove the auto_slots element, if it was created
       lDechainElem(lGetListRW(ep, config_nm), auto_slots);
       lFreeElem(&auto_slots);
    }
+#endif
    DRETURN(mods);
 }
 

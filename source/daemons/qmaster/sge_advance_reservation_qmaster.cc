@@ -1720,7 +1720,7 @@ ar_initialize_resource_booking(lListElem *ar) {
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
       const char *host_name = lGetHost(gep, JG_qhostname);
 
-      // @todo CS-731: DONE: add the binding_touse information (copy from JG to GRU)
+      // add the binding_touse information (copy from JG to GRU)
       const lList *binding_to_use_list = lGetList(gep, JG_binding_to_use);
       ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 

@@ -694,7 +694,6 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
          }
       }
 
-      // @todo: CS-732: handle binding parameters in JSV
       /*
        * -bamount
        * and all other -b...-switches that are also related to -binding
@@ -1438,7 +1437,6 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
-   // @todo: CS-732: Handle binding in JSV
    /*
     * -bamount <number>
     * and all other binding information specified with -b...-switches at the command line

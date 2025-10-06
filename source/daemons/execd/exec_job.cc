@@ -453,10 +453,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_slots += (int) lGetUlong(gdil_ep, JG_slots);
    }
 
-   // @todo: CS-731: find the binding decision for the job that needs to be written to the config file
    ocs::TopologyString binding_to_use;
    bool binding_to_use_is_initialized = false;
-   // @todo: CS-731: support other binding strategies than set also in shepherd
    ocs::BindingInstance::Instance binding_instance = ocs::BindingInstance::SET;
    if (mconf_get_enable_binding()) {
       const lListElem *gr;
@@ -465,7 +463,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             continue; // we are only interested in binding resources
          }
 
-         // @todo: CS-731: this code is still not correct for task specific binding
+         // @todo CS-732: select a task specific binding? might be counterproductive if tasks depend on interrupts (IO heavy)
          // if the granted binding list contains just one entry then we can use it directly (host binding or task binding with one task)
          // but if there are multiple entries then we should choose an unused one and pass it to the shepherd
          // for now we just OR all binding decisions and pass it to the shepherd as if we should do a host binding.
@@ -1467,7 +1465,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    }
 
-   // @todo CS-731: write the binding to the config file.
    if (binding_to_use_is_initialized) {
       fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
       fprintf(fp, "binding_instance=%s\n", ocs::BindingInstance::to_string(binding_instance).c_str());
@@ -1475,7 +1472,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fprintf(fp, "binding_to_use=%s\n", "none");
       fprintf(fp, "binding_instance=%s\n", "none");
    }
-
 
    if (petep != nullptr) {
       fprintf(fp, "job_name=%s\n", lGetString(petep, PET_name));

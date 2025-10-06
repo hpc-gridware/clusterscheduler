@@ -760,7 +760,6 @@ int ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *ho
    return mods;
 }
 
-// @todo CS-731: DONE: debit bindings
 static int
 ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, int slots, bool *just_check) {
    DENTER(TOP_LAYER);
@@ -776,7 +775,6 @@ ja_task_debit_host_binding(const lListElem *granted_resource, lListElem *host, i
    DRETURN(mods);
 }
 
-// @todo CS-731: DONE: debit bindings
 int ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = lGetHost(host, EH_name);

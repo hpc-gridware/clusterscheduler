@@ -1517,8 +1517,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
       }
    }
 
-   // @todo CS-731: DONE: for DOMINANT_LAYER_HOST place for additional binding specific checks
-   //if (layer == DOMINANT_LAYER_HOST && *start_time != DISPATCH_TIME_QUEUE_END) {
+   // check if we have a binding request on host layer
    if (layer == DOMINANT_LAYER_HOST) {
       int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, 1, host, binding_inuse);
 
@@ -4254,7 +4253,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       sge_dstring_free(&rue_name);
       sge_dstring_free(&limit_name);
 
-      // @todo CS-731: DONE: PE - copy task specific binding decision into the JG-element
+      // copy task specific binding decision into the JG-element
       ocs::BindingSchedd::copy_strategy(a);
 
       if (accu_host_slots >= a->slots && have_master_host) {
@@ -4910,7 +4909,7 @@ dispatch_t sge_sequential_assignment(sge_assignment_t *a)
             a->start = job_start_time;
          }
 
-         // @todo CS-731: DONE: copy task specific binding decision into the JG-element
+         // copy task specific binding decision into the JG-element
          ocs::BindingSchedd::copy_strategy(a);
       }
    }
@@ -6055,7 +6054,9 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    lListElem *cep, *req;
    dispatch_t result, ret = DISPATCH_OK;
    ocs::TopologyString binding_inuse;
+#if 0
    bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
+#endif
 
    clear_resource_tags(a->job, QUEUE_TAG);
 
@@ -6067,12 +6068,13 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       DRETURN(DISPATCH_OK); // no slots capacity defined on exec host level, it's the queue instances which limit it
    }
 
-   // @todo: CS-731: only required for binding if user has not defined a capacity for slots
-   // if we debit EH_consumable_config_list, we need to ensure that the slots complex is available for the binding booking
-   // We need to add it if the admin did not add it on host level
+#if 0
+   // @todo: CS-732: should not be required anymore because installer or master add solts on host level automatically
+   // if we debit EH_consumable_config_list, we need to ensure that the slots-complex is available for
+   // the binding booking. We need to add it if the admin did not add it on host-level.
    lListElem *auto_slots = nullptr;
    if (slots_on_host_layer && tep == nullptr) {
-      // @todo: CS-731: this upper limit might be reduced to either the amount of cores or threads depending on the binding settings
+      // This maximum will be reduces as soon as we know the topology sent via load-report
       constexpr int max_slots_value = std::numeric_limits<int>::max();
 
       auto_slots = lCreateElem(CE_Type);
@@ -6083,6 +6085,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       tep = auto_slots;
       lAppendElem((lList*)total_list, auto_slots);
    }
+#endif
 
    // if slots is defined on host level then check how much is available
    if (tep != nullptr) {
@@ -6106,11 +6109,13 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                            SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, "slots=1",
                            object_name, sge_dstring_get_string(&reason));
          }
+#if 0
          // @todo CS-731: we can remove autoslots if we created them above
          if (auto_slots != nullptr) {
             lDechainElem((lList*)total_list, auto_slots);
             lFreeElem(&auto_slots);
          }
+#endif
 
          // @todo CS-601 remove all tags. This could come from a host (but we don't have the object!)
          //              or a queue - we have it
@@ -6121,11 +6126,13 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, SGE_ATTR_SLOTS, max_slots);
    }
 
+#if 0
    // @todo CS-731: we can remove autoslots if we created them above
    if (auto_slots != nullptr) {
       lDechainElem((lList*)total_list, auto_slots);
       lFreeElem(&auto_slots);
    }
+#endif
 
    /* --- default requests except slots which we handled above */
    const char *name;
@@ -6404,8 +6411,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       // @todo if global requests have not matched, no need to check other scopes
    } // end for each scope
 
-
-   // @todo CS-731: DONE: PE - for DOMINANT_LAYER_HOST place for additional binding specific checks
+   // do the binding
    if (layer == DOMINANT_LAYER_HOST) {
       int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, max_slots, host, binding_inuse);
 
