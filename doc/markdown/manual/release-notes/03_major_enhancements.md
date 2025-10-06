@@ -1,5 +1,39 @@
 # Major Enhancements
 
+## v9.0.9
+
+### FlexNet Integration (license-manager)
+
+This release introduces automated FlexNet license management for
+Gridware Cluster Scheduler (GCS), enabling seamless integration between
+license servers and job scheduling decisions.
+
+**Key Features:**
+
+- Automated License Discovery and Configuration
+  The new `license-manager` command-line tool automatically queries FlexNet
+  license servers and synchronizes license availability with GCS. It discovers
+  available licenses, creates corresponding GCS complexes with the `lm_` prefix,
+  (configurable) and maintains accurate license counts without manual configuration.
+
+- Real-Time License Monitoring
+  Operating as a GCS load sensor, the license-manager reports current license
+  availability in real-time, allowing the scheduler to make informed job
+  placement decisions based on actual license capacity. This prevents job
+  failures due to license exhaustion and optimizes license utilization across
+  the cluster.
+
+- External License Tracking
+  The tool provides integration for tracking licenses consumed by non-GCS
+  processes, ensuring accurate accounting of total license availability and
+  preventing over-subscription when external applications share the same
+  license pool.
+
+This integration eliminates manual license complex configuration,
+reduces job scheduling failures, and maximizes return on investment for
+expensive software licenses by enabling intelligent, license-aware
+workload distribution across HPC clusters.
+
 ## v9.0.5
 
 ### qtelemetry (Developer Preview)
