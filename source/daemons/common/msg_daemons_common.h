@@ -140,6 +140,7 @@
 #define MSG_HEART_WRITE_ERROR_SS             _MESSAGE(27094, _("can't write data to heartbeat file " SFQ ": " SFN))
 #define MSG_HEART_CLOSE_ERROR_SS             _MESSAGE(27095, _("error closing heartbeat file " SFQ ": " SFN))
 #define MSG_HEART_WRITE_TIMEOUT_S            _MESSAGE(27096, _("got timeout error while write data to heartbeat file " SFQ))
+// @todo CS-1545 shouldn't it be heartbeat instead of act_qmaster?
 #define MSG_HEART_CANNOT_READ_FILE_S         _MESSAGE(27097, _("can't read act_qmaster file: " SFN))
 #define MSG_HEART_ACT_QMASTER_FILE_CHANGED   _MESSAGE(27098, _("act_qmaster file has been changed by another qmaster"))
 #define MSG_HEART_READ_TIMEOUT_S             _MESSAGE(27099, _("got timeout error while read data from heartbeat file " SFQ))

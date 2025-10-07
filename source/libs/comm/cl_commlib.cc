@@ -963,6 +963,29 @@ int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
    return ret_val;
 }
 
+int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config) {
+   int ret_val = CL_RETVAL_OK;
+
+   pthread_mutex_lock(&cl_com_ssl_setup_mutex);
+   if (cl_com_ssl_setup_config != nullptr) {
+#if defined(OCS_WITH_OPENSSL)
+      CL_LOG(CL_LOG_INFO, "updating ssl setup configuration");
+      // update the client certificate
+      if (new_config->ssl_client_cert_file != nullptr) {
+         sge_free(&cl_com_ssl_setup_config->ssl_client_cert_file);
+         cl_com_ssl_setup_config->ssl_client_cert_file = strdup(new_config->ssl_client_cert_file);
+      }
+      // so far no need to update further properties
+#endif
+   } else {
+      CL_LOG(CL_LOG_WARNING, "ssl configuration does not (yet) exist, cannot update it");
+      ret_val = CL_RETVAL_PARAMS;
+   }
+   pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+
+   return ret_val;
+}
+
 cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       cl_framework_t framework,
                                       cl_xml_connection_type_t data_flow_type,
@@ -1142,7 +1165,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          }
          if (!client_cert_path.empty()) {
             new_handle->ssl_client_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
-            if (new_handle->ssl_client_context == nullptr) {
+            if (new_handle->ssl_client_context == nullptr && cl_com_ssl_setup_config->needs_client_cert) {
                sge_free(&local_hostname);
                sge_free(&new_handle);
                cl_raw_list_unlock(cl_com_handle_list);
@@ -1150,7 +1173,8 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                   *commlib_error = CL_RETVAL_SSL_COULD_NOT_CREATE_CONTEXT;
                }
                pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
-               cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, sge_dstring_get_string(&dstr_error));
+               cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT,
+                                                 sge_dstring_get_string(&dstr_error));
                return nullptr;
             }
          }
@@ -1730,6 +1754,35 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    }
    return new_handle;
 }
+
+#if defined(OCS_WITH_OPENSSL)
+int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
+   int return_value = CL_RETVAL_OK;
+
+   DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+   // we have an updated client cert file in the ssl setup
+   std::string client_cert_path{cl_com_ssl_setup_config->ssl_client_cert_file};
+   std::string client_key_path{}; // we don't need a client key file
+
+   // create a new client context
+   ocs::uti::OpenSSL::OpenSSLContext *new_context = nullptr;
+   if (!client_cert_path.empty()) {
+      new_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
+
+      if (new_context == nullptr) {
+         cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, sge_dstring_get_string(&dstr_error));
+      } else {
+         // if we have a new context, replace the old one by it
+         if (handle->ssl_client_context != nullptr) {
+            delete handle->ssl_client_context;
+         }
+         handle->ssl_client_context = new_context;
+      }
+   }
+
+   return return_value;
+}
+#endif
 
 static bool debug_commlib_shutdown = getenv("SGE_DEBUG_COMMLIB_SHUTDOWN") != nullptr;
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
@@ -6400,13 +6453,12 @@ static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
    connection = elem->connection;
 
    /*
-    * If message should be send to a client without access, don't send a message to it
+    * If message shall be sent to a client without access, don't send a message to it
     */
    if (connection->was_accepted &&
        connection->crm_state != CL_CRM_CS_UNDEFINED &&
        connection->crm_state != CL_CRM_CS_CONNECTED) {
-      CL_LOG_STR_STR_INT(CL_LOG_ERROR,
-                         "ignore connection in unexpected connection state:",
+      CL_LOG_STR_STR_INT(CL_LOG_ERROR, "ignore connection in unexpected connection state:",
                          connection->remote->comp_host,
                          connection->remote->comp_name,
                          (int) connection->remote->comp_id);

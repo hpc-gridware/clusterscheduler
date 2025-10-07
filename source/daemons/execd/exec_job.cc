@@ -1701,10 +1701,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* shall shepherd write osjob_id, or is it done by (our) rshd */
    fprintf(fp, "write_osjob_id=%d\n", write_osjob_id);
 
-   /* should the job inherit the execd's environment */
+   /* should the job inherit the execd's environment? */
    fprintf(fp, "inherit_env=%d\n", (int) mconf_get_inherit_env());
 
-   /* should the addgrp-id be used to kill processes */
+   /* should the addgrp-id be used to kill processes? */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int) mconf_get_enable_addgrp_kill());
 
    if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {

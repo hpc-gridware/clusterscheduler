@@ -258,7 +258,7 @@ int sge_execd_process_messages() {
             }
 
             if (now - last_qmaster_file_read >= sge_gmt32_to_gmt64(EXECD_MAX_RECONNECT_TIMEOUT)) {
-               /* re-read act qmaster file (max. every EXECD_MAX_RECONNECT_TIMEOUT seconds) */
+               /* re-read act_qmaster file (max. every EXECD_MAX_RECONNECT_TIMEOUT seconds) */
                DPRINTF("re-read actual qmaster file\n");
                last_qmaster_file_read = now;
 
@@ -332,7 +332,7 @@ int sge_execd_process_messages() {
 #endif
 
                /*
-                * last message was send before alive_check_interval seconds
+                * last message was sent before alive_check_interval seconds
                 */
                if (now - last_heard > alive_check_interval) {
                   int ret_val = CL_RETVAL_OK;

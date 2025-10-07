@@ -270,6 +270,9 @@ typedef struct cl_ssl_setup_type {
    char *ssl_client_cert_file;    // client cert file to verify peer (if not nullptr/empty string)
    char *ssl_server_cert_file;    // server cert file to identify ourselves
    char *ssl_server_key_file;     // server key file to identify ourselves
+   bool needs_client_cert;        // commlib handle will not be created if reading the client certificate fails
+                                  // default true, but for sge_qmaster this can be OK, if act_qmaster contains a
+                                  // host name for which no certificate is available
 #endif
 } cl_ssl_setup_t;
 

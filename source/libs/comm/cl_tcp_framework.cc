@@ -585,6 +585,7 @@ int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
    }
    if (ssl_context != nullptr) {
       DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      CL_LOG_STR(CL_LOG_INFO, "creating SSL connection with certificate:", ssl_context->get_cert_file());
       com_private->ssl_connection = ocs::uti::OpenSSL::OpenSSLConnection::create(ssl_context, &dstr_error);
       if (com_private->ssl_connection == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR, "error creating SSL connection:", sge_dstring_get_string(&dstr_error));

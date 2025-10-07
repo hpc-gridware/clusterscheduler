@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -85,6 +85,10 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
 cl_com_handle_t *cl_com_get_handle(const char *component_name,
                                    unsigned long component_id);  /* CR check */
 
+#if defined(OCS_WITH_OPENSSL)
+int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle);
+#endif
+
 /* commlib parameter functions */
 int cl_com_set_synchron_receive_timeout(cl_com_handle_t *handle, int timeout);
 
@@ -107,6 +111,7 @@ int cl_com_append_host_alias(char *local_resolved_name, char *alias_name);
 int cl_com_remove_host_alias(char *alias_name);
 
 int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config);
+int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config);
 
 int cl_com_append_known_endpoint_from_name(char *unresolved_comp_host, const char *comp_name, unsigned long comp_id,
                                            int service_port, cl_xml_connection_autoclose_t autoclose, bool is_static);

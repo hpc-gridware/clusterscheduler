@@ -561,7 +561,8 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_method_t ssl_method,
                             const char *ssl_client_cert_file,
                             const char *ssl_server_cert_file,
-                            const char *ssl_server_key_file) {
+                            const char *ssl_server_key_file,
+                            bool allow_incomplete, bool needs_client_cert) {
    cl_ssl_setup_t *tmp_setup = nullptr;
 
    if (new_setup == nullptr) {
@@ -611,7 +612,7 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
          cl_com_free_ssl_setup(&tmp_setup);
          return CL_RETVAL_MALLOC;
       }
-   } else {
+   } else if (!allow_incomplete) {
       CL_LOG(CL_LOG_ERROR, "server certificate file not set");
       cl_com_free_ssl_setup(&tmp_setup);
       return CL_RETVAL_PARAMS;
@@ -623,12 +624,13 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
          cl_com_free_ssl_setup(&tmp_setup);
          return CL_RETVAL_MALLOC;
       }
-   } else {
+   } else if (!allow_incomplete) {
       CL_LOG(CL_LOG_ERROR, "server key file not set");
       cl_com_free_ssl_setup(&tmp_setup);
       return CL_RETVAL_PARAMS;
    }
 
+   tmp_setup->needs_client_cert = needs_client_cert;
    *new_setup = tmp_setup;
 
    return CL_RETVAL_OK;
@@ -662,7 +664,8 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
                                   source->ssl_method,
                                   source->ssl_client_cert_file,
                                   source->ssl_server_cert_file,
-                                  source->ssl_server_key_file);
+                                  source->ssl_server_key_file,
+                                  false, source->needs_client_cert);
 #endif
       return CL_RETVAL_SSL_NOT_SUPPORTED;
 }

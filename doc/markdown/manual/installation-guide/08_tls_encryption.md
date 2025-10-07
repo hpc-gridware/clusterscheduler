@@ -35,3 +35,6 @@ pkg install -y openssl3
 On newer Linux distributions (e.g. Ubuntu 24.04, Alma/CentOS/RHEL/Rocky 9 and higher, Suse 15.x @todo exact names) OpenSSL 3 is already the default version and no additional installation is required.
 
 Similarly, OpenSSL 3 is included in Solaris 11.4 and higher as well as in IllumOS / OpenSolaris / OpenIndiana, in FreeBSD 14 and higher, and in macOS 11 (Big Sur) @todo verify and higher.
+
+[//]: # (Eeach file has to end with two empty lines)
+

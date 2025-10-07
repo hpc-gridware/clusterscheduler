@@ -99,6 +99,8 @@
 #include "sge_ijs_threads.h"
 #include "sge_client_ijs.h"
 
+#include "gdi/sge_gdi_data.h"
+
 #include "uti/sge_pty.h"
 #include "uti/sge_parse_args.h"
 #include "uti/sge_arch.h"
@@ -1713,8 +1715,9 @@ int main(int argc, const char **argv)
       }
 
       /*
-      ** security hook
-      */
+       * security hook
+       * @todo it might be necessary to do this in the loop closing / reopening the sge_qmaster connection
+       */
       if (set_sec_cred(sge_root, mastername, job, &alp) != 0) {
          answer_list_output(&alp);
          sge_exit(1);
@@ -2004,11 +2007,14 @@ int main(int argc, const char **argv)
 
          DPRINTF("random polling set to %d\n", random_poll);
 
-         /* close connection to QMaster */
+         // close connection to sge_qmaster
+         // re-read the sge_qmaster host name, as it might have changed due to migration (see CS-1540)
+         mastername = gdi_data_get_master_host();
          cl_commlib_close_connection(cl_com_get_handle(progname,0),
                                      (char*)mastername,
                                      (char*)prognames[QMASTER],
                                      1, false);
+         DPRINTF("closed commlib connection to sge_qmaster on host %s\n", mastername);
 
          if (is_qlogin) {
             if (!g_new_interactive_job_support) {
@@ -2017,13 +2023,17 @@ int main(int argc, const char **argv)
 
                /* qlogin_starter reports "ready to start" */
                if (msgsock >= 0) {
-                  if (!get_client_server_context(msgsock, &port, &job_dir,
-                     &utilbin_dir, &host)) {
+                  if (!get_client_server_context(msgsock, &port, &job_dir, &utilbin_dir, &host)) {
                      cl_com_ignore_timeouts(false);
-                     cl_commlib_open_connection(cl_com_get_handle(progname,0),
+                     // re-read the act_qmaster file
+                     // it would be enough to do this if cl_commlib_open_connection fails, but even after a
+                     // sge_qmaster migration, the first call to cl_commlib_open_connection seems to return OK
+                     mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
+                     int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                         (char*)mastername,
                                         (char*)prognames[QMASTER],
                                         1);
+                     DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      delete_job(job_id, lp_jobs);
                      do_exit = 1;
                      exit_status = 1;
@@ -2051,8 +2061,13 @@ int main(int argc, const char **argv)
                   if (exit_status < 0) {
                      WARNING(MSG_QSH_CLEANINGUPAFTERABNORMALEXITOF_S, client_name);
                      cl_com_ignore_timeouts(false);
-                     cl_commlib_open_connection(cl_com_get_handle(progname,0),
+                     // re-read the act_qmaster file
+                     // it would be enough to do this if cl_commlib_open_connection fails, but even after a
+                     // sge_qmaster migration, the first call to cl_commlib_open_connection seems to return OK
+                     mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
+                     int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                         (char*)mastername, (char*)prognames[QMASTER], 1);
+                     DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      DPRINTF("deleting job\n");
                      delete_job(job_id, lp_jobs);
                      exit_status = EXIT_FAILURE;
@@ -2094,10 +2109,15 @@ int main(int argc, const char **argv)
                      DPRINTF("got error while waiting for connection\n");
                      cl_com_ignore_timeouts(false);
                      /* Tell the master to delete the job */
-                     cl_commlib_open_connection(cl_com_get_handle(progname,0),
+                     // re-read the act_qmaster file
+                     // it would be enough to do this if cl_commlib_open_connection fails, but even after a
+                     // sge_qmaster migration, the first call to cl_commlib_open_connection seems to return OK
+                     mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
+                     int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                         (char*)mastername,
                                         (char*)prognames[QMASTER],
                                         1);
+                     DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      delete_job(job_id, lp_jobs);
 
                      do_exit = 1;
@@ -2147,11 +2167,18 @@ int main(int argc, const char **argv)
             /* wait for qsh job to be scheduled */
             sleep(random_poll);
          }
+
+         // re-read the act_qmaster file
+         // it would be enough to do this if cl_commlib_open_connection fails, but even after a
+         // sge_qmaster migration, the first call to cl_commlib_open_connection seems to return OK
+         mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
          cl_com_ignore_timeouts(false);
-         cl_commlib_open_connection(cl_com_get_handle(progname,0),
+         int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                     (char*)mastername,
                                     (char*)prognames[QMASTER],
                                     1);
+
+         DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
 
          /* get job from qmaster: to handle qsh and to detect deleted qrsh job */
          what = lWhat("%T(%I)", JB_Type, JB_ja_tasks);

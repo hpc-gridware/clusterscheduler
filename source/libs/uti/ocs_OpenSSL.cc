@@ -557,12 +557,14 @@ namespace ocs::uti {
       }
    }
 
+#define PER_USER_AND_HOST_CERTS
    bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname) {
       bool ret = true;
       // need info
       // -> daemon or user certificate?
       //    -> daemon: $SGE_ROOT/$SGE_CELL/common/certs/hostname.pem
-      //    -> user: $HOME/.ocs/certs/hostname.pem
+      //    -> user: $HOME/.ocs/certs/hostname.pem OR $HOME/.ocs/certs/cert.pem
+      //             => or do not store it at all?
       if (hostname == nullptr) {
          // @todo use error_dstr
          ret = false;
@@ -570,7 +572,11 @@ namespace ocs::uti {
          if (home_dir == nullptr) {
             cert_path = std::string(bootstrap_get_sge_root()) + "/" + std::string(bootstrap_get_sge_cell()) + std::string("/common/certs/") + std::string(hostname) + std::string(".pem");
          } else {
+#if defined(PER_USER_AND_HOST_CERTS)
             cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string(hostname) + std::string(".pem");
+#else
+            cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string("cert.pem");
+#endif
          }
       }
       return ret;
@@ -579,7 +585,7 @@ namespace ocs::uti {
       bool ret = true;
       // -> daemon or user key?
       //    -> daemon: /var/lib/ocs/private/hostname.pem
-      //    -> user: $HOME/.ocs/private/hostname.pem
+      //    -> user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
       // @todo need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
       if (hostname == nullptr) {
          // @todo use error_dstr
@@ -588,7 +594,11 @@ namespace ocs::uti {
          if (home_dir == nullptr) {
             key_path = std::string("/var/lib/ocs/private/") + std::string(hostname) + std::string(".pem");
          } else {
+#if defined(PER_USER_AND_HOST_CERTS)
             key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string(hostname) + std::string(".pem");
+#else
+            key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string("key.pem");
+#endif
          }
       }
       return ret;
@@ -683,7 +693,7 @@ namespace ocs::uti {
       }
       if (ok) {
          if (days_left < 0 || secs_left < 0) {
-            // certificate is already expired
+            // the certificate is already expired
             ret = true;
          } else {
             int sec_total = days_left * 86400 + secs_left;
@@ -915,6 +925,8 @@ namespace ocs::uti {
 
       if (ok) {
          ret = new OpenSSLConnection(is_server, ssl);
+      } else {
+         SSL_free_func(ssl);
       }
 
       return ret;

@@ -593,7 +593,10 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
          communication_framework = CL_CT_SSL_TLS;
 #if defined(OCS_WITH_OPENSSL)
-         cl_ret = gdi_setup_tls_config(is_server, answer_list, qualified_hostname, master, sge_qmaster_port);
+         // sge_qmaster is not really a client, BUT in case master (from act_qmaster file) != qualified_hostname
+         // it checks if there is a qmaster running on the other host - that's what it is using the client connection for
+         bool needs_client = me_who != QMASTER;
+         cl_ret = gdi_setup_tls_config(needs_client, is_server, answer_list, qualified_hostname, master, sge_qmaster_port);
          if (cl_ret != CL_RETVAL_OK) {
             DRETURN(cl_ret);
          }
@@ -938,12 +941,13 @@ FCLOSE_ERROR:
 
 const char *
 ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
+   DENTER(BASIS_LAYER);
+
    sge_error_class_t *eh = gdi_data_get_error_handle();
    static bool error_already_logged = false;
 
-   DENTER(BASIS_LAYER);
-
-   if (gdi_data_get_master_host() == nullptr || reread) {
+   const char *old_master_host = gdi_data_get_master_host();
+   if (old_master_host == nullptr || reread) {
       char err_str[SGE_PATH_MAX + 128];
       char master_name[CL_MAXHOSTNAMELEN];
       u_long64 now = sge_get_gmt64();
@@ -966,11 +970,30 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
             DRETURN(nullptr);
          }
          error_already_logged = false;
-         DPRINTF("(re-)reading act_qmaster file. Got master host \"%s\"\n", master_name);
+         DPRINTF("(re-)read act_qmaster file. Old master host: " SFQ ". New master host " SFQ "\n",
+            old_master_host != nullptr ? old_master_host : "<nullptr>", master_name);
          /*
          ** TODO: thread locking needed here ?
          */
          gdi_set_master_host(master_name);
+
+         // Update the client certificate if the qmaster host name changed.
+         // Old_master_host is nullptr in the first call, here nothing is to be done.
+         if (old_master_host != nullptr && strcmp(old_master_host, master_name) != 0) {
+            if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+   #if defined(OCS_WITH_OPENSSL)
+               lList *answer_list = nullptr;
+               int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
+               if (cl_ret != CL_RETVAL_OK) {
+                  //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
+                  answer_list_output(&answer_list);
+               }
+               lFreeList(&answer_list);
+   #else
+               DPRINTF(SFNMAX, MSG_SSL_NOT_BUILT_IN);
+   #endif
+            }
+         }
       }
    }
    DRETURN(gdi_data_get_master_host());

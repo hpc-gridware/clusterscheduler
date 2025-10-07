@@ -4359,7 +4359,7 @@ static void *japi_implementation_thread(void * a_user_data_pointer)
                   error_handler(MSG_JAPI_QMASTER_DOWN);
                }
 
-               DPRINTF(MSG_JAPI_QMASTER_DOWN);
+               DPRINTF(SFNMAX "\n", MSG_JAPI_QMASTER_DOWN);
                disconnected = true;
             }
          } /* for_each */

@@ -90,8 +90,9 @@ namespace ocs::gdi {
       static bool sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bool local_uid_gid, bool reresolve_user,
                                                bool reresolve_supp_grp);
 #if defined(OCS_WITH_OPENSSL)
-      static int gdi_setup_tls_config(bool is_server, lList **answer_list, const char *local_host,
-                                      const char *master_host, u_long32 master_port);
+      static int gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
+                                      const char *local_host, const char *master_host,u_long32 master_port);
+      static int gdi_update_client_tls_config(lList **answer_list, const char *master_host);
 #endif
    };
 }

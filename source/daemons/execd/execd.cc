@@ -238,7 +238,7 @@ int main(int argc, char **argv)
       sge_exit(1);
    }
 
-   /* exit if we can't get communication handle (bind port) */
+   /* exit if we can't get a communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
       ocs::gdi::ClientBase::prepare_enroll(&alp);
@@ -453,6 +453,8 @@ static void execd_exit_func(int i)
 *
 *******************************************************************************/
 int sge_execd_register_at_qmaster(bool is_restart) {
+   DENTER(TOP_LAYER);
+
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
    lList *alp = nullptr;
@@ -462,8 +464,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     * re-read in order to update ctx qmaster cache when master migrates.
     */
    const char *master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(is_restart);
-
-   DENTER(TOP_LAYER);
 
    /* We will not try to make a gdi request when qmaster is not alive. The
     * gdi will return with timeout after one minute. If qmaster is not alive

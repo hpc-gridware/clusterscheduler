@@ -126,7 +126,8 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_method_t ssl_method,
                             const char *ssl_client_cert_file,
                             const char *ssl_server_cert_file,
-                            const char *ssl_server_key_file);
+                            const char *ssl_server_key_file,
+                            bool allow_incomplete = false, bool needs_client_cert = true);
 #endif
 
 int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source);
