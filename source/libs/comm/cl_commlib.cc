@@ -1147,10 +1147,17 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          std::string key_path{cl_com_ssl_setup_config->ssl_server_key_file};
          std::string client_cert_path{cl_com_ssl_setup_config->ssl_client_cert_file};
          std::string client_key_path{}; // we don't need a client key file
-         // we first create the server context if required
-         // this will create certificate and key file if they do not exist
-         if (service_provider && !cert_path.empty() && !key_path.empty()) {
-            new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(true, cert_path, key_path, &dstr_error);
+         // We first create the server context if required.
+         // This will either create a certificate and key on the fly (qrsh),
+         // or create a certificate and a key file if they do not exist.
+         if (service_provider) {
+            if (!cert_path.empty() && !key_path.empty()) {
+               // sge_qmaster or sge_execd
+               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(true, cert_path, key_path, &dstr_error);
+            } else {
+               // qrsh
+               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(&dstr_error);
+            }
             if (new_handle->ssl_server_context == nullptr) {
                sge_free(&local_hostname);
                sge_free(&new_handle);

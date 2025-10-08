@@ -1269,14 +1269,13 @@ static void write_builtin_ijs_connection_data_to_job_object(
    set_command_to_env(envlp, opts_qrsh);
    sge_dstring_free(&connection_params);
 
-   // In case of TLS encryption send the credentials to the shepherd
+   // In case of TLS encryption, send the credentials to the shepherd
 #if defined(OCS_WITH_OPENSSL)
-   int len = 0;
    if (com_handle->ssl_server_context != nullptr) {
-      const char *cert_file_name = com_handle->ssl_server_context->get_cert_file();
-      const char *cred = sge_file2string(cert_file_name, &len);
+      char *cred = com_handle->ssl_server_context->get_cert();
       if (cred != nullptr) {
          lSetString(job, JB_cred, cred);
+         sge_free(&cred);
       }
    }
 #endif

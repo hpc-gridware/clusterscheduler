@@ -47,7 +47,9 @@ namespace ocs::uti {
    SSL_CTX_new_func_t OpenSSL::SSL_CTX_new_func = nullptr;
    ERR_get_error_func_t OpenSSL::ERR_get_error_func = nullptr;
    ERR_reason_error_string_func_t OpenSSL::ERR_reason_error_string_func = nullptr;
+   SSL_CTX_use_certificate_func_t OpenSSL::SSL_CTX_use_certificate_func = nullptr;
    SSL_CTX_use_certificate_chain_file_func_t OpenSSL::SSL_CTX_use_certificate_chain_file_func = nullptr;
+   SSL_CTX_use_PrivateKey_func_t OpenSSL::SSL_CTX_use_PrivateKey_func = nullptr;
    SSL_CTX_use_PrivateKey_file_func_t OpenSSL::SSL_CTX_use_PrivateKey_file_func = nullptr;
    SSL_CTX_load_verify_locations_func_t OpenSSL::SSL_CTX_load_verify_locations_func = nullptr;
    SSL_CTX_set_verify_func_t OpenSSL::SSL_CTX_set_verify_func = nullptr;
@@ -94,6 +96,14 @@ namespace ocs::uti {
    PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
    X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
    ASN1_TIME_diff_func_t OpenSSL::ASN1_TIME_diff_func = nullptr;
+   BIO_new_func_t OpenSSL::BIO_new_func = nullptr;
+   BIO_free_func_t OpenSSL::BIO_free_func = nullptr;
+   BIO_s_mem_func_t OpenSSL::BIO_s_mem_func = nullptr;
+   BIO_number_written_func_t OpenSSL::BIO_number_written_func = nullptr;
+   BIO_read_func_t OpenSSL::BIO_read_func = nullptr;
+   SSL_CTX_get0_certificate_func_t OpenSSL::SSL_CTX_get0_certificate_func = nullptr;
+   PEM_write_bio_X509_func_t OpenSSL::PEM_write_bio_X509_func = nullptr;
+
 
    // static methods
    bool OpenSSL::initialize(dstring *error_dstr) {
@@ -162,9 +172,25 @@ namespace ocs::uti {
          }
       }
       if (ret) {
+         func = "SSL_CTX_use_certificate";
+         SSL_CTX_use_certificate_func = reinterpret_cast<SSL_CTX_use_certificate_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_use_certificate_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
          func = "SSL_CTX_use_certificate_chain_file";
          SSL_CTX_use_certificate_chain_file_func = reinterpret_cast<SSL_CTX_use_certificate_chain_file_func_t>(dlsym(lib_handle, func));
          if (SSL_CTX_use_certificate_chain_file_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_use_PrivateKey";
+         SSL_CTX_use_PrivateKey_func = reinterpret_cast<SSL_CTX_use_PrivateKey_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_use_PrivateKey_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -537,6 +563,62 @@ namespace ocs::uti {
             ret = false;
          }
       }
+      if (ret) {
+         func = "BIO_new";
+         BIO_new_func = reinterpret_cast<BIO_new_func_t>(dlsym(lib_handle, func));
+         if (BIO_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_free";
+         BIO_free_func = reinterpret_cast<BIO_free_func_t>(dlsym(lib_handle, func));
+         if (BIO_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_s_mem";
+         BIO_s_mem_func = reinterpret_cast<BIO_s_mem_func_t>(dlsym(lib_handle, func));
+         if (BIO_s_mem_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_number_written";
+         BIO_number_written_func = reinterpret_cast<BIO_number_written_func_t>(dlsym(lib_handle, func));
+         if (BIO_number_written_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_read";
+         BIO_read_func = reinterpret_cast<BIO_read_func_t>(dlsym(lib_handle, func));
+         if (BIO_read_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_get0_certificate";
+         SSL_CTX_get0_certificate_func = reinterpret_cast<SSL_CTX_get0_certificate_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_get0_certificate_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_write_bio_X509";
+         PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(lib_handle, func));
+         if (PEM_write_bio_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
 
       // if the initialization failed, free everything again
       if (!ret) {
@@ -586,7 +668,6 @@ namespace ocs::uti {
       // -> daemon or user key?
       //    -> daemon: /var/lib/ocs/private/hostname.pem
       //    -> user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
-      // @todo need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
       if (hostname == nullptr) {
          // @todo use error_dstr
          ret = false;
@@ -604,10 +685,12 @@ namespace ocs::uti {
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, dstring *error_dstr, bool &created_dirs) {
       bool ret = true;
 
       if (ret) {
+         // @todo CS-1530 can we prevent multiple processes from creating the directories?
+         //       probably not, but we shouldn't fail on EEXISTS
          std::filesystem::path cert_dir = cert_path.parent_path();
          if (!std::filesystem::exists(cert_dir)) {
             // need to switch to admin user if we are root
@@ -628,6 +711,8 @@ namespace ocs::uti {
                if (ec) {
                   sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_PERM_CERT_DIR_SS, cert_dir.c_str(), ec.message().c_str());
                   ret = false;
+               } else {
+                  created_dirs = true;
                }
             }
             if (switch_user) {
@@ -648,6 +733,8 @@ namespace ocs::uti {
                if (ec) {
                   sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_PERM_KEY_DIR_SS, key_dir.c_str(), ec.message().c_str());
                   ret = false;
+               } else {
+                  created_dirs = true;
                }
             }
          }
@@ -661,50 +748,60 @@ namespace ocs::uti {
       bool ok = true;
       X509 *cert = nullptr;
 
+      // Try to open the certificate file.
       FILE *fp = fopen(cert_path.c_str(), "r");
       if (fp == nullptr) {
          sge_dstring_sprintf(error_dstr, "cannot open certificate file %s: %s", cert_path.c_str(), strerror(errno));
          ok = false;
-         ret = true; // we cannot read the cert file - try to recreate it
+         ret = true; // We cannot read the cert file, so try to recreate it.
       }
 
       if (ok) {
+         // Read the certificate into memory.
          cert = PEM_read_X509_func(fp, nullptr, nullptr, nullptr);
          fclose(fp);
          if (cert == nullptr) {
             // @todo Do this and the following functions set some error code? No info in the man page.
+            // @todo I18N
             sge_dstring_sprintf(error_dstr, "cannot read certificate from file %s", cert_path.c_str());
+            // We could not read the certificate file - nothing else to do here and try to re-create it.
             ok = false;
-            ret = true; // we cannot read the cert file - try to recreate it
+            ret = true;
          }
       }
 
+      // Calculate if the certificate has already expired or will expire soon.
       int days_left, secs_left;
       if (ok) {
+         // Get the expiration date/time.
          const ASN1_TIME *notAfter = X509_get0_notAfter_func(cert);
 
-         // diff between notAfter and current time
-         // ==> If from or to is NULL the current time is used.
+         // Diff between notAfter and current time.
+         // ==> If from or to is nullptr the current time is used.
          if (ASN1_TIME_diff_func(&days_left, &secs_left, nullptr, notAfter) != 1) {
             sge_dstring_sprintf(error_dstr, "cannot calculate difference between current time and certificate notAfter time");
+            // We cannot calculate the diff?
+            // Nothing else to be done here, re-create the certificate.
             ok = false;
-            ret = true; // we cannot calculate a diff, try to recreate the certificate
+            ret = true;
          }
       }
+
       if (ok) {
          if (days_left < 0 || secs_left < 0) {
-            // the certificate is already expired
+            // The certificate has already expired - re-create it.
             ret = true;
          } else {
             int sec_total = days_left * 86400 + secs_left;
             int certificate_lifetime = bootstrap_get_cert_lifetime();
-            // renew when only 25% of the lifetime is left
+            // Renew when only 25% of the lifetime is left.
             if (sec_total  < certificate_lifetime / 4) {
                ret = true;
             }
          }
       }
 
+      // Clean up.
       if (cert != nullptr) {
          X509_free_func(cert);
          cert = nullptr;
@@ -727,15 +824,26 @@ namespace ocs::uti {
       bool called_as_root = geteuid() == SGE_SUPERUSER_UID;
       int component = component_get_component_id();
       bool switch_user = called_as_root && (component == QMASTER || component == EXECD);
-      bool create_certificate_and_key = false;
 
-      if (!std::filesystem::exists(cert_path) ||
-          !std::filesystem::exists(key_path)) {
-         ret = verify_create_directories(switch_user, error_dstr);
-         if (ret) {
+      // Do we store certificate and key on file? For daemons: yes, for qrsh: no.
+      bool file_based = !cert_path.empty() && !key_path.empty();
+
+      // If it is not file based, we need to create the certificate in any case.
+      bool create_certificate_and_key = !file_based;
+
+      if (file_based) {
+         // If the certificate or the key directory not yet exist, create them.
+         // In this case we have to create the certificate and key.
+         bool created_dirs = false;
+         ret = verify_create_directories(switch_user, error_dstr, created_dirs);
+         if (ret && created_dirs) {
             create_certificate_and_key = true;
          }
-      } else {
+      }
+
+      // We already had the directories and possibly the certificate + key,
+      // check if they really exist and have not yet expired or are about to expire.
+      if (ret && !create_certificate_and_key) {
          if (certificate_recreate_required(error_dstr)) {
             if (sge_dstring_strlen(error_dstr) > 0) {
                // when there were errors we renew the certificate
@@ -746,9 +854,9 @@ namespace ocs::uti {
          }
       }
 
+      // So far all was OK and we have to create the certificates.
       if (ret && create_certificate_and_key) {
          // @todo can we create the certificate from some template?
-         // @todo need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
          EVP_PKEY *pkey = EVP_PKEY_new_func();
          RSA *rsa = RSA_new_func();
          BIGNUM *bn = BN_new_func();
@@ -771,29 +879,66 @@ namespace ocs::uti {
 
          X509_sign_func(x509, pkey, EVP_sha256_func());
 
-         FILE *f = fopen(key_path.c_str(), "wb");
-         PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
-         fclose(f);
-         // @todo in theory we have a very short time window here where the file is created but not yet protected
-         chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
+         // @todo error handling!!
+         if (file_based) {
+            // @todo CS-1530 need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
+            FILE *f = fopen(key_path.c_str(), "wb");
+            PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
+            fclose(f);
+            // @todo in theory we have a very short time window here where the file is created but not yet protected
+            //       OTOH the key directory is only readable/writable by root or the user himself
+            chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
 
-         // need to switch to admin user if we are root
-         // SGE_ROOT might be on a filesystem where root has no write permissions
-         if (switch_user) {
-            sge_switch2admin_user();
-         }
-         f = fopen(cert_path.c_str(), "wb");
-         PEM_write_X509_func(f, x509);
-         fclose(f);
-         chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
-         if (switch_user) {
-            sge_switch2start_user();
+            // need to switch to admin user if we are root
+            // SGE_ROOT might be on a filesystem where root has no write permissions
+            if (switch_user) {
+               sge_switch2admin_user();
+            }
+            // @todo error handling!!
+            f = fopen(cert_path.c_str(), "wb");
+            PEM_write_X509_func(f, x509);
+            fclose(f);
+            chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
+            if (switch_user) {
+               sge_switch2start_user();
+            }
+         } else {
+            if (ret) {
+               if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
+                  sge_dstring_sprintf(error_dstr, "cannot use certificate from x509: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+                  ret = false;
+               }
+            }
+            // We do not store certificate and key in files - pass them to the SSL_CTX in memory.
+            if (ret) {
+               if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
+                  sge_dstring_sprintf(error_dstr, "cannot use private key from pkey: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+                  ret = false;
+               }
+            }
          }
 
          X509_free_func(x509);
          EVP_PKEY_free_func(pkey);
          // rsa is freed with pkey
          BN_free_func(bn);
+      }
+
+      // If we have the certificates in files, pass them to the SSL_CTX via paths.
+      if (ret && file_based) {
+         if (ret) {
+            if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
+               sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", cert_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
+               ret = false;
+            }
+         }
+
+         if (ret) {
+            if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
+               sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", key_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
+               ret = false;
+            }
+         }
       }
 
       DRETURN(ret);
@@ -803,23 +948,9 @@ namespace ocs::uti {
       bool ret = true;
 
       // verify if certificate and key files exist, otherwise create them
+      // @todo move code from verify_create_certificate_and_key here
       if (ret) {
          ret = verify_create_certificate_and_key(error_dstr);
-      }
-
-      /* Set the key and cert */
-      if (ret) {
-         if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
-            sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", cert_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
-            ret = false;
-         }
-      }
-
-      if (ret) {
-         if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-            sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", key_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
-            ret = false;
-         }
       }
 
       return ret;
@@ -858,7 +989,18 @@ namespace ocs::uti {
       }
    }
 
-   OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
+      // Not really required but explicitly marks the case that certificate and key are not stored in files
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(dstring *error_dstr) {
+         OpenSSLContext *ret{nullptr};
+
+         std::string cert_path{};
+         std::string key_path{};
+         ret = create(true, cert_path, key_path, error_dstr);
+
+         return ret;
+      }
+
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
       OpenSSLContext *ret{nullptr};
 
       bool ok = true;
@@ -901,6 +1043,29 @@ namespace ocs::uti {
 
       return ret;
    }
+
+   char *OpenSSL::OpenSSLContext::get_cert() {
+      char *ret = nullptr;
+
+      X509 *cert = SSL_CTX_get0_certificate_func(ssl_ctx);
+      if (cert != nullptr) {
+         BIO *bio = BIO_new_func(BIO_s_mem_func());
+         if (bio != nullptr) {
+            if (PEM_write_bio_X509_func(bio, cert) > 0) {
+               size_t size = BIO_number_written_func(bio);
+               ret = sge_malloc(size + 1);
+               if (ret != nullptr) {
+                  memset(ret, 0, size + 1);
+                  BIO_read_func(bio, ret, size);
+               }
+            }
+            BIO_free_func(bio);
+         }
+      }
+
+      return ret;
+   }
+
 
    OpenSSL::OpenSSLConnection *OpenSSL::OpenSSLConnection::create(OpenSSLContext *context, dstring *error_dstr) {
       OpenSSLConnection *ret{nullptr};
@@ -1037,7 +1202,6 @@ namespace ocs::uti {
                //       ==> return a boolean indicating that we need to repeat something
                //       ==> have a special state (multiple states?) in commlib connection to indicate that
                //           we need to repeat some operation (read, write, accept, connect)
-               // @todo test with test_openssl binary operating on non-blocking socket
                if (wait_for_socket_ready(err, error_dstr)) {
                   done = false; // try again
                   DPRINTF("  --> repeat read\n");
@@ -1174,7 +1338,6 @@ namespace ocs::uti {
                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_CONNECT) {
                   DPRINTF("  --> got connect error %d\n", err);
                   // @todo workaround: need to set commlib connection into some special state and re-visit
-                  // @todo test with test_openssl binary operating on non-blocking socket
                   if (wait_for_socket_ready(err, error_dstr)) {
                      done = false; // try again
                      DPRINTF("  --> repeat connect\n");

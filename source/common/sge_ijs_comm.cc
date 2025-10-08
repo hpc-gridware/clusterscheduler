@@ -548,7 +548,6 @@ int comm_open_connection(bool        b_server,
       std::string client_cert_path;
       std::string server_cert_path;
       std::string server_key_path;
-      const char *home_dir = nullptr;
       DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
 
       ret_val = COMM_RETVAL_OK;
@@ -560,31 +559,19 @@ int comm_open_connection(bool        b_server,
          }
       }
       if (ret_val == COMM_RETVAL_OK) {
-         // We need the home directory for building the cert (and key) path.
-         // @todo For now rely on env HOME. It is set in sge_shepherd (at least it is in the environment file)
-         // and let's hope that it is set in the qrsh environment.
-         home_dir = getenv("HOME");
-         if (home_dir == nullptr) {
-            sge_dstring_sprintf(err_msg, "home directory not set");
-            ret_val = COMM_CANT_SETUP_SSL;
-         }
-      }
-      if (ret_val == COMM_RETVAL_OK) {
-         // set up a dummy ssl_config (from CSP) to pass cert and key path to commlib
-         // @todo we must pass different certs to commlib:
-         // - if we are server: use our own cert and key ($HOME/.ocs/...)
-         // - if we are client: @todo use remote_host cert to verify qrsh user/host certificate
+         // Set up a dummy ssl_config (from CSP) to pass cert and key path to commlib
+         // TLS: We must pass different certs to commlib:
+         // - if we are server, this is the qrsh commlib server, we keep certificate and key in memory
+         // - if we are client, this is the sge_shepherd connecting to qrsh, we read from file
          DPRINTF("===> setting up cert and key paths\n");
          if (b_server) {
-            ocs::uti::OpenSSL::build_cert_path(server_cert_path, home_dir, hostname);
-            ocs::uti::OpenSSL::build_key_path(server_key_path, home_dir, hostname);
-            DPRINTF("  -> server cert path: %s\n", server_cert_path.c_str());
-            DPRINTF("  -> server key path:  %s\n", server_key_path.c_str());
+            // this is in qrsh client
+            DPRINTF("  -> we do not store the certificate/key file in case of qrsh");
          } else {
-            // @todo For now we pass an empty string as client cert pass, this will switch off certificate
-            // verification in commlib. Later we must pass the qrsh user cert here to verify it.
-            // cred.pem is written by sge_execd in the active_jobs directory of the job.
-            // @todo are we sure that our cwd is the job's active_jobs directory?
+            // This is in sge_shepherd.
+            // The certificate was transferred from qrsh in the job object / the pe task request object
+            // to sge_execd which wrote it to file "cert.pem" in the job's active_jobs directory.
+            // Our CWD is the job's active_jobs directory, read the certificate from there.
             client_cert_path = "cert.pem";
             DPRINTF("  -> client cert path: %s\n", client_cert_path.c_str());
          }

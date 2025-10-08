@@ -40,7 +40,9 @@ namespace ocs::uti {
    using SSL_CTX_new_func_t = SSL_CTX *(*)(const SSL_METHOD *method);
    using ERR_get_error_func_t = unsigned long (*)();
    using ERR_reason_error_string_func_t = const char *(*)(unsigned long e);
+   using SSL_CTX_use_certificate_func_t = int (*)(SSL_CTX *ctx, X509 *x509);
    using SSL_CTX_use_certificate_chain_file_func_t = int (*)(SSL_CTX *ctx, const char *file);
+   using SSL_CTX_use_PrivateKey_func_t = int (*)(SSL_CTX *ctx, EVP_PKEY *pkey);
    using SSL_CTX_use_PrivateKey_file_func_t = int (*)(SSL_CTX *ctx, const char *file, int type);
    using SSL_CTX_load_verify_locations_func_t = int (*)(SSL_CTX *ctx, const char *CAfile, const char *CApath);
    using SSL_CTX_set_verify_func_t = void (*)(SSL_CTX *ctx, int mode, int (*callback)(int, X509_STORE_CTX *));
@@ -87,6 +89,13 @@ namespace ocs::uti {
    using PEM_read_X509_func_t = X509 *(*)(FILE *fp, X509 **x, pem_password_cb *cb, void *u);
    using X509_get0_notAfter_func_t = const ASN1_TIME *(*)(const X509 *x);
    using ASN1_TIME_diff_func_t = int (*)(int *pday, int *psec, const ASN1_TIME *from, const ASN1_TIME *to);
+   using BIO_new_func_t = BIO *(*)(const BIO_METHOD *method);
+   using BIO_free_func_t = int (*)(BIO *a);
+   using BIO_s_mem_func_t = const BIO_METHOD *(*)();
+   using BIO_number_written_func_t = int (*)(BIO *b);
+   using BIO_read_func_t = int (*)(BIO *b, void *buf, int len);
+   using SSL_CTX_get0_certificate_func_t = X509 *(*)(const SSL_CTX *ctx);
+   using PEM_write_bio_X509_func_t = int (*)(BIO *, X509 *);
 
    class OpenSSL {
       // static data
@@ -97,7 +106,9 @@ namespace ocs::uti {
       static SSL_CTX_new_func_t SSL_CTX_new_func;
       static ERR_get_error_func_t ERR_get_error_func;
       static ERR_reason_error_string_func_t ERR_reason_error_string_func;
+      static SSL_CTX_use_certificate_func_t SSL_CTX_use_certificate_func;
       static SSL_CTX_use_certificate_chain_file_func_t SSL_CTX_use_certificate_chain_file_func;
+      static SSL_CTX_use_PrivateKey_func_t SSL_CTX_use_PrivateKey_func;
       static SSL_CTX_use_PrivateKey_file_func_t SSL_CTX_use_PrivateKey_file_func;
       static SSL_CTX_load_verify_locations_func_t SSL_CTX_load_verify_locations_func;
       static SSL_CTX_set_verify_func_t SSL_CTX_set_verify_func;
@@ -143,6 +154,13 @@ namespace ocs::uti {
       static PEM_read_X509_func_t PEM_read_X509_func;
       static X509_get0_notAfter_func_t X509_get0_notAfter_func;
       static ASN1_TIME_diff_func_t ASN1_TIME_diff_func;
+      static BIO_new_func_t BIO_new_func;
+      static BIO_free_func_t BIO_free_func;
+      static BIO_s_mem_func_t BIO_s_mem_func;
+      static BIO_number_written_func_t BIO_number_written_func;
+      static BIO_read_func_t BIO_read_func;
+      static SSL_CTX_get0_certificate_func_t SSL_CTX_get0_certificate_func;
+      static PEM_write_bio_X509_func_t PEM_write_bio_X509_func;
 
    public:
       // static methods
@@ -163,7 +181,7 @@ namespace ocs::uti {
          OpenSSLContext(bool is_server, SSL_CTX *ssl_ctx, std::filesystem::path(cert_path), std::filesystem::path(key_path))
          : is_server(is_server), ssl_ctx(ssl_ctx), cert_path{cert_path}, key_path {key_path} {}
 
-         bool verify_create_directories(bool switch_user, dstring *error_dstr);
+         bool verify_create_directories(bool switch_user, dstring *error_dstr, bool &created_dirs);
          bool verify_create_certificate_and_key(dstring *error_dstr);
          bool certificate_recreate_required(dstring *error_dstr);
 
@@ -171,12 +189,14 @@ namespace ocs::uti {
          bool configure_client_context(dstring *error_dstr);
 
       public:
+         static OpenSSLContext *create(dstring *error_dstr);
          static OpenSSLContext *create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr);
          ~OpenSSLContext();
 
          bool get_is_server() { return is_server; }
-         const char *get_cert_file() { return cert_path.c_str(); }
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
+         char *get_cert();
+         const char *get_cert_file() { return cert_path.c_str(); }
       };
 
       class OpenSSLConnection {
