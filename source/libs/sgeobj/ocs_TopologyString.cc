@@ -66,6 +66,45 @@ ocs::TopologyString::contains_valid_node_names(std::string& sequence) {
    return true;
 }
 
+bool
+ocs::TopologyString::is_same_topology(const TopologyString& topo1, const TopologyString& topo2) {
+   // Helper function to recursively compare node structures
+   std::function<bool(const Node&, const Node&)> compare_nodes = [&](const Node& n1, const Node& n2) -> bool {
+      // Compare number of child nodes
+      if (n1.nodes.size() != n2.nodes.size()) {
+         return false;
+      }
+
+      // Compare node types (ignoring case - upper/lower just indicates usage)
+      if (std::toupper(n1.c) != std::toupper(n2.c)) {
+         return false;
+      }
+
+      // Recursively compare all child nodes
+      for (size_t i = 0; i < n1.nodes.size(); ++i) {
+         if (!compare_nodes(n1.nodes[i], n2.nodes[i])) {
+            return false;
+         }
+      }
+
+      return true;
+   };
+
+   // Compare number of root nodes
+   if (topo1.nodes.size() != topo2.nodes.size()) {
+      return false;
+   }
+
+   // Compare all root nodes
+   for (size_t i = 0; i < topo1.nodes.size(); ++i) {
+      if (!compare_nodes(topo1.nodes[i], topo2.nodes[i])) {
+         return false;
+      }
+   }
+
+   return true;
+}
+
 std::string
 ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                                bool with_characteristics, bool with_internal_characteristics,
@@ -83,11 +122,10 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
    }
 
    // Helper function to convert nodes to string recursively
-   std::function<void(const std::vector<Node>&, int)> nodes_to_string =
-       [&](const std::vector<Node>& current_nodes, int indent) {
+   std::function<void(const std::vector<Node>&, int)> nodes_to_string = [&](const std::vector<Node>& current_nodes, int indent) {
           bool show_data_nodes = true;
 
-          // If there is only one node, and it is a thread, and we are not showing single threads then return
+          // If there is only one node, and it is a thread, and we are not showing single threads, then return
           if (current_nodes.size() == 1 && std::toupper(current_nodes[0].c) == 'T' && !show_single_threads) {
              return;
           }
@@ -141,7 +179,6 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                 }
              }
 
-
              // Add a newline after each node
              if (with_tree_format && show_data_nodes) {
                 oss << std::endl;
@@ -161,7 +198,6 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
              if (with_structure && show_data_nodes) {
                 oss << ")";
              }
-
           }
    };
 
@@ -335,9 +371,10 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    nodes = parse_nodes();
 }
 
-void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_characteristic, bool ascending) {
+void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_characteristic, const bool ascending) {
+   DENTER(TOP_LAYER);
    if (nodes.empty()) {
-      return;
+      DRETURN_VOID;
    }
 
    // Convert to lowercase for consistent comparison
@@ -349,6 +386,8 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
 
    // Define a recursive function to sort nodes at each level
    std::function<void(std::vector<Node>&)> sort_nodes = [&](std::vector<Node>& current_nodes) {
+      DENTER(TOP_LAYER);
+
       // Check if any child nodes match the target type
       bool has_matching_nodes = false;
       for (const auto& node : current_nodes) {
@@ -391,11 +430,11 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
 
                // If one matches and the other doesn't, put matching nodes first
                if (a_matches != b_matches) {
-                  return a_matches;
+                  DRETURN(a_matches);
                }
 
                // If neither matches, maintain current order
-               return false;
+               DRETURN(false);
             });
       }
 
@@ -409,20 +448,34 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
 
    // Start sorting from the top level
    sort_nodes(nodes);
+   DRETURN_VOID;
 }
 
-void ocs::TopologyString::sort_tree(const std::string& node_types, char sort_characteristic) {
-   // If there is nothing to sort then return
-   if (nodes.empty()) {
-      return;
+/** @brief Sorts the topology tree according to the specified criteria
+ *
+ * `sort_criterias` specifies node types (represented by letters in the string) that should be sorted.
+ * The capitalization of each letter shows the sort order (ascending, descending) whereas the
+ * sort characteristic defines the comparison unit (currently 't' is supported).
+ *
+ * @param sort_criterias String containing characters representing node types to sort by.
+ * @param sort_characteristic 't'
+ */
+void ocs::TopologyString::sort_tree(const std::string& sort_criterias, const char sort_characteristic) {
+   DENTER(TOP_LAYER);
+
+   // If there is nothing to sort, then return
+   if (nodes.empty() || sort_criterias.empty() || sort_criterias == NONE_STR) {
+      DRETURN_VOID;
    }
 
-   // Sort each node type in the order specified by captalisation of the characters
-   // Lowercase means ascending order, which means less utilized nodes first
-   for (char node_type : node_types) {
-      bool ascending = std::islower(node_type);
-      sort_tree_nodes(node_type, sort_characteristic, ascending);
+   // Sort each node type in the order specified by capitalisation of the characters
+   // Lowercase means ascending order, which means less used nodes first
+   for (const char sort_criteria : sort_criterias) {
+      const bool ascending = std::islower(sort_criteria);
+      sort_tree_nodes(sort_criteria, sort_characteristic, ascending);
    }
+
+   DRETURN_VOID;
 }
 
 /** @brief Find the first unused thread in a topology string
@@ -1093,5 +1146,3 @@ void ocs::TopologyString::invert_binding() {
 
    DRETURN_VOID;
 }
-
-

@@ -243,11 +243,13 @@ Filters are **additive**: both, globally disabled units and job-specific disable
 
 ## Binding Strategy
 
-**Packed Binding** is the primary (default) binding strategy in Open and xxQS_NAMExx. It provides more flexibility than the static binding strategies found in earlier versions of Grid Engine.
+**Packed Binding** is the primary (default) binding strategy in Open and xxQS_NAMExx. It provides more flexibility than the static binding strategies found in earlier versions of Grid Engine. 
+
+If the product is able to select additional strategies in the future, then the binding strategy can be selected with the `-bstrategy` option.
 
 In **Open Cluster Scheduler (OCS)**, packed binding assigns **available** units sequentially from **left to right** in the node’s topology string. The scheduler starts at the first available unit and continues until either the required number of units has been assigned or the end of the topology string is reached. If all requested units are available, the binding is applied to the job. If not, the binding cannot be applied on that host.
 
-A unit is considered available when all child units are not in use by other jobs. This means for core binding (C) all threads of selected cores must be free or for Chiplet/Die binding (X) all cores on that Chiplet/Die as well als all threads within each of those cores must be unused.
+A unit is considered available when all child units are not in use by other jobs. This means for core binding (C) all threads of selected cores must be free or for Chiplet/Die binding (X) all cores on that Chiplet/Die as well as all threads within each of those cores must be unused.
 
 ***Example 10: Packed Core Binding in OCS***
 

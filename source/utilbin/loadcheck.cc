@@ -306,7 +306,7 @@ void test_hwloc()
       printf("Your " SFN  " kernel version is: %s\n", name.sysname, name.release);
    }
 
-   if (!ocs::Topo::has_core_binding()) {
+   if (!ocs::Topo::has_topology_information()) {
       printf("Your " SFN " kernel seems not to offer core binding capabilities for HWLOC!\n",
              name.sysname);
    }

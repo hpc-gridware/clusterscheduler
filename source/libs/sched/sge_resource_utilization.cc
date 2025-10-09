@@ -444,7 +444,7 @@ int utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, doubl
 
    utilization_normalize(resource_diagram);
 
-   // @todo CS-731: disable when finished
+   // @todo CS-732: disable when finished
 #if 1
    DSTRING_STATIC(combined_name, 1024);
    sge_dstring_sprintf(&combined_name, "after normalize %s-%s", object_name, name);

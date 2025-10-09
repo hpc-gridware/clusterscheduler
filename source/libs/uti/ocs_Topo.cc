@@ -24,11 +24,13 @@
 #include "ocs_Topo.h"
 #include "sge_log.h"
 #include "sge_rmon_macros.h"
+#include "sgeobj/sge_conf.h"
 
 
 // we do lazy initialization of the hwloc library
 bool topo_initialized = false;
 hwloc_topology_t topo_hwloc_topology = nullptr;
+std::string fake_topo_file = NONE_STR;           //< active topology file or NONE
 
 /* @todo: We might want to do the initialization for every operation, e.g.
  *        in execd retrieving topology as load value:
@@ -39,16 +41,51 @@ hwloc_topology_t topo_hwloc_topology = nullptr;
  *         See issue OGE-111.
  */
 
+void ocs::Topo::set_fake_topo_file(std::string &topo_file) {
+   DENTER(TOP_LAYER);
+
+   // early exit if setting did not change
+   if (topo_file == fake_topo_file) {
+      DRETURN_VOID;
+   }
+
+   // HWLOC cleanup
+   if (topo_initialized) {
+      hwloc_topology_destroy(topo_hwloc_topology);
+      topo_initialized = false;
+   }
+
+   // remember the current setting
+   // next call that makes use of HWLOC will reinitialize the library
+   fake_topo_file = topo_file;
+
+   DRETURN_VOID;
+}
+
 /**
  * Initialize hwloc.
+ * e.g "/home/ebablick/Clion/gcs0/ocs-testsuite/checktree_gcs/resources/hwloc-topo/AMD-Epyc-Zen5-c4d-highmem-384.xml"
  * @return true if the initialization succeeded, else false
  */
 bool ocs::Topo::init() {
+   DENTER(TOP_LAYER);
    bool ret = false;
 
+   // Initialize HWLOC
    if (hwloc_topology_init(&topo_hwloc_topology) == 0) {
-      if (hwloc_topology_load(topo_hwloc_topology) == 0) {
+      int hwloc_error = 0;
+
+      // Prepare loading of fake topology
+      DPRINTF("using topo file %s\n", fake_topo_file.c_str());
+      if (!fake_topo_file.empty() && fake_topo_file != NONE_STR && sge_is_file(fake_topo_file.c_str())) {
+         hwloc_error = hwloc_topology_set_xml(topo_hwloc_topology, fake_topo_file.c_str());
+         DTRACE;
+      }
+
+      // Load topology or detect topoloy
+      if (hwloc_error == 0 && hwloc_topology_load(topo_hwloc_topology) == 0) {
          ret = true;
+         DTRACE;
       } else {
          hwloc_topology_destroy(topo_hwloc_topology);
       }
@@ -57,15 +94,12 @@ bool ocs::Topo::init() {
    // even if initialization failed, treat it as initialized
    // we expect it to either succeed or always fail
    topo_initialized = true;
-   return ret;
+   DRETURN(ret);
 }
 
-
-/**
- * Checks if current architecture (on which this function is called)
- * offers processor topology information or not.
+/** @brief Checks if executing host has topology information via HWLOC
  *
- * @return true if the arch offers topology information, false if not
+ * @return true if HWLOC is available
  */
 bool ocs::Topo::has_topology_information() {
    bool ret = false;
@@ -78,29 +112,6 @@ bool ocs::Topo::has_topology_information() {
    if (topo_hwloc_topology != nullptr) {
       auto support = hwloc_topology_get_support(topo_hwloc_topology);
       if (support->discovery->pu != 0) {
-         ret = true;
-      }
-   }
-
-   return ret;
-}
-
-/**
- * Checks if core binding is possible on the current host / architecture.
- *
- * @return true, if core binding is possible, else false
- */
-bool ocs::Topo::has_core_binding() {
-   bool ret = false;
-
-   if (!topo_initialized) {
-      init();
-   }
-
-   // @todo: do this only once?
-   if (topo_hwloc_topology != nullptr) {
-      auto support = hwloc_topology_get_support(topo_hwloc_topology);
-      if (support->cpubind->set_proc_cpubind != 0) {
          ret = true;
       }
    }
@@ -453,18 +464,24 @@ ocs::Topo::CpuKind::get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t c
    DRETURN('C');
 }
 
-void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool data_nodes) {
+void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool data_nodes, bool close_numa) {
    bool close_group = false;
-   bool close_numa = false;
 
+   // NUMA nodes are part of a separate tree within HWLOC
    if (data_nodes) {
-      // NUMA nodes are part of a separate tree within HWLOC
       if (obj->memory_arity > 0) {
          hwloc_obj_t mem_obj = obj->memory_first_child;
-         get_sub_topology(topo_string, topology, mem_obj, depth, data_nodes);
 
-         // NUMA nodes will be closed at the end of this function so that all packages are enclosed
-         if (obj-> type == HWLOC_OBJ_NUMANODE) {
+         if (mem_obj->type == HWLOC_OBJ_NUMANODE) {
+            // If we are already within a NUMA node, we close it first ...
+            if (close_numa) {
+               topo_string += ")";
+            }
+
+            // ... and begin a new node. It will be closed when the new starts or when we reach the end
+            topo_string += "(N[size=";
+            topo_string += std::to_string(mem_obj->attr->numanode.local_memory);
+            topo_string += "]";
             close_numa = true;
          }
       }
@@ -494,16 +511,6 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
          break;
 
       // Note: for following objects obj->attr->osdev.type would return the memory in bytes
-      case HWLOC_OBJ_NUMANODE:
-         if (data_nodes) {
-            topo_string += "(N[size=";
-            topo_string += std::to_string(obj->attr->numanode.local_memory);
-            topo_string += "]";
-
-            // will be done in caller for NUMA nodes
-            close_group = false;
-         }
-         break;
       case HWLOC_OBJ_L3CACHE:
          if (data_nodes) {
             topo_string += "(X[size=";
@@ -524,25 +531,10 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
          break;
    }
 
-#if 0
-   // Print indented topology string with node information similar to `lstopo`
-   char type[32], attr[1024];
-   hwloc_obj_type_snprintf(type, sizeof(type), obj, 0);
-   printf("%*s%s", 2*depth, "", type);
-   if (obj->os_index != (unsigned) -1) {
-      printf("#%u", obj->os_index);
-   }
-   hwloc_obj_attr_snprintf(attr, sizeof(attr), obj, " ", 0);
-   if (*attr) {
-      printf("(%s)", attr);
-   }
-   printf("\n");
-#endif
-
-   // walk along the hardware/cache tree
+   // walk along the hardware tree that also contains cache information
    if (obj->arity > 0) {
       for (unsigned i = 0; i < obj->arity; i++) {
-         get_sub_topology(topo_string, topology, obj->children[i], depth + 1, data_nodes);
+         get_sub_topology(topo_string, topology, obj->children[i], depth + 1, data_nodes, close_numa);
       }
    }
 
@@ -551,8 +543,8 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
       topo_string += ")";
    }
 
-   // If we are in a NUMA node, we close it here
-   if (close_numa) {
+   // If we are in a NUMA node, we close it when we reach the end
+   if (close_numa && depth == 1) {
       topo_string += ")";
    }
 }
@@ -564,7 +556,7 @@ ocs::Topo::get_new_topology(std::string &topo_str, bool data_nodes) {
    }
 
    CpuKind::detect_via_hwloc();
-   get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes);
+   get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes, false);
    CpuKind::release_data();
    return true;
 }

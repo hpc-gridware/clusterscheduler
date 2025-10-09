@@ -1383,6 +1383,18 @@ can be found in the help output of the accompanying Java command. This setting i
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
+## topology_file
+
+Do *NOT* use this parameter in productive clusters. It should be used for test setups only.
+
+This parameter is intended for debugging and testing purposes only and should not be used during normal operation. The default value is `NONE`.
+
+*topology_file* can be set to the name of a file that describes the topology of a compute node. The file format is version-dependent and may vary based on the product version.
+
+When set globally, the specified topology information will be applied to all compute nodes in the cluster, overriding their actual hardware topology. Alternatively, this setting can be configured per execution node to apply the topology information only to that specific node.
+
+Note: While this setting is being changed, no jobs are permitted to run. It is recommended to restart the qmaster after modifying this parameter.
+
 # SEE ALSO
 
 xxqs_name_sxx_intro(1), csh(1), qconf(1), qsub(1), xxqs_name_sxx_jsv(1), rsh(1), sh(1), getpwnam(3), drmaa_attributes(3),

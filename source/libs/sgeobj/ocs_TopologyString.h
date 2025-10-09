@@ -64,6 +64,7 @@ namespace ocs {
 
       // Check if a string contains valid node characters
       static bool contains_valid_node_names(std::string& sequence);
+      static bool is_same_topology(const TopologyString& topo1, const TopologyString& topo2);
 
       static void elem_mark_nodes_as_used_or_unused(lListElem *elem, int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used);
 

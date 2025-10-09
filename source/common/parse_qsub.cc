@@ -347,12 +347,9 @@ lList *cull_parse_cmdline(
          }
 
          DPRINTF("\"-bstrategy %s\"\n", *sp);
-         if (strcmp("linear", *sp) == 0) {
+         if (strcmp(ocs::BindingStrategy::to_string(ocs::BindingStrategy::PACKED).c_str(), *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::LINEAR);
-         } else if (strcmp("pack", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::PACK);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::PACKED);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
             DRETURN(answer);

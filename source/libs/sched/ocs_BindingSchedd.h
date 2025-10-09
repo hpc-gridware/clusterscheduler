@@ -28,7 +28,7 @@ namespace ocs {
       static bool
       find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString &host_in_use);
 
-      static void
+      static bool
       find_final_in_use(const sge_assignment_t *a, TopologyString &binding_in_use);
 
       static bool

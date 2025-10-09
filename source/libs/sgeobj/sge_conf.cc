@@ -127,6 +127,7 @@ struct confel {                       /* cluster configuration parameters */
     char        *libjvm_path;         /* libjvm_path for jvm_thread */
     char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
     char        *binding_params;      //< string containing al binding specific parameters
+    char        *topology_file;       //< None or path to a hwloc topology file
 };
 
 typedef struct confel sge_conf_type;
@@ -136,7 +137,7 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
-   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr
+   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr
 };
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
@@ -398,6 +399,7 @@ static tConfEntry conf_entries[] = {
  { "delegated_file_staging",     0, "false",                   1, nullptr},
  { "libjvm_path",                1, "",                        1, nullptr},
  { "additional_jvm_args",        1, "",                        1, nullptr},
+ { "topology_file",              1, NONE_STR,                  1, nullptr},
  { nullptr,                      0, nullptr,                   0, nullptr}
 };
 
@@ -584,6 +586,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "delegated_file_staging", &Master_Config.delegated_file_staging, nullptr, 0);
    chg_conf_val(lpCfg, "libjvm_path", &Master_Config.libjvm_path, nullptr, 0);
    chg_conf_val(lpCfg, "additional_jvm_args", &Master_Config.additional_jvm_args, nullptr, 0);
+   chg_conf_val(lpCfg, "topology_file", &Master_Config.topology_file, nullptr, 0);
    DRETURN_VOID;
 }
 
@@ -1343,6 +1346,8 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xprojects");
    sge_dstring_clear(&dstr);
 
+   INFO(MSG_CONF_USING_SS, Master_Config.topology_file != nullptr ? Master_Config.topology_file : NONE_STR, "topology_file");
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    // reset to original setting
@@ -1403,7 +1408,8 @@ static void clean_conf() {
    sge_free(&Master_Config.delegated_file_staging);
    sge_free(&Master_Config.libjvm_path);
    sge_free(&Master_Config.additional_jvm_args);
-   
+   sge_free(&Master_Config.topology_file);
+
    memset(&Master_Config, 0, sizeof(sge_conf_type));
 
    DRETURN_VOID;
@@ -3034,3 +3040,12 @@ std::string mconf_get_binding_filter() {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
+
+std::string mconf_get_topology_file() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = Master_Config.topology_file;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+

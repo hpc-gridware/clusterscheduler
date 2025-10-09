@@ -1047,13 +1047,13 @@ rc_debit_consumable(const lListElem *jep, const lListElem *pe, lListElem *ep, co
    }
 
 #if 0
-   // @todo: CS-731: only required for binding if user has not defined a capacity for slots
+   // @todo: CS-732: only required for binding if user has not defined a capacity for slots
    // if we debit EH_consumable_config_list, we need to ensure that the slots complex is available for the binding booking
    // We need to add it if the admin did not add it on host level
    lListElem *auto_slots = nullptr;
    if (config_nm == EH_consumable_config_list && lGetElemStr(lGetListRW(ep, config_nm), CE_name, SGE_ATTR_SLOTS) == nullptr) {
 
-      // @todo: CS-731: this upper limit might be reduced to either the amount of cores or threads depending on the binding settings
+      // @todo: CS-732: this upper limit might be reduced to either the amount of cores or threads depending on the binding settings
       constexpr int max_slots_value = std::numeric_limits<int>::max();
 
       auto_slots = lCreateElem(CE_Type);

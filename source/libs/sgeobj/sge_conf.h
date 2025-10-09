@@ -218,3 +218,4 @@ bool mconf_schedule_on_any_host();
 std::string mconf_get_binding_filter();
 binding_mode_t mconf_get_binding_mode();
 ocs::BindingUnit::Unit mconf_get_default_binding_unit();
+std::string mconf_get_topology_file();

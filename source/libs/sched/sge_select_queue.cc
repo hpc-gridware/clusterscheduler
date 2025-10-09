@@ -6110,7 +6110,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                            object_name, sge_dstring_get_string(&reason));
          }
 #if 0
-         // @todo CS-731: we can remove autoslots if we created them above
+         // @todo CS-732: we can remove autoslots if we created them above
          if (auto_slots != nullptr) {
             lDechainElem((lList*)total_list, auto_slots);
             lFreeElem(&auto_slots);
@@ -6127,7 +6127,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    }
 
 #if 0
-   // @todo CS-731: we can remove autoslots if we created them above
+   // @todo CS-732: we can remove autoslots if we created them above
    if (auto_slots != nullptr) {
       lDechainElem((lList*)total_list, auto_slots);
       lFreeElem(&auto_slots);

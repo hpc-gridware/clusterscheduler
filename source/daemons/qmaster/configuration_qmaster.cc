@@ -151,6 +151,13 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
          binding_params = lAddSubStr(global, CF_name, "binding_params", CONF_entries, CF_Type);
          lSetString(binding_params, CF_value, BINDING_PARAMS_DEFAULT);
       }
+
+      // add topology_string if the attribute is missing
+      lListElem *topology_file = lGetElemStrRW(entries, CF_name, "topology_file");
+      if (topology_file == nullptr) {
+         binding_params = lAddSubStr(global, CF_name, "topology_file", CONF_entries, CF_Type);
+         lSetString(binding_params, CF_value, NONE_STR);
+      }
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 

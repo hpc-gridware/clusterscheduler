@@ -42,6 +42,7 @@ namespace ocs {
          static char get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t core);
       };
 
+      static void set_fake_topo_file(std::string &topo_file);
       static bool init();
 
       static bool has_topology_information();
@@ -50,7 +51,7 @@ namespace ocs {
 
       static hwloc_topology_t get_hwloc_topology();
 
-      static void get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool no_data_nodes);
+      static void get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool no_data_nodes, bool close_numa);
 
       static bool get_new_topology(std::string &topology, bool data_nodes = false);
       static bool get_topology(std::string &topology);

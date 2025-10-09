@@ -18,6 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_hostname.h"
@@ -142,28 +146,38 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
 
 /** @brief Applies additional constraints to the given binding in use
  */
-void
+bool
 ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString &binding_in_use) {
    DENTER(TOP_LAYER);
 
-   // find all parameter related to binding
-   std::string binding_filter = Job::binding_get_filter(a->job);
-   std::string binding_sort = Job::binding_get_sort(a->job);
+   // Remove all threads that are defined by an optional job specific filter (-bfilter)
+   const std::string binding_filter = Job::binding_get_filter(a->job);
+   DPRINTF("find_final_in_use: job filter is %s\n", binding_filter.c_str());
+   if (!binding_filter.empty() && binding_filter != NONE_STR) {
+      const TopologyString binding_filter_mask(binding_filter);
+      bool same = TopologyString::is_same_topology(binding_in_use, binding_filter_mask);
+      if (!same) {
+         DPRINTF("find_final_in_use: filter does not match binding in use topology\n");
+         DRETURN(false);
+      }
 
+      binding_in_use.mark_nodes_as_used_or_unused(binding_filter_mask, true);
+   }
 
-   // @todo CS-732: Here we should remove all threads that are masked by an admin manually
-   // e.g binding_params or m_topology set in complex values
-
-   // @todo CS-732: If a job also requests RSMAPS and when those have a topology mask set then
+   // @todo CS-1547: If a job also requests RSMAPS and when those have a topology mask
    // we can remove all threads that can never match in case certain RSMAPS are already in use by others
 
-   // @todo CS-732: If affinity information is available and also enforced we can remove all threads
+   // @todo CS-1549: If affinity information is available and also enforced we can remove all threads
    // where the affinity mask will prevent scheduling
 
-   // @todo CS-732: If memory binding is active and constrains for NUMA memory (or caches) apply them
+   // @todo CS-1551: If memory binding is active and constrains for NUMA memory (or caches) apply them
    // we can remove those threads belonging to NUMA nodes not having enough memory available
 
-   DRETURN_VOID;
+   // Finally, sort the topology string (-bsort)
+   const std::string binding_sort = Job::binding_get_sort(a->job);
+   binding_in_use.sort_tree(binding_sort, 't');
+
+   DRETURN(true);
 }
 
 /** @brief Returns true if binding checks and binding should not be done
@@ -216,8 +230,11 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    }
 
    // Use the given binding in use and apply additional filter based on context and do sort
-   ocs::TopologyString tmp_binding_in_use(binding_in_use.to_string(true, true, true, false, false, false));
-   find_final_in_use(a, tmp_binding_in_use);
+   TopologyString tmp_binding_in_use(binding_in_use.to_string(true, true, true, false, false, false));
+   bool ret = find_final_in_use(a, tmp_binding_in_use);
+   if (!ret) {
+      DRETURN(0);
+   }
 
    // handle different binding types
    unsigned binding_amount = Job::binding_get_amount(a->job);
@@ -263,6 +280,16 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    DRETURN(0.0);
 }
 
+std::string vector_to_string(const std::vector<int>& vec) {
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        oss << vec[i];
+        if (i + 1 < vec.size()) oss << ", ";
+    }
+    oss << "]";
+    return oss.str();
+}
 
 /** @brief Apply the binding strategy and store the decision in the assignment structure
  */
@@ -290,7 +317,12 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
    // Use the given binding in use and apply additional filter based on context and do sort
    find_initial_in_use(a, host, topo_in_use);
-   find_final_in_use(a, topo_in_use);
+   bool ret = find_final_in_use(a, topo_in_use);
+   if (!ret) {
+      DRETURN(0);
+   }
+
+   DPRINTF("find_binding: final binding in use on host %s is %s\n", hostname, topo_in_use.to_product_topology_string().c_str());
 
    // distinguish between host and slot-based binding
    unsigned binding_amount = Job::binding_get_amount(a->job);
@@ -349,8 +381,14 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
             break;
          }
 
+         DPRINTF("find_binding: found units %s for slot %d on host %s\n", vector_to_string(ids).c_str(), max_slots, hostname);
+
          // create a binding mask that only contains those units that we will bind for this slot binding on the host
-         task_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, true));
+         std::string topo_in_use_str = topo_in_use.to_string(true, true, true, false, false, true);
+
+         DPRINTF("find_binding: slot binding for task %d before binding is %s\n", max_slots, topo_in_use_str.c_str());
+
+         task_binding_to_use.reset_topology(topo_in_use_str);
          task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
          DPRINTF("find_binding: slot binding for task %d will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());

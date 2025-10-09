@@ -192,7 +192,7 @@ ocs::BindingStrategy::Strategy
 ocs::Binding::binding_get_strategy(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
 
-   constexpr BindingStrategy::Strategy default_strategy = BindingStrategy::PACK; // default binding strategy is slot
+   constexpr BindingStrategy::Strategy default_strategy = BindingStrategy::PACKED; // default binding strategy is slot
    const lListElem *binding_elem = lGetObject(parent, nm);
    if (binding_elem == nullptr) {
       DRETURN(default_strategy);
@@ -301,6 +301,6 @@ void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm)
    auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
    if (strategy == BindingStrategy::Strategy::UNINITIALIZED ||
        strategy == BindingStrategy::Strategy::NONE) {
-      lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::Strategy::PACK);
+      lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::Strategy::PACKED);
    }
 }

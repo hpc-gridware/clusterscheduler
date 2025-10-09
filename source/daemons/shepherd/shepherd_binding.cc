@@ -555,7 +555,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       /* first core could be set from scheduler */
       /* offset is the first core to start with (make sense only with exclusive host) */
 
-      if (Topo::has_core_binding()) {
+      if (Topo::has_topology_information()) {
          /* bitmask for processors to turn on and off */
          hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
@@ -700,7 +700,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       /* n := take every n-th core */
       bool bound = false;
 
-      if (Topo::has_core_binding()) {
+      if (Topo::has_topology_information()) {
          /* bitmask for processors to turn on and off */
          hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
@@ -840,7 +840,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    static bool bind_process_to_mask(hwloc_const_bitmap_t cpuset) {
       bool ret = false;
 
-      if (Topo::has_core_binding()) {
+      if (Topo::has_topology_information()) {
          // we only need core binding capabilites, no topology is required
          hwloc_topology_t topology = Topo::get_hwloc_topology();
          if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_STRICT) == 0) {
@@ -909,7 +909,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       }
 
       /* do only on linux when we have core binding feature in kernel */
-      if (Topo::has_core_binding()) {
+      if (Topo::has_topology_information()) {
 
          if (Topo::has_topology_information()) {
             /* bitmask for processors to turn on and off */

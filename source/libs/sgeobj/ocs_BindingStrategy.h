@@ -28,8 +28,7 @@ namespace ocs {
       enum Strategy {
          UNINITIALIZED = 0,
          NONE,
-         LINEAR,
-         PACK
+         PACKED
       };
 
 

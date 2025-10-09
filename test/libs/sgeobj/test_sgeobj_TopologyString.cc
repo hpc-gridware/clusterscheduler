@@ -125,7 +125,9 @@ test_sort_by_characteristic_test(const std::string &name, ocs::TopologyString &t
 
 #if 0
    std::cout << topo.to_string(true, true, true, true, true) << std::endl;
+   std::cout << "BEFORE" << std::endl;
    std::cout << before << std::endl;
+   std::cout << "AFTER" << std::endl;
    std::cout << after << std::endl;
 #endif
 
@@ -142,27 +144,42 @@ test_sort_by_characteristic_scenarios() {
    bool ret = true;
 
    // topo string with C-cores that are partially or completely used and one E core that is completely used
-   // NSXYCTTYCtTycttYCTtYCTTYCTTYETETetETYETETETET
+   // NSXYCTTYCtTycttYCTtYCTTYCTTYEEeEYEEEE
    ocs::TopologyString topoA("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
    std::string sort_criteria = "NSAXYCET"; // all empty nodes first
-   std::string expected_after = "NSXYETETETETYETETETetYCTTYCTTYCTTYCTtYCTtyctt";
+   std::string expected_after = "NSXYEEEEYEEEeYCTTYCTTYCTTYCTtYCTtyctt";
    char sort_characteristic = 't';
    ret &= test_sort_by_characteristic_test("A" , topoA,  sort_criteria, sort_characteristic, expected_after);
 
    // nodes with the most utilized threads first
    ocs::TopologyString topoB("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
    sort_criteria = "nsaxycet"; // all "full" nodes frist
-   expected_after = "NSXycttYCtTYCtTYCTTYCTTYCTTYetETETETYETETETET";
+   expected_after = "NSXycttYCtTYCtTYCTTYCTTYCTTYeEEEYEEEE";
    sort_characteristic = 't';
    ret &= test_sort_by_characteristic_test("B" , topoB,  sort_criteria, sort_characteristic, expected_after);
 
    // sorted all according to utilized threads except of Y caches
    ocs::TopologyString topoC("(N[size=134782259200](S(X[size=25165824](Y[size=1310720](C(T)(T)))(Y[size=1310720](C(t)(T)))(y[size=1310720](c(t)(t)))(Y[size=1310720](C(T)(t)))(Y[size=1310720](C(T)(T)))(Y[size=1310720](C(T)(T)))(Y[size=2097152](E(T))(E(T))(e(t))(E(T)))(Y[size=2097152](E(T))(E(T))(E(T))(E(T))))))");
    sort_criteria = "nsaxYcet"; // all "full" nodes frist
-   expected_after = "NSXYETETETETYetETETETYCTTYCTTYCTTYCtTYCtTyctt";
+   expected_after = "NSXYEEEEYeEEEYCTTYCTTYCTTYCtTYCtTyctt";
    sort_characteristic = 't';
    ret &= test_sort_by_characteristic_test("C" , topoC,  sort_criteria, sort_characteristic, expected_after);
 
+   DRETURN(ret);
+}
+
+bool
+test_sort_bug_scenario() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+   // Epyc ZEN 5
+   ocs::TopologyString topo_str("(N[size=1597403992064](S(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))))(N[size=1598010523648](S(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))(X[size=33554432](Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T)))(Y[size=1048576](C(T)(T))))))");
+
+   std::string sort_criteria = "N"; // all "full" nodes frist
+   char sort_characteristic = 't';
+   std::string expected_after = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTT"
+                                "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTT";
+   ret &= test_sort_by_characteristic_test("A" , topo_str,  sort_criteria, sort_characteristic, expected_after);
    DRETURN(ret);
 }
 
@@ -796,7 +813,7 @@ bool test_prevent_socket_binding_twice() {
    ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
    ocs::BindingStart::Start start = ocs::BindingStart::NONE;
    ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
-   std::string expected_topo_str = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTyetetetetyetetetetyetetetetyetetetet";
+   std::string expected_topo_str = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTyeeeeyeeeeyeeeeyeeee";
 
    // bind the socket but only the ecores
    auto ids = topo.find_n_packed_units(1, unit, start, end);
@@ -844,7 +861,7 @@ bool test_do_full_socket_binding() {
    ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
    ocs::BindingStart::Start start = ocs::BindingStart::NONE;
    ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
-   std::string expected_topo_str = "nsxycttycttycttycttycttycttycttycttyetetetetyetetetetyetetetetyetetetet";
+   std::string expected_topo_str = "nsxycttycttycttycttycttycttycttycttyeeeeyeeeeyeeeeyeeee";
 
    // bind the socket; selection will return only E-cores but all core types will be marked
    auto ids = topo.find_n_packed_units(1, unit, start, end);
@@ -871,9 +888,9 @@ bool test_do_full_socket_binding() {
 int main (int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_HostTopology");
 
+
    bool ret = test_find_first_unused_scenarios();
    ret &= test_correct_topology_scenarios();
-   ret &= test_sort_by_characteristic_scenarios();
    ret &= test_find_first_unused_thread_scenarios();
    ret &= test_to_unused_internal_topoloy_string();
    ret &= test_mark_as_used_scenarios();
@@ -882,6 +899,8 @@ int main (int argc, char *argv[]) {
    ret &= test_find_n_packed_units_stop();
    ret &= test_prevent_socket_binding_twice();
    ret &= test_do_full_socket_binding();
+   ret &= test_sort_by_characteristic_scenarios();
+   ret &= test_sort_bug_scenario();
 
    if (!ret) {
       std::cerr << "Test failed." << std::endl;

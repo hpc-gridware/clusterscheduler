@@ -1078,14 +1078,14 @@
 #define MSG_GDI_USAGE_BTYPE_OPT           "[-btype [host|slot]]"
 #define MSG_GDI_UTEXT_BTYPE_OPT           _MESSAGE(60729, _("set type of binding"))
 
-#define MSG_PARSE_BUNIT_INVALID_S         _MESSAGE(60730, _("invalid binding unit " SFQ ", must be one of: [T|ET|C|E|S|X|Y|N]"))
-#define MSG_GDI_USAGE_BUNIT_OPT           "[-bunit [T|ET|C|E|S|X|Y|N]"
+#define MSG_PARSE_BUNIT_INVALID_S         _MESSAGE(60730, _("invalid binding unit " SFQ ", must be one of: [T|ET|C|E|S|ES|X|EX|Y|EY|N|EN]"))
+#define MSG_GDI_USAGE_BUNIT_OPT           "[-bunit [T|ET|C|E|S|ES|X|EX|Y|EY|N|EN]"
 #define MSG_GDI_UTEXT_BUNIT_OPT           _MESSAGE(60731, _("set binding unit"))
 
 #define MSG_GDI_USAGE_BFILTER_OPT         "[-bfilter topology_string]"
-#define MSG_GDI_UTEXT_BFILTER_OPT         _MESSAGE(60732, _("specifies binding filter to mask out units from binding"))
+#define MSG_GDI_UTEXT_BFILTER_OPT         _MESSAGE(60732, _("specifies binding filter to mask binding units"))
 
-#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid binding sort " SFQ ", must be one or more of: [ACESTNXY]"))
+#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid binding sort " SFQ ", must be one or more of: [NSXYCET]"))
 #define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [ACESTNXY]]"
 #define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
 
@@ -1100,8 +1100,8 @@
 #define MSG_GDI_USAGE_BAMOUNT_OPT         "[-bamount number]"
 #define MSG_GDI_UTEXT_BAMOUNT_OPT         _MESSAGE(60739, _("defines the number of binding units to be used"))
 
-#define MSG_PARSE_BSTRATEGY_INVALID_S     _MESSAGE(60740, _("invalid binding stargey " SFQ ", must be one of: [linear|pack]"))
-#define MSG_GDI_USAGE_BSTRATEGY_OPT       "[-bstrategy [linear|pack]]"
+#define MSG_PARSE_BSTRATEGY_INVALID_S     _MESSAGE(60740, _("invalid binding strategy " SFQ ", must be \'packed\'."))
+#define MSG_GDI_USAGE_BSTRATEGY_OPT       "[-bstrategy name]]"
 #define MSG_GDI_UTEXT_BSTRATEGY_OPT       _MESSAGE(60741, _("defines the binding strategy"))
 
 #define MSG_PARSE_BINSTANCE_INVALID_S     _MESSAGE(60742, _("invalid binding instance " SFQ ", must be one of: [set|env|pe]"))

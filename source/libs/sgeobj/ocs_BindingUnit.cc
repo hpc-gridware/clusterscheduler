@@ -22,6 +22,10 @@
 
 #include "ocs_BindingUnit.h"
 
+/** @brief Returns the sort string form of a binding unit type
+ *
+ * @param mode A binding unit type
+ */
 std::string ocs::BindingUnit::to_string(const Unit mode) {
    switch (mode) {
       case NONE: return "NONE";
@@ -41,6 +45,13 @@ std::string ocs::BindingUnit::to_string(const Unit mode) {
    }
 }
 
+/** @brief Converts a binding unit string to its corresponding constant
+ *
+ * Units strings with an E represent a unit attached to an efficiency core. Units with the C prefix denote power units.
+ * Single letter units automatically refer to power units.
+ *
+ * @param mode A Binding unit string.
+ */
 ocs::BindingUnit::Unit
 ocs::BindingUnit::from_string(const std::string& mode) {
    if (mode == "NONE") {
@@ -74,6 +85,14 @@ ocs::BindingUnit::from_string(const std::string& mode) {
    }
 }
 
+/** @brief Returns true if the given unit is a power unit
+ *
+ * Intel differentiates between power and efficiency core. If the specified `unit` comprises a
+ * power core (e.g., also memory units that are connected to power-cores), then this method
+ * returns true.
+ *
+ * @param unit Enum value representing a binding unit.
+ */
 bool ocs::BindingUnit::is_power_unit(const Unit unit) {
    if (unit == CSOCKET || unit == CCORE || unit == CTHREAD || unit == CCACHE2 || unit == CCACHE3 || unit == CNUMA) {
       return true;
