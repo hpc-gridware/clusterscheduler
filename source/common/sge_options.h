@@ -304,7 +304,7 @@ enum {
    bfilter_OPT, //< binding filter
    bsort_OPT, //< binding sort
    bstart_OPT, //< binding start
-   bend_OPT, //< binding end
+   bstop_OPT, //< binding stop
    bstrategy_OPT, //< binding strategy
    bamount_OPT, //< binding amount
    binstance_OPT, //< binding instance

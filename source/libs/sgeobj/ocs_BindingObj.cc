@@ -83,7 +83,7 @@ ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList*
    lSetString(binding_elem, BN_new_filter, nullptr);
    lSetString(binding_elem, BN_new_sort, nullptr);
    lSetUlong(binding_elem, BN_new_start, BindingStart::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_new_end, BindingEnd::UNINITIALIZED);
+   lSetUlong(binding_elem, BN_new_stop, BindingStop::UNINITIALIZED);
    lSetUlong(binding_elem, BN_new_strategy, BindingStrategy::UNINITIALIZED);
 
    lSetObject(parent, nm, binding_elem);
@@ -171,18 +171,18 @@ ocs::Binding::binding_get_start(const lListElem *parent, const int nm) {
    DRETURN(binding_start);
 }
 
-ocs::BindingEnd::End
+ocs::BindingStop::Stop
 ocs::Binding::binding_get_end(const lListElem *parent, const int nm) {
    DENTER(TOP_LAYER);
 
-   constexpr BindingEnd::End default_end = BindingEnd::NONE;
+   constexpr BindingStop::Stop default_end = BindingStop::NONE;
    const lListElem *binding_elem = lGetObject(parent, nm);
    if (binding_elem == nullptr) {
       DRETURN(default_end);
    }
 
-   const auto binding_end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
-   if (binding_end == BindingEnd::NONE || binding_end == BindingEnd::UNINITIALIZED) {
+   const auto binding_end = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_new_stop));
+   if (binding_end == BindingStop::NONE || binding_end == BindingStop::UNINITIALIZED) {
       DRETURN(default_end);
    }
    DRETURN(binding_end);
@@ -294,9 +294,9 @@ void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm)
    if (start == BindingStart::Start::UNINITIALIZED) {
       lSetUlong(binding_elem, BN_new_start, BindingStart::Start::NONE);
    }
-   auto end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
-   if (end == BindingEnd::End::UNINITIALIZED) {
-      lSetUlong(binding_elem, BN_new_end, BindingEnd::End::NONE);
+   auto end = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_new_stop));
+   if (end == BindingStop::Stop::UNINITIALIZED) {
+      lSetUlong(binding_elem, BN_new_stop, BindingStop::Stop::NONE);
    }
    auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_new_strategy));
    if (strategy == BindingStrategy::Strategy::UNINITIALIZED ||

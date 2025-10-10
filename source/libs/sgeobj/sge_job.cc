@@ -4459,7 +4459,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
       job_add_opt_to_comand_line(dstr, "-b", "yes");
    }
 
-   // -btype, -bunit, -bstrategy, -bstart, -bend, -bamount ...
+   // -btype, -bunit, -bstrategy, -bstart, -bstop, -bamount ...
    const lListElem *binding = lGetObject(job, JB_new_binding);
    if (binding != nullptr) {
       std::string binding_str;

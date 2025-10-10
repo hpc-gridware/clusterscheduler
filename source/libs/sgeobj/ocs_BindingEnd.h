@@ -22,10 +22,10 @@
 #include <string>
 
 namespace ocs {
-   class BindingEnd {
-      BindingEnd() = default; // prevent instantiation
+   class BindingStop {
+      BindingStop() = default; // prevent instantiation
    public:
-      enum End{
+      enum Stop{
          UNINITIALIZED = 0,
          NONE,
          FIRST_FREE_SOCKET,
@@ -40,7 +40,7 @@ namespace ocs {
          FIRST_USED_CACHE2,
       };
 
-      static std::string to_string(End mode);
-      static End from_string(const std::string& mode);
+      static std::string to_string(Stop mode);
+      static Stop from_string(const std::string& mode);
       };
 }

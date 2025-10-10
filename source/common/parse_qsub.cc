@@ -469,8 +469,8 @@ lList *cull_parse_cmdline(
       }
 
       /*----------------------------------------------------------------------------*/
-      // -bend s | c | e
-      if (strcmp("-bend", *sp) == 0) {
+      // -bstop s | c | e ...
+      if (strcmp("-bstop", *sp) == 0) {
          if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
@@ -479,17 +479,17 @@ lList *cull_parse_cmdline(
          sp++;
          if (!*sp) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bend");
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-bstop");
             DRETURN(answer);
          }
 
-         DPRINTF("\"-bend %s\"\n", *sp);
-         ocs::BindingEnd::End bend = ocs::BindingEnd::from_string(*sp);
-         if (bend != ocs::BindingEnd::UNINITIALIZED) {
-            ep_opt = sge_add_arg(pcmdline, bend_OPT, lIntT, *(sp - 1), *sp);
-            lSetInt(ep_opt, SPA_argval_lIntT, bend);
+         DPRINTF("\"-bstop %s\"\n", *sp);
+         ocs::BindingStop::Stop bstop = ocs::BindingStop::from_string(*sp);
+         if (bstop != ocs::BindingStop::UNINITIALIZED) {
+            ep_opt = sge_add_arg(pcmdline, bstop_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, bstop);
          } else {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BEND_INVALID_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTOP_INVALID_S, *sp);
             DRETURN(answer);
          }
 

@@ -22,7 +22,7 @@
 
 #include "ocs_BindingEnd.h"
 
-std::string ocs::BindingEnd::to_string(const End mode) {
+std::string ocs::BindingStop::to_string(const Stop mode) {
    switch (mode) {
       case NONE: return "NONE";
       case FIRST_FREE_SOCKET: return "S";
@@ -39,8 +39,8 @@ std::string ocs::BindingEnd::to_string(const End mode) {
    }
 }
 
-ocs::BindingEnd::End
-ocs::BindingEnd::from_string(const std::string& mode) {
+ocs::BindingStop::Stop
+ocs::BindingStop::from_string(const std::string& mode) {
    if (mode == "NONE") {
       return NONE;
    } else if (mode == "S") {

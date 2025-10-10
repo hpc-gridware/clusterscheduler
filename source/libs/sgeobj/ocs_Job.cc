@@ -211,8 +211,8 @@ ocs::Job::binding_get_start(const lListElem *job) {
    return Binding::binding_get_start(job, JB_new_binding);
 }
 
-ocs::BindingEnd::End
-ocs::Job::binding_get_end(const lListElem *job) {
+ocs::BindingStop::Stop
+ocs::Job::binding_get_stop(const lListElem *job) {
    return Binding::binding_get_end(job, JB_new_binding);
 }
 

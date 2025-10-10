@@ -330,9 +330,9 @@ The bold areas within the topology string show Sockets that are completely free.
 |                          |                               |
 | after sort with -bsort S | **NSCCCCSCCCC**SCcCCSCCss     |
 |                          |                               |
-| -bstart S -bend s        | **N\[SCCCCSCCCC\]**SCcCCSCCss |
+| -bstart S -bstop s       | **N\[SCCCCSCCCC\]**SCcCCSCCss |
 |                          |                               |
-| -bstart s -bend S        | **NSCCCCSCCCC**\[SCcCCSCCss\] |
+| -bstart s -bstop S       | **NSCCCCSCCCC**\[SCcCCSCCss\] |
 
 Note: If a specified start position for binding cannot be found, then no valid binding can be found. If no end position after start can be found then the end of the topology string is the implicit end for binding.
 

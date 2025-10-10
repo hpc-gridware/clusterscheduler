@@ -458,8 +458,8 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_BAMOUNT_OPT, MSG_GDI_UTEXT_BAMOUNT_OPT);
    }
 
-   if (VALID_OPT(bend_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_BEND_OPT, MSG_GDI_UTEXT_BEND_OPT);
+   if (VALID_OPT(bstop_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_BSTOP_OPT, MSG_GDI_UTEXT_BSTOP_OPT);
    }
 
    if (VALID_OPT(bfilter_OPT, prog_number)) {

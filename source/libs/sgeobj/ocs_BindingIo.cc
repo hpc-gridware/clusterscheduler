@@ -105,15 +105,15 @@ ocs::BindingIo::binding_print_to_string(const lListElem *binding_elem, std::stri
       binding_string += std::to_string(amount);
    }
 
-   // -bend s|c|...
-   auto end = static_cast<BindingEnd::End>(lGetUlong(binding_elem, BN_new_end));
-   if (end != BindingEnd::End::UNINITIALIZED && end != BindingEnd::End::NONE) {
+   // -bstop s|c|...
+   auto bstop = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_new_stop));
+   if (bstop != BindingStop::Stop::UNINITIALIZED && bstop != BindingStop::Stop::NONE) {
       if (as_switches) {
-         binding_string += " -bend ";
+         binding_string += " -bstop ";
       } else {
-         binding_string += ",bend=";
+         binding_string += ",bstop=";
       }
-      binding_string += BindingEnd::to_string(end);
+      binding_string += BindingStop::to_string(bstop);
    }
 
    // -binstance set|pe|env

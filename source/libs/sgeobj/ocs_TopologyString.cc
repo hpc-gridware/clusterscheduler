@@ -827,7 +827,7 @@ ocs::TopologyString::is_empty() {
 }
 
 std::vector<int>
-ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingEnd::End bend) const {
+ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingStop::Stop bstop) const {
 
    // ensure bamount cannot be 0
    SGE_ASSERT(bamount > 0);
@@ -920,7 +920,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
 
    const char unit_letter = BindingUnit::is_power_unit(bunit) ? 'C' : 'E';
    const Node* start_node = nullptr; // node that satisfies bstart or first node if NONE
-   const Node* end_node = nullptr;   // node that satisfies bend or nullptr if NONE.
+   const Node* stop_node = nullptr;   // node that satisfies bstop or nullptr if NONE.
 
    // walk forward from root-node in pre-order DFS
    // - visit node, then children
@@ -952,24 +952,24 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
          }
 
          // try to find end-position
-         if (!skip_end_detection && start_node != nullptr && end_node == nullptr && bend != BindingEnd::End::NONE) {
+         if (!skip_end_detection && start_node != nullptr && stop_node == nullptr && bstop != BindingStop::Stop::NONE) {
             if (
-               (bend == BindingEnd::End::FIRST_FREE_NUMA && is_free_X_numa(n, unit_letter))
-               || (bend == BindingEnd::End::FIRST_USED_NUMA && is_used_numa(n))
-               || (bend == BindingEnd::End::FIRST_FREE_CACHE3 && is_free_X_cache3(n, unit_letter))
-               || (bend == BindingEnd::End::FIRST_USED_CACHE3 && is_used_cache3(n))
-               || (bend == BindingEnd::End::FIRST_FREE_CACHE2 && is_free_X_cache2(n, unit_letter))
-               || (bend == BindingEnd::End::FIRST_USED_CACHE2 && is_used_cache2(n))
-               || (bend == BindingEnd::End::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
-               || (bend == BindingEnd::End::FIRST_USED_SOCKET && is_used_socket(n))
-               || (bend == BindingEnd::End::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
-               || (bend == BindingEnd::End::FIRST_USED_CORE && is_used_X_core(n, unit_letter))) {
-               end_node = &n;
+               (bstop == BindingStop::Stop::FIRST_FREE_NUMA && is_free_X_numa(n, unit_letter))
+               || (bstop == BindingStop::Stop::FIRST_USED_NUMA && is_used_numa(n))
+               || (bstop == BindingStop::Stop::FIRST_FREE_CACHE3 && is_free_X_cache3(n, unit_letter))
+               || (bstop == BindingStop::Stop::FIRST_USED_CACHE3 && is_used_cache3(n))
+               || (bstop == BindingStop::Stop::FIRST_FREE_CACHE2 && is_free_X_cache2(n, unit_letter))
+               || (bstop == BindingStop::Stop::FIRST_USED_CACHE2 && is_used_cache2(n))
+               || (bstop == BindingStop::Stop::FIRST_FREE_SOCKET && is_free_X_socket(n, unit_letter))
+               || (bstop == BindingStop::Stop::FIRST_USED_SOCKET && is_used_socket(n))
+               || (bstop == BindingStop::Stop::FIRST_FREE_CORE && is_free_X_core(n, unit_letter))
+               || (bstop == BindingStop::Stop::FIRST_USED_CORE && is_used_X_core(n, unit_letter))) {
+               stop_node = &n;
             }
          }
 
          // we are between start and end => collect IDs
-         if (start_node != nullptr && end_node == nullptr) {
+         if (start_node != nullptr && stop_node == nullptr) {
             bool add_id = false;
 
             if (bunit == BindingUnit::Unit::CSOCKET && is_free_X_socket(n, 'C')) {
@@ -1016,7 +1016,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
          }
 
          // end already reached => exit
-         if (start_node != nullptr && end_node != nullptr) {
+         if (start_node != nullptr && stop_node != nullptr) {
             return;
          }
 

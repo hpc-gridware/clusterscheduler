@@ -742,11 +742,11 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                }
             }
 
-            if (ret && strcmp("bend", param) == 0) {
+            if (ret && strcmp("bstop", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingEnd::from_string(value));
+                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStop::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingEnd::End::NONE);
+                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStop::Stop::NONE);
                }
             }
 
@@ -1475,10 +1475,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          sge_dstring_sprintf(&buffer, "%s bstart %s", prefix, ocs::BindingStart::to_string(start).c_str());
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
-         // -bend
-         ocs::BindingEnd::End end = ocs::Job::binding_get_end(old_job);
+         // -bstop
+         ocs::BindingStop::Stop stop = ocs::Job::binding_get_stop(old_job);
          sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s bend %s", prefix, ocs::BindingEnd::to_string(end).c_str());
+         sge_dstring_sprintf(&buffer, "%s bstop %s", prefix, ocs::BindingStop::to_string(stop).c_str());
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
          // -binstance

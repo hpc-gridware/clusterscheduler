@@ -153,14 +153,14 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       lRemoveElem(pcmdline, &ep);
    }
 
-   // -bend
-   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bend");
+   // -bstop
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bstop");
    if (ep != nullptr) {
       lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_end, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 

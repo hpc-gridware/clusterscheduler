@@ -52,7 +52,7 @@ namespace ocs {
       static BindingUnit::Unit binding_get_unit(const lListElem *job);
       static std::string binding_get_sort(const lListElem *job);
       static BindingStart::Start binding_get_start(const lListElem *job);
-      static BindingEnd::End binding_get_end(const lListElem *job);
+      static BindingStop::Stop binding_get_stop(const lListElem *job);
       static BindingStrategy::Strategy binding_get_strategy(const lListElem *job);
       static std::string binding_get_filter(const lListElem *job);
       static u_long32 binding_get_amount(const lListElem *job);

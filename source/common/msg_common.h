@@ -1093,9 +1093,9 @@
 #define MSG_GDI_USAGE_BSTART_OPT          "[-bstart [S|s|C|c|E|e|N|n|X|x|Y|y]]"
 #define MSG_GDI_UTEXT_BSTART_OPT          _MESSAGE(60736, _("defines the start position for binding"))
 
-#define MSG_PARSE_BEND_INVALID_S          _MESSAGE(60737, _("invalid binding end " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
-#define MSG_GDI_USAGE_BEND_OPT            "[-bend [S|s|C|c|E|e|N|n|X|x|Y|y]]"
-#define MSG_GDI_UTEXT_BEND_OPT            _MESSAGE(60738, _("defines the end position for binding"))
+#define MSG_PARSE_BSTOP_INVALID_S         _MESSAGE(60737, _("invalid binding stop " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
+#define MSG_GDI_USAGE_BSTOP_OPT           "[-bstop [S|s|C|c|E|e|N|n|X|x|Y|y]]"
+#define MSG_GDI_UTEXT_BSTOP_OPT           _MESSAGE(60738, _("defines the stop position for binding"))
 
 #define MSG_GDI_USAGE_BAMOUNT_OPT         "[-bamount number]"
 #define MSG_GDI_UTEXT_BAMOUNT_OPT         _MESSAGE(60739, _("defines the number of binding units to be used"))

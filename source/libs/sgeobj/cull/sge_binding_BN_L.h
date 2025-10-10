@@ -53,8 +53,8 @@
 *    SGE_ULONG(BN_new_start) - Start position
 *    Defines the start position for binding within the topology string.
 *
-*    SGE_ULONG(BN_new_end) - End position
-*    Defines the end position for binding within the topology string.
+*    SGE_ULONG(BN_new_stop) - Stop position
+*    Defines the stop position for binding within the topology string.
 *
 *    SGE_ULONG(BN_new_strategy) - Binding strategy ...
 *    Defines the strategy for binding, like linear, striding, packed or explicit
@@ -84,7 +84,7 @@ enum {
    BN_new_filter,
    BN_new_sort,
    BN_new_start,
-   BN_new_end,
+   BN_new_stop,
    BN_new_strategy,
    BN_specific_hostname,
    BN_specific_binding,
@@ -100,7 +100,7 @@ LISTDEF(BN_Type)
    SGE_STRING(BN_new_filter, CULL_SUBLIST)
    SGE_STRING(BN_new_sort, CULL_SUBLIST)
    SGE_ULONG(BN_new_start, CULL_SUBLIST)
-   SGE_ULONG(BN_new_end, CULL_SUBLIST)
+   SGE_ULONG(BN_new_stop, CULL_SUBLIST)
    SGE_ULONG(BN_new_strategy, CULL_SUBLIST)
    SGE_HOST(BN_specific_hostname, CULL_SUBLIST)
    SGE_STRING(BN_specific_binding, CULL_SUBLIST)
@@ -116,7 +116,7 @@ NAMEDEF(BNN)
    NAME("BN_new_filter")
    NAME("BN_new_sort")
    NAME("BN_new_start")
-   NAME("BN_new_end")
+   NAME("BN_new_stop")
    NAME("BN_new_strategy")
    NAME("BN_specific_hostname")
    NAME("BN_specific_binding")

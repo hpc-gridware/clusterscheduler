@@ -765,11 +765,11 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
             }
 
             // copy new end but only if it is not UNINITIALIZED and different from the old one
-            auto new_end = static_cast<ocs::BindingEnd::End>(lGetUlong(new_binding_elem, BN_new_end));
-            if (new_end != ocs::BindingEnd::End::UNINITIALIZED) {
-               ocs::BindingEnd::End old_end = ocs::AdvanceReservation::binding_get_end(new_ar);
-               if (old_end != new_end) {
-                  lSetUlong(old_binding_elem, BN_new_end, new_end);
+            auto new_stop = static_cast<ocs::BindingStop::Stop>(lGetUlong(new_binding_elem, BN_new_stop));
+            if (new_stop != ocs::BindingStop::Stop::UNINITIALIZED) {
+               ocs::BindingStop::Stop old_stop = ocs::AdvanceReservation::binding_get_stop(new_ar);
+               if (old_stop != new_stop) {
+                  lSetUlong(old_binding_elem, BN_new_stop, new_stop);
                }
             }
 

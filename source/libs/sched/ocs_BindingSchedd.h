@@ -29,7 +29,7 @@ namespace ocs {
       find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString &host_in_use);
 
       static bool
-      find_final_in_use(const sge_assignment_t *a, TopologyString &binding_in_use);
+      find_final_in_use(const sge_assignment_t *a, TopologyString& binding_in_use, TopologyString& binding_in_use_sorted);
 
       static bool
       ignore_binding(const sge_assignment_t *a, const lListElem *host);

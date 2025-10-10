@@ -42,7 +42,7 @@
 /** @brief Find the binding in use (either now, reservation, within AR or for reservation within AR
  */
 bool
-ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString &host_in_use) {
+ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListElem *host, TopologyString& host_in_use) {
    DENTER(TOP_LAYER);
 
    bool in_reservation_mode = !host_in_use.is_empty();
@@ -145,9 +145,18 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
 }
 
 /** @brief Applies additional constraints to the given binding in use
+ *
+ * This method takes the given binding_in_use which represents the 'current' state of the host
+ * and applies additional constraints like job filter (-bfilter) and other constraints in the future.
+ * The resulting binding_in_use_sorted is a sorted version of the final binding_in_use (-bsort).
+ *
+ * @param a                     Assignment data structure
+ * @param binding_in_use        Topology string representing the current binding in use except for filtered units
+ * @param binding_in_use_sorted Topology string representing the sorted final binding in use
+ * @returns                     true if after applying all constraints there are still threads available
  */
 bool
-ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString &binding_in_use) {
+ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString& binding_in_use, TopologyString& binding_in_use_sorted) {
    DENTER(TOP_LAYER);
 
    // Remove all threads that are defined by an optional job specific filter (-bfilter)
@@ -173,9 +182,10 @@ ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString 
    // @todo CS-1551: If memory binding is active and constrains for NUMA memory (or caches) apply them
    // we can remove those threads belonging to NUMA nodes not having enough memory available
 
-   // Finally, sort the topology string (-bsort)
+   // Finally, make a copy of the topology string and sort it (-bsort)
    const std::string binding_sort = Job::binding_get_sort(a->job);
-   binding_in_use.sort_tree(binding_sort, 't');
+   binding_in_use_sorted.reset_topology(binding_in_use.to_string(true, true, true, false, false, false));
+   binding_in_use_sorted.sort_tree(binding_sort, 't');
 
    DRETURN(true);
 }
@@ -216,6 +226,11 @@ double
 ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use) {
    DENTER(TOP_LAYER);
 
+   // We can handle all slots (with respect to binding) if binding can or has to be ignored
+   if (ignore_binding(a, host)) {
+      DRETURN(slots);
+   }
+
    // if no slots are specified (PE scheduling), then we try to maximize slots.
    if (slots == 0.0) {
       slots = static_cast<double>(std::numeric_limits<int>::max());
@@ -231,22 +246,22 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
 
    // Use the given binding in use and apply additional filter based on context and do sort
    TopologyString tmp_binding_in_use(binding_in_use.to_string(true, true, true, false, false, false));
-   bool ret = find_final_in_use(a, tmp_binding_in_use);
+   TopologyString tmp_binding_in_use_sorted;
+   bool ret = find_final_in_use(a, tmp_binding_in_use, tmp_binding_in_use_sorted);
    if (!ret) {
       DRETURN(0);
    }
 
    // handle different binding types
    unsigned binding_amount = Job::binding_get_amount(a->job);
-   //BindingStrategy::Strategy binding_strategy = Job::binding_get_strategy(a->job);
    BindingType::Type binding_type = Job::binding_get_type(a->job);
    BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
-   BindingEnd::End binding_end = Job::binding_get_end(a->job);
+   BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
    if (binding_type == BindingType::HOST) {
 
       // host binding can handle all slots per definition
-      auto ids = tmp_binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+      auto ids = tmp_binding_in_use_sorted.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
       if (ids.size() >= binding_amount) {
          // enough units found -> report that requested slots are idle
          DPRINTF("max_binding_idleness: enough units found for host-binding of %f slots\n", slots);
@@ -254,17 +269,18 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
       }
 
    } else if (binding_type == BindingType::SLOT) {
+      int max_slots = 0;
 
       // find the requested binding for all slots
-      int max_slots = 0;
       for (max_slots = 0; max_slots < slots; max_slots++) {
-         auto ids = tmp_binding_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+         auto ids = tmp_binding_in_use_sorted.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
          if (ids.size() < binding_amount) {
             break;
          }
 
-         // add the task binding to the binding mask
-         tmp_binding_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+         // add the task binding to the sorted binding mask so that we can continue
+         // finding the next binding for the next task on the remaining units
+         tmp_binding_in_use_sorted.mark_units_as_used_or_unused(ids, binding_unit, true);
       }
 
       if (max_slots > 0) {
@@ -272,8 +288,6 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
          DPRINTF("max_binding_idleness: units found for slots-binding of %f/%f slots\n", min, slots);
          DRETURN(min);
       }
-   } else {
-      // new binding type?
    }
 
    DPRINTF("max_binding_idleness: no binding found for %s\n", lGetHost(host, EH_name));
@@ -302,8 +316,8 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       DRETURN(slots);
    }
 
-   // Early exit in the case of host binding when binding was already done.
-   // We know per definition that we can handle all slots.
+   // Early exit in the case of host binding when binding was already done. We know per definition that we can
+   // handle all slots if the host binding was done once.
    const char *hostname = lGetHost(host, EH_name);
    BindingType::Type binding_type= Job::binding_get_type(a->job);
    lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
@@ -312,38 +326,40 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       DRETURN(slots);
    }
 
-#ifdef WITH_EXTENSIONS
-#endif
-
    // Use the given binding in use and apply additional filter based on context and do sort
+   TopologyString topo_in_use_sorted;
    find_initial_in_use(a, host, topo_in_use);
-   bool ret = find_final_in_use(a, topo_in_use);
+   bool ret = find_final_in_use(a, topo_in_use, topo_in_use_sorted);
    if (!ret) {
+      DPRINTF("find_binding: failed to find binding (filter cannot be applied) %s\n", hostname);
       DRETURN(0);
    }
 
-   DPRINTF("find_binding: final binding in use on host %s is %s\n", hostname, topo_in_use.to_product_topology_string().c_str());
+#ifdef WITH_EXTENSIONS
+#endif
 
-   // distinguish between host and slot-based binding
+   DPRINTF("find_binding: final binding in use on host %s is %s\n", hostname, topo_in_use.to_product_topology_string().c_str());
+   DPRINTF("find_binding: sorted final binding in use is %s\n", topo_in_use_sorted.to_product_topology_string().c_str());
+
    unsigned binding_amount = Job::binding_get_amount(a->job);
    BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
-   BindingEnd::End binding_end = Job::binding_get_end(a->job);
+   BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
+
+   // distinguish between host and slot-based binding
    if (binding_type == BindingType::HOST) {
 
-      // find the requested binding
-      auto ids = topo_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+      // find the requested binding using the sorted topology string
+      auto ids = topo_in_use_sorted.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
       if (ids.size() < binding_amount) {
          DPRINTF("find_binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
          DRETURN(0); // host binding cannot be fulfilled
       }
+      DPRINTF("find_binding: found units %s for slot %d on host %s\n", vector_to_string(ids).c_str(), slots, hostname);
 
       // create a binding mask that only contains those units that we will bind for this host binding
       TopologyString binding_to_use(topo_in_use.to_string(true, true, true, false, false, true));
       binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
-      for (auto id : ids) {
-         binding_to_use.mark_node_as_used_or_unused(id, true);
-      }
       DPRINTF("find_binding: host binding for this job will be %s\n", binding_to_use.to_product_topology_string().c_str());
 
       // store the binding decision in the assignment structure
@@ -351,7 +367,6 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       lSetString(binding_done, BN_specific_binding, binding_to_use.to_string(true, true, true, false, false, false).c_str());
       lSetList(binding_done, BN_specific_binding_list, nullptr);
       DRETURN(slots);
-
    } else if (binding_type == BindingType::SLOT) {
 
       // Find the initial ID for the next task binding if there are already bindings otherwise start with 0
@@ -362,7 +377,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
       // Use the current binding on the host as a starting point for the binding decision
       // or continue binding at that position where it previously finished on that host (e.g. PE round_robin)
-      ocs::TopologyString host_binding_to_use;
+      TopologyString host_binding_to_use;
       if (binding_done == nullptr) {
          host_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, false));
       } else {
@@ -374,40 +389,30 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       int max_slots;
       for (max_slots = 0; max_slots < slots; max_slots++) {
 
-         // find the requested binding
-         auto ids = topo_in_use.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
+         // find the requested binding with the sorted topology string
+         auto ids = topo_in_use_sorted.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
          if (ids.size() < binding_amount) {
             DPRINTF("find_binding: not enough units found for binding request (only %u/%u)\n", ids.size(), binding_amount);
             break;
          }
-
          DPRINTF("find_binding: found units %s for slot %d on host %s\n", vector_to_string(ids).c_str(), max_slots, hostname);
 
-         // create a binding mask that only contains those units that we will bind for this slot binding on the host
-         std::string topo_in_use_str = topo_in_use.to_string(true, true, true, false, false, true);
-
-         DPRINTF("find_binding: slot binding for task %d before binding is %s\n", max_slots, topo_in_use_str.c_str());
-
-         task_binding_to_use.reset_topology(topo_in_use_str);
+         // create a binding mask that only contains those units that we will bind for this task (slot)
+         // and store it in the assignment structure for later use in the gdil element
+         task_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, true));
          task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
-
-         DPRINTF("find_binding: slot binding for task %d will be %s\n", max_slots, hostname, task_binding_to_use.to_product_topology_string().c_str());
+         if (binding_done == nullptr) {
+            binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
+         }
+         lListElem *binding_for_task = lAddSubUlong(binding_done, ST_id, next_binding_id_for_task++, BN_specific_binding_list, ST_Type);
+         lSetString(binding_for_task, ST_name, task_binding_to_use.to_string(true, true, true, false, false, false).c_str());
 
          // add the task binding to the host binding mask
          host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
 
-         // add the task binding to the binding list for the host
-         topo_in_use.mark_units_as_used_or_unused(ids, binding_unit, true);
-
-         // store the binding decision for the task
-         if (binding_done == nullptr) {
-            binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
-         }
-         lListElem *binding_for_task = lAddSubUlong(binding_done, ST_id, next_binding_id_for_task, BN_specific_binding_list, ST_Type);
-         lSetString(binding_for_task, ST_name, task_binding_to_use.to_string(true, true, true, false, false, false).c_str());
-
-         // continue with the next task
-         next_binding_id_for_task++;
+         // add the task binding to the actual binding lists (unsorted and sorted) so that we can continue
+         // finding the next binding for the next task on the remaining units
+         topo_in_use_sorted.mark_units_as_used_or_unused(ids, binding_unit, true);
       }
 
       // exit if no binding was found
@@ -416,7 +421,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
          DRETURN(0);
       }
 
-      // store the binding decision in the assignment structure
+      // store the combined host binding decision in the assignment structure
       if (binding_done) {
          lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, true, false, false, false).c_str());
          DPRINTF("find_binding: slot binding for all tasks on will give us binding %s\n", host_binding_to_use.to_product_topology_string().c_str());

@@ -36,7 +36,7 @@ enum {
    BN_new_filter,
    BN_new_sort,
    BN_new_start,
-   BN_new_end,
+   BN_new_stop,
    BN_new_strategy,
    BN_specific_hostname,
    BN_specific_binding,
@@ -52,7 +52,7 @@ constexpr const int BN_Type[] = {
    BN_new_filter,
    BN_new_sort,
    BN_new_start,
-   BN_new_end,
+   BN_new_stop,
    BN_new_strategy,
    BN_specific_hostname,
    BN_specific_binding,
@@ -69,7 +69,7 @@ constexpr const int BN_Type[] = {
    {BN_new_filter, "BN_new_filter", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_new_sort, "BN_new_sort", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_new_start, "BN_new_start", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {BN_new_end, "BN_new_end", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {BN_new_stop, "BN_new_stop", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_new_strategy, "BN_new_strategy", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_specific_hostname, "BN_specific_hostname", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {BN_specific_binding, "BN_specific_binding", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

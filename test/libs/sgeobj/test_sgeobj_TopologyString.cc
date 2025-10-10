@@ -316,13 +316,13 @@ bool test_mark_nodes_as_unused() {
 bool
 test_find_n_packed_nodes_of_unit_test(const std::string &name, const std::string &topo_string,
                                      int bamount, const ocs::BindingUnit::Unit unit,
-                                     const ocs::BindingStart::Start start, const ocs::BindingEnd::End end,
+                                     const ocs::BindingStart::Start start, const ocs::BindingStop::Stop stop,
                                      std::vector<int> &expected_ids) {
    DENTER(TOP_LAYER);
 
    ocs::TopologyString topo(topo_string);
 
-   std::vector<int> ids = topo.find_n_packed_units(bamount, unit, start, end);
+   std::vector<int> ids = topo.find_n_packed_units(bamount, unit, start, stop);
 
    topo.mark_units_as_used_or_unused(ids, unit, true);
    std::cout << "   ==> " << topo.to_product_topology_string();
@@ -365,7 +365,7 @@ test_find_n_packed_nodes_of_unit_test(const std::string &name, const std::string
 using BindingSelectionTuple = std::tuple<
     ocs::BindingUnit::Unit,
     ocs::BindingStart::Start,
-    ocs::BindingEnd::End,
+    ocs::BindingStop::Stop,
     std::vector<int>
 >;
 
@@ -384,15 +384,15 @@ test_find_n_packed_nodes_of_unit_scenario_collection(std::string &topo_str, std:
    for (auto scenario : scenarios) {
       ocs::BindingUnit::Unit unit = std::get<0>(scenario);
       ocs::BindingStart::Start start = std::get<1>(scenario);
-      ocs::BindingEnd::End end = std::get<2>(scenario);
+      ocs::BindingStop::Stop stop = std::get<2>(scenario);
       std::vector<int> expected_ids = std::get<3>(scenario);
 
       std::cout << "   " << i << ": bunit=" << ocs::BindingUnit::to_string(unit);
       std::cout << "," << "bstart=" << ocs::BindingStart::to_string(start);
-      std::cout << "," << "bend=" << ocs::BindingEnd::to_string(end);
+      std::cout << "," << "bstop=" << ocs::BindingStop::to_string(stop);
 
       ret = test_find_n_packed_nodes_of_unit_test("A1", topo_str, 9999,
-                                                   unit, start, end, expected_ids);
+                                                   unit, start, stop, expected_ids);
 
       std::cout << "   ==> " << (ret ? "Success" : "Failed") << std::endl;
       if (!ret) {
@@ -411,352 +411,352 @@ bool test_find_n_packed_units_scenarios() {
    std::string topo_A1("(N(S(X(Y(C(T)(t)))(Y(C(T)(T)))(Y(e(t))(E(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))))))");
    std::vector<BindingSelectionTuple> scenarios_A1 = {
       // All unit tests without start or stop position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingStop::NONE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingStop::NONE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingStop::NONE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingStop::NONE, {}},
 
       // All unit tests with start position FIRST_USED_SOCKET
       // scenarios are identical to scenarios without starting position because the match can start at the first node
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::NONE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::NONE, {}},
 
       // All unit tests with start position FIRST_FREE_SOCKET (half od the topo string is skipped)
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::NONE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::NONE, {}},
 
       // All unit tests with start position FIRST_USED_CORE
       // scenarios are identical to scenarios without starting position because matching would anyways not before 5
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::NONE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::NONE, {}},
 
       // All unit tests with start position FIRST_FREE_CORE
       // scenarios are identical to scenarios without start-position because matching would anyways not before 5
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::NONE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::NONE, {}},
 
       // All unit tests without start but with stop position
       // nothing can match because the first socket which is used defines the end criteria
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
 
       // All unit tests without start but with stop position
       // nothing can match because the first core in sequence us used and defines the end criteria
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_USED_CORE, {}},
 
       // All unit tests without start or stop position
       // add mathing ids must be below 17 because this is the start of the first free socket after start
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {6, 10, 11}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {9}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {16}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {15}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {8}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {6, 10, 11}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {9}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {16}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {15}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {8}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::NONE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
 
       // scenarios are identical to scenarios without end position because ther is no used socket after start
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {}},
 
       // All unit tests with start position FIRST_FREE_SOCKET (half od the topo string is skipped)
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_SOCKET, {}},
 
       // All unit tests with start position FIRST_USED_CORE
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
 
       // All unit tests with start position FIRST_FREE_CORE
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_SOCKET, {}},
 
       // node 17 is the first free socket which will cause all bindings to end there
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {6, 10, 11}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {9}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {16}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {15}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {8}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {6, 10, 11}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {9}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {16}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {15}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {8}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
 
       // there is no free socket after start therefore the regular end is the end
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
 
       // All unit tests with start position FIRST_USED_CORE
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {6, 10, 11}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {9}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {16}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {15}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {8}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {6, 10, 11}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {9}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {16}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {15}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {8}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
 
       // All unit tests with start position FIRST_FREE_CORE
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {10, 11}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {9}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {16}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {15}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {10, 11}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {9}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {16}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {15}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_SOCKET, {}},
 
       // no binding because end is already node 5 which is within the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
 
       // no binding because end is already node 5 which is within the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_USED_CORE, {}},
 
       // start and end for cores will respect the requested core type
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {6, 10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {8, 19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {6, 10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {8, 19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_USED_CORE, {}},
 
       // All unit tests with start position FIRST_FREE_CORE
       // scenarios are identical to those without end-position because there is no used socket after the start position
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {10, 11, 21, 22, 25, 26}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {9, 20, 24}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {16, 29, 31}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {15, 28, 30}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {19, 23}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {10, 11, 21, 22, 25, 26}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {9, 20, 24}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {16, 29, 31}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {15, 28, 30}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {19, 23}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_USED_CORE, {}},
 
       // node 9 is the first free core that will cause all bindings to end there
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {6}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {8}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {6}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {8}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
 
       //
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {19}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingEnd::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {19}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_SOCKET, ocs::BindingStop::FIRST_FREE_CORE, {}},
 
       //
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {6}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {8}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {6}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {8}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_USED_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
 
       //
-      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {10, 11}},
-      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {9}},
-      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {17}},
-      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {16}},
-      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {15}},
-      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {17}},
-      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {19}},
-      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {18}},
-      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
-      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {27}},
-      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {18}},
-      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingEnd::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::CTHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {10, 11}},
+      {ocs::BindingUnit::CCORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {9}},
+      {ocs::BindingUnit::CSOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {17}},
+      {ocs::BindingUnit::ETHREAD, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {16}},
+      {ocs::BindingUnit::ECORE,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {15}},
+      {ocs::BindingUnit::ESOCKET, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {17}},
+      {ocs::BindingUnit::CCACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {19}},
+      {ocs::BindingUnit::CCACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {18}},
+      {ocs::BindingUnit::CNUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
+      {ocs::BindingUnit::ECACHE2, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {27}},
+      {ocs::BindingUnit::ECACHE3, ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {18}},
+      {ocs::BindingUnit::ENUMA,   ocs::BindingStart::FIRST_FREE_CORE, ocs::BindingStop::FIRST_FREE_CORE, {}},
 
    };
 
@@ -772,30 +772,30 @@ bool test_find_n_packed_units_stop() {
    //                                             1               1              2             2               3
    std::string topo_str("(N(S(X(Y(C(T)(t)))(Y(C(T)(T)))(Y(e(t))(E(T)))))(S(X(Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))))))");
    std::vector<BindingSelectionTuple> scenarios_A1 = {
-   {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingEnd::NONE, {6, 10, 11, 21, 22, 25, 26}},
+   {ocs::BindingUnit::CTHREAD, ocs::BindingStart::NONE, ocs::BindingStop::NONE, {6, 10, 11, 21, 22, 25, 26}},
    };
 
    ocs::TopologyString topo = ocs::TopologyString(topo_str);
    ocs::BindingUnit::Unit unit = ocs::BindingUnit::CTHREAD;
    ocs::BindingStart::Start start = ocs::BindingStart::NONE;
-   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+   ocs::BindingStop::Stop stop = ocs::BindingStop::NONE;
 
    // We expect 7 elements (one ID for each available power-core) if amount>=7
-   std::vector<int> ids = topo.find_n_packed_units(99, unit, start, end);
+   std::vector<int> ids = topo.find_n_packed_units(99, unit, start, stop);
    if (ids.size() != 7) {
       std::cout << "ERROR: expected 7 units but found " << ids.size() << std::endl;
       ret = false;
    }
 
    // We expect 6 elements (early exist)
-   ids = topo.find_n_packed_units(6, unit, start, end);
+   ids = topo.find_n_packed_units(6, unit, start, stop);
    if (ids.size() != 6) {
       std::cout << "ERROR: expected 6 units but found " << ids.size() << std::endl;
       ret = false;
    }
 
    // We expect 3 elements (early exist)
-   ids = topo.find_n_packed_units(3, unit, start, end);
+   ids = topo.find_n_packed_units(3, unit, start, stop);
    if (ids.size() != 3) {
       std::cout << "ERROR: expected 3 units but found " << ids.size() << std::endl;
       ret = false;
@@ -812,11 +812,11 @@ bool test_prevent_socket_binding_twice() {
    ocs::TopologyString topo = ocs::TopologyString(topo_str);
    ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
    ocs::BindingStart::Start start = ocs::BindingStart::NONE;
-   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+   ocs::BindingStop::Stop stop = ocs::BindingStop::NONE;
    std::string expected_topo_str = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTyeeeeyeeeeyeeeeyeeee";
 
    // bind the socket but only the ecores
-   auto ids = topo.find_n_packed_units(1, unit, start, end);
+   auto ids = topo.find_n_packed_units(1, unit, start, stop);
    if (ids.size() != 1) {
       ret = false;
       for (auto id : ids) {
@@ -833,7 +833,7 @@ bool test_prevent_socket_binding_twice() {
 
    // now try to bind socket again but only the C-cores. this has to fail
    unit = ocs::BindingUnit::CSOCKET;
-   ids = topo.find_n_packed_units(1, unit, start, end);
+   ids = topo.find_n_packed_units(1, unit, start, stop);
    if (ids.size() != 0) {
       ret = false;
       for (auto id : ids) {
@@ -860,7 +860,7 @@ bool test_do_full_socket_binding() {
    ocs::TopologyString topo = ocs::TopologyString(topo_str);
    ocs::BindingUnit::Unit unit = ocs::BindingUnit::ESOCKET;
    ocs::BindingStart::Start start = ocs::BindingStart::NONE;
-   ocs::BindingEnd::End end = ocs::BindingEnd::NONE;
+   ocs::BindingStop::Stop end = ocs::BindingStop::NONE;
    std::string expected_topo_str = "nsxycttycttycttycttycttycttycttycttyeeeeyeeeeyeeeeyeeee";
 
    // bind the socket; selection will return only E-cores but all core types will be marked

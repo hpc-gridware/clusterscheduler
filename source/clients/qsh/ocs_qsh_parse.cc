@@ -250,8 +250,8 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       lRemoveElem(cmdline, &ep);
    }
 
-   // -bend
-   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bend"))) {
+   // -bstop
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-bstop"))) {
       // Create a binding element if it does not exist
       lListElem *binding_elem = ocs::Job::binding_get_or_create_elem(*pjob, &answer);
       if (binding_elem == nullptr) {
@@ -259,7 +259,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_end, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);

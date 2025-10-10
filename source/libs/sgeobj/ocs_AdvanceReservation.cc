@@ -82,8 +82,8 @@ ocs::AdvanceReservation::binding_get_start(const lListElem *ar) {
    return Binding::binding_get_start(ar, AR_binding);
 }
 
-ocs::BindingEnd::End
-ocs::AdvanceReservation::binding_get_end(const lListElem *ar) {
+ocs::BindingStop::Stop
+ocs::AdvanceReservation::binding_get_stop(const lListElem *ar) {
    return Binding::binding_get_end(ar, AR_binding);
 }
 

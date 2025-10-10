@@ -76,10 +76,10 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_end",
-			"summary":	"End position",
+			"name":	"new_stop",
+			"summary":	"Stop position",
 			"description":	[{
-				"line":	"Defines the end position for binding within the topology string."
+				"line":	"Defines the stop position for binding within the topology string."
 			}],
 			"type":	"lUlongT",
 			"flags":	[{

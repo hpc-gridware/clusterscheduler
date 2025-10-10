@@ -97,7 +97,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, false), "-scope global -soft -l");
 #endif
 
-   // -btype -bunit -bamount -bsort -bstart -bend
+   // -btype -bunit -bamount -bsort -bstart -bstop
    sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_new_binding, SGE_NO_ABORT));
 
    // -pe pe_name pe_range
