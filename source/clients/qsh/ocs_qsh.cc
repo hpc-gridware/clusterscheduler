@@ -70,6 +70,7 @@
 #include "sgeobj/sge_job.h"
 
 #include "gdi/sge_gdi.h"
+#include "gdi/sge_gdi_data.h"
 #include "gdi/sge_security.h"
 #include "gdi/sge_qexec.h"
 #include "gdi/ocs_gdi_client.h"
@@ -1992,6 +1993,8 @@ int main(int argc, const char **argv)
          DPRINTF("random polling set to %d\n", random_poll);
 
          /* close connection to QMaster */
+         // re-read the sge_qmaster host name, as it might have changed due to migration (see CS-1540)
+         mastername = gdi_data_get_master_host();
          cl_commlib_close_connection(cl_com_get_handle(progname,0),
                                      (char*)mastername,
                                      (char*)prognames[QMASTER],
