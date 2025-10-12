@@ -82,7 +82,10 @@ int sge_execd_process_messages() {
    u_long64 last_alive_check = 0;
    u_long64 load_report_time = 0;
    u_long64 alive_check_interval = 0;
-
+#if defined(OCS_WITH_OPENSSL)
+   bool tls_security = bootstrap_has_security_mode(BS_SEC_MODE_TLS);
+#endif
+   bool munge_security = bootstrap_has_security_mode(BS_SEC_MODE_MUNGE);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
 
@@ -118,10 +121,10 @@ int sge_execd_process_messages() {
       if (ret == CL_RETVAL_OK) {
          int pack_ret = init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
          if (pack_ret == PACK_SUCCESS) {
-            bool from_qmaster = (strcmp(msg.snd_name, prognames[QMASTER]) == 0);
+            bool from_qmaster = strcmp(msg.snd_name, prognames[QMASTER]) == 0;
             bool authentication_ok = true;
             // in case of Munge authentication check and optionally re-resolve the user
-            if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+            if (munge_security) {
                if (from_qmaster) {
                   // Message from qmaster? Check if it is coming from the admin user.
                   if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, true, false, false)) {
@@ -131,7 +134,7 @@ int sge_execd_process_messages() {
                   // Messages from non qmaster are pe-task start orders,
                   // re-resolve and check the user
                   // no need to re-resolve the supplementary groups - they are not used in starting tasks
-                  if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+                  if (munge_security) {
                      if (!ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(&msg.buf, false, true, false)) {
                         authentication_ok = false;
                      }
@@ -240,8 +243,8 @@ int sge_execd_process_messages() {
          if (cl_com_get_handle(prognames[EXECD], 1) == nullptr) {
             terminate = true; /* if we don't have a handle, we must leave
                                * because execd_register will create a new one.
-                               * This error would be realy strange, because
-                               * if this happens the local socket was destroyed.
+                               * This error would be really strange, because
+                               * if this happens, the local socket was destroyed.
                                */
             ret = CL_RETVAL_HANDLE_NOT_FOUND;
          }
@@ -370,6 +373,14 @@ int sge_execd_process_messages() {
 
       /* do cyclic stuff */
       if (!terminate) {
+#if defined(OCS_WITH_OPENSSL)
+         if (tls_security) {
+            // renew certificates if required
+            cl_com_handle_t *handle = cl_com_get_handle(prognames[EXECD], 1);
+            cl_commlib_check_refresh_server_context(handle);
+         }
+#endif
+
          int to_do_return_value = do_ck_to_do(do_reconnect);
          if (to_do_return_value == 1) {
             terminate = true;

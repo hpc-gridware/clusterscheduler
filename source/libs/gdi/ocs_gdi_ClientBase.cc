@@ -979,9 +979,13 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
 
          // Update the client certificate if the qmaster host name changed.
          // Old_master_host is nullptr in the first call, here nothing is to be done.
-         if (old_master_host != nullptr && strcmp(old_master_host, master_name) != 0) {
-            if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
    #if defined(OCS_WITH_OPENSSL)
+            // @todo need a new context
+            //       - when the master host changed
+            //       - when the certificate was renewed - how to find that out? Certificate file timestamp?
+            //       for now simply always create a new context
+            if (old_master_host != nullptr /* && strcmp(old_master_host, master_name) != 0 */) {
                lList *answer_list = nullptr;
                int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
                if (cl_ret != CL_RETVAL_OK) {
@@ -989,10 +993,10 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
                   answer_list_output(&answer_list);
                }
                lFreeList(&answer_list);
+            }
    #else
                DPRINTF(SFNMAX, MSG_SSL_NOT_BUILT_IN);
    #endif
-            }
          }
       }
    }

@@ -313,6 +313,7 @@ int main(int argc, char *argv[]) {
    lListElem *global = nullptr;
    lListElem *local = nullptr;
    lList *conf_list = nullptr;
+
    const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 progid = component_get_component_id();
    if (ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||

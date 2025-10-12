@@ -1,3 +1,4 @@
+#include <sge_time.h>
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -33,6 +34,7 @@
 
 #include "ocs_OpenSSL.h"
 
+#include <ocs_OpenSSL.h>
 #include <sge_bootstrap_env.h>
 #include <sge_string.h>
 
@@ -42,67 +44,68 @@ namespace ocs::uti {
    // static members
    void *OpenSSL::lib_handle = nullptr;
 
-   TLS_server_method_func_t OpenSSL::TLS_server_method_func = nullptr;
-   TLS_client_method_func_t OpenSSL::TLS_client_method_func = nullptr;
-   SSL_CTX_new_func_t OpenSSL::SSL_CTX_new_func = nullptr;
-   ERR_get_error_func_t OpenSSL::ERR_get_error_func = nullptr;
-   ERR_reason_error_string_func_t OpenSSL::ERR_reason_error_string_func = nullptr;
-   SSL_CTX_use_certificate_func_t OpenSSL::SSL_CTX_use_certificate_func = nullptr;
-   SSL_CTX_use_certificate_chain_file_func_t OpenSSL::SSL_CTX_use_certificate_chain_file_func = nullptr;
-   SSL_CTX_use_PrivateKey_func_t OpenSSL::SSL_CTX_use_PrivateKey_func = nullptr;
-   SSL_CTX_use_PrivateKey_file_func_t OpenSSL::SSL_CTX_use_PrivateKey_file_func = nullptr;
-   SSL_CTX_load_verify_locations_func_t OpenSSL::SSL_CTX_load_verify_locations_func = nullptr;
-   SSL_CTX_set_verify_func_t OpenSSL::SSL_CTX_set_verify_func = nullptr;
-   SSL_new_func_t OpenSSL::SSL_new_func = nullptr;
-   SSL_set_fd_func_t OpenSSL::SSL_set_fd_func = nullptr;
-   SSL_accept_func_t OpenSSL::SSL_accept_func = nullptr;
-   SSL_read_func_t OpenSSL::SSL_read_func = nullptr;
-   SSL_write_func_t OpenSSL::SSL_write_func = nullptr;
-   SSL_shutdown_func_t OpenSSL::SSL_shutdown_func = nullptr;
-   SSL_free_func_t OpenSSL::SSL_free_func = nullptr;
-   SSL_CTX_free_func_t OpenSSL::SSL_CTX_free_func = nullptr;
-   SSL_set1_host_func_t OpenSSL::SSL_set1_host_func = nullptr;
-   SSL_connect_func_t OpenSSL::SSL_connect_func = nullptr;
-   SSL_ctrl_func_t OpenSSL::SSL_ctrl_func = nullptr;
-   OPENSSL_init_ssl_func_t OpenSSL::OPENSSL_init_ssl_func = nullptr;
+   std::vector<OpenSSL::OpenSSLContext *> OpenSSL::OpenSSLContext::contexts_to_delete;
 
-   EVP_PKEY_new_func_t OpenSSL::EVP_PKEY_new_func = nullptr;
-   EVP_PKEY_free_func_t OpenSSL::EVP_PKEY_free_func = nullptr;
-   EVP_PKEY_assign_func_t OpenSSL::EVP_PKEY_assign_func = nullptr;
-   RSA_new_func_t OpenSSL::RSA_new_func = nullptr;
-   RSA_free_func_t OpenSSL::RSA_free_func = nullptr;
-   RSA_generate_key_ex_func_t OpenSSL::RSA_generate_key_ex_func = nullptr;
-   BN_new_func_t OpenSSL::BN_new_func = nullptr;
-   BN_free_func_t OpenSSL::BN_free_func = nullptr;
-   BN_set_word_func_t OpenSSL::BN_set_word_func = nullptr;
-   X509_new_func_t OpenSSL::X509_new_func = nullptr;
-   X509_free_func_t OpenSSL::X509_free_func = nullptr;
-   X509_set_version_func_t OpenSSL::X509_set_version_func = nullptr;
    ASN1_INTEGER_set_func_t OpenSSL::ASN1_INTEGER_set_func = nullptr;
-   X509_gmtime_adj_func_t OpenSSL::X509_gmtime_adj_func = nullptr;
-   X509_set_pubkey_func_t OpenSSL::X509_set_pubkey_func = nullptr;
-   X509_get_serialNumber_func_t OpenSSL::X509_get_serialNumber_func = nullptr;
-   X509_NAME_add_entry_by_txt_func_t OpenSSL::X509_NAME_add_entry_by_txt_func = nullptr;
-   X509_set_issuer_name_func_t OpenSSL::X509_set_issuer_name_func = nullptr;
-   X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
-   PEM_write_PrivateKey_func_t OpenSSL::PEM_write_PrivateKey_func = nullptr;
-   PEM_write_X509_func_t OpenSSL::PEM_write_X509_func = nullptr;
-   EVP_sha256_func_t OpenSSL::EVP_sha256_func = nullptr;
-   X509_get_subject_name_func_t OpenSSL::X509_get_subject_name_func = nullptr;
-   X509_getm_notBefore_func_t OpenSSL::X509_getm_notBefore_func = nullptr;
-   X509_getm_notAfter_func_t OpenSSL::X509_getm_notAfter_func = nullptr;
-   SSL_get_error_func_t OpenSSL::SSL_get_error_func = nullptr;
-   ERR_clear_error_func_t OpenSSL::ERR_clear_error_func = nullptr;
-   PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
-   X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
    ASN1_TIME_diff_func_t OpenSSL::ASN1_TIME_diff_func = nullptr;
-   BIO_new_func_t OpenSSL::BIO_new_func = nullptr;
    BIO_free_func_t OpenSSL::BIO_free_func = nullptr;
-   BIO_s_mem_func_t OpenSSL::BIO_s_mem_func = nullptr;
+   BIO_new_func_t OpenSSL::BIO_new_func = nullptr;
    BIO_number_written_func_t OpenSSL::BIO_number_written_func = nullptr;
    BIO_read_func_t OpenSSL::BIO_read_func = nullptr;
-   SSL_CTX_get0_certificate_func_t OpenSSL::SSL_CTX_get0_certificate_func = nullptr;
+   BIO_s_mem_func_t OpenSSL::BIO_s_mem_func = nullptr;
+   BN_free_func_t OpenSSL::BN_free_func = nullptr;
+   BN_new_func_t OpenSSL::BN_new_func = nullptr;
+   BN_set_word_func_t OpenSSL::BN_set_word_func = nullptr;
+   ERR_clear_error_func_t OpenSSL::ERR_clear_error_func = nullptr;
+   ERR_get_error_func_t OpenSSL::ERR_get_error_func = nullptr;
+   ERR_reason_error_string_func_t OpenSSL::ERR_reason_error_string_func = nullptr;
+   EVP_PKEY_assign_func_t OpenSSL::EVP_PKEY_assign_func = nullptr;
+   EVP_PKEY_free_func_t OpenSSL::EVP_PKEY_free_func = nullptr;
+   EVP_PKEY_new_func_t OpenSSL::EVP_PKEY_new_func = nullptr;
+   EVP_sha256_func_t OpenSSL::EVP_sha256_func = nullptr;
+   OPENSSL_init_ssl_func_t OpenSSL::OPENSSL_init_ssl_func = nullptr;
+   PEM_read_X509_func_t OpenSSL::PEM_read_X509_func = nullptr;
+   PEM_write_PrivateKey_func_t OpenSSL::PEM_write_PrivateKey_func = nullptr;
+   PEM_write_X509_func_t OpenSSL::PEM_write_X509_func = nullptr;
    PEM_write_bio_X509_func_t OpenSSL::PEM_write_bio_X509_func = nullptr;
+   RSA_free_func_t OpenSSL::RSA_free_func = nullptr;
+   RSA_generate_key_ex_func_t OpenSSL::RSA_generate_key_ex_func = nullptr;
+   RSA_new_func_t OpenSSL::RSA_new_func = nullptr;
+   SSL_CTX_free_func_t OpenSSL::SSL_CTX_free_func = nullptr;
+   SSL_CTX_get0_certificate_func_t OpenSSL::SSL_CTX_get0_certificate_func = nullptr;
+   SSL_CTX_load_verify_locations_func_t OpenSSL::SSL_CTX_load_verify_locations_func = nullptr;
+   SSL_CTX_new_func_t OpenSSL::SSL_CTX_new_func = nullptr;
+   SSL_CTX_set_verify_func_t OpenSSL::SSL_CTX_set_verify_func = nullptr;
+   SSL_CTX_use_PrivateKey_file_func_t OpenSSL::SSL_CTX_use_PrivateKey_file_func = nullptr;
+   SSL_CTX_use_PrivateKey_func_t OpenSSL::SSL_CTX_use_PrivateKey_func = nullptr;
+   SSL_CTX_use_certificate_chain_file_func_t OpenSSL::SSL_CTX_use_certificate_chain_file_func = nullptr;
+   SSL_CTX_use_certificate_func_t OpenSSL::SSL_CTX_use_certificate_func = nullptr;
+   SSL_accept_func_t OpenSSL::SSL_accept_func = nullptr;
+   SSL_connect_func_t OpenSSL::SSL_connect_func = nullptr;
+   SSL_ctrl_func_t OpenSSL::SSL_ctrl_func = nullptr;
+   SSL_free_func_t OpenSSL::SSL_free_func = nullptr;
+   SSL_get_error_func_t OpenSSL::SSL_get_error_func = nullptr;
+   SSL_new_func_t OpenSSL::SSL_new_func = nullptr;
+   SSL_read_func_t OpenSSL::SSL_read_func = nullptr;
+   SSL_set1_host_func_t OpenSSL::SSL_set1_host_func = nullptr;
+   SSL_set_fd_func_t OpenSSL::SSL_set_fd_func = nullptr;
+   SSL_shutdown_func_t OpenSSL::SSL_shutdown_func = nullptr;
+   SSL_write_func_t OpenSSL::SSL_write_func = nullptr;
+   TLS_client_method_func_t OpenSSL::TLS_client_method_func = nullptr;
+   TLS_server_method_func_t OpenSSL::TLS_server_method_func = nullptr;
+   X509_NAME_add_entry_by_txt_func_t OpenSSL::X509_NAME_add_entry_by_txt_func = nullptr;
+   X509_free_func_t OpenSSL::X509_free_func = nullptr;
+   X509_get0_notAfter_func_t OpenSSL::X509_get0_notAfter_func = nullptr;
+   X509_get_serialNumber_func_t OpenSSL::X509_get_serialNumber_func = nullptr;
+   X509_get_subject_name_func_t OpenSSL::X509_get_subject_name_func = nullptr;
+   X509_getm_notAfter_func_t OpenSSL::X509_getm_notAfter_func = nullptr;
+   X509_getm_notBefore_func_t OpenSSL::X509_getm_notBefore_func = nullptr;
+   X509_gmtime_adj_func_t OpenSSL::X509_gmtime_adj_func = nullptr;
+   X509_new_func_t OpenSSL::X509_new_func = nullptr;
+   X509_set_issuer_name_func_t OpenSSL::X509_set_issuer_name_func = nullptr;
+   X509_set_pubkey_func_t OpenSSL::X509_set_pubkey_func = nullptr;
+   X509_set_version_func_t OpenSSL::X509_set_version_func = nullptr;
+   X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
 
 
    // static methods
@@ -130,27 +133,89 @@ namespace ocs::uti {
       // load the functions
       const char *func;
       if (ret) {
-         func = "TLS_server_method";
-         //func = "TLS_method";
-         TLS_server_method_func = reinterpret_cast<TLS_server_method_func_t>(dlsym(lib_handle, func));
-         if (TLS_server_method_func == nullptr) {
+         func = "ASN1_INTEGER_set";
+         ASN1_INTEGER_set_func = reinterpret_cast<ASN1_INTEGER_set_func_t>(dlsym(lib_handle, func));
+         if (ASN1_INTEGER_set_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "TLS_client_method";
-         //func = "TLS_method";
-         TLS_client_method_func = reinterpret_cast<TLS_client_method_func_t>(dlsym(lib_handle, func));
-         if (TLS_client_method_func == nullptr) {
+         func = "ASN1_TIME_diff";
+         ASN1_TIME_diff_func = reinterpret_cast<ASN1_TIME_diff_func_t>(dlsym(lib_handle, func));
+         if (ASN1_TIME_diff_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "SSL_CTX_new";
-         SSL_CTX_new_func = reinterpret_cast<SSL_CTX_new_func_t>(dlsym(lib_handle, func));
-         if (SSL_CTX_new_func == nullptr) {
+         func = "BIO_free";
+         BIO_free_func = reinterpret_cast<BIO_free_func_t>(dlsym(lib_handle, func));
+         if (BIO_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_new";
+         BIO_new_func = reinterpret_cast<BIO_new_func_t>(dlsym(lib_handle, func));
+         if (BIO_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_number_written";
+         BIO_number_written_func = reinterpret_cast<BIO_number_written_func_t>(dlsym(lib_handle, func));
+         if (BIO_number_written_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_read";
+         BIO_read_func = reinterpret_cast<BIO_read_func_t>(dlsym(lib_handle, func));
+         if (BIO_read_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BIO_s_mem";
+         BIO_s_mem_func = reinterpret_cast<BIO_s_mem_func_t>(dlsym(lib_handle, func));
+         if (BIO_s_mem_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BN_free";
+         BN_free_func = reinterpret_cast<BN_free_func_t>(dlsym(lib_handle, func));
+         if (BN_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BN_new";
+         BN_new_func = reinterpret_cast<BN_new_func_t>(dlsym(lib_handle, func));
+         if (BN_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "BN_set_word";
+         BN_set_word_func = reinterpret_cast<BN_set_word_func_t>(dlsym(lib_handle, func));
+         if (BN_set_word_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "ERR_clear_error";
+         ERR_clear_error_func = reinterpret_cast<ERR_clear_error_func_t>(dlsym(lib_handle, func));
+         if (ERR_clear_error_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -167,6 +232,142 @@ namespace ocs::uti {
          func = "ERR_reason_error_string";
          ERR_reason_error_string_func = reinterpret_cast<ERR_reason_error_string_func_t>(dlsym(lib_handle, func));
          if (ERR_reason_error_string_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "EVP_PKEY_assign";
+         EVP_PKEY_assign_func = reinterpret_cast<EVP_PKEY_assign_func_t>(dlsym(lib_handle, func));
+         if (EVP_PKEY_assign_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "EVP_PKEY_free";
+         EVP_PKEY_free_func = reinterpret_cast<EVP_PKEY_free_func_t>(dlsym(lib_handle, func));
+         if (EVP_PKEY_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "EVP_PKEY_new";
+         EVP_PKEY_new_func = reinterpret_cast<EVP_PKEY_new_func_t>(dlsym(lib_handle, func));
+         if (EVP_PKEY_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "EVP_sha256";
+         EVP_sha256_func = reinterpret_cast<EVP_sha256_func_t>(dlsym(lib_handle, func));
+         if (EVP_sha256_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "OPENSSL_init_ssl";
+         OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(lib_handle, func));
+         if (OPENSSL_init_ssl_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_read_X509";
+         PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(lib_handle, func));
+         if (PEM_read_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_write_PrivateKey";
+         PEM_write_PrivateKey_func = reinterpret_cast<PEM_write_PrivateKey_func_t>(dlsym(lib_handle, func));
+         if (PEM_write_PrivateKey_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_write_X509";
+         PEM_write_X509_func = reinterpret_cast<PEM_write_X509_func_t>(dlsym(lib_handle, func));
+         if (PEM_write_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "PEM_write_bio_X509";
+         PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(lib_handle, func));
+         if (PEM_write_bio_X509_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "RSA_free";
+         RSA_free_func = reinterpret_cast<RSA_free_func_t>(dlsym(lib_handle, func));
+         if (RSA_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "RSA_generate_key_ex";
+         RSA_generate_key_ex_func = reinterpret_cast<RSA_generate_key_ex_func_t>(dlsym(lib_handle, func));
+         if (RSA_generate_key_ex_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "RSA_new";
+         RSA_new_func = reinterpret_cast<RSA_new_func_t>(dlsym(lib_handle, func));
+         if (RSA_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_free";
+         SSL_CTX_free_func = reinterpret_cast<SSL_CTX_free_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_free_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_get0_certificate";
+         SSL_CTX_get0_certificate_func = reinterpret_cast<SSL_CTX_get0_certificate_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_get0_certificate_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_load_verify_locations";
+         SSL_CTX_load_verify_locations_func = reinterpret_cast<SSL_CTX_load_verify_locations_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_load_verify_locations_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_new";
+         SSL_CTX_new_func = reinterpret_cast<SSL_CTX_new_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_new_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_CTX_set_verify";
+         SSL_CTX_set_verify_func = reinterpret_cast<SSL_CTX_set_verify_func_t>(dlsym(lib_handle, func));
+         if (SSL_CTX_set_verify_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -204,89 +405,9 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "SSL_CTX_load_verify_locations";
-         SSL_CTX_load_verify_locations_func = reinterpret_cast<SSL_CTX_load_verify_locations_func_t>(dlsym(lib_handle, func));
-         if (SSL_CTX_load_verify_locations_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_CTX_set_verify";
-         SSL_CTX_set_verify_func = reinterpret_cast<SSL_CTX_set_verify_func_t>(dlsym(lib_handle, func));
-         if (SSL_CTX_set_verify_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_new";
-         SSL_new_func = reinterpret_cast<SSL_new_func_t>(dlsym(lib_handle, func));
-         if (SSL_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_set_fd";
-         SSL_set_fd_func = reinterpret_cast<SSL_set_fd_func_t>(dlsym(lib_handle, func));
-         if (SSL_set_fd_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
          func = "SSL_accept";
          SSL_accept_func = reinterpret_cast<SSL_accept_func_t>(dlsym(lib_handle, func));
          if (SSL_accept_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_read";
-         SSL_read_func = reinterpret_cast<SSL_read_func_t>(dlsym(lib_handle, func));
-         if (SSL_read_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_write";
-         SSL_write_func = reinterpret_cast<SSL_write_func_t>(dlsym(lib_handle, func));
-         if (SSL_write_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_shutdown";
-         SSL_shutdown_func = reinterpret_cast<SSL_shutdown_func_t>(dlsym(lib_handle, func));
-         if (SSL_shutdown_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_free";
-         SSL_free_func = reinterpret_cast<SSL_free_func_t>(dlsym(lib_handle, func));
-         if (SSL_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_CTX_free";
-         SSL_CTX_free_func = reinterpret_cast<SSL_CTX_free_func_t>(dlsym(lib_handle, func));
-         if (SSL_CTX_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "SSL_set1_host";
-         SSL_set1_host_func = reinterpret_cast<SSL_set1_host_func_t>(dlsym(lib_handle, func));
-         if (SSL_set1_host_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -308,217 +429,9 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "OPENSSL_init_ssl";
-         OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(lib_handle, func));
-         if (OPENSSL_init_ssl_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-
-      if (ret) {
-         // this should actually not be necessary, unless we want to change the default settings
-         if (!OPENSSL_init_ssl_func(0, nullptr)) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_INIT_FAILED);
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "EVP_PKEY_new";
-         EVP_PKEY_new_func = reinterpret_cast<EVP_PKEY_new_func_t>(dlsym(lib_handle, func));
-         if (EVP_PKEY_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "EVP_PKEY_free";
-         EVP_PKEY_free_func = reinterpret_cast<EVP_PKEY_free_func_t>(dlsym(lib_handle, func));
-         if (EVP_PKEY_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "EVP_PKEY_assign";
-         EVP_PKEY_assign_func = reinterpret_cast<EVP_PKEY_assign_func_t>(dlsym(lib_handle, func));
-         if (EVP_PKEY_assign_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_new";
-         RSA_new_func = reinterpret_cast<RSA_new_func_t>(dlsym(lib_handle, func));
-         if (RSA_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_free";
-         RSA_free_func = reinterpret_cast<RSA_free_func_t>(dlsym(lib_handle, func));
-         if (RSA_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "RSA_generate_key_ex";
-         RSA_generate_key_ex_func = reinterpret_cast<RSA_generate_key_ex_func_t>(dlsym(lib_handle, func));
-         if (RSA_generate_key_ex_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "BN_new";
-         BN_new_func = reinterpret_cast<BN_new_func_t>(dlsym(lib_handle, func));
-         if (BN_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "BN_free";
-         BN_free_func = reinterpret_cast<BN_free_func_t>(dlsym(lib_handle, func));
-         if (BN_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "BN_set_word";
-         BN_set_word_func = reinterpret_cast<BN_set_word_func_t>(dlsym(lib_handle, func));
-         if (BN_set_word_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_new";
-         X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(lib_handle, func));
-         if (X509_new_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_free";
-         X509_free_func = reinterpret_cast<X509_free_func_t>(dlsym(lib_handle, func));
-         if (X509_free_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_set_version";
-         X509_set_version_func = reinterpret_cast<X509_set_version_func_t>(dlsym(lib_handle, func));
-         if (X509_set_version_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "ASN1_INTEGER_set";
-         ASN1_INTEGER_set_func = reinterpret_cast<ASN1_INTEGER_set_func_t>(dlsym(lib_handle, func));
-         if (ASN1_INTEGER_set_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_gmtime_adj";
-         X509_gmtime_adj_func = reinterpret_cast<X509_gmtime_adj_func_t>(dlsym(lib_handle, func));
-         if (X509_gmtime_adj_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_set_pubkey";
-         X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(lib_handle, func));
-         if (X509_set_pubkey_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_get_serialNumber";
-         X509_get_serialNumber_func = reinterpret_cast<X509_get_serialNumber_func_t>(dlsym(lib_handle, func));
-         if (X509_get_serialNumber_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_NAME_add_entry_by_txt";
-         X509_NAME_add_entry_by_txt_func = reinterpret_cast<X509_NAME_add_entry_by_txt_func_t>(dlsym(lib_handle, func));
-         if (X509_NAME_add_entry_by_txt_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_set_issuer_name";
-         X509_set_issuer_name_func = reinterpret_cast<X509_set_issuer_name_func_t>(dlsym(lib_handle, func));
-         if (X509_set_issuer_name_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_sign";
-         X509_sign_func = reinterpret_cast<X509_sign_func_t>(dlsym(lib_handle, func));
-         if (X509_sign_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "PEM_write_PrivateKey";
-         PEM_write_PrivateKey_func = reinterpret_cast<PEM_write_PrivateKey_func_t>(dlsym(lib_handle, func));
-         if (PEM_write_PrivateKey_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "PEM_write_X509";
-         PEM_write_X509_func = reinterpret_cast<PEM_write_X509_func_t>(dlsym(lib_handle, func));
-         if (PEM_write_X509_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "EVP_sha256";
-         EVP_sha256_func = reinterpret_cast<EVP_sha256_func_t>(dlsym(lib_handle, func));
-         if (EVP_sha256_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_get_subject_name";
-         X509_get_subject_name_func = reinterpret_cast<X509_get_subject_name_func_t>(dlsym(lib_handle, func));
-         if (X509_get_subject_name_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_getm_notBefore";
-         X509_getm_notBefore_func = reinterpret_cast<X509_getm_notBefore_func_t>(dlsym(lib_handle, func));
-         if (X509_getm_notBefore_func == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
-            ret = false;
-         }
-      }
-      if (ret) {
-         func = "X509_getm_notAfter";
-         X509_getm_notAfter_func = reinterpret_cast<X509_getm_notAfter_func_t>(dlsym(lib_handle, func));
-         if (X509_getm_notAfter_func == nullptr) {
+         func = "SSL_free";
+         SSL_free_func = reinterpret_cast<SSL_free_func_t>(dlsym(lib_handle, func));
+         if (SSL_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -532,17 +445,75 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "ERR_clear_error";
-         ERR_clear_error_func = reinterpret_cast<ERR_clear_error_func_t>(dlsym(lib_handle, func));
-         if (ERR_clear_error_func == nullptr) {
+         func = "SSL_new";
+         SSL_new_func = reinterpret_cast<SSL_new_func_t>(dlsym(lib_handle, func));
+         if (SSL_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "PEM_read_X509";
-         PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(lib_handle, func));
-         if (PEM_read_X509_func == nullptr) {
+         func = "SSL_read";
+         SSL_read_func = reinterpret_cast<SSL_read_func_t>(dlsym(lib_handle, func));
+         if (SSL_read_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_set1_host";
+         SSL_set1_host_func = reinterpret_cast<SSL_set1_host_func_t>(dlsym(lib_handle, func));
+         if (SSL_set1_host_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_set_fd";
+         SSL_set_fd_func = reinterpret_cast<SSL_set_fd_func_t>(dlsym(lib_handle, func));
+         if (SSL_set_fd_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_shutdown";
+         SSL_shutdown_func = reinterpret_cast<SSL_shutdown_func_t>(dlsym(lib_handle, func));
+         if (SSL_shutdown_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "SSL_write";
+         SSL_write_func = reinterpret_cast<SSL_write_func_t>(dlsym(lib_handle, func));
+         if (SSL_write_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "TLS_client_method";
+         //func = "TLS_method";
+         TLS_client_method_func = reinterpret_cast<TLS_client_method_func_t>(dlsym(lib_handle, func));
+         if (TLS_client_method_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "TLS_server_method";
+         //func = "TLS_method";
+         TLS_server_method_func = reinterpret_cast<TLS_server_method_func_t>(dlsym(lib_handle, func));
+         if (TLS_server_method_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_free";
+         X509_free_func = reinterpret_cast<X509_free_func_t>(dlsym(lib_handle, func));
+         if (X509_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
@@ -556,66 +527,98 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         func = "ASN1_TIME_diff";
-         ASN1_TIME_diff_func = reinterpret_cast<ASN1_TIME_diff_func_t>(dlsym(lib_handle, func));
-         if (ASN1_TIME_diff_func == nullptr) {
+         func = "X509_get_serialNumber";
+         X509_get_serialNumber_func = reinterpret_cast<X509_get_serialNumber_func_t>(dlsym(lib_handle, func));
+         if (X509_get_serialNumber_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "BIO_new";
-         BIO_new_func = reinterpret_cast<BIO_new_func_t>(dlsym(lib_handle, func));
-         if (BIO_new_func == nullptr) {
+         func = "X509_get_subject_name";
+         X509_get_subject_name_func = reinterpret_cast<X509_get_subject_name_func_t>(dlsym(lib_handle, func));
+         if (X509_get_subject_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "BIO_free";
-         BIO_free_func = reinterpret_cast<BIO_free_func_t>(dlsym(lib_handle, func));
-         if (BIO_free_func == nullptr) {
+         func = "X509_getm_notAfter";
+         X509_getm_notAfter_func = reinterpret_cast<X509_getm_notAfter_func_t>(dlsym(lib_handle, func));
+         if (X509_getm_notAfter_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "BIO_s_mem";
-         BIO_s_mem_func = reinterpret_cast<BIO_s_mem_func_t>(dlsym(lib_handle, func));
-         if (BIO_s_mem_func == nullptr) {
+         func = "X509_getm_notBefore";
+         X509_getm_notBefore_func = reinterpret_cast<X509_getm_notBefore_func_t>(dlsym(lib_handle, func));
+         if (X509_getm_notBefore_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "BIO_number_written";
-         BIO_number_written_func = reinterpret_cast<BIO_number_written_func_t>(dlsym(lib_handle, func));
-         if (BIO_number_written_func == nullptr) {
+         func = "X509_gmtime_adj";
+         X509_gmtime_adj_func = reinterpret_cast<X509_gmtime_adj_func_t>(dlsym(lib_handle, func));
+         if (X509_gmtime_adj_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "BIO_read";
-         BIO_read_func = reinterpret_cast<BIO_read_func_t>(dlsym(lib_handle, func));
-         if (BIO_read_func == nullptr) {
+         func = "X509_NAME_add_entry_by_txt";
+         X509_NAME_add_entry_by_txt_func = reinterpret_cast<X509_NAME_add_entry_by_txt_func_t>(dlsym(lib_handle, func));
+         if (X509_NAME_add_entry_by_txt_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "SSL_CTX_get0_certificate";
-         SSL_CTX_get0_certificate_func = reinterpret_cast<SSL_CTX_get0_certificate_func_t>(dlsym(lib_handle, func));
-         if (SSL_CTX_get0_certificate_func == nullptr) {
+         func = "X509_new";
+         X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(lib_handle, func));
+         if (X509_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
       }
       if (ret) {
-         func = "PEM_write_bio_X509";
-         PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(lib_handle, func));
-         if (PEM_write_bio_X509_func == nullptr) {
+         func = "X509_set_issuer_name";
+         X509_set_issuer_name_func = reinterpret_cast<X509_set_issuer_name_func_t>(dlsym(lib_handle, func));
+         if (X509_set_issuer_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_set_pubkey";
+         X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(lib_handle, func));
+         if (X509_set_pubkey_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_set_version";
+         X509_set_version_func = reinterpret_cast<X509_set_version_func_t>(dlsym(lib_handle, func));
+         if (X509_set_version_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+      if (ret) {
+         func = "X509_sign";
+         X509_sign_func = reinterpret_cast<X509_sign_func_t>(dlsym(lib_handle, func));
+         if (X509_sign_func == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
+            ret = false;
+         }
+      }
+
+      if (ret) {
+         // this should actually not be necessary, unless we want to change the default settings
+         if (!OPENSSL_init_ssl_func(0, nullptr)) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_INIT_FAILED);
             ret = false;
          }
       }
@@ -640,52 +643,54 @@ namespace ocs::uti {
    }
 
 #define PER_USER_AND_HOST_CERTS
-   bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname) {
+   bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name) {
       bool ret = true;
       // need info
       // -> daemon or user certificate?
       //    -> daemon: $SGE_ROOT/$SGE_CELL/common/certs/hostname.pem
       //    -> user: $HOME/.ocs/certs/hostname.pem OR $HOME/.ocs/certs/cert.pem
       //             => or do not store it at all?
-      if (hostname == nullptr) {
+      if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
       } else {
          if (home_dir == nullptr) {
-            cert_path = std::string(bootstrap_get_sge_root()) + "/" + std::string(bootstrap_get_sge_cell()) + std::string("/common/certs/") + std::string(hostname) + std::string(".pem");
+            cert_path = std::string(bootstrap_get_sge_root()) + "/" + std::string(bootstrap_get_sge_cell()) +
+               std::string("/common/certs/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
          } else {
 #if defined(PER_USER_AND_HOST_CERTS)
-            cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string(hostname) + std::string(".pem");
+            cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string(comp_name) + std::string("_") +
+               std::string(hostname) + std::string(".pem");
 #else
-            cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string("cert.pem");
+            cert_path = std::string(home_dir) + std::string("/.ocs/certs/") + std::string(comp_name) + std::string(".pem");
 #endif
          }
       }
       return ret;
    }
-   bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname) {
+   bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname, const char *comp_name) {
       bool ret = true;
       // -> daemon or user key?
       //    -> daemon: /var/lib/ocs/private/hostname.pem
       //    -> user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
-      if (hostname == nullptr) {
+      if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
       } else {
          if (home_dir == nullptr) {
-            key_path = std::string("/var/lib/ocs/private/") + std::string(hostname) + std::string(".pem");
+            key_path = std::string("/var/lib/ocs/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
          } else {
 #if defined(PER_USER_AND_HOST_CERTS)
-            key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string(hostname) + std::string(".pem");
+            key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
 #else
-            key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string("key.pem");
+            key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string(comp_name) + std::string(".pem");
 #endif
          }
       }
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, dstring *error_dstr, bool &created_dirs) {
+   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) {
       bool ret = true;
 
       if (ret) {
@@ -695,7 +700,7 @@ namespace ocs::uti {
          if (!std::filesystem::exists(cert_dir)) {
             // need to switch to admin user if we are root
             // SGE_ROOT might be on a filesystem where root has no write permissions
-            if (switch_user) {
+            if (switch_user && called_as_root) {
                sge_switch2admin_user();
             }
             std::error_code ec;
@@ -715,12 +720,17 @@ namespace ocs::uti {
                   created_dirs = true;
                }
             }
-            if (switch_user) {
+            if (switch_user && called_as_root) {
                sge_switch2start_user();
             }
          }
       }
       if (ret) {
+         // for the key file we need to be root
+         // if we are admin user right now, switch to start user (root)
+         if (switch_user && !called_as_root) {
+            sge_switch2start_user();
+         }
          std::filesystem::path key_dir = key_path.parent_path();
          if (!std::filesystem::exists(key_dir)) {
             std::error_code ec;
@@ -738,9 +748,27 @@ namespace ocs::uti {
                }
             }
          }
+         if (switch_user && !called_as_root) {
+            sge_switch2admin_user();
+         }
       }
 
       return ret;
+   }
+
+   bool OpenSSL::OpenSSLContext::certificate_recreate_required() {
+      DENTER(TOP_LAYER);
+
+      bool ret = false;
+
+      u_long64 now = sge_get_gmt64();
+      if (renewal_time <= now) {
+         // The certificate has expired.
+         DPRINTF("the certificate has expired / is about to expire\n");
+         ret = true;
+      }
+
+      DRETURN(ret);
    }
 
    bool OpenSSL::OpenSSLContext::certificate_recreate_required(dstring *error_dstr) {
@@ -749,6 +777,9 @@ namespace ocs::uti {
       X509 *cert = nullptr;
 
       // Try to open the certificate file.
+      // @todo can we just fetch the certificate from the ssl_ctx?
+      //       or do we intentionally read it from file as it could have been re-created externally?
+      //       But then we also would have to re-read it into a new context!
       FILE *fp = fopen(cert_path.c_str(), "r");
       if (fp == nullptr) {
          sge_dstring_sprintf(error_dstr, "cannot open certificate file %s: %s", cert_path.c_str(), strerror(errno));
@@ -794,8 +825,11 @@ namespace ocs::uti {
          } else {
             int sec_total = days_left * 86400 + secs_left;
             int certificate_lifetime = bootstrap_get_cert_lifetime();
+            u_long64 now = sge_get_gmt64();
+
             // Renew when only 25% of the lifetime is left.
-            if (sec_total  < certificate_lifetime / 4) {
+            renewal_time = sge_get_gmt64() + sge_gmt32_to_gmt64(sec_total - certificate_lifetime / 4);
+            if (renewal_time <= now) {
                ret = true;
             }
          }
@@ -810,53 +844,63 @@ namespace ocs::uti {
       return ret;
    }
 
-   bool OpenSSL::OpenSSLContext::verify_create_certificate_and_key(dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
 
-      // when we are starting as root and creating a daemon certificate
+      // When we are starting as root and creating a daemon certificate
       // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/private
-      // we need to be root to write the key
-      // but as root we might not be able to create directories or files in $SGE_ROOT
+      // we need to be root to write the key.
+      // But as root we might not be able to create directories or files in $SGE_ROOT,
+      // so we need to switch to admin user.
+      // When we are renewing certificates during qmaster/execd run time, we are admin user,
+      // so we need to switch to the start user (root) for writing the key and back to admin user
+      // to write the cert file.
       // OTOH when running qrsh as root, we write the certificate and key in $HOME/.ocs
       // and need to be root to write there.
-      bool called_as_root = geteuid() == SGE_SUPERUSER_UID;
       int component = component_get_component_id();
-      bool switch_user = called_as_root && (component == QMASTER || component == EXECD);
+      bool switch_user = (component == QMASTER || component == EXECD);
+      bool called_as_root = geteuid() == SGE_SUPERUSER_UID;
 
       // Do we store certificate and key on file? For daemons: yes, for qrsh: no.
       bool file_based = !cert_path.empty() && !key_path.empty();
+      // Do we have to initialize the SSL_CTX from files, or can we initialize it from memory?
+      bool file_read_required = file_based;
 
-      // If it is not file based, we need to create the certificate in any case.
+      // If it is not file-based, we need to create the certificate in any case.
       bool create_certificate_and_key = !file_based;
 
       if (file_based) {
          // If the certificate or the key directory not yet exist, create them.
          // In this case we have to create the certificate and key.
          bool created_dirs = false;
-         ret = verify_create_directories(switch_user, error_dstr, created_dirs);
+         ret = verify_create_directories(switch_user, called_as_root, error_dstr, created_dirs);
          if (ret && created_dirs) {
             create_certificate_and_key = true;
          }
       }
 
-      // We already had the directories and possibly the certificate + key,
+      // We already have the directories and possibly the certificate + key,
       // check if they really exist and have not yet expired or are about to expire.
       if (ret && !create_certificate_and_key) {
          if (certificate_recreate_required(error_dstr)) {
             if (sge_dstring_strlen(error_dstr) > 0) {
-               // when there were errors we renew the certificate
-               // no way to report this except some debug output
+               // When there were errors we renew the certificate
+               // no way to report this except some debug output.
                DPRINTF("checking certificate lifetime had errors: %s\n", sge_dstring_get_string(error_dstr));
             }
             create_certificate_and_key = true;
          }
       }
 
-      // So far all was OK and we have to create the certificates.
+      // So far all was OK, but we have to create the certificates.
       if (ret && create_certificate_and_key) {
+         int certificate_lifetime = bootstrap_get_cert_lifetime();
+         DPRINTF("creating certificate with lifetime %d\n", certificate_lifetime);
+
          // @todo can we create the certificate from some template?
+         // @todo additional error handling?
          EVP_PKEY *pkey = EVP_PKEY_new_func();
          RSA *rsa = RSA_new_func();
          BIGNUM *bn = BN_new_func();
@@ -869,7 +913,6 @@ namespace ocs::uti {
          X509_set_version_func(x509, 2);
          ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
          X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
-         int certificate_lifetime = bootstrap_get_cert_lifetime();
          X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
@@ -879,43 +922,79 @@ namespace ocs::uti {
 
          X509_sign_func(x509, pkey, EVP_sha256_func());
 
-         // @todo error handling!!
+         // @todo additional error handling!!
          if (file_based) {
+            // we need to be root to be able to write in the key directory
+            DPRINTF("=====> switch_user: %d, called_as_root: %d\n", switch_user, called_as_root);
+            if (switch_user && !called_as_root) {
+               DPRINTF("  --> switching to start user\n");
+               sge_switch2start_user();
+            }
             // @todo CS-1530 need to lock the directory? Otherwise multiple processes might try to create the certificate at the same time
+            DPRINTF("writing key to file %s\n", key_path.c_str());
             FILE *f = fopen(key_path.c_str(), "wb");
-            PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
-            fclose(f);
-            // @todo in theory we have a very short time window here where the file is created but not yet protected
-            //       OTOH the key directory is only readable/writable by root or the user himself
-            chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
+            if (f == nullptr) {
+               sge_dstring_sprintf(error_dstr, "cannot open key file %s: %s", key_path.c_str(), strerror(errno));
+               DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
+               ret = false;
+            } else {
+               PEM_write_PrivateKey_func(f, pkey, nullptr, nullptr, 0, nullptr, nullptr);
+               fclose(f);
+               // @todo in theory we have a very short time window here where the file is created but not yet protected
+               //       OTOH the key directory is only readable/writable by root or the user himself
+               chmod(key_path.c_str(), S_IRUSR | S_IWUSR); // key file should be only readable/writable by owner
+            }
+            if (switch_user && !called_as_root) {
+               DPRINTF("  --> switching to admin user\n");
+               sge_switch2admin_user();
+            }
 
             // need to switch to admin user if we are root
             // SGE_ROOT might be on a filesystem where root has no write permissions
-            if (switch_user) {
-               sge_switch2admin_user();
-            }
-            // @todo error handling!!
-            f = fopen(cert_path.c_str(), "wb");
-            PEM_write_X509_func(f, x509);
-            fclose(f);
-            chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
-            if (switch_user) {
-               sge_switch2start_user();
-            }
-         } else {
+            // only write the certificate if we could successfully write the key file
             if (ret) {
-               if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
-                  sge_dstring_sprintf(error_dstr, "cannot use certificate from x509: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+               if (switch_user && called_as_root) {
+                  DPRINTF("  --> switching to admin user\n");
+                  sge_switch2admin_user();
+               }
+               // @todo error handling!!
+               DPRINTF("writing certificate to file %s\n", cert_path.c_str());
+               f = fopen(cert_path.c_str(), "wb");
+               if (f == nullptr) {
+                  sge_dstring_sprintf(error_dstr, "cannot open cert file %s: %s", cert_path.c_str(), strerror(errno));
+                  DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
                   ret = false;
+               } else {
+                  PEM_write_X509_func(f, x509);
+                  fclose(f);
+                  chmod(cert_path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); // cert file should be readable by everyone
+               }
+               if (switch_user && called_as_root) {
+                  DPRINTF("  --> switching to start user\n");
+                  sge_switch2start_user();
                }
             }
-            // We do not store certificate and key in files - pass them to the SSL_CTX in memory.
-            if (ret) {
-               if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
-                  sge_dstring_sprintf(error_dstr, "cannot use private key from pkey: %s", ERR_reason_error_string_func(ERR_get_error_func()));
-                  ret = false;
-               }
+         }
+
+         // We have the certificate in memory, initialize ssl_ctx from memory.
+         file_read_required = false;
+         if (ret) {
+            if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
+               sge_dstring_sprintf(error_dstr, "cannot use certificate from x509: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+               ret = false;
             }
+         }
+         // We do not store certificate and key in files - pass them to the SSL_CTX in memory.
+         if (ret) {
+            if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
+               sge_dstring_sprintf(error_dstr, "cannot use private key from pkey: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+               ret = false;
+            }
+         }
+
+         if (ret) {
+            // We renew when more than 75 percent of the lifetime have passed.
+            renewal_time = sge_get_gmt64() + sge_gmt32_to_gmt64(certificate_lifetime - certificate_lifetime / 4);
          }
 
          X509_free_func(x509);
@@ -924,9 +1003,11 @@ namespace ocs::uti {
          BN_free_func(bn);
       }
 
-      // If we have the certificates in files, pass them to the SSL_CTX via paths.
-      if (ret && file_based) {
+      // If we have the certificates in files.
+      // If we didn't pass them from memory above (after creating a new cert), pass them to the SSL_CTX via paths.
+      if (ret && file_based && file_read_required) {
          if (ret) {
+            // We can read this file, as admin user and as root.
             if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
                sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", cert_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
@@ -934,26 +1015,23 @@ namespace ocs::uti {
          }
 
          if (ret) {
+            // We need to be root to read this file!
+            if (switch_user && !called_as_root) {
+               DPRINTF("  --> switching to start user\n");
+               sge_switch2start_user();
+            }
             if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
                sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", key_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
+            }
+            if (switch_user && !called_as_root) {
+               DPRINTF("  --> switching to admin user\n");
+               sge_switch2admin_user();
             }
          }
       }
 
       DRETURN(ret);
-   }
-
-   bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {
-      bool ret = true;
-
-      // verify if certificate and key files exist, otherwise create them
-      // @todo move code from verify_create_certificate_and_key here
-      if (ret) {
-         ret = verify_create_certificate_and_key(error_dstr);
-      }
-
-      return ret;
    }
 
    bool OpenSSL::OpenSSLContext::configure_client_context(dstring *error_dstr) {
@@ -982,11 +1060,46 @@ namespace ocs::uti {
    }
 
    OpenSSL::OpenSSLContext::~OpenSSLContext() {
-      // free the SSL context
-      if (ssl_ctx != nullptr) {
-         SSL_CTX_free_func(ssl_ctx);
-         ssl_ctx = nullptr;
+      DENTER(TOP_LAYER);
+      // If there are still connections referencing this object, we do not free the ssl_ctx.
+      // Better have a small (seldom) leak than a crash.
+      if (connection_count == 0) {
+         // free the SSL context
+         if (ssl_ctx != nullptr) {
+            SSL_CTX_free_func(ssl_ctx);
+            ssl_ctx = nullptr;
+         }
+      } else {
+         DPRINTF("===> Destructor for an OpenSSLContext which is still referenced %d times\n", connection_count);
       }
+      DRETURN_VOID;
+   }
+
+   void OpenSSL::OpenSSLContext::mark_context_for_deletion(OpenSSLContext *context) {
+      DENTER(TOP_LAYER);
+      if (context->connection_count == 0) {
+         delete context;
+      } else {
+         contexts_to_delete.push_back(context);
+      }
+      DRETURN_VOID;
+   }
+   void OpenSSL::OpenSSLContext::delete_no_longer_used_contexts() {
+      DENTER(TOP_LAYER);
+      // Remove and delete contexts with no active connections.
+      // Use erase-remove idiom to safely delete elements while iterating.
+      auto it = contexts_to_delete.begin();
+      while (it != contexts_to_delete.end()) {
+         OpenSSLContext *context = *it;
+         if (context->connection_count == 0) {
+            DPRINTF("Deleting unused OpenSSLContext\n");
+            it = contexts_to_delete.erase(it);
+            delete context;
+         } else {
+            ++it;
+         }
+      }
+      DRETURN_VOID;
    }
 
       // Not really required but explicitly marks the case that certificate and key are not stored in files
@@ -996,6 +1109,16 @@ namespace ocs::uti {
          std::string cert_path{};
          std::string key_path{};
          ret = create(true, cert_path, key_path, error_dstr);
+
+         return ret;
+      }
+
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(const OpenSSLContext *source, dstring *error_dstr) {
+         OpenSSLContext *ret{nullptr};
+
+         std::string cert_path{source->cert_path};
+         std::string key_path{source->key_path};
+         ret = create(source->is_server, cert_path, key_path, error_dstr);
 
          return ret;
       }
@@ -1089,7 +1212,7 @@ namespace ocs::uti {
       }
 
       if (ok) {
-         ret = new OpenSSLConnection(is_server, ssl);
+         ret = new OpenSSLConnection(context, is_server, ssl);
       } else {
          SSL_free_func(ssl);
       }
@@ -1158,6 +1281,9 @@ namespace ocs::uti {
       if (ssl != nullptr) {
          SSL_shutdown_func(ssl);
          SSL_free_func(ssl);
+      }
+      if (context != nullptr) {
+         context->dec_connection_count();
       }
    }
 

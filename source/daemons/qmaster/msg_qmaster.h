@@ -684,4 +684,9 @@
 #define MSG_REQLIMIT_ADDVALUENOT_ALLOWED_S         _MESSAGE(33977, _("additional character " SFQ " after value in request limit is not allowed"))
 #define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33978, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
 
+// ocs_security_qmaster.cc
+#define MSG_NO_COMMLIB_HANDLE_FOUND                _MESSAGE(33985, _("no commlib handle found for security operations"))
+#define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))
+#define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
+
 // clang-format on

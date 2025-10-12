@@ -1240,7 +1240,7 @@ int main(int argc, char *argv[]) {
          // pass the client certificate of the component to connect to (identified by hostname)
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
          std::string client_cert_path;
-         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, resolved_comp_host);
+         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, resolved_comp_host, comp_name);
          int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
                                           CL_SSL_PEM_FILE,
                                           CL_SSL_TLS,

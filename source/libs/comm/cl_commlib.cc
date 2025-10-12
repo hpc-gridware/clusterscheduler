@@ -39,6 +39,7 @@
 #include <sys/resource.h>
 #include <cerrno>
 
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_log.h"
@@ -77,7 +78,7 @@ static int cl_commlib_check_callback_functions();
 
 static int cl_commlib_check_connection_count(cl_com_handle_t *handle);
 
-static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, int lock_list);
+static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, bool lock_list);
 
 static int cl_commlib_handle_debug_clients(cl_com_handle_t *handle, bool lock_list);
 
@@ -4416,7 +4417,45 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
    return ret_val;
 }
 
-static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, int lock_list) {
+#if defined(OCS_WITH_OPENSSL)
+int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
+   DENTER(TOP_LAYER);
+   int ret_val = CL_RETVAL_OK;
+
+   // We lock the connection list.
+   // This should ensure that the openssl context will not be accessed (when creating new connections).
+   cl_raw_list_lock(handle->connection_list);
+
+   if (handle != nullptr && handle->ssl_server_context != nullptr) {
+      if (handle->ssl_server_context->certificate_recreate_required()) {
+         DPRINTF("===> context needs to be recreated\n");
+         // Create a copy of the context with a new certificate
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         ocs::uti::OpenSSL::OpenSSLContext *new_ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(handle->ssl_server_context, &error_dstr);
+
+         if (new_ssl_server_context != nullptr) {
+            // Make sure that the context will be deleted once the last connection using it has been closed.
+            DPRINTF("  -> got a new context, marking old one for deletion - it will still be used by open connections\n");
+            ocs::uti::OpenSSL::OpenSSLContext::mark_context_for_deletion(handle->ssl_server_context);
+            DPRINTF("  -> using new context in handle\n");
+            handle->ssl_server_context = new_ssl_server_context;
+         } else {
+            // @todo ret_val = CL_RETVAL_MALLOC;
+            DPRINTF("  --> didn't get a new context: %s\n", sge_dstring_get_string(&error_dstr));
+            CL_LOG_STR(CL_LOG_ERROR, "failed to create new OpenSSLContext for certificate refresh", sge_dstring_get_string(&error_dstr));
+            // we keep the old context with a certificate which will probably expire soon - try again later
+         }
+      }
+   }
+
+   // Now the handle can be used again to work on connections.
+   cl_raw_list_unlock(handle->connection_list);
+
+   DRETURN(ret_val);
+}
+#endif
+
+static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, bool lock_list) {
    cl_connection_list_elem_t *elem = nullptr;
    struct timeval now;
    double handle_time_last = 0.0;
@@ -4449,7 +4488,7 @@ static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_up
       }
    }
 
-   if (lock_list != 0) {
+   if (lock_list) {
       cl_raw_list_lock(handle->connection_list);
    }
    gettimeofday(&now, nullptr);  /* right after getting the lock */
@@ -4575,7 +4614,7 @@ static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_up
    handle->statistic->real_bytes_sent = 0;
    handle->statistic->real_bytes_received = 0;
 
-   if (lock_list != 0) {
+   if (lock_list) {
       cl_raw_list_unlock(handle->connection_list);
    }
    return CL_RETVAL_OK;

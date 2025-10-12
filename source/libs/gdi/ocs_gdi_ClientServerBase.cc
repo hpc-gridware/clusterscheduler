@@ -564,10 +564,11 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
    std::string client_cert_path;
    std::string server_cert_path;
    std::string server_key_path;
-   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host);
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
    if (is_server) {
-      ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host);
-      ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host);
+      const char *comp_name = component_get_component_name();
+      ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host, comp_name);
+      ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host, comp_name);
    }
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
@@ -616,7 +617,7 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
    // - we might need both, e.g. for sge_execd
    // - and what if the qmaster name changes? Then we need to update the client cert.
    std::string client_cert_path;
-   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host);
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
                                     client_cert_path.c_str(),
