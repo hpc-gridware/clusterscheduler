@@ -228,9 +228,18 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
+      DPRINTF("max_binding_idleness: binding ignored for host %s\n", lGetHost(host, EH_name));
       DRETURN(slots);
    }
 
+   // No units requested?
+   unsigned binding_amount = Job::binding_get_amount(a->job);
+   if (binding_amount == 0) {
+      DPRINTF("max_binding_idleness: no binding amount requested\n");
+      DRETURN(slots);
+   }
+
+   // @todo instead of maximizing the number of slots we should get slots > 0 as input
    // if no slots are specified (PE scheduling), then we try to maximize slots.
    if (slots == 0.0) {
       slots = static_cast<double>(std::numeric_limits<int>::max());
@@ -253,7 +262,6 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    }
 
    // handle different binding types
-   unsigned binding_amount = Job::binding_get_amount(a->job);
    BindingType::Type binding_type = Job::binding_get_type(a->job);
    BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
@@ -313,6 +321,14 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
+      DPRINTF("find_binding: binding ignored for host %s\n", lGetHost(host, EH_name));
+      DRETURN(slots);
+   }
+
+   // No units requested?
+   unsigned binding_amount = Job::binding_get_amount(a->job);
+   if (binding_amount == 0) {
+      DPRINTF("find_binding: no binding amount requested\n");
       DRETURN(slots);
    }
 
@@ -341,7 +357,6 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
    DPRINTF("find_binding: final binding in use on host %s is %s\n", hostname, topo_in_use.to_product_topology_string().c_str());
    DPRINTF("find_binding: sorted final binding in use is %s\n", topo_in_use_sorted.to_product_topology_string().c_str());
 
-   unsigned binding_amount = Job::binding_get_amount(a->job);
    BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
    BindingStop::Stop binding_end = Job::binding_get_stop(a->job);

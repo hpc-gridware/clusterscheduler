@@ -464,8 +464,10 @@ ocs::Topo::CpuKind::get_letter_for_core(hwloc_topology_t topology, hwloc_obj_t c
    DRETURN('C');
 }
 
-void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool data_nodes, bool close_numa) {
+// NSX SNX SXN
+void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool data_nodes) {
    bool close_group = false;
+   bool close_numa_group = false;
 
    // NUMA nodes are part of a separate tree within HWLOC
    if (data_nodes) {
@@ -473,16 +475,13 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
          hwloc_obj_t mem_obj = obj->memory_first_child;
 
          if (mem_obj->type == HWLOC_OBJ_NUMANODE) {
-            // If we are already within a NUMA node, we close it first ...
-            if (close_numa) {
-               topo_string += ")";
-            }
-
-            // ... and begin a new node. It will be closed when the new starts or when we reach the end
+            // begin a NUMA node group
             topo_string += "(N[size=";
             topo_string += std::to_string(mem_obj->attr->numanode.local_memory);
             topo_string += "]";
-            close_numa = true;
+
+            // we are now inside a NUMA node that need to get closed
+            close_numa_group = true;
          }
       }
    }
@@ -500,7 +499,7 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
          }
          break;
       case HWLOC_OBJ_CORE: {
-         topo_string += "(";
+         topo_string += "("; // C or E foolows next
          topo_string += CpuKind::get_letter_for_core(topology, obj);
          close_group = true;
          break;
@@ -534,7 +533,7 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
    // walk along the hardware tree that also contains cache information
    if (obj->arity > 0) {
       for (unsigned i = 0; i < obj->arity; i++) {
-         get_sub_topology(topo_string, topology, obj->children[i], depth + 1, data_nodes, close_numa);
+         get_sub_topology(topo_string, topology, obj->children[i], depth + 1, data_nodes);
       }
    }
 
@@ -543,8 +542,8 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
       topo_string += ")";
    }
 
-   // If we are in a NUMA node, we close it when we reach the end
-   if (close_numa && depth == 1) {
+   // If we opened a NUMA node within a socket then we close it here
+   if (close_numa_group) {
       topo_string += ")";
    }
 }
@@ -556,7 +555,7 @@ ocs::Topo::get_new_topology(std::string &topo_str, bool data_nodes) {
    }
 
    CpuKind::detect_via_hwloc();
-   get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes, false);
+   get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes);
    CpuKind::release_data();
    return true;
 }

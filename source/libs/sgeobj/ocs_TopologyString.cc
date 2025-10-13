@@ -28,8 +28,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <unordered_map>
 #include <set>
+#include <bitset>
 
 #include "uti/sge_string.h"
 #include "uti/sge_rmon_macros.h"
@@ -55,17 +55,62 @@ ocs::TopologyString::TopologyString(const std::string& topology) {
    reset_topology(topology);
 }
 
+/** @brief Returns true if the given sequence contains only valid letters of potential nodes
+ *
+ * Valid node names are defined in DATA_NODE_CHARACTERS and HARDWARE_NODE_CHARACTERS.
+ * The function is case-insensitive which means that both upper and lower case letters
+ * are accepted.
+ *
+ * @param sequence The sequence to check
+ * @return true if the sequence contains only valid node names, false otherwise
+ */
 bool
-ocs::TopologyString::contains_valid_node_names(std::string& sequence) {
-   for (char c : sequence) {
-      if (DATA_NODE_CHARACTERS.find(c) == std::string::npos &&
-          HARDWARE_NODE_CHARACTERS.find(c) == std::string::npos) {
-         return false;
-          }
-   }
-   return true;
+ocs::TopologyString::contains_valid_node_names(const std::string& sequence) {
+   return std::ranges::all_of(sequence, [](char c) {
+      const char upper = static_cast<char>(std::toupper(c));
+      return DATA_NODE_CHARACTERS.find(upper) != std::string::npos ||
+             HARDWARE_NODE_CHARACTERS.find(upper) != std::string::npos;
+   });
 }
 
+/** @brief Checks for contradicting sort orders in the given sort criteria string
+ *
+ * This function analyzes a string of sort criteria to determine if there are any
+ * contradicting sort orders for the same node type. A contradicting sort order occurs
+ * when both upper and lower case letters representing the same node type are present
+ * in the string, indicating conflicting usage states.
+ *
+ * @param sort_criterias The string containing sort criteria
+ * @return true if there are contradicting sort orders, false otherwise
+ */
+bool
+ocs::TopologyString::has_contradicting_sort_orders(const std::string& sort_criterias) {
+   std::bitset<26> lower, upper;
+
+   for (const char c : sort_criterias) {
+      if (std::isalpha(static_cast<unsigned char>(c))) {
+         const int idx = std::toupper(static_cast<unsigned char>(c)) - 'A';
+         if (std::islower(static_cast<unsigned char>(c))) {
+            lower.set(idx);
+         } else {
+            upper.set(idx);
+         }
+      }
+   }
+   return (lower & upper).any();
+}
+
+/** @brief Compares two topology strings for structural equality
+ *
+ * This function compares two TopologyString objects to determine if they represent
+ * the same topology structure. The comparison ignores the case of node characters
+ * (upper/lower case indicates usage, not type) and focuses on the arrangement and
+ * types of nodes.
+ *
+ * @param topo1 The first TopologyString object to compare
+ * @param topo2 The second TopologyString object to compare
+ * @return true if both topologies are structurally identical, false otherwise
+ */
 bool
 ocs::TopologyString::is_same_topology(const TopologyString& topo1, const TopologyString& topo2) {
    // Helper function to recursively compare node structures
@@ -105,6 +150,21 @@ ocs::TopologyString::is_same_topology(const TopologyString& topo1, const Topolog
    return true;
 }
 
+/** @brief Converts the topology tree to a string representation
+ *
+ * This function converts the internal tree representation of the topology into a string.
+ * The output can be customized using various flags to include or exclude data nodes,
+ * structure, characteristics, and formatting options.
+ *
+ * @param with_data_nodes If true, include data nodes (N, X, Y) in the output
+ * @param with_structure If true, include structural parentheses in the output
+ * @param with_characteristics If true, include node characteristics in the output
+ * @param with_internal_characteristics If true, include internal characteristics (prefixed with '#')
+ * @param with_tree_format If true, format the output in a tree-like structure with indentation
+ * @param show_as_unused If true, show all nodes as unused (uppercase letters)
+ * @param show_single_threads If true, show single threads even if they are the only node
+ * @return The string representation of the topology
+ */
 std::string
 ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                                bool with_characteristics, bool with_internal_characteristics,
@@ -205,6 +265,14 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
    return oss.str();
 }
 
+/** @brief Converts the topology to a product topology string
+ *
+ * This function generates a product topology string based on the current binding mode.
+ * If the binding mode is DEFAULT or GCS, it includes data nodes in the output.
+ * Otherwise, it excludes data nodes.
+ *
+ * @return The product topology string
+ */
 std::string ocs::TopologyString::to_product_topology_string() const {
 #ifdef WITH_EXTENSIONS
    binding_mode_t mode = mconf_get_binding_mode();
@@ -215,10 +283,27 @@ std::string ocs::TopologyString::to_product_topology_string() const {
    return to_string(false, false, false, false, false);
 }
 
+/** @brief Converts the topology to an unused internal topology string
+ *
+ * This function generates a string representation of the topology where all nodes
+ * are marked as unused (uppercase letters). It includes internal characteristics
+ * and excludes data nodes and structure.
+ *
+ * @todo Replace direct call of to_string by this method call
+ * @return The unused internal topology string
+ */
 std::string ocs::TopologyString::to_unused_internal_topology_string() const {
    return to_string(true, true, false, false, false, true);
 }
 
+/** @brief Parses a topology string into a tree structure
+ *
+ * This function takes a topology string and parses it into an internal tree representation.
+ * It identifies node types, characteristics, and the hierarchical structure of the topology.
+ * Each node is assigned a sequential ID as a characteristic.
+ *
+ * @param topology The topology string to parse
+ */
 void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    nodes.clear();
 
@@ -280,7 +365,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
       return result;
    };
 
-// Define a recursive lambda function to parse nodes
+   // Define a recursive lambda function to parse nodes
    std::function<std::vector<Node>(void)> parse_nodes = [&]() -> std::vector<Node> {
       std::vector<Node> result;
 
@@ -371,6 +456,16 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    nodes = parse_nodes();
 }
 
+/** @brief Sorts nodes of a specific type in the topology tree
+ *
+ * This function sorts all nodes of the specified type (e.g., 'S' for sockets)
+ * in the topology tree based on a given characteristic (e.g., free threads).
+ * The sorting can be done in ascending or descending order.
+ *
+ * @param node_type The character representing the node type to sort (case-insensitive)
+ * @param sort_characteristic The characteristic to sort by (currently only 't' for threads is supported)
+ * @param ascending If true, sort in ascending order; if false, sort in descending order
+ */
 void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_characteristic, const bool ascending) {
    DENTER(TOP_LAYER);
    if (nodes.empty()) {
@@ -386,56 +481,86 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
 
    // Define a recursive function to sort nodes at each level
    std::function<void(std::vector<Node>&)> sort_nodes = [&](std::vector<Node>& current_nodes) {
-      DENTER(TOP_LAYER);
 
-      // Check if any child nodes match the target type
-      bool has_matching_nodes = false;
-      for (const auto& node : current_nodes) {
-         if (std::tolower(node.c) == node_type_lower) {
-            has_matching_nodes = true;
-            break;
+      // Only sort if there are multiple nodes at this level
+      if (current_nodes.size() > 1) {
+
+         // Check if any child nodes match the target type
+         bool has_matching_nodes = false;
+         for (const auto& node : current_nodes) {
+            if (std::tolower(node.c) == node_type_lower) {
+               has_matching_nodes = true;
+               break;
+            }
          }
-      }
 
-      // If we have nodes of the target type, sort them
-      if (has_matching_nodes) {
-         std::stable_sort(current_nodes.begin(), current_nodes.end(),
-            [node_type_lower, sort_key, ascending](const Node& a, const Node& b) {
-               // Only compare nodes of the target type
-               bool a_matches = std::tolower(a.c) == node_type_lower;
-               bool b_matches = std::tolower(b.c) == node_type_lower;
+         // If we have nodes of the target type, sort them
+         if (has_matching_nodes) {
+            std::stable_sort(current_nodes.begin(), current_nodes.end(),
+                      [node_type_lower, sort_key, ascending](const Node& a, const Node& b) {
+                  // Only compare nodes of the target type
+                  bool a_matches = std::tolower(a.c) == node_type_lower;
+                  bool b_matches = std::tolower(b.c) == node_type_lower;
 
-               if (a_matches && b_matches) {
-                  // Get the values from characteristics
-                  int value_a = 0;
-                  int value_b = 0;
+                  if (a_matches && b_matches) {
+                     // Get the values from characteristics
+                     int value_a = 0;
+                     int value_b = 0;
 
-                  auto it_a = a.characteristics.find(sort_key);
-                  if (it_a != a.characteristics.end()) {
-                     value_a = std::stoi(it_a->second);
+                     auto it_a = a.characteristics.find(sort_key);
+                     if (it_a != a.characteristics.end()) {
+                        value_a = std::stoi(it_a->second);
+                     }
+
+                     auto it_b = b.characteristics.find(sort_key);
+                     if (it_b != b.characteristics.end()) {
+                        value_b = std::stoi(it_b->second);
+                     }
+
+#if 0
+                     // Maintain current order (according to node ID) if values are equal (stable sort)
+                     if (value_a == value_b) {
+                        int node_id_a = -1;
+                        int node_id_b = -1;
+
+                        auto it = a.characteristics.find(ocs::TopologyString::ID_PREFIX);
+                        if (it != a.characteristics.end()) {
+                           node_id_a = std::stoi(it->second);
+                        }
+                        it = b.characteristics.find(ocs::TopologyString::ID_PREFIX);
+                        if (it != b.characteristics.end()) {
+                           node_id_b = std::stoi(it->second);
+                        }
+
+                        if (node_id_a < node_id_b) {
+                           return true;
+                        }
+
+                        return false;
+                     }
+#endif
+
+                     // Sort in ascending order by the free characteristic (free threads)
+                     if (ascending) {
+                        return value_a < value_b;
+                     } else {
+                        return value_a > value_b;
+                     }
+                     return false;
+
+                     // Sort in descending order by the free characteristic
+                     //return value_a > value_b;
                   }
 
-                  auto it_b = b.characteristics.find(sort_key);
-                  if (it_b != b.characteristics.end()) {
-                     value_b = std::stoi(it_b->second);
+                  // If one matches and the other doesn't, put matching nodes first
+                  if (a_matches != b_matches) {
+                     return a_matches;
                   }
 
-                  // Sort in ascending order by the free characteristic
-                  if (ascending) {
-                     return value_a < value_b;
-                  } else {
-                     return value_a > value_b;
-                  }
-               }
-
-               // If one matches and the other doesn't, put matching nodes first
-               if (a_matches != b_matches) {
-                  DRETURN(a_matches);
-               }
-
-               // If neither matches, maintain current order
-               DRETURN(false);
-            });
+                  // If neither matches, maintain current order
+                  return false;
+               });
+         }
       }
 
       // Recursively sort children of each node
@@ -614,7 +739,14 @@ void ocs::TopologyString::correct_topology_upper_lower() {
     DRETURN_VOID;
 }
 
-// Return the ID of the first unused thread in the topology tree or NO_POS if none exists.
+/** @brief Find the first unused thread in the topology tree
+ *
+ * This function searches for the first occurrence of an unused thread (uppercase 'T') in the
+ * topology tree. It returns the ID of the thread if found, or NO_POS if no unused thread exists.
+ *
+ * @todo Can be removed when core implementation is finished
+ * @return The ID of the first unused thread, or NO_POS if none exists.
+ */
 int
 ocs::TopologyString::find_first_unused_thread() const {
    int id, s, c, t;
@@ -625,7 +757,14 @@ ocs::TopologyString::find_first_unused_thread() const {
    return NO_POS;
 }
 
-// Return the ID of the first core in the topology tree.
+/** @brief Find the first core in the topology tree
+ *
+ * This function searches for the first occurrence of a core (either 'C' or 'E') in the
+ * topology tree. It returns the ID of the core if found, or NO_POS if no core exists.
+ *
+ * @todo Can be removed when core implementation is finished
+ * @return The ID of the first core, or NO_POS if none exists.
+ */
 int
 ocs::TopologyString::find_first_core() const {
    int id = NO_POS;
@@ -661,8 +800,29 @@ ocs::TopologyString::find_first_core() const {
    return id;
 }
 
-/** @brief marks the given node and all children as used
+/** @brief Resets the topology tree by parsing a new topology string
  *
+ * This function clears the current topology tree and rebuilds it by parsing
+ * the provided topology string. It updates the internal structure and characteristics
+ * based on the new topology.
+ *
+ * @param topology The new topology string to parse and set
+ */
+void ocs::TopologyString::reset_topology(const std::string &topology) {
+   DENTER(TOP_LAYER);
+   parse_to_tree(topology);
+   DRETURN_VOID;
+}
+
+/** @brief Marks a node and its subtree as used or unused based on the given ID
+ *
+ * This function searches for a node with the specified ID in the topology tree.
+ * If found, it marks the node and all its children as used (lowercase) or unused (uppercase)
+ * based on the `do_mark_used` flag. After marking, it normalizes the case of parent nodes
+ * and refreshes internal characteristics by rebuilding the topology string.
+ *
+ * @param id The ID of the node to mark
+ * @param do_mark_used If true, mark as used (lowercase); if false, mark as unused (uppercase)
  */
 void
 ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mark_used) {
@@ -726,13 +886,16 @@ ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mar
    DRETURN_VOID;
 }
 
-void ocs::TopologyString::reset_topology(const std::string &topology) {
-   DENTER(TOP_LAYER);
-   parse_to_tree(topology);
-   DRETURN_VOID;
-}
-
-
+/** @brief Marks nodes in the current topology as used or unused based on another topology
+ *
+ * This function updates the current topology by marking nodes as used (lowercase)
+ * or unused (uppercase) based on the structure of another provided topology.
+ * If the current topology is empty, it initializes it with the provided topology.
+ * After marking, it normalizes parent node cases and refreshes internal characteristics.
+ *
+ * @param topo The topology to use as a mask for marking nodes
+ * @param mark_used If true, mark nodes as used; if false, mark nodes as unused
+ */
 void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used) {
    DENTER(TOP_LAYER);
 
@@ -793,6 +956,19 @@ void ocs::TopologyString::mark_nodes_as_used_or_unused(const TopologyString &top
    DRETURN_VOID;
 }
 
+/** @brief Marks nodes in a list element's topology string as used or unused
+ *
+ * This function updates the topology string stored in a list element by marking nodes
+ * as used (lowercase) or unused (uppercase) based on another provided topology.
+ * It uses a temporary `binding_now` topology to track changes and updates the list element
+ * with the new topology string after marking.
+ *
+ * @param elem The list element containing the topology string to update
+ * @param nm The name of the attribute in the list element that holds the topology string
+ * @param binding_now A temporary `TopologyString` to track current bindings
+ * @param binding_to_use The `TopologyString` to use as a mask for marking nodes
+ * @param mark_used If true, mark nodes as used; if false, mark nodes as unused
+ */
 void
 ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const int nm, TopologyString &binding_now, const TopologyString &binding_to_use, bool mark_used) {
    DENTER(TOP_LAYER);
@@ -820,12 +996,33 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
    DRETURN_VOID;
 }
 
+/** @brief Checks if the topology tree is empty
+ *
+ * This function returns true if the topology tree has no nodes, indicating that it is empty.
+ *
+ * @return true if the topology tree is empty, false otherwise
+ */
 bool
 ocs::TopologyString::is_empty() {
    DENTER(TOP_LAYER);
    DRETURN(nodes.empty());
 }
 
+/** @brief Finds n packed units in the topology tree based on binding criteria
+ *
+ * This function searches the topology tree for a specified number of packed units
+ * (e.g., sockets, cores, threads) that meet certain binding criteria. It returns
+ * a vector of IDs of the found units.
+ *
+ * The search respects the specified binding unit, start, and stop criteria to ensure
+ * that the selected units are appropriately packed and meet the desired conditions.
+ *
+ * @param bamount The number of units to find (must be greater than 0)
+ * @param bunit The binding unit type (e.g., socket, core, thread)
+ * @param bstart The binding start criteria (e.g., any, free, used)
+ * @param bstop The binding stop criteria (e.g., any, free, used)
+ * @return A vector of IDs of the found packed units
+ */
 std::vector<int>
 ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingStop::Stop bstop) const {
 
@@ -1041,6 +1238,17 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
    return ids;
 }
 
+/** @brief Marks nodes in the topology tree as used or unused based on a list of IDs
+ *
+ * This function updates the topology tree by marking nodes with IDs present in the provided
+ * list as used (lowercase) or unused (uppercase) based on the specified binding unit.
+ * It also marks child nodes of cores that are marked, ensuring consistency in the hierarchy.
+ * After marking, it normalizes parent node cases and refreshes internal characteristics.
+ *
+ * @param ids A vector of IDs representing the nodes to mark
+ * @param unit The binding unit type (e.g., socket, core, thread)
+ * @param mark_used If true, mark nodes as used; if false, mark nodes as unused
+ */
 void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used) {
    DENTER(TOP_LAYER);
 
@@ -1121,6 +1329,13 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
    DRETURN_VOID;
 }
 
+/** @brief Inverts the binding state of all nodes in the topology tree
+ *
+ * This function traverses the topology tree and inverts the case of each node character.
+ * Uppercase characters (indicating unused nodes) are converted to lowercase (indicating used nodes),
+ * and vice versa. After inverting, it normalizes parent node cases and rebuilds the tree
+ * to refresh internal characteristics.
+ */
 void ocs::TopologyString::invert_binding() {
    DENTER(TOP_LAYER);
 

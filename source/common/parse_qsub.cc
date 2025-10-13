@@ -515,14 +515,16 @@ lList *cull_parse_cmdline(
 
          DPRINTF("\"-bsort %s\"\n", *sp);
          std::string sort_arg = *sp;
-         if (ocs::TopologyString::contains_valid_node_names(sort_arg)) {
-            ep_opt = sge_add_arg(pcmdline, bsort_OPT, lStringT, *(sp - 1), *sp);
-            lSetString(ep_opt, SPA_argval_lStringT, *sp);
-         } else {
+         if (!ocs::TopologyString::contains_valid_node_names(sort_arg)) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_INVALID_S, *sp);
             DRETURN(answer);
          }
-
+         if (ocs::TopologyString::has_contradicting_sort_orders(sort_arg)) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_CONTRA_S, *sp);
+            DRETURN(answer);
+         }
+         ep_opt = sge_add_arg(pcmdline, bsort_OPT, lStringT, *(sp - 1), *sp);
+         lSetString(ep_opt, SPA_argval_lStringT, *sp);
          sp++;
          continue;
       }

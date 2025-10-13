@@ -1085,8 +1085,8 @@
 #define MSG_GDI_USAGE_BFILTER_OPT         "[-bfilter topology_string]"
 #define MSG_GDI_UTEXT_BFILTER_OPT         _MESSAGE(60732, _("specifies binding filter to mask binding units"))
 
-#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid binding sort " SFQ ", must be one or more of: [NSXYCET]"))
-#define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [ACESTNXY]]"
+#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid character in binding sort " SFQ ", must be one or more of: [SsCcEeNnXxYy]"))
+#define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [SsCcEeNnXxYy]]"
 #define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
 
 #define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
@@ -1106,6 +1106,8 @@
 
 #define MSG_PARSE_BINSTANCE_INVALID_S     _MESSAGE(60742, _("invalid binding instance " SFQ ", must be one of: [set|env|pe]"))
 #define MSG_GDI_USAGE_BINSTANCE_OPT       "[-binstance [set|env|pe]]"
-#define MSG_GDI_UTEXT_BINSTANCE_OPT       _MESSAGE(60741, _("defines the instance applying the binding"))
+#define MSG_GDI_UTEXT_BINSTANCE_OPT       _MESSAGE(60743, _("defines the instance applying the binding"))
+
+#define MSG_PARSE_BSORT_CONTRA_S          _MESSAGE(60744, _("contradicting ascending and descending sort order in binding sort " SFQ))
 
 // clang-format on
