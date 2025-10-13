@@ -978,6 +978,10 @@ namespace ocs::uti {
 
          // We have the certificate in memory, initialize ssl_ctx from memory.
          file_read_required = false;
+
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
          if (ret) {
             if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
                sge_dstring_sprintf(error_dstr, "cannot use certificate from x509: %s", ERR_reason_error_string_func(ERR_get_error_func()));
@@ -1006,6 +1010,9 @@ namespace ocs::uti {
       // If we have the certificates in files.
       // If we didn't pass them from memory above (after creating a new cert), pass them to the SSL_CTX via paths.
       if (ret && file_based && file_read_required) {
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
          if (ret) {
             // We can read this file, as admin user and as root.
             if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
@@ -1040,6 +1047,9 @@ namespace ocs::uti {
          // We do not use this, consider handling it an error.
          SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_NONE, nullptr);
       } else {
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
          /*
           * Configure the client to abort the handshake if certificate verification
           * fails
@@ -1127,6 +1137,9 @@ namespace ocs::uti {
       OpenSSLContext *ret{nullptr};
 
       bool ok = true;
+
+      // clear previously occurred but not yet fetched errors
+      ERR_clear_error_func();
 
       // prepare object parameters
       SSL_CTX *ssl_ctx;
@@ -1253,8 +1266,8 @@ namespace ocs::uti {
          }
          if (ret) {
             struct timeval tv;
-            tv.tv_sec = 1; // @todo make timeout configurable
-            tv.tv_usec = 0;
+            tv.tv_sec = 0; // @todo make timeout configurable
+            tv.tv_usec = 100000;
             int select_ret = select(fd + 1, read_fds, write_fds, nullptr, &tv);
             if (select_ret < 0) {
                if (errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR) {
@@ -1262,7 +1275,6 @@ namespace ocs::uti {
                   ret = false;
                }
             } else if (select_ret == 0) {
-               // @todo really an error? Or just try again?
                sge_dstring_sprintf(error_dstr, MSG_SSL_SELECT_TIMEOUT);
                ret = false;
             }
@@ -1306,50 +1318,61 @@ namespace ocs::uti {
 
    int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
+
+      DPRINTF("OpenSSLConnection::read()\n");
+      int ret;
+
       // clear previously occurred but not yet fetched errors
       ERR_clear_error_func();
 
-      DPRINTF("OpenSSLConnection::read()\n");
-      bool done;
-      do {
-         done = true;
-         int read_ret = SSL_read_func(ssl, buffer, static_cast<int>(max_len));
-         if (read_ret > 0) {
-            // we actually read some data without errors
-            DRETURN(read_ret);
+      int read_ret = SSL_read_func(ssl, buffer, static_cast<int>(max_len));
+      if (read_ret > 0) {
+         // we actually read some data without errors
+         //DRETURN(read_ret);
+         ret = read_ret;
+      } else {
+         int err = SSL_get_error_func(ssl, read_ret);
+         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            DPRINTF("  --> got %s\n", err == SSL_ERROR_WANT_READ ? "SSL_ERROR_WANT_READ" : "SSL_ERROR_WANT_WRITE");
+            // We return 0, meaning we didn't read any application data.
+            // The socked became ready for reading due to SSL protocol data,
+            // this has been parsed, either there will be more protocol data (when the socked becomes ready to
+            // read again in commlib, or there is no more data.
+            // The fact that SSL_read() returns SSL_ERROR_WANT_READ is somewhat misleading in this case.
+            ret = 0;
          } else {
-            int err = SSL_get_error_func(ssl, read_ret);
-            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-               DPRINTF("  --> got %s\n", err == SSL_ERROR_WANT_READ ? "SSL_ERROR_WANT_READ" : "SSL_ERROR_WANT_WRITE");
-               // @todo workaround: need to set commlib connection into some special state and re-visit
-               //       ==> even if we see a socket ready for write, if we have an unfinished read, we need
-               //           to try the read again
-               //       ==> store the unfinished operation in the OpenSSLConnection object
-               //       ==> return a boolean indicating that we need to repeat something
-               //       ==> have a special state (multiple states?) in commlib connection to indicate that
-               //           we need to repeat some operation (read, write, accept, connect)
-               if (wait_for_socket_ready(err, error_dstr)) {
-                  done = false; // try again
-                  DPRINTF("  --> repeat read\n");
-               }
-            } else {
-               sge_dstring_sprintf(error_dstr, MSG_CANNOT_READ_DS, err,
-                                   ERR_reason_error_string_func(ERR_get_error_func()));
-            }
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_READ_DS, err,
+                                ERR_reason_error_string_func(ERR_get_error_func()));
+            ret = -1;
          }
-      } while (!done);
-      DRETURN(-1);
+      }
+
+      DRETURN(ret);
    }
+
+   // @todo make retries configurable
+#define SGE_OPENSSL_MAX_RETRIES 10
+   /* @todo allow partial write operations
+    * The write functions will only return with success when the complete contents of buf of length num has been written. This
+    * default behaviour can be changed with the SSL_MODE_ENABLE_PARTIAL_WRITE option of SSL_CTX_set_mode(3). When this flag is
+    * set the write functions will also return with success when a partial write has been successfully completed. In this case
+    * the write function operation is considered completed. The bytes are sent and a new write call with a new buffer (with the
+    * already sent bytes removed) must be started. A partial write is performed with the size of a message block, which is
+    * 16kB.
+    */
 
    int OpenSSL::OpenSSLConnection::write(char *buffer, size_t len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
+
+      DPRINTF("OpenSSLConnection::write()\n");
+
       // clear previously occurred but not yet fetched errors
       ERR_clear_error_func();
 
-      DPRINTF("OpenSSLConnection::write()\n");
-      bool done;
-      do {
+      bool done = false;
+      for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
          done = true;
+
          int write_ret = SSL_write_func(ssl, buffer, static_cast<int>(len));
          if (write_ret > 0) {
             // we actually wrote some data without errors
@@ -1367,17 +1390,14 @@ namespace ocs::uti {
                                    ERR_reason_error_string_func(ERR_get_error_func()));
             }
          }
-      } while (!done);
-      // if we get here an error occurred
+      }
+      // if we get here, an error occurred
       DRETURN(-1);
    }
 
    bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
       DENTER(TOP_LAYER);
       DPRINTF("OpenSSLConnection::accept()\n");
-
-      // clear previously occurred but not yet fetched errors
-      ERR_clear_error_func();
 
       bool ret = ssl != nullptr;
 
@@ -1389,14 +1409,19 @@ namespace ocs::uti {
       }
       if (ret) {
          // @todo there is some option for auto repeat with blocking io, and it is still blocking at the time of the accept call
-         bool done;
-         do {
+
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
+         bool done = false;
+         for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
+            // expect one call to be enough
             done = true;
             int accept_ret = SSL_accept_func(ssl);
             if (accept_ret <= 0) {
                int err = SSL_get_error_func(ssl, accept_ret);
                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_ACCEPT) {
-                  DPRINTF("  --> got %s\n", err == SSL_ERROR_WANT_READ ? "SSL_ERROR_WANT_READ" : "SSL_ERROR_WANT_WRITE");
+                  DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
                   if (wait_for_socket_ready(err, error_dstr)) {
                      done = false; // try again
                      DPRINTF("  --> repeat accept\n");
@@ -1409,20 +1434,20 @@ namespace ocs::uti {
                   ret = false;
                }
             }
-         } while (!done);
+         }
       }
 
       DRETURN(ret);
    }
 
    bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) {
-      // clear previously occurred but not yet fetched errors
-      ERR_clear_error_func();
-
       bool ret = ssl != nullptr;
 
       // we do this only on the client side
       if (ret && !is_server) { // @todo: ERROR when is_server is true
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
          // Set hostname for SNI
          // SSL_set_tlsext_host_name(s, name) is a macro:
          // SSL_ctrl(s,SSL_CTRL_SET_TLSEXT_HOSTNAME,TLSEXT_NAMETYPE_host_name, (void *)name)
@@ -1439,8 +1464,6 @@ namespace ocs::uti {
 
    bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
       DENTER(TOP_LAYER);
-      // clear previously occurred but not yet fetched errors
-      ERR_clear_error_func();
 
       bool ret = ssl != nullptr;
 
@@ -1453,16 +1476,22 @@ namespace ocs::uti {
             ret = false;
          }
       }
+
       if (ret) {
-         bool done;
-         do {
+         // clear previously occurred but not yet fetched errors
+         ERR_clear_error_func();
+
+         bool done = false;
+         for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
+            // expect one call to be enough
             done = true;
+
             int connect_ret = SSL_connect_func(ssl);
             if (connect_ret <= 0) {
                // @todo need to call SSL_get_error_func() for all failing SSL_* functions?
                int err = SSL_get_error_func(ssl, connect_ret);
                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_CONNECT) {
-                  DPRINTF("  --> got connect error %d\n", err);
+                  DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
                   // @todo workaround: need to set commlib connection into some special state and re-visit
                   if (wait_for_socket_ready(err, error_dstr)) {
                      done = false; // try again
@@ -1471,13 +1500,12 @@ namespace ocs::uti {
                } else {
                   sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err,
                                       ERR_reason_error_string_func(ERR_get_error_func()));
+                  DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
                   ret = false;
                }
             }
-         } while (!done);
+         }
       }
-
-      DPRINTF("  --> returning %d: %s\n", ret, sge_dstring_get_string(error_dstr));
 
       DRETURN(ret);
    }

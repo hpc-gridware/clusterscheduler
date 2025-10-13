@@ -828,11 +828,9 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
          CL_LOG_STR(CL_LOG_ERROR, "ssl read error:", sge_dstring_get_string(&dstr_error));
          return CL_RETVAL_READ_ERROR;
       }
-      if (data_read == 0) {
-         /* this should only happen if the connection is down */
-         CL_LOG(CL_LOG_WARNING, "client connection disconnected");
-         return CL_RETVAL_READ_ERROR;
-      }
+      // Data read > 0 means OK: We read some data.
+      // Data read == 0 is also OK: It means that the socked became ready for read to handle
+      // SSL protocol data. There was no application data.
    } else
 #endif
    {

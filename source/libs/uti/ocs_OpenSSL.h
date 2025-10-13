@@ -183,7 +183,7 @@ namespace ocs::uti {
 
          // private constructor, use the create() method
          OpenSSLContext(bool is_server, SSL_CTX *ssl_ctx, std::filesystem::path(cert_path), std::filesystem::path(key_path))
-         : is_server(is_server), renewal_time(0), ssl_ctx(ssl_ctx), cert_path{cert_path}, key_path {key_path} {}
+         : is_server(is_server), renewal_time(0), connection_count(0), ssl_ctx(ssl_ctx), cert_path{cert_path}, key_path {key_path} {}
 
          bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs);
          bool certificate_recreate_required(dstring *error_dstr);
