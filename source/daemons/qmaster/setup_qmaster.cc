@@ -865,7 +865,6 @@ setup_qmaster() {
               {"m_core",           "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {"m_socket",         "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
               {"m_topology",       "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
-              {"m_topology_inuse", "utopo",  9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
               {nullptr,            nullptr,  0, 0,          0,             nullptr, 0,        nullptr}
       };
       int i;
@@ -932,6 +931,14 @@ setup_qmaster() {
       if (sge_add_host_of_type(&packet, &task, qualified_hostname, ocs::gdi::Target::SGE_AH_LIST, &monitor)) {
          DRETURN(-1);
       }
+   }
+
+   // ensure that all exec hosts have defined slots
+   lListElem *ehost;
+   for_each_rw(ehost, *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST)) {
+      u_long32 processors = lGetUlong(ehost, EH_processors);
+
+      host_ensure_slots_are_defined(ehost, processors);
    }
 
    DPRINTF("manager_list----------------------------\n");
@@ -1069,6 +1076,8 @@ setup_qmaster() {
    DPRINTF("advance reservation list -----------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
+
+//   lWriteListTo(*ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), stderr);
 
    /* initialize cached advance reservations structures */
    {
@@ -1328,13 +1337,15 @@ static void debit_all_jobs_from_qs() {
             } else {
                const char *host_name = lGetHost(gdi, JG_qhostname);
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
+               const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
+
                /* debit in all layers */
                lListElem *rqs = nullptr;
-               debit_host_consumable(jep, jatep, pe,
+               debit_host_consumable(jep, jatep, granted_resources_list, pe,
                                      host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                       SGE_GLOBAL_NAME), master_centry_list, slots,
                                      master_task, do_per_global_host_booking, nullptr);
-               debit_host_consumable(jep, jatep, pe,
+               debit_host_consumable(jep, jatep, granted_resources_list, pe,
                                      host_list_locate(*ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST),
                                                       host_name), master_centry_list,
                                      slots, master_task, do_per_host_booking, nullptr);
@@ -1357,11 +1368,11 @@ static void debit_all_jobs_from_qs() {
                   }
 
                   if (ar_global_host != nullptr) {
-                     debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
+                     debit_host_consumable(jep, jatep, granted_resources_list, pe, ar_global_host, master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
                   }
                   lListElem *host = lGetSubHostRW(ar, EH_name, host_name, AR_reserved_hosts);
                   if (host != nullptr) {
-                     debit_host_consumable(jep, jatep, pe, host, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
+                     debit_host_consumable(jep, jatep, granted_resources_list, pe, host, master_centry_list, slots, master_task, do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_u32 " runs on host " SFQ " not reserved by AR " sge_u32,
                            lGetUlong(jep, JB_job_number), host_name, ar_id);

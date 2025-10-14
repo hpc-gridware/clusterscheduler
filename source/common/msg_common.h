@@ -52,9 +52,7 @@
 
 #define MSG_GDI_ARGUMENTSYNTAX_QA_CATEGORY_ID          "cat_id                  category ID"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING       "account_string          account_name"
-#define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_EXP "exp                     explicit:<socket>,<core>[:...]"
-#define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_LIN "lin                     linear:<amount>[:<socket>,<core>]"
-#define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_STRATEGY_STR "str                     striding:<amount>:<stepsize>[:<socket>,<core>]"
+#define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_FILTER_STR   "topology_string         topology string where lower case letters show masked units"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_COMPLEX_LIST         "complex_list            complex[,complex,...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_CONTEXT_LIST         "context_list            variable[=value][,variable[=value],...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_CKPT_SEL             "ckpt_selector           `n' `s' `m' `x' <interval> "
@@ -884,9 +882,6 @@
 #define MSG_GDI_USAGE_b_OPT_YN                           "[-b y[es]|n[o]]"
 #define MSG_GDI_UTEXT_b_OPT_YN                           _MESSAGE(23500, _("handle command as binary"))
 
-#define MSG_GDI_USAGE_binding_OPT_YN                     "[-binding [env|pe|set] exp|lin|str]"
-#define MSG_GDI_UTEXT_binding_OPT_YN                     _MESSAGE(23501, _("binds job to processor cores"))
-
 #define MSG_GDI_USAGE_Msconf_OPT                         "[-Msconf fname]"
 #define MSG_GDI_UTEXT_Msconf_OPT                         _MESSAGE(23502, _("modify scheduler configuration from file"))
 
@@ -1078,5 +1073,41 @@
 
 #define MSG_GDI_USAGE_scat_OPT_CATEGORY_NAME  "[-scat cat_id]"
 #define MSG_GDI_UTEXT_scat_OPT_CATEGORY_NAME  _MESSAGE(60727, _("show category" ))
+
+#define MSG_PARSE_BTYPE_INVALID_S          _MESSAGE(60728, _("invalid binding type " SFQ ", must be \"host\" or \"slot\""))
+#define MSG_GDI_USAGE_BTYPE_OPT           "[-btype [host|slot]]"
+#define MSG_GDI_UTEXT_BTYPE_OPT           _MESSAGE(60729, _("set type of binding"))
+
+#define MSG_PARSE_BUNIT_INVALID_S         _MESSAGE(60730, _("invalid binding unit " SFQ ", must be one of: [T|ET|C|E|S|ES|X|EX|Y|EY|N|EN]"))
+#define MSG_GDI_USAGE_BUNIT_OPT           "[-bunit [T|ET|C|E|S|ES|X|EX|Y|EY|N|EN]"
+#define MSG_GDI_UTEXT_BUNIT_OPT           _MESSAGE(60731, _("set binding unit"))
+
+#define MSG_GDI_USAGE_BFILTER_OPT         "[-bfilter topology_string]"
+#define MSG_GDI_UTEXT_BFILTER_OPT         _MESSAGE(60732, _("specifies binding filter to mask binding units"))
+
+#define MSG_PARSE_BSORT_INVALID_S         _MESSAGE(60733, _("invalid character in binding sort " SFQ ", must be one or more of: [SsCcEeNnXxYy]"))
+#define MSG_GDI_USAGE_BSORT_OPT           "[-bsort [SsCcEeNnXxYy]]"
+#define MSG_GDI_UTEXT_BSORT_OPT           _MESSAGE(60734, _("enables and specifieds binding sort order"))
+
+#define MSG_PARSE_BSTART_INVALID_S        _MESSAGE(60735, _("invalid binding start " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
+#define MSG_GDI_USAGE_BSTART_OPT          "[-bstart [S|s|C|c|E|e|N|n|X|x|Y|y]]"
+#define MSG_GDI_UTEXT_BSTART_OPT          _MESSAGE(60736, _("defines the start position for binding"))
+
+#define MSG_PARSE_BSTOP_INVALID_S         _MESSAGE(60737, _("invalid binding stop " SFQ ", must be one of: [S|s|C|c|E|e|N|n|X|x|Y|y]"))
+#define MSG_GDI_USAGE_BSTOP_OPT           "[-bstop [S|s|C|c|E|e|N|n|X|x|Y|y]]"
+#define MSG_GDI_UTEXT_BSTOP_OPT           _MESSAGE(60738, _("defines the stop position for binding"))
+
+#define MSG_GDI_USAGE_BAMOUNT_OPT         "[-bamount number]"
+#define MSG_GDI_UTEXT_BAMOUNT_OPT         _MESSAGE(60739, _("defines the number of binding units to be used"))
+
+#define MSG_PARSE_BSTRATEGY_INVALID_S     _MESSAGE(60740, _("invalid binding strategy " SFQ ", must be \'packed\'."))
+#define MSG_GDI_USAGE_BSTRATEGY_OPT       "[-bstrategy name]]"
+#define MSG_GDI_UTEXT_BSTRATEGY_OPT       _MESSAGE(60741, _("defines the binding strategy"))
+
+#define MSG_PARSE_BINSTANCE_INVALID_S     _MESSAGE(60742, _("invalid binding instance " SFQ ", must be one of: [set|env|pe]"))
+#define MSG_GDI_USAGE_BINSTANCE_OPT       "[-binstance [set|env|pe]]"
+#define MSG_GDI_UTEXT_BINSTANCE_OPT       _MESSAGE(60743, _("defines the instance applying the binding"))
+
+#define MSG_PARSE_BSORT_CONTRA_S          _MESSAGE(60744, _("contradicting ascending and descending sort order in binding sort " SFQ))
 
 // clang-format on

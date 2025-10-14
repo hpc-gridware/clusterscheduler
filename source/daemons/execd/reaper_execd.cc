@@ -119,10 +119,6 @@ static void build_derived_final_usage(lListElem *jr, u_long32 job_id, u_long32 j
 
 static void examine_job_task_from_file(int startup, char *dir, lListElem *jep, lListElem *jatep, lListElem *petep, pid_t *pids, int npids);
 
-#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-static void update_used_cores(const char* path_to_config, lListElem** jr);
-#endif
-
 static void clean_up_binding(char* binding);
 /* TODO: global c file with #define JAPI_SINGLE_SESSION_KEY "JAPI_SSK" */
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
@@ -1486,30 +1482,7 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
             to JRUNNING
          */ 
          if ((jr=get_job_report(jobid, jataskid, pe_task_id_str))) {
-
             lSetUlong(jr, JR_state, JRUNNING);
-            /* here we will call a ptf function to get */
-            /* the first usage data after restart      */
-
-#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-            {
-               /* do accounting of bound cores */ 
-               dstring fconfig = DSTRING_INIT;
-
-               sge_get_active_job_file_path(&fconfig, jobid, jataskid, pe_task_id_str, "config");
-               
-               if (sge_dstring_get_string(&fconfig) == nullptr) {
-                  DPRINTF("couldn't find config file for running job\n");
-               } else {   
-                  DPRINTF("path to config file %s\n", sge_dstring_get_string(&fconfig));
-                  update_used_cores(sge_dstring_get_string(&fconfig), &jr);
-               }
-               
-               sge_dstring_free(&fconfig);
-                  
-            }            
-#endif
-
          } else {
             /* found job in active jobs directory 
                but not in spool directory of execd */
@@ -1543,60 +1516,6 @@ examine_job_task_from_file(int startup, char *dir, lListElem *jep,
 
    DRETURN_VOID;
 }
-
-#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-static void update_used_cores(const char* path_to_config, lListElem** jr)
-{
-   const char* binding_cfg;
-   
-   DENTER(TOP_LAYER);
-  
-   DPRINTF("update used cores: %s\n", path_to_config);
-
-   if (!read_config(path_to_config)) {
-
-      binding_cfg = get_conf_val("binding");
-
-      if (binding_cfg == nullptr) {
-         DPRINTF("couldn't get binding element from config file!\n");
-      } else {
-
-         DPRINTF("BINDING bindingcfg %s\n", binding_cfg);
-
-         if (binding_cfg != nullptr) {
-            /* extract the job binding string and account it */
-            const char* jobtopo = binding_get_topology_for_job(binding_cfg);
-         
-            if (jobtopo != nullptr) {
-               /* usage in job report */
-               dstring pseudo_usage = DSTRING_INIT; 
-
-               /* account the used cores on execd global */
-               DPRINTF("account cores used by job: %s\n", jobtopo);
-               account_job(jobtopo);
-
-               /* add to job report (for qstat -j x -cb) */
-               sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s", jobtopo); 
-               
-               add_usage(*jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-               sge_dstring_free(&pseudo_usage); 
-
-            } else {
-               DPRINTF("topology not found\n");
-            }   
-         } else {
-            DPRINTF("binding_cfg is nullptr\n");
-         }
-      
-      } /* binding_cfg found */
-
-   } else {
-      DPRINTF("couldnt read config in\n");
-   }
-
-   DRETURN_VOID;
-}
-#endif
 
 /************************************************************/
 /* fill dusage with:                                        */ 

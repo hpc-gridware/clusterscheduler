@@ -489,9 +489,7 @@ unsigned short sge_options[][ALL_OPT + 1] =
  {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 /* tc_OPT */
  {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-/* binding_OPT */
- {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-/* suspend_remote_OPT - qrsh */ 
+/* suspend_remote_OPT - qrsh */
  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 /* ace_OPT, dd ce object */
  {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -514,15 +512,32 @@ unsigned short sge_options[][ALL_OPT + 1] =
    /* scatl_OPT show category list */
 {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
    /* scat_OPT show category */
-{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-   /*
-     n  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
-     o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L
-     n  l  o  e  o  a  o  e  l  e  h  s  o  t  u  e  v  s  d  s  n  L
-     e  t  n  l  l  s  d  s  s  l     h  g  a  b  c  e  u  e  t  e  _
-        e  f     d  t     u     e        i  t     d  n  b  l  a     O
-        r           e     b     c        n           t        t     P
-                    r           t                                   T
+{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* btype_OPT - specify binding type */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bunit_OPT - specify binding unit */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bfilter_OPT - specify binding filter */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bsort_OPT - specify binding sort order */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bstart - specify binding start */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bstop - specify binding stop */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bstrategy - specify binding strategy */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* bamount - specify binding amount */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+   /* binstance - specifies who makes the binding */
+{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1}
+/*  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
+    o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L
+    n  l  o  e  o  a  o  e  l  e  h  s  o  t  u  e  v  s  d  s  n  L
+    e  t  n  l  l  s  d  s  s  l     h  g  a  b  c  e  u  e  t  e  _
+       e  f     d  t     u     e        i  t     d  n  b  l  a     O
+       r           e     b     c        n           t        t     P
+                   r           t                                   T
 */
 };
 

@@ -47,11 +47,12 @@
 #include "uti/sge_binding_hlp.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
-#include "uti/ocs_topology.h"
+#include "uti/ocs_Topo.h"
 
 #include "ocs_shepherd_systemd.h"
 #include "shepherd_binding.h"
 #include "err_trace.h"
+#include "ocs_BindingInstance.h"
 
 #if defined(BINDING_SOLARIS)
 #  include "sge_uidgid.h"
@@ -80,6 +81,82 @@ namespace ocs {
 #endif
 
 #if defined(OCS_HWLOC) && !defined(SOLARIS)
+
+
+   int do_thread_binding() {
+      // read binding parameters from config file
+      char *binding_to_use = get_conf_val("binding_to_use");
+      if (binding_to_use == nullptr) {
+         shepherd_trace("do_thread_binding: \"binding_to_use\" parameter not found in config file");
+         return -1;
+      }
+      if (strcasecmp("none", binding_to_use) == 0) {
+         shepherd_trace("do_thread_binding: binding is disabled (no socket/core/thread specified)");
+         return 0;
+
+      }
+      char *binding_instance_str = get_conf_val("binding_instance");
+      if (binding_instance_str == nullptr) {
+         shepherd_trace("do_thread_binding: \"binding_instance\" parameter not found in config file");
+         return -1;
+      }
+      if (strcasecmp("none", binding_instance_str) == 0) {
+         shepherd_trace("do_thread_binding: binding is disabled (no instance specified)");
+      }
+
+      // determine binding instance type
+      BindingInstance::Instance binding_instance = BindingInstance::from_string(binding_instance_str);
+      if (binding_instance == BindingInstance::Instance::NONE) {
+         shepherd_trace("do_thread_binding: invalid binding instance specified");
+         return -1;
+      }
+
+      // prepare binding mask containing the PU's
+      hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+
+      int socket_id = -1;
+      int core_id = -1;
+      int thread_id = -1;
+
+      for (int pos = 0; binding_to_use[pos] != '\0'; pos++) {
+         switch (binding_to_use[pos]) {
+            case 'S':
+            case 's':
+               socket_id++;
+               core_id = -1; // reset core and thread id for new socket
+               thread_id = -1;
+               break;
+            case 'C':
+            case 'E':
+            case 'c':
+            case 'e':
+               core_id++;
+               thread_id = -1; // reset thread id for new core
+               break;
+            case 'T':
+               thread_id++;
+               break;
+            case 't': {
+               thread_id++;
+
+               int pu_id = Topo::add_hw_for_logical_id(cpuset, socket_id, core_id, thread_id);
+               shepherd_trace("do_thread_binding: adding PU %d to cpuset for S%dC%dT%d", pu_id, socket_id, core_id, thread_id);
+               break;
+            }
+            default:
+               thread_id++;
+               break;
+         }
+      }
+
+      // set the binding mask
+      if (!bind_process_to_mask(cpuset)) {
+         shepherd_trace("do_thread_binding: binding to prepared PUs failed");
+         return -1;
+      }
+
+      return 0;
+   }
 
 /****** shepherd_binding/do_core_binding() *************************************
 *  NAME
@@ -425,7 +502,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    shepherd_trace("binding_add_core_to_cpuset: adding socket %d core %d to cpuset", socket, core);
 
    bool ret = false;
-   hwloc_obj_t current_core = hwloc_get_obj_below_by_type(topo_get_hwloc_topology(),
+   hwloc_obj_t current_core = hwloc_get_obj_below_by_type(Topo::get_hwloc_topology(),
                                               HWLOC_OBJ_SOCKET, socket,
                                               HWLOC_OBJ_CORE, core);
    if (current_core != nullptr) {
@@ -478,11 +555,11 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       /* first core could be set from scheduler */
       /* offset is the first core to start with (make sense only with exclusive host) */
 
-      if (topo_has_core_binding()) {
+      if (Topo::has_topology_information()) {
          /* bitmask for processors to turn on and off */
          hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
-         if (topo_has_topology_information()) {
+         if (Topo::has_topology_information()) {
             /* next socket to use */
             int next_socket = first_socket;
             /* the amount of cores of the next socket */
@@ -490,18 +567,18 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
             /* next core to use */
             int next_core = first_core + offset;
             /* maximal amount of sockets on this system */
-            int max_amount_of_sockets = topo_get_total_amount_of_sockets();
+            int max_amount_of_sockets = Topo::get_total_amount_of_sockets();
 
             /* strategy: go to the first_socket and the first_core + offset and
                fill up socket and go to the next one. */
 
             /* TODO maybe better to search for using a core exclusively? */
 
-            while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
+            while (Topo::get_amount_of_cores_for_socket(next_socket) <= next_core) {
                /* TODO which kind of warning when first socket does not offer this? */
                /* move on to next socket - could be that we have to deal only with cores
                   instead of <socket><core> tuples */
-               next_core -= topo_get_amount_of_cores_for_socket(next_socket);
+               next_core -= Topo::get_amount_of_cores_for_socket(next_socket);
                next_socket++;
                if (next_socket >= max_amount_of_sockets) {
                   /* we are out of sockets - we do nothing */
@@ -515,13 +592,13 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                return false;
             }
 
-            /* collect the other processo r ids with the strategy */
+            /* collect the other processor ids with the strategy */
             for (int cores_set = 1; cores_set < amount_of_cores; ++cores_set) {
                next_core++;
                /* jump to next socket when it is needed */
                /* maybe the next socket could offer 0 cores (I can' see when,
                   but just to be sure) */
-               while ((socket_amount_of_cores = topo_get_amount_of_cores_for_socket(next_socket))
+               while ((socket_amount_of_cores = Topo::get_amount_of_cores_for_socket(next_socket))
                       <= next_core) {
                   next_socket++;
                   next_core = next_core - socket_amount_of_cores;
@@ -623,7 +700,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       /* n := take every n-th core */
       bool bound = false;
 
-      if (topo_has_core_binding()) {
+      if (Topo::has_topology_information()) {
          /* bitmask for processors to turn on and off */
          hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
 
@@ -633,7 +710,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
               * then add n: if core is not available go to next socket
               * ...
          */
-         if (topo_has_topology_information()) {
+         if (Topo::has_topology_information()) {
             /* amount of cores set in processor binding mask */
             int cores_set = 0;
             /* next socket to use */
@@ -641,7 +718,7 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
             /* next core to use */
             int next_core = first_core;
             /* maximal amount of sockets on this system */
-            int max_amount_of_sockets = topo_get_total_amount_of_sockets();
+            int max_amount_of_sockets = Topo::get_total_amount_of_sockets();
             shepherd_trace("binding_set_striding_linux: max_amount_of_sockets: %d", max_amount_of_sockets);
 
             /* check if we are already out of range */
@@ -651,11 +728,11 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                return false;
             }
 
-            shepherd_trace("binding_set_striding_linux: max_amount_of_cores per socket %d", topo_get_amount_of_cores_for_socket(next_socket));
-            while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
+            shepherd_trace("binding_set_striding_linux: max_amount_of_cores per socket %d", Topo::get_amount_of_cores_for_socket(next_socket));
+            while (Topo::get_amount_of_cores_for_socket(next_socket) <= next_core) {
                /* move on to next socket - could be that we have to deal only with cores 
                   instead of <socket><core> tuples */
-               next_core -= topo_get_amount_of_cores_for_socket(next_socket);
+               next_core -= Topo::get_amount_of_cores_for_socket(next_socket);
                next_socket++;
                if (next_socket >= max_amount_of_sockets) {
                   /* we are out of sockets - we do nothing */
@@ -683,10 +760,10 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
                   return false;
                }
 
-               while (topo_get_amount_of_cores_for_socket(next_socket) <= next_core) {
+               while (Topo::get_amount_of_cores_for_socket(next_socket) <= next_core) {
                   /* move on to next socket - could be that we have to deal only with cores 
                      instead of <socket><core> tuples */
-                  next_core -= topo_get_amount_of_cores_for_socket(next_socket);
+                  next_core -= Topo::get_amount_of_cores_for_socket(next_socket);
                   next_socket++;
                   if (next_socket >= max_amount_of_sockets) {
                      /* we are out of sockets - we do nothing */
@@ -763,9 +840,9 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
    static bool bind_process_to_mask(hwloc_const_bitmap_t cpuset) {
       bool ret = false;
 
-      if (topo_has_core_binding()) {
+      if (Topo::has_topology_information()) {
          // we only need core binding capabilites, no topology is required
-         hwloc_topology_t topology = topo_get_hwloc_topology();
+         hwloc_topology_t topology = Topo::get_hwloc_topology();
          if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_STRICT) == 0) {
             shepherd_trace("strict cpu binding succeeded");
             ret = true;
@@ -832,9 +909,9 @@ bool binding_add_core_to_cpuset(hwloc_bitmap_t cpuset, int socket, int core) {
       }
 
       /* do only on linux when we have core binding feature in kernel */
-      if (topo_has_core_binding()) {
+      if (Topo::has_topology_information()) {
 
-         if (topo_has_topology_information()) {
+         if (Topo::has_topology_information()) {
             /* bitmask for processors to turn on and off */
             hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
             /* processor id counter */

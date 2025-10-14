@@ -45,7 +45,9 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Session.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_id.h"
@@ -60,7 +62,6 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/msg_sgeobjlib.h"
-#include "sgeobj/ocs_DataStore.h"
 
 #include "comm/commlib.h"
 
@@ -762,6 +763,27 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
          }
+      }
+
+      // The topology string that we receive from execd contains more information than we need
+      // Filter the information and only keep the topology string as load value
+      // Store the full string in the host element
+      if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
+         ocs::TopologyString topology(value);
+
+         // The first core can be 'disabled' for binding globally
+         std::string global_binding_filter = mconf_get_binding_filter();
+         if (global_binding_filter == FIRST_CORE) {
+            int node_id = topology.find_first_core();
+            if (node_id != ocs::TopologyString::NO_POS) {
+               topology.mark_node_as_used_or_unused(node_id, true);
+            }
+         }
+
+         // Keep the original value in the host element and a product-specific version as load value
+         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
+         lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
+         value = lGetString(ep, LR_value);
       }
 
       if (is_static == 2) {
@@ -1468,6 +1490,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
       DPRINTF("got new %s\n", attr_name);
 
+      // ensure that slots-attribute is part of the list
+      if (host_ensure_slots_are_defined(ep, lGetUlong(new_ep, EH_processors))) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
+
       /* check if corresponding complex attributes exist */
       if (ensure_attrib_available(alpp, ep, EH_consumable_config_list, master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
@@ -1483,12 +1510,14 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      /* the centry_list_fill_request returns 0 if success */
+      // fill missing attributes in EH_consumable_config_list
       if (centry_list_fill_request(lGetListRW(tmp_elem, EH_consumable_config_list), alpp, master_centry_list, true,
                                    false, false)) {
          lFreeElem(&tmp_elem);
          DRETURN(STATUS_EUNKNOWN);
       }
+
+      // debit resources
       {
          lListElem *jep = nullptr;
          const lListElem *ar_ep;
@@ -1497,7 +1526,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
          // initialize booking
          lSetList(tmp_elem, EH_resource_utilization, nullptr);
-         debit_host_consumable(nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
+         debit_host_consumable(nullptr, nullptr, nullptr, nullptr, tmp_elem, master_centry_list, 0, true, true, nullptr);
 
          // do the resource booking
          for_each_rw (jep, master_job_list) {
@@ -1509,6 +1538,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                bool is_master_task = false;
                const void *iterator = nullptr;
                const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+               const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
 
                if (global_host || (lFirst(gdil) == lGetElemHostFirst(gdil, JG_qhostname, host, &iterator))) {
                   is_master_task = true;
@@ -1518,7 +1548,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
 
                if (slots > 0) {
                   // do_per_host_booking is true, we book on one host once
-                  debit_host_consumable(jep, jatep, pe, tmp_elem, master_centry_list, slots, is_master_task, true, nullptr);
+                  debit_host_consumable(jep, jatep, granted_resources_list, pe, tmp_elem, master_centry_list, slots, is_master_task, true, nullptr);
                }
             }
          }
@@ -1548,7 +1578,7 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
                job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar_ep, AR_resource_list)));
 
                while (gdil_ep != nullptr) {
-                  rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+                  rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                          tmp_elem, master_centry_list, lGetUlong(gdil_ep, JG_slots),
                                          EH_consumable_config_list, EH_resource_utilization, host,
                                          lGetUlong64(ar_ep, AR_start_time), lGetUlong64(ar_ep, AR_duration),

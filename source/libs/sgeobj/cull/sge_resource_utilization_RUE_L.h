@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -44,6 +44,9 @@
 *    SGE_LIST(RUE_utilized_now_resource_map_list) - Utilized Now Resource Map List
 *    Currently used amount of Resource Maps
 *
+*    SGE_STRING(RUE_utilized_now_binding_inuse) - Utilized Now Binding In Use
+*    Topology string with lowercase core/threads that are currently in use.
+*
 *    SGE_LIST(RUE_utilized) - Utilized
 *    A resource diagram indicating future utilization.
 *
@@ -59,6 +62,7 @@ enum {
    RUE_name = RUE_LOWERBOUND,
    RUE_utilized_now,
    RUE_utilized_now_resource_map_list,
+   RUE_utilized_now_binding_inuse,
    RUE_utilized,
    RUE_utilized_now_nonexclusive,
    RUE_utilized_nonexclusive
@@ -68,6 +72,7 @@ LISTDEF(RUE_Type)
    SGE_STRING(RUE_name, CULL_PRIMARY_KEY | CULL_UNIQUE | CULL_HASH | CULL_SPOOL | CULL_SUBLIST)
    SGE_DOUBLE(RUE_utilized_now, CULL_DEFAULT)
    SGE_LIST(RUE_utilized_now_resource_map_list, RESL_Type, CULL_DEFAULT)
+   SGE_STRING(RUE_utilized_now_binding_inuse, CULL_DEFAULT)
    SGE_LIST(RUE_utilized, RDE_Type, CULL_DEFAULT)
    SGE_DOUBLE(RUE_utilized_now_nonexclusive, CULL_DEFAULT)
    SGE_LIST(RUE_utilized_nonexclusive, RDE_Type, CULL_DEFAULT)
@@ -77,6 +82,7 @@ NAMEDEF(RUEN)
    NAME("RUE_name")
    NAME("RUE_utilized_now")
    NAME("RUE_utilized_now_resource_map_list")
+   NAME("RUE_utilized_now_binding_inuse")
    NAME("RUE_utilized")
    NAME("RUE_utilized_now_nonexclusive")
    NAME("RUE_utilized_nonexclusive")

@@ -38,6 +38,7 @@
 #endif
 
 #include "sge_orders.h"
+#include "sgeobj/ocs_TopologyString.h"
 
 /* min number of jobs in a category to use
  *    the skip host, queue and the soft violations */
@@ -138,6 +139,8 @@ typedef struct {
    bool       is_schedule_based;  /* true, if resource reservation is enabled       */
    bool       is_soft;            /* true, if job has soft requests                 */
    u_long64   now;                /* now time for immediate jobs                    */
+   bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
+   bool do_binding_on_any_hosts;  //< cached value of the corresponding configuration parameter
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
@@ -149,14 +152,16 @@ typedef struct {
    int        slots;              /* total number of slots we do matching against   */
    u_long64   start;              /* jobs start time                                */
    int        soft_violations;    /* number of soft request violations              */
-   lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr     */
+   lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr  */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
+   lList      *binding_to_use;    /* Core/thread binding information                */
    /* ------ scheduler profiling index as picky pack data ------------------------- */
    sched_prof_t *pi;
 } sge_assignment_t;
 
-#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, \
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr}
+#define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
+   0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
+   false, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
@@ -209,16 +214,17 @@ int sge_get_double_qattr(double *dvalp, const char *attrname, const lListElem *q
 int sge_get_string_qattr(char *dst, int dst_len, const char *attrname, lListElem *q, const lList *exechost_list, const lList *complex_list);
 
 dispatch_t
-parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, const lList *total_list,
-                          const lList *rue_list, const lList *load_attr, bool force_slots, lListElem *queue,
+parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_list,
+                          const lList *rue_list, const lList *load_attr, bool force_slots,
+                          lListElem *host, lListElem *queue,
                           u_long32 layer, double lc_factor, u_long32 tag, bool need_master,
                           bool is_master_host, bool allow_non_requestable, const char *object_name,
                           bool isRQ);
 
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,
-                 const lList *actual_attr, const lListElem *queue, dstring *reason, bool allow_non_requestable,
-                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name);
+                 const lList *actual_attr, const lListElem *host, const lListElem *queue, dstring *reason, bool allow_non_requestable,
+                 int slots, u_long32 layer, double lc_factor, u_long64 *start_time, const char *object_name, ocs::TopologyString& binding_inuse);
 
 dispatch_t cqueue_match_static(const char *cqname, sge_assignment_t *a);
 
@@ -226,6 +232,6 @@ void
 sge_ar_swap_resource_lists(sge_assignment_t &a);
 
 dispatch_t
-parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, lListElem *centry,
+parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue);

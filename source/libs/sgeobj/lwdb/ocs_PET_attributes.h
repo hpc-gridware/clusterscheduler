@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ enum {
    PET_granted_destin_identifier_list,
    PET_pid,
    PET_osjobid,
+   PET_systemd_scope,
+   PET_usage_collection,
    PET_usage,
    PET_scaled_usage,
    PET_reported_usage,
@@ -56,6 +58,8 @@ constexpr const int PET_Type[] = {
    PET_granted_destin_identifier_list,
    PET_pid,
    PET_osjobid,
+   PET_systemd_scope,
+   PET_usage_collection,
    PET_usage,
    PET_scaled_usage,
    PET_reported_usage,
@@ -78,6 +82,8 @@ constexpr const int PET_Type[] = {
    {PET_granted_destin_identifier_list, "PET_granted_destin_identifier_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_pid, "PET_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_osjobid, "PET_osjobid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PET_systemd_scope, "PET_systemd_scope", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PET_usage_collection, "PET_usage_collection", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_usage, "PET_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_scaled_usage, "PET_scaled_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_reported_usage, "PET_reported_usage", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

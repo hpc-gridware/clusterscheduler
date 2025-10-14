@@ -54,6 +54,7 @@
 #include "ocs_qrsub_parse.h"
 
 #include "msg_common.h"
+#include "ocs_AdvanceReservation.h"
 
 
 bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
@@ -62,18 +63,118 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
    lList *lp = nullptr;
    DENTER(TOP_LAYER);
 
-   /*  -help 	 print this help */
+   /* -help print this help */
    if ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-help"))) {
       lRemoveElem(pcmdline, &ep);
       sge_usage(QRSUB, stdout);
       sge_exit(0);
    }
 
-   /*  -a date_time 	 start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
+   /* -a date_time start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-a"))) {
       lSetUlong64(*ar, AR_start_time, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(pcmdline, &ep);
    }
+
+   // -btype host | slot
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-btype");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem != nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_type, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bamount number
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bamount");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_amount, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -binstance set | env | pe
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-binstance");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_instance, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bunit binding_unit
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bunit");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_unit, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bfilter topo_string
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bfilter");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetString(binding_elem, BN_new_filter, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bsort sort_string
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bsort");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetString(binding_elem, BN_new_sort, lGetString(ep, SPA_argval_lStringT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bstart
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bstart");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_start, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bstop
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bstop");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
+   // -bstrategy
+   ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-bstrategy");
+   if (ep != nullptr) {
+      lListElem *binding_elem = ocs::AdvanceReservation::binding_get_or_create_elem(*ar, alpp);
+      if (binding_elem == nullptr) {
+         DRETURN(false);
+      }
+      lSetUlong(binding_elem, BN_new_strategy, lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(pcmdline, &ep);
+   }
+
 
    /*  -e date_time 	 end time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG*/
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-e"))) {
@@ -81,7 +182,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       lRemoveElem(pcmdline, &ep);
    }
 
-   /*  -d time 	 duration in TIME format SGE_ULONG */
+   /*  -d time duration in TIME format SGE_ULONG */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-d"))) {
       lSetUlong64(*ar, AR_duration, lGetUlong64(ep, SPA_argval_lUlong64T));
       lRemoveElem(pcmdline, &ep);
@@ -99,17 +200,17 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       lRemoveElem(pcmdline, &ep);
    }
       
-   /*  -A account_string 	 AR name in accounting record SGE_STRING */
+   /*  -A account_string AR name in accounting record SGE_STRING */
    while ((ep = lGetElemStrRW(pcmdline, SPA_switch_val, "-A"))) {
       lSetString(*ar, AR_account, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
      
-   /*  -l resource_list 	 request the given resources  SGE_LIST */
+   /*  -l resource_list request the given resources  SGE_LIST */
    parse_list_simple(pcmdline, "-l", *ar, AR_resource_list, 0, 0, FLG_LIST_APPEND);
    centry_list_remove_duplicates(lGetListRW(*ar, AR_resource_list));
 
-   /*  -u wc_user 	       access list SGE_LIST */
+   /*  -u wc_user access list SGE_LIST */
    /*  -u ! wc_user TBD: Think about eval_expression support in compare allowed and excluded lists */
    parse_list_simple(pcmdline, "-u", *ar, AR_acl_list, ARA_name, 0, FLG_LIST_MERGE);
    /*  -u ! list separation */

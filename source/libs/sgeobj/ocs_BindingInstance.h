@@ -1,7 +1,8 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,16 +19,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <iostream>
+#include <string>
 
-#include "sgeobj/ocs_HostTopology.h"
+namespace ocs {
+   class BindingInstance {
+      BindingInstance() = default; // prevent instantiation
+   public:
+      enum Instance {
+         UNINITIALIZED = 0,
+         NONE,
+         SET,
+         ENV,
+         PE,
+      };
 
-int main (int argc, char *argv[]) {
-   std::string topo_mask = "ScTTCtTsctTtt";
-   ocs::HostTopology ht = ocs::HostTopology(topo_mask);
-
-   std::cout << topo_mask << std::endl;
-   std::cout << ht.getTopoMask() << std::endl;
-   std::cout << ht.getFullTopoMask() << std::endl;
-   return 0;
+      static std::string to_string(Instance mode);
+      static Instance from_string(const std::string& mode);
+   };
 }

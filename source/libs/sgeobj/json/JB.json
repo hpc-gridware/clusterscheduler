@@ -1002,17 +1002,17 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"binding",
+			"name":	"new_binding",
 			"summary":	"Binding Strategy",
 			"description":	[{
-					"line":	"Binding strategy for execution host (and later scheduler)"
-				}],
-			"type":	"lListT",
+				"line":	"Binding strategy for the job"
+			}],
+			"type":	"lObjectT",
 			"subClassName":	"BN",
 			"subCullPrefix":	"BN",
 			"flags":	[{
-					"name":	"SPOOL"
-				}]
+				"name":	"SPOOL"
+			}]
 		}, {
 			"name":	"submission_command_line",
 			"summary":	"Submission Command Line",

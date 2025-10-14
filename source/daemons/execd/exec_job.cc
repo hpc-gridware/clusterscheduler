@@ -102,6 +102,7 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
+#include "ocs_TopologyString.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -452,6 +453,37 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_slots += (int) lGetUlong(gdil_ep, JG_slots);
    }
 
+   ocs::TopologyString binding_to_use;
+   bool binding_to_use_is_initialized = false;
+   ocs::BindingInstance::Instance binding_instance = ocs::BindingInstance::SET;
+   if (mconf_get_enable_binding()) {
+      const lListElem *gr;
+      for_each_ep(gr, lGetList(jatep, JAT_granted_resources_list)) {
+         if (u_long32 type = lGetUlong(gr, GRU_type); type != GRU_BINDING_TYPE) {
+            continue; // we are only interested in binding resources
+         }
+
+         // @todo CS-732: select a task specific binding? might be counterproductive if tasks depend on interrupts (IO heavy)
+         // if the granted binding list contains just one entry then we can use it directly (host binding or task binding with one task)
+         // but if there are multiple entries then we should choose an unused one and pass it to the shepherd
+         // for now we just OR all binding decisions and pass it to the shepherd as if we should do a host binding.
+         // The OS scheduler will then decide finally which task gets which part of the combined mask.
+         const lList *binding_list = lGetList(gr, GRU_binding_inuse);
+         const lListElem *be;
+         for_each_ep(be, binding_list) {
+            // we have a binding entry, append it to the binding_to_use dstring
+            if (!binding_to_use_is_initialized) {
+               binding_to_use.reset_topology(lGetString(be, ST_name));
+               binding_to_use_is_initialized = true;
+            } else {
+               ocs::TopologyString binding_to_add(lGetString(be, ST_name));
+
+               binding_to_use.mark_nodes_as_used_or_unused(binding_to_add, true);
+            }
+         }
+      }
+   }
+
    // Core Binding
    //
    // Linux: "set affinity" is used to bind the job to cores
@@ -467,27 +499,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    if (mconf_get_enable_binding()) {
 
 #if defined(OCS_HWLOC)
-      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(&core_binding_strategy_string, jep, &rankfileinput);
+      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(jep, &rankfileinput);
 #elif defined(BINDING_SOLARIS)
       ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(&core_binding_strategy_string, jep, err_str, err_length, &sge_binding_environment, &rankfileinput);
       if (sge_binding_environment != nullptr) {
          INFO("SGE_BINDING variable set: %s", sge_binding_environment);
-      }
-#endif
-         
-#if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
-      if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
-          && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
-         INFO("core binding: %s", sge_dstring_get_string(&core_binding_strategy_string));
-
-         dstring pseudo_usage = DSTRING_INIT;
-         sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s",
-                             binding_get_topology_for_job(sge_dstring_get_string(&core_binding_strategy_string)));
-
-         lListElem *jr = get_job_report(job_id, ja_task_id, pe_task_id);
-         add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-         flush_job_report(jr);
-         sge_dstring_free(&pseudo_usage);
       }
 #endif
    }
@@ -1448,6 +1464,15 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fprintf(fp, "binding=%s\n", processor_binding_strategy);
 
    }
+
+   if (binding_to_use_is_initialized) {
+      fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
+      fprintf(fp, "binding_instance=%s\n", ocs::BindingInstance::to_string(binding_instance).c_str());
+   } else {
+      fprintf(fp, "binding_to_use=%s\n", "none");
+      fprintf(fp, "binding_instance=%s\n", "none");
+   }
+
    if (petep != nullptr) {
       fprintf(fp, "job_name=%s\n", lGetString(petep, PET_name));
    } else {

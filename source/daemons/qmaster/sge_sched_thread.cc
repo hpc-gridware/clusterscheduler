@@ -1121,9 +1121,9 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
 
       if (is_start) {
 
-         DPRINTF("looking for immediate parallel assignment for job "
-                         sge_u32"." sge_u32 " requesting pe \"%s\" duration " sge_u64 "\n",
-                         a.job_id, a.ja_task_id, pe_name, a.duration);
+         DPRINTF("LOOKING FOR IMMEDIATE PARALLEL ASSIGMENT FOR JOB "
+                 sge_u32"." sge_u32 " REQUESTING PE \"%s\" DURATION " sge_u64 "\n",
+                 a.job_id, a.ja_task_id, pe_name, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
          a.is_reservation = false;
@@ -1143,9 +1143,9 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       // lists - shall we then do a reservation? So far (before CS-1108) this has not been done.
       if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
-            DPRINTF("looking for parallel reservation for job "
-                            sge_u32"." sge_u32 " requesting pe \"%s\" duration " sge_u32 "\n",
-                            a.job_id, a.ja_task_id, pe_name, a.duration);
+            DPRINTF("LOOKING FOR PARALLEL RESERVATION FOR JOB "
+                    sge_u32"." sge_u32 " REQUESTING PE \"%s\" DURATION " sge_u32 "\n",
+                    a.job_id, a.ja_task_id, pe_name, a.duration);
             is_computed_reservation = true;
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;
@@ -1169,9 +1169,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       a.slots = 1;
 
       if (is_start) {
-         DPRINTF("looking for immediate sequential assignment for job "
-                         sge_u32"." sge_u32 " duration " sge_u64 "\n", a.job_id,
-                         a.ja_task_id, a.duration);
+         DPRINTF("LOOKING FOR IMMEDIATE SEQUENTIAL ASSIGNMENT OF JOB "
+                 sge_u32"." sge_u32 " DURATION " sge_u64 "\n", a.job_id, a.ja_task_id, a.duration);
 
          a.start = DISPATCH_TIME_NOW;
          a.is_reservation = false;
@@ -1191,8 +1190,8 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
       /* try to reserve for jobs that can be dispatched with the current configuration */
       if (result == DISPATCH_NEVER_CAT) {
          if (is_reserve) {
-            DPRINTF("looking for sequential reservation for job "
-                            sge_u32"." sge_u32 " duration " sge_u64 "\n",
+            DPRINTF("LOOKING FOR SEQUENTIAL RESERVATION FOR JOB "
+                            sge_u32"." sge_u32 " DURATION " sge_u64 "\n",
                             a.job_id, a.ja_task_id, a.duration);
             a.start = DISPATCH_TIME_QUEUE_END;
             a.is_reservation = true;

@@ -284,7 +284,6 @@ enum {
 
    tc_OPT,        /* task concurrency */
 
-   binding_OPT,          /* requests job binding strategy */
    suspend_remote_OPT,   /* parameter for qrsh to toggle the suspend behavior */
 
    ace_OPT, /* add ce object */
@@ -299,6 +298,16 @@ enum {
    dept_OPT,  //< set department of job
    scatl_OPT, //< show category list
    scat_OPT,  //< show category
+
+   btype_OPT,  //< binding type
+   bunit_OPT,  //< binding unit
+   bfilter_OPT, //< binding filter
+   bsort_OPT, //< binding sort
+   bstart_OPT, //< binding start
+   bstop_OPT, //< binding stop
+   bstrategy_OPT, //< binding strategy
+   bamount_OPT, //< binding amount
+   binstance_OPT, //< binding instance
 };
 
 /* macros used in parsing */

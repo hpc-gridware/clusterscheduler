@@ -34,18 +34,30 @@
 
 #include <cstring>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/sge_log.h"
 
+#include "ocs_Binding.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingObj.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStrategy.h"
 #include "ocs_Job.h"
 #include "sge_ja_task.h"
 #include "sge_job.h"
 #include "sge_pe.h"
 #include "sge_pe_task.h"
+#include "sge_answer.h"
 
 #include "cull/sge_eejob_SGEJ_L.h"
 
-#include "uti/ocs_Systemd.h"
+#include "msg_common.h"
+#include "ocs_BindingInstance.h"
+#include "ocs_BindingObj.h"
 
 /** @brief Sort jobs in the job list based on  prio, submit time and job number
  *
@@ -168,3 +180,63 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 
    DRETURN(ret);
 }
+
+lListElem *
+ocs::Job::binding_get_or_create_elem(lListElem *job, lList**answer) {
+   return Binding::binding_get_or_create_elem(job, JB_new_binding, answer);
+}
+
+bool
+ocs::Job::binding_was_requested(const lListElem *job) {
+   return Binding::binding_was_requested(job, JB_new_binding);
+}
+
+ocs::BindingType::Type
+ocs::Job::binding_get_type(const lListElem *job) {
+   return Binding::binding_get_type(job, JB_new_binding);
+}
+
+ocs::BindingUnit::Unit
+ocs::Job::binding_get_unit(const lListElem *job) {
+   return Binding::binding_get_unit(job, JB_new_binding);
+}
+
+std::string
+ocs::Job::binding_get_sort(const lListElem *job) {
+   return Binding::binding_get_sort(job, JB_new_binding);
+}
+
+ocs::BindingStart::Start
+ocs::Job::binding_get_start(const lListElem *job) {
+   return Binding::binding_get_start(job, JB_new_binding);
+}
+
+ocs::BindingStop::Stop
+ocs::Job::binding_get_stop(const lListElem *job) {
+   return Binding::binding_get_end(job, JB_new_binding);
+}
+
+ocs::BindingStrategy::Strategy
+ocs::Job::binding_get_strategy(const lListElem *job) {
+   return Binding::binding_get_strategy(job, JB_new_binding);
+}
+
+ocs::BindingInstance::Instance
+ocs::Job::binding_get_instance(const lListElem *job) {
+   return Binding::binding_get_instance(job, JB_new_binding);
+}
+
+std::string
+ocs::Job::binding_get_filter(const lListElem *job) {
+   return Binding::binding_get_filter(job, JB_new_binding);
+}
+
+u_long32
+ocs::Job::binding_get_amount(const lListElem *job) {
+   return Binding::binding_get_amount(job, JB_new_binding);
+}
+
+void ocs::Job::binding_set_missing_defaults(lListElem *job) {
+   return Binding::binding_set_missing_defaults(job, JB_new_binding);
+}
+

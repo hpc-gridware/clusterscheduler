@@ -71,11 +71,17 @@ struct qrstat_report_handler_str {
    bool (*report_ar_node_boolean)(qrstat_report_handler_t* handler, lList **alpp, 
                                   const char *name, bool value);
 
-   bool first_granted_slot; 
-   bool (*report_start_granted_slots_list)(qrstat_report_handler_t* handler, lList **alpp);
-   bool (*report_finish_granted_slots_list)(qrstat_report_handler_t* handler, lList **alpp);
-   bool (*report_granted_slots_list_node)(qrstat_report_handler_t* handler, lList **alpp,
-                                          const char *name, u_long32 value);
+   bool first_exec_queue;
+   bool (*report_start_exec_queue_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_finish_exec_queue_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_exec_queue_list_node)(qrstat_report_handler_t* handler, lList **alpp,
+                                       const char *name, u_long32 value);
+
+   bool first_exec_binding;
+   bool (*report_start_exec_binding_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_finish_exec_binding_list)(qrstat_report_handler_t* handler, lList **alpp);
+   bool (*report_exec_binding_list_node)(qrstat_report_handler_t* handler, lList **alpp,
+                                         const char *name, const char *value);
 
    bool (*report_start_granted_parallel_environment)(qrstat_report_handler_t* handler, lList **alpp);
    bool (*report_finish_granted_parallel_environment)(qrstat_report_handler_t* handler, lList **alpp);

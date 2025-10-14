@@ -1708,3 +1708,26 @@ const char *sge_str_move_left(char *start, char *substr) {
    }
    return start;
 }
+
+/** @brief Reverse a string in place
+ *
+ * This function reverses the characters in the string pointed to by 'str'.
+ * It does not allocate any new memory and modifies the original string.
+ *
+ * @param str Pointer to the string to be reversed. If str is nullptr, no action is taken.
+ */
+void
+sge_str_reverse(char *str) {
+   // Nothing to do
+   if (!str) {
+      return;
+   }
+
+   // Exchange characters from the start and end of the string
+   int len = strlen(str);
+   for (int i = 0; i < len / 2; i++) {
+      char temp = str[i];
+      str[i] = str[len - i - 1];
+      str[len - i - 1] = temp;
+   }
+}

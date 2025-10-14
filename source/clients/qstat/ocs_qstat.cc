@@ -116,7 +116,7 @@ static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char* qna
 static int qstat_stdout_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
-static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp);
+static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char * details, lList **alpp);
 static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp);
 static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp);
 static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp);
@@ -1809,10 +1809,14 @@ static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char *qna
 }
 
 static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, 
-                                       const char* name, const char* value, lList **alpp) 
+                                       const char* name, const char* value, const char *details, lList **alpp)
 {
    DENTER(TOP_LAYER);
-   printf("\t%s:%s=%s\n", dom, name, value);
+   if (details != nullptr && strlen(details) > 0) {
+      printf("\t%s:%s=%s (%s)\n", dom, name, value, details);
+   } else {
+      printf("\t%s:%s=%s\n", dom, name, value);
+   }
    DRETURN(0);
 }
 
@@ -2083,7 +2087,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
 
             JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
             JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
-            JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+            JB_type, JB_new_binding, JB_ja_task_concurrency, JB_pty,
             JB_grp_list, JB_sync_options, JB_category_id);
 
    /* get job list */
@@ -2206,7 +2210,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
             /* global schduling info */
             for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
                if (first_run) {
-                  printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+                  printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                   first_run = 0;
                } else {
                   printf("%s", "                                ");
@@ -2221,7 +2225,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
                for_each_ep(mes_jid, lGetList(mes, MES_job_number_list)) {
                   if (lGetUlong(mes_jid, ULNG_value) == jid) {
                      if (first_run) {
-                        printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+                        printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                         first_run = 0;
                      } else {
                         printf("%s", "                                ");
@@ -2285,7 +2289,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
          first_run = 1;
          for_each_ep(mes, lGetList(sme, SME_global_message_list)) {
             if (first_run) {
-               printf("%s:                ",MSG_SCHEDD_SCHEDULINGINFO);
+               printf("%s:                 ",MSG_SCHEDD_SCHEDULINGINFO);
                first_run = 0;
             }
             else

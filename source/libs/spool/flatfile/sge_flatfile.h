@@ -134,6 +134,8 @@ extern const spool_flatfile_instr qconf_sfi;
 extern const spool_flatfile_instr qconf_sub_comma_list_sfi;
 extern const spool_flatfile_instr qconf_name_value_list_sfi;
 extern const spool_flatfile_instr qconf_sub_name_value_comma_sfi;
+extern const spool_flatfile_instr qconf_sub_sub_name_value_comma_sfi;
+extern const spool_flatfile_instr qconf_sub_name_list_sfi;
 extern const spool_flatfile_instr qconf_sub_comma_sfi;
 extern const spool_flatfile_instr qconf_param_sfi;
 extern const spool_flatfile_instr qconf_sub_param_sfi;

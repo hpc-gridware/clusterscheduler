@@ -304,9 +304,10 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
          lSetUlong(hep, EH_load_correction_factor, ulc_factor);
       }
 
-      debit_host_consumable(job, ja_task, pe, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots,
+      const lList *granted_resources_list = lGetList(ja_task, JAT_granted_resources_list);
+      debit_host_consumable(job, ja_task, granted_resources_list, pe, host_list_locate(host_list, SGE_GLOBAL_NAME), centry_list, slots,
                             is_master_task, do_per_global_host_booking, nullptr);
-      debit_host_consumable(job, ja_task, pe, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
+      debit_host_consumable(job, ja_task, granted_resources_list, pe, hep, centry_list, slots, is_master_task, do_per_host_booking, nullptr);
       is_master_task = false;
       do_per_global_host_booking = false;
 
@@ -344,16 +345,18 @@ debit_job_from_hosts(lListElem *job, lListElem *ja_task, const lListElem *pe, lL
  *        Do we want to initialize the RUE_utilized_now_resource_map_list?
  */
 int
-debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lListElem *pe, lListElem *hep,
+debit_host_consumable(const lListElem *jep, const lListElem *jatep, const lList *granted_resources_list, const lListElem *pe, lListElem *hep,
                       const lList *centry_list, int slots, bool is_master_task, bool do_per_host_booking,
                       bool *just_check) {
+   DENTER(TOP_LAYER);
    int mods = 0;
    mods += rc_debit_consumable(jep, pe, hep, centry_list, slots, EH_consumable_config_list, EH_resource_utilization,
                                lGetHost(hep, EH_name), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
-      mods += ja_task_debit_host_rsmaps(jatep, hep, slots, just_check);
+      mods += ja_task_debit_host_rsmaps(granted_resources_list, hep, slots, just_check);
+      mods += ja_task_debit_host_bindings(granted_resources_list, hep, slots, just_check);
    }
-   return mods;
+   DRETURN(mods);
 }
 
 /****** sge_resource_quota_schedd/debit_job_from_rqs() **********************************
@@ -424,16 +427,17 @@ debit_job_from_ar(lListElem *ar, lListElem *job, lListElem *ja_task, const lList
       for_each_ep(gel, granted) {
          int slots = lGetUlong(gel, JG_slots);
          bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gel, JG_qhostname));
+         const lList *granted_resources_list = lGetList(ja_task, JAT_granted_resources_list);
 
          lListElem *queue = lGetSubStrRW(ar, QU_full_name, lGetString(gel, JG_qname), AR_reserved_queues);
          qinstance_debit_consumable(queue, job, pe, centry_list, slots, master_task, do_per_host_booking, nullptr);
          if (ar_global_host != nullptr) {
-            debit_host_consumable(job, ja_task, pe, ar_global_host, centry_list, slots, master_task,
+            debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_global_host, centry_list, slots, master_task,
                                   do_per_global_host_booking, nullptr);
          }
          lListElem *host = lGetSubHostRW(ar, EH_name, lGetHost(gel, JG_qhostname), AR_reserved_hosts);
          if (host != nullptr) {
-            debit_host_consumable(job, ja_task, pe, host, centry_list, slots, master_task,
+            debit_host_consumable(job, ja_task, granted_resources_list, pe, host, centry_list, slots, master_task,
                                   do_per_host_booking, nullptr);
          }
          master_task = false;

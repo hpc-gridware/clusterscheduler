@@ -430,7 +430,9 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
 
 bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, 
                                int nm, const char *option);
-                               
+
+bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, int pos);
+
 bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
                             const char *option); 
 

@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@
 *    SGE_STRING(JG_processors) - Processor Set
 *    Processor set the job is supposed to run on (Solaris only?)
 *
+*    SGE_LIST(JG_binding_to_use) - Binding that should be used
+*    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
+*
 */
 
 enum {
@@ -92,7 +95,8 @@ enum {
    JG_sticket,
    JG_jcoticket,
    JG_jcfticket,
-   JG_processors
+   JG_processors,
+   JG_binding_to_use
 };
 
 LISTDEF(JG_Type)
@@ -109,6 +113,7 @@ LISTDEF(JG_Type)
    SGE_DOUBLE(JG_jcoticket, CULL_DEFAULT)
    SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT)
    SGE_STRING(JG_processors, CULL_DEFAULT)
+   SGE_LIST(JG_binding_to_use, ST_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(JGN)
@@ -125,6 +130,7 @@ NAMEDEF(JGN)
    NAME("JG_jcoticket")
    NAME("JG_jcfticket")
    NAME("JG_processors")
+   NAME("JG_binding_to_use")
 NAMEEND
 
 #define JG_SIZE sizeof(JGN)/sizeof(char *)

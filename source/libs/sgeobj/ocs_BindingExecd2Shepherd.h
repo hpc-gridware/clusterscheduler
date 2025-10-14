@@ -28,12 +28,14 @@ namespace ocs {
 
 #if defined(OCS_HWLOC)
    private:
+#if 0
       static bool linear_linux(dstring *result, const lListElem *binding_elem, bool automatic);
       static bool striding_linux(dstring *result, const lListElem *binding_elem, bool automatic);
       static bool explicit_linux(dstring *result, const lListElem *binding_elem);
+#endif
    public:
       /* creates string with core binding which is written to job "config" file */
-      static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep, char **rankfileinput);
+      static bool create_binding_strategy_string_linux(lListElem *jep, char **rankfileinput);
 #endif
 
 #ifdef BINDING_SOLARIS

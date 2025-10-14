@@ -72,7 +72,7 @@
 
 /* EB: ADOC: add commets */
 
-const int max_host_resources = 29;/* specifies the number of elements in the host_resource array */
+const int max_host_resources = 28;/* specifies the number of elements in the host_resource array */
 const struct queue2cmplx host_resource[] = {
         {"arch",             0, 0, 0, TYPE_STR},
         {"cpu",              0, 0, 0, TYPE_DOUBLE},
@@ -101,8 +101,7 @@ const struct queue2cmplx host_resource[] = {
         {"m_core",           0, 0, 0, TYPE_INT},
         {"m_socket",         0, 0, 0, TYPE_INT},
         {"m_thread",         0, 0, 0, TYPE_INT},
-        {"m_topology",       0, 0, 0, TYPE_STR},
-        {"m_topology_inuse", 0, 0, 0, TYPE_STR}
+        {"m_topology",       0, 0, 0, TYPE_STR}
 };
 
 const int max_queue_resources = 24; /* specifies the number of elements in the queue_resource array */
@@ -1368,8 +1367,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
 
          if (centry == nullptr) {
             ERROR(MSG_GDI_NO_ATTRIBUTE_S, name != nullptr ? name : "<noname>");
-            answer_list_add(alpp, SGE_EVENT, 
-                            STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
             break;
          } else {
@@ -1385,6 +1383,45 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
       }
    }
    DRETURN(ret);
+}
+
+/** @brief Adds the slot complex to the complex values
+ *
+ * @param ehost Host object
+ * @param load_list List of load values
+ * returns error status or 0 on success
+ */
+int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
+   DENTER(TOP_LAYER);
+
+   // Input argument incorrect
+   if (ehost == nullptr) {
+      DRETURN(STATUS_EUNKNOWN);
+   }
+
+   // No need to add slots to global host
+   const char *name = lGetHost(ehost, EH_name);
+   if (strcmp(name, SGE_GLOBAL_NAME) == 0) {
+      DRETURN(0);
+   }
+
+   // Complex is already there.
+   const lListElem *slots_complex = lGetSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list);
+   if (slots_complex != nullptr) {
+      DPRINTF("slots complex is already there\n");
+      return 0;
+   }
+
+   if (processors == 0) {
+      processors = std::numeric_limits<int>::max();
+   }
+
+   // Add the slot complex and use the given processors as value
+   lListElem *new_entry = lAddSubStr(ehost, CE_name, SGE_ATTR_SLOTS, EH_consumable_config_list, CE_Type);
+   lSetString(new_entry, CE_stringval, std::to_string(processors).c_str());
+   lSetDouble(new_entry, CE_doubleval, processors);
+
+   DRETURN(0);
 }
 
 /****** sge_centry/validate_load_formula() ********************

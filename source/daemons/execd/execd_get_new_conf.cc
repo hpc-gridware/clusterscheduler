@@ -56,6 +56,8 @@
 #include <ocs_gdi_ClientExecd.h>
 #include <reaper_execd.h>
 
+#include "ocs_Topo.h"
+
 #ifdef COMPILE_DC
 #  include "ptf.h"
 #endif
@@ -78,7 +80,11 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    keep_active_t old_keep_active = mconf_get_keep_active();
 
    ret = ocs::gdi::ClientExecd::gdi_get_merged_configuration(&Execd_Config_List);
-  
+
+   // Set fake topology and trigger reinit of HWLOC
+   std::string topo_file = mconf_get_topology_file();
+   ocs::Topo::set_fake_topo_file(topo_file);
+
    const char *spool_dir = mconf_get_execd_spool_dir();
    if (strcmp(old_spool, spool_dir)) {
       WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir");

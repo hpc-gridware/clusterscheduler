@@ -81,8 +81,7 @@ add_executable(loadcheck
       ../../../${PROJECT_FEATURES}/source/daemons/qmaster/TestClass.cc
 )
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
-target_link_libraries(loadcheck PRIVATE sgeobj cull commlists uti
-      ${SGE_TOPO_LIB} ${SGE_LIBS})
+target_link_libraries(loadcheck PRIVATE sgeobj cull comm commlists uti ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 # now
 add_executable(now now.cc)

@@ -76,4 +76,7 @@ bool
 ja_task_is_tightly_integrated(const lListElem *ja_task, const lList *master_pe_list);
 
 int
-ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slots, bool *just_check);
+ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check);
+
+int
+ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check);

@@ -83,6 +83,7 @@
 #include "sge.h"
 
 #include "msg_qstat.h"
+#include "ocs_TopologyString.h"
 
 static int qstat_env_get_all_lists(qstat_env_t *qstat_env, bool need_job_list, lList** alpp);
 
@@ -1536,9 +1537,29 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
          }
          sge_dstring_clear(&resource_string);
          s = sge_get_dominant_stringval(rep, &dominant, &resource_string);
-         monitor_dominance(dom, dominant); 
-         
-         if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, alpp))) {
+         monitor_dominance(dom, dominant);
+
+         std::string details;
+         if (strcmp(lGetString(rep, CE_name), "m_topology") == 0) {
+            ocs::TopologyString topo_in_use;
+            const char *hostname = lGetHost(q, QU_qhostname);
+            const lListElem *host = lGetElemHost(qstat_env->exechost_list, EH_name, hostname);
+            if (host) {
+               const lList *resource_utilization = lGetList(host, EH_resource_utilization);
+               if (resource_utilization != nullptr) {
+                  const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
+                  if (slots_utilization != nullptr) {
+                     const char *binding_inuse = lGetString(slots_utilization, RUE_utilized_now_binding_inuse);
+                     if (binding_inuse) {
+                        topo_in_use.reset_topology(binding_inuse);
+                     }
+                  }
+               }
+            }
+            details = topo_in_use.to_product_topology_string();
+         }
+
+         if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, details.c_str(), alpp))) {
             DPRINTF("report_queue_resource failed\n");
             break;
          }
@@ -2543,13 +2564,15 @@ static int sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lLis
          }
       }
       if (handler->report_binding && (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) != 0) {
-         const lList *binding_list = lGetList(job, JB_binding);
+         const lListElem *binding_elem = lGetObject(job, JB_new_binding);
 
-         if (binding_list != nullptr) {
-            const lListElem *binding_elem = lFirst(binding_list);
+         if (binding_elem != nullptr) {
             dstring binding_param = DSTRING_INIT;
 
-            ocs::BindingIo::binding_print_to_string(binding_elem, &binding_param);
+            std::string binding_str;
+            ocs::BindingIo::binding_print_to_string(binding_elem, binding_str);
+            sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
+
             if (handler->report_binding_started && 
                 (ret=handler->report_binding_started(handler, alpp))) {
                DPRINTF("handler->report_binding_started failed\n");
@@ -3213,7 +3236,7 @@ void qstat_filter_add_r_attributes(qstat_env_t *qstat_env) {
       JB_request_set_list,
       JB_jid_request_list,
       JB_ja_ad_request_list,
-      JB_binding,
+      JB_new_binding,
       NoName
    };
    const int nm_JAT_Type_template[] = {

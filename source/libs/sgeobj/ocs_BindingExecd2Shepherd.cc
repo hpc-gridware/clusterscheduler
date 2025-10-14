@@ -28,6 +28,8 @@
 
 #include "sgeobj/ocs_BindingExecd2Shepherd.h"
 
+#include "ocs_BindingInstance.h"
+
 #if defined(BINDING_SOLARIS) || defined(OCS_HWLOC)
 
 /****** exec_job/parse_job_accounting_and_create_logical_list() ****************
@@ -151,95 +153,34 @@ ocs::BindingExecd2Shepherd::parse_job_accounting_and_create_logical_list(const c
 *
 *******************************************************************************/
 bool
-ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(dstring *result, lListElem *jep, char **rankfileinput) {
-   /* temporary result string with or without "env:" prefix (when environment
-      variable for binding should be set or not) */
-   dstring tmp_result = DSTRING_INIT;
-   bool retval;
-
-   /* binding strategy */
-   const lListElem *binding_elem = nullptr;
-   const lList *binding = lGetList(jep, JB_binding);
-
+ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(lListElem *jep, char **rankfileinput) {
    DENTER(TOP_LAYER);
 
-   if (binding != nullptr) {
-      /* get sublist */
-      if ((binding_elem = lFirst(binding)) != nullptr) {
+   const lListElem *binding_elem = lGetObject(jep, JB_new_binding);
 
-         /* re-create the binding string (<strategy>:<parameter>:<parameter>) */
+   // nothing to do
+   if (binding_elem == nullptr) {
+      DRETURN(false);
+   }
 
-         /* check if a leading "env_" or "pe_" is needed */
-         if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_ENV) {
-            /* we have just to set the environment variable SGE_BINDING for the
-               job */
-            sge_dstring_append(result, "env_");
-
-         } else if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
-            /* we have to attach settings to the pe_hostfile */
-            sge_dstring_append(result, "pe_");
-         }
-
-         if (strcmp(lGetString(binding_elem, BN_strategy), "linear") == 0) {
-
-            retval = linear_linux(&tmp_result, binding_elem, false);
-
-         } else if (strcmp(lGetString(binding_elem, BN_strategy), "linear_automatic") == 0) {
-
-            retval = linear_linux(&tmp_result, binding_elem, true);
-
-         } else if (strcmp(lGetString(binding_elem, BN_strategy), "striding") == 0) {
-
-            retval = striding_linux(&tmp_result, binding_elem, false);
-
-         } else if (strcmp(lGetString(binding_elem, BN_strategy), "striding_automatic") == 0) {
-
-            retval = striding_linux(&tmp_result, binding_elem, true);
-
-         } else if (strcmp(lGetString(binding_elem, BN_strategy), "explicit") == 0) {
-
-            retval = explicit_linux(&tmp_result, binding_elem);
-
-         } else {
-
-            /* BN_strategy does not contain anything usefull */
-            retval = false;
-         }
-
-        if (retval != false) {
-           /* parse the topology used by the job out of the string (it is at the
-              end) and convert it to "<socket>,<core>:<socket>,<core>:..." but just
-              when config binding element has prefix "pe_" */
-           if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
-              /* generate pe_hostfile input */
-              if (!parse_job_accounting_and_create_logical_list(
-                     sge_dstring_get_string(&tmp_result), rankfileinput)) {
-                 WARNING("Core binding: Couldn't create input for pe_hostfile");
-                 retval = false;
-              }
-           }
-           /* append result to the prefix */
-           sge_dstring_append_dstring(result, &tmp_result);
-        }
-      } else {
-         INFO("Core binding: No CULL sublist for binding found!");
+   // @todo: CS-732: create rankfile
+   // old binding created a string like "<socket>,<core>:<socket>,<core>:..."
+   // according to some MPI documetations also a list of PU-IDs (==thread) should work
+   auto instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_new_instance));
+   if (instance == BindingInstance::Instance::PE) {
+#if 0
+      /* generate pe_host file input */
+      if (!parse_job_accounting_and_create_logical_list( sge_dstring_get_string(&tmp_result), rankfileinput)) {
+         WARNING("Core binding: Couldn't create input for pe_hostfile");
          retval = false;
       }
-   } else {
-      INFO("Core binding: Couldn't get binding sublist");
-      retval = false;
+#endif
    }
 
-   if (!retval) {
-      sge_dstring_clear(result);
-      sge_dstring_append(result, "nullptr");
-   }
-
-   sge_dstring_free(&tmp_result);
-
-   DRETURN(retval);
+   DRETURN(true);
 }
 
+#if 0
 /****** exec_job/linear_linux() ************************************************
 *  NAME
 *     linear_linux() -- Creates a binding request string from request (CULL list).
@@ -280,18 +221,17 @@ ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(dstring *result
 *******************************************************************************/
 bool
 ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
+   DENTER(TOP_LAYER);
+
    int first_socket = 0;
    int first_core = 0;
    int used_first_socket = 0;
    int used_first_core = 0;
-   int amount = 0;
    char *topo_job = nullptr;
    int topo_job_length = 0;
    bool retval;
 
-   DENTER(TOP_LAYER);
-
-   amount = (int) lGetUlong(binding_elem, BN_parameter_n);
+   int amount = (int) lGetUlong(binding_elem, BN_parameter_n);
 
    /* check if first socket and first core have to be determined by execd or
       not */
@@ -305,8 +245,9 @@ ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *bindi
       shephered */
 
    if (automatic) {
-      /* user has not specified where to begin, this has now beeing
-         figured out automatically */
+      DPRINTF("automatic\n");
+
+      /* user has not specified where to begin, this has now being figured out automatically */
       int *list_of_sockets = nullptr;
       int samount = 0;
       int *list_of_cores = nullptr;
@@ -345,25 +286,20 @@ ocs::BindingExecd2Shepherd::linear_linux(dstring *result, const lListElem *bindi
       }
 
    } else {
+      DPRINTF("not automatic\n");
+
       /* we have already a socket,core tuple to start with, therefore we
          use this one if possible or do not do any binding */
-      if (get_striding_first_socket_first_core_and_account(amount, 1, first_socket,
-                                                           first_core, automatic, &used_first_socket, &used_first_core,
-                                                           &topo_job,
-                                                           &topo_job_length)) {
+      if (get_striding_first_socket_first_core_and_account(amount, 1, first_socket, first_core,
+                                                           automatic, &used_first_socket, &used_first_core,
+                                                           &topo_job, &topo_job_length)) {
 
          /* only "linear" is allowed in config file, because execd has to figure
             out first <socket,core> to bind to (not shepherd - because of race
             conditions) */
-         sge_dstring_sprintf(result, "%s:%d:%d,%d:%s",
-                             "linear",
-                             amount,
-                             first_socket,
-                             first_core,
-                             topo_job);
+         sge_dstring_sprintf(result, "%s:%d:%d,%d:%s", "linear", amount, first_socket, first_core, topo_job);
 
          retval = true;
-
       } else {
          /* couldn't allocate cores */
          DPRINTF("ERROR: Couldn't allocate cores with respect to binding request!");
@@ -558,6 +494,7 @@ ocs::BindingExecd2Shepherd::explicit_linux(dstring *result, const lListElem *bin
 
    DRETURN(retval);
 }
+#endif
 
 #endif
 
@@ -600,16 +537,13 @@ ocs::BindingExecd2Shepherd::explicit_linux(dstring *result, const lListElem *bin
 bool
 ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(dstring* result, lListElem *jep, char* err_str, int err_length, char** env, char** rankfileinput)
 {
+   DENTER(TOP_LAYER);
 
    /* 1. check cull list and check which binding strategy was requested */
    bool retval;
    /* binding strategy */
-   const lList *binding = lGetList(jep, JB_binding);
-   const lListElem *binding_elem = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   if (binding != nullptr && ((binding_elem = lFirst(binding)) != nullptr)) {
+   const lListElem *binding_elem = lGetObject(jep, JB_new_binding);
+   if (binding_elem != nullptr)) {
 
       if (strcmp(lGetString(binding_elem, BN_strategy), "striding_automatic") == 0) {
 
@@ -644,7 +578,7 @@ ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(dstring* resu
       }
 
    } else {
-      INFO("No CULL JB_binding sublist found");
+      INFO("No CULL JB_new_binding sublist found");
       retval = false;
    }
 

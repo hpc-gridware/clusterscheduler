@@ -103,7 +103,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
          goto ERROR;
       }
    }
-   attr_mod_ulong(pe, new_pe, PE_slots, "slots");
+   attr_mod_ulong(pe, new_pe, PE_slots, SGE_ATTR_SLOTS);
 
    /* ---- PE_control_slaves */
    attr_mod_bool(pe, new_pe, PE_control_slaves, "control_slaves");

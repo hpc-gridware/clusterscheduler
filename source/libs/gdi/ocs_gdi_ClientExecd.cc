@@ -44,6 +44,7 @@
 #include "ocs_gdi_ClientExecd.h"
 #include "msg_common.h"
 #include "msg_gdilib.h"
+#include "uti/ocs_Topo.h"
 
 int ocs::gdi::ClientExecd::gdi_wait_for_conf(lList **conf_list) {
    lListElem *global = nullptr;

@@ -177,7 +177,7 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
 static int qstat_xml_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
-static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp);
+static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
 
 static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp);
 static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
@@ -1115,7 +1115,7 @@ static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, 
    DRETURN(0);
 }
 
-static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp) {
+static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = nullptr;
    lListElem *xml_elem = nullptr;
@@ -1125,7 +1125,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
    attribute_list = lGetListRW(xml_elem, XMLE_List);
    
-   DPRINTF("queue resource: %s, %s, %s\n", dom, name, value);
+   DPRINTF("queue resource: %s, %s, %s, %s\n", dom, name, value, details);
    xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
    xml_addAttribute(xml_elem, "name", name);  
    xml_addAttribute(xml_elem, "type", dom);
@@ -1155,7 +1155,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    if (error) {
       xml_elem = xml_getHead("communication_error", *answer_list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, 
-         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
+         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_new_binding);
       lFreeElem(&xml_elem);
    }
    else {
@@ -1181,7 +1181,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
       
       xml_elem = xml_getHead("message", *list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, 
-         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
+         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_new_binding);
       lFreeElem(&xml_elem);
       *list = nullptr;
    }
@@ -1212,12 +1212,12 @@ void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list,
 
    if (error) {
       xml_elem = xml_getHead("communication_error", *answer_list, nullptr);
-      lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1); 
+      lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_new_binding : -1);
       lFreeElem(&xml_elem);
    } else {
       if (lGetNumberOfElem(*job_list) == 0) {
          xml_elem = xml_getHead("unknown_jobs", *id_list, nullptr);
-         lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
+         lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_new_binding : -1);
          lFreeElem(&xml_elem);
          *id_list = nullptr;
       } else {
@@ -1244,7 +1244,7 @@ void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list,
          lAppendElem(XML_out, xmlElem);
          
          xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
-         lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
+         lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_new_binding : -1);
          lFreeElem(&xml_elem);
          *job_list = nullptr;
          *msg_list = nullptr;

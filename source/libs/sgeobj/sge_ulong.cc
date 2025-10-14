@@ -602,6 +602,22 @@ ulong_parse_priority(lList **answer_list, int *valp, const char *priority_str)
    DRETURN(ret);
 }
 
+bool
+ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str)
+{
+   bool ret = true;
+   char *s;
+
+   DENTER(TOP_LAYER);
+   *valp = strtol(bamount_str, &s, 10);
+   if ((char*)valp == s || *valp < 0) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_BAMOUNT_I, (int) *valp);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      ret = false;
+   }
+   DRETURN(ret);
+}
+
 /* DG: TODO: add ADOC */
 bool
 ulong_parse_value_from_string(u_long32 *this_ulong, 

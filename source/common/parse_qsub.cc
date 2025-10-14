@@ -45,6 +45,13 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_BindingStrategy.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_BindingInstance.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/parse.h"
@@ -324,56 +331,265 @@ lList *cull_parse_cmdline(
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
-      /* "-binding [set|env|pe] linear:<amount>[:<socket>,<core>] 
-            | striding:<amount>:<stepsize>[:<socket>,<core>] 
-            | explicit:<socket>,<core>[:<socket>,<core>]* " */
+      /*----------------------------------------------------------------------------*/
+      // -bstrategy linear | pack
+      if (strcmp("-bstrategy", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
 
-      if (!strcmp("-binding", *sp)) {
-         lListElem *binding_elem = lCreateElem(BN_Type);
-         dstring argument_string = DSTRING_INIT;
-         const char *switch_name = "-binding";
-         const char *switch_argument = nullptr;
-
-         /* next field is [set|env|pe] "linear" or "striding" or "explicit" */
          sp++;
-         if (*sp == nullptr) {
+         if (!*sp) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                     MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bstrategy");
             DRETURN(answer);
          }
-         if (strcmp(*sp, "set") == 0 || strcmp(*sp, "env") == 0 || strcmp(*sp, "pe") == 0) {
 
-            sge_dstring_append(&argument_string, *sp);
-            sge_dstring_append_char(&argument_string, ' ');
-            sp++;
-            if (*sp == nullptr) {
-               answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                        MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binding");
-               sge_dstring_free(&argument_string);
-               DRETURN(answer);
-            }
-         }
-         sge_dstring_append(&argument_string, *sp);
-         switch_argument = sge_dstring_get_string(&argument_string);
-
-         if (ocs::BindingIo::binding_parse_from_string(binding_elem, &answer, &argument_string)) {
-            lList *binding_list = lCreateList("binding", BN_Type);
-
-            lAppendElem(binding_list, binding_elem);
-            ep_opt = sge_add_arg(pcmdline, binding_OPT, lListT, switch_name, switch_argument);
-            lSetList(ep_opt, SPA_argval_lListT, binding_list);
+         DPRINTF("\"-bstrategy %s\"\n", *sp);
+         if (strcmp(ocs::BindingStrategy::to_string(ocs::BindingStrategy::PACKED).c_str(), *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingStrategy::PACKED);
          } else {
-            /* answer has ween written by binding_parse_from_string() */
-            sge_dstring_free(&argument_string);
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
             DRETURN(answer);
          }
-         sge_dstring_free(&argument_string);
+
          sp++;
          continue;
       }
 
-/*-----------------------------------------------------------------------------*/
+      /*----------------------------------------------------------------------------*/
+      // -binstance set | env | pe
+      if (strcmp("-binstance", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-binstance");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-binstance %s\"\n", *sp);
+         if (strcmp("set", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::SET);
+         } else if (strcmp("env", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::ENV);
+         } else if (strcmp("pe", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::PE);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      /* "-bamount number */
+
+      if (!strcmp("-bamount", *sp)) {
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-bamount" );
+            DRETURN(answer);
+         }
+
+         int amount;
+         if (!ulong_parse_binding_amount(&answer, &amount, *sp)) {
+            DRETURN(answer);
+         }
+
+         ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, *(sp - 1), *sp);
+         lSetInt(ep_opt, SPA_argval_lIntT, amount);
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bfilter <filter_string>
+      if (strcmp("-bfilter", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bfilter");
+            DRETURN(answer);
+         }
+         DPRINTF("\"-bfilter %s\"\n", *sp);
+
+         ep_opt = sge_add_arg(pcmdline, bfilter_OPT, lStringT, *(sp - 1), *sp);
+         lSetString(ep_opt, SPA_argval_lStringT, *sp);
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bstart S | s | C | c | E | e
+      if (strcmp("-bstart", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bstart");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bstart %s\"\n", *sp);
+         ocs::BindingStart::Start bstart = ocs::BindingStart::from_string(*sp);
+         if (bstart != ocs::BindingStart::UNINITIALIZED) {
+            ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, bstart);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTART_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
+      // -bstop s | c | e ...
+      if (strcmp("-bstop", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-bstop");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bstop %s\"\n", *sp);
+         ocs::BindingStop::Stop bstop = ocs::BindingStop::from_string(*sp);
+         if (bstop != ocs::BindingStop::UNINITIALIZED) {
+            ep_opt = sge_add_arg(pcmdline, bstop_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, bstop);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTOP_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+
+      /*----------------------------------------------------------------------------*/
+      // -bsort S | s | C | c | E | e
+      if (strcmp("-bsort", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bsort");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bsort %s\"\n", *sp);
+         std::string sort_arg = *sp;
+         if (!ocs::TopologyString::contains_valid_node_names(sort_arg)) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+         if (ocs::TopologyString::has_contradicting_sort_orders(sort_arg)) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSORT_CONTRA_S, *sp);
+            DRETURN(answer);
+         }
+         ep_opt = sge_add_arg(pcmdline, bsort_OPT, lStringT, *(sp - 1), *sp);
+         lSetString(ep_opt, SPA_argval_lStringT, *sp);
+         sp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      // -btype host | task
+      if (strcmp("-btype", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                     MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-btype");
+             DRETURN(answer);
+         }
+
+         DPRINTF("\"-btype %s\"\n", *sp);
+
+         if (strcmp("host", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingType::HOST);
+         } else if (strcmp("slot", *sp) == 0) {
+            ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingType::SLOT);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BTYPE_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      // -bunit T|CT|ET|C|E|CS|ES
+      if (strcmp("-bunit", *sp) == 0) {
+         if (lGetElemStr(*pcmdline, SPA_switch_val, *sp)) {
+            answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
+                                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
+         }
+
+         sp++;
+         if (!*sp) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S,"-bunit");
+            DRETURN(answer);
+         }
+
+         DPRINTF("\"-bunit %s\"\n", *sp);
+         ocs::BindingUnit::Unit bunit = ocs::BindingUnit::from_string(*sp);
+
+         if (bunit != ocs::BindingUnit::UNINITIALIZED && bunit != ocs::BindingUnit::NONE) {
+            ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
+            lSetInt(ep_opt, SPA_argval_lIntT, bunit);
+         } else {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BUNIT_INVALID_S, *sp);
+            DRETURN(answer);
+         }
+
+         sp++;
+         continue;
+      }
 
 /*-----------------------------------------------------------------------------*/
       /* "-c [op] interval */

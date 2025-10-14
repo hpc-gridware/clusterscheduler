@@ -23,6 +23,7 @@ set(LIBRARY_NAME sched)
 set(LIBRARY_SOURCES
       debit.cc
       load_correction.cc
+      ocs_BindingSchedd.cc
       ocs_CategorySchedd.cc
       schedd_message.cc
       schedd_monitor.cc

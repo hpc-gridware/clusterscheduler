@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ object_get_subtype(int nm)
       case JB_path_aliases:
          ret = PA_Type;
          break;
-      case JB_binding:
+      case JB_new_binding:
          ret = BN_Type;
          break;
       case JB_grp_list:
@@ -250,6 +250,9 @@ object_get_subtype(int nm)
       case OR_granted_resources_list:
          ret = GRU_Type;
          break;
+      case OQ_binding_to_use:
+         ret = ST_Type;
+         break;
       case US_entries:
          ret = UE_Type;
          break;
@@ -276,6 +279,9 @@ object_get_subtype(int nm)
          break;
       case CONF_entries:
          ret = CF_Type;
+         break;
+      case JG_binding_to_use:
+         ret = ST_Type;
          break;
       case SPA_argval_lListT:
          ret = ST_Type;
@@ -318,6 +324,9 @@ object_get_subtype(int nm)
          break;
       case GRU_resource_map_list:
          ret = RESL_Type;
+         break;
+      case GRU_binding_inuse:
+         ret = ST_Type;
          break;
       case STN_children:
          ret = STN_Type;
@@ -625,6 +634,12 @@ object_get_subtype(int nm)
       case AR_joker:
          ret = VA_Type;
          break;
+      case AR_granted_resources_list:
+         ret = GRU_Type;
+         break;
+      case AR_binding:
+         ret = BN_Type;
+         break;
       case EVR_event_list:
          ret = ET_Type;
          break;
@@ -633,6 +648,9 @@ object_get_subtype(int nm)
          break;
       case PRO_groups:
          ret = GR_Type;
+         break;
+      case BN_specific_binding_list:
+         ret = ST_Type;
          break;
       case BN_joker:
          ret = VA_Type;

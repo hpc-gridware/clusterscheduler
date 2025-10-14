@@ -202,6 +202,8 @@ centry_list_is_correct(lList *this_list, lList **answer_list);
 
 int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *master_centry_list);
 
+int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors);
+
 bool
 validate_load_formula(const char *formula, lList **answer_list, const lList *centry_list, const char *name);
 
