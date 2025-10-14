@@ -91,7 +91,7 @@ namespace ocs::gdi {
                                                bool reresolve_supp_grp);
 #if defined(OCS_WITH_OPENSSL)
       static int gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
-                                      const char *local_host, const char *master_host,u_long32 master_port);
+                                      const char *local_host, const char *target_host,u_long32 target_port, const char *target_commproc);
       static int gdi_update_client_tls_config(lList **answer_list, const char *master_host);
 #endif
    };

@@ -777,9 +777,6 @@ namespace ocs::uti {
       X509 *cert = nullptr;
 
       // Try to open the certificate file.
-      // @todo can we just fetch the certificate from the ssl_ctx?
-      //       or do we intentionally read it from file as it could have been re-created externally?
-      //       But then we also would have to re-read it into a new context!
       FILE *fp = fopen(cert_path.c_str(), "r");
       if (fp == nullptr) {
          sge_dstring_sprintf(error_dstr, "cannot open certificate file %s: %s", cert_path.c_str(), strerror(errno));
@@ -1171,6 +1168,15 @@ namespace ocs::uti {
          }
       }
 
+      /* @todo allow partial write operations
+       * The write functions will only return with success when the complete contents of buf of length num has been written. This
+       * default behaviour can be changed with the SSL_MODE_ENABLE_PARTIAL_WRITE option of SSL_CTX_set_mode(3). When this flag is
+       * set the write functions will also return with success when a partial write has been successfully completed. In this case
+       * the write function operation is considered completed. The bytes are sent and a new write call with a new buffer (with the
+       * already sent bytes removed) must be started. A partial write is performed with the size of a message block, which is
+       * 16kB.
+       */
+
       // if something failed, free the object again and return nullptr
       if (!ok && ret != nullptr) {
          delete ret;
@@ -1233,6 +1239,9 @@ namespace ocs::uti {
       return ret;
    }
 
+   // @todo CS-1559 Try to move waiting for the socket into commlib
+   //       Problem: E.g., when waiting for accept or connect to continue, we may not
+   //       repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
    bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) {
       // wait until the socket is ready for read or write
       DENTER(TOP_LAYER);
@@ -1265,9 +1274,10 @@ namespace ocs::uti {
                break;
          }
          if (ret) {
+            // @todo make timeout configurable
             struct timeval tv;
-            tv.tv_sec = 0; // @todo make timeout configurable
-            tv.tv_usec = 100000;
+            tv.tv_sec = 1;
+            tv.tv_usec = 0;
             int select_ret = select(fd + 1, read_fds, write_fds, nullptr, &tv);
             if (select_ret < 0) {
                if (errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR) {
@@ -1275,8 +1285,9 @@ namespace ocs::uti {
                   ret = false;
                }
             } else if (select_ret == 0) {
-               sge_dstring_sprintf(error_dstr, MSG_SSL_SELECT_TIMEOUT);
-               ret = false;
+               // select timeout is not an error
+               //sge_dstring_sprintf(error_dstr, MSG_SSL_SELECT_TIMEOUT);
+               //ret = false;
             }
          }
       }
@@ -1351,15 +1362,8 @@ namespace ocs::uti {
    }
 
    // @todo make retries configurable
-#define SGE_OPENSSL_MAX_RETRIES 10
-   /* @todo allow partial write operations
-    * The write functions will only return with success when the complete contents of buf of length num has been written. This
-    * default behaviour can be changed with the SSL_MODE_ENABLE_PARTIAL_WRITE option of SSL_CTX_set_mode(3). When this flag is
-    * set the write functions will also return with success when a partial write has been successfully completed. In this case
-    * the write function operation is considered completed. The bytes are sent and a new write call with a new buffer (with the
-    * already sent bytes removed) must be started. A partial write is performed with the size of a message block, which is
-    * 16kB.
-    */
+   // @todo differentiate between server and client?
+#define SGE_OPENSSL_MAX_RETRIES 30
 
    int OpenSSL::OpenSSLConnection::write(char *buffer, size_t len, dstring *error_dstr) {
       DENTER(TOP_LAYER);

@@ -596,7 +596,8 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          // sge_qmaster is not really a client, BUT in case master (from act_qmaster file) != qualified_hostname
          // it checks if there is a qmaster running on the other host - that's what it is using the client connection for
          bool needs_client = me_who != QMASTER;
-         cl_ret = gdi_setup_tls_config(needs_client, is_server, answer_list, qualified_hostname, master, sge_qmaster_port);
+         cl_ret = gdi_setup_tls_config(needs_client, is_server, answer_list, qualified_hostname,
+                             master, sge_qmaster_port, prognames[QMASTER]);
          if (cl_ret != CL_RETVAL_OK) {
             DRETURN(cl_ret);
          }

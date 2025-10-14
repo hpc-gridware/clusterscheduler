@@ -115,7 +115,8 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
             communication_framework = CL_CT_SSL_TLS;
             lList *answer_list = nullptr;
             commlib_error = gdi_setup_tls_config(true, false, &answer_list,
-                                                 component_get_qualified_hostname(), tohost, execd_port);
+                                                 component_get_qualified_hostname(), tohost,
+                                                 execd_port, tocomproc);
             if (commlib_error != CL_RETVAL_OK) {
                answer_list_output(&answer_list);
                DRETURN(commlib_error);
@@ -544,7 +545,8 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
 #if defined(OCS_WITH_OPENSSL)
 int
 ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
-                                                 const char *local_host, const char *master_host,u_long32 master_port) {
+                                                 const char *local_host, const char *target_host,
+                                                 u_long32 target_port, const char *target_commproc) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
@@ -558,13 +560,13 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
    // set up a ssl_config to pass cert and key path to commlib
    // we must pass different certs to commlib:
    // - if we are server: use our own cert and key
-   // - if we are client: use qmaster cert to verify qmaster
+   // - if we are client: use qmaster cert to verify qmaster / execd cert to verify execd in case of qrsh -inherit
    // - we might need both, e.g. for sge_execd
    // - and what if the qmaster name changes? Then we need to update the client cert.
    std::string client_cert_path;
    std::string server_cert_path;
    std::string server_key_path;
-   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, target_host, target_commproc);
    if (is_server) {
       const char *comp_name = component_get_component_name();
       ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host, comp_name);
@@ -580,7 +582,7 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
       DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
-                              0, master_port, cl_get_error_text(cl_ret));
+                              0, target_port, cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
    cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
@@ -588,7 +590,7 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
       DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
-                              0, master_port, cl_get_error_text(cl_ret));
+                              0, target_port, cl_get_error_text(cl_ret));
       // no need to free ssl_config, because it does not contain allocated memory
       // cert and key path strings are managed by std::string
       DRETURN(cl_ret);
