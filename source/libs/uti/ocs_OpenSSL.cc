@@ -1171,15 +1171,6 @@ namespace ocs::uti {
          }
       }
 
-      /* @todo allow partial write operations
-       * The write functions will only return with success when the complete contents of buf of length num has been written. This
-       * default behaviour can be changed with the SSL_MODE_ENABLE_PARTIAL_WRITE option of SSL_CTX_set_mode(3). When this flag is
-       * set the write functions will also return with success when a partial write has been successfully completed. In this case
-       * the write function operation is considered completed. The bytes are sent and a new write call with a new buffer (with the
-       * already sent bytes removed) must be started. A partial write is performed with the size of a message block, which is
-       * 16kB.
-       */
-
       // if something failed, free the object again and return nullptr
       if (!ok && ret != nullptr) {
          delete ret;
@@ -1228,9 +1219,23 @@ namespace ocs::uti {
          }
       }
       if (ok) {
-         // make sure that protocol handshakes are automatically restarted when interrupted
-         //SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+         // Make sure that protocol handshakes are automatically restarted when interrupted.
+         // This does *not* mean that they are *always* restarted. On a non-blocking file handle we still see
+         // the error codes SSL_ERROR_WANT_*
+         // and have to restart the operations ourselves.
+         // Macro: SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
          SSL_ctrl_func(ssl,SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY,nullptr);
+      }
+      if (ok) {
+         // Allow partial write operations:
+         // SSL_MODE_ENABLE_PARTIAL_WRITE
+         //   Allow SSL_write_ex(...,  n,  &r)  to  return with 0 < r < n (i.e., report success when just a single record has been
+         //   written). This works in a similar way for SSL_write(). When not set (the default), SSL_write_ex() or SSL_write() will
+         //   only report success once the complete chunk was written. Once SSL_write_ex() or  SSL_write() returns successful, r
+         //   bytes have been written and the next call to SSL_write_ex() or SSL_write() must only send the n-r bytes left,
+         //   imitating the behaviour of write().
+         // Macro: SSL_set_mode(ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+         SSL_ctrl_func(ssl, SSL_CTRL_MODE, SSL_MODE_ENABLE_PARTIAL_WRITE, nullptr);
       }
 
       if (ok) {
