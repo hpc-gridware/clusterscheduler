@@ -169,7 +169,7 @@ namespace ocs::uti {
       static void cleanup();
       static bool is_openssl_available() { return lib_handle != nullptr; }
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
-      static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, const char *comp_name);
+      static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name);
 
       // sub-classes
       class OpenSSLContext {

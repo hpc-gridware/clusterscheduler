@@ -115,8 +115,8 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
             communication_framework = CL_CT_SSL_TLS;
             lList *answer_list = nullptr;
             commlib_error = gdi_setup_tls_config(true, false, &answer_list,
-                                                 component_get_qualified_hostname(), tohost,
-                                                 execd_port, tocomproc);
+                                                 component_get_qualified_hostname(), 0,
+                                                 tohost, execd_port, tocomproc);
             if (commlib_error != CL_RETVAL_OK) {
                answer_list_output(&answer_list);
                DRETURN(commlib_error);
@@ -545,8 +545,8 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
 #if defined(OCS_WITH_OPENSSL)
 int
 ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
-                                                 const char *local_host, const char *target_host,
-                                                 u_long32 target_port, const char *target_commproc) {
+                                                 const char *local_host, u_long32 local_port,
+                                                 const char *target_host, u_long32 target_port, const char *target_commproc) {
    DENTER(TOP_LAYER);
 
    DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
@@ -570,7 +570,7 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
    if (is_server) {
       const char *comp_name = component_get_component_name();
       ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host, comp_name);
-      ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host, comp_name);
+      ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host, local_port, comp_name);
    }
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,

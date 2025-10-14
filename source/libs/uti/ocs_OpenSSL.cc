@@ -668,17 +668,21 @@ namespace ocs::uti {
       }
       return ret;
    }
-   bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname, const char *comp_name) {
+   bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name) {
       bool ret = true;
       // -> daemon or user key?
-      //    -> daemon: /var/lib/ocs/private/hostname.pem
+      //    -> daemon: /var/lib/ocs/<port>/private/component_hostname.pem
       //    -> user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
       if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
       } else {
          if (home_dir == nullptr) {
-            key_path = std::string("/var/lib/ocs/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
+            key_path = std::string("/var/lib/ocs/");
+            if (port != 0) {
+               key_path += std::to_string(port);
+            }
+            key_path += std::string("/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
          } else {
 #if defined(PER_USER_AND_HOST_CERTS)
             key_path = std::string(home_dir) + std::string("/.ocs/private/") + std::string(comp_name) + std::string("_") + std::string(hostname) + std::string(".pem");
@@ -985,7 +989,6 @@ namespace ocs::uti {
                ret = false;
             }
          }
-         // We do not store certificate and key in files - pass them to the SSL_CTX in memory.
          if (ret) {
             if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
                sge_dstring_sprintf(error_dstr, "cannot use private key from pkey: %s", ERR_reason_error_string_func(ERR_get_error_func()));

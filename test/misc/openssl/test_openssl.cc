@@ -134,7 +134,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     ocs::uti::OpenSSL::build_cert_path(cert_path, home_dir, rem_server_name, "test_openssl");
-    ocs::uti::OpenSSL::build_key_path(key_path, home_dir, rem_server_name, "test_openssl");
+    ocs::uti::OpenSSL::build_key_path(key_path, home_dir, rem_server_name, server_port, "test_openssl");
     printf("Using certificate: %s\n", cert_path.c_str());
     if (isServer) {
         printf("Using key:         %s\n", key_path.c_str());
