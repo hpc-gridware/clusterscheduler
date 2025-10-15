@@ -100,7 +100,7 @@ namespace ocs::uti {
    class OpenSSL {
       // static data
       // handle and function pointers of the libssl.so
-      static void *lib_handle;
+      static void *libssl_handle;
 
       static ASN1_INTEGER_set_func_t ASN1_INTEGER_set_func;
       static ASN1_TIME_diff_func_t ASN1_TIME_diff_func;
@@ -167,7 +167,7 @@ namespace ocs::uti {
       // static methods
       static bool initialize(dstring *error_dstr);
       static void cleanup();
-      static bool is_openssl_available() { return lib_handle != nullptr; }
+      static bool is_openssl_available() { return libssl_handle != nullptr; }
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
       static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name);
 

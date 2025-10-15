@@ -42,7 +42,7 @@
 
 namespace ocs::uti {
    // static members
-   void *OpenSSL::lib_handle = nullptr;
+   void *OpenSSL::libssl_handle = nullptr;
 
    std::vector<OpenSSL::OpenSSLContext *> OpenSSL::OpenSSLContext::contexts_to_delete;
 
@@ -115,17 +115,21 @@ namespace ocs::uti {
       bool ret = true;
 
       // initialize only once
-      if (ret && lib_handle != nullptr) {
+      if (ret && libssl_handle != nullptr) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_OPENSSL_ALREADY_INITIALIZED);
          ret = false;
       }
 
       // Load the shared library and the required functions
       if (ret) {
-         const char *libsystemd = "libssl.so.3";
-         lib_handle = dlopen(libsystemd, RTLD_LAZY);
-         if (lib_handle == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, libsystemd, dlerror());
+#if defined(FREEBSD)
+         const char *libssl = "libssl3.so";
+#else
+         const char *libssl = "libssl.so.3";
+#endif
+         libssl_handle = dlopen(libssl, RTLD_LAZY);
+         if (libssl_handle == nullptr) {
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, libssl, dlerror());
             ret = false;
          }
       }
@@ -134,7 +138,7 @@ namespace ocs::uti {
       const char *func;
       if (ret) {
          func = "ASN1_INTEGER_set";
-         ASN1_INTEGER_set_func = reinterpret_cast<ASN1_INTEGER_set_func_t>(dlsym(lib_handle, func));
+         ASN1_INTEGER_set_func = reinterpret_cast<ASN1_INTEGER_set_func_t>(dlsym(libssl_handle, func));
          if (ASN1_INTEGER_set_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -142,7 +146,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "ASN1_TIME_diff";
-         ASN1_TIME_diff_func = reinterpret_cast<ASN1_TIME_diff_func_t>(dlsym(lib_handle, func));
+         ASN1_TIME_diff_func = reinterpret_cast<ASN1_TIME_diff_func_t>(dlsym(libssl_handle, func));
          if (ASN1_TIME_diff_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -150,7 +154,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BIO_free";
-         BIO_free_func = reinterpret_cast<BIO_free_func_t>(dlsym(lib_handle, func));
+         BIO_free_func = reinterpret_cast<BIO_free_func_t>(dlsym(libssl_handle, func));
          if (BIO_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -158,7 +162,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BIO_new";
-         BIO_new_func = reinterpret_cast<BIO_new_func_t>(dlsym(lib_handle, func));
+         BIO_new_func = reinterpret_cast<BIO_new_func_t>(dlsym(libssl_handle, func));
          if (BIO_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -166,7 +170,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BIO_number_written";
-         BIO_number_written_func = reinterpret_cast<BIO_number_written_func_t>(dlsym(lib_handle, func));
+         BIO_number_written_func = reinterpret_cast<BIO_number_written_func_t>(dlsym(libssl_handle, func));
          if (BIO_number_written_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -174,7 +178,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BIO_read";
-         BIO_read_func = reinterpret_cast<BIO_read_func_t>(dlsym(lib_handle, func));
+         BIO_read_func = reinterpret_cast<BIO_read_func_t>(dlsym(libssl_handle, func));
          if (BIO_read_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -182,7 +186,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BIO_s_mem";
-         BIO_s_mem_func = reinterpret_cast<BIO_s_mem_func_t>(dlsym(lib_handle, func));
+         BIO_s_mem_func = reinterpret_cast<BIO_s_mem_func_t>(dlsym(libssl_handle, func));
          if (BIO_s_mem_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -190,7 +194,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BN_free";
-         BN_free_func = reinterpret_cast<BN_free_func_t>(dlsym(lib_handle, func));
+         BN_free_func = reinterpret_cast<BN_free_func_t>(dlsym(libssl_handle, func));
          if (BN_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -198,7 +202,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BN_new";
-         BN_new_func = reinterpret_cast<BN_new_func_t>(dlsym(lib_handle, func));
+         BN_new_func = reinterpret_cast<BN_new_func_t>(dlsym(libssl_handle, func));
          if (BN_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -206,7 +210,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "BN_set_word";
-         BN_set_word_func = reinterpret_cast<BN_set_word_func_t>(dlsym(lib_handle, func));
+         BN_set_word_func = reinterpret_cast<BN_set_word_func_t>(dlsym(libssl_handle, func));
          if (BN_set_word_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -214,7 +218,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "ERR_clear_error";
-         ERR_clear_error_func = reinterpret_cast<ERR_clear_error_func_t>(dlsym(lib_handle, func));
+         ERR_clear_error_func = reinterpret_cast<ERR_clear_error_func_t>(dlsym(libssl_handle, func));
          if (ERR_clear_error_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -222,7 +226,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "ERR_get_error";
-         ERR_get_error_func = reinterpret_cast<ERR_get_error_func_t>(dlsym(lib_handle, func));
+         ERR_get_error_func = reinterpret_cast<ERR_get_error_func_t>(dlsym(libssl_handle, func));
          if (ERR_get_error_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -230,7 +234,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "ERR_reason_error_string";
-         ERR_reason_error_string_func = reinterpret_cast<ERR_reason_error_string_func_t>(dlsym(lib_handle, func));
+         ERR_reason_error_string_func = reinterpret_cast<ERR_reason_error_string_func_t>(dlsym(libssl_handle, func));
          if (ERR_reason_error_string_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -238,7 +242,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "EVP_PKEY_assign";
-         EVP_PKEY_assign_func = reinterpret_cast<EVP_PKEY_assign_func_t>(dlsym(lib_handle, func));
+         EVP_PKEY_assign_func = reinterpret_cast<EVP_PKEY_assign_func_t>(dlsym(libssl_handle, func));
          if (EVP_PKEY_assign_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -246,7 +250,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "EVP_PKEY_free";
-         EVP_PKEY_free_func = reinterpret_cast<EVP_PKEY_free_func_t>(dlsym(lib_handle, func));
+         EVP_PKEY_free_func = reinterpret_cast<EVP_PKEY_free_func_t>(dlsym(libssl_handle, func));
          if (EVP_PKEY_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -254,7 +258,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "EVP_PKEY_new";
-         EVP_PKEY_new_func = reinterpret_cast<EVP_PKEY_new_func_t>(dlsym(lib_handle, func));
+         EVP_PKEY_new_func = reinterpret_cast<EVP_PKEY_new_func_t>(dlsym(libssl_handle, func));
          if (EVP_PKEY_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -262,7 +266,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "EVP_sha256";
-         EVP_sha256_func = reinterpret_cast<EVP_sha256_func_t>(dlsym(lib_handle, func));
+         EVP_sha256_func = reinterpret_cast<EVP_sha256_func_t>(dlsym(libssl_handle, func));
          if (EVP_sha256_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -270,7 +274,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "OPENSSL_init_ssl";
-         OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(lib_handle, func));
+         OPENSSL_init_ssl_func = reinterpret_cast<OPENSSL_init_ssl_func_t>(dlsym(libssl_handle, func));
          if (OPENSSL_init_ssl_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -278,7 +282,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "PEM_read_X509";
-         PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(lib_handle, func));
+         PEM_read_X509_func = reinterpret_cast<PEM_read_X509_func_t>(dlsym(libssl_handle, func));
          if (PEM_read_X509_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -286,7 +290,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "PEM_write_PrivateKey";
-         PEM_write_PrivateKey_func = reinterpret_cast<PEM_write_PrivateKey_func_t>(dlsym(lib_handle, func));
+         PEM_write_PrivateKey_func = reinterpret_cast<PEM_write_PrivateKey_func_t>(dlsym(libssl_handle, func));
          if (PEM_write_PrivateKey_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -294,7 +298,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "PEM_write_X509";
-         PEM_write_X509_func = reinterpret_cast<PEM_write_X509_func_t>(dlsym(lib_handle, func));
+         PEM_write_X509_func = reinterpret_cast<PEM_write_X509_func_t>(dlsym(libssl_handle, func));
          if (PEM_write_X509_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -302,7 +306,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "PEM_write_bio_X509";
-         PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(lib_handle, func));
+         PEM_write_bio_X509_func = reinterpret_cast<PEM_write_bio_X509_func_t>(dlsym(libssl_handle, func));
          if (PEM_write_bio_X509_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -310,7 +314,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "RSA_free";
-         RSA_free_func = reinterpret_cast<RSA_free_func_t>(dlsym(lib_handle, func));
+         RSA_free_func = reinterpret_cast<RSA_free_func_t>(dlsym(libssl_handle, func));
          if (RSA_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -318,7 +322,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "RSA_generate_key_ex";
-         RSA_generate_key_ex_func = reinterpret_cast<RSA_generate_key_ex_func_t>(dlsym(lib_handle, func));
+         RSA_generate_key_ex_func = reinterpret_cast<RSA_generate_key_ex_func_t>(dlsym(libssl_handle, func));
          if (RSA_generate_key_ex_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -326,7 +330,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "RSA_new";
-         RSA_new_func = reinterpret_cast<RSA_new_func_t>(dlsym(lib_handle, func));
+         RSA_new_func = reinterpret_cast<RSA_new_func_t>(dlsym(libssl_handle, func));
          if (RSA_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -334,7 +338,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_free";
-         SSL_CTX_free_func = reinterpret_cast<SSL_CTX_free_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_free_func = reinterpret_cast<SSL_CTX_free_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -342,7 +346,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_get0_certificate";
-         SSL_CTX_get0_certificate_func = reinterpret_cast<SSL_CTX_get0_certificate_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_get0_certificate_func = reinterpret_cast<SSL_CTX_get0_certificate_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_get0_certificate_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -350,7 +354,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_load_verify_locations";
-         SSL_CTX_load_verify_locations_func = reinterpret_cast<SSL_CTX_load_verify_locations_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_load_verify_locations_func = reinterpret_cast<SSL_CTX_load_verify_locations_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_load_verify_locations_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -358,7 +362,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_new";
-         SSL_CTX_new_func = reinterpret_cast<SSL_CTX_new_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_new_func = reinterpret_cast<SSL_CTX_new_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -366,7 +370,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_set_verify";
-         SSL_CTX_set_verify_func = reinterpret_cast<SSL_CTX_set_verify_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_set_verify_func = reinterpret_cast<SSL_CTX_set_verify_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_set_verify_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -374,7 +378,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_use_certificate";
-         SSL_CTX_use_certificate_func = reinterpret_cast<SSL_CTX_use_certificate_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_use_certificate_func = reinterpret_cast<SSL_CTX_use_certificate_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_use_certificate_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -382,7 +386,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_use_certificate_chain_file";
-         SSL_CTX_use_certificate_chain_file_func = reinterpret_cast<SSL_CTX_use_certificate_chain_file_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_use_certificate_chain_file_func = reinterpret_cast<SSL_CTX_use_certificate_chain_file_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_use_certificate_chain_file_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -390,7 +394,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_use_PrivateKey";
-         SSL_CTX_use_PrivateKey_func = reinterpret_cast<SSL_CTX_use_PrivateKey_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_use_PrivateKey_func = reinterpret_cast<SSL_CTX_use_PrivateKey_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_use_PrivateKey_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -398,7 +402,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_CTX_use_PrivateKey_file";
-         SSL_CTX_use_PrivateKey_file_func = reinterpret_cast<SSL_CTX_use_PrivateKey_file_func_t>(dlsym(lib_handle, func));
+         SSL_CTX_use_PrivateKey_file_func = reinterpret_cast<SSL_CTX_use_PrivateKey_file_func_t>(dlsym(libssl_handle, func));
          if (SSL_CTX_use_PrivateKey_file_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -406,7 +410,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_accept";
-         SSL_accept_func = reinterpret_cast<SSL_accept_func_t>(dlsym(lib_handle, func));
+         SSL_accept_func = reinterpret_cast<SSL_accept_func_t>(dlsym(libssl_handle, func));
          if (SSL_accept_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -414,7 +418,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_connect";
-         SSL_connect_func = reinterpret_cast<SSL_connect_func_t>(dlsym(lib_handle, func));
+         SSL_connect_func = reinterpret_cast<SSL_connect_func_t>(dlsym(libssl_handle, func));
          if (SSL_connect_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -422,7 +426,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_ctrl";
-         SSL_ctrl_func = reinterpret_cast<SSL_ctrl_func_t>(dlsym(lib_handle, func));
+         SSL_ctrl_func = reinterpret_cast<SSL_ctrl_func_t>(dlsym(libssl_handle, func));
          if (SSL_ctrl_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -430,7 +434,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_free";
-         SSL_free_func = reinterpret_cast<SSL_free_func_t>(dlsym(lib_handle, func));
+         SSL_free_func = reinterpret_cast<SSL_free_func_t>(dlsym(libssl_handle, func));
          if (SSL_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -438,7 +442,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_get_error";
-         SSL_get_error_func = reinterpret_cast<SSL_get_error_func_t>(dlsym(lib_handle, func));
+         SSL_get_error_func = reinterpret_cast<SSL_get_error_func_t>(dlsym(libssl_handle, func));
          if (SSL_get_error_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -446,7 +450,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_new";
-         SSL_new_func = reinterpret_cast<SSL_new_func_t>(dlsym(lib_handle, func));
+         SSL_new_func = reinterpret_cast<SSL_new_func_t>(dlsym(libssl_handle, func));
          if (SSL_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -454,7 +458,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_read";
-         SSL_read_func = reinterpret_cast<SSL_read_func_t>(dlsym(lib_handle, func));
+         SSL_read_func = reinterpret_cast<SSL_read_func_t>(dlsym(libssl_handle, func));
          if (SSL_read_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -462,7 +466,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_set1_host";
-         SSL_set1_host_func = reinterpret_cast<SSL_set1_host_func_t>(dlsym(lib_handle, func));
+         SSL_set1_host_func = reinterpret_cast<SSL_set1_host_func_t>(dlsym(libssl_handle, func));
          if (SSL_set1_host_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -470,7 +474,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_set_fd";
-         SSL_set_fd_func = reinterpret_cast<SSL_set_fd_func_t>(dlsym(lib_handle, func));
+         SSL_set_fd_func = reinterpret_cast<SSL_set_fd_func_t>(dlsym(libssl_handle, func));
          if (SSL_set_fd_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -478,7 +482,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_shutdown";
-         SSL_shutdown_func = reinterpret_cast<SSL_shutdown_func_t>(dlsym(lib_handle, func));
+         SSL_shutdown_func = reinterpret_cast<SSL_shutdown_func_t>(dlsym(libssl_handle, func));
          if (SSL_shutdown_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -486,7 +490,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "SSL_write";
-         SSL_write_func = reinterpret_cast<SSL_write_func_t>(dlsym(lib_handle, func));
+         SSL_write_func = reinterpret_cast<SSL_write_func_t>(dlsym(libssl_handle, func));
          if (SSL_write_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -495,7 +499,7 @@ namespace ocs::uti {
       if (ret) {
          func = "TLS_client_method";
          //func = "TLS_method";
-         TLS_client_method_func = reinterpret_cast<TLS_client_method_func_t>(dlsym(lib_handle, func));
+         TLS_client_method_func = reinterpret_cast<TLS_client_method_func_t>(dlsym(libssl_handle, func));
          if (TLS_client_method_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -504,7 +508,7 @@ namespace ocs::uti {
       if (ret) {
          func = "TLS_server_method";
          //func = "TLS_method";
-         TLS_server_method_func = reinterpret_cast<TLS_server_method_func_t>(dlsym(lib_handle, func));
+         TLS_server_method_func = reinterpret_cast<TLS_server_method_func_t>(dlsym(libssl_handle, func));
          if (TLS_server_method_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -512,7 +516,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_free";
-         X509_free_func = reinterpret_cast<X509_free_func_t>(dlsym(lib_handle, func));
+         X509_free_func = reinterpret_cast<X509_free_func_t>(dlsym(libssl_handle, func));
          if (X509_free_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -520,7 +524,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_get0_notAfter";
-         X509_get0_notAfter_func = reinterpret_cast<X509_get0_notAfter_func_t>(dlsym(lib_handle, func));
+         X509_get0_notAfter_func = reinterpret_cast<X509_get0_notAfter_func_t>(dlsym(libssl_handle, func));
          if (X509_get0_notAfter_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -528,7 +532,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_get_serialNumber";
-         X509_get_serialNumber_func = reinterpret_cast<X509_get_serialNumber_func_t>(dlsym(lib_handle, func));
+         X509_get_serialNumber_func = reinterpret_cast<X509_get_serialNumber_func_t>(dlsym(libssl_handle, func));
          if (X509_get_serialNumber_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -536,7 +540,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_get_subject_name";
-         X509_get_subject_name_func = reinterpret_cast<X509_get_subject_name_func_t>(dlsym(lib_handle, func));
+         X509_get_subject_name_func = reinterpret_cast<X509_get_subject_name_func_t>(dlsym(libssl_handle, func));
          if (X509_get_subject_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -544,7 +548,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_getm_notAfter";
-         X509_getm_notAfter_func = reinterpret_cast<X509_getm_notAfter_func_t>(dlsym(lib_handle, func));
+         X509_getm_notAfter_func = reinterpret_cast<X509_getm_notAfter_func_t>(dlsym(libssl_handle, func));
          if (X509_getm_notAfter_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -552,7 +556,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_getm_notBefore";
-         X509_getm_notBefore_func = reinterpret_cast<X509_getm_notBefore_func_t>(dlsym(lib_handle, func));
+         X509_getm_notBefore_func = reinterpret_cast<X509_getm_notBefore_func_t>(dlsym(libssl_handle, func));
          if (X509_getm_notBefore_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -560,7 +564,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_gmtime_adj";
-         X509_gmtime_adj_func = reinterpret_cast<X509_gmtime_adj_func_t>(dlsym(lib_handle, func));
+         X509_gmtime_adj_func = reinterpret_cast<X509_gmtime_adj_func_t>(dlsym(libssl_handle, func));
          if (X509_gmtime_adj_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -568,7 +572,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_NAME_add_entry_by_txt";
-         X509_NAME_add_entry_by_txt_func = reinterpret_cast<X509_NAME_add_entry_by_txt_func_t>(dlsym(lib_handle, func));
+         X509_NAME_add_entry_by_txt_func = reinterpret_cast<X509_NAME_add_entry_by_txt_func_t>(dlsym(libssl_handle, func));
          if (X509_NAME_add_entry_by_txt_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -576,7 +580,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_new";
-         X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(lib_handle, func));
+         X509_new_func = reinterpret_cast<X509_new_func_t>(dlsym(libssl_handle, func));
          if (X509_new_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -584,7 +588,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_set_issuer_name";
-         X509_set_issuer_name_func = reinterpret_cast<X509_set_issuer_name_func_t>(dlsym(lib_handle, func));
+         X509_set_issuer_name_func = reinterpret_cast<X509_set_issuer_name_func_t>(dlsym(libssl_handle, func));
          if (X509_set_issuer_name_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -592,7 +596,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_set_pubkey";
-         X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(lib_handle, func));
+         X509_set_pubkey_func = reinterpret_cast<X509_set_pubkey_func_t>(dlsym(libssl_handle, func));
          if (X509_set_pubkey_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -600,7 +604,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_set_version";
-         X509_set_version_func = reinterpret_cast<X509_set_version_func_t>(dlsym(lib_handle, func));
+         X509_set_version_func = reinterpret_cast<X509_set_version_func_t>(dlsym(libssl_handle, func));
          if (X509_set_version_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -608,7 +612,7 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "X509_sign";
-         X509_sign_func = reinterpret_cast<X509_sign_func_t>(dlsym(lib_handle, func));
+         X509_sign_func = reinterpret_cast<X509_sign_func_t>(dlsym(libssl_handle, func));
          if (X509_sign_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
             ret = false;
@@ -625,9 +629,9 @@ namespace ocs::uti {
 
       // if the initialization failed, free everything again
       if (!ret) {
-         if (lib_handle != nullptr) {
-            dlclose(lib_handle);
-            lib_handle = nullptr;
+         if (libssl_handle != nullptr) {
+            dlclose(libssl_handle);
+            libssl_handle = nullptr;
          }
       }
 
@@ -636,9 +640,9 @@ namespace ocs::uti {
 
    void OpenSSL::cleanup() {
       // close the library
-      if (lib_handle != nullptr) {
-         dlclose(lib_handle);
-         lib_handle = nullptr;
+      if (libssl_handle != nullptr) {
+         dlclose(libssl_handle);
+         libssl_handle = nullptr;
       }
    }
 
