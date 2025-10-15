@@ -122,11 +122,7 @@ namespace ocs::uti {
 
       // Load the shared library and the required functions
       if (ret) {
-#if defined(FREEBSD)
-         const char *libssl = "libssl3.so";
-#else
          const char *libssl = "libssl.so.3";
-#endif
          libssl_handle = dlopen(libssl, RTLD_LAZY);
          if (libssl_handle == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_OPEN_LIB_SS, libssl, dlerror());
