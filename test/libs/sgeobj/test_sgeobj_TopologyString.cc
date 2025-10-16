@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <sstream>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -180,6 +181,54 @@ test_sort_bug_scenario() {
    std::string expected_after = "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTT"
                                 "NSXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTTXYCTTYCTTYCTTYCTTYCTTYCTTYCTTYCTT";
    ret &= test_sort_by_characteristic_test("A" , topo_str,  sort_criteria, sort_characteristic, expected_after);
+   DRETURN(ret);
+}
+
+bool
+test_find_socket_and_core_or_threads_scenario(const std::string& scenario, const ocs::TopologyString& topo_str, const std::string& expected_ids_str, bool collect_cores) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   auto ids = topo_str.get_socket_and_cores_or_thread_tuples(collect_cores);
+   std::string ids_str = ocs::TopologyString::id_tuple2string(ids);
+
+   if (ids_str != expected_ids_str) {
+      std::cerr << "Scenario " << scenario << ": Expected to get " << expected_ids_str <<  " for socket and core ids, but got " << ids_str << "." << std::endl;
+      ret = false;
+   }
+
+   DRETURN(ret);
+}
+
+bool
+test_find_socket_and_core_or_threads() {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   ocs::TopologyString topo_str0 ("(S(c(t)(t))(C(T)(t)))(S(C(t)(T))(c(t)(t)))");
+   std::string expected_ids_str_with_cores0 = "0,0:0,1:1,0:1,1";
+   std::string expected_ids_str_with_threads0 = "0,0:0,1:0,3:1,0:1,2:1,3";
+   ret &= test_find_socket_and_core_or_threads_scenario("0", topo_str0, expected_ids_str_with_cores0, true);
+   ret &= test_find_socket_and_core_or_threads_scenario("0", topo_str0, expected_ids_str_with_threads0, false);
+
+   ocs::TopologyString topo_str1 ("(S(C(T)(t))(C(T)(T)))(S(C(T)(T))(C(T)(T)))");
+   std::string expected_ids_str_with_cores1 = "0,0";
+   std::string expected_ids_str_with_threads1 = "0,1";
+   ret &= test_find_socket_and_core_or_threads_scenario("1", topo_str1, expected_ids_str_with_cores1, true);
+   ret &= test_find_socket_and_core_or_threads_scenario("1", topo_str1, expected_ids_str_with_threads1, false);
+
+   ocs::TopologyString topo_str2 ("(S(C(T)(T))(C(T)(T)))(S(C(T)(T))(C(T)(T)))");
+   std::string expected_ids_str_with_cores2 = "";
+   std::string expected_ids_str_with_threads2 = "";
+   ret &= test_find_socket_and_core_or_threads_scenario("2", topo_str2, expected_ids_str_with_cores2, true);
+   ret &= test_find_socket_and_core_or_threads_scenario("2", topo_str2, expected_ids_str_with_threads2, false);
+
+   ocs::TopologyString topo_str3 ("NONE");
+   std::string expected_ids_str_with_cores3 = "";
+   std::string expected_ids_str_with_threads3 = "";
+   ret &= test_find_socket_and_core_or_threads_scenario("3", topo_str3, expected_ids_str_with_cores3, true);
+   ret &= test_find_socket_and_core_or_threads_scenario("3", topo_str3, expected_ids_str_with_threads3, false);
+
    DRETURN(ret);
 }
 
@@ -901,6 +950,7 @@ int main (int argc, char *argv[]) {
    ret &= test_do_full_socket_binding();
    ret &= test_sort_by_characteristic_scenarios();
    ret &= test_sort_bug_scenario();
+   ret &= test_find_socket_and_core_or_threads();
 
    if (!ret) {
       std::cerr << "Test failed." << std::endl;
