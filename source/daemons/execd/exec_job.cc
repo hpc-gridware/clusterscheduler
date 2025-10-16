@@ -44,7 +44,6 @@
 #include "uti/ocs_Systemd.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
@@ -64,7 +63,7 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
-#include "sgeobj/ocs_BindingExecd2Shepherd.h"
+#include "sgeobj/ocs_BindingInstance.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
@@ -102,6 +101,7 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
+#include "ocs_GrantedResources.h"
 #include "ocs_TopologyString.h"
 
 #if defined(SOLARIS)
@@ -363,8 +363,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    bool bInputFileStaging, bOutputFileStaging, bErrorFileStaging;
 
-   const char *processor_binding_strategy = nullptr;
-
    /* env var reflecting SGE_BINDING if set */
    char *sge_binding_environment = nullptr;
    /* string reflecting the logical socket,core pairs if "pe" is set */
@@ -453,63 +451,26 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       pe_slots += (int) lGetUlong(gdil_ep, JG_slots);
    }
 
-   ocs::TopologyString binding_to_use;
+   // Calculate a combined binding_to_use for all tasks of a job on that host
    bool binding_to_use_is_initialized = false;
-   ocs::BindingInstance::Instance binding_instance = ocs::BindingInstance::SET;
-   if (mconf_get_enable_binding()) {
-      const lListElem *gr;
-      for_each_ep(gr, lGetList(jatep, JAT_granted_resources_list)) {
-         if (u_long32 type = lGetUlong(gr, GRU_type); type != GRU_BINDING_TYPE) {
-            continue; // we are only interested in binding resources
-         }
-
-         // @todo CS-732: select a task specific binding? might be counterproductive if tasks depend on interrupts (IO heavy)
-         // if the granted binding list contains just one entry then we can use it directly (host binding or task binding with one task)
-         // but if there are multiple entries then we should choose an unused one and pass it to the shepherd
-         // for now we just OR all binding decisions and pass it to the shepherd as if we should do a host binding.
-         // The OS scheduler will then decide finally which task gets which part of the combined mask.
-         const lList *binding_list = lGetList(gr, GRU_binding_inuse);
-         const lListElem *be;
-         for_each_ep(be, binding_list) {
-            // we have a binding entry, append it to the binding_to_use dstring
-            if (!binding_to_use_is_initialized) {
-               binding_to_use.reset_topology(lGetString(be, ST_name));
-               binding_to_use_is_initialized = true;
-            } else {
-               ocs::TopologyString binding_to_add(lGetString(be, ST_name));
-
-               binding_to_use.mark_nodes_as_used_or_unused(binding_to_add, true);
-            }
-         }
-      }
-   }
-
-   // Core Binding
-   //
-   // Linux: "set affinity" is used to bind the job to cores
-   // - check, depending on the used topology, which cores can be used in order to fulfill the selected strategy.
-   // - if strategy is not applicable or in case of errors "nullptr" is written to this line in the "config" file
-   // - in case SGE_BINDING environment variable has to be set this is done in the shepherd itself and not here.
-   //
-   // Solaris: "processor sets" are used to bind the job to cores
-   // - try to create processor set according to binding strategy and write processor set id to "binding" element in config file
-   // - in case SGE_BINDING environment variable has to be setup instead of creating processor sets, this have to be done here
-   //   (on Linux this is done from shepherd itself)
-   char *rankfileinput = nullptr;
-   if (mconf_get_enable_binding()) {
-
 #if defined(OCS_HWLOC)
-      ocs::BindingExecd2Shepherd::create_binding_strategy_string_linux(jep, &rankfileinput);
-#elif defined(BINDING_SOLARIS)
-      ocs::BindingExecd2Shepherd::create_binding_strategy_string_solaris(&core_binding_strategy_string, jep, err_str, err_length, &sge_binding_environment, &rankfileinput);
-      if (sge_binding_environment != nullptr) {
-         INFO("SGE_BINDING variable set: %s", sge_binding_environment);
-      }
+   ocs::BindingInstance::Instance binding_instance = ocs::Job::binding_get_instance(jep);
+   const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
+   ocs::TopologyString binding_to_use;
+   ocs::GrantedResources::get_combined_binding_for_host(granted_resources_list, qualified_hostname, binding_to_use);
+   binding_to_use_is_initialized = true;
 #endif
+
+   // Prepare binding mask containing the PU's using the binding_to_use string
+   bool binding_cpuset_is_initialized = false;
+#if defined(OCS_HWLOC)
+   hwloc_bitmap_t cpuset = nullptr;
+   cpuset = hwloc_bitmap_alloc();
+   if (binding_to_use_is_initialized) {
+      ocs::Topo::make_cpuset(cpuset, binding_to_use.to_string(true, false, false, false, false, false, true));
+      binding_cpuset_is_initialized = true;
    }
-   if (rankfileinput != nullptr) {
-      INFO("appended socket,core list to hostfile %s", rankfileinput);
-   }
+#endif
 
    /***************** write out sge host file ******************************/
    /* JG: TODO: create function write_pe_hostfile() */
@@ -524,7 +485,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       fp = fopen(str_hostfilename, "w");
       if (!fp) {
          snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_hostfilename, strerror(errno));
-         sge_free(&rankfileinput);
          sge_free(&pw_buffer);
          DRETURN(-2);
       }
@@ -540,42 +500,32 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          We need to combine the processor sets of all queues on this host.
          They need to get passed to shepherd
       */
+
+      // If we have a binding_to_use then prepare a string for the rankfile
+      std::string ids_str;
+      if (binding_to_use_is_initialized && binding_instance == ocs::BindingInstance::PE) {
+         auto ids = binding_to_use.get_socket_and_cores_or_thread_tuples(true);
+         ids_str = ocs::TopologyString::id_tuple2string(ids);
+      }
+
       host_slots = 0;
       for_each_ep(gdil_ep, gdil) {
-         int slots;
          lList *alp = nullptr;
-         /* this is the processor set id in case when when using
-            the processors feature */
-         const char *q_set = nullptr;
 
-         slots = (int) lGetUlong(gdil_ep, JG_slots);
-         q_set = lGetString(gdil_ep, JG_processors);
+         // get processor set configuration (used when available and thread binding is not used
+         const char *q_set = lGetString(gdil_ep, JG_processors);
 
-         /* if job to core binding is used this appears in the fourth row
-            and is more important than the processors configuration out
-            of the queue since both should NOT be used together */
+         // get all other values for the rankfile
+         int slots = static_cast<int>(lGetUlong(gdil_ep, JG_slots));
+         const char *hostname = lGetHost(gdil_ep, JG_qhostname);
+         const char *qname = lGetString(gdil_ep, JG_qname);
 
-         if (rankfileinput != nullptr) {
-            /* print job2core binding info */
-            fprintf(fp, "%s %d %s %s\n",
-                    lGetHost(gdil_ep, JG_qhostname),
-                    slots,
-                    lGetString(gdil_ep, JG_qname),
-                    rankfileinput);
-         } else {
-            /* print processors info      */
-            fprintf(fp, "%s %d %s %s\n",
-                    lGetHost(gdil_ep, JG_qhostname),
-                    slots,
-                    lGetString(gdil_ep, JG_qname),
-                    q_set ? q_set : "<nullptr>");
-         }
+         fprintf(fp, "%s %d %s %s\n", hostname, slots, qname, ids_str.empty() ? (q_set ? q_set : "<nullptr>") : ids_str.c_str());
 
          if (!sge_hostcmp(lGetHost(master_q, QU_qhostname), lGetHost(gdil_ep, JG_qhostname))) {
             host_slots += slots;
             if (q_set && strcasecmp(q_set, "UNDEFINED")) {
-               range_list_parse_from_string(&processor_set, &alp, q_set,
-                                            false, false, INF_ALLOWED);
+               range_list_parse_from_string(&processor_set, &alp, q_set, false, false, INF_ALLOWED);
                /* TODO: should we not print the answerlist in case of an error? */
                lFreeList(&alp);
             }
@@ -583,7 +533,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
 
       FCLOSE(fp);
-      sge_free(&rankfileinput);
    }
    /*************************** finished writing sge hostfile  ********/
 
@@ -875,6 +824,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    var_list_set_string(&environmentList, VAR_PREFIX "ACCOUNT", (lGetString(jep, JB_account) ?
                                                                 lGetString(jep, JB_account) : DEFAULT_ACCOUNT));
+
+   // binding specific environment
+   if (binding_to_use_is_initialized) {
+      var_list_set_string(&environmentList, "SGE_BINDING_INSTANCE", ocs::BindingInstance::to_string(binding_instance).c_str());
+      var_list_set_string(&environmentList, "SGE_BINDING_TOPOLOGY", binding_to_use.to_product_topology_string().c_str());
+   }
+   if (binding_cpuset_is_initialized) {
+#if defined(OCS_HWLOC)
+      char *cpuset_str = NULL;
+      hwloc_bitmap_asprintf(&cpuset_str, cpuset);
+      var_list_set_string(&environmentList, "SGE_BINDING_CPUSET", cpuset_str);
+      sge_free(&cpuset_str);
+#endif
+   }
 
    sge_get_path(qualified_hostname, lGetList(jep, JB_shell_list), cwd,
                 lGetString(jep, JB_owner),
@@ -1448,29 +1411,35 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    fprintf(fp, "forbid_apperror=%d\n", mconf_get_forbid_apperror() ? 1 : 0);
    fprintf(fp, "queue=%s\n", lGetString(master_q, QU_qname));
    fprintf(fp, "host=%s\n", lGetHost(master_q, QU_qhostname));
+
+   // Write processor set
    {
       dstring range_string = DSTRING_INIT;
       range_list_print_to_string(processor_set, &range_string, true, false, false);
       fprintf(fp, "processors=%s\n", sge_dstring_get_string(&range_string));
       sge_dstring_free(&range_string);
-
-
-      if (sge_dstring_get_string(&core_binding_strategy_string) == nullptr) {
-         processor_binding_strategy = "nullptr";
-      } else {
-         processor_binding_strategy = sge_dstring_get_string(&core_binding_strategy_string);
-      }
-      /* write binding strategy */
-      fprintf(fp, "binding=%s\n", processor_binding_strategy);
-
    }
 
+   // Write binding info
    if (binding_to_use_is_initialized) {
-      fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
       fprintf(fp, "binding_instance=%s\n", ocs::BindingInstance::to_string(binding_instance).c_str());
+      fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
    } else {
-      fprintf(fp, "binding_to_use=%s\n", "none");
-      fprintf(fp, "binding_instance=%s\n", "none");
+      fprintf(fp, "binding_instance=%s\n", NONE_STR);
+      fprintf(fp, "binding_to_use=%s\n", NONE_STR);
+   }
+
+   // Write cpuset if available
+   if (binding_cpuset_is_initialized) {
+#if defined (OCS_HWLOC)
+      char *cpuset_string = NULL;
+      hwloc_bitmap_asprintf(&cpuset_string, cpuset);
+      fprintf(fp, "binding_cpuset=%s\n", cpuset_string);
+      sge_free(&cpuset_string);
+      hwloc_bitmap_free(cpuset);
+#else
+      fprintf(fp, "binding_cpuset=%s\n", NONE_STR);
+#endif
    }
 
    if (petep != nullptr) {

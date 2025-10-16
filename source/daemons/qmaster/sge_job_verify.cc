@@ -38,7 +38,6 @@
 
 #include "sge.h"
 
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"

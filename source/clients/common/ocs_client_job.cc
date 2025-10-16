@@ -48,7 +48,7 @@
 #include "sgeobj/ocs_BindingType.h"
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_BindingStart.h"
-#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStop.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_GrantedResources.h"
 #include "sgeobj/ocs_Job.h"
