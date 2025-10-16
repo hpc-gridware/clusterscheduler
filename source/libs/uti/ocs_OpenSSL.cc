@@ -1369,43 +1369,42 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
-   // @todo make retries configurable
-   // @todo differentiate between server and client?
-#define SGE_OPENSSL_MAX_RETRIES 30
-
    int OpenSSL::OpenSSLConnection::write(char *buffer, size_t len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
+      int ret;
       DPRINTF("OpenSSLConnection::write()\n");
 
       // clear previously occurred but not yet fetched errors
       ERR_clear_error_func();
 
-      bool done = false;
-      for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
-         done = true;
-
-         int write_ret = SSL_write_func(ssl, buffer, static_cast<int>(len));
-         if (write_ret > 0) {
-            // we actually wrote some data without errors
-            DRETURN(write_ret);
+      // clear repeat_write - we expect the write operation to finish
+      repeat_write = false;
+      int write_ret = SSL_write_func(ssl, buffer, static_cast<int>(len));
+      if (write_ret > 0) {
+         // we actually wrote some data without errors
+         ret = write_ret;
+      } else {
+         int err = SSL_get_error_func(ssl, write_ret);
+         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            DPRINTF("  --> got %s\n", err == SSL_ERROR_WANT_READ ? "SSL_ERROR_WANT_READ" : "SSL_ERROR_WANT_WRITE");
+            // We need to repeat the write() call, even if our file descriptor becomes ready to read.
+            repeat_write = true;
+            ret = 0;
          } else {
-            int err = SSL_get_error_func(ssl, write_ret);
-            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-               DPRINTF("  --> got %s\n", err == SSL_ERROR_WANT_READ ? "SSL_ERROR_WANT_READ" : "SSL_ERROR_WANT_WRITE");
-               if (wait_for_socket_ready(err, error_dstr)) {
-                  done = false; // try again
-                  DPRINTF("  --> repeat write\n");
-               }
-            } else {
-               sge_dstring_sprintf(error_dstr, MSG_CANNOT_WRITE_DS, err,
-                                   ERR_reason_error_string_func(ERR_get_error_func()));
-            }
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_WRITE_DS, err,
+                                ERR_reason_error_string_func(ERR_get_error_func()));
+            ret = -1;
          }
       }
+
       // if we get here, an error occurred
-      DRETURN(-1);
+      DRETURN(ret);
    }
+
+   // @todo make timeouts configurable
+#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER 1 * 1000000 // 1 second
+#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT 10 * 1000000 // 10 seconds
 
    bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
       DENTER(TOP_LAYER);
@@ -1420,13 +1419,13 @@ namespace ocs::uti {
          }
       }
       if (ret) {
-         // @todo there is some option for auto repeat with blocking io, and it is still blocking at the time of the accept call
-
          // clear previously occurred but not yet fetched errors
          ERR_clear_error_func();
 
          bool done = false;
-         for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
+         u_long64 timeout = sge_get_gmt64() + SGE_OPENSSL_RETRY_TIMEOUT_SERVER;
+         int repetitions = 0;
+         do {
             // expect one call to be enough
             done = true;
             int accept_ret = SSL_accept_func(ssl);
@@ -1435,8 +1434,14 @@ namespace ocs::uti {
                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_ACCEPT) {
                   DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
                   if (wait_for_socket_ready(err, error_dstr)) {
-                     done = false; // try again
-                     DPRINTF("  --> repeat accept\n");
+                     if (sge_get_gmt64() >= timeout) {
+                        sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II,
+                                            SGE_OPENSSL_RETRY_TIMEOUT_SERVER / 1000000, repetitions);
+                        DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
+                     } else {
+                        done = false; // try again
+                        DPRINTF("  --> repeat accept\n");
+                     }
                   }
                } else {
                   // @todo need to call SSL_get_error_func() for all failing SSL_* functions?
@@ -1446,7 +1451,8 @@ namespace ocs::uti {
                   ret = false;
                }
             }
-         }
+            repetitions++;
+         } while (!done);
       }
 
       DRETURN(ret);
@@ -1461,8 +1467,7 @@ namespace ocs::uti {
          ERR_clear_error_func();
 
          // Set hostname for SNI
-         // SSL_set_tlsext_host_name(s, name) is a macro:
-         // SSL_ctrl(s,SSL_CTRL_SET_TLSEXT_HOSTNAME,TLSEXT_NAMETYPE_host_name, (void *)name)
+         // Macro: SSL_set_tlsext_host_name(s, name)
          SSL_ctrl_func(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, (void *)server_name);
          /* Configure server hostname check */
          if (!SSL_set1_host_func(ssl, server_name)) {
@@ -1494,7 +1499,9 @@ namespace ocs::uti {
          ERR_clear_error_func();
 
          bool done = false;
-         for (int i = 0; !done && i < SGE_OPENSSL_MAX_RETRIES; ++i) {
+         u_long64 timeout = sge_get_gmt64() + SGE_OPENSSL_RETRY_TIMEOUT_CLIENT;
+         int repetitions = 0;
+         do {
             // expect one call to be enough
             done = true;
 
@@ -1506,8 +1513,14 @@ namespace ocs::uti {
                   DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
                   // @todo workaround: need to set commlib connection into some special state and re-visit
                   if (wait_for_socket_ready(err, error_dstr)) {
-                     done = false; // try again
-                     DPRINTF("  --> repeat connect\n");
+                     if (sge_get_gmt64() >= timeout) {
+                        sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
+                                            SGE_OPENSSL_RETRY_TIMEOUT_CLIENT, repetitions);
+                        DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
+                     } else {
+                        done = false; // try again
+                        DPRINTF("  --> repeat connect\n");
+                     }
                   }
                } else {
                   sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err,
@@ -1516,7 +1529,8 @@ namespace ocs::uti {
                   ret = false;
                }
             }
-         }
+            repetitions++;
+         } while (!done);
       }
 
       DRETURN(ret);

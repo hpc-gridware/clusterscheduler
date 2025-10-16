@@ -3430,6 +3430,15 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
+   // A previous SSL_write might have reported SSL_ERROR_WANT_WRITE or SSL_ERROR_WANT_READ.
+   // In this case we have to repeate the SSL_write call, even if the socket is ready to read.
+#if defined(OCS_WITH_OPENSSL)
+   if (cl_com_tcp_write_repeat_required(elem->connection)) {
+      // need to repeat an earlier write operation
+      select_mode = CL_W_SELECT;
+   }
+#endif
+
    switch (select_mode) {
       case CL_RW_SELECT:
          do_read_select = 1;

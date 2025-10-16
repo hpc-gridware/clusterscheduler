@@ -79,6 +79,9 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 /* connection establish help functions */
 int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read);
 
+#if defined(OCS_WITH_OPENSSL)
+bool cl_com_tcp_write_repeat_required(const cl_com_connection_t *connection);
+#endif
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write);
 

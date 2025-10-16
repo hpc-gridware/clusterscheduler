@@ -254,5 +254,7 @@
 #define MSG_OPENSSL_CANNOT_CREATE_KEY_DIR_SS       _MESSAGE(59298, _("cannot create key directory " SFQ ": " SFN4))
 #define MSG_OPENSSL_CANNOT_PERM_CERT_DIR_SS        _MESSAGE(59299, _("cannot set permissions on certificate directory " SFQ ": " SFN4))
 #define MSG_OPENSSL_CANNOT_PERM_KEY_DIR_SS         _MESSAGE(59300, _("cannot set permissions on key directory " SFQ ": " SFN4))
+#define MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II           _MESSAGE(59301, _("SSL accept timed out after %d seconds and %d repetitions"))
+#define MSG_OPENSSL_TIMEOUT_IN_CONNECT_II          _MESSAGE(59302, _("SSL connect timed out after %d seconds and %d repetitions"))
 
 // clang-format on

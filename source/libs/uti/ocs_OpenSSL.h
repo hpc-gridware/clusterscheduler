@@ -216,10 +216,11 @@ namespace ocs::uti {
          bool is_server;
          SSL *ssl;
          int fd;
+         bool repeat_write;
 
          // private constructor, use the create() method
          OpenSSLConnection(OpenSSLContext *context, bool is_server, SSL *ssl)
-         : context(context), is_server(is_server), ssl(ssl) { context->inc_connection_count(); }
+         : context(context), is_server(is_server), ssl(ssl), fd(-1), repeat_write(false) { context->inc_connection_count(); }
          bool wait_for_socket_ready(int reason, dstring *error_dstr);
 
       public:
@@ -233,6 +234,7 @@ namespace ocs::uti {
          bool connect(dstring *error_dstr);
          int read(char *buffer, size_t max_len, dstring *error_dstr);
          int write(char *buffer, size_t len, dstring *error_dstr);
+         bool repeat_write_required() { return repeat_write; }
       };
    };
 } // namespace ocs::uti

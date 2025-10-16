@@ -692,6 +692,21 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
    return cl_com_tcp_free_com_private(*connection);
 }
 
+#if defined(OCS_WITH_OPENSSL)
+bool cl_com_tcp_write_repeat_required(const cl_com_connection_t *connection) {
+   bool ret = false;
+
+   cl_com_tcp_private_t *private_com = reinterpret_cast<cl_com_tcp_private_t *>(connection->com_private);
+   if (private_com != nullptr &&
+       private_com->ssl_connection != nullptr &&
+       private_com->ssl_connection->repeat_write_required()) {
+      ret = true;
+   }
+
+   return ret;
+}
+#endif
+
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write) {
    cl_com_tcp_private_t *private_com = nullptr;
@@ -738,7 +753,7 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
    if (private_com->ssl_connection != nullptr) {
       DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
       data_written = private_com->ssl_connection->write((char *)message, size, &dstr_error);
-      if (data_written <= 0) {
+      if (data_written < 0) {
          CL_LOG_STR(CL_LOG_ERROR, "ssl write error:", sge_dstring_get_string(&dstr_error));
          return CL_RETVAL_SEND_ERROR;
       }
@@ -1775,16 +1790,15 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
 
    /* TODO: Fix this problem (multithread mode):
-         -  find a way to wake up select when a new connection was added by another thread
-            (perhaps with dummy read file descriptor)
-   */
-
-   if ((nr_of_descriptors != ldata->last_nr_of_descriptors) &&
-       (nr_of_descriptors == 1 && service_connection != nullptr && do_read_select != 0)) {
+    *       find a way to wake up select when a new connection was added by another thread
+    *       (perhaps with dummy read file descriptor)
+    */
+   if (nr_of_descriptors != ldata->last_nr_of_descriptors &&
+       nr_of_descriptors == 1 && service_connection != nullptr && do_read_select != 0) {
       /* This is to return as fast as possible if this connection has a service and
           a client was disconnected */
 
-      /* a connection is done and no more connections (beside service connection itself) is alive,
+      /* a connection is done, and no more connections (beside service connection itself) is alive,
          return to application as fast as possible, don't wait for a new connect */
       ldata->last_nr_of_descriptors = nr_of_descriptors;
       cl_raw_list_unlock(connection_list);
@@ -1897,7 +1911,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
          default:
          {
             cl_raw_list_lock(connection_list);
-            /* now set the read flags for connections, where data is available */
+            /* now set the read flags for connections where data is available */
             for (fd_index = 0; fd_index < ufds_index; fd_index++) {
                connection = ufds_con[fd_index];
                if (connection != nullptr) {
