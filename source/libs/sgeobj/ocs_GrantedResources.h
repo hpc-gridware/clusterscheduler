@@ -39,10 +39,13 @@
 
 #include "cull/sge_grantedres_GRU_L.h"
 
+#include "sgeobj/ocs_TopologyString.h"
+
 namespace ocs {
    class GrantedResources {
    public:
       static std::string to_string(const lList *granted_resources);
       static void add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list);
+      static void get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use);
    };
 }

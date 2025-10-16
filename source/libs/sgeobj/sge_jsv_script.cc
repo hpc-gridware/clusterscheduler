@@ -36,8 +36,8 @@
 #include <cctype>
 #include <vector>
 #include <utility>
+#include <tuple>
 
-#include "uti/sge_binding_parse.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -45,6 +45,14 @@
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_Binding.h"
+#include "sgeobj/ocs_BindingInstance.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingStop.h"
+#include "sgeobj/ocs_BindingStrategy.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
@@ -59,22 +67,12 @@
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/ocs_Binding.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "symbols.h"
 #include "msg_common.h"
 
-#include <tuple>
-#include <sched/sgeee.h>
-
-#include "ocs_BindingEnd.h"
-#include "ocs_BindingInstance.h"
-#include "ocs_BindingStart.h"
-#include "ocs_BindingStrategy.h"
-#include "ocs_BindingType.h"
-#include "ocs_BindingUnit.h"
-#include "ocs_Job.h"
+#include "sched/sgeee.h"
 
 /*
  * defines the timeout how long a client/qmaster would wait maximally for

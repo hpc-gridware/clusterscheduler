@@ -24,11 +24,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "uti/ocs_Topo.h"
+
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_BindingStart.h"
-#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStop.h"
 
 namespace ocs {
    // Product internal topology string representation
@@ -61,6 +63,8 @@ namespace ocs {
       static const std::string DATA_NODE_CHARACTERS;
       static const std::string HARDWARE_NODE_CHARACTERS;
       static const std::string STRUCTURE_CHARACTERS;
+
+      static std::string id_tuple2string(const std::vector<std::pair<int, int>> &ids);
 
       // Check if a string contains valid node characters
       static bool contains_valid_node_names(const std::string& sequence);
@@ -99,7 +103,7 @@ namespace ocs {
       [[nodiscard]] std::vector<int> find_n_packed_units(unsigned bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingStop::Stop stop) const;
       void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used);
       void invert_binding();
-
+      [[nodiscard]] std::vector<std::pair<int, int>> get_socket_and_cores_or_thread_tuples(bool collect_cores) const;
       bool is_empty();
    };
 } // namespace ocs

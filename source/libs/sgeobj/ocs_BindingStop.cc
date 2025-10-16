@@ -20,7 +20,7 @@
 
 #include <string>
 
-#include "ocs_BindingEnd.h"
+#include "ocs_BindingStop.h"
 
 std::string ocs::BindingStop::to_string(const Stop mode) {
    switch (mode) {

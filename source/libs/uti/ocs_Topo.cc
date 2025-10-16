@@ -24,6 +24,7 @@
 #include "ocs_Topo.h"
 #include "sge_log.h"
 #include "sge_rmon_macros.h"
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_conf.h"
 
 
@@ -558,6 +559,49 @@ ocs::Topo::get_new_topology(std::string &topo_str, bool data_nodes) {
    get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes);
    CpuKind::release_data();
    return true;
+}
+
+void
+ocs::Topo::make_cpuset(hwloc_bitmap_t cpuset, const std::string &binding_to_use) {
+   DENTER(TOP_LAYER);
+
+   if (cpuset == nullptr || binding_to_use.empty()) {
+      DRETURN_VOID;
+   }
+
+   hwloc_bitmap_zero(cpuset);
+
+   int socket_id = -1;
+   int core_id = -1;
+   int thread_id = -1;
+   for (const auto c : binding_to_use) {
+      switch (c) {
+         case 'S':
+         case 's':
+            socket_id++;
+            core_id = -1; // reset core and thread id for new socket
+            thread_id = -1;
+            break;
+         case 'C':
+         case 'E':
+         case 'c':
+         case 'e':
+            core_id++;
+            thread_id = -1; // reset thread id for new core
+            break;
+         case 'T':
+            thread_id++;
+            break;
+         case 't':
+            thread_id++;
+            Topo::add_hw_for_logical_id(cpuset, socket_id, core_id, thread_id);
+            break;
+         default:
+            thread_id++;
+            break;
+      }
+   }
+   DRETURN_VOID;
 }
 
 #endif

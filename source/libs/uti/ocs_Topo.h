@@ -70,7 +70,9 @@ namespace ocs {
       static int get_total_amount_of_threads();
 
       static int get_total_amount_of_sockets();
-   };
+
+      static void make_cpuset(hwloc_bitmap_t cpuset, const std::string &binding_to_use);
+      };
 }
 
 #endif

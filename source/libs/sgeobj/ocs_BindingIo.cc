@@ -34,11 +34,8 @@
 
 #include <string>
 
-#include "uti/sge_binding_hlp.h"
-#include "uti/sge_binding_parse.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/cull/sge_binding_BN_L.h"
 
@@ -46,7 +43,7 @@
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
 #include "ocs_BindingStart.h"
-#include "ocs_BindingEnd.h"
+#include "ocs_BindingStop.h"
 #include "ocs_BindingInstance.h"
 #include "ocs_BindingStrategy.h"
 

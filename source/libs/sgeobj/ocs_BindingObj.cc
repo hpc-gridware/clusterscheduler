@@ -42,7 +42,7 @@
 #include "sgeobj/ocs_BindingObj.h"
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_BindingStart.h"
-#include "sgeobj/ocs_BindingEnd.h"
+#include "sgeobj/ocs_BindingStop.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_BindingInstance.h"
 #include "ocs_Binding.h"

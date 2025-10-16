@@ -39,7 +39,7 @@
 #include "ocs_BindingType.h"
 #include "ocs_BindingUnit.h"
 #include "ocs_BindingStart.h"
-#include "ocs_BindingEnd.h"
+#include "ocs_BindingStop.h"
 #include "ocs_BindingStrategy.h"
 #include "ocs_BindingInstance.h"
 

@@ -34,7 +34,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 

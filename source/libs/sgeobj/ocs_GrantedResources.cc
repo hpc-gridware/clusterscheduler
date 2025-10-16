@@ -47,6 +47,9 @@
 #include "sge_str.h"
 
 /** @brief Convert granted resources to a comma-separated string
+ *
+ * @param granted_resources List of granted resources (list of GRU_Type)
+ * @return String representation of granted resources
  */
 std::string
 ocs::GrantedResources::to_string(const lList *granted_resources) {
@@ -79,6 +82,10 @@ ocs::GrantedResources::to_string(const lList *granted_resources) {
 }
 
 /** @brief Add binding-to-use for a specific host as granted binding information
+ *
+ * @param granted_resources_list List of granted resources to add to
+ * @param host_name Hostname to add the binding information for
+ * @param binding_touse_list List of binding information to add (list of ST_Type)
  */
 void
 ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const char *host_name, const lList *binding_touse_list) {
@@ -95,3 +102,38 @@ ocs::GrantedResources::add_binding_to_use(lList **granted_resources_list, const 
    DRETURN_VOID;
 }
 
+/** @brief Get a combined binding_to_use for all granted resources of a host
+ *
+ * The combined binding_to_use contains all PUs that are reserved for any of the slots (in case there are multiple).
+ * If no binding information is found, the returned binding_to_use will be empty.
+ *
+ * @param gr_list List of granted resources
+ * @param hostname Hostname to search for
+ * @param binding_to_use Returned combined binding_to_use (empty if no binding information is found)
+ */
+void
+ocs::GrantedResources::get_combined_binding_for_host(const lList *gr_list, const char *hostname, TopologyString &binding_to_use) {
+   DENTER(TOP_LAYER);
+   const void *iterator = nullptr;
+   const lListElem *next_gr = lGetElemHostFirst(gr_list, GRU_host, hostname, &iterator);
+   const lListElem *gr;
+   while ((gr = next_gr) != nullptr) {
+      next_gr = lGetElemHostNext(gr_list, GRU_host, hostname, &iterator);
+
+      if (const u_long32 type = lGetUlong(gr, GRU_type); type != GRU_BINDING_TYPE) {
+         continue; // we are only interested in binding resources
+      }
+
+      const lList *binding_list = lGetList(gr, GRU_binding_inuse);
+      const lListElem *be;
+      for_each_ep(be, binding_list) {
+         if (binding_to_use.is_empty()) {
+            binding_to_use.reset_topology(lGetString(be, ST_name));
+         } else {
+            TopologyString binding_to_add(lGetString(be, ST_name));
+            binding_to_use.mark_nodes_as_used_or_unused(binding_to_add, true);
+         }
+      }
+   }
+   DRETURN_VOID;
+}

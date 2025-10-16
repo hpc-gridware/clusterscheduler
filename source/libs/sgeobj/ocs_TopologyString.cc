@@ -34,10 +34,11 @@
 #include "uti/sge_string.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
+#include "uti/ocs_Topo.h"
 
 #include "sgeobj/ocs_TopologyString.h"
 
-#include "ocs_BindingEnd.h"
+#include "ocs_BindingStop.h"
 #include "ocs_BindingStart.h"
 #include "ocs_BindingUnit.h"
 #include "sge_conf.h"
@@ -1356,4 +1357,91 @@ void ocs::TopologyString::invert_binding() {
    parse_to_tree(to_string(true, true, true, false, false, false));
 
    DRETURN_VOID;
+}
+
+/** @brief Extracts unique (socket, core) or (socket, thread) tuples from the topology string
+ *
+ * This function parses the topology string to extract unique tuples of (socket, core)
+ * or (socket, thread) based on the `collect_cores` flag. It walks through the topology
+ * string, tracking socket, core, and thread IDs, and collects the specified tuples
+ * while avoiding duplicates.
+ *
+ * @param collect_cores If true, collect (socket, core) tuples; if false, collect (socket, thread) tuples
+ * @return A vector of unique (socket, core) or (socket, thread) tuples
+ */
+std::vector<std::pair<int, int>>
+ocs::TopologyString::get_socket_and_cores_or_thread_tuples(const bool collect_cores) const {
+   DENTER(TOP_LAYER);
+
+   // vector of (socket, core) tuples or (socket, thread) tuples
+   std::vector<std::pair<int, int>> ids;
+
+   // to avoid duplicates
+   std::set<std::pair<int, int>> unique_ids;
+
+   // walk along the topology string and collect tuples
+   const std::string topology_str = to_product_topology_string();
+   int socket_id = -1;
+   int core_id = -1;
+   int thread_id = -1;
+   for (const char c : topology_str) {
+      switch (c) {
+         case 'S':
+         case 's':
+            socket_id++;
+            core_id = -1; // reset core and thread id for new socket
+            thread_id = -1;
+            break;
+         case 'C':
+         case 'E':
+         case 'c':
+         case 'e':
+            core_id++;
+            break;
+         case 'T':
+            thread_id++;
+            break;
+         case 't': {
+            thread_id++;
+
+            // create a tuple of (socket, core) or (socket, thread)
+            auto tuple = std::make_pair(socket_id, (collect_cores ? core_id : thread_id));
+
+            // insert only unique tuples
+            if (unique_ids.insert(tuple).second) {
+               ids.emplace_back(tuple);
+            }
+
+            break;
+         }
+         default:
+            break;
+      }
+   }
+
+   DRETURN(ids);
+}
+
+/** @brief Converts a vector of (socket, core) or (socket, thread) tuples to a string
+ *
+ * This function takes a vector of tuples and converts them into a string representation.
+ * Each tuple is formatted as "socket,core" or "socket,thread" and tuples are separated by colons.
+ *
+ * @param ids A vector of (socket, core) or (socket, thread) tuples
+ * @return A string representation of the tuples
+ */
+std::string
+ocs::TopologyString::id_tuple2string(const std::vector<std::pair<int, int>> &ids) {
+   DENTER(TOP_LAYER);
+   std::stringstream ss;
+   bool is_first = true;
+   for (const auto &id : ids) {
+      if (is_first) {
+         is_first = false;
+      } else {
+         ss << ",";
+      }
+      ss << id.first << ":" << id.second;
+   }
+   DRETURN(ss.str());
 }
