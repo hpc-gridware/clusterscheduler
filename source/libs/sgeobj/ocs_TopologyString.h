@@ -105,5 +105,7 @@ namespace ocs {
       void invert_binding();
       [[nodiscard]] std::vector<std::pair<int, int>> get_socket_and_cores_or_thread_tuples(bool collect_cores) const;
       bool is_empty();
+
+      BindingUnit::Unit adapt_binding_unit(BindingUnit::Unit unit) const;
    };
 } // namespace ocs

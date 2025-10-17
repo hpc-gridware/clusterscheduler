@@ -261,9 +261,12 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
       DRETURN(0);
    }
 
+   // Adapt binding unit if topology does not provide that unit
+   BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
+   binding_unit = tmp_binding_in_use.adapt_binding_unit(binding_unit);
+
    // handle different binding types
    BindingType::Type binding_type = Job::binding_get_type(a->job);
-   BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
    BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
    if (binding_type == BindingType::HOST) {
@@ -357,11 +360,13 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
    DPRINTF("find_binding: final binding in use on host %s is %s\n", hostname, topo_in_use.to_product_topology_string().c_str());
    DPRINTF("find_binding: sorted final binding in use is %s\n", topo_in_use_sorted.to_product_topology_string().c_str());
 
+   // Adapt binding unit if topology does not provide that unit
    BindingUnit::Unit binding_unit = Job::binding_get_unit(a->job);
+   binding_unit = topo_in_use.adapt_binding_unit(binding_unit);
+
+   // Find host and slot-based binding
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
    BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
-
-   // distinguish between host and slot-based binding
    if (binding_type == BindingType::HOST) {
 
       // find the requested binding using the sorted topology string

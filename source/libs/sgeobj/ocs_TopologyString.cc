@@ -36,11 +36,10 @@
 #include "uti/sge_log.h"
 #include "uti/ocs_Topo.h"
 
-#include "sgeobj/ocs_TopologyString.h"
-
 #include "ocs_BindingStop.h"
 #include "ocs_BindingStart.h"
 #include "ocs_BindingUnit.h"
+#include "ocs_TopologyString.h"
 #include "sge_conf.h"
 
 const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = "NABUVWXYZ";
@@ -1444,4 +1443,63 @@ ocs::TopologyString::id_tuple2string(const std::vector<std::pair<int, int>> &ids
       ss << id.first << ":" << id.second;
    }
    DRETURN(ss.str());
+}
+
+/** @brief Adapts a binding unit based on the available topology
+ *
+ * This function adjusts the requested binding unit to match the available hardware
+ * units in the topology. This is done in OCS because memory units are not available there.
+ * In GCS this is done for hosts that do not provide memory units in their topology.
+ * The Mapping is as follows:
+ *
+ *    NUMA => Socket
+ *    3rd Level Cache => Socket
+ *    2nd Level Cache => Core
+ *
+ * It will not change hardware units (Socket, Core, Thread) as they are always available.
+ * Also, efficiency/power preference is preserved during adaptation.
+ *
+ * @param unit The binding unit to adapt
+ * @return The adapted binding unit
+ */
+ocs::BindingUnit::Unit
+ocs::TopologyString::adapt_binding_unit(BindingUnit::Unit unit) const {
+   DENTER(TOP_LAYER);
+
+   // early exit. no topology => no adaptation
+   if (nodes.empty()) {
+      DRETURN(unit);
+   }
+
+   // hardware units do not need to be adapted. Every topo string has at least one socket/core/thread
+   if (unit == BindingUnit::Unit::CSOCKET || unit == BindingUnit::Unit::ESOCKET
+       || unit == BindingUnit::Unit::CCORE || unit == BindingUnit::Unit::ECORE
+       || unit == BindingUnit::Unit::CTHREAD || unit == BindingUnit::Unit::ETHREAD) {
+      DRETURN(unit);
+   }
+
+   // prepare a topo string with only upper case letters to check available memory units
+   std::string topo_str = to_string(true, false, false,
+             false, false, true);
+   bool is_power_unit = BindingUnit::is_power_unit(unit);
+
+   // by default, we enforce mapping of memory units to hardware units in OCS
+   // because only GCS with extensions can handle memory units
+   bool enforce_mapping = true;
+#if defined(WITH_EXTENSIONS)
+   enforce_mapping = false;
+#endif
+
+   // adapt memory units to next plausible hardware units if they are not available on a host
+   if ((unit == BindingUnit::Unit::CNUMA || unit == BindingUnit::Unit::ENUMA)
+       && (enforce_mapping || topo_str.find('N') == std::string::npos)) {
+      unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
+   } else if ((unit == BindingUnit::Unit::CCACHE3 || unit == BindingUnit::Unit::ECACHE3)
+              && (enforce_mapping && topo_str.find('X') == std::string::npos)) {
+      unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
+   } else if ((unit == BindingUnit::Unit::CCACHE2 || unit == BindingUnit::Unit::ECACHE2)
+              && (enforce_mapping &&  topo_str.find('Y') == std::string::npos)) {
+      unit = is_power_unit ? BindingUnit::Unit::CCORE : BindingUnit::Unit::ECORE;
+   }
+   DRETURN(unit);
 }
