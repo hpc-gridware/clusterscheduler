@@ -604,7 +604,10 @@ sge_get_hwthreads(const char* qualified_hostname, lList **lpp) {
 
 static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
    std::string topology;
-   bool ret = ocs::Topo::get_new_topology(topology, true);
+   bool ret = false;
+#if defined(OCS_HWLOC)   
+   ret = ocs::Topo::get_new_topology(topology, true);
+#endif   
    sge_add_str2load_report(lpp, LOAD_ATTR_TOPOLOGY, ret ? topology.c_str() : NONE_STR, qualified_hostname);
 }
 

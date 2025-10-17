@@ -82,8 +82,10 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    ret = ocs::gdi::ClientExecd::gdi_get_merged_configuration(&Execd_Config_List);
 
    // Set fake topology and trigger reinit of HWLOC
+#if defined(OCS_HWLOC)
    std::string topo_file = mconf_get_topology_file();
    ocs::Topo::set_fake_topo_file(topo_file);
+#endif
 
    const char *spool_dir = mconf_get_execd_spool_dir();
    if (strcmp(old_spool, spool_dir)) {

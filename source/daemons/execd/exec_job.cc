@@ -503,10 +503,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
       // If we have a binding_to_use then prepare a string for the rankfile
       std::string ids_str;
+#if defined(OCS_HWLOC)
       if (binding_to_use_is_initialized && binding_instance == ocs::BindingInstance::PE) {
          auto ids = binding_to_use.get_socket_and_cores_or_thread_tuples(true);
          ids_str = ocs::TopologyString::id_tuple2string(ids);
       }
+#endif
 
       host_slots = 0;
       for_each_ep(gdil_ep, gdil) {
@@ -826,18 +828,18 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                                                                 lGetString(jep, JB_account) : DEFAULT_ACCOUNT));
 
    // binding specific environment
+#if defined(OCS_HWLOC)
    if (binding_to_use_is_initialized) {
       var_list_set_string(&environmentList, "SGE_BINDING_INSTANCE", ocs::BindingInstance::to_string(binding_instance).c_str());
       var_list_set_string(&environmentList, "SGE_BINDING_TOPOLOGY", binding_to_use.to_product_topology_string().c_str());
    }
    if (binding_cpuset_is_initialized) {
-#if defined(OCS_HWLOC)
       char *cpuset_str = NULL;
       hwloc_bitmap_asprintf(&cpuset_str, cpuset);
       var_list_set_string(&environmentList, "SGE_BINDING_CPUSET", cpuset_str);
       sge_free(&cpuset_str);
-#endif
    }
+#endif
 
    sge_get_path(qualified_hostname, lGetList(jep, JB_shell_list), cwd,
                 lGetString(jep, JB_owner),
@@ -1422,8 +1424,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    // Write binding info
    if (binding_to_use_is_initialized) {
+#if defined (OCS_HWLOC)
       fprintf(fp, "binding_instance=%s\n", ocs::BindingInstance::to_string(binding_instance).c_str());
       fprintf(fp, "binding_to_use=%s\n", binding_to_use.to_product_topology_string().c_str());
+#endif
    } else {
       fprintf(fp, "binding_instance=%s\n", NONE_STR);
       fprintf(fp, "binding_to_use=%s\n", NONE_STR);

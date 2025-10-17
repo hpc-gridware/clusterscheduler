@@ -105,8 +105,10 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
    sge_show_conf();
 
    // Set fake topology and trigger reinit of HWLOC
+#if defined(OCS_HWLOC)
    std::string topo_file = mconf_get_topology_file();
    ocs::Topo::set_fake_topo_file(topo_file);
+#endif
 
    /* get aliased hostname */
    /* TODO: is this call needed ? */
