@@ -491,6 +491,37 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
+#if !defined(WITH_EXTENSIONS)
+   if (ret == STATUS_OK) {
+      lListElem *binding_elem = lGetObject(jep, JB_new_binding);
+      if (binding_elem != nullptr) {
+         // in OCS bsort is not available
+         std::string binding_sort = ocs::Job::binding_get_sort(jep);
+         if (binding_sort != NONE_STR) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+
+         // in OCS binding start is not available
+         ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(jep);
+         if (binding_start != ocs::BindingStart::UNINITIALIZED && binding_start != ocs::BindingStart::NONE) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+
+         // in OCS binding stop is not available
+         ocs::BindingStop::Stop binding_stop = ocs::Job::binding_get_stop(jep);
+         if (binding_stop != ocs::BindingStop::UNINITIALIZED && binding_stop != ocs::BindingStop::NONE) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+      }
+   }
+#endif
+
    /* verify the job name */
    if (ret == STATUS_OK) {
       if (object_verify_name(jep, alpp, JB_job_name)) {

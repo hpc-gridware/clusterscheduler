@@ -1136,6 +1136,7 @@ enum {
 
 int
 sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp, int sub_command) {
+   DENTER(TOP_LAYER);
    lListElem *nxt, *jobep = nullptr;   /* pointer to old job */
    int job_id_pos;
    int user_list_pos;
@@ -1151,8 +1152,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
-   DENTER(TOP_LAYER);
 
    if (jep == nullptr) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -1272,7 +1271,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 
       /* operate on a cull copy of the job */
       new_job = lCopyElem(jobep);
-      if (mod_job_attributes(packet, new_job, jep, &tmp_alp, &trigger)) {
+      int lret = mod_job_attributes(packet, new_job, jep, &tmp_alp, &trigger);
+      if (lret != STATUS_OK) {
          if (*alpp == nullptr) {
             *alpp = lCreateList("answer", AN_Type);
          }
@@ -1280,7 +1280,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          lFreeElem(&new_job);
          lFreeWhere(&job_where);
          sge_free(&job_mod_name);
-         DRETURN(STATUS_EUNKNOWN);
+         DRETURN(lret);
       }
 
       if (!(trigger & VERIFY_EVENT)) {
@@ -2679,6 +2679,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
             // copy new sort but only if it is not UNINITIALIZED and different from the old one
             const char *new_sort = lGetString(new_binding_elem, BN_new_sort);
+#if !defined(WITH_EXTENSIONS)
+            if (new_sort != nullptr) {
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+               answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+               DRETURN(STATUS_ENOTAVAILABLE);
+            }
+#endif
             if (new_sort != nullptr) {
                std::string old_sort = ocs::Job::binding_get_sort(new_job);
                if (old_sort != new_sort) {
@@ -2689,6 +2696,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
             // copy new start but only if it is not UNINITIALIZED and different from the old one
             auto new_start = static_cast<ocs::BindingStart::Start>(lGetUlong(new_binding_elem, BN_new_start));
+#if !defined(WITH_EXTENSIONS)
+            // in OCS binding start is not available
+            if (new_start != ocs::BindingStart::UNINITIALIZED && new_start != ocs::BindingStart::NONE) {
+               ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+               answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+               DRETURN(STATUS_ENOTAVAILABLE);
+            }
+#endif
             if (new_start != ocs::BindingStart::Start::UNINITIALIZED) {
                ocs::BindingStart::Start old_start = ocs::Job::binding_get_start(new_job);
                if (old_start != new_start) {
@@ -2699,6 +2714,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
             // copy new end but only if it is not UNINITIALIZED and different from the old one
             auto new_stop = static_cast<ocs::BindingStop::Stop>(lGetUlong(new_binding_elem, BN_new_stop));
+#if !defined(WITH_EXTENSIONS)
+            // in OCS binding start is not available
+            if (new_stop != ocs::BindingStop::UNINITIALIZED && new_stop != ocs::BindingStop::NONE) {
+               ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+               answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+               DRETURN(STATUS_ENOTAVAILABLE);
+            }
+#endif
             if (new_stop != ocs::BindingStop::Stop::UNINITIALIZED) {
                ocs::BindingStop::Stop old_stop = ocs::Job::binding_get_stop(new_job);
                if (old_stop != new_stop) {
@@ -3598,9 +3621,10 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
    job_initialize_id_lists(new_jep, nullptr);
 
    /* override settings of old job with new settings of jep */
-   if (mod_job_attributes(packet, new_jep, jep, alpp, &dummy_trigger)) {
+   int lret = mod_job_attributes(packet, new_jep, jep, alpp, &dummy_trigger);
+   if (lret != STATUS_OK) {
       lFreeElem(&new_jep);
-      DRETURN(STATUS_EUNKNOWN);
+      DRETURN(lret);
    }
 
    /* reset the job number. we will get a new one when we add the job */

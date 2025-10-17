@@ -168,7 +168,7 @@ The **binding unit** defines the type of hardware resource that should be alloca
 - **S** or **CS** – All power cores of a socket
 - **ES** – All efficiency cores of a socket
 
-If available on a compute node, the following units can also be requested with xxQS_NAMExx:
+If available on a compute node, the following units can also be requested with Gridware Cluster Scheduler.
 
 - **X** or **CX** – All power units sharing the same L3 cache
 - **EX** – All efficiency units sharing the same L3 cache
@@ -287,6 +287,8 @@ By combining **sorting** with **start and stop positions**, administrators can f
 
 ## Binding Sort
 
+Available in Gridware Cluster Scheduler.
+
 The **`-bsort`** option controls the order in which units are considered for binding within a host topology. By default, the **packed binding strategy** assigns units sequentially from **left to right** in the topology string. Sorting allows users to **prioritize specific hardware or memory units** when the scheduler attempts to dispatch a job.
 
 The `-bsort` argument accepts a list of letters representing hardware and memory units. Letters corresponding to unit types **not present** on a host are ignored.
@@ -313,6 +315,8 @@ Sorting NUMA nodes is not strictly based on load. After the first node, the sche
 | Nxc    | NSXCCXCC NSXccXCC NSXCCXCC NSXcCxCC | N2 => N1/N4 => N3 |
 
 ## Binding Start and Stop
+
+Available in Gridware Cluster Scheduler.
 
 The `-bstart` and `-bstop` allow to define a start and stop position within a topology string where binding should be done. The specification of start and stop is optional, in case of absence the topology strings first and last unit are implicit start and stop positions. If sorting of topology strings is enabled with `-bsort` then the start and stop position is searched within the sorted topology.
 
