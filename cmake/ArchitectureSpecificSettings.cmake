@@ -247,7 +247,7 @@ function(architecture_specific_settings)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
-      set(WITH_HWLOC OFF PARENT_SCOPE)
+      # set(WITH_HWLOC OFF PARENT_SCOPE)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
