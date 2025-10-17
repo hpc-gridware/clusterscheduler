@@ -583,16 +583,16 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
                               0, target_port, cl_get_error_text(cl_ret));
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
       DRETURN(cl_ret);
    }
    cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+   cl_com_free_ssl_setup(&sec_ssl_setup_config);
    if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
                               0, target_port, cl_get_error_text(cl_ret));
-      // no need to free ssl_config, because it does not contain allocated memory
-      // cert and key path strings are managed by std::string
       DRETURN(cl_ret);
    }
 
@@ -630,9 +630,11 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
                               0, 0, cl_get_error_text(cl_ret));
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
       DRETURN(cl_ret);
    }
    cl_ret = cl_com_update_ssl_configuration(sec_ssl_setup_config);
+   cl_com_free_ssl_setup(&sec_ssl_setup_config);
    if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       DPRINTF("return value of cl_com_update_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
