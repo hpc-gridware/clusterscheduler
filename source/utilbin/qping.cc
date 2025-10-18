@@ -1252,6 +1252,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
          }
          cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+         cl_com_free_ssl_setup(&sec_ssl_setup_config);
          if (cl_ret != CL_RETVAL_OK) {
             fprintf(stderr,"cannot set ssl configuration: %s\n", cl_get_error_text(cl_ret));
             exit(EXIT_FAILURE);

@@ -321,8 +321,7 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
 *  SEE ALSO
 *    communication/comm_cleanup_lib()
 *******************************************************************************/
-int comm_init_lib(dstring *err_msg)
-{
+int comm_init_lib(dstring *err_msg) {
    int ret, ret_val = COMM_RETVAL_OK;
 
    DENTER(TOP_LAYER);
@@ -598,6 +597,7 @@ int comm_open_connection(bool        b_server,
             ret_val = COMM_CANT_SETUP_SSL;
          }
       }
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
 #else
       sge_dstring_sprintf(err_msg, "comm_open_connection(): No SSL/TLS support compiled into this binary!");
       DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
