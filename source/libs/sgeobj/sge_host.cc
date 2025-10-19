@@ -36,11 +36,8 @@
 #include "comm/commlib.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_href.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_resource_utilization.h"
@@ -56,6 +53,8 @@
 #include "msg_common.h"
 
 #include "sge_host.h"
+
+#include "ocs_TopologyString.h"
 
 lListElem *
 host_list_locate(const lList *host_list, const char *hostname) {
@@ -534,6 +533,69 @@ host_debit_rsmap(lListElem *host, const char *ce_name, const lListElem *resl, in
    }
 
    return mods;
+}
+
+int
+host_debit_binding(lListElem *host, const char *ce_name, const lListElem *resl, int slots, bool *just_check) {
+   DENTER(TOP_LAYER);
+
+   // we book cores/threads in the resource utilization of slots
+   lList *resource_utilization = lGetListRW(host, EH_resource_utilization);
+   lListElem *resource = lGetElemStrRW(resource_utilization, RUE_name, ce_name);
+
+   // add resource utilization entry if it does not exist yet
+   if (resource == nullptr) {
+      resource = lAddSubStr(host, RUE_name, ce_name, EH_resource_utilization, RUE_Type);
+      lSetString(resource, RUE_utilized_now_binding_inuse, nullptr);
+   }
+
+   // what is currently booked and what should be booked additionally
+   const char *binding_to_use = lGetString(resl, ST_name);
+   const char *binding_in_use = lGetString(resource, RUE_utilized_now_binding_inuse);
+
+#if 1
+   const char *action = slots > 0 ? "add" : "del";
+   if (binding_in_use != nullptr) {
+      ocs::TopologyString topo_in_use(binding_in_use);
+      DPRINTF("host_debit_binding: before %s\n", topo_in_use.to_product_topology_string().c_str());
+   } else {
+      DPRINTF("host_debit_binding: before NONE\n");
+   }
+   if (binding_to_use != nullptr) {
+      ocs::TopologyString topo_to_use(binding_to_use);
+      DPRINTF("host_debit_binding: %s    %s\n", action, topo_to_use.to_product_topology_string().c_str());
+   }
+#endif
+
+   // just check if the requested change makes sense then return
+   int mods = 0;
+   if (just_check != nullptr) {
+      if (binding_in_use == nullptr || strcmp(binding_to_use, binding_in_use) != 0) {
+         *just_check = true;
+         mods++;
+      } else {
+         *just_check = false;
+      }
+      DRETURN(mods);
+   }
+
+   // add/remove all cores/threads that are set in binding_to_use to binding_in_use
+   ocs::TopologyString topo_now;
+   const char *now_str = lGetString(resource, RUE_utilized_now_binding_inuse);
+   if (now_str) {
+      topo_now = ocs::TopologyString(now_str);
+      ocs::TopologyString topo_to_use(binding_to_use);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
+                                                            topo_now, topo_to_use, slots > 0);
+   } else {
+      topo_now = ocs::TopologyString(binding_to_use);
+      ocs::TopologyString::elem_mark_nodes_as_used_or_unused(resource, RUE_utilized_now_binding_inuse,
+                                                            topo_now, topo_now, slots > 0);
+   }
+   DPRINTF("host_debit_binding: after  %s\n", topo_now.to_product_topology_string().c_str());
+
+   mods++;
+   DRETURN(mods);
 }
 
 bool

@@ -49,10 +49,8 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_string.h"
-#include "shepherd_binding.h"
 /* TODO: (SH) get_path.h is a header-file of execd. We have to do a CLEANUP here. */
 #include "get_path.h"
 
@@ -60,6 +58,7 @@
 #  include <grp.h>
 #endif
 
+#include "ocs_BindingShepherd.h"
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_stdlib.h"
@@ -856,14 +855,9 @@ int main(int argc, char **argv)
     */
    sge_pset_create_processor_set();
 
-   /*
-    * Perform core binding (do not use processor set together with core binding)
-    */
-#if defined(OCS_HWLOC)
-   ocs::do_core_binding();
-#elif defined(BINDING_SOLARIS)
-   /*switch later to startuser */
-   ocs::do_core_binding();
+   // do the new scheduler-binding
+#if defined(OCS_HWLOC) && !defined(BINDING_SOLARIS)
+   ocs::BindingShepherd::do_thread_binding();
 #endif
 
    /*

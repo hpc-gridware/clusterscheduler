@@ -115,4 +115,6 @@ const char *sge_replace_substring(const char *input, const char *search, const c
 
 const char *sge_str_move_left(char *start, char *substr);
 
+void sge_str_reverse(char *string);
+
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)

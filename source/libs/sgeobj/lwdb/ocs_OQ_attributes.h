@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ enum {
    OQ_ticket,
    OQ_oticket,
    OQ_fticket,
-   OQ_sticket
+   OQ_sticket,
+   OQ_binding_to_use
 };
 
 constexpr const int OQ_Type[] = {
@@ -46,6 +47,7 @@ constexpr const int OQ_Type[] = {
    OQ_oticket,
    OQ_fticket,
    OQ_sticket,
+   OQ_binding_to_use,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -56,7 +58,8 @@ constexpr const int OQ_Type[] = {
    {OQ_ticket, "OQ_ticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {OQ_oticket, "OQ_oticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {OQ_fticket, "OQ_fticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {OQ_sticket, "OQ_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {OQ_sticket, "OQ_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {OQ_binding_to_use, "OQ_binding_to_use", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

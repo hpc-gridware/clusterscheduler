@@ -98,6 +98,9 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
+#include "ocs_AdvanceReservation.h"
+#include "ocs_GrantedResources.h"
+#include "sge_sched_thread_rsmap.h"
 
 typedef struct {
    u_long32 ar_id;
@@ -236,7 +239,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
 
    if (!ar_validate(ar, alpp, true, false, master_cqueue_list, master_hgroup_list, master_centry_list, master_ckpt_list,
                     master_pe_list, master_userset_list)) {
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    if (add) {
@@ -254,7 +257,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    } else {
       ERROR(MSG_NOTYETIMPLEMENTED_S, "advance reservation modification");
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    if (max_advance_reservations > 0 &&
@@ -285,8 +288,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    /*   AR_checkpoint_name, SGE_STRING    Named checkpoint */
    attr_mod_zerostr(ar, new_ar, AR_checkpoint_name, object->object_name);
    /*   AR_resource_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0,
-                     nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_resource_list, AR_name, ar, cmd, sub_command, SGE_ATTR_COMPLEX_VALUES, SGE_OBJ_AR, 0, nullptr);
    /*   AR_queue_list, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_mail_options, SGE_ULONG   */
@@ -296,8 +298,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    /*   AR_pe, SGE_STRING */
    attr_mod_zerostr(ar, new_ar, AR_pe, object->object_name);
    /*   AR_master_queue_list, SGE_LIST */
-   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0,
-                     nullptr);
+   attr_mod_sub_list(alpp, new_ar, AR_master_queue_list, AR_name, ar, cmd, sub_command, SGE_ATTR_QUEUE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_pe_range, SGE_LIST */
    attr_mod_sub_list(alpp, new_ar, AR_pe_range, AR_name, ar, cmd, sub_command, SGE_ATTR_PE_LIST, SGE_OBJ_AR, 0, nullptr);
    /*   AR_acl_list, SGE_LIST */
@@ -306,17 +307,19 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListEl
    attr_mod_sub_list(alpp, new_ar, AR_xacl_list, AR_name, ar, cmd, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_AR, 0, nullptr);
    /*   AR_type, SGE_ULONG     */
    attr_mod_ulong(ar, new_ar, AR_type, object->object_name);
+   // AR_binding
+   attr_mod_obj_binding(alpp, new_ar, ar);
 
    /* try to reserve the queues */
    if (!ar_reserve_queues(alpp, new_ar, packet->gdi_session)) {
-      goto ERROR;
+      goto AR_MOD_ERROR;
    }
 
    INFO(MSG_AR_GRANTED_U, ar_id);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    DRETURN(0);
 
-   ERROR:
+   AR_MOD_ERROR:
 DRETURN(STATUS_EUNKNOWN);
    DOITAGAIN:
 DRETURN(STATUS_NOTOK_DOAGAIN);
@@ -1006,6 +1009,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 *******************************************************************************/
 static bool
 ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
+   DENTER(TOP_LAYER);
    lList **splitted_job_lists[SPLIT_LAST];
    lList *suspended_list = nullptr;                   /* JB_Type */
    lList *running_list = nullptr;                     /* JB_Type */
@@ -1019,7 +1023,6 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    const lListElem *cqueue = nullptr;
    bool ret = true;
    int i = 0;
-   lListElem *dummy_job = lCreateElem(JB_Type);
    sge_assignment_t a = SGE_ASSIGNMENT_INIT;
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
@@ -1034,8 +1037,8 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
 
    dispatch_t result = DISPATCH_NEVER_CAT;
 
-   DENTER(TOP_LAYER);
 
+   lListElem *dummy_job = lCreateElem(JB_Type);
    if (lGetList(ar, AR_acl_list) != nullptr) {
       lSetString(dummy_job, JB_owner, "*");
       lSetString(dummy_job, JB_group, "*");
@@ -1183,7 +1186,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
    lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
    lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
-
+   lSetObject(dummy_job, JB_new_binding, lCopyElem(lGetObject(ar, AR_binding)));
 
    if (lGetString(ar, AR_pe)) {
       lSetString(dummy_job, JB_pe, lGetString(ar, AR_pe));
@@ -1227,6 +1230,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
          ar_do_reservation(ar, true, gdi_session);
       }
    }
+
 
    /* stop dreaming */
    sconf_set_qs_state(QS_STATE_FULL);
@@ -1318,7 +1322,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       pe_slots += tmp_slots;
 
       /* reserve global host */
-      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  global_host_ep, master_centry_list, tmp_slots,
                                  EH_consumable_config_list, EH_resource_utilization,
                                  SGE_GLOBAL_NAME, start_time, duration, GLOBAL_TAG,
@@ -1330,7 +1334,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
 
       /* reserve exec host */
       lListElem *host_ep = host_list_locate(master_exechost_list, queue_hostname);
-      if (rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      if (rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                  host_ep, master_centry_list, tmp_slots, EH_consumable_config_list,
                                  EH_resource_utilization, queue_hostname, start_time,
                                  duration, HOST_TAG, false, is_master_task, do_per_host_booking) != 0) {
@@ -1340,7 +1344,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       }
 
       /* reserve queue instance */
-      rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+      rc_add_job_utilization(gdil_ep, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                              queue, master_centry_list, tmp_slots, QU_consumable_config_list,
                              QU_resource_utilization, queue_name, start_time, duration,
                              QUEUE_TAG, false, is_master_task, do_per_host_booking);
@@ -1354,7 +1358,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
    if (pe != nullptr) {
       utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
                       duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false);
+                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr);
       sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
    }
 
@@ -1708,12 +1712,17 @@ ar_initialize_resource_booking(lListElem *ar) {
    lListElem *global_host = lAddElemHost(&host_list, EH_name, SGE_GLOBAL_NAME, host_descr);
    const lListElem *master_global_host = lGetElemHost(master_exechost_list, EH_name, SGE_GLOBAL_NAME);
 
+   lList *granted_resources_list = nullptr;
    bool is_master_queue = true;
    const char *last_hostname = nullptr;
    for_each_ep(gep, gdil) {
       const char *queue_name = lGetString(gep, JG_qname);
       char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
       const char *host_name = lGetHost(gep, JG_qhostname);
+
+      // add the binding_touse information (copy from JG to GRU)
+      const lList *binding_to_use_list = lGetList(gep, JG_binding_to_use);
+      ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // create queue with slot booking
       lListElem *queue = lAddElemStr(&queue_list, QU_full_name, queue_name, queue_descr);
@@ -1833,9 +1842,10 @@ ar_initialize_resource_booking(lListElem *ar) {
    for_each_rw(host, host_list) {
       // make sure all complex attributes are properly filled in
       centry_list_fill_config(lGetListRW(host, EH_consumable_config_list), master_centry_list);
-      debit_host_consumable(nullptr, nullptr, nullptr, host, master_centry_list, 0, true, true, nullptr);
+      debit_host_consumable(nullptr, nullptr, granted_resources_list, nullptr, host, master_centry_list, 0, true, true, nullptr);
    }
 
+   lSetList(ar, AR_granted_resources_list, granted_resources_list);
    lSetList(ar, AR_reserved_queues, queue_list);
    lSetList(ar, AR_reserved_hosts, host_list);
 

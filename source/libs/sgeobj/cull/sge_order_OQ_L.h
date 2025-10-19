@@ -55,6 +55,9 @@
 *    SGE_DOUBLE(OQ_sticket) - Sharetree Tickets
 *    Total SGEEE sharetree tickets.
 *
+*    SGE_LIST(OQ_binding_to_use) - Binding that should be used
+*    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
+*
 */
 
 enum {
@@ -64,7 +67,8 @@ enum {
    OQ_ticket,
    OQ_oticket,
    OQ_fticket,
-   OQ_sticket
+   OQ_sticket,
+   OQ_binding_to_use
 };
 
 LISTDEF(OQ_Type)
@@ -75,6 +79,7 @@ LISTDEF(OQ_Type)
    SGE_DOUBLE(OQ_oticket, CULL_DEFAULT)
    SGE_DOUBLE(OQ_fticket, CULL_DEFAULT)
    SGE_DOUBLE(OQ_sticket, CULL_DEFAULT)
+   SGE_LIST(OQ_binding_to_use, ST_Type, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(OQN)
@@ -85,6 +90,7 @@ NAMEDEF(OQN)
    NAME("OQ_oticket")
    NAME("OQ_fticket")
    NAME("OQ_sticket")
+   NAME("OQ_binding_to_use")
 NAMEEND
 
 #define OQ_SIZE sizeof(OQN)/sizeof(char *)

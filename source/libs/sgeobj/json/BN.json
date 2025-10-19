@@ -6,77 +6,126 @@
 		}],
 	"cullPrefix":	"BN",
 	"attributes":	[{
-			"name":	"strategy",
-			"summary":	"@todo add summary",
+			"name":	"new_type",
+			"summary":	"type of binding",
 			"description":	[{
-					"line":	"@todo add description"
-				}],
+				"line":	"host or slot binding"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_instance",
+			"summary":	"Instance that applies the binding",
+			"description":	[{
+				"line":	"Set, PE or env"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_amount",
+			"summary":	"Amount of units",
+			"description":	[{
+				"line":	"Number of units to bind to"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_unit",
+			"summary":	"Unit type that should be bound",
+			"description":	[{
+				"line":	"Defines if threads, cores, sockets ... should be bound"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_filter",
+			"summary":	"Mask that defines which parts of a topology should not be bound",
+			"description":	[{
+				"line":	"Masked parts have to be lowercase in the topology string."
+			}],
 			"type":	"lStringT",
 			"flags":	[{
-					"name":	"PRIMARY_KEY"
-				}, {
-					"name":	"SPOOL_SUBLIST"
-				}]
+				"name":	"SPOOL_SUBLIST"
+			}]
 		}, {
-			"name":	"type",
-			"summary":	"@todo add summary",
+			"name":	"new_sort",
+			"summary":	"Sort order of binding",
 			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
-		}, {
-			"name":	"parameter_n",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
-		}, {
-			"name":	"parameter_socket_offset",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
-		}, {
-			"name":	"parameter_core_offset",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
-		}, {
-			"name":	"parameter_striding_step_size",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
-		}, {
-			"name":	"parameter_explicit",
-			"summary":	"@todo add summary",
-			"description":	[{
-					"line":	"@todo add description"
-				}],
+				"line":	"Defines how units within the topology string should be sorted before binding."
+			}],
 			"type":	"lStringT",
 			"flags":	[{
-					"name":	"SPOOL_SUBLIST"
-				}]
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_start",
+			"summary":	"Start position",
+			"description":	[{
+				"line":	"Defines the start position for binding within the topology string."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_stop",
+			"summary":	"Stop position",
+			"description":	[{
+				"line":	"Defines the stop position for binding within the topology string."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"new_strategy",
+			"summary":	"Binding strategy ...",
+			"description":	[{
+				"line":	"Defines the strategy for binding, like linear, striding, packed or explicit"
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"specific_hostname",
+			"summary":	"hostname of a host where the other specific attributes are valid for",
+			"description":	[{
+				"line":	"Used in scheduler only to identify where a specific binding decision was done for."
+			}],
+			"type":	"lHostT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"specific_binding",
+			"summary":	"A specific binding decision for a task or job on a host",
+			"description":	[{
+				"line":	"Used in scheduler only to hold a binding decision for a specific task or job on a host."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
+		}, {
+			"name":	"specific_binding_list",
+			"summary":	"Sublist of individual task specific bindings.",
+			"description":	[{
+				"line":	"Id of sublist specifies a task ID and the string the binding done for that task."
+			}, { "line":	"Exists only if task specific binding decisions have to be done."
+			}],
+			"type":	"lListT",
+			"subClassName": "SpecificBindingList",
+			"subCullPrefix": "ST",
+			"flags":	[{ "name":  "SPOOL" }]
 		}, {
 			"name":	"joker",
 			"summary":	"Joker",

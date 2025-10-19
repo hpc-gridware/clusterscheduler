@@ -93,7 +93,7 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **answer_list, 
 
          DPRINTF("Got CE_name: " SFQ "\n", name);
          lSetString(centry, CE_name, name);
-         if (!strcmp("slots", name)) {
+         if (!strcmp(SGE_ATTR_SLOTS, name)) {
             is_slots_attr = true;
          }
       }
@@ -508,7 +508,7 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
    }
    for_each_rw (hep, master_ehost_list) {
       lSetList(hep, EH_resource_utilization, nullptr);
-      debit_host_consumable(nullptr, nullptr, nullptr, hep, master_centry_list, 0, true, true, nullptr);
+      debit_host_consumable(nullptr, nullptr, nullptr, nullptr, hep, master_centry_list, 0, true, true, nullptr);
    }
 
    /* 
@@ -526,6 +526,7 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
          int slots = 0;
          const char *last_hostname = nullptr;
          const lListElem *pe = lGetObject(jatep, JAT_pe_object);
+         const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
 
          bool do_per_global_host_booking = true;
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
@@ -539,13 +540,12 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
 
             qslots = lGetUlong(gdil, JG_slots);
 
-            debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
+            debit_host_consumable(jep, jatep, granted_resources_list, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
                                   master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
 
             bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
-            debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list,
-                                                                        lGetHost(qep, QU_qhostname)),
-                                  master_centry_list, qslots,
+            debit_host_consumable(jep, jatep, granted_resources_list, pe, host_list_locate(master_ehost_list,
+                        lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
                                   master_task, do_per_host_booking, nullptr);
             qinstance_debit_consumable(qep, jep, pe, master_centry_list, qslots, master_task, do_per_host_booking,
                                        nullptr);

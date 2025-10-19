@@ -250,7 +250,7 @@ namespace ocs::execd {
          if (systemd.sd_bus_get_property("Scope", scope, property, value, &error_dstr)) {
             double usage_value = value * factor;
             lSetDouble(usage_elem, UA_value, usage_value);
-            DPRINTF("==> Updated usage %s for scope '%s': %f", usage_attr_str, scope.c_str(), usage_value);
+            DPRINTF("==> Updated usage %s for scope '%s': %f\n", usage_attr_str, scope.c_str(), usage_value);
          } else {
             // I18N, and the message should already contain all necessary information (?)
             WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));
@@ -299,7 +299,7 @@ namespace ocs::execd {
          }
          double usage_value = (value1 + value2) * factor;
          lSetDouble(usage_elem, UA_value, usage_value);
-         DPRINTF("Updated usage %s: %lu + %s: %lu = %f for scope '%s'", property1_str, value1, property2_str, value2, usage_value, scope.c_str());
+         DPRINTF("Updated usage %s: %lu + %s: %lu = %f for scope '%s'\n", property1_str, value1, property2_str, value2, usage_value, scope.c_str());
       }
 
       DRETURN_VOID;
@@ -343,7 +343,7 @@ namespace ocs::execd {
                   success = systemd.sd_bus_get_property("Unit", scope, "ActiveState", state, &error_dstr);
                   if (success) {
                       if (state.compare("active") == 0) {
-                        DPRINTF("==> Job is active in systemd scope %s", scope.c_str());
+                        DPRINTF("==> Job is active in systemd scope %s\n", scope.c_str());
                         lList *usage_list = lGetListRW(os_job, JO_usage_list);
                         if (usage_list == nullptr) {
                            usage_list = ptf_build_usage_list("usagelist", usage_collection);
@@ -366,7 +366,7 @@ namespace ocs::execd {
                               usage_elem = lGetElemStrRW(usage_list, UA_name, USAGE_ATTR_MAXRSS);
                               if (rss > lGetDouble(usage_elem, UA_value)) {
                                  lSetDouble(usage_elem, UA_value, rss);
-                                 DPRINTF("==> Updated MAXRSS for scope '%s': %f", scope.c_str(), rss);
+                                 DPRINTF("==> Updated MAXRSS for scope '%s': %f\n", scope.c_str(), rss);
                               }
                            }
                         }
@@ -377,7 +377,7 @@ namespace ocs::execd {
                          //       The values delivered seem not to make sense.
                          // ptf_get_usage_value_from_systemd2(systemd, scope, usage_list, "IOReadBytes", "IOWriteBytes", USAGE_ATTR_IO, 1.0);
                       } else {
-                        DPRINTF("==> Job is not active in systemd scope %s, state: %s", scope.c_str(), state.c_str());
+                        DPRINTF("==> Job is not active in systemd scope %s, state: %s\n", scope.c_str(), state.c_str());
                      }
                   } else {
                      WARNING("Failed to get property '%s' from systemd scope '%s': %s", "ActiveState", scope.c_str(), sge_dstring_get_string(&error_dstr));

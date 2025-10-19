@@ -367,7 +367,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                lListElem *slots_ce = nullptr;
 
                /* implicit slots entry */
-               if (lGetElemStr(new_value, CE_name, "slots") == nullptr) {
+               if (lGetElemStr(new_value, CE_name, SGE_ATTR_SLOTS) == nullptr) {
                   const lList *cq_slots_attr = lGetList(cqueue, CQ_job_slots);
                   u_long32 slots_value;
                   dstring buffer = DSTRING_INIT;
@@ -379,7 +379,7 @@ qinstance_modify_attribute(lListElem *this_elem, lList **answer_list, const lLis
                   if (new_value == nullptr) {
                      created_new_value = true;
                   }
-                  slots_ce = lAddElemStr(&new_value, CE_name, "slots", CE_Type);
+                  slots_ce = lAddElemStr(&new_value, CE_name, SGE_ATTR_SLOTS, CE_Type);
                   lSetDouble(slots_ce, CE_doubleval, slots_value);
                   lSetString(slots_ce, CE_stringval, sge_dstring_get_string(&buffer));
                   sge_dstring_free(&buffer);
@@ -1163,7 +1163,7 @@ qinstance_reinit_consumable_actual_list(lListElem *this_elem,
 
             job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ep, AR_resource_list)));
 
-            rc_add_job_utilization(dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
+            rc_add_job_utilization(nullptr, dummy_job, pe, 0, SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                    this_elem, centry_list, lGetUlong(gdil_ep, JG_slots),
                                    QU_consumable_config_list, QU_resource_utilization, name,
                                    lGetUlong64(ep, AR_start_time), lGetUlong64(ep, AR_duration),

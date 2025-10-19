@@ -41,10 +41,21 @@
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
 
+#include "sgeobj/ocs_BindingUnit.h"
+
 #define GID_RANGE_NOT_ALLOWED_ID 100
 #define RLIMIT_UNDEFINED -9999
 
 #define PDC_DISABLED U_LONG64_MAX
+
+#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_hosts=true,filter=NONE"
+#define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
+
+typedef enum {
+   BINDING_MODE_DEFAULT = 0,
+   BINDING_MODE_OCS,
+   BINDING_MODE_GCS
+} binding_mode_t;
 
 typedef enum {
    KEEP_ACTIVE_TRUE = 0,
@@ -96,6 +107,7 @@ char* mconf_get_shepherd_cmd();
 char* mconf_get_qmaster_params();
 char* mconf_get_execd_params();
 char* mconf_get_reporting_params();
+char* mconf_get_binding_params();
 char* mconf_get_gid_range();
 u_long32 mconf_get_zombie_jobs();
 char* mconf_get_qlogin_daemon();
@@ -198,3 +210,12 @@ u_long32 mconf_get_script_timeout();
 
 // one function for all monitoring options
 std::tuple<u_long32, bool, bool> mconf_get_monitoring_options();
+
+// getter for binding specific configuration parameters
+bool mconf_is_binding_enabled();
+bool mconf_do_implicit_binding();
+bool mconf_schedule_on_any_host();
+std::string mconf_get_binding_filter();
+binding_mode_t mconf_get_binding_mode();
+ocs::BindingUnit::Unit mconf_get_default_binding_unit();
+std::string mconf_get_topology_file();

@@ -40,7 +40,7 @@
 
 #include <unistd.h>
 
-#include "uti/ocs_topology.h"
+#include "uti/ocs_Topo.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_language.h"
@@ -54,6 +54,8 @@
 #include "msg_utilbin.h"
 
 #include <TestClass.h>
+
+#include "ocs_TopologyString.h"
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 #include <sys/utsname.h>
@@ -297,8 +299,6 @@ void check_core_binding()
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
 void test_hwloc()
 {
-   char* topology = nullptr;
-   int length     = 0;
    int s, c;
    struct utsname name;
 
@@ -306,33 +306,42 @@ void test_hwloc()
       printf("Your " SFN  " kernel version is: %s\n", name.sysname, name.release);
    }
 
-   if (!ocs::topo_has_core_binding()) {
+   if (!ocs::Topo::has_topology_information()) {
       printf("Your " SFN " kernel seems not to offer core binding capabilities for HWLOC!\n",
              name.sysname);
    }
 
-   if (!ocs::topo_has_topology_information()) {
+   if (!ocs::Topo::has_topology_information()) {
       printf("No topology information could by retrieved by HWLOC!\n");
    } else {
       /* get amount of sockets */
-      printf("Amount of sockets:\t\t%d\n", ocs::topo_get_total_amount_of_sockets());
+      printf("Amount of sockets:\t\t%d\n", ocs::Topo::get_total_amount_of_sockets());
       /* get amount of cores   */
-      printf("Amount of cores:\t\t%d\n", ocs::topo_get_total_amount_of_cores());
+      printf("Amount of cores:\t\t%d\n", ocs::Topo::get_total_amount_of_cores());
       /* the amount of threads must be shown as well */
-      printf("Amount of threads:\t\t%d\n", ocs::topo_get_total_amount_of_threads());
-      /* get topology */
-      ocs::topo_get_topology(&topology, &length);
-      printf("Topology:\t\t\t%s\n", topology);
-      sge_free(&topology); 
+      printf("Amount of threads:\t\t%d\n", ocs::Topo::get_total_amount_of_threads());
+
+      // Get internal topology (with structure and memory information)
+      std::string topology;
+      ocs::Topo::get_new_topology(topology, true);
+      printf("Topology (Internal):\t\t%s\n", topology.c_str());
+
+      // Strip attributes and structure
+      ocs::TopologyString topology_string(topology);
+      printf("Topology (GCS):\t\t\t%s\n", topology_string.to_string(true, false, false, false, false).c_str());
+
+      // Strip memory information
+      printf("Topology (OCS):\t\t\t%s\n", topology_string.to_string(false, false, false, false, false).c_str());
+
       printf("Mapping of logical socket and core numbers to internal\n");
 
       /* for each socket,core pair get the internal processor number */
       /* try multi-mapping */
-      for (s = 0; s < ocs::topo_get_total_amount_of_sockets(); s++) {
-         for (c = 0; c < ocs::topo_get_amount_of_cores_for_socket(s); c++) {
+      for (s = 0; s < ocs::Topo::get_total_amount_of_sockets(); s++) {
+         for (c = 0; c < ocs::Topo::get_amount_of_cores_for_socket(s); c++) {
             int* proc_ids  = nullptr;
             int amount     = 0;
-            if (ocs::topo_get_processor_ids(s, c, &proc_ids, &amount)) {
+            if (ocs::Topo::get_processor_ids(s, c, &proc_ids, &amount)) {
                printf("Internal processor ids for socket %5d core %5d: ", s , c);
                for (int i = 0; i < amount; i++) {
                   printf(" %5d", proc_ids[i]);
@@ -369,23 +378,20 @@ void test_hwloc()
 *     void - nothing 
 *
 *******************************************************************************/
-void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology)
-{
-   int ms, mc, mt;
-   char* topo = nullptr;
-   int length = 0;
-
-   ms = get_execd_amount_of_sockets();
-   mc = get_execd_amount_of_cores();
-   mt = get_execd_amount_of_threads();
-   if (!get_execd_topology(&topo, &length) || topo == nullptr) {
-      topo = sge_strdup(nullptr, "-");
-   }
+void fill_socket_core_topology(dstring* msocket, dstring* mcore, dstring* mthread, dstring* mtopology) {
+   int ms = get_execd_amount_of_sockets();
    sge_dstring_sprintf(msocket, "%d", ms);
+
+   int mc = get_execd_amount_of_cores();
    sge_dstring_sprintf(mcore, "%d", mc);
+
+   int mt = get_execd_amount_of_threads();
    sge_dstring_sprintf(mthread, "%d", mt);
-   sge_dstring_append(mtopology, topo);
-   sge_free(&topo);
+
+   std::string topology;
+   ocs::Topo::get_new_topology(topology, true);
+   ocs::TopologyString topology_string(topology);
+   sge_dstring_append(mtopology, topology_string.to_product_topology_string().c_str());
 }
 
 #endif

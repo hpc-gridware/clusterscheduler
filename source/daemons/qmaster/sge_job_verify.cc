@@ -38,7 +38,6 @@
 
 #include "sge.h"
 
-#include "uti/sge_binding_hlp.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
@@ -50,6 +49,8 @@
 #include "gdi/ocs_gdi_Packet.h"
 #include "gdi/ocs_gdi_security.h"
 
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
@@ -67,7 +68,6 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/ocs_DataStore.h"
 
 #include "sge_userprj_qmaster.h"
 #include "sge_userset_qmaster.h"
@@ -77,9 +77,6 @@
 #include "msg_qmaster.h"
 
 #include <sge_str.h>
-
-static bool
-check_binding_param_consistency(const lListElem *binding_elem);
 
 static bool
 sge_job_verify_global_master_slave_queues(lList **alpp, const lListElem *jep) {
@@ -359,6 +356,9 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
+   // Check if there are binding parameters that are required but unset
+   ocs::Job::binding_set_missing_defaults(jep);
+
    /*
     * fill name and shortcut for all requests
     * fill numeric values for all bool, time, memory and int type requests
@@ -479,25 +479,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       }
    }
 
-   if (ret == STATUS_OK) {
-      const lListElem *binding_elem = lFirst(lGetList(jep, JB_binding));
-
-      if (binding_elem == nullptr) {
-         bool lret = job_init_binding_elem(jep);
-
-         if (!lret) {
-            ret = STATUS_EUNKNOWN;
-         }
-      } else {
-         /* verify if binding parameters are consistent (bugster 6903956) */
-         if (!check_binding_param_consistency(binding_elem)) {
-            /* TODO add to answer list */
-            answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-            ret = STATUS_EUNKNOWN;
-         }
-      }
-   }
-
    /* verify or set the account string */
    if (ret == STATUS_OK) {
       if (!lGetString(jep, JB_account)) {
@@ -509,6 +490,37 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
          }
       }
    }
+
+#if !defined(WITH_EXTENSIONS)
+   if (ret == STATUS_OK) {
+      lListElem *binding_elem = lGetObject(jep, JB_new_binding);
+      if (binding_elem != nullptr) {
+         // in OCS bsort is not available
+         std::string binding_sort = ocs::Job::binding_get_sort(jep);
+         if (binding_sort != NONE_STR) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+
+         // in OCS binding start is not available
+         ocs::BindingStart::Start binding_start = ocs::Job::binding_get_start(jep);
+         if (binding_start != ocs::BindingStart::UNINITIALIZED && binding_start != ocs::BindingStart::NONE) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+
+         // in OCS binding stop is not available
+         ocs::BindingStop::Stop binding_stop = ocs::Job::binding_get_stop(jep);
+         if (binding_stop != ocs::BindingStop::UNINITIALIZED && binding_stop != ocs::BindingStop::NONE) {
+            ERROR(SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
+            answer_list_add(alpp, SGE_EVENT, STATUS_ENOTAVAILABLE, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_ENOTAVAILABLE);
+         }
+      }
+   }
+#endif
 
    /* verify the job name */
    if (ret == STATUS_OK) {
@@ -892,150 +904,3 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
 
    DRETURN(ret);
 }
-
-
-/****** sge_job_verify/check_binding_param_consistency() ***********************
-*  NAME
-*     check_binding_param_consistency() -- Semantic check of JSV binding parameter change.
-*
-*  SYNOPSIS
-*     static bool check_binding_param_consistency(lListElem* binding_elem) 
-*
-*  FUNCTION
-*     Checks the JSV parameter change of the binding parater for semantical 
-*     correctness. In case there is some missconfiguration found in the 
-*     binding CULL sublist an error is thrown and the job is rejected. 
-* 
-*     This function is introduced in order to fix bugster 6903956
-*
-*  INPUTS
-*     lListElem* binding_elem - CULL sublist for core binding 
-*
-*  RESULT
-*     static bool - true if semantic is correct - false if not
-*
-*  NOTES
-*     MT-NOTE: check_binding_param_consistency() is MT safe 
-*
-*******************************************************************************/
-static bool
-check_binding_param_consistency(const lListElem *binding_elem) {
-   const char *strategy;
-
-   DENTER(TOP_LAYER);
-
-   if (binding_elem == nullptr) {
-      DRETURN(false);
-   }
-
-   if ((strategy = lGetString(binding_elem, BN_strategy)) == nullptr) {
-      /* no binding strategy set */
-      ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_strategy", "nullptr");
-      DRETURN(false);
-   }
-
-   /* check according strategy linear */
-   if ((strcmp(strategy, "linear") == 0)
-       || (strcmp(strategy, "linear_automatic") == 0)) {
-
-      /* amount must be > 0 */
-      if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter", "n");
-         DRETURN(false);
-      }
-
-      /* socket and core values are implicitly 0 */
-
-      /* check if step_size > 0 */
-      if (lGetUlong(binding_elem, BN_parameter_striding_step_size) > 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0");
-         DRETURN(false);
-      }
-
-      /* check if explicit value is set */
-      if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr");
-         DRETURN(false);
-      }
-
-      /* in case of linear_automatic the core and socket number 
-         must not be > 0 */
-      if (strcmp(strategy, "linear_automatic") == 0) {
-         if (lGetUlong(binding_elem, BN_parameter_socket_offset) > 0) {
-            ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0");
-            DRETURN(false);
-         }
-         if (lGetUlong(binding_elem, BN_parameter_core_offset) > 0) {
-            ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0");
-            DRETURN(false);
-         }
-      }
-   }
-
-   /* check according strategy striding */
-   if ((strcmp(strategy, "striding") == 0)
-       || (strcmp(strategy, "striding_automatic") == 0)) {
-
-      /* the amount of cores requested must be > 0 */
-      if (lGetUlong(binding_elem, BN_parameter_n) == 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "0");
-         DRETURN(false);
-      }
-
-      /* socket and core values are implicitly 0 */
-
-      /* check explicit socket core list */
-      if (lGetString(binding_elem, BN_parameter_explicit) != nullptr) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "!= nullptr");
-         DRETURN(false);
-      }
-
-   }
-
-   /* check according strategy explicit */
-   if (strcmp(strategy, "explicit") == 0) {
-      const char *expl;
-      int amount;
-
-      /* the explicit parameter must be set */
-      if (lGetString(binding_elem, BN_parameter_explicit) == nullptr) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_explicit", "== nullptr");
-         DRETURN(false);
-      }
-
-      /* amount makes no sense */
-      if (lGetUlong(binding_elem, BN_parameter_n) > 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_n", "> 0");
-         DRETURN(false);
-      }
-
-      /* step size makes no sense */
-      if (lGetUlong(binding_elem, BN_parameter_striding_step_size) > 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_striding_step_size", "> 0");
-         DRETURN(false);
-      }
-
-      /* check if socket offset was set */
-      if (lGetUlong(binding_elem, BN_parameter_socket_offset) > 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_socket_offset", "> 0");
-         DRETURN(false);
-      }
-
-      /* check if core offset was set */
-      if (lGetUlong(binding_elem, BN_parameter_core_offset) > 0) {
-         ERROR(MSG_JSV_BINDING_REJECTED_SS, "BN_parameter_core_offset", "> 0");
-         DRETURN(false);
-      }
-
-      expl = lGetString(binding_elem, BN_parameter_explicit);
-      amount = get_explicit_amount(expl, false);
-
-      if (!check_explicit_binding_string(expl, amount, false)) {
-         DRETURN(false);
-      }
-
-   }
-
-   return true;
-}
-

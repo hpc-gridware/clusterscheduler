@@ -114,6 +114,8 @@ qrstat_filter_add_ar_attributes(qrstat_env_t *qrstat_env)
       AR_type,
       AR_reserved_queues,
       AR_reserved_hosts,
+      AR_binding,
+      AR_granted_resources_list,
       NoName
    };
 

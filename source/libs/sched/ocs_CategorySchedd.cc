@@ -44,10 +44,12 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) 
 
 void
 ocs::CategorySchedd::job_reject_category(const lListElem *job, bool with_reservation) {
+   DENTER(TOP_LAYER);
    auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
 
    lSetBool(cat, CT_rejected, true);
    if (with_reservation) {
       lSetBool(cat, CT_reservation_rejected, true);
    }
+   DRETURN_VOID;
 }

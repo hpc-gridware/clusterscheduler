@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ enum {
    JG_sticket,
    JG_jcoticket,
    JG_jcfticket,
-   JG_processors
+   JG_processors,
+   JG_binding_to_use
 };
 
 constexpr const int JG_Type[] = {
@@ -58,6 +59,7 @@ constexpr const int JG_Type[] = {
    JG_jcoticket,
    JG_jcfticket,
    JG_processors,
+   JG_binding_to_use,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -74,7 +76,8 @@ constexpr const int JG_Type[] = {
    {JG_sticket, "JG_sticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JG_jcoticket, "JG_jcoticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JG_jcfticket, "JG_jcfticket", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {JG_processors, "JG_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {JG_processors, "JG_processors", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JG_binding_to_use, "JG_binding_to_use", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/ocs_Topo.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -94,8 +95,13 @@ void sge_setup_sge_execd(const char* tmp_err_file_name)
       sleep(1);
       ocs::gdi::ClientBase::gdi_get_act_master_host(true);
    }
-   sge_show_conf();         
+   sge_show_conf();
 
+   // Set fake topology and trigger reinit of HWLOC
+#if defined(OCS_HWLOC)
+   std::string topo_file = mconf_get_topology_file();
+   ocs::Topo::set_fake_topo_file(topo_file);
+#endif
 
    /* get aliased hostname */
    /* TODO: is this call needed ? */

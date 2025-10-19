@@ -123,6 +123,7 @@ endif()
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 
+
 set(PROJECT_3RDPARTY_HOME
         "$ENV{HOME}/3rd_party"
         CACHE STRING "installation directory for 3rdparty tools")
@@ -141,7 +142,9 @@ set(CMAKE_INSTALL_RPATH "\$ORIGIN/../../lib/${SGE_ARCH}")
 
 # 3rdparty packages @todo: better install them into
 # <base_dir>/<pkg>/<version>/<arch>/<os>/<osversion>/<debug|release>
+
 include(cmake/BuildThirdParty.cmake)
+
 build_third_party("${CMAKE_BINARY_DIR}/3rd_party" ${PROJECT_3RDPARTY_DIR})
 
 # @todo: we shouldn't need includes - daemons/common, required for err_trace.h
@@ -235,7 +238,8 @@ endif()
 
 if (WITH_HWLOC)
    if (SGE_ARCH MATCHES "darwin-arm64")
-      set(SGE_TOPO_LIB hwloc CoreFoundation Core)
+      #set(SGE_TOPO_LIB hwloc CoreFoundation Core)
+      set(SGE_TOPO_LIB hwloc)
       set(SGE_TOPO_LIB_PATH "")
    elseif (SGE_ARCH MATCHES "fbsd-amd64")
       set(SGE_TOPO_LIB hwloc udev)
@@ -247,7 +251,11 @@ if (WITH_HWLOC)
          set(SGE_TOPO_LIB hwloc picl kstat lgrp pciaccess)
       endif()
    else ()
-      set(SGE_TOPO_LIB hwloc udev)
+      if (OS_ID STREQUAL "ubuntu" AND OS_VERSION EQUAL 24.04)
+         set(SGE_TOPO_LIB hwloc udev OpenCL)
+      else()
+         set(SGE_TOPO_LIB hwloc udev)
+      endif()
       set(SGE_TOPO_LIB_PATH "")
       add_compile_definitions(OCS_HWLOC)
    endif ()

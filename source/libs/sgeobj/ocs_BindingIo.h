@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "cull/cull_list.h"
 #include "uti/sge_dstring.h"
 
@@ -40,10 +42,7 @@
 namespace ocs {
    class BindingIo {
    public:
-      static bool
-      binding_print_to_string(const lListElem *this_list, dstring * string);
-
-      static bool
-      binding_parse_from_string(lListElem *this_elem, lList **answer_list, dstring *string);
+      static void
+      binding_print_to_string(const lListElem *this_list, std::string &binding_string, bool as_switches = false);
    };
 }

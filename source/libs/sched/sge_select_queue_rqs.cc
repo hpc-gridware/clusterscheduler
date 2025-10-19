@@ -37,6 +37,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_parse_num_par.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_advance_reservation.h"
@@ -177,9 +178,10 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             lAppendElem(tmp_rue_list, tmp_rue_elem);
 
             sge_dstring_clear(&reason);
+            ocs::TopologyString binding_inuse;
             ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list,  tmp_rue_list,
-                                       nullptr, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
-                                       SGE_RQS_NAME);
+                                   nullptr, nullptr, &reason, false, 1,
+                                   DOMINANT_LAYER_RQS, 0.0, &tmp_time, SGE_RQS_NAME, binding_inuse);
             if (ret != DISPATCH_OK) {
                DPRINTF("denied because: %s\n", sge_dstring_get_string(&reason));
                lFreeList(&tmp_rue_list);
@@ -838,10 +840,11 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
       result = DISPATCH_OK;
    }
 
+   DSTRING_STATIC(dstr, 64);
    if (result == DISPATCH_OK || result == DISPATCH_MISSING_ATTR) {
-      DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> " sge_u64 "\n", queue, host, tt_rqs_all);
+      DPRINTF("rqs_by_slots(%s@%s) returns <at specified time> %s (" sge_u64 ")\n", queue, host, sge_ctime64(*tt_rqs_all, &dstr), *tt_rqs_all);
    } else {
-      DPRINTF("rqs_by_slots(%s@%s) returns <later> " sge_u64 " (%s)\n", queue, host, tt_rqs_all, *is_global?"global":"not global");
+      DPRINTF("rqs_by_slots(%s@%s) returns <later> %s (" sge_u64 ") (%s)\n", queue, host, sge_ctime64(*tt_rqs_all, &dstr), *tt_rqs_all, *is_global?"global":"not global");
    }
 
    DRETURN(result);

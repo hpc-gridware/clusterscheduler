@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -45,6 +45,9 @@ enum {
    JAT_pending_signal_delivery_time,
    JAT_pid,
    JAT_osjobid,
+   JAT_systemd_scope,
+   JAT_systemd_slice,
+   JAT_usage_collection,
    JAT_usage_list,
    JAT_scaled_usage_list,
    JAT_reported_usage_list,
@@ -85,6 +88,9 @@ constexpr const int JAT_Type[] = {
    JAT_pending_signal_delivery_time,
    JAT_pid,
    JAT_osjobid,
+   JAT_systemd_scope,
+   JAT_systemd_slice,
+   JAT_usage_collection,
    JAT_usage_list,
    JAT_scaled_usage_list,
    JAT_reported_usage_list,
@@ -126,6 +132,9 @@ constexpr const int JAT_Type[] = {
    {JAT_pending_signal_delivery_time, "JAT_pending_signal_delivery_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_pid, "JAT_pid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_osjobid, "JAT_osjobid", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_systemd_scope, "JAT_systemd_scope", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_systemd_slice, "JAT_systemd_slice", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JAT_usage_collection, "JAT_usage_collection", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_usage_list, "JAT_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_scaled_usage_list, "JAT_scaled_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_reported_usage_list, "JAT_reported_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

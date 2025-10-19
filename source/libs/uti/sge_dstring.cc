@@ -598,6 +598,26 @@ const char *sge_dstring_get_string(const dstring *sb) {
    return (sb != nullptr) ? sb->s : nullptr;
 }
 
+/** @brief Returns a pointer to the string buffer of a dstring
+ *
+ * The content of the buffer can be adjusted by the caller as
+ * long as size of the buffer (returned by sge_dstring_get_size()) is not exceeded.
+ *
+ * @param sb pointer to dstring
+ * @returns pointer to the string buffer of a dstring
+ */
+char *sge_dstring_get_string_rw(dstring *sb) {
+   return (sb != nullptr) ? sb->s : nullptr;
+}
+
+/** @brief Returns the max size (buffer size) of a dstring
+ *
+ * @param sb pointer to dstring
+ * @returns size of the dstring
+ */
+size_t sge_dstring_get_size(const dstring *sb) {
+   return (sb != nullptr) ? sb->size : 0;
+}
 
 /****** uti/dstring/sge_dstring_strlen() **************************************
 *  NAME

@@ -128,21 +128,35 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
       lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
       if (jsv_url == nullptr) {
          jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
-         lSetString(jsv_url, CF_value, "none");
+         lSetString(jsv_url, CF_value, NONE_STR);
       }
 
       // add jsv_allowed_mod if it is missing
       lListElem *jsv_allowed_mod = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
       if (jsv_allowed_mod == nullptr) {
          jsv_allowed_mod = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
-         lSetString(jsv_allowed_mod, CF_value, "ac,h,i,e,o,j,M,N,p,w");
+         lSetString(jsv_allowed_mod, CF_value, JSV_ALLOWED_MOD_DEFAULT);
       }
 
       // add gdi_request_limits if the attribute is missing
       lListElem *gdi_request_limits = lGetElemStrRW(entries, CF_name, "gdi_request_limits");
       if (gdi_request_limits == nullptr) {
          gdi_request_limits = lAddSubStr(global, CF_name, "gdi_request_limits", CONF_entries, CF_Type);
-         lSetString(gdi_request_limits, CF_value, "none");
+         lSetString(gdi_request_limits, CF_value, NONE_STR);
+      }
+
+      // add gdi_request_limits if the attribute is missing
+      lListElem *binding_params = lGetElemStrRW(entries, CF_name, "binding_params");
+      if (binding_params == nullptr) {
+         binding_params = lAddSubStr(global, CF_name, "binding_params", CONF_entries, CF_Type);
+         lSetString(binding_params, CF_value, BINDING_PARAMS_DEFAULT);
+      }
+
+      // add topology_string if the attribute is missing
+      lListElem *topology_file = lGetElemStrRW(entries, CF_name, "topology_file");
+      if (topology_file == nullptr) {
+         binding_params = lAddSubStr(global, CF_name, "topology_file", CONF_entries, CF_Type);
+         lSetString(binding_params, CF_value, NONE_STR);
       }
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);

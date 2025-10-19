@@ -20,20 +20,20 @@
 
 # source/daemons/shepherd
 add_executable(sge_shepherd
-      builtin_starter.cc
-      ocs_shepherd_systemd.cc
-      setjoblimit.cc
-      setrlimits.cc
-      sge_fileio.cc
-      sge_pset.cc
-      sge_shepconf.cc
-      sge_shepherd_ijs.cc
-      shepherd.cc
-      shepherd_binding.cc
-      signal_queue.cc
-      ../../common/execution_states.cc
-      ../../common/sge_ijs_comm.cc
-      ../../common/sge_ijs_threads.cc)
+        builtin_starter.cc
+        ocs_BindingShepherd.cc
+        ocs_shepherd_systemd.cc
+        setjoblimit.cc
+        setrlimits.cc
+        sge_fileio.cc
+        sge_pset.cc
+        sge_shepconf.cc
+        sge_shepherd_ijs.cc
+        shepherd.cc
+        signal_queue.cc
+        ../../common/execution_states.cc
+        ../../common/sge_ijs_comm.cc
+        ../../common/sge_ijs_threads.cc)
 
 target_include_directories(sge_shepherd PRIVATE ${SGE_INCLUDES})
 

@@ -3685,7 +3685,6 @@ o   -a date_time                           request a job start time
 +   -ac context_list                       add context variable(s)
 +   -A account_string                      use account at host
 +   -b y|n                                 handle command as binary
-+   -binding                               core binding
 +   -c ckpt_selector                       define type of checkpointing for job
 +   -ckpt ckpt-name                        request checkpoint method
 +   -clear                                 skip previous definitions for job

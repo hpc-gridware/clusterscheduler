@@ -57,5 +57,13 @@
 			"subClassName":	"RESL",
 			"subCullPrefix":	"RESL",
 			"flags":	[]
+		}, {
+			"name":	"binding_inuse",
+			"summary":	"Binding",
+			"description":	[{
+				"line":	"Cores/threads that are used by jobs. Filled only if the resource is slots and when bookkeeping is done on host level."
+			}],
+			"type":	"lStringT",
+			"flags":	[]
 		}]
 }

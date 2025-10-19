@@ -64,6 +64,7 @@
 #include "sgeobj/sge_userset.h"
 
 #include "basis_types.h"
+#include "ocs_TopologyString.h"
 #include "uti/sge.h"
 
 #define SGE_BIN "bin"
@@ -125,6 +126,8 @@ struct confel {                       /* cluster configuration parameters */
     char        *delegated_file_staging; /*drmaa attribute: "true" or "false" */
     char        *libjvm_path;         /* libjvm_path for jvm_thread */
     char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
+    char        *binding_params;      //< string containing al binding specific parameters
+    char        *topology_file;       //< None or path to a hwloc topology file
 };
 
 typedef struct confel sge_conf_type;
@@ -134,7 +137,7 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
-   0, 0, nullptr, 0, nullptr, nullptr, nullptr
+   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr
 };
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
@@ -142,6 +145,7 @@ static bool forbid_apperror = false;
 static bool enable_forced_qdel = false;
 static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
+static bool enable_binding = true;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool ignore_ngroups_max_limit = false;
@@ -187,11 +191,6 @@ static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
 static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
 
 static u_long32 script_timeout = 120;
-#ifdef LINUX
-static bool enable_binding = true;
-#else
-static bool enable_binding = false;
-#endif
 static bool enable_addgrp_kill = false;
 static u_long64 pdc_interval = sge_gmt32_to_gmt64(1);
 static char s_descriptors[100];
@@ -219,6 +218,14 @@ static bool old_reporting = false;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
 static std::string usage_patterns;
+
+// Binding specific parameters
+static bool is_binding_enabled = true;
+static bool do_implicit_binding = true;
+static bool schedule_on_any_host = true;
+static binding_mode_t binding_mode = BINDING_MODE_DEFAULT;
+static ocs::BindingUnit::Unit default_binding_unit = ocs::BindingUnit::CCORE;
+static std::string binding_filter = NONE_STR;
 
 /* generally simulate all execd's */
 static bool simulate_execds = false;
@@ -342,42 +349,43 @@ static tConfEntry conf_entries[] = {
  { "execd_spool_dir",            1, nullptr,                   1, nullptr},
  { "mailer",                     1, MAILER,                    1, nullptr},
  { "xterm",                      1, "/usr/bin/X11/xterm",      1, nullptr},
- { "load_sensor",                1, "none",                    1, nullptr},
+ { "load_sensor",                1, NONE_STR,                  1, nullptr},
  { "prolog",                     1, PROLOG,                    1, nullptr},
  { "epilog",                     1, EPILOG,                    1, nullptr},
  { "shell_start_mode",           1, SHELL_START_MODE,          1, nullptr},
  { "login_shells",               1, LOGIN_SHELLS,              1, nullptr},
  { "min_uid",                    0, MIN_UID,                   1, nullptr},
  { "min_gid",                    0, MIN_GID,                   1, nullptr},
- { "user_lists",                 0, "none",                    1, nullptr},
- { "xuser_lists",                0, "none",                    1, nullptr},
- { "projects",                   0, "none",                    1, nullptr},
- { "xprojects",                  0, "none",                    1, nullptr},
+ { "user_lists",                 0, NONE_STR,                  1, nullptr},
+ { "xuser_lists",                0, NONE_STR,                  1, nullptr},
+ { "projects",                   0, NONE_STR,                  1, nullptr},
+ { "xprojects",                  0, NONE_STR,                  1, nullptr},
  { "load_report_time",           1, LOAD_LOG_TIME,             1, nullptr},
  { "max_unheard",                0, MAX_UNHEARD,               1, nullptr},
  { "loglevel",                   0, LOGLEVEL,                  1, nullptr},
  { "enforce_project",            0, "false",                   1, nullptr},
  { "enforce_user",               0, "false",                   1, nullptr},
- { "administrator_mail",         0, "none",                    1, nullptr},
- { "mail_tag",                   0, "none",                    1, nullptr},
- { "set_token_cmd",              1, "none",                    1, nullptr},
- { "pag_cmd",                    1, "none",                    1, nullptr},
+ { "administrator_mail",         0, NONE_STR,                  1, nullptr},
+ { "mail_tag",                   0, NONE_STR,                  1, nullptr},
+ { "set_token_cmd",              1, NONE_STR,                  1, nullptr},
+ { "pag_cmd",                    1, NONE_STR,                  1, nullptr},
  { "token_extend_time",          1, "24:0:0",                  1, nullptr},
- { "shepherd_cmd",               1, "none",                    1, nullptr},
- { "qmaster_params",             0, "none",                    1, nullptr},
- { "execd_params",               1, "none",                    1, nullptr},
+ { "shepherd_cmd",               1, NONE_STR,                  1, nullptr},
+ { "qmaster_params",             0, NONE_STR,                  1, nullptr},
+ { "execd_params",               1, NONE_STR,                  1, nullptr},
  { "reporting_params",           1, REPORTING_PARAMS,          1, nullptr},
- { "gid_range",                  1, "none",                    1, nullptr},
+ { "binding_params",             0, BINDING_PARAMS_DEFAULT,    1, nullptr},
+ { "gid_range",                  1, NONE_STR,                  1, nullptr},
  { "finished_jobs",              0, FINISHED_JOBS,             1, nullptr},
- { "qlogin_daemon",              1, "none",                    1, nullptr},
- { "qlogin_command",             1, "none",                    1, nullptr},
- { "rsh_daemon",                 1, "none",                    1, nullptr},
- { "rsh_command",                1, "none",                    1, nullptr},
- { "jsv_url",                    0, "none",                    1, nullptr},
- { "jsv_allowed_mod",            0, "none",                    1, nullptr},
- { "gdi_request_limits",         0, "none",                    1, nullptr},
- { "rlogin_daemon",              1, "none",                    1, nullptr},
- { "rlogin_command",             1, "none",                    1, nullptr},
+ { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
+ { "qlogin_command",             1, NONE_STR,                  1, nullptr},
+ { "rsh_daemon",                 1, NONE_STR,                  1, nullptr},
+ { "rsh_command",                1, NONE_STR,                  1, nullptr},
+ { "jsv_url",                    0, NONE_STR,                  1, nullptr},
+ { "jsv_allowed_mod",            0, NONE_STR,                  1, nullptr},
+ { "gdi_request_limits",         0, NONE_STR,                  1, nullptr},
+ { "rlogin_daemon",              1, NONE_STR,                  1, nullptr},
+ { "rlogin_command",             1, NONE_STR,                  1, nullptr},
  { "reschedule_unknown",         1, RESCHEDULE_UNKNOWN,        1, nullptr},
  { "max_aj_instances",           0, MAX_AJ_INSTANCES,          1, nullptr},
  { "max_aj_tasks",               0, MAX_AJ_TASKS,              1, nullptr},
@@ -386,11 +394,12 @@ static tConfEntry conf_entries[] = {
  { "max_advance_reservations",   0, MAX_ADVANCE_RESERVATIONS,  1, nullptr},
  { "auto_user_oticket",          0, "0",                       1, nullptr},
  { "auto_user_fshare",           0, "0",                       1, nullptr},
- { "auto_user_default_project",  0, "none",                    1, nullptr},
+ { "auto_user_default_project",  0, NONE_STR,                  1, nullptr},
  { "auto_user_delete_time",      0, "0",                       1, nullptr},
  { "delegated_file_staging",     0, "false",                   1, nullptr},
  { "libjvm_path",                1, "",                        1, nullptr},
  { "additional_jvm_args",        1, "",                        1, nullptr},
+ { "topology_file",              1, NONE_STR,                  1, nullptr},
  { nullptr,                      0, nullptr,                   0, nullptr}
 };
 
@@ -551,6 +560,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "qmaster_params", &Master_Config.qmaster_params, nullptr, 0);
    chg_conf_val(lpCfg, "execd_params",  &Master_Config.execd_params, nullptr, 0);
    chg_conf_val(lpCfg, "reporting_params",  &Master_Config.reporting_params, nullptr, 0);
+   chg_conf_val(lpCfg, "binding_params",  &Master_Config.binding_params, nullptr, 0);
    chg_conf_val(lpCfg, "finished_jobs", nullptr, &Master_Config.zombie_jobs, TYPE_INT);
    chg_conf_val(lpCfg, "qlogin_daemon", &Master_Config.qlogin_daemon, nullptr, 0);
    chg_conf_val(lpCfg, "qlogin_command", &Master_Config.qlogin_command, nullptr, 0);
@@ -576,6 +586,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "delegated_file_staging", &Master_Config.delegated_file_staging, nullptr, 0);
    chg_conf_val(lpCfg, "libjvm_path", &Master_Config.libjvm_path, nullptr, 0);
    chg_conf_val(lpCfg, "additional_jvm_args", &Master_Config.additional_jvm_args, nullptr, 0);
+   chg_conf_val(lpCfg, "topology_file", &Master_Config.topology_file, nullptr, 0);
    DRETURN_VOID;
 }
 
@@ -669,6 +680,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       char* qmaster_params = mconf_get_qmaster_params();
       char* execd_params = mconf_get_execd_params();
       char* reporting_params = mconf_get_reporting_params();
+      char* binding_params = mconf_get_binding_params();
       u_long32 load_report_time = mconf_get_load_report_time();
 #ifdef LINUX
       bool mtrace_before = enable_mtrace;
@@ -680,6 +692,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_forced_qdel = false;
       enable_sup_grp_eval = false;
       enable_enforce_master_limit = false;
+      enable_binding = true;
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       ignore_ngroups_max_limit = false;
@@ -761,6 +774,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &enable_enforce_master_limit)) {
             continue;
          } 
+         if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
+            continue;
+         }
          if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &enable_test_sleep_after_request)) {
             continue;
          }
@@ -917,11 +933,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       keep_active = KEEP_ACTIVE_FALSE;
       usage_collection = USAGE_COLLECTION_DEFAULT;
       script_timeout = 120;
-#ifdef LINUX
-      enable_binding = true;
-#else
-      enable_binding = false;
-#endif
       enable_addgrp_kill = false;
       use_qsub_gid = false;
       prof_execd_thrd = false;
@@ -1001,9 +1012,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "SIMULATE_JOBS", &simulate_jobs)) {
-            continue;
-         }
-         if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
             continue;
          }
          if (parse_bool_param(s, "ENABLE_ADDGRP_KILL", &enable_addgrp_kill)) {
@@ -1181,9 +1189,64 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       sge_free_saved_vars(conf_context);
       conf_context=nullptr;
 
+      /* parse binding parameters */
+      SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+      for (s=sge_strtok_r(binding_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+         if (parse_bool_param(s, "enabled", &is_binding_enabled)) {
+            continue;
+         }
+         if (parse_bool_param(s, "implicit", &do_implicit_binding)) {
+            continue;
+         }
+         if (parse_bool_param(s, "on_any_host", &schedule_on_any_host)) {
+            continue;
+         }
+         std::string binding_mode_str;
+         if (parse_string_param(s, "mode", binding_mode_str)) {
+            if (binding_mode_str == "default" || binding_mode_str == "DEFAULT") {
+               binding_mode = BINDING_MODE_DEFAULT;
+            } else if (binding_mode_str == "ocs" || binding_mode_str == "OCS") {
+               binding_mode = BINDING_MODE_OCS;
+            } else if (binding_mode_str == "gcs" || binding_mode_str == "GCS") {
+               binding_mode = BINDING_MODE_GCS;
+            } else {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "binding_params", "mode", -1);
+               binding_mode = BINDING_MODE_DEFAULT;
+            }
+            continue;
+         }
+         std::string default_binding_unit_str;
+         if (parse_string_param(s, "default_unit", default_binding_unit_str)) {
+            default_binding_unit = ocs::BindingUnit::from_string(default_binding_unit_str);
+
+            if (default_binding_unit == ocs::BindingUnit::UNINITIALIZED) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "binding_params", "default_unit", -1);
+               default_binding_unit = ocs::BindingUnit::CCORE;
+               continue;
+            }
+
+            continue;
+         }
+         if (parse_string_param(s, "filter", binding_filter)) {
+            if (binding_filter != NONE_STR && binding_filter != FIRST_CORE) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "binding_params", "filter", -1);
+               binding_filter = NONE_STR;
+               continue;
+            }
+
+            continue;
+         }
+      }
+      SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+      sge_free_saved_vars(conf_context);
+      conf_context=nullptr;
       sge_free(&qmaster_params);
       sge_free(&execd_params);
       sge_free(&reporting_params);
+      sge_free(&binding_params);
    }
 
    lFreeList(&mlist);
@@ -1239,6 +1302,7 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_US, Master_Config.token_extend_time, "token_extend_time");
    INFO(MSG_CONF_USING_SS, Master_Config.shepherd_cmd != nullptr ? Master_Config.shepherd_cmd : "none", "shepherd_cmd");
    INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : "none", "reporting_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.binding_params != nullptr ? Master_Config.binding_params : "none", "binding_params");
    INFO(MSG_CONF_USING_US, Master_Config.zombie_jobs, "finished_jobs");
    INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : "none", "qlogin_daemon");
    INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : "none", "qlogin_command");
@@ -1281,6 +1345,8 @@ void sge_show_conf()
    prj_list_append_to_dstring(Master_Config.xprojects, &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xprojects");
    sge_dstring_clear(&dstr);
+
+   INFO(MSG_CONF_USING_SS, Master_Config.topology_file != nullptr ? Master_Config.topology_file : NONE_STR, "topology_file");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -1327,6 +1393,7 @@ static void clean_conf() {
    sge_free(&Master_Config.qmaster_params);
    sge_free(&Master_Config.execd_params);
    sge_free(&Master_Config.reporting_params);
+   sge_free(&Master_Config.binding_params);
    sge_free(&Master_Config.gid_range);
    sge_free(&Master_Config.qlogin_daemon);
    sge_free(&Master_Config.qlogin_command);
@@ -1341,7 +1408,8 @@ static void clean_conf() {
    sge_free(&Master_Config.delegated_file_staging);
    sge_free(&Master_Config.libjvm_path);
    sge_free(&Master_Config.additional_jvm_args);
-   
+   sge_free(&Master_Config.topology_file);
+
    memset(&Master_Config, 0, sizeof(sge_conf_type));
 
    DRETURN_VOID;
@@ -1746,6 +1814,17 @@ char* mconf_get_reporting_params() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(reporting_params);
+}
+
+/* returned pointer needs to be freed */
+char* mconf_get_binding_params() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   char *binding_params = sge_strdup(nullptr, Master_Config.binding_params);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(binding_params);
 }
 
 /* returned pointer needs to be freed */
@@ -2166,18 +2245,6 @@ usage_collection_t mconf_get_usage_collection() {
    ret = usage_collection;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   DRETURN(ret);
-}
-
-bool mconf_get_enable_binding() {
-   bool ret;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   ret = enable_binding;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
 
@@ -2708,6 +2775,17 @@ bool mconf_get_enable_enforce_master_limit() {
 
 }
 
+bool mconf_get_enable_binding() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = enable_binding;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+
+}
+
 bool mconf_get_enable_test_sleep_after_request() {
    bool ret;
 
@@ -2910,3 +2988,64 @@ std::tuple<u_long32, bool, bool> mconf_get_monitoring_options() {
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
+
+/** @brief Returns true if binding is enabled
+ *
+ * This value is cached in the assignment structure for the scheduler to avoid calling this function.
+ */
+bool mconf_is_binding_enabled() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = is_binding_enabled;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_do_implicit_binding() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = do_implicit_binding;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_schedule_on_any_host() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   bool ret = schedule_on_any_host;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+binding_mode_t mconf_get_binding_mode() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   binding_mode_t ret = binding_mode;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+ocs::BindingUnit::Unit mconf_get_default_binding_unit() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ocs::BindingUnit::Unit ret = default_binding_unit;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::string mconf_get_binding_filter() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = binding_filter;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::string mconf_get_topology_file() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   std::string ret = Master_Config.topology_file;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+

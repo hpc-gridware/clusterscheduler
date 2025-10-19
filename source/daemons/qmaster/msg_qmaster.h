@@ -683,6 +683,7 @@
 #define MSG_REQLIMIT_INVALIDVALUE_S                _MESSAGE(33976, _("value " SFQ " for request limits are not allowed"))
 #define MSG_REQLIMIT_ADDVALUENOT_ALLOWED_S         _MESSAGE(33977, _("additional character " SFQ " after value in request limit is not allowed"))
 #define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33978, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
+#define MSG_SGETEXT_BINDING_NOT_AVAILABLE          _MESSAGE(33979, _("-bsort, -bstart and -bstop options are not available in OCS. Request a demo license of GCS to use these options."))
 
 // ocs_security_qmaster.cc
 #define MSG_NO_COMMLIB_HANDLE_FOUND                _MESSAGE(33985, _("no commlib handle found for security operations"))

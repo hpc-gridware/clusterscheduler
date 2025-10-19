@@ -57,6 +57,18 @@
 					"name":	"SPOOL"
 				}]
 		}, {
+			"name":	"binding_inuse",
+			"summary":	"Grant Binding In Use",
+			"description":	[{
+				"line":	"Topology strings that show the granted core binding cores/threads."
+			}],
+			"type":	"lListT",
+			"subClassName":	"ST",
+			"subCullPrefix":	"ST",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
+		}, {
 			"name":	"host",
 			"summary":	"Host",
 			"description":	[{

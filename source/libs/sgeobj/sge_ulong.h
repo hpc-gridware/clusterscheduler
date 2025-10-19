@@ -79,6 +79,9 @@ bool
 ulong_parse_priority(lList **alpp, int *valp, const char *priority_str);
 
 bool
+ulong_parse_binding_amount(lList **answer_list, int *valp, const char *bamount_str);
+
+bool
 ulong_parse_value_from_string(u_long32 *this_ulong, 
                            lList **answer_list, const char *string);
 

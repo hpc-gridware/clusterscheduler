@@ -46,7 +46,6 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_string.h"
 #include "uti/sge_spool.h"
-#include "uti/sge_binding_hlp.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/cull/sge_binding_BN_L.h"

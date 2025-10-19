@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ enum {
    JB_ar,
    JB_pty,
    JB_ja_task_concurrency,
-   JB_binding,
+   JB_new_binding,
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
@@ -198,7 +198,7 @@ constexpr const int JB_Type[] = {
    JB_ar,
    JB_pty,
    JB_ja_task_concurrency,
-   JB_binding,
+   JB_new_binding,
    JB_submission_command_line,
    JB_grp_list,
    JB_joker,
@@ -288,12 +288,12 @@ constexpr const int JB_Type[] = {
    {JB_ar, "JB_ar", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_pty, "JB_pty", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_ja_task_concurrency, "JB_ja_task_concurrency", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_binding, "JB_binding", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JB_new_binding, "JB_new_binding", AttributeStatic::OBJECT, BN_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_submission_command_line, "JB_submission_command_line", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_sync_options, "JB_sync_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_category_id, "JB_category_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, true} \
+   {JB_category_id, "JB_category_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
 
 } // end namespace
 

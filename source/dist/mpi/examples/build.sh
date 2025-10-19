@@ -34,16 +34,19 @@ if [ $# -gt 0 ]; then
     BINARY="$BINARY-$1"
 fi
 
+LD_LIBRARY_PATH="$MPIR_HOME/lib"
+export LD_LIBRARY_PATH
+
 PATH=$MPIR_HOME/bin:$PATH
 export PATH
 
-CFLAGS=""
-LFLAGS=""
-# need additional options for Intel MPI
-type mpiicc >/dev/null 2>&1
-if [ $? -eq 0 ]; then
-    CFLAGS="$CFLAGS -I$MPIR_HOME/include"
-    LFLAGS="$LFLAGS -L$MPIR_HOME/lib"
-fi
+CFLAGS="$CFLAGS -I$MPIR_HOME/include"
+LFLAGS="$LFLAGS -L$MPIR_HOME/lib"
+
+echo "Compiling $BINARY in $PWD"
+echo "MPIR_HOME=$MPIR_HOME"
+echo "CFLAGS=$CFLAGS"
+echo "LFLAGS=$LFLAGS"
+echo "mpicc $CFLAGS $LFLAGS -o $BINARY $SGE_ROOT/mpi/examples/testmpi.c -l"
 
 mpicc $CFLAGS $LFLAGS -o $BINARY $SGE_ROOT/mpi/examples/testmpi.c -lm

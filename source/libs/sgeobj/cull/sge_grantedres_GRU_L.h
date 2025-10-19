@@ -53,6 +53,9 @@
 *    In case of resource maps: Which Ids and how much per Id has been granted
 *    For RSMAPs: Which ids have been granted.
 *
+*    SGE_LIST(GRU_binding_inuse) - Grant Binding In Use
+*    Topology strings that show the granted core binding cores/threads.
+*
 *    SGE_HOST(GRU_host) - Host
 *    Host on which the resource has been granted (required in case of parallel jobs).
 *
@@ -63,6 +66,7 @@ enum {
    GRU_name,
    GRU_amount,
    GRU_resource_map_list,
+   GRU_binding_inuse,
    GRU_host
 };
 
@@ -71,6 +75,7 @@ LISTDEF(GRU_Type)
    SGE_STRING(GRU_name, CULL_SPOOL)
    SGE_DOUBLE(GRU_amount, CULL_SPOOL)
    SGE_LIST(GRU_resource_map_list, RESL_Type, CULL_SPOOL)
+   SGE_LIST(GRU_binding_inuse, ST_Type, CULL_SPOOL)
    SGE_HOST(GRU_host, CULL_SPOOL)
 LISTEND
 
@@ -79,6 +84,7 @@ NAMEDEF(GRUN)
    NAME("GRU_name")
    NAME("GRU_amount")
    NAME("GRU_resource_map_list")
+   NAME("GRU_binding_inuse")
    NAME("GRU_host")
 NAMEEND
 

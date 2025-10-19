@@ -28,6 +28,7 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_utilization.h"
+#include "sgeobj/sge_str.h"
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_monitoring_level.h"
@@ -35,6 +36,8 @@
 #include "uti/sge_string.h"
 
 #include "sge_sched_thread_rsmap.h"
+
+#include "ocs_GrantedResources.h"
 
 static bool
 gru_add_free_rsmap_ids(lListElem *gru, const char *name, const char *host_name, const lList *host_list,
@@ -190,7 +193,12 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    for_each_ep(gdil_ep, a->gdil) {
       int slots = lGetUlong(gdil_ep, JG_slots);
       const char *host_name = lGetHost(gdil_ep, JG_qhostname);
-      DPRINTF("gdil_ep: %s, %d slots %s\n", host_name, slots, is_master_task ? ", master task" : "");
+
+      DPRINTF("gdil_ep: %s, %d slots%s\n", host_name, slots, is_master_task ? ", master task" : "");
+
+      // add the binding_touse information (copy from JG to GRU)
+      const lList *binding_to_use_list = lGetList(gdil_ep, JG_binding_to_use);
+      ocs::GrantedResources::add_binding_to_use(&granted_resources_list, host_name, binding_to_use_list);
 
       // book the global resources
       const lListElem *request;
@@ -278,6 +286,11 @@ bool add_granted_resource_list(sge_assignment_t *a, lListElem *ja_task, const lL
    } else {
       lFreeList(&granted_resources_list);
    }
+
+#if 0
+   DPRINTF("add_granted_resource_list: after adding binding information\n");
+   lWriteElemTo(ja_task, stderr);
+#endif
 
    DRETURN(ret);
 }

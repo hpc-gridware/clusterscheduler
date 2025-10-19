@@ -2764,7 +2764,9 @@ job_get_contribution_by_scope(const lListElem *job, lList **answer_list, const c
       ret = false; 
    }
    if (is_default_request && *value == 0) {
+#if 0
       DPRINTF("job_get_contribution_by_scope: default request for %s is 0, ignoring\n", name);
+#endif
       ret = false;
    }
    
@@ -3081,6 +3083,18 @@ sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_ele
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
       sge_dstring_sprintf_append(category_str, sge_u32, ul);
+      sge_dstring_append_char(category_str, ' ');
+   }
+   DRETURN(true);
+}
+
+bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, const int pos) {
+   DENTER(TOP_LAYER);
+   lListElem *binding_elem = lGetPosObject(job, pos);
+   if (binding_elem != nullptr) {
+      std::string binding_switches_str;
+      ocs::BindingIo::binding_print_to_string(binding_elem, binding_switches_str, true);
+      sge_dstring_append(category_str, binding_switches_str.c_str());
       sge_dstring_append_char(category_str, ' ');
    }
    DRETURN(true);
@@ -3904,30 +3918,6 @@ job_is_requesting_consumable(lListElem *jep, const char *resource_name)
    return false;
 }
 
-bool
-job_init_binding_elem(lListElem *jep) 
-{
-   bool ret = true;
-   lList *binding_list = lCreateList("", BN_Type);
-   lListElem *binding_elem = lCreateElem(BN_Type); 
-
-   if (binding_elem != nullptr && binding_list != nullptr) {
-      lAppendElem(binding_list, binding_elem);
-      lSetList(jep, JB_binding, binding_list);
-
-      lSetString(binding_elem, BN_strategy, "no_job_binding");
-      lSetUlong(binding_elem, BN_type, BINDING_TYPE_NONE);
-      lSetUlong(binding_elem, BN_parameter_n, 0);
-      lSetUlong(binding_elem, BN_parameter_socket_offset, 0);
-      lSetUlong(binding_elem, BN_parameter_core_offset, 0);
-      lSetUlong(binding_elem, BN_parameter_striding_step_size, 0);
-      lSetString(binding_elem, BN_parameter_explicit, "no_explicit_binding");
-   } else {
-      ret = false;
-   }
-   return ret;
-}
-
 bool job_parse_scope_string(const char *scope, char &scope_id) {
    bool ret = true;
 
@@ -4468,11 +4458,14 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    if (JOB_TYPE_IS_BINARY(lGetUlong(job, JB_type))) {
       job_add_opt_to_comand_line(dstr, "-b", "yes");
    }
-   // -binding
-   const lListElem *binding;
-   for_each_ep(binding, lGetList(job, JB_binding)) {
-      sge_dstring_append(dstr, " -binding ");
-      ocs::BindingIo::binding_print_to_string(binding, dstr);
+
+   // -btype, -bunit, -bstrategy, -bstart, -bstop, -bamount ...
+   const lListElem *binding = lGetObject(job, JB_new_binding);
+   if (binding != nullptr) {
+      std::string binding_str;
+      ocs::BindingIo::binding_print_to_string(binding, binding_str, true);
+      sge_dstring_append_char(dstr, ' ');
+      sge_dstring_append(dstr, binding_str.c_str());
    }
 
    job_add_str_opt_to_command_line(job, dstr, "-C", JB_directive_prefix);

@@ -180,6 +180,14 @@ static spooling_field ST_sub_fields[] = {
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
 };
 
+#if 0
+static spooling_field ST_sub_fields_binding[] = {
+   {  ST_id,               0, nullptr,                false, nullptr, false, nullptr, nullptr},
+   {  ST_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr},
+   {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr}
+};
+#endif
+
 static spooling_field ASTRLIST_sub_fields[] = {
    {  ASTRLIST_href,       0, nullptr,                false, nullptr, false, nullptr, nullptr},
    {  ASTRLIST_value,      0, nullptr,                false, ST_sub_fields, false, nullptr, nullptr},
@@ -489,7 +497,8 @@ static spooling_field QR_sub_fields[] = {
 static spooling_field JG_sub_fields[] = {
    {  JG_qname,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  JG_slots,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
-   {  NoName,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
+//   {  JG_binding_to_use,    0, nullptr,                false, ST_sub_fields_binding, false, &qconf_sub_sub_name_value_comma_sfi, nullptr, nullptr},
+   {  NoName,               0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
 static spooling_field MR_sub_fields[] = {

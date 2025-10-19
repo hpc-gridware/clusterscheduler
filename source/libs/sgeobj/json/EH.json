@@ -417,5 +417,18 @@
 			"subClassName": "Variable",
 			"subCullPrefix": "VA",
 			"flags":	[{ "name":  "SPOOL" }]
+		}, {
+			"name":	"internal_topology",
+			"summary":	"topology string stored internally",
+			"description":	[{
+				"line":	"topology string stored internally, used by qmaster"
+			}, { "line":   "contains hardware information (socket, cores, threads),"
+			}, { "line":   "memory information (numa nodes and caches),"
+			}, { "line":   "and attributes for those nodes (size, speed etc.)"
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"JGDI_HIDDEN"
+			}]
 		}]
 }

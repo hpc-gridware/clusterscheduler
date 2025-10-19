@@ -313,7 +313,7 @@ struct qstat_handler_str {
   int (*report_queue_suspend_alarm)(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
   int (*report_queue_message)(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
   
-  int (*report_queue_resource)(qstat_handler_t* handler, const char* dom, const char* name, const char* value, lList **alpp);
+  int (*report_queue_resource)(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
   
   job_handler_t job_handler;
   

@@ -975,6 +975,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          }
 
          const char *last_hostname = nullptr;
+         const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
          const lListElem *gdil_ep;
          const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
          for_each_rw(gdil_ep, gdil) {
@@ -1011,7 +1012,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                }
 
                /* debit consumable resources */
-               if (debit_host_consumable(jep, jatep, pe, global_host_ep, master_centry_list, tmp_slot, master_task,
+               if (debit_host_consumable(jep, jatep, granted_resources_list, pe, global_host_ep, master_centry_list, tmp_slot, master_task,
                                          do_per_global_host_booking,
                                          nullptr) > 0) {
                   /* this info is not spooled */
@@ -1021,7 +1022,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   answer_list_output(&answer_list);
                }
                host = host_list_locate(master_exechost_list, queue_hostname);
-               if (debit_host_consumable(jep, jatep, pe, host, master_centry_list, tmp_slot, master_task,
+               if (debit_host_consumable(jep, jatep, granted_resources_list, pe, host, master_centry_list, tmp_slot, master_task,
                                          do_per_host_booking, nullptr) > 0) {
                   /* this info is not spooled */
                   sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
@@ -1052,11 +1053,11 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   bookings += qinstance_debit_consumable(queue, jep, pe, master_centry_list, tmp_slot, master_task,
                                                  do_per_host_booking, nullptr) > 0;
                   if (ar_global_host != nullptr) {
-                     bookings += debit_host_consumable(jep, jatep, pe, ar_global_host, master_centry_list, tmp_slot, master_task, do_per_global_host_booking, nullptr) > 0;
+                     bookings += debit_host_consumable(jep, jatep, granted_resources_list, pe, ar_global_host, master_centry_list, tmp_slot, master_task, do_per_global_host_booking, nullptr) > 0;
                   }
                   lListElem *host = lGetSubHostRW(ar, EH_name, queue_hostname, AR_reserved_hosts);
                   if (host != nullptr) {
-                     bookings += debit_host_consumable(jep, jatep, pe, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+                     bookings += debit_host_consumable(jep, jatep, granted_resources_list, pe, host, master_centry_list, tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
                   }
                   if (bookings > 0) {
                      /* this info is not spooled */
@@ -1579,9 +1580,10 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
          pe_slots += tmp_slot;
          if (incslots) {
             lListElem *host;
+            const lList *granted_resources_list = lGetList(ja_task, JAT_granted_resources_list);
 
             /* undebit consumable resources */
-            if (debit_host_consumable(job, ja_task, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
+            if (debit_host_consumable(job, ja_task, granted_resources_list, pe, global_host_ep, master_centry_list, -tmp_slot, master_task,
                                       do_per_global_host_booking, nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
@@ -1589,7 +1591,7 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                answer_list_output(&answer_list);
             }
             host = host_list_locate(master_exechost_list, queue_hostname);
-            if (debit_host_consumable(job, ja_task, pe, host, master_centry_list, -tmp_slot, master_task,
+            if (debit_host_consumable(job, ja_task, granted_resources_list, pe, host, master_centry_list, -tmp_slot, master_task,
                                       do_per_host_booking, nullptr) > 0) {
                /* this info is not spooled */
                sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0, queue_hostname, nullptr, nullptr, host, gdi_session);
@@ -1621,11 +1623,11 @@ sge_clear_granted_resources(lListElem *job, lListElem *ja_task, int incslots, mo
                bookings += qinstance_debit_consumable(queue, job, pe, master_centry_list, -tmp_slot, master_task,
                                               do_per_host_booking, nullptr) > 0;
                if (ar_global_host != nullptr) {
-                  bookings += debit_host_consumable(job, ja_task, pe, ar_global_host, master_centry_list, -tmp_slot, master_task, do_per_global_host_booking, nullptr) > 0;
+                  bookings += debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_global_host, master_centry_list, -tmp_slot, master_task, do_per_global_host_booking, nullptr) > 0;
                }
                lListElem *host = lGetSubHostRW(ar, EH_name, queue_hostname, AR_reserved_hosts);
                if (host != nullptr) {
-                  bookings += debit_host_consumable(job, ja_task, pe, host, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
+                  bookings += debit_host_consumable(job, ja_task, granted_resources_list, pe, host, master_centry_list, -tmp_slot, master_task, do_per_host_booking, nullptr) > 0;
                }
 
                if (bookings > 0) {

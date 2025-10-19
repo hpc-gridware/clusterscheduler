@@ -99,15 +99,22 @@ static bool
 qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp,
                                      const char *name, bool value);
 static bool
-qrstat_report_start_granted_slots_list(qrstat_report_handler_t* handler, lList **alpp);
+qrstat_report_start_exec_queue_list(qrstat_report_handler_t* handler, lList **alpp);
 
 static bool
-qrstat_report_finish_granted_slots_list(qrstat_report_handler_t* handler, lList **alpp);
+qrstat_report_finish_exec_queue_list(qrstat_report_handler_t* handler, lList **alpp);
 
 static bool
-qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler,
-                                          lList **alpp,
-                                          const char *name, u_long32 value);
+qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, u_long32 value);
+
+static bool
+qrstat_report_start_exec_binding_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_finish_exec_binding_list(qrstat_report_handler_t* handler, lList **alpp);
+
+static bool
+qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, const char *value);
 
 static bool
 qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handler, lList **alpp);
@@ -200,9 +207,13 @@ qrstat_create_report_handler_xml(qrstat_env_t *qrstat_env, lList **answer_list)
 
          ret->report_ar_node_boolean = qrstat_report_ar_node_boolean;
 
-         ret->report_start_granted_slots_list = qrstat_report_start_granted_slots_list;
-         ret->report_finish_granted_slots_list = qrstat_report_finish_granted_slots_list;
-         ret->report_granted_slots_list_node = qrstat_report_granted_slots_list_node;
+         ret->report_start_exec_queue_list = qrstat_report_start_exec_queue_list;
+         ret->report_finish_exec_queue_list = qrstat_report_finish_exec_queue_list;
+         ret->report_exec_queue_list_node = qrstat_report_exec_queue_list_node;
+
+         ret->report_start_exec_binding_list = qrstat_report_start_exec_binding_list;
+         ret->report_finish_exec_binding_list = qrstat_report_finish_exec_binding_list;
+         ret->report_exec_binding_list_node = qrstat_report_exec_binding_list_node;
 
          ret->report_start_granted_parallel_environment = qrstat_report_start_granted_parallel_environment;
          ret->report_finish_granted_parallel_environment = qrstat_report_finish_granted_parallel_environment;
@@ -465,47 +476,85 @@ qrstat_report_ar_node_boolean(qrstat_report_handler_t* handler, lList **alpp, co
 }
 
 static bool
-qrstat_report_start_granted_slots_list(qrstat_report_handler_t* handler, lList **alpp) 
+qrstat_report_start_exec_queue_list(qrstat_report_handler_t* handler, lList **alpp)
 {
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
    DENTER(TOP_LAYER);
 
-   sge_dstring_append(buffer, "      <granted_slots_list>\n");
+   sge_dstring_append(buffer, "      <exec_queue_list>\n");
      
    DRETURN(ret); 
 }
 
 static bool
-qrstat_report_finish_granted_slots_list(qrstat_report_handler_t* handler, lList **alpp)
+qrstat_report_finish_exec_queue_list(qrstat_report_handler_t* handler, lList **alpp)
 {
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_append(buffer, "      </granted_slots_list>\n");
+   sge_dstring_append(buffer, "      </exec_queue_list>\n");
 
    DRETURN(ret); 
 }
 
 static bool
-qrstat_report_granted_slots_list_node(qrstat_report_handler_t* handler, 
-                                      lList **alpp,
-                                      const char *name, u_long32 value)
+qrstat_report_exec_queue_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, u_long32 value)
 {
    bool ret = true;
    dstring *buffer = (dstring*)handler->ctx;
 
    DENTER(TOP_LAYER);
   
-   sge_dstring_sprintf_append(buffer, "         <granted_slots  queue_instance=" SFQ
-                              " slots=\"" sge_u32 "\"/>\n", name, value);
+   sge_dstring_sprintf_append(buffer, "         <exec_queue><queue_instance>" SFN
+                              "</queue_instance><slots>" sge_u32 "</slots></exec_queue>\n", name, value);
 
    DRETURN(ret); 
 }
- 
+
+static bool
+qrstat_report_start_exec_binding_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+
+   sge_dstring_append(buffer, "      <exec_binding_list>\n");
+
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_finish_exec_binding_list(qrstat_report_handler_t* handler, lList **alpp)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+
+   sge_dstring_append(buffer, "      </exec_binding_list>\n");
+
+   DRETURN(ret);
+}
+
+static bool
+qrstat_report_exec_binding_list_node(qrstat_report_handler_t* handler, lList **alpp, const char *name, const char *value)
+{
+   bool ret = true;
+   dstring *buffer = (dstring*)handler->ctx;
+
+   DENTER(TOP_LAYER);
+
+   sge_dstring_sprintf_append(buffer, "         <exec_binding><exec_host>" SFN
+                              "</exec_host><binding>" SFN "</binding></exec_binding>\n", name, value);
+
+   DRETURN(ret);
+}
+
 static bool
 qrstat_report_start_granted_parallel_environment(qrstat_report_handler_t* handler, lList **alpp) 
 {

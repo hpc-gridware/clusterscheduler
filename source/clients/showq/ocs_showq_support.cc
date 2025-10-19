@@ -57,8 +57,6 @@
 
 #include "ocs_showq_support.h"
 
-static void get_core_binding_string(lListElem *job,const int task_number, dstring* corebinding);
-
 struct sort_def{
    int sort_key[20];
    int count;
@@ -374,20 +372,6 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
                lSetDouble(tmp_dj_job, TACCDJ_priority,
                           lGetDouble(tmp_task, JAT_prio));
 
-               /* core binding */           
-               {
-                  dstring cb = DSTRING_INIT;
-                  get_core_binding_string(job, (int)lGetUlong(jatep, JAT_task_number), &cb);
-
-                  if (sge_dstring_get_string(&cb) != nullptr) {
-                     lSetString(tmp_dj_job, TACCDJ_corebinding, 
-                                 sge_dstring_get_string(&cb));
-                  } else {
-                     lSetString(tmp_dj_job, TACCDJ_corebinding, "-");
-                  }
-
-                  sge_dstring_free(&cb);
-               }
                /* append this job to the active job list */
                /* printf("appending to active jobs\n"); */
                /*
@@ -478,17 +462,6 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
          lSetDouble(tmp_dj_job, TACCDJ_priority,
                     lGetDouble(tmp_task, JAT_prio));
 
-         /* core binding */
-         {
-            dstring cb = DSTRING_INIT;
-            get_core_binding_string(job, -1, &cb);
-            
-            lSetString(tmp_dj_job, TACCDJ_corebinding, 
-                           sge_dstring_get_string(&cb));
-            
-            sge_dstring_free(&cb);
-         }
-
          job_tag = 1;                /* make sure this job is marked as accounted
                                  * for */
 
@@ -559,17 +532,6 @@ int extract_dj_lists(lList *job_list, lList **active_jobs, lList **waiting_jobs,
 
          /* set priority */
          lSetDouble(tmp_dj_job, TACCDJ_priority, lGetDouble(tmp_task, JAT_prio));
-
-         /* core binding */
-         {
-            dstring cb = DSTRING_INIT;
-            get_core_binding_string(job, -1, &cb);
-            
-            lSetString(tmp_dj_job, TACCDJ_corebinding, 
-                          sge_dstring_get_string(&cb));
-            
-            sge_dstring_free(&cb);
-         }
 
          lAppendElem(*unsched_jobs, tmp_dj_job);
 
@@ -801,61 +763,5 @@ void show_waiting_jobs(lList *joblist, int flags)
          printf("%-20s\n", "");
       }
    }
-}
-
-static void get_core_binding_string(lListElem *job, const int task_number, dstring* corebinding)
-{
-   const lListElem *jatep;
-   bool binding_of_first_task_found = false;
-
-   if (corebinding == nullptr || job == nullptr) {
-      return;
-   } 
-
-   for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-      /* int first_task = 1; */
-      const lListElem *usage_elem;
-      const char *binding_inuse = nullptr;
-      const char *binding_topo = nullptr;
-
-      if (task_number > 0) {
-         if ((int)lGetUlong(jatep, JAT_task_number) != task_number) {
-            continue;
-         }
-      }
-
-      if (lGetUlong(jatep, JAT_status) != JRUNNING && lGetUlong(jatep, JAT_status) != JTRANSFERING) {
-         continue;
-      }
-
-      for_each_ep(usage_elem, lGetList(jatep, JAT_scaled_usage_list)) {
-         const char *binding_name = "binding_inuse";
-         const char *usage_name = lGetString(usage_elem, UA_name);
-
-         if (strncmp(usage_name, binding_name, strlen(binding_name)) == 0) {
-            binding_inuse = strstr(usage_name, "!"); 
-            if (binding_inuse != nullptr) {
-               binding_inuse++;
-            }
-            break;
-         }
-      }
-
-      if (binding_inuse != nullptr && strcmp(binding_inuse, "nullptr") != 0) {
-         binding_topo = binding_get_topology_for_job(binding_inuse);
-
-         if (binding_topo != nullptr) {
-            sge_dstring_append(corebinding, binding_topo);
-            binding_of_first_task_found = true;
-            break;
-         }
-      }
-      
-   }
-   
-   if (!binding_of_first_task_found) {
-      sge_dstring_append(corebinding, "-");
-   }
-
 }
 

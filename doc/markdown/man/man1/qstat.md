@@ -85,7 +85,7 @@ Mbytes, and maximum virtual memory utilization in Mbytes. This information is no
 retrieval is not supported for the OS platform where the job is hosted.
 
 In combination with `-cp` the output of this command will additionally contain the information of a requested binding 
-(see `-binding` of qsub(1)) and the changes that have been applied to the topology string (real binding) for the host 
+(see `-bamount` of qsub(1)) and the changes that have been applied to the topology string (real binding) for the host 
 where this job is running.
 
 The topology string will contain capital letters for all those cores that were not bound to the displayed job. Bound 

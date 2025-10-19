@@ -20,6 +20,10 @@
 
 function(architecture_specific_settings)
    get_os_release_info(OS_ID OS_VERSION OS_CODENAME)
+   set(OS_ID ${OS_ID} PARENT_SCOPE)
+   set(OS_VERSION ${OS_VERSION} PARENT_SCOPE)
+   set(OS_CODENAME ${OS_CODENAME} PARENT_SCOPE)
+
    message(STATUS "Build for Version: ${CMAKE_BUILD_ID}")
 
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
@@ -243,7 +247,7 @@ function(architecture_specific_settings)
       set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
       add_compile_definitions(DARWIN DARWIN10 GETHOSTBYNAME GETHOSTBYADDR_M SPOOLING_classic)
 
-      set(WITH_HWLOC OFF PARENT_SCOPE)
+      # set(WITH_HWLOC OFF PARENT_SCOPE)
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_SPOOL_BERKELEYDB OFF PARENT_SCOPE)
       set(WITH_SPOOL_DYNAMIC OFF PARENT_SCOPE)
