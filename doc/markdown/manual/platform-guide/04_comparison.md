@@ -24,5 +24,5 @@ The table below outlines the differences between the Gridware Cluster Scheduler 
 | Support Offering                                                                                                  | v9.0.0 |   -    |
 
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

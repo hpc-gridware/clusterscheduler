@@ -62,5 +62,5 @@ xxQS_NAMExx components on the other axis.
 > older operating systems if the OS version has been supported in the past. Please contact our sales and support 
 > team for more information.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

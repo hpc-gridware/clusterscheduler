@@ -36,5 +36,5 @@ On newer Linux distributions (e.g. Ubuntu 24.04, Alma/CentOS/RHEL/Rocky 9 and hi
 
 Similarly, OpenSSL 3 is included in Solaris 11.4 and higher as well as in IllumOS / OpenSolaris / OpenIndiana, in FreeBSD 14 and higher, and in macOS 11 (Big Sur) @todo verify and higher.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

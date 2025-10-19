@@ -54,5 +54,5 @@ Once you have downloaded all packages, you can test and install them at the desi
    
 4. If your `<install-dir>` is located on a shared filesystem available on all hosts in the cluster then you can start the installation process.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

@@ -71,5 +71,5 @@ The table below outlines the supported operating systems, versions, and architec
 > 
 > Is your operating system missing from the table above? This simply indicates that we have not completed all the necessary QA checks, not that Gridware Cluster Scheduler or Open Cluster Scheduler cannot be installed. If you want support coverage also for older operating systems then please reach out to our sales and support team for further assistance.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

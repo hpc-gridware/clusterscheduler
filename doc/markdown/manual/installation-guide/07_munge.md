@@ -153,5 +153,5 @@ echo 'munged_enable="YES"' >> /etc/rc.conf
 /usr/local/etc/rc.d/munged status
 ```
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

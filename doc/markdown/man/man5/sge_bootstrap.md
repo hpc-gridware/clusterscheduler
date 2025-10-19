@@ -125,7 +125,8 @@ Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs
 This optional setting allows to pass additional parameters to the security subsystem. The format of this parameter depends on the chosen security mode.
 
 For TLS security mode the following parameter can be set:
-* `certificate_lifetime=<n>`: Defines the lifetime of automatically created certificates in seconds. The default is one year (31536000 seconds), which is also the maximum lifetime for certificates created by xxQS_NAMExx components. Setting this parameter to a lower value will cause more frequent certificate renewals, which may be desired in high security environments. The minimum lifetime is 120 seconds, which is mostly meant for testing purposes. If a value lower than 120 seconds is set, 120 seconds will be used instead. If a value higher than 31536000 seconds is set, 31536000 seconds will be used instead.
+
+* `certificate_lifetime=<n>`: Defines the lifetime of automatically created certificates in seconds. The default is one year (31536000 seconds), which is also the maximum lifetime for certificates created by xxQS_NAMExx components. Setting this parameter to a lower value will cause more frequent certificate renewals, which may be desired in high-security environments. The minimum lifetime is 120 seconds, which is mostly meant for testing purposes. If a value lower than 120 seconds is set, 120 seconds will be used instead. If a value higher than 31536000 seconds is set, 31536000 seconds will be used instead.
 
 ## *listener_threads*
 

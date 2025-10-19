@@ -1,4 +1,3 @@
-#include <sge_time.h>
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -31,6 +30,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "ocs_OpenSSL.h"
 
