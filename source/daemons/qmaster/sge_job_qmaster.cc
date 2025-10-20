@@ -2877,7 +2877,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       DRETURN(STATUS_EEXIST);
    }
 
-   DRETURN(0);
+   DRETURN(STATUS_OK);
 }
 
 /****** sge_job_qmaster/contains_dependency_cycles() ***************************
