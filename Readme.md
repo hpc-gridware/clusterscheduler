@@ -20,7 +20,7 @@ Technological advancements in CPU and GPU design necessitate advanced decision-m
 We aim to tackle these challenges, ensuring the Cluster Scheduler codebase can effectively support modern
 multi-core CPUs, GPUs, NPUs, and FPGAs.
 
-## Roadmap
+## Roadmap and Achievements
 
 Our immediate focus is on laying a robust foundation for the future of cluster schedulers. The following updates will be part of the initial "Open Cluster Scheduler" release:
 
@@ -69,6 +69,29 @@ A daily build of the master branch of the Open Cluster Scheduler is provided by 
 Please be aware that this build is done from the main development branch. It is not a stable and QAed release.
 Use it for testing purposes but not in a productive environment.
 
+## Quickinstall for Testing and Development
+
+For a quick single-node test or development setup on a fresh VM/container:
+
+**Prerequisites:** Linux system with curl and bash installed, root or sudo access
+
+**Installation:**
+
+```bash
+# Download and inspect the installation script (recommended)
+curl -s https://raw.githubusercontent.com/hpc-gridware/quickinstall/refs/heads/main/ocs.sh > ocs.sh
+less ocs.sh
+
+# Run the installation
+OCS_VERSION=9.0.8 sh ocs.sh
+```
+
+Or for quick testing (only if you trust the source):
+```bash
+curl -s https://raw.githubusercontent.com/hpc-gridware/quickinstall/refs/heads/main/ocs.sh | OCS_VERSION=9.0.8 sh
+```
+
+
 ## Other Documents
 
 - [Build Instructions](https://github.com/hpc-gridware/clusterscheduler/blob/master/doc/markdown/manual/development-guide/01_prepare_dev_env.md)
@@ -81,6 +104,8 @@ Use it for testing purposes but not in a productive environment.
 - [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
+- [Maximize Your Software License Investment with Gridware Cluster Scheduler](https://hpc-gridware.com/maximize-your-software-license-investment-with-gridware-cluster-scheduler/)
+- [Understanding Multi-Node Jobs in Gridware Cluster Scheduler and Open Cluster Scheduler](https://hpc-gridware.com/understanding-multi-node-jobs-in-gridware-cluster-scheduler-and-open-cluster-scheduler/)
 - [Unleashing the Full Power of NVIDIA GPUs with Gridware Cluster Scheduler: Transforming HPC and AI Workflows](https://www.hpc-gridware.com/unleashing-the-full-power-of-nvidia-gpus-with-gridware-cluster-scheduler-transforming-hpc-and-ai-workflows/)
 - [Improving Scalability: First Architectural Changes to the Gridware Cluster Scheduler](https://www.hpc-gridware.com/first-architectural-changes/)
 - [Announcing Gridware Cluster Scheduler 9.0.0 Release](https://www.hpc-gridware.com/announcing-gridware-cluster-scheduler-9-0-0-release/)
