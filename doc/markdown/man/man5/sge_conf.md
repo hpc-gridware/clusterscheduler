@@ -1042,13 +1042,6 @@ often or never the online usage can be incomplete or totally missing (for exampl
 jobs might be missing) and the resource limit enforcement is less accurate or would not happen if PDC is turned of 
 completely.
 
-***ENABLE_BINDING***
-
-If this parameter is set, then xxQS_NAMExx enables the core binding module within the execution daemon to apply 
-binding parameters that are specified during submission time of a job. This parameter is not set per default, and 
-therefore all binding related information will be ignored. Find more information for job to core binding in the 
-section `-binding` of qsub(1).
-
 ***ENABLE_SYSTEMD***
 
 If this parameter is set,
