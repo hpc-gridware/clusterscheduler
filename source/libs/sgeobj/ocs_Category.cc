@@ -98,7 +98,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
 #endif
 
    // -btype -bunit -bamount -bsort -bstart -bstop
-   sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_new_binding, SGE_NO_ABORT));
+   sge_unparse_binding_dstring(category_str, job, lGetPosViaElem(job, JB_binding, SGE_NO_ABORT));
 
    // -pe pe_name pe_range
    sge_unparse_pe_dstring(category_str, job, lGetPosViaElem(job, JB_pe, SGE_NO_ABORT), lGetPosViaElem(job, JB_pe_range, SGE_NO_ABORT), "-pe");

@@ -4460,7 +4460,7 @@ job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *
    }
 
    // -btype, -bunit, -bstrategy, -bstart, -bstop, -bamount ...
-   const lListElem *binding = lGetObject(job, JB_new_binding);
+   const lListElem *binding = lGetObject(job, JB_binding);
    if (binding != nullptr) {
       std::string binding_str;
       ocs::BindingIo::binding_print_to_string(binding, binding_str, true);

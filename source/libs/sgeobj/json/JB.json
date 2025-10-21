@@ -1002,7 +1002,7 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"new_binding",
+			"name":	"binding",
 			"summary":	"Binding Strategy",
 			"description":	[{
 				"line":	"Binding strategy for the job"

@@ -2087,7 +2087,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
 
             JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
             JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
-            JB_type, JB_new_binding, JB_ja_task_concurrency, JB_pty,
+            JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
             JB_grp_list, JB_sync_options, JB_category_id);
 
    /* get job list */

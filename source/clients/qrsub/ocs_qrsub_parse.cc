@@ -94,7 +94,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_amount, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_amount, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -105,7 +105,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_instance, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_instance, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -116,7 +116,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_unit, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_unit, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -127,7 +127,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetString(binding_elem, BN_new_filter, lGetString(ep, SPA_argval_lStringT));
+      lSetString(binding_elem, BN_filter, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -138,7 +138,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetString(binding_elem, BN_new_sort, lGetString(ep, SPA_argval_lStringT));
+      lSetString(binding_elem, BN_sort, lGetString(ep, SPA_argval_lStringT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -149,7 +149,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_start, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_start, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -160,7 +160,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_stop, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 
@@ -171,7 +171,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
       if (binding_elem == nullptr) {
          DRETURN(false);
       }
-      lSetUlong(binding_elem, BN_new_strategy, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_strategy, lGetInt(ep, SPA_argval_lIntT));
       lRemoveElem(pcmdline, &ep);
    }
 

@@ -169,7 +169,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_amount, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_amount, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -184,7 +184,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_instance, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_instance, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -199,7 +199,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_unit, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_unit, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -214,7 +214,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetString(binding_elem, BN_new_filter, lGetString(ep, SPA_argval_lStringT));
+      lSetString(binding_elem, BN_filter, lGetString(ep, SPA_argval_lStringT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -229,7 +229,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetString(binding_elem, BN_new_sort, lGetString(ep, SPA_argval_lStringT));
+      lSetString(binding_elem, BN_sort, lGetString(ep, SPA_argval_lStringT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -244,7 +244,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_start, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_start, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -259,7 +259,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_stop, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);
@@ -274,7 +274,7 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
       }
 
       // Transfer the binding information from the command line to the job
-      lSetUlong(binding_elem, BN_new_strategy, lGetInt(ep, SPA_argval_lIntT));
+      lSetUlong(binding_elem, BN_strategy, lGetInt(ep, SPA_argval_lIntT));
 
       // Get rid of the binding element from the command line
       lRemoveElem(cmdline, &ep);

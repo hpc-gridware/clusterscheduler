@@ -115,7 +115,7 @@ object_get_subtype(int nm)
       case JB_path_aliases:
          ret = PA_Type;
          break;
-      case JB_new_binding:
+      case JB_binding:
          ret = BN_Type;
          break;
       case JB_grp_list:

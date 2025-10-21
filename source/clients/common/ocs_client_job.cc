@@ -617,8 +617,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       dst += lGetDouble(uep, UA_value);                                                                                \
    }
 
-   if (lGetPosViaElem(job, JB_new_binding, SGE_NO_ABORT) >= 0) {
-      const lListElem *binding_elem = lGetObject(job, JB_new_binding);
+   if (lGetPosViaElem(job, JB_binding, SGE_NO_ABORT) >= 0) {
+      const lListElem *binding_elem = lGetObject(job, JB_binding);
       std::string binding_param;;
       ocs::BindingIo::binding_print_to_string(binding_elem, binding_param);
       printf("binding:                         " SFN "\n", binding_param.c_str());
