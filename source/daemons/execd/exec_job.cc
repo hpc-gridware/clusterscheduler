@@ -831,7 +831,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 #if defined(OCS_HWLOC)
    if (binding_to_use_is_initialized) {
       var_list_set_string(&environmentList, "SGE_BINDING_INSTANCE", ocs::BindingInstance::to_string(binding_instance).c_str());
-      var_list_set_string(&environmentList, "SGE_BINDING_TOPOLOGY", binding_to_use.to_product_topology_string().c_str());
+      var_list_set_string(&environmentList, "SGE_BINDING_TOPOLOGY",
+         binding_to_use.is_empty() ? NONE_STR : binding_to_use.to_product_topology_string().c_str());
    }
    if (binding_cpuset_is_initialized) {
       char *cpuset_str = NULL;

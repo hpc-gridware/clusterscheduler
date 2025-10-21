@@ -145,7 +145,6 @@ static bool forbid_apperror = false;
 static bool enable_forced_qdel = false;
 static bool enable_sup_grp_eval = false;
 static bool enable_enforce_master_limit = false;
-static bool enable_binding = true;
 static bool enable_test_sleep_after_request = false;
 static bool enable_forced_qdel_if_unknown = false;
 static bool ignore_ngroups_max_limit = false;
@@ -202,9 +201,9 @@ static char h_memorylocked[100];
 static char s_locks[100];
 static char h_locks[100];
 
-/* 
- * reporting params 
- * when you add new params, make sure to set them to default values in 
+/*
+ * reporting params
+ * when you add new params, make sure to set them to default values in
  * parsing code (merge_configuration)
  */
 static bool do_accounting         = true;
@@ -252,7 +251,7 @@ static int spool_time = STREESPOOLTIMEDEF;
 #define DEFAULT_DS_DEVIATION (1000)
 static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 
-/* 
+/*
  * Reserved usage flags
  *
  * In SGE, hosts which support DR (dynamic repriorization) default to using
@@ -266,7 +265,7 @@ static int max_ds_deviation = DEFAULT_DS_DEVIATION;
 static bool acct_reserved_usage = false;
 static bool sharetree_reserved_usage = false;
 
-/* 
+/*
  * Use primary group of qsub-host also for the job execution
  */
 static bool use_qsub_gid = false;
@@ -304,7 +303,7 @@ typedef struct {
   const char *name;              /* name of parameter */
   int local;               /* 0 | 1 -> local -> may be overidden by local conf */
   const char *value;             /* value of parameter */
-  int isSet;               /* 0 | 1 -> is already set */        
+  int isSet;               /* 0 | 1 -> is already set */
   char *envp;              /* pointer to environment variable */
 } tConfEntry;
 
@@ -415,7 +414,7 @@ static tConfEntry conf_entries[] = {
  */
 static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
 {
-   int i = 0; 
+   int i = 0;
    lListElem *ep = nullptr;
    tConfEntry *pConf = nullptr;
 
@@ -430,15 +429,15 @@ static void sge_set_defined_defaults(const char *cell_root, lList **lpCfg)
    }
 
    lFreeList(lpCfg);
-      
+
    while (conf_entries[i].name) {
-      
+
       ep = lAddElemStr(lpCfg, CF_name, conf_entries[i].name, CF_Type);
       lSetString(ep, CF_value, conf_entries[i].value);
       lSetUlong(ep, CF_local, conf_entries[i].local);
-      
+
       i++;
-   }      
+   }
 
    DRETURN_VOID;
 }
@@ -466,9 +465,9 @@ chg_conf_val(lList *lp_cfg, const char *name, char **cpp, u_long32 *val, int typ
 #if 0
       if (s) {
          int old_verbose = log_state_get_log_verbose();
-  
+
          /* prevent logging function from writing to stderr
-          * but log into log file 
+          * but log into log file
           */
          log_state_set_log_verbose(0);
          INFO(MSG_CONF_USING_SS, s, name);
@@ -502,7 +501,7 @@ setConfFromCull(lList *lpCfg) {
    /* get following logging entries logged if log_info is selected */
    chg_conf_val(lpCfg, "loglevel", nullptr, &Master_Config.loglevel, TYPE_LOG);
    log_state_set_log_level(Master_Config.loglevel);
-   
+
    chg_conf_val(lpCfg, "execd_spool_dir", &Master_Config.execd_spool_dir, nullptr, 0);
    chg_conf_val(lpCfg, "mailer", &Master_Config.mailer, nullptr, 0);
    chg_conf_val(lpCfg, "xterm", &Master_Config.xterm, nullptr, 0);
@@ -520,7 +519,7 @@ setConfFromCull(lList *lpCfg) {
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.user_lists));
          Master_Config.user_lists = lp;
-      }   
+      }
    }
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "xuser_lists"))) {
@@ -528,15 +527,15 @@ setConfFromCull(lList *lpCfg) {
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, US_Type, US_name, " \t,")) {
          lFreeList(&(Master_Config.xuser_lists));
          Master_Config.xuser_lists = lp;
-      }   
+      }
    }
-   
+
    if ((ep = lGetElemStr(lpCfg, CF_name, "projects"))) {
       lList *lp = nullptr;
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.projects));
          Master_Config.projects = lp;
-      }   
+      }
    }
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "xprojects"))) {
@@ -544,9 +543,9 @@ setConfFromCull(lList *lpCfg) {
       if (!lString2ListNone(lGetString(ep, CF_value), &lp, PR_Type, PR_name, " \t,")) {
          lFreeList(&(Master_Config.xprojects));
          Master_Config.xprojects = lp;
-      }   
+      }
    }
-   
+
    chg_conf_val(lpCfg, "load_report_time", nullptr, &Master_Config.load_report_time, TYPE_TIM);
    chg_conf_val(lpCfg, "enforce_project", &Master_Config.enforce_project, nullptr, 0);
    chg_conf_val(lpCfg, "enforce_user", &Master_Config.enforce_user, nullptr, 0);
@@ -633,7 +632,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    const lListElem *elem;
    lListElem *ep2;
    lList *mlist = nullptr;
-   
+
    DENTER(BASIS_LAYER);
    if (lpp == nullptr) {
       lpp = &mlist;
@@ -646,7 +645,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    ** handled later
    */
    if (global) {
-      cl = lGetList(global, CONF_entries); 
+      cl = lGetList(global, CONF_entries);
       for_each_ep(elem, cl) {
          ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2) {
@@ -658,7 +657,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
 
    /* Merge in local configuration */
    if (local) {
-      cl = lGetList(local, CONF_entries); 
+      cl = lGetList(local, CONF_entries);
       for_each_ep(elem, cl) {
          ep2 = lGetElemCaseStrRW(*lpp, CF_name, lGetString(elem, CF_name));
          if (ep2 && lGetUlong(ep2, CF_local)) {
@@ -672,7 +671,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
    setConfFromCull(*lpp);
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
-   /* put contents of qmaster_params and execd_params  
+   /* put contents of qmaster_params and execd_params
       into some convenient global variables */
    {
       struct saved_vars_s *conf_context = nullptr;
@@ -692,7 +691,6 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       enable_forced_qdel = false;
       enable_sup_grp_eval = false;
       enable_enforce_master_limit = false;
-      enable_binding = true;
       enable_test_sleep_after_request = false;
       enable_forced_qdel_if_unknown = false;
       ignore_ngroups_max_limit = false;
@@ -703,7 +701,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       spool_time = STREESPOOLTIMEDEF;
       max_ds_deviation = DEFAULT_DS_DEVIATION;
       use_qidle = false;
-      disable_reschedule = false;   
+      disable_reschedule = false;
       disable_secondary_ds = false;
       disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
       disable_secondary_ds_execd = DEFAULT_DISABLE_SECONDARY_DS_EXECD;
@@ -764,17 +762,14 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_bool_param(s, "FORBID_APPERROR", &forbid_apperror)) {
             continue;
-         }   
+         }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL", &enable_forced_qdel)) {
             continue;
-         } 
+         }
          if (parse_bool_param(s, "ENABLE_SUP_GRP_EVAL", &enable_sup_grp_eval)) {
             continue;
          }
          if (parse_bool_param(s, "ENABLE_ENFORCE_MASTER_LIMIT", &enable_enforce_master_limit)) {
-            continue;
-         } 
-         if (parse_bool_param(s, "ENABLE_BINDING", &enable_binding)) {
             continue;
          }
          if (parse_bool_param(s, "__TEST_SLEEP_AFTER_REQUEST", &enable_test_sleep_after_request)) {
@@ -782,7 +777,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_bool_param(s, "ENABLE_FORCED_QDEL_IF_UNKNOWN", &enable_forced_qdel_if_unknown)) {
             continue;
-         } 
+         }
 #ifdef LINUX
          if (parse_bool_param(s, "ENABLE_MTRACE", &enable_mtrace)) {
             continue;
@@ -799,12 +794,12 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             /* reversed logic */
             do_credentials = do_credentials ? false : true;
             continue;
-         } 
+         }
          if (parse_bool_param(s, "NO_AUTHENTICATION", &do_authentication)) {
             /* reversed logic */
             do_authentication = do_authentication ? false : true;
             continue;
-         } 
+         }
          if (parse_bool_param(s, "DISABLE_AUTO_RESCHEDULING", &disable_reschedule)) {
             continue;
          }
@@ -899,10 +894,10 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
       conf_context = nullptr;
-     
+
 #ifdef LINUX
-      /* enable/disable GNU malloc library facility for recording of all 
-         memory allocation/deallocation 
+      /* enable/disable GNU malloc library facility for recording of all
+         memory allocation/deallocation
          requires MALLOC_TRACE in environment (see mtrace(3) under Linux) */
       if (enable_mtrace != mtrace_before) {
          if (enable_mtrace) {
@@ -964,7 +959,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (progid == EXECD) {
-            if (parse_bool_param(s, "NO_SECURITY", &do_credentials)) { 
+            if (parse_bool_param(s, "NO_SECURITY", &do_credentials)) {
                /* reversed logic */
                do_credentials = do_credentials ? false : true;
                continue;
@@ -1019,13 +1014,13 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
          }
          if (parse_bool_param(s, "ACCT_RESERVED_USAGE", &acct_reserved_usage)) {
             continue;
-         } 
+         }
          if (parse_bool_param(s, "SHARETREE_RESERVED_USAGE", &sharetree_reserved_usage)) {
             continue;
          }
          if (parse_bool_param(s, "PROF_EXECD", &prof_execd_thrd)) {
             continue;
-         } 
+         }
          if (!strncasecmp(s, "NOTIFY_KILL", sizeof("NOTIFY_KILL")-1)) {
             if (!strcasecmp(s, "NOTIFY_KILL=default")) {
                notify_kill_type = 1;
@@ -1039,7 +1034,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                notify_kill = sge_strdup(nullptr, &(s[sizeof("NOTIFY_KILL")]));
             }
             continue;
-         } 
+         }
          if (!strncasecmp(s, "NOTIFY_SUSP", sizeof("NOTIFY_SUSP")-1)) {
             if (!strcasecmp(s, "NOTIFY_SUSP=default")) {
                notify_susp_type = 1;
@@ -1053,7 +1048,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                notify_susp = sge_strdup(nullptr, &(s[sizeof("NOTIFY_SUSP")]));
             }
             continue;
-         } 
+         }
          if (parse_bool_param(s, "USE_QSUB_GID", &use_qsub_gid)) {
             continue;
          }
@@ -1130,7 +1125,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       sge_free_saved_vars(conf_context);
       conf_context = nullptr;
 
-      /* If profiling configuration has changed, 
+      /* If profiling configuration has changed,
          set_thread_prof_status_by_name has to be called for each thread
       */
       set_thread_prof_status_by_name("Execd Thread", prof_execd_thrd);
@@ -1166,7 +1161,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                                        -1);
                accounting_flush_time = -1;
             }
-            
+
             continue;
          }
          if (parse_bool_param(s, "old_accounting", &old_accounting)) {
@@ -1426,7 +1421,7 @@ static void clean_conf() {
  *
  * \param thread_name Thread name, nullptr for all threads.
  */
-void conf_update_thread_profiling(const char *thread_name) 
+void conf_update_thread_profiling(const char *thread_name)
 {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1895,9 +1890,9 @@ void mconf_set_new_config(bool new_config)
 {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
-   
+
    is_new_config = new_config;
-   
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    DRETURN_VOID;
 }
@@ -2770,17 +2765,6 @@ bool mconf_get_enable_enforce_master_limit() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = enable_enforce_master_limit;
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(ret);
-
-}
-
-bool mconf_get_enable_binding() {
-   bool ret;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   ret = enable_binding;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 
