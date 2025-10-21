@@ -992,14 +992,18 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
             //       - when the master host changed
             //       - when the certificate was renewed - how to find that out? Certificate file timestamp?
             //       for now simply always create a new context
-            if (old_master_host != nullptr /* && strcmp(old_master_host, master_name) != 0 */) {
-               lList *answer_list = nullptr;
-               int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
-               if (cl_ret != CL_RETVAL_OK) {
-                  //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
-                  answer_list_output(&answer_list);
+            // Only update the SSL context if we already had one == when commlib was already initialized.
+            cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+            if (handle != nullptr) {
+               if (old_master_host != nullptr /* && strcmp(old_master_host, master_name) != 0 */) {
+                  lList *answer_list = nullptr;
+                  int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
+                  if (cl_ret != CL_RETVAL_OK) {
+                     //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
+                     answer_list_output(&answer_list);
+                  }
+                  lFreeList(&answer_list);
                }
-               lFreeList(&answer_list);
             }
    #else
                DPRINTF(SFNMAX, MSG_SSL_NOT_BUILT_IN);
