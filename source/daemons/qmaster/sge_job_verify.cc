@@ -493,7 +493,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
 
 #if !defined(WITH_EXTENSIONS)
    if (ret == STATUS_OK) {
-      lListElem *binding_elem = lGetObject(jep, JB_new_binding);
+      lListElem *binding_elem = lGetObject(jep, JB_binding);
       if (binding_elem != nullptr) {
          // in OCS bsort is not available
          std::string binding_sort = ocs::Job::binding_get_sort(jep);

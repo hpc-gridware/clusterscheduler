@@ -73,6 +73,7 @@ ___INFO__MARK_END__-->
 
             <xs:element name="acl_list" type="acl_list_t" minOccurs="0"/>
             <xs:element name="xacl_list" type="acl_list_t" minOccurs="0"/>
+            <xs:element name="binding" type="AR_binding_t" minOccurs="0"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -141,6 +142,22 @@ ___INFO__MARK_END__-->
 
     <xs:complexType name="acl_t">
         <xs:attribute name="user" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- AR_binding -->
+    <xs:complexType name="AR_binding_t">
+        <xs:sequence>
+            <xs:element name="BN_type" type="xs:unsignedInt"/>
+            <xs:element name="BN_instance" type="xs:string"/>
+            <xs:element name="BN_amount" type="xs:unsignedInt"/>
+            <xs:element name="BN_unit" type="xs:unsignedInt"/>
+            <xs:element name="BN_filter" type="xs:string"/>
+            <xs:element name="BN_sort" type="xs:string"/>
+            <xs:element name="BN_start" type="xs:unsignedInt"/>
+            <xs:element name="BN_stop" type="xs:unsignedInt"/>
+            <xs:element name="BN_strategy" type="xs:unsignedInt"/>
+            <xs:element name="BN_specific_hostname" type="xs:unsignedInt"/>
+        </xs:sequence>
     </xs:complexType>
 
 </xs:schema>

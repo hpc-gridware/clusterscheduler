@@ -697,22 +697,22 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
        * and all other -b...-switches that are also related to -binding
        */
       {
-         lListElem *binding_elem = lGetObject(new_job, JB_new_binding);
+         lListElem *binding_elem = lGetObject(new_job, JB_binding);
 
          if (binding_elem != nullptr) {
             if (ret && strcmp("bamount", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_amount, std::atoi(value));
+                  lSetUlong(binding_elem, BN_amount, std::atoi(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_amount, 0);
+                  lSetUlong(binding_elem, BN_amount, 0);
                }
             }
 
             if (ret && strcmp("bstrategy", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_strategy, ocs::BindingStrategy::from_string(value));
+                  lSetUlong(binding_elem, BN_strategy, ocs::BindingStrategy::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_strategy, ocs::BindingStrategy::Strategy::NONE);
+                  lSetUlong(binding_elem, BN_strategy, ocs::BindingStrategy::Strategy::NONE);
                }
             }
 
@@ -726,49 +726,49 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
 
             if (ret && strcmp("bunit", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_unit, ocs::BindingUnit::from_string(value));
+                  lSetUlong(binding_elem, BN_unit, ocs::BindingUnit::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_unit, ocs::BindingUnit::Unit::NONE);
+                  lSetUlong(binding_elem, BN_unit, ocs::BindingUnit::Unit::NONE);
                }
             }
 
             if (ret && strcmp("bstart", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStart::from_string(value));
+                  lSetUlong(binding_elem, BN_start, ocs::BindingStart::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStart::Start::NONE);
+                  lSetUlong(binding_elem, BN_start, ocs::BindingStart::Start::NONE);
                }
             }
 
             if (ret && strcmp("bstop", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStop::from_string(value));
+                  lSetUlong(binding_elem, BN_start, ocs::BindingStop::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_start, ocs::BindingStop::Stop::NONE);
+                  lSetUlong(binding_elem, BN_start, ocs::BindingStop::Stop::NONE);
                }
             }
 
             if (ret && strcmp("bsort", param) == 0) {
                if (value != nullptr) {
-                  lSetString(binding_elem, BN_new_sort, value);
+                  lSetString(binding_elem, BN_sort, value);
                } else {
-                  lSetString(binding_elem, BN_new_sort, nullptr);
+                  lSetString(binding_elem, BN_sort, nullptr);
                }
             }
 
             if (ret && strcmp("bfilter", param) == 0) {
                if (value != nullptr) {
-                  lSetString(binding_elem, BN_new_filter, value);
+                  lSetString(binding_elem, BN_filter, value);
                } else {
-                  lSetString(binding_elem, BN_new_filter, nullptr);
+                  lSetString(binding_elem, BN_filter, nullptr);
                }
             }
 
             if (ret && strcmp("binstance", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_new_instance, ocs::BindingInstance::from_string(value));
+                  lSetUlong(binding_elem, BN_instance, ocs::BindingInstance::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_new_instance, ocs::BindingInstance::Instance::NONE);
+                  lSetUlong(binding_elem, BN_instance, ocs::BindingInstance::Instance::NONE);
                }
             }
          }
@@ -1440,11 +1440,11 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
     * and all other binding information specified with -b...-switches at the command line
     */
    {
-      const lListElem *binding_elem = lGetObject(old_job, JB_new_binding);
+      const lListElem *binding_elem = lGetObject(old_job, JB_binding);
 
       if (binding_elem != nullptr) {
          // -bamount
-         u_long32 amount = lGetUlong(binding_elem, BN_new_amount);
+         u_long32 amount = lGetUlong(binding_elem, BN_amount);
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bamount " sge_u32, prefix, amount);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1486,13 +1486,13 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
          // -bfilter
-         const char *filter = lGetString(binding_elem, BN_new_filter);
+         const char *filter = lGetString(binding_elem, BN_filter);
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bfilter %s", prefix, filter != nullptr ? filter : NONE_STR);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
          // -bsort
-         const char *sort = lGetString(binding_elem, BN_new_sort);
+         const char *sort = lGetString(binding_elem, BN_sort);
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bsort %s", prefix, sort != nullptr ? sort : NONE_STR);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -2067,7 +2067,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const lListElem *job) {
       ret = "ar";
    } else if (cull_attr == JB_account) {
       ret = "A";
-   } else if (cull_attr == JB_new_binding) {
+   } else if (cull_attr == JB_binding) {
       ret = "binding";
    } else if (cull_attr == JB_checkpoint_interval) {
       ret = "c_interval";

@@ -16,7 +16,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_instance",
+			"name":	"instance",
 			"summary":	"Instance that applies the binding",
 			"description":	[{
 				"line":	"Set, PE or env"
@@ -26,7 +26,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_amount",
+			"name":	"amount",
 			"summary":	"Amount of units",
 			"description":	[{
 				"line":	"Number of units to bind to"
@@ -36,7 +36,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_unit",
+			"name":	"unit",
 			"summary":	"Unit type that should be bound",
 			"description":	[{
 				"line":	"Defines if threads, cores, sockets ... should be bound"
@@ -46,7 +46,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_filter",
+			"name":	"filter",
 			"summary":	"Mask that defines which parts of a topology should not be bound",
 			"description":	[{
 				"line":	"Masked parts have to be lowercase in the topology string."
@@ -56,7 +56,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_sort",
+			"name":	"sort",
 			"summary":	"Sort order of binding",
 			"description":	[{
 				"line":	"Defines how units within the topology string should be sorted before binding."
@@ -66,7 +66,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_start",
+			"name":	"start",
 			"summary":	"Start position",
 			"description":	[{
 				"line":	"Defines the start position for binding within the topology string."
@@ -76,7 +76,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_stop",
+			"name":	"stop",
 			"summary":	"Stop position",
 			"description":	[{
 				"line":	"Defines the stop position for binding within the topology string."
@@ -86,7 +86,7 @@
 				"name":	"SPOOL_SUBLIST"
 			}]
 		}, {
-			"name":	"new_strategy",
+			"name":	"strategy",
 			"summary":	"Binding strategy ...",
 			"description":	[{
 				"line":	"Defines the strategy for binding, like linear, striding, packed or explicit"
@@ -97,7 +97,7 @@
 			}]
 		}, {
 			"name":	"specific_hostname",
-			"summary":	"hostname of a host where the other specific attributes are valid for",
+			"summary":	"hostname of where the attributes specific_binding is valid for",
 			"description":	[{
 				"line":	"Used in scheduler only to identify where a specific binding decision was done for."
 			}],
@@ -107,9 +107,9 @@
 			}]
 		}, {
 			"name":	"specific_binding",
-			"summary":	"A specific binding decision for a task or job on a host",
+			"summary":	"A specific binding decision for a job on a host",
 			"description":	[{
-				"line":	"Used in scheduler only to hold a binding decision for a specific task or job on a host."
+				"line":	"Used in scheduler only to hold a binding decision for a specific job on a host."
 			}],
 			"type":	"lStringT",
 			"flags":	[{

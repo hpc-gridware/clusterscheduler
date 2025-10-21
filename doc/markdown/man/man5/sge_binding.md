@@ -348,13 +348,15 @@ The `-binstance` switch defines the instance that realizes the core binding on a
 
 The following binding instances are possible:
 
-- set - The binding is applied by Cluster Scheduler. How this is achieved depends on the underlying operating system of the execution host where the submitted job will be started.
-- env - Cluster Scheduler will not do the core binding, but the job can do the binding using the information provided by the environment variable GCS_BINDING.
-- pe - The binding instance pe causes the binding information to be written into the fourth column of the pe_hostfile. Here logical socket and core/thread IDs will be printed. Numberging starts at 0 and numbers have no holes. Socket and core/thread IDs are separated by the comma character (,), and those number pairs are separated by colon character (:). ‘0,0:0,1’ means core/thread 0 and 1 on socket 0.
+- *set* - The binding is applied by Cluster Scheduler. How this is achieved depends on the underlying operating system of the execution host where the submitted job will be started.
+- *env* - Cluster Scheduler will not do the core binding, but the job can do the binding using the information provided by the environment variable GCS_BINDING.
+- *pe* - The binding instance pe causes the binding information to be written into the fourth column of the `pe_hostfile`. Here logical socket and core IDs will be printed. Numbering starts at 0 and numbers have no holes. Socket and core IDs are separated by the comma character (:), and those number pairs are separated by colon character (,). ‘0:0,0:1’ means core 0 and 1 on socket 0. Depending in the MPI implementation this addition column will be evaluated to do the core binding. Some MPI implementations require additional switches or environment variables to enable that functionality or socket/core pairs need to be converted into a different format and passed either via switches to the MPI runtime or via *rankfile* file mechanism. Consult your MPI documentation for details.
 
-Additionally, the variable GCS_BINDING is available that contains the system's processor numbers of the scheduler binding decision. In the case of core binding, there might be more processor numbers made available through the environment variable if the selected CPU cores are represented by multiple identifiers (threads). The processor numbers are space separated.
+Independent of the binding instance and if a job is requesting binding, the following environment variables will be available within the job environment:
 
-GCS_BINDING and GCS_BINDING_INSTANCE will be exported to the job environment independent of the binding instance.
+- SGE_BINDING_INSTANCE - shows the selected binding instance or NONE if no binding is applied.
+- SGE_BINDING_TOPOLOGY - shows the topology string of the host where a job or task is running. Bound units are shown in lowercase letters. Without binding NONE is shown.
+- SGE_BUNDING_CPUSET - shows the cpuset string (as printed by HWLOC) or 0x0 if no binding affinity is applied.
 
 ## Configuration Parameters Influencing Binding
 

@@ -6054,9 +6054,6 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    lListElem *cep, *req;
    dispatch_t result, ret = DISPATCH_OK;
    ocs::TopologyString binding_inuse;
-#if 0
-   bool slots_on_host_layer = (layer == DOMINANT_LAYER_HOST && strcmp(object_name, SGE_ATTR_SLOTS) == 0);
-#endif
 
    clear_resource_tags(a->job, QUEUE_TAG);
 
@@ -6067,25 +6064,6 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    if (tep == nullptr && force_slots) {
       DRETURN(DISPATCH_OK); // no slots capacity defined on exec host level, it's the queue instances which limit it
    }
-
-#if 0
-   // @todo: CS-732: should not be required anymore because installer or master add solts on host level automatically
-   // if we debit EH_consumable_config_list, we need to ensure that the slots-complex is available for
-   // the binding booking. We need to add it if the admin did not add it on host-level.
-   lListElem *auto_slots = nullptr;
-   if (slots_on_host_layer && tep == nullptr) {
-      // This maximum will be reduces as soon as we know the topology sent via load-report
-      constexpr int max_slots_value = std::numeric_limits<int>::max();
-
-      auto_slots = lCreateElem(CE_Type);
-      lSetString(auto_slots, CE_name, SGE_ATTR_SLOTS);
-      lSetDouble(auto_slots, CE_doubleval, max_slots_value);
-      std::string str = std::to_string(max_slots_value);
-      lSetString(auto_slots, CE_stringval, str.c_str());
-      tep = auto_slots;
-      lAppendElem((lList*)total_list, auto_slots);
-   }
-#endif
 
    // if slots is defined on host level then check how much is available
    if (tep != nullptr) {
@@ -6109,13 +6087,6 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                            SCHEDD_INFO_CANNOTRUNINQUEUE_SSS, "slots=1",
                            object_name, sge_dstring_get_string(&reason));
          }
-#if 0
-         // @todo CS-732: we can remove autoslots if we created them above
-         if (auto_slots != nullptr) {
-            lDechainElem((lList*)total_list, auto_slots);
-            lFreeElem(&auto_slots);
-         }
-#endif
 
          // @todo CS-601 remove all tags. This could come from a host (but we don't have the object!)
          //              or a queue - we have it
@@ -6125,14 +6096,6 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       max_slots      = MIN(max_slots,      avail);
       DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, SGE_ATTR_SLOTS, max_slots);
    }
-
-#if 0
-   // @todo CS-732: we can remove autoslots if we created them above
-   if (auto_slots != nullptr) {
-      lDechainElem((lList*)total_list, auto_slots);
-      lFreeElem(&auto_slots);
-   }
-#endif
 
    /* --- default requests except slots which we handled above */
    const char *name;

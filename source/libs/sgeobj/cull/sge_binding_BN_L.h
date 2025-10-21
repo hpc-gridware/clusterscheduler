@@ -35,35 +35,35 @@
 *    SGE_ULONG(BN_new_type) - type of binding
 *    host or slot binding
 *
-*    SGE_ULONG(BN_new_instance) - Instance that applies the binding
+*    SGE_ULONG(BN_instance) - Instance that applies the binding
 *    Set, PE or env
 *
-*    SGE_ULONG(BN_new_amount) - Amount of units
+*    SGE_ULONG(BN_amount) - Amount of units
 *    Number of units to bind to
 *
-*    SGE_ULONG(BN_new_unit) - Unit type that should be bound
+*    SGE_ULONG(BN_unit) - Unit type that should be bound
 *    Defines if threads, cores, sockets ... should be bound
 *
-*    SGE_STRING(BN_new_filter) - Mask that defines which parts of a topology should not be bound
+*    SGE_STRING(BN_filter) - Mask that defines which parts of a topology should not be bound
 *    Masked parts have to be lowercase in the topology string.
 *
-*    SGE_STRING(BN_new_sort) - Sort order of binding
+*    SGE_STRING(BN_sort) - Sort order of binding
 *    Defines how units within the topology string should be sorted before binding.
 *
-*    SGE_ULONG(BN_new_start) - Start position
+*    SGE_ULONG(BN_start) - Start position
 *    Defines the start position for binding within the topology string.
 *
-*    SGE_ULONG(BN_new_stop) - Stop position
+*    SGE_ULONG(BN_stop) - Stop position
 *    Defines the stop position for binding within the topology string.
 *
-*    SGE_ULONG(BN_new_strategy) - Binding strategy ...
+*    SGE_ULONG(BN_strategy) - Binding strategy ...
 *    Defines the strategy for binding, like linear, striding, packed or explicit
 *
-*    SGE_HOST(BN_specific_hostname) - hostname of a host where the other specific attributes are valid for
+*    SGE_HOST(BN_specific_hostname) - hostname of where the attributes specific_binding is valid for
 *    Used in scheduler only to identify where a specific binding decision was done for.
 *
-*    SGE_STRING(BN_specific_binding) - A specific binding decision for a task or job on a host
-*    Used in scheduler only to hold a binding decision for a specific task or job on a host.
+*    SGE_STRING(BN_specific_binding) - A specific binding decision for a job on a host
+*    Used in scheduler only to hold a binding decision for a specific job on a host.
 *
 *    SGE_LIST(BN_specific_binding_list) - Sublist of individual task specific bindings.
 *    Id of sublist specifies a task ID and the string the binding done for that task.
@@ -78,14 +78,14 @@
 
 enum {
    BN_new_type = BN_LOWERBOUND,
-   BN_new_instance,
-   BN_new_amount,
-   BN_new_unit,
-   BN_new_filter,
-   BN_new_sort,
-   BN_new_start,
-   BN_new_stop,
-   BN_new_strategy,
+   BN_instance,
+   BN_amount,
+   BN_unit,
+   BN_filter,
+   BN_sort,
+   BN_start,
+   BN_stop,
+   BN_strategy,
    BN_specific_hostname,
    BN_specific_binding,
    BN_specific_binding_list,
@@ -94,14 +94,14 @@ enum {
 
 LISTDEF(BN_Type)
    SGE_ULONG(BN_new_type, CULL_SUBLIST)
-   SGE_ULONG(BN_new_instance, CULL_SUBLIST)
-   SGE_ULONG(BN_new_amount, CULL_SUBLIST)
-   SGE_ULONG(BN_new_unit, CULL_SUBLIST)
-   SGE_STRING(BN_new_filter, CULL_SUBLIST)
-   SGE_STRING(BN_new_sort, CULL_SUBLIST)
-   SGE_ULONG(BN_new_start, CULL_SUBLIST)
-   SGE_ULONG(BN_new_stop, CULL_SUBLIST)
-   SGE_ULONG(BN_new_strategy, CULL_SUBLIST)
+   SGE_ULONG(BN_instance, CULL_SUBLIST)
+   SGE_ULONG(BN_amount, CULL_SUBLIST)
+   SGE_ULONG(BN_unit, CULL_SUBLIST)
+   SGE_STRING(BN_filter, CULL_SUBLIST)
+   SGE_STRING(BN_sort, CULL_SUBLIST)
+   SGE_ULONG(BN_start, CULL_SUBLIST)
+   SGE_ULONG(BN_stop, CULL_SUBLIST)
+   SGE_ULONG(BN_strategy, CULL_SUBLIST)
    SGE_HOST(BN_specific_hostname, CULL_SUBLIST)
    SGE_STRING(BN_specific_binding, CULL_SUBLIST)
    SGE_LIST(BN_specific_binding_list, ST_Type, CULL_SPOOL)
@@ -110,14 +110,14 @@ LISTEND
 
 NAMEDEF(BNN)
    NAME("BN_new_type")
-   NAME("BN_new_instance")
-   NAME("BN_new_amount")
-   NAME("BN_new_unit")
-   NAME("BN_new_filter")
-   NAME("BN_new_sort")
-   NAME("BN_new_start")
-   NAME("BN_new_stop")
-   NAME("BN_new_strategy")
+   NAME("BN_instance")
+   NAME("BN_amount")
+   NAME("BN_unit")
+   NAME("BN_filter")
+   NAME("BN_sort")
+   NAME("BN_start")
+   NAME("BN_stop")
+   NAME("BN_strategy")
    NAME("BN_specific_hostname")
    NAME("BN_specific_binding")
    NAME("BN_specific_binding_list")

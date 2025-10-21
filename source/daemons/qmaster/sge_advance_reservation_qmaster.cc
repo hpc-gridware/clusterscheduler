@@ -1186,7 +1186,7 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
    job_set_master_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_master_queue_list)));
    lSetUlong(dummy_job, JB_type, lGetUlong(ar, AR_type));
    lSetString(dummy_job, JB_checkpoint_name, lGetString(ar, AR_checkpoint_name));
-   lSetObject(dummy_job, JB_new_binding, lCopyElem(lGetObject(ar, AR_binding)));
+   lSetObject(dummy_job, JB_binding, lCopyElem(lGetObject(ar, AR_binding)));
 
    if (lGetString(ar, AR_pe)) {
       lSetString(dummy_job, JB_pe, lGetString(ar, AR_pe));

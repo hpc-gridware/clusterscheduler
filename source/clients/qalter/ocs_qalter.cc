@@ -338,7 +338,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bamount number
@@ -350,11 +350,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_amount, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_amount, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -binstance set | env | pe
@@ -366,11 +366,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_instance, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_instance, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bunit binding_unit
@@ -382,11 +382,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_unit, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_unit, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bfilter topo_string
@@ -398,11 +398,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetString(binding_elem, BN_new_filter, lGetString(ep, SPA_argval_lStringT));
+         lSetString(binding_elem, BN_filter, lGetString(ep, SPA_argval_lStringT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bsort sort_string
@@ -414,11 +414,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetString(binding_elem, BN_new_sort, lGetString(ep, SPA_argval_lStringT));
+         lSetString(binding_elem, BN_sort, lGetString(ep, SPA_argval_lStringT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bstart
@@ -430,11 +430,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_start, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_start, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bstop
@@ -446,11 +446,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_stop, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_stop, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       // -bstrategy
@@ -462,11 +462,11 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          }
 
          // Transfer the binding information from the command line to the job
-         lSetUlong(binding_elem, BN_new_strategy, lGetInt(ep, SPA_argval_lIntT));
+         lSetUlong(binding_elem, BN_strategy, lGetInt(ep, SPA_argval_lIntT));
 
          // Get rid of the binding element from the command line
          lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_new_binding);
+         nm_set(job_field, JB_binding);
       }
 
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-cwd"))) {
@@ -1045,7 +1045,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             NoName
          };
          static int object_nm[] = {
-            JB_new_binding,
+            JB_binding,
             NoName
          };
 
