@@ -1272,7 +1272,7 @@ static void write_builtin_ijs_connection_data_to_job_object(
    // In case of TLS encryption, send the credentials to the shepherd
 #if defined(OCS_WITH_OPENSSL)
    if (com_handle->ssl_server_context != nullptr) {
-      char *cred = com_handle->ssl_server_context->get_cert();
+      const char *cred = com_handle->ssl_server_context->get_cert();
       if (cred != nullptr) {
          lSetString(job, JB_cred, cred);
          sge_free(&cred);

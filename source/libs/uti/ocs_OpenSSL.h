@@ -205,7 +205,7 @@ namespace ocs::uti {
          void inc_connection_count() { connection_count++; }
          void dec_connection_count() { connection_count--; delete_no_longer_used_contexts(); }
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
-         char *get_cert();
+         const char *get_cert();
          const char *get_cert_file() { return cert_path.c_str(); }
          time_t get_renewal_time() { return renewal_time; }
          bool certificate_recreate_required();

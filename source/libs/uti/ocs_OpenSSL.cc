@@ -649,10 +649,7 @@ namespace ocs::uti {
 
       // if the initialization failed, free everything again
       if (!ret) {
-         if (libssl_handle != nullptr) {
-            dlclose(libssl_handle);
-            libssl_handle = nullptr;
-         }
+         cleanup();
       }
 
       DRETURN(ret);
@@ -668,11 +665,13 @@ namespace ocs::uti {
     * @see initialize()
     */
    void OpenSSL::cleanup() {
+      DENTER(TOP_LAYER);
       // close the library
       if (libssl_handle != nullptr) {
          dlclose(libssl_handle);
          libssl_handle = nullptr;
       }
+      DRETURN_VOID;
    }
 
    /**
@@ -701,6 +700,7 @@ namespace ocs::uti {
     */
 #define PER_USER_AND_HOST_CERTS
    bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name) {
+      DENTER(TOP_LAYER);
       bool ret = true;
       // need info
       // -> daemon or user certificate?
@@ -722,7 +722,7 @@ namespace ocs::uti {
 #endif
          }
       }
-      return ret;
+      DRETURN(ret);
    }
    /**
     * @brief Constructs the filesystem path for storing an SSL private key.
@@ -751,6 +751,7 @@ namespace ocs::uti {
     * @see build_cert_path()
     */
    bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name) {
+      DENTER(TOP_LAYER);
       bool ret = true;
       // -> daemon or user key?
       //    -> daemon: /var/lib/ocs/<port>/private/component_hostname.pem
@@ -773,7 +774,7 @@ namespace ocs::uti {
 #endif
          }
       }
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -797,6 +798,7 @@ namespace ocs::uti {
     * @return true if directories exist or were successfully created, false on error
     */
    bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) {
+      DENTER(TOP_LAYER);
       bool ret = true;
 
       if (ret) {
@@ -859,7 +861,7 @@ namespace ocs::uti {
          }
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -912,6 +914,7 @@ namespace ocs::uti {
     * @see certificate_recreate_required()
     */
    bool OpenSSL::OpenSSLContext::certificate_recreate_required(dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       bool ret = false;
       bool ok = true;
       X509 *cert = nullptr;
@@ -977,7 +980,7 @@ namespace ocs::uti {
          cert = nullptr;
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1224,10 +1227,14 @@ namespace ocs::uti {
     * @return true if client context was successfully configured, false on error
     */
    bool OpenSSL::OpenSSLContext::configure_client_context(dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       bool ret = true;
+
       if (cert_path.empty()) {
-         // We do not use this, consider handling it an error.
-         SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_NONE, nullptr);
+         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_OPENSSL_EMPTY_CERT_PATH);
+         ret = false;
+         // We could instead disable certificate verification by setting verify func SSL_VERIFY_NONE.
+         // SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_NONE, nullptr);
       } else {
          // clear previously occurred but not yet fetched errors
          ERR_clear_error_func();
@@ -1249,7 +1256,7 @@ namespace ocs::uti {
          }
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1359,13 +1366,14 @@ namespace ocs::uti {
        */
       // Not really required but explicitly marks the case that certificate and key are not stored in files
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(dstring *error_dstr) {
+         DENTER(TOP_LAYER);
          OpenSSLContext *ret{nullptr};
 
          std::string cert_path{};
          std::string key_path{};
          ret = create(true, cert_path, key_path, error_dstr);
 
-         return ret;
+         DRETURN(ret);
       }
 
       /**
@@ -1385,13 +1393,14 @@ namespace ocs::uti {
        * @see create(bool, std::string&, std::string&, dstring*)
        */
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(const OpenSSLContext *source, dstring *error_dstr) {
+         DENTER(TOP_LAYER);
          OpenSSLContext *ret{nullptr};
 
          std::string cert_path{source->cert_path};
          std::string key_path{source->key_path};
          ret = create(source->is_server, cert_path, key_path, error_dstr);
 
-         return ret;
+         DRETURN(ret);
       }
 
       /**
@@ -1422,6 +1431,7 @@ namespace ocs::uti {
        * @note Caller is responsible for deleting the returned context.
        */
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       OpenSSLContext *ret{nullptr};
 
       bool ok = true;
@@ -1465,7 +1475,7 @@ namespace ocs::uti {
          ret = nullptr;
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1487,7 +1497,8 @@ namespace ocs::uti {
     * @note Caller is responsible for freeing the returned string using sge_free().
     * @note The returned string is null-terminated and suitable for transmission or display.
     */
-   char *OpenSSL::OpenSSLContext::get_cert() {
+   const char *OpenSSL::OpenSSLContext::get_cert() {
+      DENTER(TOP_LAYER);
       char *ret = nullptr;
 
       X509 *cert = SSL_CTX_get0_certificate_func(ssl_ctx);
@@ -1506,7 +1517,7 @@ namespace ocs::uti {
          }
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1533,10 +1544,14 @@ namespace ocs::uti {
     * @note SSL_MODE_ENABLE_PARTIAL_WRITE allows writing data in chunks for better performance.
     */
    OpenSSL::OpenSSLConnection *OpenSSL::OpenSSLConnection::create(OpenSSLContext *context, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       OpenSSLConnection *ret{nullptr};
 
       bool ok = true;
       bool is_server = context->get_is_server();
+
+      // clear previously occurred but not yet fetched errors
+      ERR_clear_error_func();
 
       // initialize the SSL connection
       SSL *ssl;
@@ -1571,9 +1586,10 @@ namespace ocs::uti {
          ret = new OpenSSLConnection(context, is_server, ssl);
       } else {
          SSL_free_func(ssl);
+         ssl = nullptr;
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1634,7 +1650,7 @@ namespace ocs::uti {
                break;
          }
          if (ret) {
-            // @todo make timeout configurable
+            // @todo CS-1579 make timeout configurable
             struct timeval tv;
             tv.tv_sec = 1;
             tv.tv_usec = 0;
@@ -1676,6 +1692,7 @@ namespace ocs::uti {
     */
 
    OpenSSL::OpenSSLConnection::~OpenSSLConnection() {
+      DENTER(TOP_LAYER);
       if (ssl != nullptr) {
          SSL_shutdown_func(ssl);
          SSL_free_func(ssl);
@@ -1683,6 +1700,7 @@ namespace ocs::uti {
       if (context != nullptr) {
          context->dec_connection_count();
       }
+      DRETURN_VOID;
    }
 
    /**
@@ -1702,6 +1720,7 @@ namespace ocs::uti {
     * @note The SSL connection does not take ownership of the file descriptor.
     */
    bool OpenSSL::OpenSSLConnection::set_fd(int new_fd, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       // clear previously occurred but not yet fetched errors
       ERR_clear_error_func();
 
@@ -1715,7 +1734,7 @@ namespace ocs::uti {
             ret = false;
          }
       }
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1864,7 +1883,6 @@ namespace ocs::uti {
 
    bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
       DENTER(TOP_LAYER);
-      DPRINTF("OpenSSLConnection::accept()\n");
 
       bool ret = ssl != nullptr;
 
@@ -1894,6 +1912,7 @@ namespace ocs::uti {
                         sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II,
                                             SGE_OPENSSL_RETRY_TIMEOUT_SERVER / 1000000, repetitions);
                         DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
+                        ret = false;
                      } else {
                         done = false; // try again
                         DPRINTF("  --> repeat accept\n");
@@ -1936,6 +1955,7 @@ namespace ocs::uti {
     * @note The hostname is used both for SNI and for certificate hostname verification.
     */
    bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       bool ret = ssl != nullptr;
 
       // we do this only on the client side
@@ -1953,7 +1973,7 @@ namespace ocs::uti {
          }
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /**
@@ -1987,8 +2007,6 @@ namespace ocs::uti {
 
       bool ret = ssl != nullptr;
 
-      DPRINTF("OpenSSLConnection::connect()\n");
-
       // we do this only on the client side
       if (ret) {
          if (is_server) {
@@ -2018,6 +2036,7 @@ namespace ocs::uti {
                         sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
                                             SGE_OPENSSL_RETRY_TIMEOUT_CLIENT, repetitions);
                         DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
+                        ret = false;
                      } else {
                         done = false; // try again
                         DPRINTF("  --> repeat connect\n");
