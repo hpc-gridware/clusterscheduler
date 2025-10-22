@@ -1401,7 +1401,7 @@ int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
 
    // No need to add slots to global host
    const char *name = lGetHost(ehost, EH_name);
-   if (strcmp(name, SGE_GLOBAL_NAME) == 0) {
+   if (strcmp(name, SGE_GLOBAL_NAME) == 0 || strcmp(name, SGE_TEMPLATE_NAME) == 0) {
       DRETURN(0);
    }
 
