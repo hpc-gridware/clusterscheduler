@@ -1729,7 +1729,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 #if defined(OCS_WITH_OPENSSL)
    if (tls_mode) {
       // for qrsh type jobs sge_shepherd needs the tls certificate of the qrsh commlib server
-      // @todo we need a better way to identify qrsh type jobs
+      // write it to the jobs's spool directory
       const char *cert;
       if (petep == nullptr) {
          cert = lGetString(jep, JB_cred);

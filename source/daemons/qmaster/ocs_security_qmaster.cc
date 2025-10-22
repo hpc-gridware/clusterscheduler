@@ -32,6 +32,17 @@
 
 namespace ocs::qmaster {
 
+   /**
+    * @brief Creates and schedules a timed event for SSL certificate renewal.
+    *
+    * This function retrieves the SSL server context from the communication library handle
+    * and determines when the SSL certificate needs to be renewed. It then creates a
+    * one-time timed event that will trigger the certificate renewal process at the
+    * appropriate time.
+    *
+    * The renewal time is obtained from the OpenSSL context, which typically schedules
+    * renewal when 75% of the certificate's lifetime has passed.
+    */
    static void
    cert_renewal_create_event() {
       DENTER(TOP_LAYER);
@@ -56,6 +67,18 @@ namespace ocs::qmaster {
       DRETURN_VOID;
    }
 
+   /**
+    * @brief Initializes the SSL certificate renewal system for the qmaster daemon.
+    *
+    * This function performs the initial setup for automatic SSL certificate renewal:
+    * - Registers the event handler that will be called when certificate renewal is needed
+    * - Creates and schedules the first certificate renewal event based on the current
+    *   certificate's expiration time
+    *
+    * This function should be called once during qmaster startup after the SSL context
+    * has been established.
+    *
+    */
    void
    cert_renewal_initialize() {
       DENTER(TOP_LAYER);
@@ -67,6 +90,23 @@ namespace ocs::qmaster {
       DRETURN_VOID;
    }
 
+   /**
+    * @brief Event handler callback for SSL certificate renewal events.
+    *
+    * This function is called by the timed event system when a certificate renewal
+    * event is triggered. It performs the following actions:
+    * - Retrieves the communication library handle for the qmaster
+    * - Triggers a refresh of the SSL server context, which recreates certificates
+    *   if they have expired or are approaching expiration
+    * - Schedules the next certificate renewal event
+    *
+    * The handler ensures continuous certificate renewal throughout the lifetime
+    * of the qmaster daemon.
+    *
+    * @param anEvent The timed event that triggered this handler (TYPE_SSL_CERT_RENEWAL_EVENT)
+    * @param monitor Pointer to monitoring structure (currently unused)
+    *
+    */
    void
    cert_renewal_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DENTER(TOP_LAYER);

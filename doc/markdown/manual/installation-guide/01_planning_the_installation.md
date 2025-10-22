@@ -70,7 +70,9 @@ See also [Installing Munge].
 
 ### TLS encryption of communication
 
-When TLS encryption of communication shall be enabled for the xxQS_NAMExx cluster, the OpenSSL shared library must be installed in the default location on all cluster hosts. Best use the OS package manager to install the library and to keep it up to date.
+When TLS encryption of communication shall be enabled for the xxQS_NAMExx cluster, the OpenSSL shared library must be
+installed in the default location on all cluster hosts. Best use the OS package manager to install the library
+and to keep it up to date.
 OpenSSL version 3.x is required.
 
 ## Product Component Overview

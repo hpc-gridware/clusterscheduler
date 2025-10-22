@@ -252,7 +252,7 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
             ERROR(SFNMAX, MSG_SSL_NOT_BUILT_IN);
 #endif
          }
-         // is create_handle enough? In prepare_enroll() we also create some ssl config object
+
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
                               false, (int)sge_execd_port, CL_TCP_DEFAULT,
                               "execd_handle", 0, 0, 500);
@@ -554,7 +554,7 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
       DPRINTF("initializing OpenSSL failed: %s\n", sge_dstring_get_string(&dstr_error));
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               "initializing OpenSSL failed: %s", sge_dstring_get_string(&dstr_error)); // @todo i18n
-      DRETURN(CL_RETVAL_UNKNOWN); // @todo add new commlib error code
+      DRETURN(CL_RETVAL_UNKNOWN);
    }
 
    // set up a ssl_config to pass cert and key path to commlib
@@ -626,7 +626,6 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
                                     nullptr, nullptr, true);
    if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
       DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
-      // @todo more precise error message, also above and below
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
                               0, 0, cl_get_error_text(cl_ret));
@@ -640,8 +639,6 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
                               0, 0, cl_get_error_text(cl_ret));
-      // no need to free ssl_config, because it does not contain allocated memory
-      // cert and key path strings are managed by std::string
       DRETURN(cl_ret);
    }
 
@@ -652,8 +649,6 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
                               0, 0, cl_get_error_text(cl_ret));
-      // no need to free ssl_config, because it does not contain allocated memory
-      // cert and key path strings are managed by std::string
       DRETURN(cl_ret);
    }
 

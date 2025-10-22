@@ -6,4 +6,3 @@ test framework can also be integrated in a CI/CD framework.
 TODO
 [//]: # (Each file has to end with two empty lines)
 
-

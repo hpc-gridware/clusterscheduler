@@ -988,7 +988,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
          // Old_master_host is nullptr in the first call, here nothing is to be done.
          if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
    #if defined(OCS_WITH_OPENSSL)
-            // @todo need a new context
+            // Need a new context
             //       - when the master host changed
             //       - when the certificate was renewed - how to find that out? Certificate file timestamp?
             //       for now simply always create a new context

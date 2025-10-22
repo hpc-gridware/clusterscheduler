@@ -678,7 +678,8 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
-   // @todo OpenSSL: should we call SSL_shutdown() here?
+   // @todo CS-1578 OpenSSL: We could call SSL_shutdown() here as well.
+   // OTOH in the next step we free the connection and here SSL_shutdown() is called.
 
    if (private_com->sockfd >= 0) {
       CL_LOG(CL_LOG_INFO, "closing connection");
@@ -693,6 +694,7 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
 }
 
 #if defined(OCS_WITH_OPENSSL)
+// check if a SSL_write call needs to be repeated due to SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE
 bool cl_com_tcp_write_repeat_required(const cl_com_connection_t *connection) {
    bool ret = false;
 
@@ -749,6 +751,8 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
       return CL_RETVAL_MAX_READ_SIZE;
    }
 
+   // We use either the SSL_write() call from OpenSSL,
+   // or we do a write() directly on the socket.
 #if defined(OCS_WITH_OPENSSL)
    if (private_com->ssl_connection != nullptr) {
       DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
@@ -1160,7 +1164,7 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
-   // @todo OpenSSL: here we should call SSL_shutdown() before shutdown()
+   // @todo CS-1578 OpenSSL: here we should call SSL_shutdown() before shutdown()
    shutdown(private_com->sockfd, 2);
    close(private_com->sockfd);
    private_com->sockfd = -1;

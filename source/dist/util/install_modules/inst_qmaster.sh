@@ -580,7 +580,7 @@ SetProductMode()
       TLS_PREFIX=""
    fi
 
-   # @todo CS-1523 allow multiple security options, at least munge and tls
+   # Allow multiple security options, at least munge and tls.
    if [ "$AFS" = "true" ]; then
       if [ "$CSP" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
          $INFOTEXT "\nAFS security can't be combined with other security options!\n"

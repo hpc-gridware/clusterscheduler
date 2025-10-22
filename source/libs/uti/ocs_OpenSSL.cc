@@ -107,6 +107,32 @@ namespace ocs::uti {
    X509_set_version_func_t OpenSSL::X509_set_version_func = nullptr;
    X509_sign_func_t OpenSSL::X509_sign_func = nullptr;
 
+   /**
+    * @brief Initializes the OpenSSL library by loading libssl.so.3 and resolving all required function symbols.
+    *
+    * This function dynamically loads the OpenSSL shared library (libssl.so.3) and resolves
+    * all necessary function pointers for SSL/TLS operations. It can only be called once;
+    * later calls will fail with an error.
+    *
+    * The function loads and resolves symbols for:
+    * - ASN1 operations (time, integer handling)
+    * - BIO operations (memory buffers, I/O)
+    * - BIGNUM operations
+    * - Error handling functions
+    * - EVP (envelope) operations for keys and digests
+    * - PEM file I/O
+    * - RSA key generation
+    * - SSL/TLS context and connection operations
+    * - X.509 certificate operations
+    *
+    * @param error_dstr Output parameter for error messages. Will be populated if initialization fails.
+    *
+    * @return true if initialization succeeded, false otherwise
+    *
+    * @note This function must be called before any other OpenSSL wrapper functions.
+    * @note If initialization fails, all allocated resources are automatically cleaned up.
+    * @see cleanup()
+    */
 
    // static methods
    bool OpenSSL::initialize(dstring *error_dstr) {
@@ -494,7 +520,6 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "TLS_client_method";
-         //func = "TLS_method";
          TLS_client_method_func = reinterpret_cast<TLS_client_method_func_t>(dlsym(libssl_handle, func));
          if (TLS_client_method_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
@@ -503,7 +528,6 @@ namespace ocs::uti {
       }
       if (ret) {
          func = "TLS_server_method";
-         //func = "TLS_method";
          TLS_server_method_func = reinterpret_cast<TLS_server_method_func_t>(dlsym(libssl_handle, func));
          if (TLS_server_method_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_LOAD_FUNC_SS, func, dlerror());
@@ -634,6 +658,15 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Cleans up and unloads the OpenSSL library.
+    *
+    * This function closes the dynamically loaded libssl shared library handle
+    * and sets it to nullptr. After calling this function, no OpenSSL operations
+    * can be performed until initialize() is called again.
+    *
+    * @see initialize()
+    */
    void OpenSSL::cleanup() {
       // close the library
       if (libssl_handle != nullptr) {
@@ -642,14 +675,37 @@ namespace ocs::uti {
       }
    }
 
+   /**
+    * @brief Constructs the filesystem path for storing an SSL certificate.
+    *
+    * This function builds the path where an SSL certificate should be stored based on
+    * whether it's for a daemon or a user process. The path format depends on the home_dir parameter:
+    *
+    * - For daemons (home_dir == nullptr):
+    *   $SGE_ROOT/$SGE_CELL/common/certs/component_hostname.pem
+    *
+    * - For user processes we currently generate certificates and key on the fly and only in memory.
+    *   Once we implement CS-1576 cache the per user certificate used by qrsh for the IJS connection
+    *   we will store certificates and keys in the user's homedirectory, in directories below a
+    *   `.ocs` directory, e.g., $HOME/.ocs/certs/component_hostname.pem
+    *
+    * @param cert_path Output parameter that will contain the constructed path
+    * @param home_dir Home directory for user certificates, or nullptr for daemon certificates
+    * @param hostname The hostname to include in the certificate filename
+    * @param comp_name The component name (e.g., "qmaster", "execd") to include in the filename
+    *
+    * @return true if the path was successfully constructed, false if required parameters are nullptr
+    *
+    * @note The actual directory may not exist yet; this function only constructs the path string.
+    * @see build_key_path()
+    */
 #define PER_USER_AND_HOST_CERTS
    bool OpenSSL::build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name) {
       bool ret = true;
       // need info
       // -> daemon or user certificate?
       //    -> daemon: $SGE_ROOT/$SGE_CELL/common/certs/hostname.pem
-      //    -> user: $HOME/.ocs/certs/hostname.pem OR $HOME/.ocs/certs/cert.pem
-      //             => or do not store it at all?
+      //    -> with CS-1576: user: $HOME/.ocs/certs/hostname.pem OR $HOME/.ocs/certs/cert.pem
       if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
@@ -668,11 +724,37 @@ namespace ocs::uti {
       }
       return ret;
    }
+   /**
+    * @brief Constructs the filesystem path for storing an SSL private key.
+    *
+    * This function builds the path where an SSL private key should be stored based on
+    * whether it's for a daemon or a user process. The path format depends on the home_dir parameter:
+    *
+    * - For daemons (home_dir == nullptr):
+    *   /var/lib/ocs/<port>/private/component_hostname.pem
+    *   If port is 0, it's omitted from the path.
+    *
+    * - For user processes we currently generate certificates and key on the fly and only in memory.
+    *   Once we implement CS-1576 cache the per user certificate used by qrsh for the IJS connection
+    *   we will store certificates and keys in the user's homedirectory, in directories below a
+    *   `.ocs` directory, e.g., $HOME/.ocs/private/component_hostname.pem
+    *
+    * @param key_path Output parameter that will contain the constructed path
+    * @param home_dir Home directory for user keys, or nullptr for daemon keys
+    * @param hostname The hostname to include in the key filename
+    * @param port Port number to include in the path (daemon only), or 0 to omit
+    * @param comp_name The component name (e.g., "qmaster", "execd") to include in the filename
+    *
+    * @return true if path was successfully constructed, false if required parameters are nullptr
+    *
+    * @note Private keys are stored in directories with restricted permissions (700).
+    * @see build_cert_path()
+    */
    bool OpenSSL::build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name) {
       bool ret = true;
       // -> daemon or user key?
       //    -> daemon: /var/lib/ocs/<port>/private/component_hostname.pem
-      //    -> user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
+      //    -> with CS-1576: user: $HOME/.ocs/private/hostname.pem OR $HOME/.ocs/private/key.pem
       if (hostname == nullptr || comp_name == nullptr) {
          // @todo use error_dstr
          ret = false;
@@ -694,6 +776,26 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Verifies that certificate and key directories exist, creating them if necessary.
+    *
+    * This function checks for the existence of directories needed for storing certificates
+    * and private keys. If they don't exist, it creates them with appropriate permissions:
+    * - Certificate directory: mode 755 (rwxr-xr-x)
+    * - Private key directory: mode 700 (rwx------)
+    *
+    * The function handles user switching appropriately:
+    * - For daemon processes, switches between root and admin user as needed
+    * - Certificate directories may require admin user permissions (SGE_ROOT might be on NFS)
+    * - Key directories require root permissions (/var/lib/ocs)
+    *
+    * @param switch_user If true, perform user switching between root and admin user
+    * @param called_as_root True if the calling process is running as root
+    * @param error_dstr Output parameter for error messages
+    * @param created_dirs Output parameter, set to true if any directories were created
+    *
+    * @return true if directories exist or were successfully created, false on error
+    */
    bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) {
       bool ret = true;
 
@@ -760,6 +862,19 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Checks if certificate recreation is required based on the stored renewal time.
+    *
+    * This is a lightweight check that compares the stored renewal_time against the
+    * current time. The renewal_time is typically set when a certificate is created
+    * or read, indicating when the certificate should be renewed (usually when 75%
+    * of its lifetime has passed).
+    *
+    * @return true if the certificate has expired or should be renewed, false otherwise
+    *
+    * @note This version does not read the certificate file; it only checks cached renewal time.
+    * @see certificate_recreate_required(dstring*)
+    */
    bool OpenSSL::OpenSSLContext::certificate_recreate_required() {
       DENTER(TOP_LAYER);
 
@@ -775,6 +890,27 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Checks if certificate recreation is required by reading and analyzing the certificate file.
+    *
+    * This function performs a thorough check by:
+    * 1. Opening and reading the certificate file from disk
+    * 2. Parsing the X.509 certificate
+    * 3. Calculating the time remaining until expiration
+    * 4. Determining if renewal is needed (when less than 25% of lifetime remains)
+    *
+    * If the certificate file cannot be read or parsed, or if calculations fail,
+    * the function returns true (indicating recreation is needed) and populates
+    * the error_dstr with diagnostic information.
+    *
+    * @param error_dstr Output parameter for error/diagnostic messages
+    *
+    * @return true if the certificate should be recreated, false if it's still valid
+    *
+    * @note Sets the renewal_time member variable when a valid certificate is found.
+    * @note Returns true (needs recreation) on any error reading or parsing the certificate.
+    * @see certificate_recreate_required()
+    */
    bool OpenSSL::OpenSSLContext::certificate_recreate_required(dstring *error_dstr) {
       bool ret = false;
       bool ok = true;
@@ -783,7 +919,7 @@ namespace ocs::uti {
       // Try to open the certificate file.
       FILE *fp = fopen(cert_path.c_str(), "r");
       if (fp == nullptr) {
-         sge_dstring_sprintf(error_dstr, "cannot open certificate file %s: %s", cert_path.c_str(), strerror(errno));
+         sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_OPEN_CERT_FILE_SS, cert_path.c_str(), strerror(errno));
          ok = false;
          ret = true; // We cannot read the cert file, so try to recreate it.
       }
@@ -793,9 +929,8 @@ namespace ocs::uti {
          cert = PEM_read_X509_func(fp, nullptr, nullptr, nullptr);
          fclose(fp);
          if (cert == nullptr) {
-            // @todo Do this and the following functions set some error code? No info in the man page.
-            // @todo I18N
-            sge_dstring_sprintf(error_dstr, "cannot read certificate from file %s", cert_path.c_str());
+            // @todo Do this and the following functions set some error code? No info in the man page!
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_READ_CERT_FILE_S, cert_path.c_str());
             // We could not read the certificate file - nothing else to do here and try to re-create it.
             ok = false;
             ret = true;
@@ -811,7 +946,7 @@ namespace ocs::uti {
          // Diff between notAfter and current time.
          // ==> If from or to is nullptr the current time is used.
          if (ASN1_TIME_diff_func(&days_left, &secs_left, nullptr, notAfter) != 1) {
-            sge_dstring_sprintf(error_dstr, "cannot calculate difference between current time and certificate notAfter time");
+            sge_dstring_sprintf(error_dstr, SFNMAX, MSG_OPENSSL_CANNOT_CALC_DIFF_TIME);
             // We cannot calculate the diff?
             // Nothing else to be done here, re-create the certificate.
             ok = false;
@@ -845,6 +980,36 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Configures an SSL_CTX for server-side operation with certificate and private key.
+    *
+    * This function handles the complete setup of an SSL server context:
+    * 1. Creates the necessary directories for certificates and keys (if file-based)
+    * 2. Checks if existing certificates need renewal
+    * 3. Generates a new RSA key pair and self-signed X.509 certificate if needed
+    * 4. Writes certificate and key to files (if file-based) or uses them from memory
+    * 5. Configures the SSL_CTX with the certificate and private key
+    *
+    * Certificate generation details:
+    * - 2048-bit RSA key with exponent RSA_F4
+    * - X.509 v3 certificate
+    * - Self-signed with SHA-256 signature
+    * - Common Name (CN) set to qualified hostname
+    * - Lifetime configurable via bootstrap_get_cert_lifetime()
+    * - Renewal scheduled at 75% of lifetime
+    *
+    * User switching for daemons:
+    * - Switches to admin user for writing certificates (may be on NFS)
+    * - Switches to root for writing private keys (/var/lib/ocs)
+    *
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if server context was successfully configured, false on error
+    *
+    * @note The EVP_PKEY and X509 objects are safely freed after being added to SSL_CTX
+    *       (SSL_CTX internally increments their reference counts).
+    * @note For user processes (qrsh), certificates are not stored on disk.
+    */
    bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
@@ -913,7 +1078,7 @@ namespace ocs::uti {
 
          X509_set_version_func(x509, 2);
          ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
-         X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could we give a negative value here to avoid validity problems with notBefore?
+         X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could/should we give a negative value here to avoid validity problems with notBefore?
          X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
@@ -923,7 +1088,6 @@ namespace ocs::uti {
 
          X509_sign_func(x509, pkey, EVP_sha256_func());
 
-         // @todo additional error handling!!
          if (file_based) {
             // we need to be root to be able to write in the key directory
             DPRINTF("=====> switch_user: %d, called_as_root: %d\n", switch_user, called_as_root);
@@ -935,7 +1099,7 @@ namespace ocs::uti {
             DPRINTF("writing key to file %s\n", key_path.c_str());
             FILE *f = fopen(key_path.c_str(), "wb");
             if (f == nullptr) {
-               sge_dstring_sprintf(error_dstr, "cannot open key file %s: %s", key_path.c_str(), strerror(errno));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_OPEN_KEY_FILE_SS, key_path.c_str(), strerror(errno));
                DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
                ret = false;
             } else {
@@ -962,7 +1126,7 @@ namespace ocs::uti {
                DPRINTF("writing certificate to file %s\n", cert_path.c_str());
                f = fopen(cert_path.c_str(), "wb");
                if (f == nullptr) {
-                  sge_dstring_sprintf(error_dstr, "cannot open cert file %s: %s", cert_path.c_str(), strerror(errno));
+                  sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_OPEN_CERT_FILE_SS, cert_path.c_str(), strerror(errno));
                   DPRINTF(SFNMAX "\n", sge_dstring_get_string(error_dstr));
                   ret = false;
                } else {
@@ -985,13 +1149,13 @@ namespace ocs::uti {
 
          if (ret) {
             if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
-               sge_dstring_sprintf(error_dstr, "cannot use certificate from x509: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_X509_S, ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
             }
          }
          if (ret) {
             if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
-               sge_dstring_sprintf(error_dstr, "cannot use private key from pkey: %s", ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S, ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
             }
          }
@@ -1016,7 +1180,8 @@ namespace ocs::uti {
          if (ret) {
             // We can read this file, as admin user and as root.
             if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
-               sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", cert_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS, cert_path.c_str(),
+                                   ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
             }
          }
@@ -1028,7 +1193,8 @@ namespace ocs::uti {
                sge_switch2start_user();
             }
             if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
-               sge_dstring_sprintf(error_dstr, "Unable to read %s: %s", key_path.c_str(), ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_KEY_FILE_SS, key_path.c_str(),
+                                   ERR_reason_error_string_func(ERR_get_error_func()));
                ret = false;
             }
             if (switch_user && !called_as_root) {
@@ -1041,6 +1207,22 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Configures an SSL_CTX for client-side operation with certificate verification.
+    *
+    * This function sets up an SSL client context for secure connections:
+    * - If cert_path is empty: Disables certificate verification (SSL_VERIFY_NONE) (an option but not used)
+    * - If cert_path is provided: Enables peer verification (SSL_VERIFY_PEER) and
+    *   loads the trusted certificate from the specified location
+    *
+    * When verification is enabled, the client will:
+    * - Abort the handshake if the server's certificate cannot be verified
+    * - Use the specified certificate as the trust anchor (typically a self-signed cert)
+    *
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if client context was successfully configured, false on error
+    */
    bool OpenSSL::OpenSSLContext::configure_client_context(dstring *error_dstr) {
       bool ret = true;
       if (cert_path.empty()) {
@@ -1061,7 +1243,8 @@ namespace ocs::uti {
           * In this demo though we are using a self-signed certificate, so the client must trust it directly.
           */
          if (!SSL_CTX_load_verify_locations_func(ssl_ctx, cert_path.c_str(), nullptr)) {
-            sge_dstring_sprintf(error_dstr, "Unable to load verify location %s: %s", cert_path.c_str(), ocs::uti::OpenSSL::ERR_reason_error_string_func(ocs::uti::OpenSSL::ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS, cert_path.c_str(),
+                                ERR_reason_error_string_func(ERR_get_error_func()));
             ret = false;
          }
       }
@@ -1069,6 +1252,22 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Destructor for OpenSSLContext. Frees the SSL_CTX if no connections reference it.
+    *
+    * The destructor performs safe cleanup:
+    * - If connection_count is 0: Frees the SSL_CTX immediately
+    * - If connection_count > 0: Keeps the SSL_CTX allocated to prevent crashes
+    *   (results in a small memory leak, but prevents use-after-free)
+    *
+    * Contexts with active connections should be marked for deletion using
+    * mark_context_for_deletion(), which will defer actual deletion until all
+    * connections are closed.
+    *
+    * @note This defensive approach prevents crashes at the cost of occasional small memory leaks.
+    * @see mark_context_for_deletion()
+    * @see delete_no_longer_used_contexts()
+    */
    OpenSSL::OpenSSLContext::~OpenSSLContext() {
       DENTER(TOP_LAYER);
       // If there are still connections referencing this object, we do not free the ssl_ctx.
@@ -1085,6 +1284,22 @@ namespace ocs::uti {
       DRETURN_VOID;
    }
 
+   /**
+    * @brief Marks an OpenSSLContext for deferred deletion when it's safe to do so.
+    *
+    * This function handles safe deletion of contexts that may still have active connections:
+    * - If connection_count is 0: Deletes the context immediately
+    * - If connection_count > 0: Adds the context to a deletion queue for later cleanup
+    *
+    * Deferred deletion prevents crashes when contexts need to be replaced (e.g., during
+    * certificate renewal) while connections are still using them. The actual deletion
+    * occurs when delete_no_longer_used_contexts() is called and all connections are closed.
+    *
+    * @param context Pointer to the OpenSSLContext to be deleted (must not be nullptr)
+    *
+    * @note This is the preferred way to delete contexts that may have active connections.
+    * @see delete_no_longer_used_contexts()
+    */
    void OpenSSL::OpenSSLContext::mark_context_for_deletion(OpenSSLContext *context) {
       DENTER(TOP_LAYER);
       if (context->connection_count == 0) {
@@ -1094,6 +1309,21 @@ namespace ocs::uti {
       }
       DRETURN_VOID;
    }
+
+   /**
+    * @brief Deletes contexts marked for deletion that no longer have active connections.
+    *
+    * This function iterates through the contexts_to_delete vector and deletes
+    * any contexts whose connection_count has reached zero. Contexts with active
+    * connections remain in the vector for future cleanup attempts.
+    *
+    * This function should be called periodically (e.g., during event processing)
+    * to clean up contexts that were marked for deletion but couldn't be deleted
+    * immediately due to active connections.
+    *
+    * @note This function is safe to call at any time, even if no contexts are pending deletion.
+    * @see mark_context_for_deletion()
+    */
    void OpenSSL::OpenSSLContext::delete_no_longer_used_contexts() {
       DENTER(TOP_LAYER);
       // Remove and delete contexts with no active connections.
@@ -1112,6 +1342,21 @@ namespace ocs::uti {
       DRETURN_VOID;
    }
 
+      /**
+       * @brief Creates an OpenSSLContext for server mode without file-based certificate storage.
+       *
+       * This is a convenience factory method that creates a server context with certificates
+       * stored only in memory (not written to files). This is typically used for temporary
+       * client connections like qrsh where persistent certificate storage is not needed.
+       *
+       * @param error_dstr Output parameter for error messages
+       *
+       * @return Pointer to newly created OpenSSLContext, or nullptr on error
+       *
+       * @note Caller is responsible for deleting the returned context.
+       * @note Certificates are generated in memory and not persisted to disk.
+       * @see create(bool, std::string&, std::string&, dstring*)
+       */
       // Not really required but explicitly marks the case that certificate and key are not stored in files
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(dstring *error_dstr) {
          OpenSSLContext *ret{nullptr};
@@ -1123,6 +1368,22 @@ namespace ocs::uti {
          return ret;
       }
 
+      /**
+       * @brief Creates a new OpenSSLContext with the same configuration as an existing one.
+       *
+       * This factory method creates a new context that uses the same certificate and key paths
+       * as the source context. This is useful when refreshing certificates - the new context
+       * will check for updated certificates and create new ones if needed.
+       *
+       * @param source Pointer to the existing OpenSSLContext to copy configuration from
+       * @param error_dstr Output parameter for error messages
+       *
+       * @return Pointer to newly created OpenSSLContext, or nullptr on error
+       *
+       * @note Only the configuration (paths, server/client mode) is copied, not the SSL_CTX itself.
+       * @note Caller is responsible for deleting the returned context.
+       * @see create(bool, std::string&, std::string&, dstring*)
+       */
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(const OpenSSLContext *source, dstring *error_dstr) {
          OpenSSLContext *ret{nullptr};
 
@@ -1133,6 +1394,33 @@ namespace ocs::uti {
          return ret;
       }
 
+      /**
+       * @brief Creates and fully configures an OpenSSLContext for server or client operation.
+       *
+       * This is the main factory method for creating SSL contexts. It:
+       * 1. Creates an SSL_CTX using the appropriate method (server or client)
+       * 2. Constructs an OpenSSLContext wrapper object
+       * 3. Configures the context (generates/loads certificates for server, sets up verification for client)
+       *
+       * For server contexts:
+       * - If paths are empty: Creates in-memory certificates
+       * - If paths are provided: Creates/loads certificates from files
+       * - Automatically generates new certificates if needed
+       *
+       * For client contexts:
+       * - If cert_path is empty: Disables certificate verification
+       * - If cert_path is provided: Enables peer verification with the specified CA cert
+       *
+       * @param is_server true for server context, false for client context
+       * @param cert_path Path to certificate file (may be empty for in-memory certs)
+       * @param key_path Path to private key file (may be empty for in-memory keys)
+       * @param error_dstr Output parameter for error messages
+       *
+       * @return Pointer to newly created and configured OpenSSLContext, or nullptr on error
+       *
+       * @note This is the most flexible create method - others delegate to this one.
+       * @note Caller is responsible for deleting the returned context.
+       */
       OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
       OpenSSLContext *ret{nullptr};
 
@@ -1180,6 +1468,25 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Retrieves the certificate from the SSL context in PEM format.
+    *
+    * This function extracts the certificate from the SSL_CTX and converts it to
+    * PEM-encoded format as a null-terminated string. The certificate can be sent
+    * to clients or used for verification purposes.
+    *
+    * The function:
+    * 1. Gets the X.509 certificate from the SSL_CTX
+    * 2. Creates a memory BIO
+    * 3. Writes the certificate to the BIO in PEM format
+    * 4. Reads the PEM data into a newly allocated string
+    *
+    * @return Newly allocated string containing the PEM-encoded certificate,
+    *         or nullptr if no certificate is available or on error
+    *
+    * @note Caller is responsible for freeing the returned string using sge_free().
+    * @note The returned string is null-terminated and suitable for transmission or display.
+    */
    char *OpenSSL::OpenSSLContext::get_cert() {
       char *ret = nullptr;
 
@@ -1202,14 +1509,36 @@ namespace ocs::uti {
       return ret;
    }
 
-
+   /**
+    * @brief Creates a new SSL connection object associated with the given context.
+    *
+    * This factory method creates an OpenSSLConnection wrapper around an SSL object.
+    * The connection inherits its configuration (server/client mode, certificates) from
+    * the provided context.
+    *
+    * The function:
+    * 1. Creates a new SSL object from the context's SSL_CTX
+    * 2. Configures SSL_MODE_AUTO_RETRY (auto-restart interrupted handshakes on blocking sockets)
+    * 3. Configures SSL_MODE_ENABLE_PARTIAL_WRITE (allow partial writes)
+    * 4. Wraps the SSL object in an OpenSSLConnection
+    * 5. Increments the context's connection reference count
+    *
+    * @param context Pointer to the OpenSSLContext to create the connection from
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return Pointer to newly created OpenSSLConnection, or nullptr on error
+    *
+    * @note Caller is responsible for deleting the returned connection.
+    * @note The connection maintains a reference to the context, preventing premature deletion.
+    * @note SSL_MODE_ENABLE_PARTIAL_WRITE allows writing data in chunks for better performance.
+    */
    OpenSSL::OpenSSLConnection *OpenSSL::OpenSSLConnection::create(OpenSSLContext *context, dstring *error_dstr) {
       OpenSSLConnection *ret{nullptr};
 
       bool ok = true;
       bool is_server = context->get_is_server();
 
-      // initialize the SSL context
+      // initialize the SSL connection
       SSL *ssl;
       if (ok) {
          ssl = OpenSSL::SSL_new_func(context->get_SSL_CTX());
@@ -1247,12 +1576,35 @@ namespace ocs::uti {
       return ret;
    }
 
-   // @todo CS-1559 Try to move waiting for the socket into commlib
-   //       Problem: E.g., when waiting for accept or connect to continue, we may not
-   //       repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
+   /**
+    * @brief Waits for the underlying socket to become ready for the specified operation.
+    *
+    * This function uses select() to wait for the socket to become ready for reading
+    * or writing, depending on the reason parameter. This is necessary when SSL operations
+    * return SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE on non-blocking sockets.
+    *
+    * The function handles different SSL error reasons:
+    * - SSL_ERROR_WANT_ACCEPT: Waits for both read and write readiness
+    * - SSL_ERROR_WANT_CONNECT: Waits for both read and write readiness
+    * - SSL_ERROR_WANT_READ: Waits for read readiness
+    * - SSL_ERROR_WANT_WRITE: Waits for write readiness
+    *
+    * @param reason The SSL error code indicating what to wait for (SSL_ERROR_WANT_*)
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if socket became ready or timeout occurred, false on select() error
+    *
+    * @note Timeout is currently hardcoded to 1 second.
+    * @note Timeout is not treated as an error (returns true).
+    * @note EWOULDBLOCK, EAGAIN, and EINTR from select() are not treated as errors.
+    * @todo CS-1559: Consider moving this functionality into commlib for better integration.
+    *                Which is tricky, e.g., when waiting for accept or connect to continue, we may not
+    *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
+    */
    bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) {
       // wait until the socket is ready for read or write
       DENTER(TOP_LAYER);
+
       DPRINTF("waiting for socket %d to become ready for %s\n", fd, reason ? "read" : "write");
 
       bool ret = true;
@@ -1307,6 +1659,21 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Destructor for OpenSSLConnection. Shuts down SSL connection and frees resources.
+    *
+    * The destructor performs proper cleanup:
+    * 1. Performs SSL shutdown handshake if ssl is not nullptr
+    * 2. Frees the SSL object
+    * 3. Decrements the associated context's connection reference count
+    *
+    * Decrementing the context's connection count may trigger deferred deletion
+    * of the context if it was marked for deletion and this was the last connection.
+    *
+    * @note SSL_shutdown may send a close_notify alert to the peer.
+    * @note The underlying socket file descriptor is not closed by this destructor.
+    * @see OpenSSLContext::mark_context_for_deletion()
+    */
 
    OpenSSL::OpenSSLConnection::~OpenSSLConnection() {
       if (ssl != nullptr) {
@@ -1318,6 +1685,22 @@ namespace ocs::uti {
       }
    }
 
+   /**
+    * @brief Associates the SSL connection with a file descriptor (socket).
+    *
+    * This function binds the SSL connection to an already-established socket file descriptor.
+    * After calling this function, SSL operations (read, write, accept, connect) will use
+    * this socket for network I/O.
+    *
+    * @param new_fd The socket file descriptor to associate with this connection
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if the fd was successfully set, false on error
+    *
+    * @note This must be called before performing any SSL handshake or I/O operations.
+    * @note The socket should already be connected (for client) or accepted (for server).
+    * @note The SSL connection does not take ownership of the file descriptor.
+    */
    bool OpenSSL::OpenSSLConnection::set_fd(int new_fd, dstring *error_dstr) {
       // clear previously occurred but not yet fetched errors
       ERR_clear_error_func();
@@ -1335,6 +1718,31 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Reads application data from the SSL connection.
+    *
+    * This function reads decrypted application data from the SSL connection into
+    * the provided buffer. It handles SSL protocol operations transparently.
+    *
+    * Return value semantics:
+    * - Positive value: Number of bytes successfully read
+    * - 0: No application data was read (maybe due to SSL protocol data being processed)
+    * - -1: Error occurred (error_dstr is populated)
+    *
+    * When SSL_read returns SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE:
+    * - The socket became ready due to SSL protocol data (not application data)
+    * - The function returns 0 (no application data available yet)
+    * - Caller should try reading again when the socket becomes ready
+    *
+    * @param buffer Buffer to store read data
+    * @param max_len Maximum number of bytes to read
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return Number of bytes read (> 0), 0 if no data available, or -1 on error
+    *
+    * @note On non-blocking sockets, returning 0 is normal and not an error.
+    * @note SSL protocol data is handled transparently (does not appear in the buffer).
+    */
    int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
@@ -1347,7 +1755,6 @@ namespace ocs::uti {
       int read_ret = SSL_read_func(ssl, buffer, static_cast<int>(max_len));
       if (read_ret > 0) {
          // we actually read some data without errors
-         //DRETURN(read_ret);
          ret = read_ret;
       } else {
          int err = SSL_get_error_func(ssl, read_ret);
@@ -1369,6 +1776,32 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Writes application data to the SSL connection.
+    *
+    * This function encrypts and writes application data to the SSL connection.
+    * With SSL_MODE_ENABLE_PARTIAL_WRITE enabled, it may write fewer bytes than requested.
+    *
+    * Return value semantics:
+    * - Positive value: Number of bytes successfully written
+    * - 0: No data was written (operation needs to be retried)
+    * - -1: Error occurred (error_dstr is populated)
+    *
+    * When SSL_write returns SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE:
+    * - Sets the repeat_write flag to true
+    * - Returns 0 to indicate retry is needed
+    * - Caller must call write() again with the same parameters when socket is ready
+    *
+    * @param buffer Buffer containing data to write
+    * @param len Number of bytes to write
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return Number of bytes written (> 0), 0 if retry needed, or -1 on error
+    *
+    * @note With partial writes enabled, may write less than len bytes (but never 0).
+    * @note When repeat_write is true, the same write must be retried (SSL requirement).
+    * @note The repeat_write flag can be checked via needs_repeat_write().
+    */
    int OpenSSL::OpenSSLConnection::write(char *buffer, size_t len, dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
@@ -1402,7 +1835,30 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
-   // @todo make timeouts configurable
+   /**
+    * @brief Performs SSL handshake for server-side connection acceptance.
+    *
+    * This function performs the SSL/TLS handshake from the server's perspective.
+    * It repeatedly calls SSL_accept() until the handshake completes or an error occurs.
+    *
+    * The function handles SSL_ERROR_WANT_* conditions by:
+    * 1. Waiting for the socket to become ready (using select)
+    * 2. Retrying the SSL_accept() operation
+    * 3. Timing out after SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 second)
+    *
+    * This function must be called after:
+    * - TCP accept() has completed
+    * - set_fd() has been called to associate the socket
+    *
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if handshake completed successfully, false on error or timeout
+    *
+    * @note Can only be called on server-side connections (is_server must be true).
+    * @note May block for up to 1 second waiting for handshake completion.
+    * @note On non-blocking sockets, this function handles retries internally.
+    * @todo CS-1679 Make timeout configurable.
+    */
 #define SGE_OPENSSL_RETRY_TIMEOUT_SERVER 1 * 1000000 // 1 second
 #define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT 10 * 1000000 // 10 seconds
 
@@ -1444,7 +1900,6 @@ namespace ocs::uti {
                      }
                   }
                } else {
-                  // @todo need to call SSL_get_error_func() for all failing SSL_* functions?
                   sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err,
                                       ERR_reason_error_string_func(ERR_get_error_func()));
                   DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
@@ -1458,6 +1913,28 @@ namespace ocs::uti {
       DRETURN(ret);
    }
 
+   /**
+    * @brief Configures Server Name Indication (SNI) for client-side connection.
+    *
+    * This function sets the server hostname for SNI extension in the TLS ClientHello.
+    * SNI allows the client to indicate which hostname it's attempting to connect to,
+    * enabling the server to present the appropriate certificate.
+    *
+    * The function:
+    * 1. Sets the TLS extension hostname (for SNI)
+    * 2. Configures hostname verification (for certificate validation)
+    *
+    * This function must be called before connect() to take effect.
+    *
+    * @param server_name The hostname of the server to connect to (for SNI and verification)
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if SNI was successfully configured, false on error
+    *
+    * @note Can only be called on client-side connections (is_server must be false).
+    * @note Must be called before connect() to be included in the handshake.
+    * @note The hostname is used both for SNI and for certificate hostname verification.
+    */
    bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) {
       bool ret = ssl != nullptr;
 
@@ -1479,6 +1956,32 @@ namespace ocs::uti {
       return ret;
    }
 
+   /**
+    * @brief Performs SSL handshake for client-side connection establishment.
+    *
+    * This function performs the SSL/TLS handshake from the client's perspective.
+    * It repeatedly calls SSL_connect() until the handshake completes or an error occurs.
+    *
+    * The function handles SSL_ERROR_WANT_* conditions by:
+    * 1. Waiting for the socket to become ready (using select)
+    * 2. Retrying the SSL_connect() operation
+    * 3. Timing out after SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 seconds)
+    *
+    * This function must be called after:
+    * - TCP connect() has completed
+    * - set_fd() has been called to associate the socket
+    * - (Optional) set_server_name_for_sni() has been called for SNI support
+    *
+    * @param error_dstr Output parameter for error messages
+    *
+    * @return true if handshake completed successfully, false on error or timeout
+    *
+    * @note Can only be called on client-side connections (is_server must be false).
+    * @note May block for up to 10 seconds waiting for handshake completion.
+    * @note On non-blocking sockets, this function handles retries internally.
+    * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
+    * @todo CS-1679 Make timeout configurable.
+    */
    bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
       DENTER(TOP_LAYER);
 
@@ -1507,11 +2010,9 @@ namespace ocs::uti {
 
             int connect_ret = SSL_connect_func(ssl);
             if (connect_ret <= 0) {
-               // @todo need to call SSL_get_error_func() for all failing SSL_* functions?
                int err = SSL_get_error_func(ssl, connect_ret);
                if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_CONNECT) {
                   DPRINTF("  --> got connect SSL_ERROR_WANT_* %d\n", err);
-                  // @todo workaround: need to set commlib connection into some special state and re-visit
                   if (wait_for_socket_ready(err, error_dstr)) {
                      if (sge_get_gmt64() >= timeout) {
                         sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,

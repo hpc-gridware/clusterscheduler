@@ -391,8 +391,8 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
          commlib_error = ClientBase::gdi_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-            // here we update the qmaster name in ClientBase
-            // when we next try to connect to sge_qmaster we will connect to the right host
+            // Here we update the qmaster name in ClientBase.
+            // When we next try to connect to sge_qmaster we will connect to the right host.
             const char *mastername = ClientBase::gdi_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||

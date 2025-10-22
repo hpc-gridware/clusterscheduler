@@ -66,7 +66,7 @@ Encryption support is an experimental feature and is not enabled by default.
 See details in the Installation Guide, chapters "Planning the Installation" and "Installation of the Master Service"
 and in the Administration Guide, chapter "TLS Encryption of Communication."
 
-(Available in Gridware Cluster Scheduler and Open Cluster Scheduler)
+(Available in Gridware Cluster Scheduler only)
 
 ### Munge authentication
 

@@ -328,7 +328,7 @@ int comm_init_lib(dstring *err_msg) {
 
    /*
     * comm_init_lib() is only called from sge_shepherd and uses multithreaded commlib.
-    * The other communication end is qrsh which uses singlethreaded commlib.
+    * The other communication end is qrsh that uses the singlethreaded commlib.
     *
     * To enable commlib logging to a file (see my_log_list_flush_list()
     * for the file path), exchange this line with the one below.
@@ -650,7 +650,7 @@ int comm_open_connection(bool        b_server,
    }
 
    /*
-    * Need to do this as SUPERUSER, because in csp mode we need the permissions
+    * Need to do this as SUPERUSER, because in csp and tls mode we need the permissions
     * to load the job users keys.
     */
    if (!b_server) {

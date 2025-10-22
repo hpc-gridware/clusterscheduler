@@ -256,5 +256,13 @@
 #define MSG_OPENSSL_CANNOT_PERM_KEY_DIR_SS         _MESSAGE(59300, _("cannot set permissions on key directory " SFQ ": " SFN4))
 #define MSG_OPENSSL_TIMEOUT_IN_ACCEPT_II           _MESSAGE(59301, _("SSL accept timed out after %d seconds and %d repetitions"))
 #define MSG_OPENSSL_TIMEOUT_IN_CONNECT_II          _MESSAGE(59302, _("SSL connect timed out after %d seconds and %d repetitions"))
+#define MSG_OPENSSL_CANNOT_OPEN_CERT_FILE_SS       _MESSAGE(59303, _("cannot open certificate file: " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_READ_CERT_FILE_S        _MESSAGE(59304, _("cannot read from certificate file: " SFQ))
+#define MSG_OPENSSL_CANNOT_CALC_DIFF_TIME          _MESSAGE(59305, _("cannot calculate difference between current time and certificate notAfter time"))
+#define MSG_OPENSSL_CANNOT_OPEN_KEY_FILE_SS        _MESSAGE(59306, _("cannot open key file: " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_USE_CERT_X509_S         _MESSAGE(59307, _("cannot use certificate from x509: " SFN4))
+#define MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS        _MESSAGE(59308, _("cannot use certificate file: " SFQ ": " SFN4))
+#define MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S          _MESSAGE(59309, _("cannot use private key from pkey: " SFN4))
+#define MSG_OPENSSL_CANNOT_USE_KEY_FILE_SS         _MESSAGE(59310, _("cannot use private key file: " SFQ ": " SFN4))
 
 // clang-format on
