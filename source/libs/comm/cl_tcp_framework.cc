@@ -450,6 +450,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 
          // if there was an error, report it and return error
          if (!ssl_ok) {
+            private_com->ssl_connection->set_fd(-1, &dstr_error);
             shutdown(private_com->sockfd, 2);
             close(private_com->sockfd);
             private_com->sockfd = -1;
@@ -589,6 +590,8 @@ int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
       com_private->ssl_connection = ocs::uti::OpenSSL::OpenSSLConnection::create(ssl_context, &dstr_error);
       if (com_private->ssl_connection == nullptr) {
          CL_LOG_STR(CL_LOG_ERROR, "error creating SSL connection:", sge_dstring_get_string(&dstr_error));
+         cl_com_close_connection(connection);
+         return CL_RETVAL_MALLOC;
       }
    } else {
       com_private->ssl_connection = nullptr;
@@ -695,10 +698,10 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
 
 #if defined(OCS_WITH_OPENSSL)
 // check if a SSL_write call needs to be repeated due to SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE
-bool cl_com_tcp_write_repeat_required(const cl_com_connection_t *connection) {
+bool cl_com_tcp_write_repeat_required(cl_com_connection_t *connection) {
    bool ret = false;
 
-   cl_com_tcp_private_t *private_com = reinterpret_cast<cl_com_tcp_private_t *>(connection->com_private);
+   cl_com_tcp_private_t *private_com = cl_com_tcp_get_private(connection);
    if (private_com != nullptr &&
        private_com->ssl_connection != nullptr &&
        private_com->ssl_connection->repeat_write_required()) {
@@ -990,8 +993,6 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
 
    /* make socket listening for incoming connects */
    if (listen(sockfd, 5) != 0) {   /* TODO: set listen params */
-      // @todo OpenSSL: in all these places where shutdown() is called: also do SSL_shutdown()
-      // @todo this should be in a function
       shutdown(sockfd, 2);
       close(sockfd);
       CL_LOG(CL_LOG_ERROR, "listen error");
@@ -1319,7 +1320,6 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          if (ssl_ok) {
             if (!tmp_private->ssl_connection->accept(&dstr_error)) {
                CL_LOG_STR(CL_LOG_ERROR, "ssl accept error:", sge_dstring_get_string(&dstr_error));
-               // @todo some push application error to get the error being output?
                ssl_ok = false;
             }
          }

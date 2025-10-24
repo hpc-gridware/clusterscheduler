@@ -28,13 +28,24 @@ dnf install -y openssl3
 
 #### Installing OpenSSL 3 on FreeBSD 13
 
+On FreeBSD 13 there is an openssl3 package, but it seems to be lacking libcrypto, which is required for
+encryption.
+
+Openssl 3.x can be built from source, and the built libraries can be used for both building and operating xxQS_NAMExx
+in TLS mode.
+
 ```bash
-pkg install -y openssl3
+# get the openssl-3.x source code and unpack it
+# cd into the openssl source directory
+./Configure
+make
+# as user root
+make install
 ```
 
 #### Other operating systems
 
-On newer Linux distributions (e.g. Ubuntu 24.04, Alma/CentOS/RHEL/Rocky 9 and higher, SUSE Leap / SLES)
+On newer Linux distributions (e.g., Ubuntu 24.04, Alma/CentOS/RHEL/Rocky 9 and higher, SUSE Leap / SLES)
 OpenSSL 3 is already the default version, and no additional installation is required.
 
 Similarly, OpenSSL 3 is included in Solaris 11.4 and higher as well as in IllumOS / OpenSolaris / OpenIndiana,

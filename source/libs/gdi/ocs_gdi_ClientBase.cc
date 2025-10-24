@@ -1001,6 +1001,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
                   if (cl_ret != CL_RETVAL_OK) {
                      //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
                      answer_list_output(&answer_list);
+                     DRETURN(nullptr);
                   }
                   lFreeList(&answer_list);
                }

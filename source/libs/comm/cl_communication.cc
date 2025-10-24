@@ -444,7 +444,6 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
 
    switch (ssl_method) {
       case CL_SSL_v23:
-      case CL_SSL_TLS:
          break;
       default:
          CL_LOG(CL_LOG_ERROR, "unsupported ssl method");
@@ -575,7 +574,6 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
    }
 
    switch (ssl_method) {
-      case CL_SSL_v23:
       case CL_SSL_TLS:
          break;
       default:
