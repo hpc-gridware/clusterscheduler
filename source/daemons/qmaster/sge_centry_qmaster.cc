@@ -540,6 +540,7 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
 
             qslots = lGetUlong(gdil, JG_slots);
 
+            // @todo CS-1586 Is this correct? Shouldn't it be qslots we pass to the debiting functions?
             debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
                                   master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
 
