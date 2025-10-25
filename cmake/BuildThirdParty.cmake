@@ -152,6 +152,12 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
             # for openssl we rely on the OS packages only
             message(STATUS "checking for openssl")
             set (OPENSSL_INCLUDE_DIR /usr/include)
+            if (SGE_ARCH MATCHES "darwin-.*")
+                if (EXISTS "/opt/local/include/openssl")
+                    # the darwin MacPorts packages install to /opt/local
+                    set (OPENSSL_INCLUDE_DIR /opt/local/include)
+                endif()
+            endif()
             if (SGE_ARCH MATCHES "fbsd-.*")
                if (EXISTS "/usr/local/include/openssl")
                   # the freebsd openssl3 package installs to /usr/local
