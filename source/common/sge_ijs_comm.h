@@ -30,7 +30,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -95,14 +95,14 @@ typedef struct recv_message_s {
 int comm_init_lib(dstring *err_msg);
 int comm_cleanup_lib(dstring *err_msg);
 
-int comm_open_connection(bool                 b_server, 
-                         bool                 b_secure,
+int comm_open_connection(bool                 b_server,
+                         cl_framework_t communication_framework,
                          const char           *this_component,
-                         int                  port, 
+                         int                  port,
                          const char           *other_component,
-                         char                 *hostname,
+                         const char *hostname,
                          const char           *user_name,
-                         COMM_HANDLE          **handle, 
+                         COMM_HANDLE **handle,
                          dstring              *err_msg);
 
 int comm_get_application_error(dstring *err_msg);

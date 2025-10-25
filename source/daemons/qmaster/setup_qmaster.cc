@@ -257,13 +257,13 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
    DEBUG("%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname());
    admin_user = bootstrap_get_admin_user();
 
-   if (switch_to_admin_user) {
-      char str[MAX_STRING_SIZE];
-      if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
-         CRITICAL(SFNMAX, str);
-         sge_exit(1);
-      }
+   char str[MAX_STRING_SIZE];
+   if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
+      CRITICAL(SFNMAX, str);
+      sge_exit(1);
+   }
 
+   if (switch_to_admin_user) {
       if (sge_switch2admin_user()) {
          CRITICAL(SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER);
          sge_exit(1);

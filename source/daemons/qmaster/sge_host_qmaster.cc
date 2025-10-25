@@ -1237,7 +1237,6 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *h
       }
    }
 
-   lSetUlong(hep, EH_featureset_id, lGetUlong(host, EH_featureset_id));
    lSetUlong(hep, EH_report_seqno, 0);
 
    /*

@@ -70,5 +70,5 @@ As second step you have to define the `host_aliases` file to tell xxQS_NAMExx th
 master_host master_host_eth1 master_host_eth2
 ```
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -95,6 +95,7 @@ unsigned long my_application_status(char **info_message) {
    return (unsigned long) 1;
 }
 
+#if defined(SECURE)
 static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
    const char *user_name = nullptr;
    struct passwd *paswd = nullptr;
@@ -156,10 +157,10 @@ static bool my_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, con
    }
    return true;
 }
+#endif
 
 extern int main(int argc, char **argv) {
    struct sigaction sa;
-   cl_ssl_setup_t ssl_config;
    static int runs = 100;
    int handle_port = 0;
    cl_com_handle_t *handle = nullptr;
@@ -170,6 +171,8 @@ extern int main(int argc, char **argv) {
    cl_log_t log_level;
    cl_framework_t framework = CL_CT_TCP;
 
+#if defined(SECURE)
+   cl_ssl_setup_t ssl_config;
    memset(&ssl_config, 0, sizeof(ssl_config));
    ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
    ssl_config.ssl_CA_cert_pem_file = getenv("SSL_CA_CERT_FILE"); /*  CA certificate file                         */
@@ -182,6 +185,7 @@ extern int main(int argc, char **argv) {
    ssl_config.ssl_refresh_time = 0;                          /*  key alive time for connections (not used)   */
    ssl_config.ssl_password = nullptr;                       /*  password for encrypted keyfiles (not used)  */
    ssl_config.ssl_verify_func = my_ssl_verify_func;         /*  function callback for peer user/name check  */
+#endif
 
    if (getenv("CL_PORT")) {
       handle_port = atoi(getenv("CL_PORT"));
@@ -198,6 +202,7 @@ extern int main(int argc, char **argv) {
          framework = CL_CT_TCP;
          printf("using TCP framework\n");
       }
+#if defined(SECURE)
       if (strcmp(argv[2], "SSL") == 0) {
          framework = CL_CT_SSL;
          printf("using SSL framework\n");
@@ -213,6 +218,7 @@ extern int main(int argc, char **argv) {
             printf("(optional) SSL_RAND_FILE = rand file (if RAND_status() not ok)\n");
          }
       }
+#endif
       if (framework == CL_CT_UNDEFINED) {
          printf("unexpected framework type\n");
          exit(1);
@@ -271,9 +277,11 @@ extern int main(int argc, char **argv) {
 
    cl_com_set_tag_name_func(my_application_tag_name);
 
+#if defined(SECURE)
    if (framework == CL_CT_SSL) {
       cl_com_specify_ssl_configuration(&ssl_config);
    }
+#endif
 
    handle = cl_com_create_handle(nullptr, framework, CL_CM_CT_MESSAGE, true, handle_port, CL_TCP_DEFAULT, "server", 1, 1,
                                  0);

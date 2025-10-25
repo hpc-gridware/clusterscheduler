@@ -56,8 +56,9 @@
 #include "comm/cl_fd_list.h"
 #include "comm/msg_commlib.h"
 
-#include "uti/sge_unistd.h"
+#include "uti/sge_log.h"
 #include "uti/sge_os.h"
+#include "uti/sge_unistd.h"
 
 /* connection specific struct (not used from outside) */
 typedef struct cl_com_tcp_private_type {
@@ -68,8 +69,10 @@ typedef struct cl_com_tcp_private_type {
    int sockfd;              /* socket file descriptor */
    int pre_sockfd;          /* socket which was prepared for later listen call (only_prepare_service == TRUE */
    struct sockaddr_in client_addr;    /* used in connect for storing client addr of connection partner */
+#if defined (OCS_WITH_OPENSSL)
+   ocs::uti::OpenSSL::OpenSSLConnection *ssl_connection; /* SSL connection data, if SSL is used */
+#endif
 } cl_com_tcp_private_t;
-
 
 static cl_com_tcp_private_t *cl_com_tcp_get_private(cl_com_connection_t *connection);
 
@@ -352,7 +355,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
                return CL_RETVAL_UNCOMPLETE_WRITE;
             }
             default: {
-               /* we have an connect error */
+               /* we have a connect error */
                CL_LOG_INT(CL_LOG_ERROR, "connect error errno:", my_error);
                shutdown(private_com->sockfd, 2);
                close(private_com->sockfd);
@@ -416,6 +419,49 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
       CL_LOG(CL_LOG_DEBUG, "connection_sub_state is CL_COM_OPEN_CONNECTED");
 
 
+#if defined(OCS_WITH_OPENSSL)
+      if (private_com->ssl_connection != nullptr) {
+         bool ssl_ok = true;
+         DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+
+         // register the client socket with the OpenSSL object
+         if (ssl_ok) {
+            if (!private_com->ssl_connection->set_fd(private_com->sockfd, &dstr_error)) {
+               CL_LOG_STR(CL_LOG_ERROR, "could not set ssl fd", sge_dstring_get_string(&dstr_error));
+               ssl_ok = false;
+            }
+         }
+
+         /* Set hostname for SNI */
+         if (ssl_ok) {
+            if (!private_com->ssl_connection->set_server_name_for_sni(connection->remote->comp_host, &dstr_error)) {
+               CL_LOG_STR(CL_LOG_ERROR, "could not set ssl server name for sni", sge_dstring_get_string(&dstr_error));
+               ssl_ok = false;
+            }
+         }
+
+         /* Now do SSL connect with server */
+         if (ssl_ok) {
+            if (!private_com->ssl_connection->connect(&dstr_error)) {
+               CL_LOG_STR(CL_LOG_ERROR, "could not ssl connect", sge_dstring_get_string(&dstr_error));
+               ssl_ok = false;
+            }
+         }
+
+         // if there was an error, report it and return error
+         if (!ssl_ok) {
+            private_com->ssl_connection->set_fd(-1, &dstr_error);
+            shutdown(private_com->sockfd, 2);
+            close(private_com->sockfd);
+            private_com->sockfd = -1;
+            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_SSL_CONNECT_ERROR,
+                                              sge_dstring_get_string(&dstr_error));
+            return CL_RETVAL_SSL_CONNECT_ERROR;
+         }
+      }
+#endif
+
+      // set TCP_NODELAY socket option
 #if defined(SOLARIS) && !defined(SOLARIS64)
       if (setsockopt(private_com->sockfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &on, sizeof(int)) != 0)
 #else
@@ -424,6 +470,7 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
       {
          CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
       }
+
       return CL_RETVAL_OK;
    }
 
@@ -466,14 +513,15 @@ int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout) {
 *     cl_communication/cl_com_close_connection()
 *
 *******************************************************************************/
-int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
+int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
+                                cl_com_connection_t **connection,
                                 int server_port,
                                 int connect_port,
                                 cl_xml_connection_type_t data_flow_type,
                                 cl_xml_connection_autoclose_t auto_close_mode,
                                 cl_framework_t framework_type,
-                                cl_xml_data_format_t data_format_type,
-                                cl_tcp_connect_t tcp_connect_mode) {
+                                cl_xml_data_format_t data_format_type, cl_tcp_connect_t tcp_connect_mode,
+                                bool we_are_server) {
    cl_com_tcp_private_t *com_private = nullptr;
    int ret_val;
    if (connection == nullptr || *connection != nullptr) {
@@ -492,6 +540,7 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
    /* check for correct framework specification */
    switch (framework_type) {
       case CL_CT_TCP:
+      case CL_CT_SSL_TLS:
          break;
       case CL_CT_UNDEFINED:
       case CL_CT_SSL: {
@@ -525,6 +574,30 @@ int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
    com_private->connect_in_port = 0;
    com_private->server_port = server_port;
    com_private->connect_port = connect_port;
+
+#if defined(OCS_WITH_OPENSSL)
+   ocs::uti::OpenSSL::OpenSSLContext *ssl_context = nullptr;
+   if (framework_type == CL_CT_SSL_TLS && handle != nullptr) {
+      if (we_are_server) {
+         ssl_context = handle->ssl_server_context;
+      } else {
+         ssl_context = handle->ssl_client_context;
+      }
+   }
+   if (ssl_context != nullptr) {
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      CL_LOG_STR(CL_LOG_INFO, "creating SSL connection with certificate:", ssl_context->get_cert_file());
+      com_private->ssl_connection = ocs::uti::OpenSSL::OpenSSLConnection::create(ssl_context, &dstr_error);
+      if (com_private->ssl_connection == nullptr) {
+         CL_LOG_STR(CL_LOG_ERROR, "error creating SSL connection:", sge_dstring_get_string(&dstr_error));
+         cl_com_close_connection(connection);
+         return CL_RETVAL_MALLOC;
+      }
+   } else {
+      com_private->ssl_connection = nullptr;
+   }
+#endif
+
    return CL_RETVAL_OK;
 }
 
@@ -556,6 +629,14 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
    if (connection->com_private == nullptr) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
+
+#if defined(OCS_WITH_OPENSSL)
+   cl_com_tcp_private_t *com_private = cl_com_tcp_get_private(connection);
+   if (com_private->ssl_connection != nullptr) {
+      delete com_private->ssl_connection;
+      com_private->ssl_connection = nullptr;
+   }
+#endif
 
    /* free struct cl_com_tcp_private_t */
    sge_free(&(connection->com_private));
@@ -600,6 +681,9 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
+   // @todo CS-1578 OpenSSL: We could call SSL_shutdown() here as well.
+   // OTOH in the next step we free the connection and here SSL_shutdown() is called.
+
    if (private_com->sockfd >= 0) {
       CL_LOG(CL_LOG_INFO, "closing connection");
       /* shutdown socket connection */
@@ -611,6 +695,22 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
    /* free com private structure */
    return cl_com_tcp_free_com_private(*connection);
 }
+
+#if defined(OCS_WITH_OPENSSL)
+// check if a SSL_write call needs to be repeated due to SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE
+bool cl_com_tcp_write_repeat_required(cl_com_connection_t *connection) {
+   bool ret = false;
+
+   cl_com_tcp_private_t *private_com = cl_com_tcp_get_private(connection);
+   if (private_com != nullptr &&
+       private_com->ssl_connection != nullptr &&
+       private_com->ssl_connection->repeat_write_required()) {
+      ret = true;
+   }
+
+   return ret;
+}
+#endif
 
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write) {
@@ -654,20 +754,34 @@ int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_
       return CL_RETVAL_MAX_READ_SIZE;
    }
 
-   errno = 0;
-   data_written = write(private_com->sockfd, message, size);
-   my_errno = errno;
-   if (data_written < 0) {
-      if (my_errno != EWOULDBLOCK && my_errno != EAGAIN && my_errno != EINTR) {
-         if (my_errno == EPIPE) {
-            CL_LOG_INT(CL_LOG_ERROR, "pipe error errno:", my_errno);
-            return CL_RETVAL_PIPE_ERROR;
-         }
-         CL_LOG_INT(CL_LOG_ERROR, "send error errno:", my_errno);
+   // We use either the SSL_write() call from OpenSSL,
+   // or we do a write() directly on the socket.
+#if defined(OCS_WITH_OPENSSL)
+   if (private_com->ssl_connection != nullptr) {
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      data_written = private_com->ssl_connection->write((char *)message, size, &dstr_error);
+      if (data_written < 0) {
+         CL_LOG_STR(CL_LOG_ERROR, "ssl write error:", sge_dstring_get_string(&dstr_error));
          return CL_RETVAL_SEND_ERROR;
-      } else {
-         CL_LOG_INT(CL_LOG_INFO, "send error errno:", my_errno);
-         data_written = 0;
+      }
+   } else
+#endif
+   {
+      errno = 0;
+      data_written = write(private_com->sockfd, message, size);
+      my_errno = errno;
+      if (data_written < 0) {
+         if (my_errno != EWOULDBLOCK && my_errno != EAGAIN && my_errno != EINTR) {
+            if (my_errno == EPIPE) {
+               CL_LOG_INT(CL_LOG_ERROR, "pipe error errno:", my_errno);
+               return CL_RETVAL_PIPE_ERROR;
+            }
+            CL_LOG_INT(CL_LOG_ERROR, "send error errno:", my_errno);
+            return CL_RETVAL_SEND_ERROR;
+         } else {
+            CL_LOG_INT(CL_LOG_INFO, "send error errno:", my_errno);
+            data_written = 0;
+         }
       }
    }
 
@@ -728,25 +842,40 @@ cl_com_tcp_read(cl_com_connection_t *connection, cl_byte_t *message, ssize_t siz
       return CL_RETVAL_MAX_READ_SIZE;
    }
 
-   errno = 0;
-   data_read = read(private_com->sockfd, message, size);
-   my_errno = errno;
-   if (data_read <= 0) {
-      if (my_errno != EWOULDBLOCK && my_errno != EAGAIN && my_errno != EINTR && my_errno != 0) {
-         if (my_errno == EPIPE) {
-            CL_LOG_INT(CL_LOG_ERROR, "pipe error (only_one_read != nullptr) errno:", my_errno);
-            return CL_RETVAL_PIPE_ERROR;
-         }
-         CL_LOG_INT(CL_LOG_ERROR, "receive error (only_one_read != nullptr) errno:", my_errno);
+#if defined(OCS_WITH_OPENSSL)
+   if (private_com->ssl_connection != nullptr) {
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+      data_read = private_com->ssl_connection->read((char *)message, size, &dstr_error);
+      if (data_read < 0) {
+         CL_LOG_STR(CL_LOG_ERROR, "ssl read error:", sge_dstring_get_string(&dstr_error));
          return CL_RETVAL_READ_ERROR;
-      } else {
-         if (data_read == 0) {
-            /* this should only happen if the connection is down */
-            CL_LOG(CL_LOG_WARNING, "client connection disconnected");
+      }
+      // Data read > 0 means OK: We read some data.
+      // Data read == 0 is also OK: It means that the socked became ready for read to handle
+      // SSL protocol data. There was no application data.
+   } else
+#endif
+   {
+      errno = 0;
+      data_read = read(private_com->sockfd, message, size);
+      my_errno = errno;
+      if (data_read <= 0) {
+         if (my_errno != EWOULDBLOCK && my_errno != EAGAIN && my_errno != EINTR && my_errno != 0) {
+            if (my_errno == EPIPE) {
+               CL_LOG_INT(CL_LOG_ERROR, "pipe error (only_one_read != nullptr) errno:", my_errno);
+               return CL_RETVAL_PIPE_ERROR;
+            }
+            CL_LOG_INT(CL_LOG_ERROR, "receive error (only_one_read != nullptr) errno:", my_errno);
             return CL_RETVAL_READ_ERROR;
+         } else {
+            if (data_read == 0) {
+               /* this should only happen if the connection is down */
+               CL_LOG(CL_LOG_WARNING, "client connection disconnected");
+               return CL_RETVAL_READ_ERROR;
+            }
+            CL_LOG_INT(CL_LOG_INFO, "receive error errno:", my_errno);
+            data_read = 0;
          }
-         CL_LOG_INT(CL_LOG_INFO, "receive error errno:", my_errno);
-         data_read = 0;
       }
    }
 
@@ -1036,6 +1165,7 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
+   // @todo CS-1578 OpenSSL: here we should call SSL_shutdown() before shutdown()
    shutdown(private_com->sockfd, 2);
    close(private_com->sockfd);
    private_com->sockfd = -1;
@@ -1138,29 +1268,19 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          CL_LOG(CL_LOG_WARNING, "could not resolve incoming hostname");
       }
 
-      fcntl(new_sfd, F_SETFL, O_NONBLOCK);
-      sso = 1;
-#if defined(SOLARIS) && !defined(SOLARIS64)
-      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &sso, sizeof(int)) == -1)
-#else
-      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, &sso, sizeof(int)) == -1)
-#endif
-      {
-         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
-      }
       /* here we can investigate more information about the client */
       /* ntohs(cli_addr.sin_port) ... */
 
       tmp_connection = nullptr;
       /* setup a tcp connection where autoclose is still undefined */
-      if ((retval = cl_com_tcp_setup_connection(&tmp_connection,
+      if ((retval = cl_com_tcp_setup_connection(connection->handler,
+                                                &tmp_connection,
                                                 private_com->server_port,
                                                 private_com->connect_port,
                                                 connection->data_flow_type,
                                                 CL_CM_AC_UNDEFINED,
                                                 connection->framework_type,
-                                                connection->data_format_type,
-                                                connection->tcp_connect_mode)) != CL_RETVAL_OK) {
+                                                connection->data_format_type, connection->tcp_connect_mode, true)) != CL_RETVAL_OK) {
          cl_com_tcp_close_connection(&tmp_connection);
          if (resolved_host_name != nullptr) {
             sge_free(&resolved_host_name);
@@ -1184,8 +1304,50 @@ int cl_com_tcp_connection_request_handler(cl_com_connection_t *connection, cl_co
          tmp_private->connect_in_port = ntohs(cli_addr.sin_port);
       }
 
+#if defined(OCS_WITH_OPENSSL)
+      if (tmp_private->ssl_connection != nullptr) {
+         bool ssl_ok = true;
+         DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+
+         // register the client socket with the OpenSSL object
+         if (ssl_ok) {
+            if (!tmp_private->ssl_connection->set_fd(new_sfd, &dstr_error)) {
+               CL_LOG_STR(CL_LOG_ERROR, "could not set ssl fd", sge_dstring_get_string(&dstr_error));
+               ssl_ok = false;
+            }
+         }
+         // do the SSL accept
+         if (ssl_ok) {
+            if (!tmp_private->ssl_connection->accept(&dstr_error)) {
+               CL_LOG_STR(CL_LOG_ERROR, "ssl accept error:", sge_dstring_get_string(&dstr_error));
+               ssl_ok = false;
+            }
+         }
+
+         // in case of errors: cleanup and return
+         if (!ssl_ok) {
+            // @todo not sure what to do
+            // if the TCP accept above would fail, nothing special is done, it just does return CL_RETVAL_OK
+         }
+      }
+#endif
+
+      // set the socket to non-blocking
+      fcntl(new_sfd, F_SETFL, O_NONBLOCK);
+      sso = 1;
+#if defined(SOLARIS) && !defined(SOLARIS64)
+      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, (const char *) &sso, sizeof(int)) == -1)
+#else
+      if (setsockopt(new_sfd, IPPROTO_TCP, TCP_NODELAY, &sso, sizeof(int)) == -1)
+#endif
+      {
+         CL_LOG(CL_LOG_ERROR, "could not set TCP_NODELAY");
+      }
+
+      // everything ok
       *new_connection = tmp_connection;
    }
+
    return CL_RETVAL_OK;
 }
 
@@ -1418,7 +1580,8 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
       if (con_private->sockfd >= 0) {
          switch (connection->framework_type) {
-            case CL_CT_TCP: {
+            case CL_CT_TCP:
+            case CL_CT_SSL_TLS: {
                switch (connection->connection_state) {
                   case CL_CLOSING:
                      if (connection->connection_sub_state != CL_COM_SHUTDOWN_DONE) {
@@ -1631,16 +1794,15 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
 
 
    /* TODO: Fix this problem (multithread mode):
-         -  find a way to wake up select when a new connection was added by another thread
-            (perhaps with dummy read file descriptor)
-   */
-
-   if ((nr_of_descriptors != ldata->last_nr_of_descriptors) &&
-       (nr_of_descriptors == 1 && service_connection != nullptr && do_read_select != 0)) {
+    *       find a way to wake up select when a new connection was added by another thread
+    *       (perhaps with dummy read file descriptor)
+    */
+   if (nr_of_descriptors != ldata->last_nr_of_descriptors &&
+       nr_of_descriptors == 1 && service_connection != nullptr && do_read_select != 0) {
       /* This is to return as fast as possible if this connection has a service and
           a client was disconnected */
 
-      /* a connection is done and no more connections (beside service connection itself) is alive,
+      /* a connection is done, and no more connections (beside service connection itself) is alive,
          return to application as fast as possible, don't wait for a new connect */
       ldata->last_nr_of_descriptors = nr_of_descriptors;
       cl_raw_list_unlock(connection_list);
@@ -1753,7 +1915,7 @@ int cl_com_tcp_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_co
          default:
          {
             cl_raw_list_lock(connection_list);
-            /* now set the read flags for connections, where data is available */
+            /* now set the read flags for connections where data is available */
             for (fd_index = 0; fd_index < ufds_index; fd_index++) {
                connection = ufds_con[fd_index];
                if (connection != nullptr) {

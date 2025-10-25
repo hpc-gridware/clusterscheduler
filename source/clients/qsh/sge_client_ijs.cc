@@ -845,8 +845,8 @@ cleanup:
 *     sge_client_ijs/stop_ijs_server()
 *     sge_client_ijs/force_ijs_server_shutdown()
 *******************************************************************************/
-int start_ijs_server(bool csp_mode, const char* username,
-                     COMM_HANDLE **phandle, dstring *p_err_msg)
+int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
+                     const char* username, COMM_HANDLE **phandle, dstring *p_err_msg)
 {
    int     ret, ret_val = 0;
 
@@ -858,13 +858,12 @@ int start_ijs_server(bool csp_mode, const char* username,
     * TODO: Cleaner solution for this!
     */
    DPRINTF("starting commlib server\n");
-   ret = comm_open_connection(true, csp_mode, COMM_SERVER, 0, COMM_CLIENT,
-                              nullptr, username, phandle, p_err_msg);
+   ret = comm_open_connection(true, communication_framework, COMM_SERVER, 0, COMM_CLIENT,
+                              hostname, username, phandle, p_err_msg);
    if (ret != 0 || *phandle == nullptr) {
       ret_val = 1;
    } else {
-      ret = comm_set_connection_param(*phandle, HEARD_FROM_TIMEOUT,
-                                      0, p_err_msg);
+      ret = comm_set_connection_param(*phandle, HEARD_FROM_TIMEOUT, 0, p_err_msg);
       if (ret != 0) {
          ret_val = 2;
       }

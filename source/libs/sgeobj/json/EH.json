@@ -258,16 +258,6 @@
 					"name":	"JGDI_HIDDEN"
 				}]
 		}, {
-			"name":	"featureset_id",
-			"summary":	"featureset id",
-			"description":	[{
-					"line":	"supported feature-set id @todo still used?"
-				}],
-			"type":	"lUlongT",
-			"flags":	[{
-					"name":	"JGDI_HIDDEN"
-				}]
-		}, {
 			"name":	"scaled_usage_list",
 			"summary":	"scaled usage",
 			"description":	[{

@@ -39,6 +39,7 @@
 #include <sys/resource.h>
 #include <cerrno>
 
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_log.h"
@@ -77,7 +78,7 @@ static int cl_commlib_check_callback_functions();
 
 static int cl_commlib_check_connection_count(cl_com_handle_t *handle);
 
-static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, int lock_list);
+static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, bool lock_list);
 
 static int cl_commlib_handle_debug_clients(cl_com_handle_t *handle, bool lock_list);
 
@@ -782,7 +783,7 @@ int cl_com_setup_commlib(cl_thread_mode_t t_mode, cl_log_t debug_level, cl_log_f
    }
    pthread_mutex_unlock(&cl_com_thread_list_mutex);
 
-   CL_LOG(CL_LOG_INFO, "ngc library setup done");
+   CL_LOG(CL_LOG_INFO, "cl_comm_setup_commlib() done");
    cl_commlib_check_callback_functions();
 
    if (different_thread_mode) {
@@ -963,6 +964,29 @@ int cl_com_specify_ssl_configuration(cl_ssl_setup_t *new_config) {
    return ret_val;
 }
 
+int cl_com_update_ssl_configuration(cl_ssl_setup_t *new_config) {
+   int ret_val = CL_RETVAL_OK;
+
+   pthread_mutex_lock(&cl_com_ssl_setup_mutex);
+   if (cl_com_ssl_setup_config != nullptr) {
+#if defined(OCS_WITH_OPENSSL)
+      CL_LOG(CL_LOG_INFO, "updating ssl setup configuration");
+      // update the client certificate
+      if (new_config->ssl_client_cert_file != nullptr) {
+         sge_free(&cl_com_ssl_setup_config->ssl_client_cert_file);
+         cl_com_ssl_setup_config->ssl_client_cert_file = strdup(new_config->ssl_client_cert_file);
+      }
+      // so far no need to update further properties
+#endif
+   } else {
+      CL_LOG(CL_LOG_WARNING, "ssl configuration does not (yet) exist, cannot update it");
+      ret_val = CL_RETVAL_PARAMS;
+   }
+   pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+
+   return ret_val;
+}
+
 cl_com_handle_t *cl_com_create_handle(int *commlib_error,
                                       cl_framework_t framework,
                                       cl_xml_connection_type_t data_flow_type,
@@ -1062,6 +1086,12 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    /* setup the file descriptor list */
    new_handle->file_descriptor_list = nullptr;
 
+   // make sure the ssl_contexts are initialized
+#if defined(OCS_WITH_OPENSSL)
+   new_handle->ssl_server_context = nullptr;
+   new_handle->ssl_client_context = nullptr;
+#endif
+
    /* setup SSL configuration */
    new_handle->ssl_setup = nullptr;
    switch (framework) {
@@ -1097,6 +1127,68 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
          pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
          break;
+      }
+      case CL_CT_SSL_TLS: {
+         pthread_mutex_lock(&cl_com_ssl_setup_mutex);
+         if (cl_com_ssl_setup_config == nullptr) {
+            CL_LOG(CL_LOG_ERROR, "use cl_com_specify_ssl_configuration() to specify a ssl configuration");
+            sge_free(&local_hostname);
+            sge_free(&new_handle);
+            cl_raw_list_unlock(cl_com_handle_list);
+            if (commlib_error) {
+               *commlib_error = CL_RETVAL_NO_FRAMEWORK_INIT;
+            }
+            pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+            cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, nullptr);
+            return nullptr;
+         }
+#if defined(OCS_WITH_OPENSSL)
+         DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+         std::string cert_path{cl_com_ssl_setup_config->ssl_server_cert_file};
+         std::string key_path{cl_com_ssl_setup_config->ssl_server_key_file};
+         std::string client_cert_path{cl_com_ssl_setup_config->ssl_client_cert_file};
+         std::string client_key_path{}; // we don't need a client key file
+         // We first create the server context if required.
+         // This will either create a certificate and key on the fly (qrsh),
+         // or create a certificate and a key file if they do not exist.
+         if (service_provider) {
+            if (!cert_path.empty() && !key_path.empty()) {
+               // sge_qmaster or sge_execd
+               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(true, cert_path, key_path, &dstr_error);
+            } else {
+               // qrsh
+               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(&dstr_error);
+            }
+            if (new_handle->ssl_server_context == nullptr) {
+               sge_free(&local_hostname);
+               sge_free(&new_handle);
+               cl_raw_list_unlock(cl_com_handle_list);
+               if (commlib_error) {
+                  *commlib_error = CL_RETVAL_SSL_COULD_NOT_CREATE_CONTEXT;
+               }
+               pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+               cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, sge_dstring_get_string(&dstr_error));
+               return nullptr;
+            }
+         }
+         if (!client_cert_path.empty()) {
+            new_handle->ssl_client_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
+            if (new_handle->ssl_client_context == nullptr && cl_com_ssl_setup_config->needs_client_cert) {
+               sge_free(&local_hostname);
+               sge_free(&new_handle);
+               cl_raw_list_unlock(cl_com_handle_list);
+               if (commlib_error) {
+                  *commlib_error = CL_RETVAL_SSL_COULD_NOT_CREATE_CONTEXT;
+               }
+               pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+               cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT,
+                                                 sge_dstring_get_string(&dstr_error));
+               return nullptr;
+            }
+         }
+         pthread_mutex_unlock(&cl_com_ssl_setup_mutex);
+         break;
+#endif
       }
    }
 
@@ -1671,6 +1763,35 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
    return new_handle;
 }
 
+#if defined(OCS_WITH_OPENSSL)
+int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
+   int return_value = CL_RETVAL_OK;
+
+   DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+   // we have an updated client cert file in the ssl setup
+   std::string client_cert_path{cl_com_ssl_setup_config->ssl_client_cert_file};
+   std::string client_key_path{}; // we don't need a client key file
+
+   // create a new client context
+   ocs::uti::OpenSSL::OpenSSLContext *new_context = nullptr;
+   if (!client_cert_path.empty()) {
+      new_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
+
+      if (new_context == nullptr) {
+         cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, sge_dstring_get_string(&dstr_error));
+      } else {
+         // if we have a new context, replace the old one by it
+         if (handle->ssl_client_context != nullptr) {
+            delete handle->ssl_client_context;
+         }
+         handle->ssl_client_context = new_context;
+      }
+   }
+
+   return return_value;
+}
+#endif
+
 static bool debug_commlib_shutdown = getenv("SGE_DEBUG_COMMLIB_SHUTDOWN") != nullptr;
 int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages) {
    cl_thread_settings_t *thread_settings = nullptr;
@@ -2019,6 +2140,17 @@ int cl_commlib_shutdown_handle(cl_com_handle_t *handle, bool return_for_messages
 
       cl_com_free_ssl_setup(&(handle->ssl_setup));
 
+#if defined(OCS_WITH_OPENSSL)
+      if (handle->ssl_server_context != nullptr) {
+         delete handle->ssl_server_context;
+         handle->ssl_server_context = nullptr;
+      }
+      if (handle->ssl_client_context != nullptr) {
+         delete handle->ssl_client_context;
+         handle->ssl_client_context = nullptr;
+      }
+#endif
+
       cl_fd_list_cleanup(&(handle->file_descriptor_list));
 
       sge_free(&handle);
@@ -2033,15 +2165,16 @@ int cl_com_setup_connection(cl_com_handle_t *handle, cl_com_connection_t **conne
    int ret_val = CL_RETVAL_HANDLE_NOT_FOUND;
    if (handle != nullptr) {
       switch (handle->framework) {
-         case CL_CT_TCP: {
-            ret_val = cl_com_tcp_setup_connection(connection,
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
+            ret_val = cl_com_tcp_setup_connection(handle,
+                                                  connection,
                                                   handle->service_port,
                                                   handle->connect_port,
                                                   handle->data_flow_type,
                                                   handle->auto_close_mode,
                                                   handle->framework,
-                                                  CL_CM_DF_BIN,
-                                                  handle->tcp_connect_mode);
+                                                  CL_CM_DF_BIN, handle->tcp_connect_mode);
             break;
          }
          case CL_CT_SSL: {
@@ -2603,7 +2736,7 @@ int cl_commlib_trigger(cl_com_handle_t *handle, int synchron) {
             int ret_val = CL_RETVAL_OK;
             /* application has nothing to do, wait for next message */
             pthread_mutex_lock(handle->messages_ready_mutex);
-            if ((handle->messages_ready_for_read == 0) && (synchron == 1)) {
+            if (handle->messages_ready_for_read == 0 && synchron == 1) {
                CL_LOG(CL_LOG_INFO, "NO MESSAGES to READ, WAITING ...");
                pthread_mutex_unlock(handle->messages_ready_mutex);
                ret_val = cl_thread_wait_for_thread_condition(handle->app_condition,
@@ -4284,7 +4417,45 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
    return ret_val;
 }
 
-static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, int lock_list) {
+#if defined(OCS_WITH_OPENSSL)
+int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
+   DENTER(TOP_LAYER);
+   int ret_val = CL_RETVAL_OK;
+
+   // We lock the connection list.
+   // This should ensure that the openssl context will not be accessed (when creating new connections).
+   cl_raw_list_lock(handle->connection_list);
+
+   if (handle != nullptr && handle->ssl_server_context != nullptr) {
+      if (handle->ssl_server_context->certificate_recreate_required()) {
+         DPRINTF("===> context needs to be recreated\n");
+         // Create a copy of the context with a new certificate
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         ocs::uti::OpenSSL::OpenSSLContext *new_ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(handle->ssl_server_context, &error_dstr);
+
+         if (new_ssl_server_context != nullptr) {
+            // Make sure that the context will be deleted once the last connection using it has been closed.
+            DPRINTF("  -> got a new context, marking old one for deletion - it will still be used by open connections\n");
+            ocs::uti::OpenSSL::OpenSSLContext::mark_context_for_deletion(handle->ssl_server_context);
+            DPRINTF("  -> using new context in handle\n");
+            handle->ssl_server_context = new_ssl_server_context;
+         } else {
+            // @todo ret_val = CL_RETVAL_MALLOC;
+            DPRINTF("  --> didn't get a new context: %s\n", sge_dstring_get_string(&error_dstr));
+            CL_LOG_STR(CL_LOG_ERROR, "failed to create new OpenSSLContext for certificate refresh", sge_dstring_get_string(&error_dstr));
+            // we keep the old context with a certificate which will probably expire soon - try again later
+         }
+      }
+   }
+
+   // Now the handle can be used again to work on connections.
+   cl_raw_list_unlock(handle->connection_list);
+
+   DRETURN(ret_val);
+}
+#endif
+
+static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_update, bool lock_list) {
    cl_connection_list_elem_t *elem = nullptr;
    struct timeval now;
    double handle_time_last = 0.0;
@@ -4317,7 +4488,7 @@ static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_up
       }
    }
 
-   if (lock_list != 0) {
+   if (lock_list) {
       cl_raw_list_lock(handle->connection_list);
    }
    gettimeofday(&now, nullptr);  /* right after getting the lock */
@@ -4443,7 +4614,7 @@ static int cl_commlib_calculate_statistic(cl_com_handle_t *handle, bool force_up
    handle->statistic->real_bytes_sent = 0;
    handle->statistic->real_bytes_received = 0;
 
-   if (lock_list != 0) {
+   if (lock_list) {
       cl_raw_list_unlock(handle->connection_list);
    }
    return CL_RETVAL_OK;
@@ -5606,7 +5777,7 @@ int cl_commlib_open_connection(cl_com_handle_t *handle, const char *un_resolved_
 
    cl_commlib_check_callback_functions();
 
-   /* check endpoint parameters: un_resolved_hostname , componenet_name and componenet_id */
+   /* check endpoint parameters: un_resolved_hostname , component_name and component_id */
    if (un_resolved_hostname == nullptr || component_name == nullptr || component_id == 0) {
       CL_LOG(CL_LOG_ERROR, cl_get_error_text(CL_RETVAL_UNKNOWN_ENDPOINT));
       return CL_RETVAL_UNKNOWN_ENDPOINT;
@@ -6328,13 +6499,12 @@ static int cl_commlib_append_message_to_connection(cl_com_handle_t *handle,
    connection = elem->connection;
 
    /*
-    * If message should be send to a client without access, don't send a message to it
+    * If message shall be sent to a client without access, don't send a message to it
     */
    if (connection->was_accepted &&
        connection->crm_state != CL_CRM_CS_UNDEFINED &&
        connection->crm_state != CL_CRM_CS_CONNECTED) {
-      CL_LOG_STR_STR_INT(CL_LOG_ERROR,
-                         "ignore connection in unexpected connection state:",
+      CL_LOG_STR_STR_INT(CL_LOG_ERROR, "ignore connection in unexpected connection state:",
                          connection->remote->comp_host,
                          connection->remote->comp_name,
                          (int) connection->remote->comp_id);
@@ -6518,9 +6688,7 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
                             unsigned long tag,
                             bool copy_data,
                             bool wait_for_ack) {
-   unsigned long my_mid = 0;
    int return_value = CL_RETVAL_OK;
-   cl_com_endpoint_t receiver;
    char *unique_hostname = nullptr;
    struct in_addr in_addr;
    cl_byte_t *help_data = nullptr;
@@ -6608,6 +6776,7 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
                          (int) component_id);
 
       /* setup endpoint */
+      cl_com_endpoint_t receiver;
       receiver.comp_host = unique_hostname;
       receiver.comp_name = component_name;
       receiver.comp_id = component_id;
@@ -6619,6 +6788,7 @@ int cl_commlib_send_message(cl_com_handle_t *handle,
          return CL_RETVAL_MALLOC;
       }
 
+      unsigned long my_mid = 0;
       return_value = cl_commlib_append_message_to_connection(handle, &receiver, ack_type, help_data, size, response_mid,
                                                              tag, &my_mid);
       /* We return as fast as possible */

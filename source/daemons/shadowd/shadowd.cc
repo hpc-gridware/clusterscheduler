@@ -127,6 +127,7 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
       DRETURN(is_up_and_running);
    }
 
+   // @todo CS-1577 need do check bootstrap security_mode
    handle = cl_com_create_handle(&commlib_error, CL_CT_TCP, CL_CM_CT_MESSAGE, false, sge_qmaster_port, CL_TCP_DEFAULT,
                                  (char *) prognames[SHADOWD], 0, 1, 0);
    if (handle == nullptr) {

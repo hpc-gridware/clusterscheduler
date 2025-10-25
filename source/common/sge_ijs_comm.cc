@@ -321,22 +321,24 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
 *  SEE ALSO
 *    communication/comm_cleanup_lib()
 *******************************************************************************/
-int comm_init_lib(dstring *err_msg)
-{
+int comm_init_lib(dstring *err_msg) {
    int ret, ret_val = COMM_RETVAL_OK;
 
    DENTER(TOP_LAYER);
 
    /*
+    * comm_init_lib() is only called from sge_shepherd and uses multithreaded commlib.
+    * The other communication end is qrsh that uses the singlethreaded commlib.
+    *
     * To enable commlib logging to a file (see my_log_list_flush_list()
     * for the file path), exchange this line with the one below.
     * Caution: On some architectures, logging causes problems! 
     */
-   /*ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_DEBUG, my_log_list_flush_list);*/
+   // ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_DEBUG, my_log_list_flush_list);
    ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
    if (ret != CL_RETVAL_OK) {
       sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_com_setup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      DPRINTF("comm_init_lib(): cl_com_setup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
       ret_val = COMM_CANT_SETUP_COMMLIB;
    } else {
       const char *alias_path = nullptr;
@@ -346,7 +348,7 @@ int comm_init_lib(dstring *err_msg)
       ret = cl_com_set_alias_file(alias_path);
       if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_com_set_alias_file() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         DPRINTF("comm_init_lib(): cl_com_set_alias_file() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
          ret_val = COMM_CANT_SETUP_COMMLIB;
       }
       sge_free(&alias_path);
@@ -369,7 +371,7 @@ int comm_init_lib(dstring *err_msg)
          ret = cl_com_set_resolve_method(resolve_method, default_domain);
          if (ret != CL_RETVAL_OK) {
             sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-            DPRINTF("cl_com_set_resolve_method() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+            DPRINTF("comm_init_lib(): cl_com_set_resolve_method() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
             ret_val = COMM_CANT_SETUP_COMMLIB;
          }
       }
@@ -415,8 +417,8 @@ int comm_cleanup_lib(dstring *err_msg)
 
    ret = cl_com_cleanup_commlib();
    if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_com_cleanup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_cleanup_lib(): cl_com_cleanup_commlib() failed: %d: %s", ret, cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_CLEANUP_COMMLIB;
    }
 
@@ -438,7 +440,7 @@ int comm_cleanup_lib(dstring *err_msg)
 *  INPUTS
 *     bool       b_server         - If true, a comm server is started, if false
 *                                   a connection to a server is established.
-*     bool       b_secure         - If true: Use secured connections
+*     cl_framework_t communication_framework - which communication framework to use (TCP, CSP, SSL_TLS)
 *     const char *this_component  - A unique name for this end of the connection.
 *     int        port             - In case of server: Port on which the server
 *                                   should listen. If this is 0, a free port is
@@ -447,8 +449,8 @@ int comm_cleanup_lib(dstring *err_msg)
 *                                   listens.
 *     const char *other_component - The unique name of the other end of the
 *                                   connection.
-*     char       *remote_host     - Name of the host to connect to. Ignored if
-*                                   b_server is true.
+*     char       *hostname        - Name of the host to connect to if b_server is false.
+*                                   Local host name if b_server is true.
 *     const char *user_name       - For secured connections: Name of the user
 *                                   whose certificates are to be used.
 *                                   Ignored for unsecured connections.
@@ -481,21 +483,19 @@ int comm_cleanup_lib(dstring *err_msg)
 *  SEE ALSO
 *     communication/comm_shutdown_connection()
 *******************************************************************************/
-int comm_open_connection(bool        b_server, 
-                         bool        b_secure,
+int comm_open_connection(bool        b_server,
+                         cl_framework_t communication_framework,
                          const char  *this_component,
-                         int         port, 
+                         int         port,
                          const char  *other_component,
-                         char        *remote_host,
+                         const char *hostname,
                          const char  *user_name,
-                         COMM_HANDLE **handle, 
+                         COMM_HANDLE **handle,
                          dstring     *err_msg)
 {
    int              ret;
-   int              old_euid                = SGE_SUPERUSER_UID;
    int              ret_val                 = COMM_RETVAL_OK;
    int              commlib_error           = CL_RETVAL_OK;
-   cl_framework_t   communication_framework = CL_CT_TCP;
    cl_tcp_connect_t connect_type            = CL_TCP_DEFAULT;
    cl_xml_connection_type_t connection_type = CL_CM_CT_MESSAGE;
 
@@ -508,13 +508,12 @@ int comm_open_connection(bool        b_server,
       DRETURN(COMM_INVALID_PARAMETER);
    }
 
-   if (b_secure) {
+   if (communication_framework == CL_CT_SSL) {
 #ifdef SECURE
-      communication_framework = CL_CT_SSL;
-
       /*
        * Got to do this with euid = root
        */
+      int old_euid = SGE_SUPERUSER_UID;
       if (getuid() == SGE_SUPERUSER_UID) {
          old_euid = geteuid();
          seteuid(SGE_SUPERUSER_UID);
@@ -539,11 +538,72 @@ int comm_open_connection(bool        b_server,
        * because seclib support was not compiled in, we must not fall back to 
        * insecure mode, instead we must return with a fatal error.
        */
-      sge_dstring_sprintf(err_msg, "No security support compiled into this binary!");
+      sge_dstring_sprintf(err_msg, "No CSP support compiled into this binary!");
       DPRINTF("%s\n", sge_dstring_get_string(err_msg));
-      return COMM_NO_SECURITY_COMPILED_IN;      
+      ret_val = COMM_NO_SECURITY_COMPILED_IN;
 #endif
-   } 
+   } else if (communication_framework == CL_CT_SSL_TLS) {
+#if defined(OCS_WITH_OPENSSL)
+      std::string client_cert_path;
+      std::string server_cert_path;
+      std::string server_key_path;
+      DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+
+      ret_val = COMM_RETVAL_OK;
+
+      if (!ocs::uti::OpenSSL::is_openssl_available()) {
+         if (!ocs::uti::OpenSSL::initialize(&dstr_error)) {
+            sge_dstring_sprintf(err_msg, "initializing OpenSSL failed: %s\n", sge_dstring_get_string(&dstr_error));
+            ret_val = COMM_CANT_SETUP_SSL;
+         }
+      }
+      if (ret_val == COMM_RETVAL_OK) {
+         // Set up a dummy ssl_config (from CSP) to pass cert and key path to commlib
+         // TLS: We must pass different certs to commlib:
+         // - if we are server, this is the qrsh commlib server, we keep certificate and key in memory
+         // - if we are client, this is the sge_shepherd connecting to qrsh, we read from file
+         DPRINTF("===> setting up cert and key paths\n");
+         if (b_server) {
+            // this is in qrsh client
+            DPRINTF("  -> we do not store the certificate/key file in case of qrsh");
+         } else {
+            // This is in sge_shepherd.
+            // The certificate was transferred from qrsh in the job object / the pe task request object
+            // to sge_execd which wrote it to file "cert.pem" in the job's active_jobs directory.
+            // Our CWD is the job's active_jobs directory, read the certificate from there.
+            client_cert_path = "cert.pem";
+            DPRINTF("  -> client cert path: %s\n", client_cert_path.c_str());
+         }
+      }
+      cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
+      if (ret_val == COMM_RETVAL_OK) {
+         int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
+                                          CL_SSL_PEM_FILE,
+                                          CL_SSL_TLS,
+                                          client_cert_path.c_str(),
+                                          server_cert_path.c_str(),
+                                          server_key_path.c_str());
+         if (cl_ret != CL_RETVAL_OK) {
+            sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_com_create_ssl_setup() failed: %s\n", cl_get_error_text(cl_ret));
+            DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
+            ret_val = COMM_CANT_SETUP_SSL;
+         }
+      }
+      if (ret_val == COMM_RETVAL_OK) {
+         int cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+         if (cl_ret != CL_RETVAL_OK) {
+            sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_com_specify_ssl_configuration() failed: %s\n", cl_get_error_text(cl_ret));
+            DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
+            ret_val = COMM_CANT_SETUP_SSL;
+         }
+      }
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
+#else
+      sge_dstring_sprintf(err_msg, "comm_open_connection(): No SSL/TLS support compiled into this binary!");
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
+      ret_val = COMM_NO_SECURITY_COMPILED_IN;
+#endif
+   }
 
    if (ret_val == COMM_RETVAL_OK) {
       /*
@@ -551,14 +611,14 @@ int comm_open_connection(bool        b_server,
        * the default error handling function of the commlib prints
        * error messages to stderr!
        */
+      // @todo should we have an error func for server (qrsh) and client (shepherd, doing shepherd_trace)?
       ret = cl_com_set_error_func(ijs_general_communication_error);
       if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, "can't set commlib error function: %s",
-                             cl_get_error_text(ret));
-         DPRINTF("cl_com_set_error_func() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_com_set_error_func() failed: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_SETUP_COMMLIB;
       } else {
-         DPRINTF("trying to create commlib handle\n");
+         DPRINTF("trying to create commlib handle for %s\n", b_server ? "server" : "client");
          if (!b_server) {
             *handle = cl_com_create_handle(&commlib_error, 
                                           communication_framework, 
@@ -574,8 +634,8 @@ int comm_open_connection(bool        b_server,
          }
 
          if (*handle == nullptr) {
-            sge_dstring_sprintf(err_msg, cl_get_error_text(commlib_error));
-            DPRINTF("cl_com_create_handle() failed: %s (%d)\n", sge_dstring_get_string(err_msg), commlib_error);
+            sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_com_create_handle() failed: %s", cl_get_error_text(commlib_error));
+            DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
             ret_val = COMM_CANT_CREATE_HANDLE;
          } else {
             /* Set connection timeout to 'infinite' */
@@ -590,19 +650,29 @@ int comm_open_connection(bool        b_server,
    }
 
    /*
-    * Need to do this as SUPERUSER, because in csp mode we need the permissions
+    * Need to do this as SUPERUSER, because in csp and tls mode we need the permissions
     * to load the job users keys.
     */
    if (!b_server) {
-      if (getuid() == SGE_SUPERUSER_UID) {
-         old_euid = geteuid();
-         seteuid(SGE_SUPERUSER_UID);
+#if defined(SECURE)
+      if (communication_framework == CL_CT_SSL) {
+         if (getuid() == SGE_SUPERUSER_UID) {
+            old_euid = geteuid();
+            seteuid(SGE_SUPERUSER_UID);
+         }
       }
-      ret = cl_commlib_open_connection(*handle, remote_host, (char*)other_component, 1);
-      if (old_euid != SGE_SUPERUSER_UID) {
-         seteuid(old_euid);
+#endif
+      ret = cl_commlib_open_connection(*handle, hostname, (char*)other_component, 1);
+#if defined(SECURE)
+      if (communication_framework == CL_CT_SSL) {
+         if (old_euid != SGE_SUPERUSER_UID) {
+            seteuid(old_euid);
+         }
       }
+#endif
       if (ret != CL_RETVAL_OK) {
+         sge_dstring_sprintf(err_msg, "comm_open_connection(): cl_commlib_open_connection() failed %d: %s", ret, cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_OPEN_CONNECTION;
       }
    }
@@ -666,16 +736,16 @@ int comm_shutdown_connection(COMM_HANDLE *handle, const char *component_name,
                                      (char*)component_name, 1, false);
    if (ret != CL_RETVAL_OK && ret != CL_RETVAL_UNKNOWN_ENDPOINT) {
       /* shutting down the endpoint returned commlib error */
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_close_connection() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_shutdown_connection(): cl_commlib_close_connection() failed: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_CLOSE_CONNECTION;
       cl_com_ignore_timeouts(true);
       cl_commlib_shutdown_handle(handle, false);
    } else {
       ret = cl_commlib_shutdown_handle(handle, false);
       if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_commlib_close_connection() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_shutdown_connection(): cl_commlib_shutdown_handle() failed: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_SHUTDOWN_HANDLE;
       }
    }
@@ -721,9 +791,8 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
    DENTER(TOP_LAYER);
    ret = cl_commlib_set_connection_param(handle, param, value);
    if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_commlib_set_connection_param() failed: %s (%d)\n",
-                 sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_set_connection_param(): can't set connection param %d=%d: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_SET_CONNECTION_PARAM;
    }
    DRETURN(ret_val);
@@ -765,8 +834,8 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
    
    cl_com_ignore_timeouts(b_ignore);
    if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_com_ignore_timeouts() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_ignore_timeouts(): cl_com_ignore_timeouts() failed: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_SET_IGNORE_TIMEOUTS;
    }
    DRETURN(ret_val);
@@ -833,12 +902,12 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
   
    /*
     * In the while loop, do this:
-    * Call cl_commlib_trigger(), ignore the return value (it won't return 99)
+    * Call cl_commlib_trigger(), ignore the return value (it will never return 99)
     * Get the list of endpoints of expected kind
     * If endpointlist is returned and contains 0 elements, sleep for
     * 10 milliseconds and loop again.
     */
-   while ((ret2=cl_commlib_trigger(handle, 0)) != 99 
+   while ((ret2=cl_commlib_trigger(handle, 0)) != 99
           && (ret = cl_commlib_search_endpoint(handle, nullptr,
              (char*)component, 0, true, &endpoint_list)) == CL_RETVAL_OK
           && endpoint_list != nullptr
@@ -854,19 +923,19 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
    }
    if (waited_usec/1000000 >= wait_secs) {
       sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for connection");
-      DPRINTF(sge_dstring_get_string(err_msg));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_GOT_TIMEOUT;
    } else if (ret2 != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret2));
-      DPRINTF("cl_commlib_trigger() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret2);
+      sge_dstring_sprintf(err_msg, "comm_wait_for_connection(): error in cl_commlib_trigger(): %s", cl_get_error_text(ret2));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_TRIGGER;
    } else if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_search_endpoint() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_wait_for_connection(): wait_for_connection: search_endpoint error: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_SEARCH_ENDPOINT;
    }
    if (endpoint_list != nullptr) {
-      /* A client connected to us, get it's hostname */
+      /* A client connected to us, get its hostname */
       if (endpoint_list->elem_count > 0) {
          endpoint = cl_endpoint_list_get_first_elem(endpoint_list);
          sge_free(host);
@@ -966,23 +1035,22 @@ int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
    
    DPRINTF("wait_for_no_connection: after while\n");
    if (waited_usec/1000000 >= wait_secs) {
-      sge_dstring_sprintf(err_msg, 
-                          "Timeout occurred while waiting for no connection");
-      DPRINTF(sge_dstring_get_string(err_msg));
+      sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for no connection");
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_GOT_TIMEOUT;
    }
    if (ret2 != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret2));
-      DPRINTF("cl_commlib_trigger() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret2);
+      sge_dstring_sprintf(err_msg, "comm_wait_for_no_connection(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret2));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_TRIGGER;
    }
    if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_search_endpoint() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_wait_for_no_connection(): cl_commlib_search_endpoint() failed: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_SEARCH_ENDPOINT;
    }
    if (endpoint_list != nullptr) {
-      DPRINTF("wait_for_no_connection: cleaning up endpoint list\n");
+      DPRINTF("comm_wait_for_no_connection(): cleaning up endpoint list\n");
       cl_endpoint_list_cleanup(&endpoint_list);
    }
    DRETURN(ret_val);
@@ -1025,8 +1093,8 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
 
    ret = cl_raw_list_lock(handle->connection_list);
    if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_raw_list_lock() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_get_connection_count(): can't lock connection_list: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = -COMM_CANT_LOCK_CONNECTION_LIST;
    } else {
       elem = cl_connection_list_get_first_elem(handle->connection_list);
@@ -1035,8 +1103,8 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
       }
       ret = cl_raw_list_unlock(handle->connection_list);
       if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_raw_list_unlock() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_get_connection_count(): can't unlock connection_list: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = -COMM_CANT_UNLOCK_CONNECTION_LIST;
       }
    }
@@ -1086,8 +1154,8 @@ int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg)
 
    ret = cl_commlib_trigger(handle, synchron);
    if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_trigger() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_trigger(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_TRIGGER;
    }
    if (ret_val == COMM_RETVAL_OK) {
@@ -1173,18 +1241,17 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
     *       comm_write_first_message() or so.
     *
     *       Problem seems to be: Both threads try to open a connection
-    *       to the qrsh client. This problem shoud be handled by the commlib.
+    *       to the qrsh client. This problem should be handled by the commlib.
     */
 
 
    /* sendbuf was freed by the commlib */
-   sge_dstring_sprintf(err_msg, "%s", cl_get_error_text(ret));
 
    if (ret == CL_RETVAL_OK) {
       nwritten = size;
    } else {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_send_message() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "comm_write_message(): cl_commlib_send_message() failed: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
    }
    
    DRETURN(nwritten);
@@ -1221,6 +1288,7 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
 *******************************************************************************/
 int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
 {
+   DENTER(TOP_LAYER);
    unsigned long elems = 0;
    int           ret = 0, retries = 0;
 
@@ -1239,8 +1307,9 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
       if (ret != CL_RETVAL_OK && 
           ret != CL_RETVAL_SELECT_TIMEOUT &&
           ret != CL_RETVAL_SELECT_INTERRUPT) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         retries = ret;  
+         sge_dstring_sprintf(err_msg, "comm_flush_write_messages(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
+         retries = ret;
          break;   
       }
       elems = cl_com_messages_in_send_queue(handle);
@@ -1254,7 +1323,7 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
          retries--;
       }
    }
-   return retries;
+   DRETURN(retries);
 }
 
 /****** sge_ijs_comm/comm_recv_message() **************************************
@@ -1447,8 +1516,8 @@ int comm_free_message(recv_message_t *recv_mess, dstring *err_msg)
    if (recv_mess != nullptr && recv_mess->cl_message != nullptr) {
       ret = cl_com_free_message(&(recv_mess->cl_message));
       if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_com_free_message() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+         sge_dstring_sprintf(err_msg, "comm_free_message(): cl_com_free_message() failed: %s", cl_get_error_text(ret));
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
          ret_val = COMM_CANT_FREE_MESSAGE;
       }
    }
@@ -1503,8 +1572,8 @@ int check_client_alive(COMM_HANDLE *handle,
    ret = cl_commlib_get_endpoint_status(handle, hostname, 
                                         (char*)component_name, 1, &status);
    if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-      DPRINTF("cl_commlib_get_endpoint() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      sge_dstring_sprintf(err_msg, "check_client_alive(): cl_commlib_get_endpoint_status() failed: %s", cl_get_error_text(ret));
+      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
       ret_val = COMM_CANT_GET_CLIENT_STATUS;
    }
 

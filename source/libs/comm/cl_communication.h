@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -105,6 +105,7 @@ int cl_com_create_debug_client_setup(cl_debug_client_setup_t **new_setup,
 
 int cl_com_free_debug_client_setup(cl_debug_client_setup_t **new_setup);
 
+#if defined(SECURE)
 int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_cert_mode_t ssl_cert_mode,
                             cl_ssl_method_t ssl_method,
@@ -118,6 +119,16 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             unsigned long ssl_refresh_time,
                             const char *ssl_password,
                             cl_ssl_verify_func_t ssl_verify_func);
+#endif
+#if defined(OCS_WITH_OPENSSL)
+int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
+                            cl_ssl_cert_mode_t ssl_cert_mode,
+                            cl_ssl_method_t ssl_method,
+                            const char *ssl_client_cert_file,
+                            const char *ssl_server_cert_file,
+                            const char *ssl_server_key_file,
+                            bool allow_incomplete = false, bool needs_client_cert = true);
+#endif
 
 int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source);
 

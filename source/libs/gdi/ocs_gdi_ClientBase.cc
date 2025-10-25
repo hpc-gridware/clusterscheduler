@@ -66,7 +66,6 @@
 #include "gdi/sge_gdi_data.h"
 #include "gdi/msg_gdilib.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
@@ -404,8 +403,8 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
    cl_host_resolve_method_t resolve_method = CL_SHORT;
    cl_framework_t communication_framework = CL_CT_TCP;
    const char *default_domain = nullptr;
+   int me_who = component_get_component_id();
    int cl_ret = CL_RETVAL_OK;
-
 
    /* context setup is complete => setup the commlib
    **
@@ -415,7 +414,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 
    if (!cl_com_setup_commlib_complete()) {
       char *env_sge_commlib_debug = getenv("SGE_DEBUG_LEVEL");
-      switch (component_get_component_id()) {
+      switch (me_who) {
          case QMASTER:
          case DRMAA:
          case SCHEDD:
@@ -502,23 +501,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       DRETURN(cl_ret);
    }
 
-   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
-   if (handle == nullptr) {
-      /* handle does not exist, create one */
-
-      int me_who = component_get_component_id();
-      const char *progname = component_get_component_name();
-      const char *master = gdi_get_act_master_host(true);
-      const char *qualified_hostname = component_get_qualified_hostname();
-      u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
-      u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
-      int my_component_id = 0; /* 1 for daemons, 0=automatical for clients */
-
-      if (master == nullptr && !(me_who == QMASTER)) {
-         DRETURN(CL_RETVAL_UNKNOWN);
-      }
-
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
 #if defined (OCS_WITH_MUNGE)
       if (!ocs::uti::Munge::is_initialized()) {
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
@@ -535,10 +518,27 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 #endif
    }
 
+   bool is_server = me_who == QMASTER || me_who == EXECD;
+
+   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+   if (handle == nullptr) {
+      /* handle does not exist, create one */
+      const char *master = gdi_get_act_master_host(true);
+      const char *qualified_hostname = component_get_qualified_hostname();
+      u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
+      u_long32 sge_execd_port = bootstrap_get_sge_execd_port();
+      int my_component_id = 0; /* 1 for daemons, 0=automatical for clients */
+
+      if (master == nullptr && !(me_who == QMASTER)) {
+         DRETURN(CL_RETVAL_UNKNOWN);
+      }
+
       /*
       ** CSP initialize
       */
-      if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+         communication_framework = CL_CT_SSL;
+#ifdef SECURE
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
          cl_ssl_cert_mode_t ssl_cert_mode = CL_SSL_PEM_FILE;
          sge_csp_path_class_t *sge_csp = gdi_data_get_csp_path_obj();
@@ -550,7 +550,6 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          }
          sge_csp->dprintf(sge_csp);
 
-         communication_framework = CL_CT_SSL;
          cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
                                           ssl_cert_mode,
                                           CL_SSL_v23,                                   /* ssl_method           */
@@ -563,12 +562,11 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
                                           (char *) sge_csp->get_crl_file(sge_csp),        /* ssl_crl_file         */
                                           sge_csp->get_refresh_time(sge_csp),           /* ssl_refresh_time     */
                                           (char *) sge_csp->get_password(sge_csp),        /* ssl_password         */
-                                          sge_csp->get_verify_func(
-                                                  sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
+                                          sge_csp->get_verify_func(sge_csp));           /* ssl_verify_func (cl_ssl_verify_func_t)  */
          if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
             DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, qualified_hostname, progname,
+                                    MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, qualified_hostname, component_get_component_name(),
                                     0, sge_qmaster_port, cl_get_error_text(cl_ret));
             DRETURN(cl_ret);
          }
@@ -586,6 +584,32 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             DRETURN(cl_ret);
          }
          cl_com_free_ssl_setup(&sec_ssl_setup_config);
+#else
+         // @todo ERROR
+#endif
+      }
+
+      // new SSL encryption mode
+      if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         communication_framework = CL_CT_SSL_TLS;
+#if defined(OCS_WITH_OPENSSL)
+         // sge_qmaster is not really a client, BUT in case master (from act_qmaster file) != qualified_hostname
+         // it checks if there is a qmaster running on the other host - that's what it is using the client connection for
+         u_long32 local_port{0};
+         if (is_server) {
+            if (me_who == QMASTER || me_who == EXECD) {
+               local_port = sge_qmaster_port;
+            }
+         }
+         bool needs_client = me_who != QMASTER;
+         cl_ret = gdi_setup_tls_config(needs_client, is_server, answer_list, qualified_hostname,
+                                       local_port, master, sge_qmaster_port, prognames[QMASTER]);
+         if (cl_ret != CL_RETVAL_OK) {
+            DRETURN(cl_ret);
+         }
+#else
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX, MSG_SSL_NOT_BUILT_IN);
+#endif
       }
 
       if (me_who == QMASTER || me_who == EXECD || me_who == SCHEDD || me_who == SHADOWD) {
@@ -605,7 +629,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             handle = cl_com_create_handle(&cl_ret,
                                           communication_framework,
                                           CL_CM_CT_MESSAGE,
-                                          true,
+                                          is_server,
                                           (int)sge_execd_port,
                                           CL_TCP_DEFAULT,
                                           (char *) component_get_component_name(),
@@ -621,7 +645,6 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             break;
 
          case QMASTER:
-            DPRINTF("creating QMASTER handle\n");
             cl_com_append_known_endpoint_from_name((char *) master,
                                                    (char *) prognames[QMASTER],
                                                    1,
@@ -634,11 +657,10 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
                      enabling it might cause problems with current shadowd and
                      startup qmaster implementation */
             cl_commlib_set_global_param(CL_COMMLIB_DELAYED_LISTEN, false);
-
             handle = cl_com_create_handle(&cl_ret,
                                           communication_framework,
                                           CL_CM_CT_MESSAGE, /* message based tcp communication */
-                                          true,
+                                          is_server,
                                           (int)sge_qmaster_port, /* create service on qmaster port */
                                           CL_TCP_DEFAULT,   /* use standard connect mode */
                                           (char *) component_get_component_name(),
@@ -691,7 +713,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          default:
             /* this is for "normal" gdi clients of qmaster */
             DPRINTF("creating %s GDI handle\n", component_get_component_name());
-            handle = cl_com_create_handle(&cl_ret, communication_framework, CL_CM_CT_MESSAGE, false,
+            handle = cl_com_create_handle(&cl_ret, communication_framework, CL_CM_CT_MESSAGE, is_server,
                                           (int)sge_qmaster_port, CL_TCP_DEFAULT,
                                           (char *) component_get_component_name(), my_component_id, 1, 0);
             if (handle == nullptr) {
@@ -705,7 +727,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       gdi_data_set_last_commlib_error(cl_ret);
    }
 
-   if ((component_get_component_id() == QMASTER) && (getenv("SGE_TEST_SOCKET_BIND") != nullptr)) {
+   if (me_who == QMASTER && getenv("SGE_TEST_SOCKET_BIND") != nullptr) {
       /* this is for testsuite socket bind test (issue 1096 ) */
       struct timeval now{};
       gettimeofday(&now, nullptr);
@@ -750,11 +772,6 @@ ocs::gdi::ClientBase::setup(int component_id, u_long32 thread_id, lList **answer
    char group[128] = "";
    if (sge_gid2group(getegid(), group, sizeof(group), MAX_NIS_RETRIES)) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL, MSG_SYSTEM_RESOLVEGROUP);
-      DRETURN(AE_ERROR);
-   }
-
-   if (feature_initialize_from_string(bootstrap_get_security_mode(), answer_list)) {
-      // answer was set by feature_initialize_from_string()
       DRETURN(AE_ERROR);
    }
 
@@ -931,12 +948,13 @@ FCLOSE_ERROR:
 
 const char *
 ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
+   DENTER(BASIS_LAYER);
+
    sge_error_class_t *eh = gdi_data_get_error_handle();
    static bool error_already_logged = false;
 
-   DENTER(BASIS_LAYER);
-
-   if (gdi_data_get_master_host() == nullptr || reread) {
+   const char *old_master_host = gdi_data_get_master_host();
+   if (old_master_host == nullptr || reread) {
       char err_str[SGE_PATH_MAX + 128];
       char master_name[CL_MAXHOSTNAMELEN];
       u_long64 now = sge_get_gmt64();
@@ -959,11 +977,39 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
             DRETURN(nullptr);
          }
          error_already_logged = false;
-         DPRINTF("(re-)reading act_qmaster file. Got master host \"%s\"\n", master_name);
+         DPRINTF("(re-)read act_qmaster file. Old master host: " SFQ ". New master host " SFQ "\n",
+            old_master_host != nullptr ? old_master_host : "<nullptr>", master_name);
          /*
          ** TODO: thread locking needed here ?
          */
          gdi_set_master_host(master_name);
+
+         // Update the client certificate if the qmaster host name changed.
+         // Old_master_host is nullptr in the first call, here nothing is to be done.
+         if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+   #if defined(OCS_WITH_OPENSSL)
+            // Need a new context
+            //       - when the master host changed
+            //       - when the certificate was renewed - how to find that out? Certificate file timestamp?
+            //       for now simply always create a new context
+            // Only update the SSL context if we already had one == when commlib was already initialized.
+            cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+            if (handle != nullptr) {
+               if (old_master_host != nullptr /* && strcmp(old_master_host, master_name) != 0 */) {
+                  lList *answer_list = nullptr;
+                  int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
+                  if (cl_ret != CL_RETVAL_OK) {
+                     //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
+                     answer_list_output(&answer_list);
+                     DRETURN(nullptr);
+                  }
+                  lFreeList(&answer_list);
+               }
+            }
+   #else
+               DPRINTF(SFNMAX, MSG_SSL_NOT_BUILT_IN);
+   #endif
+         }
       }
    }
    DRETURN(gdi_data_get_master_host());

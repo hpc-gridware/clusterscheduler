@@ -33,8 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/cull/sge_feature_FES_L.h"
-
 typedef enum {
    FS_SHORT,
    FS_LONG,
@@ -43,34 +41,4 @@ typedef enum {
    FS_LONG_VERSION
 } featureset_product_name_id_t;
 
-typedef enum {
-   FEATURE_UNINITIALIZED = 0, 
-   FEATURE_NO_SECURITY,             /* No security mode active */
-   FEATURE_AFS_SECURITY,            /* AFS security */
-   FEATURE_DCE_SECURITY,            /* DCE security */
-   FEATURE_KERBEROS_SECURITY,       /* KERBEROS security */
-   FEATURE_CSP_SECURITY,            /* CSP security */
-   FEATURE_MUNGE_SECURITY,          /* Munge security */
-
-   /* DON'T CHANGE THE ORDER OF THE ENTRIES ABOVE */
- 
-   FEATURE_LAST_ENTRY
-} feature_id_t;
-
-typedef struct {
-   feature_id_t id;
-   const char *name;
-} featureset_names_t;            
-
-void    feature_set_already_read_from_file(int i);
-int     feature_get_already_read_from_file();
-lList** feature_get_master_featureset_list();
-
-
-void            feature_initialize();
-int             feature_initialize_from_string(const char *mode, lList **answer_list);
-void            feature_activate(feature_id_t id);
-const char*     feature_get_featureset_name(feature_id_t id);
-feature_id_t    feature_get_active_featureset_id();
-bool            feature_is_enabled(feature_id_t id);
 const char*     feature_get_product_name(featureset_product_name_id_t style, dstring *buffer);

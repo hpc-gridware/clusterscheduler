@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -133,6 +133,7 @@ extern int main(int argc, char **argv) {
    }
 
    cl_com_set_alias_file("./alias_file");
+#if defined(SECURE)
    if (framework == CL_CT_SSL) {
       cl_ssl_setup_t ssl_config;
       ssl_config.ssl_method = CL_SSL_v23;                 /*  v23 method                                  */
@@ -159,6 +160,7 @@ extern int main(int argc, char **argv) {
       }
       cl_com_specify_ssl_configuration(&ssl_config);
    }
+#endif
    CL_LOG_STR(CL_LOG_INFO, "connection to server on host", argv[1]);
    CL_LOG_INT(CL_LOG_INFO, "using port", atoi(argv[2]));
 

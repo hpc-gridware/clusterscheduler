@@ -168,6 +168,7 @@
 #define MSG_EXECD_NOADDGIDOPEN_SSS     _MESSAGE(29130, _("failed opening addgrpid file " SFN " of job " SFN ": " SFN))
 #define MSG_JOB_NOREGISTERPTF_SS       _MESSAGE(29131, _("failed registering job " SFN " at ptf: " SFN))
 #define MSG_EXECD_NOOSJOBIDOPEN_SSS    _MESSAGE(29132, _("failed opening os jobid file " SFN " of job " SFN ": " SFN))
+#define MSG_EXECD_UNABLETOCREATECERTFILE_S  _MESSAGE(29133, _("unable to create cert file: " SFN))
 
 #define MSG_COM_UNPACKFEATURESET       _MESSAGE(29134, _("unpacking featureset from job execution message"))
 #define MSG_COM_UNPACKJOB              _MESSAGE(29135, _("unpacking job from job execution message"))

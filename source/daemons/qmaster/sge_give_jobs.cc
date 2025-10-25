@@ -445,7 +445,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, u_long64 gdi_session) 
 
          init_packbuffer(&send_pb, 0);
 
-         pack_job_delivery(&send_pb, jep, feature_get_active_featureset_id());
+         pack_job_delivery(&send_pb, jep);
          if (simulate_execd) {
             failed = CL_RETVAL_OK;
          } else {
@@ -597,7 +597,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       DRETURN(-1);
    }
 
-   pack_job_delivery(&pb, tmpjep, feature_get_active_featureset_id());
+   pack_job_delivery(&pb, tmpjep);
    lFreeElem(&tmpjep);
 
    /*

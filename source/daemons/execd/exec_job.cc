@@ -49,6 +49,7 @@
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_io.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_parse_num_par.h"
@@ -74,7 +75,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_ckpt.h"
@@ -352,6 +352,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const char *admin_user = bootstrap_get_admin_user();
    const char *masterhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    bool csp_mode = false;
+   bool tls_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;
    char *pw_buffer;
@@ -549,8 +550,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
 
    /* write environment of job */
-   var_list_copy_env_vars_and_value(&environmentList,
-                                    lGetList(jep, JB_env_list));
+   var_list_copy_env_vars_and_value(&environmentList, lGetList(jep, JB_env_list));
 
    /* write environment of petask */
    if (petep != nullptr) {
@@ -1580,7 +1580,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* if "pag_cmd" is not set, do not use AFS setup for this host */
    pag_cmd = mconf_get_pag_cmd();
-   if (feature_is_enabled(FEATURE_AFS_SECURITY) && pag_cmd &&
+   if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
        strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       fprintf(fp, "use_afs=1\n");
 
@@ -1700,16 +1700,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* shall shepherd write osjob_id, or is it done by (our) rshd */
    fprintf(fp, "write_osjob_id=%d\n", write_osjob_id);
 
-   /* should the job inherit the execd's environment */
+   /* should the job inherit the execd's environment? */
    fprintf(fp, "inherit_env=%d\n", (int) mconf_get_inherit_env());
 
-   /* should the addgrp-id be used to kill processes */
+   /* should the addgrp-id be used to kill processes? */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int) mconf_get_enable_addgrp_kill());
 
-   if (strcasecmp(bootstrap_get_security_mode(), "csp") == 0) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
       csp_mode = true;
    }
    fprintf(fp, "csp=%d\n", (int) csp_mode);
+   if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+      tls_mode = true;
+   }
+   fprintf(fp, "tls=%d\n", (int) tls_mode);
 
    /* with new interactive job support, shepherd needs ignore_fqdn and default_domain */
    fprintf(fp, "ignore_fqdn=%d\n", bootstrap_get_ignore_fqdn());
@@ -1721,6 +1725,28 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    sge_dstring_free(&core_binding_strategy_string);
 
    /********************** finished writing config ************************/
+
+#if defined(OCS_WITH_OPENSSL)
+   if (tls_mode) {
+      // for qrsh type jobs sge_shepherd needs the tls certificate of the qrsh commlib server
+      // write it to the jobs's spool directory
+      const char *cert;
+      if (petep == nullptr) {
+         cert = lGetString(jep, JB_cred);
+      } else {
+         cert = lGetString(petep, PET_cred);
+      }
+      if (cert != nullptr) {
+         DSTRING_STATIC(dstr_certfilename, MAXPATHLEN);
+         const char *str_certfilename = sge_dstring_sprintf(&dstr_certfilename, "%s/%s/%s", execd_spool_dir,
+                                                            active_dir_buffer, "cert.pem");
+         if (sge_string2file(cert, 0, str_certfilename) != 0) {
+            snprintf(err_str, err_length, MSG_EXECD_UNABLETOCREATECERTFILE_S, str_certfilename);
+            DRETURN(-2);
+         }
+      }
+   }
+#endif
 
    /* test whether we can access scriptfile */
    /*
@@ -1761,7 +1787,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DRETURN(-2);
       }
    }
-   else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+   else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
       snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
       if (SGE_STAT(dce_wrapper_cmd, &buf)) {
          snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
@@ -1769,7 +1795,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
-   } else if (feature_is_enabled(FEATURE_AFS_SECURITY) && pag_cmd &&
+   } else if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
               strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       int fd, len;
       const char *cp;
@@ -1952,8 +1978,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
     * access to DFS or AFS file systems
     */
    if (starting_shepherd_ok) {
-      if ((feature_is_enabled(FEATURE_DCE_SECURITY) ||
-           feature_is_enabled(FEATURE_KERBEROS_SECURITY)) &&
+      if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
+           bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
           lGetString(jep, JB_cred)) {
 
          char ccname[1024];
@@ -1975,12 +2001,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(shepherd_cmd, ps_name, nullptr);
-      } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
+      } else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
          DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(dce_wrapper_cmd, ps_name, nullptr);
-      } else if (!feature_is_enabled(FEATURE_AFS_SECURITY) || !pag_cmd ||
+      } else if (!bootstrap_has_security_mode(BS_SEC_MODE_AFS) || !pag_cmd ||
                  !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
          DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),

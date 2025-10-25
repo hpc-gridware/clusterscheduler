@@ -44,6 +44,8 @@
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_xml_parsing.h"
 
+#include "uti/ocs_OpenSSL.h"
+
 typedef enum cl_com_debug_message_tag_type {
    CL_DMT_MESSAGE = 1,  /* default */
    CL_DMT_APP_MESSAGE,
@@ -66,7 +68,8 @@ typedef enum cl_global_settings_params_def {
 typedef enum cl_framework_def {
    CL_CT_UNDEFINED = 0,
    CL_CT_TCP,        /* tcp/ip framework */
-   CL_CT_SSL         /* secure socket layer */
+   CL_CT_SSL,        /* secure socket layer */
+   CL_CT_SSL_TLS     /* new SSL/TLS framework */
 } cl_framework_t;
 
 
@@ -89,8 +92,8 @@ typedef enum cl_host_resolve_method_def {
 } cl_host_resolve_method_t;
 
 typedef enum cl_thread_mode_def {
-   CL_NO_THREAD,       /* application must call cl_commlib_trigger() in main loop */
-   CL_RW_THREAD        /* enable read thread, write thread, trigger thread, service thread   */
+   CL_NO_THREAD,       // application must call cl_commlib_trigger() in main loop
+   CL_RW_THREAD        // enable read thread, write thread, trigger thread, service thread
 } cl_thread_mode_t;
 
 
@@ -190,7 +193,8 @@ typedef enum cl_message_state_type {
 
 /* commlib supports the following SSL connection methods */
 typedef enum cl_ssl_method_type {
-   CL_SSL_v23 = 1
+   CL_SSL_v23 = 1,
+   CL_SSL_TLS = 2
 } cl_ssl_method_t;
 
 typedef enum cl_ssl_verify_mode_type {
@@ -250,6 +254,7 @@ typedef struct cl_ssl_setup_type {
    /*     ssl_key_pem_file contains the pem key file name                          */
    /*  }                                                                           */
    cl_ssl_method_t ssl_method;                 /*  used for call to SSL_CTX_new() as parameter       */
+#if defined(SECURE)
    char *ssl_CA_cert_pem_file;       /*  CA certificate file                           ->ca_cert_file<-              */
    char *ssl_CA_key_pem_file;        /*  private key file of CA                        ->ca_key_file (not used)<-    */
    char *ssl_cert_pem_file;          /*  certificate file                              ->cert_file<-                 */
@@ -260,6 +265,15 @@ typedef struct cl_ssl_setup_type {
    unsigned long ssl_refresh_time;           /*  key alive time for connections (for services) ->refresh_time (not used)<-   */
    char *ssl_password;               /*  password for encrypted keyfiles               ->not used<-                  */
    cl_ssl_verify_func_t ssl_verify_func;       /*  function callback for peer user/name check */
+#endif
+#if defined(OCS_WITH_OPENSSL)
+   char *ssl_client_cert_file;    // client cert file to verify peer (if not nullptr/empty string)
+   char *ssl_server_cert_file;    // server cert file to identify ourselves
+   char *ssl_server_key_file;     // server key file to identify ourselves
+   bool needs_client_cert;        // commlib handle will not be created if reading the client certificate fails
+                                  // default true, but for sge_qmaster this can be OK, if act_qmaster contains a
+                                  // host name for which no certificate is available
+#endif
 } cl_ssl_setup_t;
 
 
@@ -282,6 +296,10 @@ typedef struct cl_com_connection_type cl_com_connection_t;
 
 typedef struct cl_com_handle {
    cl_ssl_setup_t *ssl_setup;         /* used for SSL framework */
+#if defined(OCS_WITH_OPENSSL)
+   ocs::uti::OpenSSL::OpenSSLContext *ssl_server_context; // SSL context for incoming connections where we are server
+   ocs::uti::OpenSSL::OpenSSLContext *ssl_client_context; // SSL context for outgoing connections where we are client
+#endif
 
    cl_debug_client_setup_t *debug_client_setup; /* used for debug clients */
 
@@ -328,7 +346,7 @@ typedef struct cl_com_handle {
    cl_max_count_t max_con_close_mode;  /*  state of auto close at max connection count */
    cl_xml_connection_autoclose_t auto_close_mode; /* used to enable/disable autoclose of connections opend from this handle to services */
    int max_write_threads;    /* maximum number of send threads */
-   int max_read_threads;     /* maximum number of receive threas */
+   int max_read_threads;     /* maximum number of receive threads */
    int select_sec_timeout;
    int select_usec_timeout;
    int connection_timeout;   /* timeout to shutdown connected clients when no messages arive */

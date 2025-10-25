@@ -475,12 +475,6 @@
 			"size_in_basic_units":	2,
 			"add_to_sge_all_lists":	true
 		}, {
-			"className":	"FeatureSet",
-			"cullPrefix":	"FES",
-			"cullNameSpec":	"feature",
-			"size_in_basic_units":	2,
-			"add_to_sge_all_lists":	true
-		}, {
 			"className":	"SubmitUser",
 			"cullPrefix":	"SU",
 			"cullNameSpec":	"suser",

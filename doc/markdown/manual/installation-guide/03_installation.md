@@ -43,6 +43,18 @@ Here are the steps required to complete the installation.
     # ./install_qmaster -munge
    ```
    
+   To install with TLS encryption pass the `-tls` option to the installation script.
+
+   ```
+    # ./install_qmaster -tls
+   ```
+   
+    If you want to install with both, Munge authentication and TLS encryption, then pass both options to the installation script.
+    
+    ```
+     # ./install_qmaster -munge -tls
+    ```
+   
    Read and follow the given instructions.
    ```
    Welcome to the Cluster Scheduler installation
@@ -793,5 +805,5 @@ The uninstallation of the xxQS_NAMExx software can be done manually or automatic
    ./inst_sge ...  
    ```
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

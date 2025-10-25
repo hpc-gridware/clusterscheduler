@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -149,19 +149,44 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
         endif ()
 
         if (WITH_OPENSSL)
-            message(STATUS "adding 3rdparty openssl")
-            if (WITH_OS_3RDPARTY)
-                if (EXISTS "/usr/include/openssl")
-                    add_compile_definitions("SECURE")
-                    add_compile_definitions("LOAD_OPENSSL")
+            # for openssl we rely on the OS packages only
+            message(STATUS "checking for openssl")
+            set (OPENSSL_INCLUDE_DIR /usr/include)
+            if (SGE_ARCH MATCHES "fbsd-.*")
+               if (EXISTS "/usr/local/include/openssl")
+                  # the freebsd openssl3 package installs to /usr/local
+                  set (OPENSSL_INCLUDE_DIR /usr/local/include)
+               endif()
+            endif()
+            message(STATUS "searching for openssl in ${OPENSSL_INCLUDE_DIR}")
+
+            if (EXISTS "${OPENSSL_INCLUDE_DIR}/openssl" OR EXISTS "${OPENSSL_INCLUDE_DIR}/openssl3")
+                # this is the old CSP mode
+                #add_compile_definitions("SECURE")
+                #add_compile_definitions("LOAD_OPENSSL")
+                if (EXISTS "${OPENSSL_INCLUDE_DIR}/openssl3")
+                    # e.g., Rocky-8 with openssl-3.x.x installed
+                    # add_compile_definitions("OCS_WITH_OPENSSL3_HEADERS")
+                    message(STATUS "Found openssl3 header files")
+                    include_directories(BEFORE SYSTEM "${OPENSSL_INCLUDE_DIR}/openssl3")
+                    add_compile_definitions("OCS_WITH_OPENSSL")
                 else()
-                    message(FATAL_ERROR "openssl header files seem not to be installed")
+                    file(STRINGS "${OPENSSL_INCLUDE_DIR}/openssl/opensslv.h" OPENSSL_MAJOR REGEX "^#.*define OPENSSL_VERSION_MAJOR ")
+                    string(REGEX REPLACE "#.*define OPENSSL_VERSION_MAJOR ([0-9]*)" "\\1" OPENSSL_MAJOR "${OPENSSL_MAJOR}")
+                    message(STATUS, "Found openssl version: ${OPENSSL_MAJOR}")
+                    if (NOT OPENSSL_MAJOR EQUAL "3")
+                        message(STATUS "Will not use OpenSSL version != 3")
+                        set(WITH_OPENSSL OFF CACHE BOOL "" FORCE)
+                    else()
+                        add_compile_definitions("OCS_WITH_OPENSSL")
+                    endif()
+                    # e.g., Ubuntu 24.04 with openssl-3.x being default (usr/include/openssl)
                 endif()
-            else ()
-                message(FATAL_ERROR "can build with openssl only with os packages")
+            else()
+                message(FATAL_ERROR "openssl header files seem not to be installed")
+                set(WITH_OPENSSL OFF CACHE BOOL "" FORCE)
             endif()
         endif()
-
     endif ()
 
     # add a target containing all 3rdparty libs which need to be built once

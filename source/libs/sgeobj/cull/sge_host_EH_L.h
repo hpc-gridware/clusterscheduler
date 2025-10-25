@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2023-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -102,9 +102,6 @@
 *    SGE_DOUBLE(EH_sge_load_pct) - percentage of load
 *    percentage of total SGEEE tickets, scheduler only
 *
-*    SGE_ULONG(EH_featureset_id) - featureset id
-*    supported feature-set id @todo still used?
-*
 *    SGE_LIST(EH_scaled_usage_list) - scaled usage
 *    scaled usage for jobs on a host - used by sge_host_mon @todo: still used?
 *
@@ -180,7 +177,6 @@ enum {
    EH_sge_load,
    EH_sge_ticket_pct,
    EH_sge_load_pct,
-   EH_featureset_id,
    EH_scaled_usage_list,
    EH_scaled_usage_pct_list,
    EH_num_running_jobs,
@@ -219,7 +215,6 @@ LISTDEF(EH_Type)
    SGE_ULONG(EH_sge_load, CULL_DEFAULT)
    SGE_DOUBLE(EH_sge_ticket_pct, CULL_DEFAULT)
    SGE_DOUBLE(EH_sge_load_pct, CULL_DEFAULT)
-   SGE_ULONG(EH_featureset_id, CULL_DEFAULT)
    SGE_LIST(EH_scaled_usage_list, UA_Type, CULL_DEFAULT)
    SGE_LIST(EH_scaled_usage_pct_list, UA_Type, CULL_DEFAULT)
    SGE_ULONG(EH_num_running_jobs, CULL_DEFAULT)
@@ -258,7 +253,6 @@ NAMEDEF(EHN)
    NAME("EH_sge_load")
    NAME("EH_sge_ticket_pct")
    NAME("EH_sge_load_pct")
-   NAME("EH_featureset_id")
    NAME("EH_scaled_usage_list")
    NAME("EH_scaled_usage_pct_list")
    NAME("EH_num_running_jobs")

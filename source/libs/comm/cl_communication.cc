@@ -75,12 +75,11 @@ static int cl_com_gethostbyaddr(struct in_addr *addr, cl_com_hostent_t **hostent
 
 static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve_method_t method, const char *domain);
 
-static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value);
-
 static bool cl_ingore_timeout = false;
 
 static bool cl_com_is_ip_address_string(const char *hostname, struct in_addr *addr);
 
+#if defined(SECURE)
 static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, const char *value) {
    switch (mode) {
       case CL_SSL_PEER_NAME: {
@@ -104,6 +103,7 @@ static bool cl_com_default_ssl_verify_func(cl_ssl_verify_mode_t mode, bool servi
    }
    return true;
 }
+#endif
 
 int cl_com_compare_endpoints(cl_com_endpoint_t *endpoint1, cl_com_endpoint_t *endpoint2) {  /* CR check */
    if (endpoint1 != nullptr && endpoint2 != nullptr) {
@@ -416,6 +416,7 @@ int cl_com_free_debug_client_setup(cl_debug_client_setup_t **dc_setup) {
    return ret_val;
 }
 
+#if defined(SECURE)
 int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
                             cl_ssl_cert_mode_t ssl_cert_mode,
                             cl_ssl_method_t ssl_method,
@@ -458,7 +459,6 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
    memset(tmp_setup, 0, sizeof(cl_ssl_setup_t));
 
    tmp_setup->ssl_cert_mode = ssl_cert_mode;
-
    tmp_setup->ssl_method = ssl_method;
 
    if (ssl_CA_cert_pem_file != nullptr) {
@@ -552,6 +552,88 @@ int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
 
    return CL_RETVAL_OK;
 }
+#endif
+
+#if defined(OCS_WITH_OPENSSL)
+int cl_com_create_ssl_setup(cl_ssl_setup_t **new_setup,
+                            cl_ssl_cert_mode_t ssl_cert_mode,
+                            cl_ssl_method_t ssl_method,
+                            const char *ssl_client_cert_file,
+                            const char *ssl_server_cert_file,
+                            const char *ssl_server_key_file,
+                            bool allow_incomplete, bool needs_client_cert) {
+   cl_ssl_setup_t *tmp_setup = nullptr;
+
+   if (new_setup == nullptr) {
+      return CL_RETVAL_PARAMS;
+   }
+
+   if (*new_setup != nullptr) {
+      CL_LOG(CL_LOG_ERROR, "setup configuration pointer is not nullptr");
+      return CL_RETVAL_PARAMS;
+   }
+
+   switch (ssl_method) {
+      case CL_SSL_TLS:
+         break;
+      default:
+         CL_LOG(CL_LOG_ERROR, "unsupported ssl method");
+         return CL_RETVAL_PARAMS;
+   }
+
+
+   tmp_setup = (cl_ssl_setup_t *) sge_malloc(sizeof(cl_ssl_setup_t));
+   if (tmp_setup == nullptr) {
+      return CL_RETVAL_MALLOC;
+   }
+
+   memset(tmp_setup, 0, sizeof(cl_ssl_setup_t));
+
+   tmp_setup->ssl_cert_mode = ssl_cert_mode;
+   tmp_setup->ssl_method = ssl_method;
+
+   if (ssl_client_cert_file != nullptr) {
+      tmp_setup->ssl_client_cert_file = strdup(ssl_client_cert_file);
+      if (tmp_setup->ssl_client_cert_file == nullptr) {
+         cl_com_free_ssl_setup(&tmp_setup);
+         return CL_RETVAL_MALLOC;
+      }
+   } else {
+      CL_LOG(CL_LOG_ERROR, "client certificate file not set");
+      cl_com_free_ssl_setup(&tmp_setup);
+      return CL_RETVAL_PARAMS;
+   }
+
+   if (ssl_server_cert_file != nullptr) {
+      tmp_setup->ssl_server_cert_file = strdup(ssl_server_cert_file);
+      if (tmp_setup->ssl_server_cert_file == nullptr) {
+         cl_com_free_ssl_setup(&tmp_setup);
+         return CL_RETVAL_MALLOC;
+      }
+   } else if (!allow_incomplete) {
+      CL_LOG(CL_LOG_ERROR, "server certificate file not set");
+      cl_com_free_ssl_setup(&tmp_setup);
+      return CL_RETVAL_PARAMS;
+   }
+
+   if (ssl_server_key_file != nullptr) {
+      tmp_setup->ssl_server_key_file = strdup(ssl_server_key_file);
+      if (tmp_setup->ssl_server_key_file == nullptr) {
+         cl_com_free_ssl_setup(&tmp_setup);
+         return CL_RETVAL_MALLOC;
+      }
+   } else if (!allow_incomplete) {
+      CL_LOG(CL_LOG_ERROR, "server key file not set");
+      cl_com_free_ssl_setup(&tmp_setup);
+      return CL_RETVAL_PARAMS;
+   }
+
+   tmp_setup->needs_client_cert = needs_client_cert;
+   *new_setup = tmp_setup;
+
+   return CL_RETVAL_OK;
+}
+#endif
 
 int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
 
@@ -559,6 +641,7 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
       return CL_RETVAL_PARAMS;
    }
 
+#if defined(SECURE)
    return cl_com_create_ssl_setup(new_setup,
                                   source->ssl_cert_mode,
                                   source->ssl_method,
@@ -572,6 +655,17 @@ int cl_com_dup_ssl_setup(cl_ssl_setup_t **new_setup, cl_ssl_setup_t *source) {
                                   source->ssl_refresh_time,
                                   source->ssl_password,
                                   source->ssl_verify_func);
+#endif
+#if defined(OCS_WITH_OPENSSL)
+   return cl_com_create_ssl_setup(new_setup,
+                                  source->ssl_cert_mode,
+                                  source->ssl_method,
+                                  source->ssl_client_cert_file,
+                                  source->ssl_server_cert_file,
+                                  source->ssl_server_key_file,
+                                  false, source->needs_client_cert);
+#endif
+      return CL_RETVAL_SSL_NOT_SUPPORTED;
 }
 
 int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
@@ -583,6 +677,7 @@ int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
       return CL_RETVAL_PARAMS;
    }
 
+#if defined(SECURE)
    /* free structure members */
    if ((*del_setup)->ssl_CA_cert_pem_file != nullptr) {
       sge_free(&((*del_setup)->ssl_CA_cert_pem_file));
@@ -610,6 +705,13 @@ int cl_com_free_ssl_setup(cl_ssl_setup_t **del_setup) {
    if ((*del_setup)->ssl_password != nullptr) {
       sge_free(&((*del_setup)->ssl_password));
    }
+#endif
+
+#if defined(OCS_WITH_OPENSSL)
+   sge_free(&((*del_setup)->ssl_client_cert_file));
+   sge_free(&((*del_setup)->ssl_server_cert_file));
+   sge_free(&((*del_setup)->ssl_server_key_file));
+#endif
 
    /* free structure itself */
    sge_free(del_setup);
@@ -813,7 +915,8 @@ static void  cl_dump_connection(cl_com_connection_t* connection) {   /* CR check
 static void cl_dump_private(cl_com_connection_t* connection) {  /* CR check */
    if (connection != nullptr) {
       switch(connection->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             cl_dump_tcp_private(connection);
             break;
          }
@@ -839,7 +942,8 @@ int cl_com_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_re
    }
 
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_read_GMSH(connection, only_one_read);
       }
       case CL_CT_SSL: {
@@ -858,15 +962,14 @@ const char *cl_com_get_framework_type(cl_com_connection_t *connection) {  /* CR 
       return "nullptr";
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
          return "CL_CT_TCP";
-      }
-      case CL_CT_SSL: {
+      case CL_CT_SSL_TLS:
+         return "CL_CT_SSL_TLS";
+      case CL_CT_SSL:
          return "CL_CT_SSL";
-      }
-      case CL_CT_UNDEFINED: {
+      case CL_CT_UNDEFINED:
          return "CL_CT_UNDEFINED";
-      }
    }
    return "unexpected framework type";
 }
@@ -1269,7 +1372,8 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
       }
 
       switch (connection->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             connection->connection_type = CL_COM_SEND_RECEIVE;
 
             retval = cl_com_tcp_open_connection(connection, timeout);
@@ -1405,7 +1509,8 @@ int cl_com_close_connection(cl_com_connection_t **connection) {
       sge_free(&((*connection)->statistic));
 
       switch ((*connection)->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             retval = cl_com_tcp_close_connection(connection);
             break;
          }
@@ -1433,7 +1538,8 @@ int cl_com_connection_get_service_port(cl_com_connection_t *connection, int *por
       return CL_RETVAL_PARAMS;
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_service_port(connection, port);
       }
       case CL_CT_SSL: {
@@ -1451,7 +1557,8 @@ int cl_com_connection_get_client_socket_in_port(cl_com_connection_t *connection,
       return CL_RETVAL_PARAMS;
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_client_socket_in_port(connection, port);
       }
       case CL_CT_SSL: {
@@ -1470,7 +1577,8 @@ int cl_com_connection_get_fd(cl_com_connection_t *connection, int *fd) {
       return ret_val;
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          ret_val = cl_com_tcp_get_fd(connection, fd);
          break;
       }
@@ -1499,7 +1607,8 @@ int cl_com_connection_get_connect_port(cl_com_connection_t *connection, int *por
       return CL_RETVAL_PARAMS;
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_get_connect_port(connection, port);
       }
       case CL_CT_SSL: {
@@ -1517,7 +1626,8 @@ int cl_com_connection_set_connect_port(cl_com_connection_t *connection, int port
       return CL_RETVAL_PARAMS;
    }
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_set_connect_port(connection, port);
       }
       case CL_CT_SSL: {
@@ -2943,7 +3053,8 @@ int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_
       retval = CL_RETVAL_UNKNOWN;
       only_prepare_service = cl_commlib_get_global_param(CL_COMMLIB_DELAYED_LISTEN);
       switch (connection->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             retval = cl_com_tcp_connection_request_handler_setup(connection, only_prepare_service);
             break;
          }
@@ -3018,7 +3129,8 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
          return CL_RETVAL_NOT_SERVICE_HANDLER;
       }
       switch (connection->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             retval = cl_com_tcp_connection_request_handler(connection, new_connection);
             break;
          }
@@ -3035,7 +3147,8 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
       if (*new_connection != nullptr && retval == CL_RETVAL_OK) {
          /* setup new cl_com_connection_t */
          switch (connection->framework_type) {
-            case CL_CT_TCP: {
+            case CL_CT_TCP:
+            case CL_CT_SSL_TLS: {
                (*new_connection)->connection_state = CL_CONNECTING;
                (*new_connection)->connection_sub_state = CL_COM_READ_INIT;
                break;
@@ -3097,7 +3210,8 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
          return CL_RETVAL_NOT_SERVICE_HANDLER;
       }
       switch (connection->framework_type) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             return cl_com_tcp_connection_request_handler_cleanup(connection);
          }
          case CL_CT_SSL: {
@@ -3185,7 +3299,8 @@ int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_ha
 
    if (handle->connection_list != nullptr) {
       switch (handle->framework) {
-         case CL_CT_TCP: {
+         case CL_CT_TCP:
+         case CL_CT_SSL_TLS: {
             return cl_com_tcp_open_connection_request_handler(poll_handle, handle, handle->connection_list,
                                                               service_connection,
                                                               sec_param, usec_rest, select_mode);
@@ -3312,6 +3427,15 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
       CL_LOG(CL_LOG_ERROR, "no hash table availabe");
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
+
+   // A previous SSL_write might have reported SSL_ERROR_WANT_WRITE or SSL_ERROR_WANT_READ.
+   // In this case we have to repeate the SSL_write call, even if the socket is ready to read.
+#if defined(OCS_WITH_OPENSSL)
+   if (cl_com_tcp_write_repeat_required(elem->connection)) {
+      // need to repeat an earlier write operation
+      select_mode = CL_W_SELECT;
+   }
+#endif
 
    switch (select_mode) {
       case CL_RW_SELECT:
@@ -4492,7 +4616,8 @@ int cl_com_connection_complete_accept(cl_com_connection_t *connection, long time
    }
 
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          /* tcp framework does not support this state */
          return CL_RETVAL_OK;
       }
@@ -4514,7 +4639,8 @@ int cl_com_read(cl_com_connection_t *connection, cl_byte_t *message, unsigned lo
    }
 
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_read(connection, message, size, only_one_read);
       }
       case CL_CT_SSL: {
@@ -4539,7 +4665,8 @@ int cl_com_connection_complete_shutdown(cl_com_connection_t *connection) {
 
 
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          /* tcp framework does not support this state */
          return CL_RETVAL_OK;
       }
@@ -4562,7 +4689,8 @@ cl_com_write(cl_com_connection_t *connection, cl_byte_t *message, unsigned long 
    }
 
    switch (connection->framework_type) {
-      case CL_CT_TCP: {
+      case CL_CT_TCP:
+      case CL_CT_SSL_TLS: {
          return cl_com_tcp_write(connection, message, size, only_one_write);
       }
       case CL_CT_SSL: {

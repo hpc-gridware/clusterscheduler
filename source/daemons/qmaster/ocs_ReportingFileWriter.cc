@@ -22,6 +22,7 @@
 #include <fstream>
 
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_qinstance_state.h"
@@ -43,7 +44,6 @@
 #include "msg_qmaster.h"
 #include "msg_common.h"
 #include "sge_string.h"
-#include "sge_feature.h"
 #include "sge_spool.h"
 
 namespace ocs {

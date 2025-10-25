@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
 
    lInit(nmv);
 
-   if (bootstrap_get_use_munge()) {
+   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
 #if defined (OCS_WITH_MUNGE)
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
       if (!ocs::uti::Munge::initialize(&error_dstr)) {

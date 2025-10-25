@@ -63,7 +63,7 @@ enum {                           /* possible values for RT_state */
 #define QTERMSIG(status)    (0)
 #endif
 sge_tid_t sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
-                      const lList *environment, const lList *path_aliases, int feature_set_id);
+                      const lList *environment, const lList *path_aliases, const char *cert);
 
 int sge_qwaittid(sge_tid_t tid, int *status, int options);
 

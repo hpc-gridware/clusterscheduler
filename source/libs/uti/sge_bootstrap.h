@@ -50,6 +50,22 @@
 #define PATH_SEPARATOR "/"
 #define PATH_SEPARATOR_CHAR '/'
 
+typedef enum {
+   BS_SECMODE_NONE = -1,
+
+   BS_SEC_MODE_TLS,
+   BS_SEC_MODE_MUNGE,
+
+   // we still have code for AFS, CSP, DCE and KERBEROS, but it is probably broken
+   BS_SEC_MODE_AFS,
+   BS_SEC_MODE_CSP,
+   BS_SEC_MODE_DCE,
+   BS_SEC_MODE_KERBEROS,
+
+   // number of possible entries
+   BS_SEC_MODE_NUM_ENTRIES
+} bs_sec_mode_t;
+
 const char *
 bootstrap_get_admin_user();
 
@@ -76,6 +92,10 @@ bootstrap_get_qmaster_spool_dir();
 
 const char *
 bootstrap_get_security_mode();
+bool
+bootstrap_has_security_mode(bs_sec_mode_t mode);
+int
+bootstrap_get_cert_lifetime();
 
 int
 bootstrap_get_listener_thread_count();
@@ -88,6 +108,3 @@ bootstrap_get_reader_thread_count();
 
 int
 bootstrap_get_scheduler_thread_count();
-
-bool
-bootstrap_get_use_munge();

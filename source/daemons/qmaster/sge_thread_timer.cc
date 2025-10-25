@@ -56,6 +56,7 @@
 
 #include "basis_types.h"
 #include "ocs_ReportingFileWriter.h"
+#include "ocs_security_qmaster.h"
 #include "setup_qmaster.h"
 #include "sge_calendar_qmaster.h"
 #include "sge_persistence_qmaster.h"
@@ -130,7 +131,6 @@ sge_timer_register_event_handler() {
    te_register_event_handler(reschedule_unknown_event, TYPE_RESCHEDULE_UNKNOWN_EVENT);
 
    te_register_event_handler(sge_ar_event_handler, TYPE_AR_EVENT);
-
 
    DRETURN_VOID;
 }
@@ -215,6 +215,10 @@ sge_timer_initialize(monitoring_t *monitor) {
    DPRINTF("job resend functionality initialized\n");
    sge_add_check_limit_trigger();
    DPRINTF("added timer event to check load reports and possibly to enforce limits\n");
+#if defined(OCS_WITH_OPENSSL)
+   ocs::qmaster::cert_renewal_initialize();
+   DPRINTF("added timer event to check certificate renewal\n");
+#endif
 
    DPRINTF(SFN " related initialisation has been done\n", threadnames[TIMER_THREAD]);
 

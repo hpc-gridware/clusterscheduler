@@ -1,6 +1,6 @@
 # Planning the Installation
 
-xxQS_NAMExx is a workload management system used in data centres to connect tens to tens of thousands of computers 
+xxQS_NAMExx is a workload management system used in data centers to connect tens to tens of thousands of computers 
 into a compute cluster. 
 It acts as the operating system of this cluster, connecting the underlying hardware according to user-configurable 
 policies, scheduling its use, and providing computing power.
@@ -68,6 +68,12 @@ hosts. The munge service must be started on all hosts within the security realm.
 
 See also [Installing Munge].
 
+### TLS encryption of communication
+
+When TLS encryption of communication shall be enabled for the xxQS_NAMExx cluster, the OpenSSL shared library must be
+installed in the default location on all cluster hosts. Best use the OS package manager to install the library
+and to keep it up to date.
+OpenSSL version 3.x is required.
 
 ## Product Component Overview
 
@@ -359,5 +365,5 @@ If this is your first time installing xxQS_NAMExx, we suggest a manual installat
 Automatic installation is recommended if you need to install or reinstall a cluster multiple times or if you plan 
 to install multiple clusters with slightly different settings.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

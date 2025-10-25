@@ -649,12 +649,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                   if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
                      if (strcmp(sender_comp_name, "qmaster") == 0) {
-                        u_long32 feature_set;
                         lListElem *job = nullptr;
-                        if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
-                           printf("      unpacked %s (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_u32 "\n", feature_set);
-                        }
                         if (cull_unpack_elem(&buf, &job, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(job, stdout); /* job */
                         } else {
@@ -662,12 +657,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                         lFreeElem(&job);
                      } else {
-                        u_long32 feature_set;
                         lListElem *petr = nullptr;
-                        if (unpackint(&buf, &feature_set) == PACK_SUCCESS) {
-                           printf("      unpacked %s - PE TASK REQUEST (binary buffer length %lu):\n", cl_values[6], buffer_length);
-                           printf("feature_set: " sge_u32 "\n", feature_set);
-                        }
                         if (cull_unpack_elem(&buf, &petr, nullptr) == PACK_SUCCESS) {
                            lWriteElemTo(petr, stdout);
                         } else {
@@ -957,6 +947,7 @@ int main(int argc, char *argv[]) {
    int   option_info       = 0;
    int   option_noalias    = 0;
    int   option_ssl        = 0;
+   int   option_tls        = 0;
    int   option_tcp        = 0;
    int   option_dump       = 0;
    int   option_nonewline  = 1;
@@ -1016,7 +1007,12 @@ int main(int argc, char *argv[]) {
              parameter_start++;
          }
          if (strcmp( argv[i] , "-ssl") == 0) {
-             option_ssl = 1;
+            option_ssl = 1;
+            parameter_count++;
+            parameter_start++;
+         }
+         if (strcmp( argv[i] , "-tls") == 0) {
+             option_tls = 1;
              parameter_count++;
              parameter_start++;
          }
@@ -1114,7 +1110,7 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   if (argc != parameter_count + 1 ) {
+   if (argc != parameter_count + 1) {
       usage(1);
    }
 
@@ -1127,20 +1123,20 @@ int main(int argc, char *argv[]) {
       comp_id   = atoi(argv[parameter_start + 3]);
    }
 
-   if ( comp_host == nullptr  ) {
+   if (comp_host == nullptr) {
       fprintf(stderr,"please enter a host name\n");
       exit(1);
    }
 
-   if ( comp_name == nullptr  ) {
+   if (comp_name == nullptr) {
       fprintf(stderr,"please enter a component name\n");
       exit(1);
    }
-   if ( comp_port < 0  ) {
+   if (comp_port < 0) {
       fprintf(stderr,"please enter a correct port number\n");
       exit(1);
    }
-   if ( comp_id <= 0 ) {
+   if (comp_id <= 0) {
       fprintf(stderr,"please enter a component id larger than 0\n");
       exit(1);
    }
@@ -1158,7 +1154,7 @@ int main(int argc, char *argv[]) {
 
 
    /* set alias file */
-   if ( !option_noalias ) {
+   if (!option_noalias) {
       const char *alias_path = sge_get_alias_path();
       if (alias_path != nullptr) {
          retval = cl_com_set_alias_file(alias_path);
@@ -1169,26 +1165,31 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   if ( option_ssl != 0 && option_tcp != 0) {
-      fprintf(stderr,"using of option -ssl and option -tcp not supported\n");
+   if (option_ssl + option_tcp + option_tls > 1) {
+      fprintf(stderr,"only one option of -ssl, -tls,  and -tcp may be used\n");
       exit(1);
    }
    
 
    /* find out the framework type to use */
-   if ( option_ssl == 0 && option_tcp == 0 ) {
-      char buffer[2*1024];
-      dstring bw;
-      sge_dstring_init(&bw, buffer, sizeof(buffer));
-
+   if (option_ssl == 0 && option_tcp == 0 && option_tls == 0) {
 #ifdef SECURE
       got_no_framework = 1;
 #endif
-      if ( strcmp( "csp", bootstrap_get_security_mode()) == 0) {
+      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
          option_ssl = 1;
+      } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         option_tls = 1;
       } else {
          option_tcp = 1;
       }
+   }
+
+   retval = cl_com_cached_gethostbyname(comp_host, &resolved_comp_host,nullptr, nullptr, nullptr);
+   if (retval != CL_RETVAL_OK) {
+      fprintf(stderr, "could not resolve hostname %s\n", comp_host);
+      cl_com_cleanup_commlib();
+      exit(1);
    }
 
    if (option_ssl != 0) {
@@ -1228,6 +1229,38 @@ int main(int argc, char *argv[]) {
    if (option_tcp != 0) {
       communication_framework = CL_CT_TCP;
    }
+   if (option_tls != 0) {
+      communication_framework = CL_CT_SSL_TLS;
+#if defined(OCS_WITH_OPENSSL)
+         DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+         if (!ocs::uti::OpenSSL::is_openssl_available() && !ocs::uti::OpenSSL::initialize(&dstr_error)) {
+            fprintf(stderr, "initializing OpenSSL failed: %s", sge_dstring_get_string(&dstr_error)); // @todo i18n
+            exit(EXIT_FAILURE);
+         }
+         // pass the client certificate of the component to connect to (identified by hostname)
+         cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
+         std::string client_cert_path;
+         ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, resolved_comp_host, comp_name);
+         int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config,
+                                          CL_SSL_PEM_FILE,
+                                          CL_SSL_TLS,
+                                          client_cert_path.c_str(),
+                                          "",
+                                          "");
+         if (cl_ret != CL_RETVAL_OK) {
+            fprintf(stderr, "cannot create ssl setup");
+            exit(EXIT_FAILURE);
+         }
+         cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+         cl_com_free_ssl_setup(&sec_ssl_setup_config);
+         if (cl_ret != CL_RETVAL_OK) {
+            fprintf(stderr,"cannot set ssl configuration: %s\n", cl_get_error_text(cl_ret));
+            exit(EXIT_FAILURE);
+         }
+#else
+      fprintf(stderr, "SSL support is not built in\n");
+#endif
+   }
 
    if (option_dump != 0) {
       connect_type = CL_TCP_RESERVED_PORT;
@@ -1252,14 +1285,6 @@ int main(int argc, char *argv[]) {
    if (option_dump == 0) {
       /* enable auto close of application */
       cl_com_set_auto_close_mode(handle, CL_CM_AC_ENABLED );
-   }
-
-
-   retval = cl_com_cached_gethostbyname(comp_host, &resolved_comp_host,nullptr, nullptr, nullptr);
-   if (retval != CL_RETVAL_OK) {
-      fprintf(stderr, "could not resolve hostname %s\n", comp_host);
-      cl_com_cleanup_commlib();
-      exit(1);
    }
 
    if (option_dump == 0) {

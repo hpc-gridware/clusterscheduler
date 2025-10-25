@@ -39,9 +39,9 @@
 #include "uti/sge_hostname.h"
 
 #include "gdi/msg_gdilib.h"
+#include "gdi/sge_gdi_data.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_feature.h"
 
 #include "ocs_gdi_ClientServerBase.h"
 
@@ -66,7 +66,6 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
    unsigned long *mid_pointer = nullptr;
    int use_execd_handle = 0;
    u_long32 progid = component_get_component_id();
-
 
    /* CR- TODO: This is for tight integration of qrsh -inherit
     *
@@ -94,12 +93,12 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
          }
    }
 
-
    if (use_execd_handle == 0) {
       /* normal gdi send to qmaster */
       DEBUG("standard gdi request to qmaster\n");
       handle = cl_com_get_handle(component_get_component_name(), 0);
    } else {
+      int execd_port = sge_get_execd_port();
       /* we have to send a message to another component than qmaster */
       DEBUG("search handle to \"%s\"\n", tocomproc);
       handle = cl_com_get_handle("execd_handle", 0);
@@ -107,12 +106,27 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", tocomproc);
-         if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
+         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+#if defined(OCS_WITH_OPENSSL)
+            DPRINTF("using communication lib with TLS framework (execd_handle)\n");
+            communication_framework = CL_CT_SSL_TLS;
+            lList *answer_list = nullptr;
+            commlib_error = gdi_setup_tls_config(true, false, &answer_list,
+                                                 component_get_qualified_hostname(), 0,
+                                                 tohost, execd_port, tocomproc);
+            if (commlib_error != CL_RETVAL_OK) {
+               answer_list_output(&answer_list);
+               DRETURN(commlib_error);
+            }
+#else
+            ERROR(SFNMAX, MSG_SSL_NOT_BUILT_IN);
+#endif
          }
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
-                              false, sge_get_execd_port(), CL_TCP_DEFAULT,
+                              false, execd_port, CL_TCP_DEFAULT,
                               "execd_handle", 0, 0, 500);
          handle = cl_com_get_handle("execd_handle", 0);
          if (handle == nullptr) {
@@ -156,7 +170,7 @@ ocs::gdi::ClientServerBase::gdi_send_message_pb(int synchron, const char *tocomp
                                             ClientServerBaseTag tag, sge_pack_buffer *pb, u_long32 *mid) {
    DENTER(GDI_LAYER);
    int ret;
-   if (!pb) {
+   if (pb == nullptr) {
       DPRINTF("no pointer for sge_pack_buffer\n");
       ret = gdi_send_message(synchron, tocomproc, toid, tohost, tag, nullptr, 0, mid);
       DRETURN(ret);
@@ -227,9 +241,16 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", fromcommproc);
-         if (feature_is_enabled(FEATURE_CSP_SECURITY)) {
+         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
+         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+#if defined (OCS_WITH_OPENSSL)
+            DPRINTF("using communication lib with SSL framework (execd_handle)\n");
+            communication_framework = CL_CT_SSL_TLS;
+#else
+            ERROR(SFNMAX, MSG_SSL_NOT_BUILT_IN);
+#endif
          }
 
          cl_com_create_handle(&commlib_error, communication_framework, CL_CM_CT_MESSAGE,
@@ -520,3 +541,117 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
 
    DRETURN(ret);
 }
+
+#if defined(OCS_WITH_OPENSSL)
+int
+ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_server, lList **answer_list,
+                                                 const char *local_host, u_long32 local_port,
+                                                 const char *target_host, u_long32 target_port, const char *target_commproc) {
+   DENTER(TOP_LAYER);
+
+   DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+   if (!ocs::uti::OpenSSL::is_openssl_available() && !ocs::uti::OpenSSL::initialize(&dstr_error)) {
+      DPRINTF("initializing OpenSSL failed: %s\n", sge_dstring_get_string(&dstr_error));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "initializing OpenSSL failed: %s", sge_dstring_get_string(&dstr_error)); // @todo i18n
+      DRETURN(CL_RETVAL_UNKNOWN);
+   }
+
+   // set up a ssl_config to pass cert and key path to commlib
+   // we must pass different certs to commlib:
+   // - if we are server: use our own cert and key
+   // - if we are client: use qmaster cert to verify qmaster / execd cert to verify execd in case of qrsh -inherit
+   // - we might need both, e.g. for sge_execd
+   // - and what if the qmaster name changes? Then we need to update the client cert.
+   std::string client_cert_path;
+   std::string server_cert_path;
+   std::string server_key_path;
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, target_host, target_commproc);
+   if (is_server) {
+      const char *comp_name = component_get_component_name();
+      ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host, comp_name);
+      ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host, local_port, comp_name);
+   }
+   cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
+   int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
+                                    client_cert_path.c_str(),
+                                    server_cert_path.c_str(),
+                                    server_key_path.c_str(),
+                                    false, needs_client);
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
+                              0, target_port, cl_get_error_text(cl_ret));
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
+      DRETURN(cl_ret);
+   }
+   cl_ret = cl_com_specify_ssl_configuration(sec_ssl_setup_config);
+   cl_com_free_ssl_setup(&sec_ssl_setup_config);
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      DPRINTF("return value of cl_com_specify_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, local_host, component_get_component_name(),
+                              0, target_port, cl_get_error_text(cl_ret));
+      DRETURN(cl_ret);
+   }
+
+   return CL_RETVAL_OK;
+}
+
+int
+ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, const char *master_host) {
+   DENTER(TOP_LAYER);
+
+   DSTRING_STATIC(dstr_error, MAX_STRING_SIZE);
+   // openssl must already have been initialized earlier
+   if (!ocs::uti::OpenSSL::is_openssl_available()) {
+      DPRINTF("OpenSSL is not initialized: %s\n", sge_dstring_get_string(&dstr_error));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              "OpenSSL is not initialized: %s", sge_dstring_get_string(&dstr_error)); // @todo i18n
+      DRETURN(CL_RETVAL_UNKNOWN); // @todo add new commlib error code
+   }
+
+   // set up a ssl_config to pass cert and key path to commlib
+   // we must pass different certs to commlib:
+   // - if we are server: use our own cert and key
+   // - if we are client: use qmaster cert to verify qmaster
+   // - we might need both, e.g. for sge_execd
+   // - and what if the qmaster name changes? Then we need to update the client cert.
+   std::string client_cert_path;
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
+   cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
+   int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
+                                    client_cert_path.c_str(),
+                                    nullptr, nullptr, true);
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      DPRINTF("return value of cl_com_create_ssl_setup(): %s\n", cl_get_error_text(cl_ret));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
+                              0, 0, cl_get_error_text(cl_ret));
+      cl_com_free_ssl_setup(&sec_ssl_setup_config);
+      DRETURN(cl_ret);
+   }
+   cl_ret = cl_com_update_ssl_configuration(sec_ssl_setup_config);
+   cl_com_free_ssl_setup(&sec_ssl_setup_config);
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      DPRINTF("return value of cl_com_update_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
+                              0, 0, cl_get_error_text(cl_ret));
+      DRETURN(cl_ret);
+   }
+
+   cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+   cl_ret = cl_commlib_handle_update_ssl_client_context(handle);
+   if (cl_ret != CL_RETVAL_OK && cl_ret != gdi_data_get_last_commlib_error()) {
+      DPRINTF("return value of cl_com_update_ssl_configuration(): %s\n", cl_get_error_text(cl_ret));
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_GDI_CANT_CONNECT_HANDLE_SSUUS, "localhost", component_get_component_name(),
+                              0, 0, cl_get_error_text(cl_ret));
+      DRETURN(cl_ret);
+   }
+
+   return CL_RETVAL_OK;
+}
+#endif

@@ -31,5 +31,5 @@ To restore a backup you have to follow these steps:
    
    You will be asked several questions during the restore process (e.g. location of the SGE_ROOT, name of the default cell directory, location of the backup files, etc.).
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

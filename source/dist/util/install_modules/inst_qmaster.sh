@@ -35,6 +35,8 @@
 #
 #  Portions of this code are Copyright 2011 Univa Inc.
 #
+#  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -533,17 +535,17 @@ SelectHostNameResolving()
 #
 SetProductMode()
 {
-   if [ $AFS = true ]; then
+   if [ "$AFS" = "true" ]; then
       AFS_PREFIX="afs"
    else
       AFS_PREFIX=""
    fi
 
-   if [ $CSP = true ]; then
-      SEC_COUNT=`strings $SGE_BIN/sge_qmaster | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
-      if [ $SEC_COUNT -ne 1 ]; then
+   if [ "$CSP" = "true" ]; then
+      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "AIMK_SECURE_OPTION_ENABLED" | wc -l`
+      if [ "$SEC_COUNT" -ne 1 ]; then
          $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-secure< option!\n"
-         $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to cancel the installation >> "
+         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
          exit 1
       else
          CSP_PREFIX="csp"
@@ -552,11 +554,11 @@ SetProductMode()
       CSP_PREFIX=""
    fi
 
-   if [ $MUNGE = true ]; then
-      SEC_COUNT=`strings $SGE_BIN/sge_qmaster | grep "EMUNGE_SUCCESS" | wc -l`
-      if [ $SEC_COUNT -ne 1 ]; then
+   if [ "$MUNGE" = "true" ]; then
+      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "EMUNGE_SUCCESS" | wc -l`
+      if [ "$SEC_COUNT" -ne 1 ]; then
          $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-DWITH_MUNGE=ON< option!\n"
-         $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to cancel the installation >> "
+         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
          exit 1
       else
          MUNGE_PREFIX="munge"
@@ -565,18 +567,48 @@ SetProductMode()
       MUNGE_PREFIX=""
    fi
 
-   if [ $AFS = "false" ]; then
-      if [ $CSP = "false" ]; then
-         if [ $MUNGE = "false" ]; then
-            PRODUCT_MODE="none"
-         else
-            PRODUCT_MODE="${MUNGE_PREFIX}"
-         fi
+   if [ "$TLS" = "true" ]; then
+      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "OpenSSL" | wc -l`
+      if [ "$SEC_COUNT" -lt 1 ]; then
+         $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-DWITH_OPENSSL=ON< option!\n"
+         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
+         exit 1
       else
-         PRODUCT_MODE="${CSP_PREFIX}"
+         TLS_PREFIX="tls"
       fi
    else
-      PRODUCT_MODE="${AFS_PREFIX}"
+      TLS_PREFIX=""
+   fi
+
+   # Allow multiple security options, at least munge and tls.
+   if [ "$AFS" = "true" ]; then
+      if [ "$CSP" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
+         $INFOTEXT "\nAFS security can't be combined with other security options!\n"
+         $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
+         exit 1
+      else
+         PRODUCT_MODE="${AFS_PREFIX}"
+      fi
+   else
+      if [ "$CSP" = "true" ]; then
+         if [ "$AFS" = "true" -o "$MUNGE" = "true" -o "$TLS" = "true" ]; then
+            $INFOTEXT "\nCSP security can't be combined with other security options!\n"
+            $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
+            exit 1
+         else
+            PRODUCT_MODE="${CSP_PREFIX}"
+         fi
+      else
+         if [ "$TLS" = "true" -a "$MUNGE" = "true" ]; then
+            PRODUCT_MODE="${MUNGE_PREFIX},${TLS_PREFIX}"
+         elif [ "$TLS" = "true" ]; then
+            PRODUCT_MODE="${TLS_PREFIX}"
+         elif [ "$MUNGE" = "true" ]; then
+            PRODUCT_MODE="${MUNGE_PREFIX}"
+         else
+            PRODUCT_MODE="none"
+         fi
+      fi
    fi
 }
 

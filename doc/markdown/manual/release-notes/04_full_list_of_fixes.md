@@ -538,5 +538,5 @@
 
 [CS-1457](https://hpc-gridware.atlassian.net/browse/CS-1457) usage collection in sge\_execd \(PDC / Systemd\) is called too often
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
 

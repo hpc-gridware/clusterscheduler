@@ -1,10 +1,10 @@
 # Prepare a Host as Development Machine
 
-In order to do development for the xxQS_NAMExx you need a host or virtual machine that provides following prerequisites. Recommended build platform is CentOS Linux 8.x.
+To do development for the xxQS_NAMExx you need a host or virtual machine that provides the following prerequisites. The recommended build platform is CentOS Linux 8.x for the lx-amd64 architecture.
 
 ## Software Prerequisites
 
-For the xxQS_NAMExx core product the environment has to provide:
+For the xxQS_NAMExx core product, the environment has to provide:
 
 * cmake >= 3.24 
 * git
@@ -13,20 +13,23 @@ For the xxQS_NAMExx core product the environment has to provide:
 * automake
 * patchelf
 
-Depending on the OS additional packages are required:
+Depending on the OS, additional packages are required:
 
 * libtirpc-devel (Linux)
 * systemd-devel or libudev-dev (Linux), libudev-devd (FreeBSD)
-* some cmake versions delivered with the OS are either too old or to new, and you need to install cmake yourself
-  In such a case we recommend to install version 3.27.9.
+* some cmake versions delivered with the OS are either too old or too new, and you need to install cmake yourself.
+  In such a case we recommend installing version 3.27.9.
 
-Relying on os packages for the 3rdparty tools requires the following additional packages
+Relying on os packages for the 3rdparty tools requires the following additional packages:
 
 * BDB
 * hwloc 
-* openssl
 
-Documentation is written in markdown. To be able to generate product man pages and pdf manuals you need:
+When building with support for TLS encryption, OpenSSL version 3.x is required.
+On build hosts the development package is required, on target hosts the runtime package is required.
+The cmake build checks for the OpenSSL header files having the correct version. If they are found, building with OpenSSL is enabled.
+
+Documentation is written in Markdown. To be able to generate product man pages and PDF manuals, you need:
 
 * pandoc
 * texlive
@@ -37,7 +40,7 @@ Source code documentation can be extracted via:
 * Doxygen
 * graphviz, ... (Dependencies depend also on the platform)
 
-In order to test your changes you need to be able to run the automated testsuite which requires:
+To test your changes, you need to be able to run the automated testsuite which requires:
 
 * TCL >= 8.5 
 * Expect >= 5.45
@@ -51,7 +54,7 @@ Certain tests of the automated test environment require:
 * python3
 * ...
 
-An IDE (e.g. Clion) is optional but might have addition prerequisites (e.g. rsync to support remote compilation). 
+An IDE (e.g., Clion) is optional but might have addition prerequisites (e.g., rsync to support remote compilation). 
 
 If you want to use *CLion* as development environment on Linux or macOS and remote compile for FreeBSD, then
 you need to downgrade the `cmake` version to *3.27.9* on FreeBSD. The default `cmake` package provides *3.28.1*
@@ -65,7 +68,7 @@ yum install -y devtoolset-11 git autoconf automake flex bison patchelf
 yum install -y numactl-devel ncurses-devel libXpm-devel pam-devel pciutils-devel systemd-devel
 yum install -y epel-release
 yum install -y tcsh expect
-yum install -y libdb libdb-devel hwloc hwloc-devel openssl-devel
+yum install -y libdb libdb-devel hwloc hwloc-devel
 ```
 #### for repository drmaa-java
 
@@ -83,6 +86,7 @@ apt-get install -y build-essential manpages-dev git
 apt-get install -y doxygen graphviz
 apt-get install -y expect tcl tdom gnuplot vim
 apt-get install -y tcsh xterm expect tcl gnuplot
+apt-get install -y libssl-dev
 ```
 
 #### for repository drmaa-java
@@ -100,6 +104,7 @@ apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y libudev-dev libmunge-dev libtirpc-dev libsystemd-dev
 apt-get install -y pandoc texlive*
+apt-get install -y libssl-dev
 ```
 
 #### for repository drmaa-java
@@ -120,6 +125,14 @@ pkg install hs-pandoc texlive-full tex-xetex
 pkg install openjdk8-8.402.06.1_1 maven
 ```
 
+#### for building support of TLS encryption
+
+For TLS encryption support, OpenSSL version 3.x is required.
+The openssl 3 development package of FreeBSD seems to be incomplete, it is missing the libcrypto shared library.
+Building OpenSSL 3.x from source solved this issue.
+The default build (./Configure, make, make install) will install OpenSSL 3.x in /usr/local
+where it is found by the cmake build system.
+
 ### maxOS 14/15 (default for darwin-amd64)
 
 MacPorts is required to install the packages.
@@ -135,6 +148,8 @@ port install pandoc texlive
 port install doxygen graphviz
 ```
 
+@todo development package for OpenSSL
+
 ### macOS 14 
 
 Homebrew is required to install the packages but munge is not available in Homebrew.
@@ -147,6 +162,8 @@ brew install expect tcl-tk gnuplot perl
 brew install pandoc texlive
 brew install doxygen graphviz
 ```
+
+@todo development package for OpenSSL
 
 #### for repository drmaa-java
 ```
@@ -176,6 +193,7 @@ dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
+dnf install -y openssl3-devel
 ```
 
 Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manually because the default `cmake` package might just provide versions < 3.24
@@ -242,6 +260,7 @@ zypper install -y openssl libtirpc-devel systemd-devel
 zypper install -y doxygen graphviz
 zypper install -y tcl expect vim xterm mailx perl gnuplot
 zypper install -y texlive pandoc
+zypper install -y libopenssl-devel
 ```
 
 #### for repository drmaa-java
@@ -259,6 +278,14 @@ apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
 apt-get install -y libudev-dev libmunge-dev libtirpc-dev
 apt-get install -y pandoc texlive*
+```
+
+#### for building support of TLS encryption
+
+OpenSSL version 3.x is available in Ubuntu 24.04 and later. It is *not* available from OS packages in earlier versions.
+
+```
+apt-get install -y libssl-dev
 ```
 
 #### for repository drmaa-java

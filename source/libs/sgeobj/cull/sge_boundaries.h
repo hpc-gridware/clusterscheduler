@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2023-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -271,10 +271,7 @@ enum NameSpaceBoundaries {
    RU_LOWERBOUND = LS_UPPERBOUND + 1,
    RU_UPPERBOUND = RU_LOWERBOUND + 2*BASIC_UNIT - 1,
 
-   FES_LOWERBOUND = RU_UPPERBOUND + 1,
-   FES_UPPERBOUND = FES_LOWERBOUND + 2*BASIC_UNIT - 1,
-
-   SU_LOWERBOUND = FES_UPPERBOUND + 1,
+   SU_LOWERBOUND = RU_UPPERBOUND + 1,
    SU_UPPERBOUND = SU_LOWERBOUND + 2*BASIC_UNIT - 1,
 
    SPC_LOWERBOUND = SU_UPPERBOUND + 1,

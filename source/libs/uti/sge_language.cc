@@ -754,7 +754,8 @@ const char *sge_gettext__(const char *x) {
       z = sge_language_functions.gettext_func(x);
    } else {
       z = x;
-      DPRINTF_("sge_gettext() called without valid gettext function pointer!\n");
+      // do not use DPRINTF here - it will call this function recursively
+      //DPRINTF_("sge_gettext() called without valid gettext function pointer!\n");
    }
 
    /*z = gettext(x);*/

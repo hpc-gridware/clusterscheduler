@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -48,14 +48,15 @@ int cl_com_tcp_set_connect_port(cl_com_connection_t *connection, int port);
 int cl_com_tcp_get_client_socket_in_port(cl_com_connection_t *connection, int *port);
 
 
-int cl_com_tcp_setup_connection(cl_com_connection_t **connection,
+int cl_com_tcp_setup_connection(cl_com_handle_t *handle,
+                                cl_com_connection_t **connection,
                                 int server_port,
                                 int connect_port,
                                 cl_xml_connection_type_t data_flow_type,
                                 cl_xml_connection_autoclose_t auto_close_mode,
                                 cl_framework_t framework_type,
-                                cl_xml_data_format_t data_format_type,
-                                cl_tcp_connect_t tcp_connect_mode);
+                                cl_xml_data_format_t data_format_type, cl_tcp_connect_t tcp_connect_mode,
+                                bool we_are_server = false);
 
 int cl_com_tcp_open_connection(cl_com_connection_t *connection, int timeout);
 
@@ -78,6 +79,9 @@ int cl_com_tcp_connection_request_handler_cleanup(cl_com_connection_t *connectio
 /* connection establish help functions */
 int cl_com_tcp_read_GMSH(cl_com_connection_t *connection, unsigned long *only_one_read);
 
+#if defined(OCS_WITH_OPENSSL)
+bool cl_com_tcp_write_repeat_required(cl_com_connection_t *connection);
+#endif
 int cl_com_tcp_write(cl_com_connection_t *connection, cl_byte_t *message, ssize_t size,
                      unsigned long *only_one_write);
 

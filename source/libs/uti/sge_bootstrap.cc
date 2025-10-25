@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstring>
+#include <vector>
 
 #include <pthread.h>
 
@@ -102,7 +103,6 @@ const char *threadnames[] = {
         nullptr
 };
 
-
 // thread local storage (level 1)
 // initialization depends on data of level 0 (e.g. logging)
 // TODO: data can partially be shared between threads. cleanup required.
@@ -118,13 +118,15 @@ typedef struct {
    char *binary_path;
    char *qmaster_spool_dir;
    char *security_mode;
+   std::vector<bool> security_modes;
+   char *security_params;
+   int certificate_lifetime;
    int listener_thread_count;
    int worker_thread_count;
    int reader_thread_count;
    int scheduler_thread_count;
    bool job_spooling;
    bool ignore_fqdn;
-   bool use_munge;
 } sge_bootstrap_ts1_t;
 
 static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
@@ -138,13 +140,15 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         nullptr, // binary_path
         nullptr, // qmaster_spool_dir
         nullptr, // security_mode
+        std::vector(BS_SEC_MODE_NUM_ENTRIES, false),
+        nullptr, // security_params
+        365 * 24 * 60 * 60, // default certificate lifetime one year
         0, // listener_thread_count
         0, // worker_thread_count
         0, // reader_thread_count
         0, // scheduler_thread_count
         false, // job_spooling
         false, // ignore_fqdn
-        false, // use_munge
 };
 
 static void
@@ -189,11 +193,66 @@ set_qmaster_spool_dir(const char *qmaster_spool_dir) {
 
 static void
 set_security_mode(const char *security_mode) {
+   DENTER(TOP_LAYER);
+
    sge_bootstrap_tl1.security_mode = sge_strdup(sge_bootstrap_tl1.security_mode, security_mode);
-#if defined(OCS_WITH_MUNGE)
-   sge_bootstrap_tl1.use_munge = strcasecmp(sge_bootstrap_tl1.security_mode, "munge") == 0;
-#endif
+   saved_vars_s *context = nullptr;
+   const char *mode = sge_strtok_r(sge_bootstrap_tl1.security_mode, ",", &context);
+   while (mode != nullptr) {
+      if (strcmp(mode, "tls") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_TLS] = true;
+      } else if (strcmp(mode, "munge") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_MUNGE] = true;
+      } else if (strcmp(mode, "afs") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_AFS] = true;
+      } else if (strcmp(mode, "csp") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_CSP] = true;
+      } else if (strcmp(mode, "dce") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_DCE] = true;
+      } else if (strcmp(mode, "kerberos") == 0) {
+         sge_bootstrap_tl1.security_modes[BS_SEC_MODE_KERBEROS] = true;
+      } else {
+         DPRINTF("invalid security mode %s\n", mode);
+      }
+      // next mode
+      mode = sge_strtok_r(nullptr, ",", &context);
+   }
+   sge_free_saved_vars(context);
+
+   DRETURN_VOID;
 }
+
+#define MIN_CERTIFICATE_LIFETIME (120)
+#define MAX_CERTIFICATE_LIFETIME (365 * 24 * 60 * 60)
+static void
+set_security_params(const char *security_params) {
+   DENTER(TOP_LAYER);
+
+   sge_bootstrap_tl1.security_params = sge_strdup(sge_bootstrap_tl1.security_params, security_params);
+   saved_vars_s *context = nullptr;
+   const char *param = sge_strtok_r(sge_bootstrap_tl1.security_params, ",", &context);
+   while (param != nullptr) {
+      if (strncasecmp(param, "certificate_lifetime=", strlen("certificate_lifetime=")) == 0) {
+         const char *str_value = strchr(param, '=');
+         if (str_value != nullptr) {
+            int value = atoi(str_value + 1);
+            if (value < MIN_CERTIFICATE_LIFETIME) {
+               value = MIN_CERTIFICATE_LIFETIME;
+            }
+            if (value > MAX_CERTIFICATE_LIFETIME) {
+               value = MAX_CERTIFICATE_LIFETIME;
+            }
+            sge_bootstrap_tl1.certificate_lifetime = value;
+         }
+      } else {
+         DPRINTF("invalid security parameter %s\n", param);
+      }
+      // next param
+      param = sge_strtok_r(nullptr, ",", &context);
+   }
+   sge_free_saved_vars(context);
+}
+
 
 // FIFO_LOCK_QUEUE_LENGTH is big enough to allow up to 32 threads
 #define MAX_THREADS_PER_POOL (32)
@@ -258,6 +317,7 @@ bootstrap_log_ts1_parameter() {
    DPRINTF("   binary_path          >%s<\n", sge_bootstrap_tl1.binary_path);
    DPRINTF("   qmaster_spool_dir    >%s<\n", sge_bootstrap_tl1.qmaster_spool_dir);
    DPRINTF("   security_mode        >%s<\n", sge_bootstrap_tl1.security_mode);
+   DPRINTF("   security_params      >%s<\n", sge_bootstrap_tl1.security_params);
    DPRINTF("   job_spooling         >%s<\n", sge_bootstrap_tl1.job_spooling ? "true" : "false");
    DPRINTF("   listener_threads     >%d<\n", sge_bootstrap_tl1.listener_thread_count);
    DPRINTF("   worker_threads       >%d<\n", sge_bootstrap_tl1.worker_thread_count);
@@ -269,7 +329,7 @@ bootstrap_log_ts1_parameter() {
 
 static void
 bootstrap_init_from_file() {
-#define NUM_BOOTSTRAP 14
+#define NUM_BOOTSTRAP 15
 #define NUM_REQ_BOOTSTRAP 9
    bootstrap_entry_t name[NUM_BOOTSTRAP] = {
            {"admin_user",        true},
@@ -282,6 +342,7 @@ bootstrap_init_from_file() {
            {"binary_path",       true},
            {"qmaster_spool_dir", true},
            {"security_mode",     true},
+           {"security_params",   false},
            {"job_spooling",      false},
 
            {"listener_threads",  false},
@@ -325,20 +386,21 @@ bootstrap_init_from_file() {
       set_binary_path(value[6]);
       set_qmaster_spool_dir(value[7]);
       set_security_mode(value[8]);
-      if (strcmp(value[9], "") != 0) {
-         parse_ulong_val(nullptr, &val, TYPE_BOO, value[9], nullptr, 0);
+      set_security_params(value[9]);
+      if (strcmp(value[10], "") != 0) {
+         parse_ulong_val(nullptr, &val, TYPE_BOO, value[10], nullptr, 0);
          set_job_spooling(val != 0);
       } else {
          set_job_spooling(true);
       }
 
-      parse_ulong_val(nullptr, &val, TYPE_INT, value[10], nullptr, 0);
-      set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[11], nullptr, 0);
-      set_worker_thread_count((int) val);
+      set_listener_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[12], nullptr, 0);
-      set_reader_thread_count((int) val);
+      set_worker_thread_count((int) val);
       parse_ulong_val(nullptr, &val, TYPE_INT, value[13], nullptr, 0);
+      set_reader_thread_count((int) val);
+      parse_ulong_val(nullptr, &val, TYPE_INT, value[14], nullptr, 0);
       set_scheduler_thread_count((int) val);
    }
 
@@ -474,6 +536,33 @@ bootstrap_get_security_mode() {
    return security_mode;
 }
 
+bool
+bootstrap_has_security_mode(bs_sec_mode_t mode) {
+   bool ret = false;
+
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   if (mode > BS_SECMODE_NONE && mode < BS_SEC_MODE_NUM_ENTRIES) {
+      ret = sge_bootstrap_tl1.security_modes[mode];
+   }
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+
+   return ret;
+}
+
+int
+bootstrap_get_cert_lifetime() {
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   int cert_lifetime = sge_bootstrap_tl1.certificate_lifetime;
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+   return cert_lifetime;
+}
+
 int
 bootstrap_get_listener_thread_count() {
    if (!bootstrap_is_initialized()) {
@@ -515,14 +604,4 @@ int bootstrap_get_scheduler_thread_count() {
    int scheduler_thread_count = sge_bootstrap_tl1.scheduler_thread_count;
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return scheduler_thread_count;
-}
-
-bool bootstrap_get_use_munge() {
-   if (!bootstrap_is_initialized()) {
-      bootstrap_ts1_init();
-   }
-   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
-   bool use_munge = sge_bootstrap_tl1.use_munge;
-   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
-   return use_munge;
 }

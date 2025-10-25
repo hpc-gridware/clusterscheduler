@@ -108,11 +108,25 @@ The default location for the master spool directory is \<xxqs_name_sxx_root>/\<c
 
 The security mode defines the set of security features the installed cluster is using.
 
-Possible security mode settings are none (no additional security) and munge (Munge authentication of all communication requests).
+Possible security mode settings are
+* `none` (default, no additional security)
+* `munge` (Munge authentication of all communication requests)
+* `tls` (TLS encryption of all daemon and client communication)
+
 Munge authentication can be enabled at installation time or later by editing the bootstrap file. This requires a re-start of all xxQS_NAMExx components.
 See also the chapter about Munge in the installation guide.
 
+TLS security can be enabled at installation time or later by editing the bootstrap file. This requires a re-start of all xxQS_NAMExx components. Certificates and keys will be created and also renewed on demand by xxQS_NAMExx components themselves. See also the chapter about TLS encryption in the installation guide.
+
 Further security modes can be enabled by doing custom-builds of xxQS_NAMExx: afs, dce, kerberos, csp (AFS, DCE, KERBEROS, CSP security model).
+
+## *security_params*
+
+This optional setting allows to pass additional parameters to the security subsystem. The format of this parameter depends on the chosen security mode.
+
+For TLS security mode the following parameter can be set:
+
+* `certificate_lifetime=<n>`: Defines the lifetime of automatically created certificates in seconds. The default is one year (31536000 seconds), which is also the maximum lifetime for certificates created by xxQS_NAMExx components. Setting this parameter to a lower value will cause more frequent certificate renewals, which may be desired in high-security environments. The minimum lifetime is 120 seconds, which is mostly meant for testing purposes. If a value lower than 120 seconds is set, 120 seconds will be used instead. If a value higher than 31536000 seconds is set, 31536000 seconds will be used instead.
 
 ## *listener_threads*
 

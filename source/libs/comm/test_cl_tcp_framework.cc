@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -254,8 +254,8 @@ void *server_thread(void *t_conf) {
    local_host = cl_com_create_endpoint(local_hostname, "server", 1, &in_addr);
    sge_free(&local_hostname);
 
-   retval = cl_com_tcp_setup_connection(&con, 5000, 5000, CL_CM_CT_STREAM, CL_CM_AC_DISABLED, CL_CT_TCP, CL_CM_DF_BIN,
-                                        CL_TCP_DEFAULT);
+   retval = cl_com_tcp_setup_connection(nullptr, &con, 5000, 5000, CL_CM_CT_STREAM, CL_CM_AC_DISABLED, CL_CT_TCP,
+                                        CL_CM_DF_BIN, CL_TCP_DEFAULT);
    CL_LOG_STR(CL_LOG_INFO, "cl_com_setup_tcp_connection() returned ", cl_get_error_text(retval));
 
    retval = cl_com_connection_request_handler_setup(con, local_host);
@@ -423,8 +423,8 @@ void *client_thread(void *t_conf) {
       pthread_cleanup_pop(pthread_cleanup_pop_execute);  /* client_thread_cleanup */
 
       if (con == nullptr) {
-         cl_com_tcp_setup_connection(&con, 5000, 5000, CL_CM_CT_STREAM, CL_CM_AC_DISABLED, CL_CT_TCP, CL_CM_DF_BIN,
-                                     CL_TCP_DEFAULT);
+         cl_com_tcp_setup_connection(nullptr, &con, 5000, 5000, CL_CM_CT_STREAM, CL_CM_AC_DISABLED, CL_CT_TCP,
+                                     CL_CM_DF_BIN, CL_TCP_DEFAULT);
          while ((retval = cl_com_open_connection(con, 5, remote_host, local_host)) == CL_RETVAL_UNCOMPLETE_WRITE) {
             sleep(1);
          }

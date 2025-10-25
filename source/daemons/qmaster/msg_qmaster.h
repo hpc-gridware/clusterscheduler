@@ -685,4 +685,9 @@
 #define MSG_REQLIMIT_NOTSUPPORTED                  _MESSAGE(33978, _("gdi_request_limits are not supported in Open Cluster Scheduler."))
 #define MSG_SGETEXT_BINDING_NOT_AVAILABLE          _MESSAGE(33979, _("-bsort, -bstart and -bstop options are not available in OCS. Request a demo license of GCS to use these options."))
 
+// ocs_security_qmaster.cc
+#define MSG_NO_COMMLIB_HANDLE_FOUND                _MESSAGE(33985, _("no commlib handle found for security operations"))
+#define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))
+#define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
+
 // clang-format on

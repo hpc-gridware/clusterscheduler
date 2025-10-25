@@ -68,25 +68,18 @@ static char execd_messages_file[SGE_PATH_MAX];
 /*-------------------------------------------------------------------*/
 void sge_setup_sge_execd(const char* tmp_err_file_name)
 {
-   char err_str[MAX_STRING_SIZE];
-   int allowed_get_conf_errors     = 5;
+   DENTER(TOP_LAYER);
+
+   int allowed_get_conf_errors = 5;
    char* spool_dir = nullptr;
    const char *unqualified_hostname = component_get_unqualified_hostname();
-   const char *admin_user = bootstrap_get_admin_user();
-
-   DENTER(TOP_LAYER);
 
    /* TODO: is this the right place to switch the user ?
             ports below 1024 ok */
+
    /*
    ** switch to admin user
    */
-   if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
-      CRITICAL(SFNMAX, err_str);
-      /* TODO: remove */
-      sge_exit(1);
-   }
-
    if (sge_switch2admin_user()) {
       CRITICAL(SFNMAX, MSG_ERROR_CANTSWITCHTOADMINUSER);
       /* TODO: remove */

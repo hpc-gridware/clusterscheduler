@@ -391,6 +391,8 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
          commlib_error = ClientBase::gdi_is_alive(answer_list);
          if (commlib_error != CL_RETVAL_OK) {
             u_long32 sge_qmaster_port = bootstrap_get_sge_qmaster_port();
+            // Here we update the qmaster name in ClientBase.
+            // When we next try to connect to sge_qmaster we will connect to the right host.
             const char *mastername = ClientBase::gdi_get_act_master_host(true);
 
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
@@ -409,7 +411,6 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
          answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
          ret = false;
       }
-
    }
 
    /* after this point we do no longer need pb - free its resources */
@@ -435,9 +436,8 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
       strcpy(rcv_host, host);
       strcpy(rcv_commproc, commproc);
 
-      /*running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request*/
+      // running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request
       do {
-
          // If GDI parameter (like gdi_timeout) changed then we will update the handle within this loop
          cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
          if (handle != nullptr) {
@@ -461,7 +461,7 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
             break;
          } else {
             ret = false;
-            /*this error appears, if qmaster or any qmaster thread is not responding, or overloaded*/
+            // this error appears if qmaster or any qmaster thread is not responding or overloaded
             if (gdi_error == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
                cl_com_SIRM_t* cl_endpoint_status = nullptr;
                DPRINTF("TEST_2372_OUTPUT: CL_RETVAL_SYNC_RECEIVE_TIMEOUT: RUNS=" sge_u32 "\n", runs);
@@ -534,7 +534,7 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
    /*
     * consistency check of received data:
     *    - is the packet id the same
-    *    - does it contain the same amount of tasks
+    *    - does it contain the same number of tasks
     *    - is the task sequence and the task id of each received task the same
     */
    if (ret) {

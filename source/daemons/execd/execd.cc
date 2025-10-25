@@ -52,7 +52,6 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_job.h"
@@ -200,7 +199,6 @@ int main(int argc, char **argv)
    sge_setup_sig_handlers(EXECD);
 
    ocs::TerminationManager::install_signal_handler();
-   ocs::TerminationManager::install_signal_handler();
 
    if (ocs::gdi::ClientBase::setup(EXECD, MAIN_THREAD, &alp, false) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
@@ -232,7 +230,15 @@ int main(int argc, char **argv)
 
    parse_cmdline_execd(argv);
 
-   /* exit if we can't get communication handle (bind port) */
+   // initialize the admin user
+   char err_str[MAX_STRING_SIZE];
+   const char *admin_user = bootstrap_get_admin_user();
+   if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
+      CRITICAL(SFNMAX, err_str);
+      sge_exit(1);
+   }
+
+   /* exit if we can't get a communication handle (bind port) */
    max_enroll_tries = 30;
    while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
       ocs::gdi::ClientBase::prepare_enroll(&alp);
@@ -447,6 +453,8 @@ static void execd_exit_func(int i)
 *
 *******************************************************************************/
 int sge_execd_register_at_qmaster(bool is_restart) {
+   DENTER(TOP_LAYER);
+
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
    lList *alp = nullptr;
@@ -457,8 +465,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
     */
    const char *master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(is_restart);
 
-   DENTER(TOP_LAYER);
-
    /* We will not try to make a gdi request when qmaster is not alive. The
     * gdi will return with timeout after one minute. If qmaster is not alive
     * we will not try a gdi request!
@@ -466,7 +472,6 @@ int sge_execd_register_at_qmaster(bool is_restart) {
    if (master_host != nullptr && ocs::gdi::ClientBase::gdi_is_alive(&alp) == CL_RETVAL_OK) {
       lList *hlp = lCreateList("exechost starting", EH_Type);
       lListElem *hep = lCreateElem(EH_Type);
-      lSetUlong(hep, EH_featureset_id, feature_get_active_featureset_id());
       lAppendElem(hlp, hep);
 
       /* register at qmaster */

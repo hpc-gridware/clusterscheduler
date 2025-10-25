@@ -162,15 +162,15 @@ do_stree_spooling() {
       DSTRING_STATIC(dstr_now, 100);
       DSTRING_STATIC(dstr_next, 100);
       DPRINTF("stree/prj/user spooling now: %s (" sge_u64 ") next: %s (" sge_u64 ")\n",
-+             sge_ctime64(Follow_Control.now, &dstr_now), Follow_Control.now,
-+             sge_ctime64(Follow_Control.next_update, &dstr_next), Follow_Control.next_update);
+              sge_ctime64(Follow_Control.now, &dstr_now), Follow_Control.now,
+              sge_ctime64(Follow_Control.next_update, &dstr_next), Follow_Control.next_update);
 
       if (Follow_Control.now >= Follow_Control.next_update) {
          DPRINTF("stree/prj/user spooling will be done.");
          Follow_Control.is_spooling = DO_SPOOL;
          is_spool = true;
       } else {
-         DPRINTF("stree/prj/user spooling will not be done. Time not reached\n");
+         DPRINTF("stree/prj/user spooling will not be done. Time not reached.\n");
          Follow_Control.is_spooling = DONOT_SPOOL;
       }
    }

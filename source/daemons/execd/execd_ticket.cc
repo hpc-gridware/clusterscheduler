@@ -35,7 +35,6 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 

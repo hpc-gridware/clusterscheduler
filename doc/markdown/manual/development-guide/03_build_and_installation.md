@@ -21,5 +21,6 @@ make install
 You can now either install the product (follow the instructions in the *Installation Guide*) or you can continue to 
 setup the automated test environment as described in the next chapter.
 
-[//]: # (Eeach file has to end with two empty lines)
+[//]: # (Each file has to end with two empty lines)
+
 
