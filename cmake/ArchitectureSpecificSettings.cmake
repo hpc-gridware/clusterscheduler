@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -257,6 +257,9 @@ function(architecture_specific_settings)
          # for macOS we need to use the MacPorts munge package
          include_directories(/opt/local/var/macports/software/munge/munge-0.5.14_2.darwin_24.arm64/opt/local/include)
          link_directories(/usr/local/lib)
+      endif()
+      if (WITH_OPENSSL)
+         include_directories(/opt/local/libexec/openssl3/include)
       endif()
    else ()
       # unknown platform
