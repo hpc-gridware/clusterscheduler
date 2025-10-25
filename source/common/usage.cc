@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1318,6 +1318,12 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_wd_OPT, MSG_GDI_UTEXT_wd_OPT);
       MARK(OA_PATH);
    }
+
+#ifdef WITH_EXTENSIONS
+   if (VALID_OPT(when_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_when_OPT, MSG_GDI_UTEXT_when_OPT);
+   }
+#endif
 
    if (VALID_OPT(xml_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_xml_OPT , MSG_GDI_UTEXT_xml_OPT );

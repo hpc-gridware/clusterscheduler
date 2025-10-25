@@ -127,6 +127,11 @@ enum {
    POKE_VERIFY          /* -w p do verification with all resource utilizations in place (poke) */
 };
 
+typedef enum {
+   QALTER_WHEN_ON_RESCHEDULE = 0,
+   QALTER_WHEN_NOW
+} qalter_when_t;
+
 /************    scheduling constants   *****************************************/
 /* priorities are in the range from -1023 to 1024 */
 /* to put them in into u_long we need to add 1024 */
@@ -552,3 +557,8 @@ gdil_make_host_unique(const lList *gdil_in);
 u_long32
 jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep);
 
+bool
+job_parse_when_string(const char *input, qalter_when_t &when);
+
+bool
+job_is_when_now(const lListElem *job);

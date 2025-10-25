@@ -1058,4 +1058,7 @@
 #define MSG_GDI_USAGE_scel_OPT            "[-scel]"
 #define MSG_GDI_UTEXT_scel_OPT            _MESSAGE(60723, _("show all complex entry names"))
 
+#define MSG_GDI_USAGE_when_OPT              "[-when now|on_reschedule]"
+#define MSG_GDI_UTEXT_when_OPT              _MESSAGE(60624, _("apply modification immediately or on job rescheduling"))
+
 // clang-format on

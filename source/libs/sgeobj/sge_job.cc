@@ -4744,3 +4744,38 @@ jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem
    }
    DRETURN(state);
 }
+bool job_parse_when_string(const char *input, qalter_when_t &when) {
+   bool ret = true;
+
+   if (sge_strnullcasecmp(input, "on_reschedule") == 0) {
+      when = QALTER_WHEN_ON_RESCHEDULE;
+   } else if (sge_strnullcasecmp(input, "now") == 0) {
+      when = QALTER_WHEN_NOW;
+   } else {
+      when = QALTER_WHEN_ON_RESCHEDULE;
+      ret = false;
+   }
+
+   return ret;
+}
+
+bool
+job_is_when_now(const lListElem *job) {
+   bool when_now = false;
+
+   // do we have the JB_joker list (V90_BRANCH, will be a job attribute in the master branch)
+   int pos = lGetPosViaElem(job, JB_joker, SGE_NO_ABORT);
+   if (pos >= 0) {
+      const lListElem *when_ep = lGetSubStr(job, VA_variable, "-when", JB_joker);
+      if (when_ep != nullptr) {
+         const char *when_str = lGetString(when_ep, VA_value);
+         qalter_when_t when = static_cast<qalter_when_t>(atoi(when_str)); // std::to_integer?
+         if (when == QALTER_WHEN_NOW) {
+            when_now = true;
+         }
+      }
+   }
+
+   return when_now;
+}
+

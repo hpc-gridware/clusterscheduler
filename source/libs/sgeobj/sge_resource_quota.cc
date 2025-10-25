@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -799,7 +799,7 @@ rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user,
 *
 *******************************************************************************/
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const lListElem *pe,
+rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
                      const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
                      bool is_master_task, bool do_per_host_booking)
 {
@@ -935,7 +935,7 @@ rqs_get_matching_rule(const lListElem *rqs, const char *user, const char *group,
 *******************************************************************************/
 // @todo: pass rue_name as const char *
 int
-rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
+rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
                      const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking)
 {
    DENTER(TOP_LAYER);

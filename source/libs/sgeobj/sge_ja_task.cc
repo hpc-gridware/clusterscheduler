@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -754,4 +754,30 @@ int ja_task_debit_host_rsmaps(const lListElem *ja_task, lListElem *host, int slo
    }
 
    return mods;
+}
+
+/**
+ * @brief Checks if a job array task is in running state
+ *
+ * This function determines whether a job array task is currently running by
+ * checking its status flags. A task is considered running if it has either
+ * the JTRANSFERING or JRUNNING status bit set.
+ *
+ * JTRANSFERING indicates the task is being transferred to an execution host,
+ * while JRUNNING indicates the task is actively executing.
+ *
+ * @param[in] ja_task The job array task element (JAT_Type) to check
+ *
+ * @return true if the task is transferring or running, false otherwise
+ *
+ * @note Thread-safe: This function only reads from the passed parameter
+ */
+bool
+ja_task_is_running(const lListElem *ja_task) {
+   bool is_running = false;
+   if (lGetUlong(ja_task, JAT_status) & JTRANSFERING ||
+       lGetUlong(ja_task, JAT_status) & JRUNNING) {
+      is_running = true;
+   }
+   return is_running;
 }

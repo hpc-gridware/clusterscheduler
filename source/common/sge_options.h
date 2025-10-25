@@ -30,7 +30,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -295,8 +295,9 @@ enum {
    sce_OPT, /* show ce object */
    scel_OPT,/* show ce object list */
 
-   stl_OPT, //< show thread list
-   dept_OPT //< set department of job
+   stl_OPT,  //< show thread list
+   dept_OPT, //< set department of job
+   when_OPT, //< for qalter set if changes shall be applied on a running job or only after rescheduling
 };
 
 /* macros used in parsing */
