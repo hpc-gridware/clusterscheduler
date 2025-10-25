@@ -385,6 +385,9 @@
 *    SGE_ULONG(JB_category_id) - Category ID (CAT_id)
 *    Category ID (CAT_id). Within the scheduler the field category refers to the category object.
 *
+*    SGE_ULONG(JB_when) - Value of -when qalter switch
+*    Value of the -when qalter switch (enum qalter_when_t).
+*
 */
 
 enum {
@@ -473,7 +476,8 @@ enum {
    JB_grp_list,
    JB_joker,
    JB_sync_options,
-   JB_category_id
+   JB_category_id,
+   JB_when
 };
 
 LISTDEF(JB_Type)
@@ -563,6 +567,7 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_joker, VA_Type, CULL_SPOOL)
    SGE_ULONG(JB_sync_options, CULL_SPOOL)
    SGE_ULONG(JB_category_id, CULL_HASH)
+   SGE_ULONG(JB_when, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(JBN)
@@ -652,6 +657,7 @@ NAMEDEF(JBN)
    NAME("JB_joker")
    NAME("JB_sync_options")
    NAME("JB_category_id")
+   NAME("JB_when")
 NAMEEND
 
 #define JB_SIZE sizeof(JBN)/sizeof(char *)
