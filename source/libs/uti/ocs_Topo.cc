@@ -394,43 +394,64 @@ ocs::Topo::CpuKind::detect_via_hwloc() {
 
    // Are there more than one CPU kinds?
    // If not then it is not guaranteed that the CPU kind is available. 0 might be returned.
-   unsigned nr = hwloc_cpukinds_get_nr(topology, 0);
+   const int nr = hwloc_cpukinds_get_nr(topology, 0);
 
    // If we have more than one entry then the entries are sorted according to
    // the efficiency of the CPU kind, with the most efficient last!
    // The most efficient CPU kind will get the letter C
-   char letter = 'C' + nr;
+   char letter = 'C' - 1;
 
    // Find more info about each CPU type. We especially need the bitmap
-   for (unsigned i = 0; i < nr; i++) {
+   int last_linux_capacity = -1;
+   int linux_capacity = -1;
+   for (int i = nr - 1; i >= 0; i--) {
       struct hwloc_info_s *info {};
       unsigned nr_infos = 0;
       int efficiency;
 
-      // last core type should get letter C
-      if (i + 1 == nr) {
-         letter-- ;
-      }
-
       hwloc_bitmap_t cpu_bitmap = hwloc_bitmap_alloc();
       int err = hwloc_cpukinds_get_info(topology, i, cpu_bitmap, &efficiency, &nr_infos, &info, 0);
       if (err == 0) {
-#if 0
+         // Print CPU kind information for debugging
          char *cpusets;
          hwloc_bitmap_asprintf(&cpusets, cpu_bitmap);
-         DPRINTF("CPU-Type #%u: efficiency=%d,cpuset=%s,GCS-letter=%c\n", i, efficiency, cpusets, letter);
+         DPRINTF("CPU-Type #%u: efficiency=%d,cpuset=%s\n", i, efficiency, cpusets);
          free(cpusets);
-#endif
 
-         // This would give more details like: Max-Frequency, Base-Frequency or Core Type
-#if 0
-         for(unsigned j=0; j < nr_infos; j++) {
-            DPRINT("  %s = %s\n", info[j].name, info[j].value);
+         // This would give more details like: Max-Frequency, Base-Frequency, LinuxCapacity => Core Type
+         // Increate the letter for the core type only if the LinuxCapacity increased by at least 5%
+         bool increase_letter = true;
+         for (unsigned j = 0; j < nr_infos; j++) {
+            if (info[j].name != nullptr && strcmp(info[j].name, "LinuxCapacity") != 0) {
+               DPRINTF("  %s = %s\n", info[j].name, info[j].value);
+               continue;
+            }
+            try {
+               linux_capacity = std::stoi(info[j].value);
+            } catch (...) {
+               linux_capacity = -1;
+            }
+            if (linux_capacity != -1) {
+               if (last_linux_capacity != -1 && 0.95 * last_linux_capacity <= linux_capacity) {
+                  increase_letter = false;
+               }
+               last_linux_capacity = linux_capacity;
+               //break;
+            }
+            DPRINTF("  %s = %s (increase_letter=%s)\n", info[j].name, info[j].value, increase_letter ? "true" : "false");
          }
-#endif
+
+         // Increase the letter for the next CPU kind if needed (see above)
+         if (increase_letter) {
+            if (letter == 'C') {
+               letter += 2; // skip 'D' which is reserved for another power core type
+            } else {
+               letter++;
+            }
+         }
 
          // Add the CPU kind to the list
-         cpu_kinds.emplace_back(letter--, cpu_bitmap);
+         cpu_kinds.emplace_back(letter, cpu_bitmap);
 
       }
    }
