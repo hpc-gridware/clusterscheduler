@@ -168,7 +168,8 @@ ocs::TopologyString::is_same_topology(const TopologyString& topo1, const Topolog
 std::string
 ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                                bool with_characteristics, bool with_internal_characteristics,
-                               bool with_tree_format, bool show_as_unused, bool show_single_threads) const {
+                               bool with_tree_format, bool show_as_unused, bool show_single_threads,
+                               bool show_2nd_level_with_one_node) const {
    std::ostringstream oss;
 
    // In tree format we will not show the structure
@@ -183,17 +184,25 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
 
    // Helper function to convert nodes to string recursively
    std::function<void(const std::vector<Node>&, int)> nodes_to_string = [&](const std::vector<Node>& current_nodes, int indent) {
-          bool show_data_nodes = true;
-
           // If there is only one node, and it is a thread, and we are not showing single threads, then return
           if (current_nodes.size() == 1 && std::toupper(current_nodes[0].c) == 'T' && !show_single_threads) {
              return;
           }
 
           for (const auto& node : current_nodes) {
+             bool show_data_nodes = true;
+
              // Skip data nodes if requested
              if (!with_data_nodes && DATA_NODE_CHARACTERS.find(std::toupper(node.c)) != std::string::npos) {
                 show_data_nodes = false;
+             }
+
+             // Skip Y nodes with only one child node (core)
+             if (!show_2nd_level_with_one_node && show_data_nodes && std::toupper(node.c) == 'Y') {
+                // Check if all child nodes have only one child
+                if (node.nodes.size() == 1) {
+                   show_data_nodes = false;
+                }
              }
 
              // Print with indentation if requested
