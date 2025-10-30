@@ -180,83 +180,393 @@ the default account string "ocs" in the accounting record of the job.
 If this option is specified then this value will be passed to defined JSV instances as parameter with the name
 *A*. (see `-jsv` option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -bamount *binding_amount*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Specifies the number of binding units to be bound to each parallel task or  
+job/task *slot* or *host*.
+
+A value of `0` (default) means no binding is requested and allows `qalter` to
+remove any existing binding request. The default corresponds to the legacy
+behavior of no CPU binding. Negative values are not permitted.  
+
+Whether *slot* (default) or *host* binding applies can be controlled with  
+the `-btype` option.  The unit type (default `C`) can be specified using  
+the `-bunit` option.
+
+    qsub -bamount 2 job.sh
+
+The job requests 2 binding units (here 2 CPU cores) for the job.  This is  
+meaningful if `job.sh` starts two processes or threads that can run  
+concurrently.
+
+    qsub -pe mpi 8 -bamount 2 -bunit T job.sh
+
+The job requests 8 slots in the parallel environment *mpi*.  Each slot  
+will be bound to 2 hardware threads per slot/task.
+
+    qsub -pe mpi_8 16 -bamount 1 -bunit X -btype host job.sh
+
+Assume that the *mpi_8* PE specifies a fixed allocation rule of 8 so that  
+the 16 parallel tasks are distributed across two hosts.  In this case,  
+the job is split into two task groups with 8 tasks each.  Each task group  
+requests one binding unit of type `X` per host, meaning that each group is  
+bound to one Die (within a single NUMA node).
+
+All *`-b...`* switches, including `-bamount`, can be
+modified dynamically through the JSV interface to adapt job placement
+policy without user intervention. (see `-jsv` option below or find more
+information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -btype *binding_type*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Defines the *binding target* that determines the granularity at which
+binding is applied.  This specifies whether the requested binding amount
+and unit type apply per *slot* (default) or per *host*.
+
+**slot**  
+Binding is applied individually to each job slot or task.  Each slot
+receives the number of binding units specified by `-bamount`.  This mode
+is suitable for loosely coupled or independent workloads, where tasks do
+not need to share cache or memory locality and isolation between slots is
+preferred.
+
+**host**  
+Binding is applied per host.  All tasks assigned to the same host share
+the same binding region.  This mode is typically used for tightly coupled
+applications that benefit from shared cache and NUMA locality, since all
+tasks on the host remain within one die or NUMA node.  Host binding
+minimizes inter-task communication latency and improves cache sharing
+within a NUMA region.
+
+When *host* binding is used with a parallel environment, the binding amount
+applies per host, not per slot.  
+
+Example — per-slot binding:
+
+    qsub -bamount 2 -btype slot -bunit C job.sh
+
+Each task or slot is bound to two CPU cores.
+
+Example — per-host binding:
+
+    qsub -pe mpi 16 -bamount 1 -bunit X -btype host job.sh
+
+All slots scheduled on a given host share one binding unit of type `X`,
+typically representing one Die or NUMA region.  This placement is well
+suited for tightly coupled MPI or hybrid jobs that exchange data
+frequently.
+
+Choosing *host* binding may, however, reduce scheduling flexibility.
+Host-level binding usually requests larger units such as Dies or Sockets
+(`-bunit X` or `-bunit S`).  These allocations can be more difficult for
+the scheduler to place when resources are fragmented, leading to longer
+queue times.  In contrast, slot-level binding with smaller units such as
+Cores or Threads (`-bunit C` or `-bunit T`) fits more easily into partial
+host resources but provides less cache locality.
+
+All *`-b...`* switches, including `-btype`, can be
+modified dynamically through the JSV interface to adapt job placement
+policy without user intervention. (see `-jsv` option below or find more
+information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -bunit *binding_unit*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Specifies the hardware topology level on which CPU binding is performed.
+Each binding unit defines the physical entity that one *binding amount*
+(`-bamount`) represents.  OCS and GCS distinguish between **performance**
+(power) and **efficiency** domains on hybrid systems.  Efficiency units
+are prefixed with **E** (for example, `ET`, `E`, `ES`, `EX`, `EY`, `EN`).
+
+Hardware-based units (`T`, `C`, `S`) and their efficiency counterparts
+(`ET`, `E`, `ES`) are available in **both OCS and GCS**.  Cache and
+memory-domain units (`X`, `Y`, `N`) and their efficiency variants (`EX`,
+`EY`, `EN`) are **available in GCS only**.  The default binding unit is `C`
+(core).  
+
+**T / ET — Hardware thread**  
+Represents one logical hardware thread.  `T` refers to a performance
+thread, while `ET` denotes an efficiency-thread context.  Useful for
+fine-grained parallelism or oversubscription testing on SMT systems.
+
+**C / E — Core**  
+Represents one CPU core.  `C` binds to a performance core; `E` targets an
+efficiency core.  This is the default binding unit when none is specified
+(with `C`).  Appropriate for general-purpose applications that use one
+process per core.
+
+**X / EX — Second-level cache domain**  
+Represents a group of cores sharing an L2 cache.  On some hardware this
+may coincide with a die or a core cluster.  `X` selects a performance L2
+domain, `EX` its efficiency counterpart.  Provides high data locality.
+Available in GCS only.
+
+**Y / EY — Third-level cache domain**  
+Represents a group of cores sharing an L3 cache.  Depending on processor
+design, this domain may correspond to a die or socket.  `Y` denotes a
+performance L3 region, and `EY` an efficiency L3 region.  Available in
+GCS only.
+
+**S / ES — Socket**  
+Represents a full processor socket (package).  `S` binds to a performance
+socket, `ES` to an efficiency socket.  Suitable for applications using
+shared memory across all cores within a package.  Available in OCS and
+GCS.
+
+**N / EN — NUMA node**  
+Represents a complete NUMA memory domain.  `N` binds to a performance
+NUMA node, while `EN` refers to an efficiency NUMA region.  Ensures that
+all threads of a task operate within one memory locality domain.  Available
+in GCS only.
+
+If a job requests a memory or cache domain unit and the execution host
+does not report that unit type, a fallback unit is selected according to
+the following mappings.
+
+**CX — All power cores sharing a third-level cache**  
+Fallback: **CS — Power cores of a socket**
+
+**EX — All efficiency cores sharing a third-level cache**  
+Fallback: **ES — Efficiency cores of a socket**
+
+**CY — All power cores sharing a second-level cache**  
+Fallback: **C — Power core**
+
+**EY — All efficiency cores sharing a second-level cache**  
+Fallback: **E — Efficiency core**
+
+**CN / N — All power cores of one NUMA node**  
+(usually one socket or multiple sockets forming a NUMA node)  
+Fallback: **CS — Power cores of a socket**
+
+**EN — All efficiency cores of one NUMA node**  
+Fallback: **ES — Efficiency cores of a socket**
+
+The scheduler applies these fallbacks only when the requested unit class is
+not present in the host’s reported topology.  When a fallback is used, the
+binding region is derived from the nearest coarser hardware domain that is
+available on the host.
+
+The product will **never exchange performance and efficiency requests**.
+If a job requests an efficiency unit (for example, `E`, `EX`, `EN`) and no
+efficiency resources are reported by the host, the job remains pending.
+The same rule applies in reverse: a request for performance units will not
+be satisfied with efficiency units.
+
+All *`-b...`* switches, including `-bunit`, can be modified dynamically
+through the JSV interface to adapt job placement policy without user
+intervention. (see `-jsv` option below or find more information concerning
+JSV in xxqs_name_sxx_jsv(1))
+
+## -bfilter *filter_expression*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Selects which binding units are **eligible** before ordering and placement
+are applied.  The filter is evaluated after topology discovery and global
+policy filters, and before sorting (`-bsort`) and range selection
+(`-bstart`, `-bstop`).  Only units that pass this filter are considered for
+binding.
+
+The *filter_expression* is a **topology string**.  Unit tokens in this
+string must be written **lowercase** to denote unit classes that are **not
+available** for scheduling on the host (and are therefore excluded).  By
+convention, **uppercase** unit tokens indicate the unit classes that are
+available or eligible after topology discovery and policy filtering.
+
+In heterogeneous clusters, the specified filter must match the topology of
+the potential target host.  A mismatch between the filter expression and
+the host’s topology prevents the job from being scheduled on that host.  A
+filter expression that excludes all eligible units results in the job
+remaining pending until suitable resources become available.
+
+Filter out the first core of each socket on dual-socket, quad-core hosts:
+
+    qsub -bunit C -bfilter "ScCCCScCCC" -bamount 1 job.sh
+
+Here, the topology string models two sockets (`S … S …`), each with four
+cores.  Lowercase `c` marks the first core on each socket as **not
+available** for scheduling, while uppercase `C` marks the remaining three
+cores as **eligible**.  Hosts whose topology does not match this pattern
+will not be considered for scheduling.
+
+Please note that there are also filter options that can be set
+cluster-wide in the global configuration (`xxqs_name_sxx_conf(5)`).
+If a global binding filter is configured, the binding filter specified
+with this option will be applied **in addition to** the global filter.
+
+All *`-b...`* switches, including `-bfilter`, can be modified dynamically
+through the JSV interface to adapt job placement policy without user
+intervention. (see `-jsv` option below or find more information concerning
+JSV in xxqs_name_sxx_jsv(1))
+
+---
+
+## -bsort *binding_sort_order*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Defines how **eligible binding units** (after `-bfilter`) are **ordered**
+before assignment.
+
+The *binding_sort_order* is a **string of unit letters** that specifies
+which topology levels to sort and in which precedence.  Valid letters are
+`S`, `C`, `E`, `X`, `Y`, and `N` (availability depends on product and host
+topology).  **Letters not present on a host are ignored.**
+
+Sorting semantics:
+
+- **Uppercase** letters move the **least-loaded** units **to the front** for
+  that node type.
+- **Lowercase** letters move **already-utilized** units **to the front**,
+  allowing jobs to fill partially used resources first.
+
+Sorting is applied **once per job** when a host is first examined.  It is
+performed **per specified node type** and **in the order** the letters
+appear in the string (left-to-right).  Node types **omitted** from the
+string are **not re-ordered**.  When multiple node types are listed,
+sorting is applied hierarchically in the specified order.  If none of the
+listed node types exist on a host, sorting is skipped and the original
+topology order is used.  For PE jobs, the scheduler does not re-sort after
+some tasks have been placed.
+
+If `-bsort` is not given, the reported hardware topology order is used
+(usually as provided by HWLOC).
+
+Prefer **free sockets first**, then cores within those sockets:
+
+    qsub -bsort "SC" ...
+
+Here `S` orders sockets by least load; `C` then orders cores within each
+socket by least load.  Multiple subsequent jobs submitted with this
+pattern will be distributed across sockets first and then across cores
+within those sockets.
+
+Prefer **filling partially used sockets first**, then cores:
+
+    qsub -bsort "sC" ...
+
+Lowercase `s` prioritizes sockets already in use, helping to keep other
+sockets completely free.  `C` then orders cores within those sockets by
+least load.  As a consequence, sockets are filled up while cores within
+those sockets are used in least-loaded order.
+
+In GCS, where cache and memory domains are supported, more complex sorting
+patterns are possible.  For example, to prefer filling partially used L3
+cache domains first, then sockets, then cores:
+
+    qsub -bsort "nSyC" ...
+
+Here `n` prioritizes partially used NUMA nodes, `S` sorts sockets within
+those nodes by least load, and `y` then orders L3 cache domains and cores
+within each socket according to utilization.  The selected ordering defines
+how subsequent binding decisions (`-bstart`, `-bstop`) traverse the
+topology.
+
+The options `-bsort`, `-bstart`, and `-bstop` define the **fill-up
+patterns** that determine how jobs occupy resources within a host and
+across a cluster.  Together they describe the sequence and locality in
+which binding units are selected and can therefore be used to implement
+various **cluster-level optimization strategies**.
+
+These switches are particularly relevant when combined with global
+policies or site-specific JSV (Job Submission Verifier) rules.  Because
+they directly influence the physical distribution of load, they may be
+adjusted or overridden by JSV scripts to enforce consistent cluster-wide
+placement behavior.
+
+Typical use cases described in the documentation include:
+
+- **Energy- and Power-Aware Scheduling**
+- **Thermal and Power-Density Balancing**
+- **Cache Entitlement Optimization**
+- **License- and Cost-Aware Scheduling**
+- **Memory-Bandwidth & NUMA Balancing**
+
+All *`-b...`* switches, including `-bsort`, can be modified dynamically
+through the **JSV interface** to adapt job placement policy without user
+intervention (see the `-jsv` option below or refer to
+`xxqs_name_sxx_jsv(1)` for more information).
+
+---
+
+## -bstart *unit*, -bstop *unit*
+
+Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
+
+Specifies the **first** (`-bstart`) and **last** (`-bstop`) unit
+within a topology string that is used to determine the range of topology
+nodes available for binding decisions.
+
+Before applying the start/stop window, the topology string is filtered
+(using `-bfilter`, if specified) and sorted (using `-bsort`, if specified).
+
+Valid values for *unit* are the letters used for nodes in topology
+strings.  The letters can be written in either **uppercase** or
+**lowercase** form.  Uppercase letters denote nodes that are **completely
+unutilized**, whereas lowercase letters refer to nodes that are **partially
+or fully utilized**.  Both OCS and GCS support `S`, `C`, and `E`.  GCS
+additionally supports the memory and cache domain units `N`, `X`, and `Y`.
+
+`-bstart` specifies the **first node** within the filtered and sorted
+topology string where binding begins.  `-bstop` defines the **first node
+after the start position** where binding must end.  The stop unit itself is
+not part of the binding range.  If multiple occurrences of the start or
+stop unit exist, only the first matching pair is used.
+
+If `-bstart` is omitted, the starting point defaults to the **beginning of
+the topology string**.  If `-bstop` is omitted, the implicit end is the
+**end of the topology string**.
+
+Binding can occur only **within the defined range** and only if enough
+`-bunit` units are available in that range to satisfy the requested
+`-bamount`.
+
+Assume the following **unsorted** topology string (mixed utilization):
+
+    NSCCccSCCCCSCCCCSCcCC
+
+Uppercase letters denote **unutilized**, lowercase letters are in use.
+This means that two sockets have some utilized cores.
+
+After sorting sockets by utilization the topology looks as follows:
+
+    -bsort S   →   NSCCCCSCCCCSCcCCSCCss
+
+Applying a start/stop window (shown with brackets):
+
+    -bstart S -bstop s   →   N[SCCCCSCCCC]SCcCCSCCss
+
+selects all nodes between the first `S` and the following first partially
+used socket.
+
+Reversing the range:
+
+    -bstart s -bstop S   →   NSCCCCSCCCC[SCcCCSCCss]
+
+selects the nodes from the first `s` up to the end of the topology string,
+because there is no following socket that is unutilized.
+
+All *`-b...`* switches, including `-bstart` and `-bstop`, can be modified
+dynamically through the JSV interface to adapt job placement policy without
+user intervention. (see `-jsv` option below or find more information
+concerning JSV in xxqs_name_sxx_jsv(1))
+
 ## -binding [ *binding_instance* ] *binding_strategy*
 
-A job can request a specific processor core binding (processor affinity) with this parameter. This request is 
-neither a hard nor a soft request, it is a hint for the execution host to do this if possible. Please note
-that the requested binding strategy is not used for resource selection within xxQS_NAMExx. As a result an 
-execution host might be selected where xxQS_NAMExx does not even know the hardware topology and therefore
-is not able to apply the requested binding.
+Not available anymore. Use the following options instead: `-bunit`, `-bamount`, `-btype`, `-bfilter`, `-binstance`.
+Gridware Cluster Scheduler additionally provides: `-bsort`, `-bstart`, `-bstop`.
 
-To enforce xxQS_NAMExx to select hardware on which the binding can be applied please use the `-l` switch in 
-combination with the complex attribute *m_topology*.
-
-*binding_instance* is an optional parameter. It might either be *env*, *pe* or *set* depending on which instance 
-should accomplish the job to core binding. If the value for *binding_instance* is not specified then *set* will be used.
-
-*env* means that the environment variable *SGE_BINDING* will be exported to the job environment of the job. 
-This variable contains the selected operating system internal processor numbers. They might be more than selected 
-cores in presence of SMT or CMT because each core could be represented by multiple processor identifiers. 
-The processor numbers are space separated.
-
-*pe* means that the information about the selected cores appears in the fourth column of the *pe_hostfile*. Here the 
-logical core and socket numbers are printed (they start at 0 and have no holes) in colon separated pairs 
-(i.e. 0,0:1,0 which means core 0 on socket 0 and core 0 on socket 1). For more information about the $pe_hostfile check
-xxqs_name_sxx_pe(5)
-
-*set* (default if nothing else is specified). The binding strategy is applied by xxQS_NAMExx. How this is achieved 
-depends on the underlying hardware architecture of the execution host where the submitted job will be started.
-
-On Solaris hosts a processor set will be created where the job can exclusively run in. Because of operating 
-system limitations at least one core must remain unbound. This resource could of course used by an unbound job.
-
-On Linux hosts a processor affinity mask will be set to restrict the job to run exclusively on the selected cores. 
-The operating system allows other unbound processes to use these cores. Please note that on Linux the binding 
-requires a Linux kernel version of 2.6.16 or greater. It might be even possible to use a kernel with lower version 
-number but in that case additional kernel patches have to be applied. The `loadcheck` tool in the utilbin directory 
-can be used to check if the hosts capabilities. You can also use the `-sep` in combination with `-cb` of qconf(5) 
-command to identify if xxQS_NAMExx is able to recognize the hardware topology.
-
-Possible values for *binding_strategy* are as follows:
-
-        linear:<amount>[:<socket>,<core>]
-        striding:<amount>:<n>[:<socket>,<core>]
-        explicit:[<socket>,<core>:...]<socket>,<core>
-
-For the binding strategy linear and striding there is an optional socket and core pair attached. This denotes the
-mandatory starting point for the first core to bind on.
-
-*linear* means that xxQS_NAMExx tries to bind the job on *amount* successive cores. If *socket* and *core* is 
-omitted then xxQS_NAMExx first allocates successive cores on the first empty socket found. Empty means that there 
-are no jobs bound to the socket by xxQS_NAMExx. If this is not possible or is not sufficient xxQS_NAMExx tries to 
-find (further) cores on the socket with the most unbound cores and so on. If the amount of allocated cores is 
-lower than requested cores, no binding is done for the job. If *socket* and *core* is specified then xxQS_NAMExx tries
-to find amount of empty cores beginning with this starting point. If this is not possible then binding is not done.
-
-*striding* means that xxQS_NAMExx tries to find cores with a certain offset. It will select *amount* of empty cores 
-with an offset of *n* -1 cores in between. Start point for the search algorithm is socket 0 core 0. As soon as 
-*amount* cores are found they will be used to do the job binding. If there are not enough empty cores or if correct
-offset cannot be achieved then there will be no binding done.
-
-*explicit* binds the specified sockets and cores that are mentioned in the provided socket/core list. 
-Each socket/core pair has to be specified only once. If a socket/core pair is already in use by a different job
-the whole binding request will be ignored.
-
-`qalter` allows changing this option even while the job executes. The modified parameter will only be in effect after 
-a restart or migration of the job, however.
-
-If this option is specified then these values will be passed to defined JSV instances as parameters with the
-names *binding_strategy*, *binding_type*, *binding_amount*, *binding_step*, *binding_socket*, *binding_core*,
-*binding_exp_n*, *binding_exp_socket\<id>*, *binding_exp_core\<id>*.
-
-Please note that the length of the socket/core value list of the explicit binding is reported as *binding_exp_n*. 
-*\<id>* will be replaced by the position of the socket/core pair within the explicit 
-list (0 \<= *id* \< *binding_exp_n*). The first socket/core pair of the explicit binding will be reported with the 
-parameter names *binding_exp_socket0* and *binding_exp_core0*.
-
-Values that do not apply for the specified binding will not be reported to JSV. E.g. *binding_step* will only be
-reported for the striding binding and all *binding_exp_** values will be passed to JSV if explicit binding was 
-specified. (see -jsv option below or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+Starting with **OCS 9.0.1** and **GCS 9.1**, CPU binding is managed directly by the scheduler.  
+Binding requests are treated as **resource requirements**; jobs start only when
+the requested topology region can be guaranteed.  
+This approach treats CPU components such as sockets, cores, threads, and memory
+units as consumable resources managed by the scheduler.
 
 ## -b *y\[es\]* \| *n\[o\]*
 
