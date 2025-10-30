@@ -1034,10 +1034,11 @@ ocs::TopologyString::is_empty() {
  */
 std::vector<int>
 ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUnit::Unit bunit, const BindingStart::Start bstart, const BindingStop::Stop bstop) const {
+   DENTER(TOP_LAYER);
    // no topology => nothing to bind
    std::vector<int> ids;
    if (nodes.empty()) {
-      return ids;
+      DRETURN(ids);
    }
 
    // Helpers to read subtree counters for predicates
@@ -1134,10 +1135,10 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
          // try to find start-position
          if (start_node == nullptr) {
 
-            // The starting point will be either the first node (NONE) or the first node that matches the predicate
+            // The starting point will be either the first node (NONE or UNSPECIFIED) or the first node that matches the predicate
             // Cores have to fit to the searched unit. A socket is considered as free if all unit_type-threads are free,
             // but it is considered as used as soon as any thread type is in use.
-            if (bstart == BindingStart::Start::NONE
+            if (bstart == BindingStart::Start::NONE || bstart == BindingStart::Start::UNINITIALIZED
                || (bstart == BindingStart::Start::FIRST_FREE_NUMA && is_free_X_numa(n, unit_letter))
                || (bstart == BindingStart::Start::FIRST_USED_NUMA && is_used_numa(n))
                || (bstart == BindingStart::Start::FIRST_FREE_CACHE3 && is_free_X_cache3(n, unit_letter))
@@ -1169,6 +1170,13 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
                stop_node = &n;
             }
          }
+
+         DPRINTF("Topology: Visiting node %c id=%s start_node=%p stop_node=%p ids_found=%zu\n",
+                  n.c,
+                  (n.characteristics.find(ID_PREFIX) != n.characteristics.end()) ? n.characteristics.at(ID_PREFIX).c_str() : "N/A",
+                  start_node,
+                  stop_node,
+                  ids.size());
 
          // we are between start and end => collect IDs
          if (start_node != nullptr && stop_node == nullptr) {
@@ -1239,8 +1247,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
    };
 
    process_node(nodes, '\0');
-
-   return ids;
+   DRETURN(ids);
 }
 
 /** @brief Marks nodes in the topology tree as used or unused based on a list of IDs
