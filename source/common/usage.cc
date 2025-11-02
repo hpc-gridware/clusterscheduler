@@ -1355,6 +1355,12 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       MARK(OA_PATH);
    }
 
+#ifdef WITH_EXTENSIONS
+   if (VALID_OPT(when_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_when_OPT, MSG_GDI_UTEXT_when_OPT);
+   }
+#endif
+
    if (VALID_OPT(xml_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_xml_OPT , MSG_GDI_UTEXT_xml_OPT );
    }

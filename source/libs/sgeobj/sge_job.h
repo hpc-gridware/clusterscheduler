@@ -31,7 +31,7 @@
  *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/       
+/*___INFO__MARK_END__*/
 
 #include "uti/sge_htable.h"
 #include "uti/sge_dstring.h"
@@ -69,37 +69,37 @@
  */
 #define JSUSPENDED_ON_THRESHOLD              0x00010000
 /*
- * SGEEE: qmaster delays job removal till schedd 
- * does no longer need this finished job 
+ * SGEEE: qmaster delays job removal till schedd
+ * does no longer need this finished job
  */
 #define JFINISHED                            0x00010000
 /* used in execd to prevent slave jobs from getting started */
 #define JSLAVE                               0x00020000
 #define JDEFERRED_REQ                        0x00100000
 
-/* 
-   GDI request syntax for JB_hold 
+/*
+   GDI request syntax for JB_hold
 
    Example:
- 
+
    qalter -h {u|s|o|n}
 
   POSIX (overwriting):
-  u: SET|USER 
+  u: SET|USER
   o: SET|OPERATOR
-  s: SET|SYSTEM 
+  s: SET|SYSTEM
   n: SUB|USER|SYSTEM|OPERATOR
- 
+
   SGE (adding):
   +u: ADD|USER
   +o: ADD|OPERATOR
   +s: ADD|SYSTEM
- 
+
   SGE (removing):
   -u: SUB|USER
   -o: SUB|OPERATOR
   -s: SUB|SYSTEM
-   
+
 */
 enum {
    MINUS_H_TGT_USER     = 1, /* remove needs at least job owner */
@@ -114,14 +114,14 @@ enum {
    MINUS_H_CMD_ADD = (0<<4), /* adds targetted flags */
    MINUS_H_CMD_SUB = (1<<4), /* remove targetted flags */
    MINUS_H_CMD_SET = (2<<4)  /* overwrites using targetted flags */
-}; 
+};
 
 /* values for JB_verify_suitable_queues */
 #define OPTION_VERIFY_STR "nwevp"
 enum {
    SKIP_VERIFY = 0,     /* -w n no expendable verifications will be done */
    WARNING_VERIFY,      /* -w w qmaster will warn about these jobs - but submit will succeed */
-   ERROR_VERIFY,        /* -w e qmaster will make expendable verifications to reject 
+   ERROR_VERIFY,        /* -w e qmaster will make expendable verifications to reject
                             jobs that are not schedulable (default) */
    JUST_VERIFY,         /* -w v just verify at qmaster but do not submit */
    POKE_VERIFY          /* -w p do verification with all resource utilizations in place (poke) */
@@ -133,6 +133,11 @@ typedef enum {
    SYNC_JOB_END       = 0x00000002,
    SYNC_JOB_START     = 0x00000004,
 } sync_switch_t;
+
+typedef enum {
+   QALTER_WHEN_ON_RESCHEDULE = 0,
+   QALTER_WHEN_NOW
+} qalter_when_t;
 
 /************    scheduling constants   *****************************************/
 /* priorities are in the range from -1023 to 1024 */
@@ -154,7 +159,7 @@ typedef enum {
 #define SUBPRIORITY_MASK  0x0000ff
 #define JOBS_SCANNED_PER_PASS 10
 
-/* 
+/*
    used in qstat:
 
    JSUSPENDED_ON_SUBORDINATE means that the job is
@@ -170,7 +175,7 @@ typedef enum {
 
 /****** sgeobj/job/jb_now *****************************************************
 *  NAME
-*     jb_now -- macros to handle flag JB_type 
+*     jb_now -- macros to handle flag JB_type
 *
 *  SYNOPSIS
 *
@@ -179,7 +184,7 @@ typedef enum {
 *     JOB_TYPE_QLOGIN
 *     JOB_TYPE_QRSH
 *     JOB_TYPE_QRLOGIN
-*        
+*
 *     JOB_TYPE_NO_ERROR
 *        When a job of this type fails and the error condition usually
 *        would result in the job error state the job is finished. Thus
@@ -193,7 +198,7 @@ typedef enum {
 #define JOB_TYPE_QRLOGIN    0x10UL
 #define JOB_TYPE_NO_ERROR   0x20UL
 
-/* submitted via "qsub -b y" or "qrsh [-b y]" */ 
+/* submitted via "qsub -b y" or "qrsh [-b y]" */
 #define JOB_TYPE_BINARY     0x40UL
 
 /* array job (qsub -t ...) */
@@ -212,7 +217,7 @@ typedef enum {
 #define JOB_TYPE_STR_NO_ERROR   "NO_ERROR"
 
 #define JOB_TYPE_CLEAR_IMMEDIATE(jb_now) \
-   jb_now = jb_now & ~JOB_TYPE_IMMEDIATE 
+   jb_now = jb_now & ~JOB_TYPE_IMMEDIATE
 
 #define JOB_TYPE_SET_IMMEDIATE(jb_now) \
    jb_now =  jb_now | JOB_TYPE_IMMEDIATE
@@ -267,7 +272,7 @@ typedef enum {
 #define JOB_TYPE_IS_NO_SHELL(jb_now)       (jb_now & JOB_TYPE_NO_SHELL)
 
 
-bool job_is_enrolled(const lListElem *job, 
+bool job_is_enrolled(const lListElem *job,
                      u_long32 ja_task_number);
 
 u_long32 job_get_ja_tasks(const lListElem *job);
@@ -277,7 +282,7 @@ u_long32 job_get_not_enrolled_ja_tasks(const lListElem *job);
 u_long32 job_get_enrolled_ja_tasks(const lListElem *job);
 
 u_long32 job_get_submit_ja_tasks(const lListElem *job);
- 
+
 lListElem *job_enroll(lListElem *job, lList **answer_list, u_long32 task_number);
 
 void job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task);
@@ -291,7 +296,7 @@ bool job_has_soft_requests(lListElem *job);
 
 bool job_is_ja_task_defined(const lListElem *job, u_long32 ja_task_number);
 
-void job_set_hold_state(lListElem *job, 
+void job_set_hold_state(lListElem *job,
                         lList **answer_list, u_long32 ja_task_id,
                         u_long32 new_hold_state);
 
@@ -302,10 +307,10 @@ u_long32 job_get_hold_state(lListElem *job, u_long32 ja_task_id);
 
 void job_list_print(lList *job_list);
 
-lListElem *job_get_ja_task_template(const lListElem *job, u_long32 ja_task_id); 
+lListElem *job_get_ja_task_template(const lListElem *job, u_long32 ja_task_id);
 
 lListElem *job_get_ja_task_template_hold(const lListElem *job,
-                                         u_long32 ja_task_id, 
+                                         u_long32 ja_task_id,
                                          u_long32 hold_state);
 
 lListElem *job_get_ja_task_template_pending(const lListElem *job,
@@ -314,11 +319,11 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
 lListElem *job_search_task(const lListElem *job, lList **answer_list, u_long32 ja_task_id);
 lListElem *job_create_task(lListElem *job, lList **answer_list, u_long32 ja_task_id);
 
-void job_add_as_zombie(lListElem *zombie, lList **answer_list, 
+void job_add_as_zombie(lListElem *zombie, lList **answer_list,
                        u_long32 ja_task_id);
 
-int job_list_add_job(lList **job_list, const char *name, lListElem *job, 
-                     int check); 
+int job_list_add_job(lList **job_list, const char *name, lListElem *job,
+                     int check);
 
 u_long32 job_get_ja_task_hold_state(const lListElem *job, u_long32 ja_task_id);
 
@@ -327,13 +332,13 @@ void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]);
 void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
                               u_long32 hold_state[16]);
 
-bool job_is_zombie_job(const lListElem *job); 
+bool job_is_zombie_job(const lListElem *job);
 
 const char *job_get_shell_start_mode(const lListElem *job,
                                      const lListElem *queue,
                                      const char *conf_shell_start_mode);
 
-bool job_is_array(const lListElem *job); 
+bool job_is_array(const lListElem *job);
 
 bool job_is_parallel(const lListElem *job);
 
@@ -341,8 +346,8 @@ bool job_is_tight_parallel(const lListElem *job, const lList *pe_list);
 
 bool job_might_be_tight_parallel(const lListElem *job, const lList *pe_list);
 
-void job_get_submit_task_ids(const lListElem *job, u_long32 *start, 
-                             u_long32 *end, u_long32 *step); 
+void job_get_submit_task_ids(const lListElem *job, u_long32 *start,
+                             u_long32 *end, u_long32 *step);
 
 int job_set_submit_task_ids(lListElem *job, u_long32 start, u_long32 end,
                             u_long32 step);
@@ -356,7 +361,7 @@ u_long32 job_get_biggest_unenrolled_task_id(const lListElem *job);
 u_long32 job_get_biggest_enrolled_task_id(const lListElem *job);
 
 int job_list_register_new_job(const lList *job_list, u_long32 max_jobs,
-                              int force_registration);   
+                              int force_registration);
 
 void jatask_list_print_to_string(const lList *task_list, dstring *range_string);
 
@@ -364,7 +369,7 @@ lList* ja_task_list_split_group(lList **task_list);
 
 int job_initialize_id_lists(lListElem *job, lList **answer_list);
 
-void job_initialize_env(lListElem *job, 
+void job_initialize_env(lListElem *job,
                         lList **answer_list,
                         const lList* path_alias_list,
                         const char *unqualified_hostname,
@@ -372,17 +377,17 @@ void job_initialize_env(lListElem *job,
 
 const char* job_get_env_string(const lListElem *job, const char *variable);
 
-void job_set_env_string(lListElem *job, const char *variable, 
+void job_set_env_string(lListElem *job, const char *variable,
                         const char *value);
 
 void job_check_correct_id_sublists(lListElem *job, lList **answer_list);
 
-const char *job_get_id_string(u_long32 job_id, u_long32 ja_task_id, 
+const char *job_get_id_string(u_long32 job_id, u_long32 ja_task_id,
                               const char *pe_task_id, dstring *buffer);
 
 const char *job_get_job_key(u_long32 job_id, dstring *buffer);
 
-const char *job_get_key(u_long32 job_id, u_long32 ja_task_id, 
+const char *job_get_key(u_long32 job_id, u_long32 ja_task_id,
                         const char *pe_task_id, dstring *buffer);
 
 const char *jobscript_get_key(const lListElem *jep, dstring *buffer);
@@ -400,8 +405,8 @@ void job_get_state_string(char *str, u_long32 op);
 
 void job_add_parent_id_to_context(lListElem *job);
 
-int job_check_qsh_display(const lListElem *job, 
-                          lList **answer_list, 
+int job_check_qsh_display(const lListElem *job,
+                          lList **answer_list,
                           bool output_warning);
 
 int job_check_owner(const ocs::gdi::Packet *packet, u_long32 job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
@@ -425,16 +430,16 @@ void
 adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots);
 
 /* unparse functions */
-bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, 
+bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem,
                                int nm, const char *option);
 
-bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, 
+bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem,
                                int nm, const char *option);
 
 bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, int pos);
 
 bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, int pe_pos, int range_pos,
-                            const char *option); 
+                            const char *option);
 
 bool sge_unparse_resource_list_dstring(dstring *category_str, lList *resource_list, const char *option);
 
@@ -464,16 +469,16 @@ bool
 job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
                         const char *user, const char *grouprp, int amount, ocs_grp_elem_t *grp_array);
 
-bool  
+bool
 job_get_ckpt_attr(int op, dstring *string);
 
 bool
 job_get_verify_attr(u_long32 op, dstring *string);
 
-void 
+void
 set_context(lList *jbctx, lListElem *job);
 
-bool 
+bool
 job_parse_validation_level(int *level, const char *input, int prog_number, lList **answer_list);
 
 bool
@@ -567,3 +572,8 @@ gdil_make_host_unique(const lList *gdil_in);
 u_long32
 jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem *jatep);
 
+bool
+job_parse_when_string(const char *input, qalter_when_t &when);
+
+bool
+job_is_when_now(const lListElem *job);

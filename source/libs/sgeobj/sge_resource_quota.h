@@ -73,11 +73,11 @@ bool
 rqs_get_rue_string(dstring *name, const lListElem *rule, const char *user, const char *project, const char *host, const char *queue, const char* pe);
 
 int
-rqs_debit_rule_usage(lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
+rqs_debit_rule_usage(const lListElem *job, const lListElem *pe, lListElem *rule, dstring *rue_name, int slots,
                      const lList *centry_list, const char *obj_name, bool is_master_task, bool do_per_host_booking);
 
 int
-rqs_debit_consumable(lListElem *rqs, lListElem *job, const lListElem *granted, const lListElem *pe,
+rqs_debit_consumable(lListElem *rqs, const lListElem *job, const lListElem *granted, const lListElem *pe,
                      const lList *centry_list, const lList *acl_list, const lList *hgrp_list, int slots,
                      bool is_master_task, bool do_per_host_booking);
 

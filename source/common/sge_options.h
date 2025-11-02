@@ -1,33 +1,33 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
  *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
@@ -164,7 +164,7 @@ enum {
    AT_OPT,
    Ap_OPT, /* add pe object from file */
    Mp_OPT, /* mod pe object from file */
-   tsm_OPT, 
+   tsm_OPT,
    msconf_OPT,   /* modify SGE scheduler configuration */
    Msconf_OPT,   /* mofify SGE scheduler configuration from file*/
    aus_OPT,     /* SGE add user */
@@ -220,7 +220,7 @@ enum {
    dcal_OPT,     /* remove calendar */
    scal_OPT,     /* show calendar */
    scall_OPT,    /* show calendar list */
-   w_OPT,        /* warn mode concerning verification of schedulability */ 
+   w_OPT,        /* warn mode concerning verification of schedulability */
 
    /* share tree node */
    astnode_OPT,  /* SGE add share tree node */
@@ -247,7 +247,7 @@ enum {
    Aattr_OPT,     /* add a element to a sublist from file */
    sobjl_OPT,     /* show object list which matches conf value */
    purge_OPT,     /* delete element which value matches given string */
-      
+
    /* added for host groups */
    ahgrp_OPT,    /* add new host group entry */
    Ahgrp_OPT,    /* add new host group entry from file */
@@ -275,7 +275,7 @@ enum {
    Mrqs_OPT,     /* modify resource quota set from file */
    drqs_OPT,     /* delete resource quota set */
    ar_OPT,       /* advanced resservation option */
-   he_OPT,       /* error handling for qrsub */ 
+   he_OPT,       /* error handling for qrsub */
    explain_OPT,  /* explain error in qrstat */
    xml_OPT,      /* generate xml outout */
    terse_OPT,    /* tersed output */
@@ -308,9 +308,11 @@ enum {
    bstrategy_OPT, //< binding strategy
    bamount_OPT, //< binding amount
    binstance_OPT, //< binding instance
+
+   when_OPT, //< for qalter set if changes shall be applied on a running job or only after rescheduling
 };
 
 /* macros used in parsing */
 #define VALID_OPT(opt,who) (sge_options[opt][who])
 
-extern unsigned short sge_options[][ALL_OPT + 1]; 
+extern unsigned short sge_options[][ALL_OPT + 1];

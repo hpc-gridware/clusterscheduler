@@ -4787,3 +4787,51 @@ jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem
    }
    DRETURN(state);
 }
+
+/**
+ * @brief Parse when string for job alteration
+ *
+ * Parses a string to determine when a job alteration should occur.
+ * Valid values are "on_reschedule" and "now". If an invalid value is
+ * provided, the function defaults to QALTER_WHEN_ON_RESCHEDULE and
+ * returns false.
+ *
+ * @param input string to parse ("on_reschedule" or "now")
+ * @param when reference to store the parsed value
+ * @return true if input was valid, false otherwise
+ */
+bool job_parse_when_string(const char *input, qalter_when_t &when) {
+   bool ret = true;
+
+   if (sge_strnullcasecmp(input, "on_reschedule") == 0) {
+      when = QALTER_WHEN_ON_RESCHEDULE;
+   } else if (sge_strnullcasecmp(input, "now") == 0) {
+      when = QALTER_WHEN_NOW;
+   } else {
+      when = QALTER_WHEN_ON_RESCHEDULE;
+      ret = false;
+   }
+
+   return ret;
+}
+
+/**
+ * @brief Check if a job has "when now" attribute set
+ *
+ * Checks whether the job has the JB_when attribute set to
+ * QALTER_WHEN_NOW, indicating that job alterations should be
+ * applied immediately.
+ * The job can be a reduced element as it is sent by the qalter command.
+ *
+ * @param job JB_Type element
+ * @return true if JB_when is set to QALTER_WHEN_NOW, false otherwise
+ */
+bool
+job_is_when_now(const lListElem *job) {
+   bool ret = false;
+   int pos = lGetPosViaElem(job, JB_when, SGE_NO_ABORT);
+   if (pos >= 0) {
+      ret = lGetPosUlong(job, pos) == QALTER_WHEN_NOW;
+   }
+   return ret;
+}

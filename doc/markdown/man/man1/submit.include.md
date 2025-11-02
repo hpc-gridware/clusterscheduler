@@ -1617,6 +1617,25 @@ after a restart or migration of the job, however.
 The parameter value will be available in defined JSV instances as parameter with the name *cwd* (see `-cwd` 
 switch above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -when *now|on_reschedule*
+
+This switch is available in Gridware Cluster Scheduler only.
+
+Available for `qalter` only.
+
+This option affects modifications of consumable resource requests.
+
+The default is *on_reschedule*. When resource requests of a job are modified with `qalter`, then the changes will
+not effect an already running job, but will be effective when the job is rescheduled.
+
+If the option is set to *now*, then the changes will be effective immediately.
+This can only be used to *reduce* the resource requirements of a job.
+
+Examples:
+
+   * When a job does no longer require a license, the license request can be removed with qalter. 
+   * When a job requires significantly less memory during a post processing step, it can make sense to reduce a memory request, allowing other jobs on the same host to start.
+
 ## command  
 Available for `qsub` and `qrsh` only.
 

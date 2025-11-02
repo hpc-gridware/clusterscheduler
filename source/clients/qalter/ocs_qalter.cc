@@ -761,9 +761,17 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          lRemoveElem(cmdline, &ep);
          nm_set(job_field, JB_cwd);
       }
-    
+
+#ifdef WITH_EXTENSIONS
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-when"))) {
+         lSetUlong(job, JB_when, lGetUlong(ep, SPA_argval_lUlongT));
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_when);
+      }
+#endif
+
       /*
-      ** to be processed in original order, set -V equal to -v
+      ** to be processed in the original order, set -V equal to -v
       */
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-V"))) {
          lSetString(ep, SPA_switch_val, "-v");
@@ -881,10 +889,10 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       lFreeElem(&job);
       DRETURN(answer);
    }
-   
+
    lFreeWhat(&what);
 
-   /* if user uses -u or -uall flag and does not enter jids
+   /* if a user uses -u or -uall flag and does not enter jids
       we will add a dummy job to send other parameters to qmaster */
    if (users_flag && !lGetList(job, JB_job_identifier_list)){   
       lList *jid_list = nullptr;
@@ -1012,6 +1020,7 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             JB_verify_suitable_queues,
             JB_ar,
             JB_ja_task_concurrency,
+            JB_when,
             NoName
          };
          static int ulong64_nm[] = {

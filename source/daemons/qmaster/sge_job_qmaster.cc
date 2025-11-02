@@ -92,7 +92,9 @@
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/sge_ack.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_resource_quota.h"
 
+#include "sched/debit.h"
 #include "sched/sge_job_schedd.h"
 #include "sched/schedd_message.h"
 #include "sched/sge_schedd_text.h"
@@ -116,6 +118,7 @@
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "sge_queue_event_master.h"
 
 #include "ocs_gdi_ClientServerBase.h"
 
@@ -170,6 +173,9 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
 static int
 mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger);
 
+static bool
+job_redebit(const lListElem *old_job, const lListElem *new_job, lList **answer_list, u_long32 gdi_session);
+
 void
 set_context(lList *jbctx, lListElem *job);
 
@@ -190,7 +196,7 @@ static void
 get_rid_of_schedd_job_messages(u_long32 job_number);
 
 static bool
-is_changes_consumables(lList **alpp, const lList *new_lp, const lList *old_lp);
+has_invalid_consumable_changes(lList **alpp, const lList *new_lp, const lList *old_lp, bool when_now, bool &resources_decreased);
 
 static void
 job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter);
@@ -548,7 +554,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
 *     is_pe_master_task_send() -- figures out, if all slaves have been notified
 *
 *  SYNOPSIS
-*     bool is_pe_master_task_send(lListElem *jatep) 
+*     bool is_pe_master_task_send(lListElem *jatep)
 *
 *  FUNCTION
 *     In case of tightly integrated pe jobs the slave execds have to be notified first.
@@ -562,7 +568,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
 *     bool - true, if all slaves have acknowledged slave notification
 *
 *  NOTES
-*     MT-NOTE: is_pe_master_task_send() is MT safe 
+*     MT-NOTE: is_pe_master_task_send() is MT safe
 *
 *******************************************************************************/
 bool
@@ -646,7 +652,7 @@ all_slave_jobs_finished(lListElem *jatep) {
 *     lListElem *jatep - the ja task of the parallel job
 *
 *  NOTES
-*     MT-NOTE: tag_all_host_gdil() is MT safe 
+*     MT-NOTE: tag_all_host_gdil() is MT safe
 *******************************************************************************/
 void
 tag_all_host_gdil(lListElem *jatep) {
@@ -670,10 +676,10 @@ tag_all_host_gdil(lListElem *jatep) {
 *     ack_all_slaves() -- send an ACK to all slave hosts
 *
 *  SYNOPSIS
-*     void 
+*     void
 *     ack_all_slaves(sge_gdi_ctx_class_t *ctx,
 *                    u_long32 job_id, u_long32 ja_task_id,
-*                    const lListElem *ja_task, u_long32 type) 
+*                    const lListElem *ja_task, u_long32 type)
 *
 *  FUNCTION
 *     Sends an acknowledge message for a tighly integrated job to all
@@ -687,7 +693,7 @@ tag_all_host_gdil(lListElem *jatep) {
 *     u_long32 type            - which ACK to send, e.g. ACK_SIGNAL_SLAVE
 *
 *  NOTES
-*     MT-NOTE: ack_all_slaves() is MT safe 
+*     MT-NOTE: ack_all_slaves() is MT safe
 *******************************************************************************/
 void
 ack_all_slaves(u_long32 job_id, u_long32 ja_task_id, const lListElem *ja_task,
@@ -794,12 +800,12 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modi
 *     job_list_filter() -- Build filter for the joblist
 *
 *  SYNOPSIS
-*     static void job_list_filter(lList *user_list, const char* jobid, char 
-*     *ruser, bool all_users_flag, lCondition **job_filter, lCondition 
-*     **user_filter) 
+*     static void job_list_filter(lList *user_list, const char* jobid, char
+*     *ruser, bool all_users_flag, lCondition **job_filter, lCondition
+*     **user_filter)
 *
 *  FUNCTION
-*     Builds two where filters: one for users and one for jobs. 
+*     Builds two where filters: one for users and one for jobs.
 *
 *  INPUTS
 *     lList *user_list         - user list or nullptr if no user exists
@@ -808,10 +814,10 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int was_modi
 *                                does exist, it will be extended by the new ones
 *
 *  RESULT
-*     static void - 
+*     static void -
 *
 *  NOTES
-*     MT-NOTE: job_list_filter() is MT safe 
+*     MT-NOTE: job_list_filter() is MT safe
 *
 *******************************************************************************/
 static void
@@ -872,10 +878,10 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
    2) all_users_flag && jid_flag          => not valid
    3) all_users_flag                      => all jobs of all users (requires
                                              manager pevileges)
-   4) user_list_flag && all_jobs_flag     => all jobs of all users given in 
+   4) user_list_flag && all_jobs_flag     => all jobs of all users given in
                                              <user_list>
    5) user_list_flag && jid_flag          => not valid
-   6) user_list_flag                      => all jobs of all users given in 
+   6) user_list_flag                      => all jobs of all users given in
                                              <user_list>
    7) all_jobs_flag                       => all jobs of current user
    8) jid_flag                            => <jid>
@@ -943,9 +949,9 @@ static void get_rid_of_schedd_job_messages(u_long32 job_number) {
          next = lNextRW(mes);
 
          if ((job_ulng = lGetElemUlongRW(lGetList(mes, MES_job_number_list), ULNG_value, job_number)) != nullptr) {
-            /* 
+            /*
             ** more than one job in list for this message => remove job id
-            ** else => remove whole message 
+            ** else => remove whole message
             */
             if (lGetNumberOfElem(lGetList(mes, MES_job_number_list)) > 1) {
                lRemoveElem(lGetListRW(mes, MES_job_number_list), &job_ulng);
@@ -1111,7 +1117,7 @@ void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
 /*    called in sge_c_gdi_mod                                              */
 /*-------------------------------------------------------------------------*/
 
-/* 
+/*
    this is our strategy:
 
    do common checks and search old job
@@ -1124,19 +1130,21 @@ void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
    replace old job by new job
 */
 
-/* actions to be done after successful 
+/* actions to be done after successful
 saving to disk of a modified job */
 enum {
    MOD_EVENT = 1,
    PRIO_EVENT = 2,
    RECHAIN_JID_HOLD = 4,
    RECHAIN_JA_AD_HOLD = 8,
-   VERIFY_EVENT = 16
+   VERIFY_EVENT = 16,
+   REDEBIT_JOB = 32
 };
 
 int
 sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *jep, lList **alpp, int sub_command) {
    DENTER(TOP_LAYER);
+
    lListElem *nxt, *jobep = nullptr;   /* pointer to old job */
    int job_id_pos;
    int user_list_pos;
@@ -1239,7 +1247,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          continue;
       }
 
-      /* ignore modify requests if all job tasks are already JFINISHED 
+      /* ignore modify requests if all job tasks are already JFINISHED
          and no task id remains in not yet ran task id lists */
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
          const lListElem *ja_task;
@@ -1281,6 +1289,20 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          lFreeWhere(&job_where);
          sge_free(&job_mod_name);
          DRETURN(lret);
+      }
+
+      if (trigger & REDEBIT_JOB) {
+         INFO("re-debiting job " sge_u32 " after modifying resource requests with -when now", lGetUlong(jobep, JB_job_number));
+         if (!job_redebit(jobep, new_job, &tmp_alp, packet->gdi_session)) {
+            if (*alpp == nullptr) {
+               *alpp = lCreateList("answer", AN_Type);
+            }
+            lAddList(*alpp, &tmp_alp);
+            lFreeElem(&new_job);
+            lFreeWhere(&job_where);
+            sge_free(&job_mod_name);
+            DRETURN(STATUS_EUNKNOWN);
+         }
       }
 
       if (!(trigger & VERIFY_EVENT)) {
@@ -1364,8 +1386,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             sge_add_job_event(sgeE_JOB_MOD, new_job, nullptr, packet->gdi_session);
          }
 
-         /* remove all existing trigger links - 
-            this has to be done using the old 
+         /* remove all existing trigger links -
+            this has to be done using the old
             jid_predecessor_list */
 
          if (trigger & RECHAIN_JID_HOLD) {
@@ -1461,10 +1483,10 @@ void sge_add_jatask_event(ev_event type, lListElem *jep, lListElem *jatask, u_lo
    DRETURN_VOID;
 }
 
-/* 
-   build up jid hold links for a job 
+/*
+   build up jid hold links for a job
    no need to spool them or to send
-   events to update schedd data 
+   events to update schedd data
 */
 static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
    lListElem *parent_jep;
@@ -1554,7 +1576,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
 *     job_suc_pre() -- build job depencency hold links
 *
 *  SYNOPSIS
-*     void job_suc_pre(lListElem *jep) 
+*     void job_suc_pre(lListElem *jep)
 *
 *  FUNCTION
 *     Builds the hold links for job dependencies,
@@ -1566,7 +1588,7 @@ static void job_suc_pre_doit(lListElem *jep, bool array_deps) {
 *  NOTES
 *     MT-NOTE: job_suc_pre() is MT safe if the caller holds the global lock
 *
-*     no need to spool the dependency links or to send events to 
+*     no need to spool the dependency links or to send events to
 *     update event clients - this is done in the calling functions
 *
 *  SEE ALSO
@@ -1584,7 +1606,7 @@ void job_suc_pre(lListElem *jep) {
 *     job_suc_pre_ad() -- build job array task depencency hold links
 *
 *  SYNOPSIS
-*     void job_suc_pre_ad(lListElem *jep) 
+*     void job_suc_pre_ad(lListElem *jep)
 *
 *  FUNCTION
 *     Builds the hold links for job array task dependencies,
@@ -1596,7 +1618,7 @@ void job_suc_pre(lListElem *jep) {
 *  NOTES
 *     MT-NOTE: job_suc_pre_ad() is MT safe if the caller holds the global lock
 *
-*     no need to spool the dependency links or to send events to 
+*     no need to spool the dependency links or to send events to
 *     update event clients - this is done in the calling functions
 *
 *  SEE ALSO
@@ -1609,8 +1631,8 @@ void job_suc_pre_ad(lListElem *jep) {
    DRETURN_VOID;
 }
 
-/* handle all per task attributes which are changeable 
-   from outside using gdi requests 
+/* handle all per task attributes which are changeable
+   from outside using gdi requests
 
    job - the job
    new_ja_task - new task structure DST; may be nullptr for not enrolled tasks
@@ -1666,7 +1688,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
 #if 0
       DPRINTF("******** jo_id = %d\n", jobid );
       DPRINTF("******** task_id = %d\n", jataskid );
-      
+
       DPRINTF("********** op_code_and_hold = %x\n", op_code_and_hold );
       DPRINTF("******************* op_code = %x\n", op_code );
       DPRINTF("*************is_sub_op_code = %x\n", is_sub_op_code);
@@ -1747,78 +1769,100 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
    DRETURN(0);
 }
 
-/****** sge_job/is_changes_consumables() ******************************************
-*  NAME
-*     is_changes_consumables() -- detect changes with consumable resource request
-*
-*  SYNOPSIS
-*     static bool is_changes_consumables(lList* new_lp, lList* old_lp) 
-*
-*  INPUTS
-*     lList** alpp - answer list pointer pointer
-*     lList*  new_lp  - jobs new JB_hard_resource_list
-*     lList*  old_lp  - jobs old JB_hard_resource_list
-*
-*  RESULT
-*     bool      - false, nothing changed
-*
-*  MT-NOTE:  is thread safe (works only on parsed in variables)
-*
-*******************************************************************************/
-
-static bool is_changes_consumables(lList **alpp, const lList *new_lp, const lList *old_lp) {
-   const lListElem *new_entry = nullptr;
-   const lListElem *old_entry = nullptr;
-   const char *name = nullptr;
-
+/**
+ * @brief Validates changes to consumable resource requests for running jobs
+ *
+ * This function checks whether modifications to consumable resource requests are valid
+ * when altering a job. For running jobs, it enforces restrictions on consumable changes:
+ * - New consumable requests cannot be added
+ * - Existing consumable request amounts cannot be increased
+ * - With -when now, consumables can be removed or their amounts decreased
+ * - Without -when now (default: -when on_reschedule), consumable amounts must remain unchanged
+ *
+ * @param[out] alpp Pointer to answer list for error messages
+ * @param[in] new_lp New hard resource list (CE_Type) with requested changes
+ * @param[in] old_lp Old hard resource list (CE_Type) from the existing job
+ * @param[in] when_now True if -when now was specified, false for -when on_reschedule
+ * @param[out] resources_decreased Set to true if any consumable resource amounts are decreased
+ *
+ * @return true if invalid changes are detected (job modification should be rejected),
+ *         false if changes are valid
+ */
+static bool
+has_invalid_consumable_changes(lList **alpp, const lList *new_lp, const lList *old_lp,
+                               bool when_now, bool &resources_decreased) {
    DENTER(TOP_LAYER);
 
-   /* ensure all old resource requests implying consumables 
-      debitation are still contained in new resource request list */
-   for_each_ep(old_entry, old_lp) {
+   const lListElem *new_entry, *old_entry;
 
-      /* ignore non-consumables */
-      if (!lGetUlong(old_entry, CE_consumable)) {
+   /* Check if requests of the original job are missing in the new job.
+    * In case of when_now, this is OK, e.g., we do no longer need a certain license.
+    * Otherwise, we reject the change.
+    */
+   for_each_ep(old_entry, old_lp) {
+      // ignore non-consumables
+      if (lGetUlong(old_entry, CE_consumable) == CONSUMABLE_NO) {
          continue;
       }
-      name = lGetString(old_entry, CE_name);
 
-      /* search it in new hard resource list */
+      const char *name = lGetString(old_entry, CE_name);
+      // search it in the new hard resource list
       if (lGetElemStr(new_lp, CE_name, name) == nullptr) {
-         ERROR(MSG_JOB_MOD_MISSINGRUNNINGJOBCONSUMABLE_S, name);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         DRETURN(true);
+         if (when_now) {
+            // the request has been removed, this is OK
+            resources_decreased = true;
+         } else {
+            ERROR(MSG_JOB_MOD_MISSINGRUNNINGJOBCONSUMABLE_S, name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(true);
+         }
       }
    }
 
-   /* ensure all new resource requests implying consumable 
-      debitation were also contained in old resource request list
-      AND have not changed the requested amount */
+   /* Ensure all new resource requests implying consumable debitation
+    * were also contained in the old resource request list.
+    * We do not allow new consumable requests.
+    * For requests which are contained in both old and new job we verify the requested amount:
+    * In case of when_now, we allow decreasing of the amount.
+    * Otherwise, the requests have to be identical.
+    */
    for_each_ep(new_entry, new_lp) {
-
-      /* ignore non-consumables */
-      if (!lGetUlong(new_entry, CE_consumable)) {
+      // ignore non-consumables
+      if (lGetUlong(new_entry, CE_consumable) == CONSUMABLE_NO) {
          continue;
       }
-      name = lGetString(new_entry, CE_name);
+      const char *name = lGetString(new_entry, CE_name);
 
-      /* search it in old hard resource list */
-      if ((old_entry = lGetElemStr(old_lp, CE_name, name)) == nullptr) {
+      // search it in the old hard resource list
+      old_entry = lGetElemStr(old_lp, CE_name, name);
+      if (old_entry == nullptr) {
          ERROR(MSG_JOB_MOD_ADDEDRUNNINGJOBCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(true);
       }
 
-      /* compare request in old_entry with new_entry */
+      // compare the request in old_entry with new_entry
       DPRINTF("request: \"%s\" old: %f new: %f\n", name,
               lGetDouble(old_entry, CE_doubleval),
               lGetDouble(new_entry, CE_doubleval));
 
-      if (lGetDouble(old_entry, CE_doubleval) !=
-          lGetDouble(new_entry, CE_doubleval)) {
-         ERROR(MSG_JOB_MOD_CHANGEDRUNNINGJOBCONSUMABLE_S, name);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         DRETURN(true);
+      double old_value = lGetDouble(old_entry, CE_doubleval);
+      double new_value = lGetDouble(new_entry, CE_doubleval);
+      if (when_now) {
+         if (new_value > old_value) {
+            ERROR(MSG_JOB_MOD_ONLYDECRUNNINGJOBCONSUMABLE_S, name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(true);
+         } else if (new_value < old_value) {
+            // allow decreasing of the amount
+            resources_decreased = true;
+         }
+      } else {
+         if (old_value != new_value) {
+            ERROR(MSG_JOB_MOD_CHANGEDRUNNINGJOBCONSUMABLE_S, name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(true);
+          }
       }
    }
 
@@ -1874,8 +1918,10 @@ int deny_soft_consumables(lList **alpp, const lList *srl, const lList *master_ce
 
 static int
 mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem *jep, lList **alpp, int *trigger) {
+   DENTER(TOP_LAYER);
+
    int pos;
-   int is_running = 0, may_not_be_running = 0;
+   bool is_running{false}, may_not_be_running{false};
    u_long32 uval;
    u_long32 jobid = lGetUlong(new_job, JB_job_number);
 
@@ -1890,22 +1936,23 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
 
-   DENTER(TOP_LAYER);
-
-   /* is job running ? */
+   /* is job running? */
    {
       const lListElem *ja_task;
       for_each_ep(ja_task, lGetList(new_job, JB_ja_tasks)) {
-         if (lGetUlong(ja_task, JAT_status) & JTRANSFERING ||
-             lGetUlong(ja_task, JAT_status) & JRUNNING) {
-            is_running = 1;
+         if (ja_task_is_running(ja_task)) {
+            is_running = true;
+            break;
          }
       }
    }
 
-   /* 
+   // is it a qalter -when now request?
+   bool when_now = job_is_when_now(jep);
+
+   /*
     * ---- JB_ja_tasks
-    *      Do we have per task change request? 
+    *      Do we have per task change request?
     */
    if ((pos = lGetPosViaElem(jep, JB_ja_tasks, SGE_NO_ABORT)) >= 0) {
       lList *ja_task_list = lGetPosList(jep, pos);
@@ -1913,11 +1960,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       int new_job_is_array = job_is_array(new_job);
       u_long32 jep_ja_task_number = lGetNumberOfElem(ja_task_list);
 
-      /* 
+      /*
        * Is it a valid per task request:
-       *    - at least one task element 
-       *    - task id field 
-       *    - multi tasks requests are only valid for array jobs 
+       *    - at least one task element
+       *    - task id field
+       *    - multi tasks requests are only valid for array jobs
        */
       if (!ja_task) {
          ERROR(MSG_SGETEXT_NEEDONEELEMENT_SS, lNm2Str(JB_ja_tasks), __func__);
@@ -1935,7 +1982,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      /* 
+      /*
        * Visit tasks
        */
       if (ja_task_list != nullptr) {
@@ -2004,8 +2051,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    }
 
 
-   /* ---- JB_override_tickets 
-           A attribute that must be allowed to 
+   /* ---- JB_override_tickets
+           A attribute that must be allowed to
            be changed when job is running
    */
    if ((pos = lGetPosViaElem(jep, JB_override_tickets, SGE_NO_ABORT)) >= 0) {
@@ -2087,7 +2134,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             DRETURN(STATUS_ENOOPR);
          }
          *trigger |= PRIO_EVENT;
-         may_not_be_running = 1;
+         may_not_be_running = true;
       }
       /* ok, do it */
       lSetUlong(new_job, JB_ar, uval);
@@ -2274,14 +2321,26 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             }
 
             /* to prevent inconsistent consumable management:
-             * - deny resource requests changes on consumables for running jobs (IZ #251)
+             * - deny resource requests changes on consumables for running jobs
+             *    - if qalter is called without -when now (= -when on_reschedule)
+             *    - with -when now
+             *       - if the requested amount shall be increased
+             *       - if new requests are done
+             * - do re-debiting of resources if with -when now resource requests are reduced
              * - a better solution would be to store for each running job the amount of resources
              *   @todo we have this now in the JAT_granted_resources_list
              */
             const lList *old_resource_list = job_get_hard_resource_list(new_job, scope);
-            bool is_changed = is_changes_consumables(alpp, resource_list, old_resource_list);
-            if (is_running && is_changed) {
-               DRETURN(STATUS_EUNKNOWN);
+            bool resources_decreased{false};
+            if (is_running) {
+               if (has_invalid_consumable_changes(alpp, resource_list, old_resource_list,
+                                                                 when_now, resources_decreased)) {
+                  DRETURN(STATUS_EUNKNOWN);
+               }
+            }
+
+            if (when_now && resources_decreased) {
+               *trigger |= REDEBIT_JOB;
             }
 
             job_set_hard_resource_list(new_job, lCopyList(nullptr, resource_list), scope);
@@ -2606,7 +2665,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
          }
 
          lSetString(new_job, JB_project, new_project);
-         may_not_be_running = 1;
+         may_not_be_running = true;
          *trigger |= MOD_EVENT;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_PROJECT, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2799,7 +2858,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       }
 
       /* save existing prefix env vars from being overwritten
-         TODO: can we rule out that after that step a prefix 
+         TODO: can we rule out that after that step a prefix
                env var appears two times in the env var list ? */
       tmp_var_list = lGetListRW(new_job, JB_env_list);
       var_list_split_prefix_vars(&tmp_var_list, &prefix_vars, VAR_PREFIX);
@@ -2882,28 +2941,28 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
 /****** sge_job_qmaster/contains_dependency_cycles() ***************************
 *  NAME
-*     contains_dependency_cycles() -- detects cycles in the job dependencies 
+*     contains_dependency_cycles() -- detects cycles in the job dependencies
 *
 *  SYNOPSIS
-*     static bool contains_dependency_cycles(const lListElem * new_job, 
-*     u_long32 job_number, lList **alpp) 
+*     static bool contains_dependency_cycles(const lListElem * new_job,
+*     u_long32 job_number, lList **alpp)
 *
 *  FUNCTION
 *     This function follows the deep search allgorithm, to look for cycles
 *     in the job dependency list. It stops, when the first cycle is found. It
-*     only performes the cycle check for a given job and not for all jobs in 
+*     only performes the cycle check for a given job and not for all jobs in
 *     the system.
 *
 *  INPUTS
-*     const lListElem * new_job - job, which dependency have to be evaludated 
-*     u_long32 job_number       - job number, of the first job 
-*     lList **alpp              - answer list 
+*     const lListElem * new_job - job, which dependency have to be evaludated
+*     u_long32 job_number       - job number, of the first job
+*     lList **alpp              - answer list
 *
 *  RESULT
 *     static bool - true, if there is a dependency cycle
 *
 *  MT-NOTE
-*     Is not thread save. Reads from the global Job-List 
+*     Is not thread save. Reads from the global Job-List
 *
 *******************************************************************************/
 static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_number, lList **alpp) {
@@ -2955,8 +3014,8 @@ static bool contains_dependency_cycles(const lListElem *new_job, u_long32 job_nu
 *
 *  SYNOPSIS
 *     static int job_verify_predecessors(const lListElem *job,
-*                                        lList **alpp,  
-*                                        lList *predecessors) 
+*                                        lList **alpp,
+*                                        lList *predecessors)
 *
 *  FUNCTION
 *     These checks are done:
@@ -3038,7 +3097,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
             next_user_job = lGetElemStrNext(master_job_list, JB_owner, owner, &user_iterator);
          }
 
-         /* if no matching job has been found we have to assume 
+         /* if no matching job has been found we have to assume
             the job finished already */
       }
    }
@@ -3056,7 +3115,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
 *     job_verify_predecessors_ad() -- verify -hold_jid_ad list of a job
 *
 *  SYNOPSIS
-*     static int job_verify_predecessors_ad(lListElem *job, lList **alpp) 
+*     static int job_verify_predecessors_ad(lListElem *job, lList **alpp)
 *
 *  FUNCTION
 *     These checks are done:
@@ -3064,7 +3123,7 @@ int job_verify_predecessors(lListElem *job, lList **alpp) {
 *       #2 Resolve job names and regulare expressions. The
 *          job ids will be stored in JB_ja_ad_predecessor_list
 *       #3 Ensure the jobs in the predecessor list are equivalent array jobs
-*       #4 Update JB_ja_a_h_ids and JB_ja_a_n_ids according to the 
+*       #4 Update JB_ja_a_h_ids and JB_ja_a_n_ids according to the
            predecessors list
 *
 *  INPUTS
@@ -3151,7 +3210,7 @@ int job_verify_predecessors_ad(lListElem *job, lList **alpp, u_long64 gdi_sessio
             next_user_job = lGetElemStrNext(master_job_list, JB_owner, owner, &user_iterator);
          }
 
-         /* if no matching job has been found we have to assume 
+         /* if no matching job has been found we have to assume
             the job finished already */
       }
    }
@@ -3643,7 +3702,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
 *     spool_write_script() -- Write job script
 *
 *  SYNOPSIS
-*     bool spool_write_script(lList **answer_list,u_long32 jobid, lListElem *jep) 
+*     bool spool_write_script(lList **answer_list,u_long32 jobid, lListElem *jep)
 *
 *  FUNCTION
 *     The function stores the script of a '-b n' job into a file.
@@ -3657,7 +3716,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
 *     static bool - true on success
 *
 *  NOTES
-*     MT-NOTE: spool_write_script() is MT safe 
+*     MT-NOTE: spool_write_script() is MT safe
 *
 *  SEE ALSO
 *     spool_delete_script()
@@ -3684,7 +3743,7 @@ bool spool_write_script(lList **answer_list, u_long32 jobid, const lListElem *je
 *     spool_read_script() -- Read job script
 *
 *  SYNOPSIS
-*     bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep) 
+*     bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep)
 *
 *  FUNCTION
 *     The function reads the script of a '-b n' job from file.
@@ -3698,7 +3757,7 @@ bool spool_write_script(lList **answer_list, u_long32 jobid, const lListElem *je
 *     bool - true on success
 *
 *  NOTES
-*     MT-NOTE: spool_read_script() is MT safe 
+*     MT-NOTE: spool_read_script() is MT safe
 *
 *  SEE ALSO
 *     spool_write_script()
@@ -3734,7 +3793,7 @@ bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
 *     spool_delete_script() -- Delete job script
 *
 *  SYNOPSIS
-*     bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep) 
+*     bool spool_delete_script(lList **answer_list, u_long32 jobid, lListElem *jep)
 *
 *  FUNCTION
 *     The function removes the file where the script of a '-b n' job is stored.
@@ -3748,7 +3807,7 @@ bool spool_read_script(lList **answer_list, u_long32 jobid, lListElem *jep) {
 *     bool - true on success
 *
 *  NOTES
-*     MT-NOTE: spool_delete_script() is MT safe 
+*     MT-NOTE: spool_delete_script() is MT safe
 *
 *  SEE ALSO
 *     spool_write_script()
@@ -3791,7 +3850,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
    DENTER(TOP_LAYER);
 
    /* In certain cases sge_commit_job() free's the job structure passed.
-    * The session information is needed after sge_commit_job() so we make 
+    * The session information is needed after sge_commit_job() so we make
     * a copy of the job session before calling sge_commit_job(). This copy
     * must be free'd!
     */
@@ -4013,7 +4072,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                   }
                }
 
-               /* 
+               /*
                 * if task is already in status deleted and was signaled
                 * only recently and deletion is not forced, do nothing
                 */
@@ -4107,9 +4166,9 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
 *     job_verify_project() -- verify the JB_project of a job
 *
 *  SYNOPSIS
-*     static int 
+*     static int
 *     job_verify_project(const lListElem *job, lList **alpp,
-*                        const char *user, const char *group) 
+*                        const char *user, const char *group)
 *
 *  FUNCTION
 *     Does verifications on the JB_project field of a job.
@@ -4176,9 +4235,9 @@ job_verify_project(const lListElem *job, lList **alpp,
          lFreeList(&xprojects);
       }
    } else {
-      /* 
+      /*
        * job does not request a project - verify project enforcement
-       * 
+       *
        * when we have a projects list in the global config,
        * every job *must* request a project
        */
@@ -4266,3 +4325,235 @@ get_job_log_name(const job_log_t type) {
    return ret;
 }
 
+/**
+ * @brief Debits or undebits consumable resources for a job array task
+ *
+ * This function performs resource debiting (or undebiting when factor is -1) for a running
+ * job array task. It updates consumable resource availability in:
+ * - Global and execution hosts
+ * - Queue instances
+ * - Resource quota sets (RQS)
+ * - Advance reservations (AR) if the job runs in an AR
+ *
+ * The function processes all granted destination identifiers (queue assignments) for the
+ * job array task and debits/undebits the allocated slots from each resource container.
+ * Events are generated for modified objects to notify event clients.
+ *
+ * @param[in] job The job object (JB_Type) containing the job array task
+ * @param[in] ja_task The job array task (JAT_Type) for which to debit/credit resources
+ * @param[out] answer_list Pointer to answer list for error messages and reporting records
+ * @param gdi_session
+ * @param[in] factor Multiplication factor: 1 for debiting (default), -1 for undebiting
+ *
+ * @return true on success, false on failure
+ *
+ * @note Thread-safe: Requires the global lock to be held by the caller
+ * @todo Optionally also debit from PE? Not needed for -when now, but when we want to use
+ *       the function in other places
+ * @todo Check the ja_task state? It could be an enrolled pending ja_task after re-scheduling
+ *
+ * @see job_ja_task_undebit()
+ * @see job_redebit()
+ */
+bool
+job_ja_task_debit(const lListElem *job, const lListElem *ja_task, lList **answer_list, u_long32 gdi_session, int factor = 1) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+   u_long64 now = sge_get_gmt64();
+
+   const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
+   const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
+   const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
+   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
+   const lList *master_rqs_list = *ocs::DataStore::get_master_list(SGE_TYPE_RQS);
+   const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+
+   u_long32 job_id = lGetUlong(job, JB_job_number);
+   //u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
+
+   lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
+   lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+   bool do_per_global_host_booking = true;
+
+   u_long32 ar_id = lGetUlong(job, JB_ar);
+   lListElem *ar = nullptr;
+   lListElem *ar_global_host = nullptr;
+   if (ar_id != 0) {
+      ar = lGetElemUlongRW(master_ar_list, AR_id, ar_id);
+      if (ar == nullptr) {
+         CRITICAL(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, job_id);
+#if defined (ENABLE_DEBUG_CHECKS)
+         abort();
+#endif
+      } else {
+         ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
+      }
+   }
+
+   bool master_task = true;
+   const char *last_hostname = nullptr;
+   const lListElem *gdil_ep;
+   const lList *gdil = lGetList(ja_task, JAT_granted_destin_identifier_list);
+   for_each_rw(gdil_ep, gdil) {
+      const char *queue_name = lGetString(gdil_ep, JG_qname);
+      lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
+      if (queue == nullptr) {
+         CRITICAL(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, job_id);
+#if defined (ENABLE_DEBUG_CHECKS)
+         abort();
+#endif
+      } else {
+         const lList *granted_resources_list = lGetList(ja_task, JAT_granted_resources_list);
+         const char *queue_hostname = lGetHost(queue, QU_qhostname);
+         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
+         int slots = lGetUlong(gdil_ep, JG_slots) * factor;
+         lListElem *host;
+
+         /* debit consumable resources from global host */
+         if (debit_host_consumable(job, ja_task, granted_resources_list, pe, global_host_ep, master_centry_list, slots, master_task,
+                                   do_per_global_host_booking, nullptr) > 0) {
+            /* this info is not spooled */
+            sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
+                          SGE_GLOBAL_NAME, nullptr, nullptr, global_host_ep, gdi_session);
+            ocs::ReportingFileWriter::create_host_consumable_records(answer_list, global_host_ep, job, now);
+         }
+         host = host_list_locate(master_exechost_list, queue_hostname);
+         if (host != nullptr) {
+            if (debit_host_consumable(job, ja_task, granted_resources_list, pe, host, master_centry_list, slots, master_task,
+                                      do_per_host_booking, nullptr) > 0) {
+               /* this info is not spooled */
+               sge_add_event(0, sgeE_EXECHOST_MOD, 0, 0,
+                             queue_hostname, nullptr, nullptr, host, gdi_session);
+               ocs::ReportingFileWriter::create_host_consumable_records(answer_list, host, job, now);
+                                      }
+         }
+         qinstance_debit_consumable(queue, job, pe, master_centry_list, slots, master_task,
+                                    do_per_host_booking, nullptr);
+         ocs::ReportingFileWriter::create_queue_consumable_records(answer_list, host, queue, job, now);
+         /* this info is not spooled */
+         qinstance_add_event(queue, sgeE_QINSTANCE_MOD, gdi_session);
+
+         if (ar_id == 0) {
+            /* debit resource quota set */
+            lListElem *rqs;
+            for_each_rw(rqs, master_rqs_list) {
+               if (rqs_debit_consumable(rqs, job, gdil_ep, pe, master_centry_list,
+                                        master_userset_list, master_hgroup_list, slots, master_task, do_per_host_booking) > 0) {
+                  /* this info is not spooled */
+                  sge_add_event(0, sgeE_RQS_MOD, 0, 0, lGetString(rqs, RQS_name), nullptr, nullptr, rqs, gdi_session);
+               }
+            }
+         } else if (ar != nullptr) {
+            /* debit in advance reservation */
+            int bookings = 0;
+            lListElem *ar_queue = lGetSubStrRW(ar, QU_full_name, queue_name, AR_reserved_queues);
+            if (ar_queue != nullptr) {
+               bookings += qinstance_debit_consumable(ar_queue, job, pe, master_centry_list, slots, master_task,
+                                                      do_per_host_booking, nullptr) > 0;
+            }
+            if (ar_global_host != nullptr) {
+               bookings += debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_global_host, master_centry_list, slots, master_task, do_per_global_host_booking, nullptr) > 0;
+            }
+            lListElem *ar_host = lGetSubHostRW(ar, EH_name, queue_hostname, AR_reserved_hosts);
+            if (ar_host != nullptr) {
+               bookings += debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_host, master_centry_list, slots, master_task, do_per_host_booking, nullptr) > 0;
+            }
+            if (bookings > 0) {
+               DSTRING_STATIC(buffer, 32);
+               /* this info is not spooled */
+               sge_dstring_sprintf(&buffer, sge_u32, ar_id);
+               sge_add_event(0, sgeE_AR_MOD, ar_id, 0, sge_dstring_get_string(&buffer), nullptr, nullptr, ar, gdi_session);
+            }
+         }
+      }
+      master_task = false;
+      do_per_global_host_booking = false;
+   }
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief Undebits consumable resources for a job array task
+ *
+ * This is a convenience wrapper around job_ja_task_debit() that credits back
+ * (undebits) consumable resources previously debited for a job array task.
+ * It calls job_ja_task_debit() with a factor of -1 to reverse the debiting.
+ *
+ * This function is typically used when:
+ * - A job's resource requests are reduced with qalter -when now
+ * - Resources need to be freed before re-debiting with new amounts
+ *
+ * @param[in] job The job object (JB_Type) containing the job array task
+ * @param[in] ja_task The job array task (JAT_Type) for which to credit resources
+ * @param
+ * @param[out] answer_list Pointer to answer list for error messages and reporting records
+ *
+ * @return true on success, false on failure
+ *
+ * @note Thread-safe: Requires the global lock to be held by the caller
+ *
+ * @see job_ja_task_debit()
+ * @see job_redebit()
+ */
+bool
+job_ja_task_undebit(const lListElem *job, const lListElem *ja_task, lList **answer_list, u_long32 gdi_session) {
+   DENTER(TOP_LAYER);
+   DRETURN(job_ja_task_debit(job, ja_task, answer_list,gdi_session, -1));
+}
+
+/**
+ * @brief Re-debits consumable resources after job modification with -when now
+ *
+ * This function handles the re-debiting of consumable resources when a running job's
+ * resource requests are modified using qalter -when now. It performs a two-step process:
+ * 1. Undebits (credits back) resources using the old job's resource requests
+ * 2. Debits resources using the new job's modified resource requests
+ *
+ * This ensures that the resource accounting remains consistent when resource requests
+ * are decreased (e.g., reducing the number of licenses or memory requested).
+ *
+ * @param[in] old_job The job object (JB_Type) with original resource requests
+ * @param[in] new_job The job object (JB_Type) with modified resource requests
+ * @param[out] answer_list Pointer to answer list for error messages and reporting records
+ * @param gdi_session
+ *
+ * @return true on success, false on failure
+ *
+ * @note Thread-safe: Requires the global lock to be held by the caller
+ * @note This function processes all job array tasks (JB_ja_tasks) of the job
+ * @note Currently always returns true or aborts on critical errors in debug builds
+ *
+ * @see job_ja_task_debit()
+ * @see job_ja_task_undebit()
+ * @see has_invalid_consumable_changes()
+ */
+static bool
+job_redebit(const lListElem *old_job, const lListElem *new_job, lList **answer_list, u_long32 gdi_session) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   // undebit old job
+   const lListElem *ja_task;
+   for_each_ep(ja_task, lGetList(old_job, JB_ja_tasks)) {
+      // so far job_ja_task_undebit will always return true (or abort() on critical errors in the dev build)
+      if (ja_task_is_running(ja_task)) {
+         job_ja_task_undebit(old_job, ja_task, answer_list, gdi_session);
+      }
+   }
+
+   // debit new job
+   if (ret) {
+      for_each_ep(ja_task, lGetList(new_job, JB_ja_tasks)) {
+         // so far job_ja_task_debit will always return true (or abort() on critical errors in the dev build)
+         if (ja_task_is_running(ja_task)) {
+            job_ja_task_debit(new_job, ja_task, answer_list, gdi_session);
+         }
+      }
+   }
+
+   DRETURN(ret);
+}

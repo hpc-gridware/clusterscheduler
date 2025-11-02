@@ -1110,4 +1110,7 @@
 
 #define MSG_PARSE_BSORT_CONTRA_S          _MESSAGE(60744, _("contradicting ascending and descending sort order in binding sort " SFQ))
 
+#define MSG_GDI_USAGE_when_OPT              "[-when now|on_reschedule]"
+#define MSG_GDI_UTEXT_when_OPT              _MESSAGE(60745, _("apply modification immediately or on job rescheduling"))
+
 // clang-format on

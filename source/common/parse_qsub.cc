@@ -2046,7 +2046,7 @@ DTRACE;
          continue;
 
       }
-/*-----------------------------------------------------------------------------*/
+      /*-----------------------------------------------------------------------------*/
       /* "-wd" */
 
       if (!strcmp("-wd", *sp)) {
@@ -2060,6 +2060,30 @@ DTRACE;
 
          ep_opt = sge_add_arg(pcmdline, wd_OPT, lStringT, "-wd", *sp);
          lSetString(ep_opt, SPA_argval_lStringT, *sp);
+
+         sp++;
+         continue;
+      }
+
+      /*-----------------------------------------------------------------------------*/
+      /* "-when" */
+
+      if (strcmp("-when", *sp) == 0) {
+         sp++;
+         if (*sp == nullptr) {
+            answer_list_add_sprintf(&answer,STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                  MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, *(sp - 1));
+            DRETURN(answer);
+         }
+         qalter_when_t when;
+         if (!job_parse_when_string(*sp, when)) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_INVALIDOPTIONARGUMENT_SS, "-when", *sp);
+            DRETURN(answer);
+         } else {
+            ep_opt = sge_add_arg(pcmdline, when_OPT, lUlongT, "-when", *sp);
+            lSetUlong(ep_opt, SPA_argval_lUlongT, when);
+         }
 
          sp++;
          continue;

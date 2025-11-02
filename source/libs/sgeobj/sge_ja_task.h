@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -80,3 +80,6 @@ ja_task_debit_host_rsmaps(const lList *granted_resources_list, lListElem *host, 
 
 int
 ja_task_debit_host_bindings(const lList *granted_resources_list, lListElem *host, int slots, bool *just_check);
+
+bool
+ja_task_is_running(const lListElem *ja_task);
