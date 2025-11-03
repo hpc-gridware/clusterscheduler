@@ -264,42 +264,42 @@ centry_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lList
 
 /****** sge_centry_qmaster/centry_success() ************************************
 *  NAME
-*     centry_success() -- ??? 
+*     centry_success() -- ???
 *
 *  SYNOPSIS
-*     int centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t 
-*     *object) 
+*     int centry_success(lListElem *ep, lListElem *old_ep, gdi_object_t
+*     *object)
 *
 *  FUNCTION
 *
 *
 *  INPUTS
-*     lListElem *ep        - ??? 
-*     lListElem *old_ep    - ??? 
-*     gdi_object_t *object - ??? 
+*     lListElem *ep        - ???
+*     lListElem *old_ep    - ???
+*     gdi_object_t *object - ???
 *
 *  RESULT
-*     int - 
+*     int -
 *
 *  EXAMPLE
-*     ??? 
+*     ???
 *
 *  NOTES
-*     MT-NOTE: centry_success() is not MT safe 
+*     MT-NOTE: centry_success() is not MT safe
 *
 *  BUGS
-*     This function is the cause for huge overhead with processing complex 
-*     entry change requests: Each change with complex configuration causes 
-*     debitations for ALL resources be re-done with all hosts and queues 
-*     based on per job resource requests. There should be a chance to notably 
-*     lower resource consumption doing this only for those complexes where 
+*     This function is the cause for huge overhead with processing complex
+*     entry change requests: Each change with complex configuration causes
+*     debitations for ALL resources be re-done with all hosts and queues
+*     based on per job resource requests. There should be a chance to notably
+*     lower resource consumption doing this only for those complexes where
 *     changes actually occurred.
-* 
+*
 *     There is no need sort centry list each time a change occurs (fixed).
-* 
+*
 *     Reporting needs to be updated only for the changed complex entry (minor issue).
 *
-*     No updates have to be done for the ADD operation - the centry cannot be 
+*     No updates have to be done for the ADD operation - the centry cannot be
 *     referenced anywhere at ADD time (fixed).
 *
 *     Update is only required, if the consumable attribute changed or
@@ -327,7 +327,7 @@ centry_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lL
                  lGetString(ep, CE_name), nullptr, nullptr, ep, packet->gdi_session);
 
    if (old_ep != nullptr) {
-      /* 
+      /*
        * If a complex has become a consumable, or
        * is no longer a consumable, or
        * it is a consumable and the default value has changed,
@@ -465,15 +465,15 @@ sge_change_queue_version_centry(u_long64 gdi_version) {
 *     centry_redebit_consumables() -- recompute consumable debitation
 *
 *  SYNOPSIS
-*     void 
-*     centry_redebit_consumables(const lList *centries) 
+*     void
+*     centry_redebit_consumables(const lList *centries)
 *
 *  FUNCTION
 *     Recomputes the complete consumable debitation for all queues, hosts and
 *     jobs.
 *
 *  INPUTS
-*     const lList *centries - list of centries that acually require 
+*     const lList *centries - list of centries that acually require
 *                             recomputation.
 *
 *  NOTES
@@ -482,9 +482,9 @@ sge_change_queue_version_centry(u_long64 gdi_version) {
 *
 *     TODO: This function could be highly optimized by taking into account the
 *     centry list passed as parameter.
-*     This would not only increase performance by only recomputing the 
-*     debitation for only the changed centries (and spooling only the actually 
-*     affected queues instead of all), but also reduce the number of scheduling 
+*     This would not only increase performance by only recomputing the
+*     debitation for only the changed centries (and spooling only the actually
+*     affected queues instead of all), but also reduce the number of scheduling
 *     decisions trashed due to a changed queue version number.
 *******************************************************************************/
 void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
@@ -511,10 +511,10 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
       debit_host_consumable(nullptr, nullptr, nullptr, nullptr, hep, master_centry_list, 0, true, true, nullptr);
    }
 
-   /* 
-    * completely rebuild resource utilization of 
+   /*
+    * completely rebuild resource utilization of
     * all queues and execution hosts
-    * change versions of corresponding queues 
+    * change versions of corresponding queues
     */
    for_each_rw (jep, master_job_list) {
       lListElem *jatep;
@@ -523,25 +523,22 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
          bool master_task = true;
          const lListElem *gdil;
          lListElem *qep = nullptr;
-         int slots = 0;
          const char *last_hostname = nullptr;
          const lListElem *pe = lGetObject(jatep, JAT_pe_object);
          const lList *granted_resources_list = lGetList(jatep, JAT_granted_resources_list);
 
          bool do_per_global_host_booking = true;
+         lListElem *global_host = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            int qslots;
-
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil, JG_qname)))) {
                /* should never happen */
                master_task = false;
                continue;
             }
 
-            qslots = lGetUlong(gdil, JG_slots);
-
-            debit_host_consumable(jep, jatep, granted_resources_list, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
-                                  master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
+            int qslots = lGetUlong(gdil, JG_slots);
+            debit_host_consumable(jep, jatep, granted_resources_list, pe, global_host, master_centry_list, qslots,
+                                  master_task, do_per_global_host_booking, nullptr);
 
             bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
             debit_host_consumable(jep, jatep, granted_resources_list, pe, host_list_locate(master_ehost_list,
@@ -549,7 +546,6 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
                                   master_task, do_per_host_booking, nullptr);
             qinstance_debit_consumable(qep, jep, pe, master_centry_list, qslots, master_task, do_per_host_booking,
                                        nullptr);
-            slots += qslots;
             master_task = false;
             do_per_global_host_booking = false;
          }
