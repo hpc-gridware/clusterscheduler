@@ -524,34 +524,28 @@ void centry_redebit_consumables(const lList *centries, u_long64 gdi_version) {
          bool master_task = true;
          const lListElem *gdil;
          lListElem *qep = nullptr;
-         int slots = 0;
          const char *last_hostname = nullptr;
          const lListElem *pe = lGetObject(jatep, JAT_pe_object);
 
          bool do_per_global_host_booking = true;
+         lListElem *global_host = host_list_locate(master_ehost_list, SGE_GLOBAL_NAME);
          for_each_ep(gdil, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            int qslots;
-
             if (!(qep = cqueue_list_locate_qinstance(master_cqueue_list, lGetString(gdil, JG_qname)))) {
                /* should never happen */
                master_task = false;
                continue;
             }
 
-            qslots = lGetUlong(gdil, JG_slots);
-
-            // @todo CS-1586 Is this correct? Shouldn't it be qslots we pass to the debiting functions?
-            debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list, SGE_GLOBAL_NAME),
-                                  master_centry_list, slots, master_task, do_per_global_host_booking, nullptr);
+            int qslots = lGetUlong(gdil, JG_slots);
+            debit_host_consumable(jep, jatep, pe, global_host, master_centry_list, qslots,
+                                  master_task, do_per_global_host_booking, nullptr);
 
             bool do_per_host_booking = host_do_per_host_booking(&last_hostname, lGetHost(gdil, JG_qhostname));
             debit_host_consumable(jep, jatep, pe, host_list_locate(master_ehost_list,
-                                                                        lGetHost(qep, QU_qhostname)),
-                                  master_centry_list, qslots,
+                         lGetHost(qep, QU_qhostname)), master_centry_list, qslots,
                                   master_task, do_per_host_booking, nullptr);
             qinstance_debit_consumable(qep, jep, pe, master_centry_list, qslots, master_task, do_per_host_booking,
                                        nullptr);
-            slots += qslots;
             master_task = false;
             do_per_global_host_booking = false;
          }
