@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -72,5 +72,6 @@ void sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
 void sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 void trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 tid, int delta);
+void create_timed_events_for_simulated_jobs();
 
 void cancel_job_resend(u_long32 jid, u_long32 tid);

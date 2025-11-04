@@ -308,6 +308,8 @@ sge_timer_terminate() {
 *******************************************************************************/
 [[noreturn]] void *
 sge_timer_main(void *arg) {
+   DENTER(TOP_LAYER);
+
    auto *thread_config = (cl_thread_settings_t *) arg;
    monitoring_t monitor;
    monitoring_t *p_monitor = &monitor;
@@ -317,11 +319,9 @@ sge_timer_main(void *arg) {
    u_long64 now;
    u_long64 next_prof_output = 0;
 
-   DENTER(TOP_LAYER);
-
    DPRINTF("started\n");
 
-   // set thread name and id used by logging an others
+   // set the thread name and id used by logging and others
    const char *thread_name = thread_config->thread_name;
    int thread_id = thread_config->thread_id;
    component_set_thread_name(thread_name);
