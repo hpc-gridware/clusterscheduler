@@ -686,13 +686,24 @@ sge_job_resend_event_handler_sim_job_end(u_long32 jobid, u_long32 jataskid, lLis
 }
 
 static int
-sge_job_resend_event_handler_sim_job_runtime(const lListElem *jep) {
+sge_job_resend_event_handler_sim_job_runtime(u_long64 now, const lListElem *job, const lListElem *ja_task) {
    const lListElem *argv1;
    int runtime = 3;
 
-   argv1 = lFirst(lGetList(jep, JB_job_args));
+   argv1 = lFirst(lGetList(job, JB_job_args));
    if (argv1 != nullptr) {
       runtime = atoi(lGetString(argv1, ST_name));
+   }
+
+   // We might get here due to a restart of sge_qmaster.
+   // Do not re-start with the whole simulated runtime but consider the already passed time.
+   u_long64 start_time = lGetUlong64(ja_task, JAT_start_time);
+   if (start_time > 0) {
+      int passed = sge_gmt64_to_gmt32(now - start_time);
+      runtime -= passed;
+      if (runtime < 0) {
+         runtime = 0;
+      }
    }
 
    return runtime;
@@ -704,7 +715,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    const lListElem *ep;
    lListElem *hep = nullptr;
    const lListElem *mqep;
-   lList *jatasks;
    const char *qnm, *hnm;
    u_long32 jobid = te_get_first_numeric_key(anEvent);
    u_long32 jataskid = te_get_second_numeric_key(anEvent);
@@ -726,10 +736,8 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       DRETURN_VOID;
    }
 
-   jatasks = lGetListRW(jep, JB_ja_tasks);
-
    if (mconf_get_simulate_execds()) {
-      int runtime = sge_job_resend_event_handler_sim_job_runtime(jep);
+      int runtime = sge_job_resend_event_handler_sim_job_runtime(now, jep, jatep);
 
       if (ISSET(lGetUlong(jatep, JAT_state), JDELETED)) {
          // job has been deleted
@@ -754,6 +762,8 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* check whether a slave execd allowance has to be retransmitted */
+   lList *jatasks = lGetListRW(jep, JB_ja_tasks);
+
    if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
 
       ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
@@ -818,14 +828,14 @@ cancel_job_resend(u_long32 jid, u_long32 ja_task_id) {
 }
 
 /* 
- * if hep equals to nullptr resend is triggered immediatelly
+ * if hep equals to nullptr, resend is triggered immediately
  */
 void
 trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 ja_task_id, int delta) {
+   DENTER(TOP_LAYER);
+
    u_long32 seconds;
    te_event_t ev = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (mconf_get_simulate_execds()) {
       seconds = delta;
@@ -838,6 +848,43 @@ trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 ja_task_
    ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, jid, ja_task_id, "job-resend_event");
    te_add_event(ev);
    te_free_event(&ev);
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Recreates timed events for all running jobs in execd simulation mode.
+ *
+ * When execd simulation is enabled, this function iterates through all jobs and their
+ * array tasks in the master job list. For each running task, it calculates the remaining
+ * runtime and triggers a job resend event. This is used during qmaster restart
+ * to restore the timing state of simulated job executions.
+ *
+ * @note Only active when mconf_get_simulate_execds() returns true.
+ *
+ * @see trigger_job_resend()
+ * @see sge_job_resend_event_handler()
+ */
+void
+create_timed_events_for_simulated_jobs() {
+   DENTER(TOP_LAYER);
+
+   if (mconf_get_simulate_execds()) {
+      u_long64 now = sge_get_gmt64();
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+      const lListElem *job;
+      for_each_ep(job, master_job_list) {
+         const lListElem *ja_task;
+         for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
+            if (ja_task_is_running(ja_task)) {
+               u_long32 jobid = lGetUlong(job, JB_job_number);
+               u_long32 jataskid = lGetUlong(ja_task, JAT_task_number);
+               int runtime = sge_job_resend_event_handler_sim_job_runtime(now, job, ja_task);
+               trigger_job_resend(now, nullptr, jobid, jataskid, runtime);
+            }
+         }
+      }
+   }
 
    DRETURN_VOID;
 }

@@ -63,6 +63,7 @@
 #include "ocs_MirrorDataStore.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_thread_main.h"
+#include "sge_give_jobs.h"
 #include "sge_qmaster_heartbeat.h"
 #include "sge_thread_listener.h"
 #include "sge_thread_signaler.h"
@@ -311,9 +312,12 @@ int main(int argc, char *argv[]) {
    ocs::event_mirror_initialize();
 
    sge_timer_initialize(&monitor);
+   // In case we are using simulated execds, we need to register timed events to handle them.
+   create_timed_events_for_simulated_jobs();
+
    sge_worker_initialize();
 
-   // before we start reader and listener we wait for the mirror threads to be ready
+   // before we start reader and listener, we wait for the mirror threads to be ready
    ocs::event_mirror_block_till_initial_events_handled();
 
    sge_reader_initialize();
