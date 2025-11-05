@@ -206,7 +206,7 @@ The binding that is finally applied to a job is visible in `qstat` and `qrstat` 
 qstat -j <jid> or qrstat -ar <ar_id>
 ...
 binding:               bamount=1,binstance=set,bstrategy=pack,btype=host,bunit=X
-exec_binding_list 1:   v01702.fritz.box=NSxycttycttyXYCTTYCTT...
+exec_binding_list 1:   host1=NSxycttycttyXYCTTYCTT...
 ```
 
 The *binding* line repeats the requested binding, whereas the *exec_binding_list* shows the assigned binding per host (or the combined slot binding per host). In this example these are all cores/threads including all L2 caches below the first L3 cache of the first Socket
@@ -243,11 +243,11 @@ Filters are **additive**: both, globally disabled units and job-specific disable
 
 ## Binding Strategy
 
-**Packed Binding** is the primary (default) binding strategy in Open and xxQS_NAMExx. It provides more flexibility than the static binding strategies found in earlier versions of Grid Engine. 
+**Packed Binding** is the primary (default) binding strategy in Open Cluster Scheduler (OCS) and xxQS_NAMExx (GCS). It provides more flexibility than the static binding strategies found in earlier versions of Grid Engine. 
 
 If the product is able to select additional strategies in the future, then the binding strategy can be selected with the `-bstrategy` option.
 
-In **Open Cluster Scheduler (OCS)**, packed binding assigns **available** units sequentially from **left to right** in the node’s topology string. The scheduler starts at the first available unit and continues until either the required number of units has been assigned or the end of the topology string is reached. If all requested units are available, the binding is applied to the job. If not, the binding cannot be applied on that host.
+In **OCS**, packed binding assigns **available** units sequentially from **left to right** in the node’s topology string. The scheduler starts at the first available unit and continues until either the required number of units has been assigned or the end of the topology string is reached. If all requested units are available, the binding is applied to the job. If not, the binding cannot be applied on that host.
 
 A unit is considered available when all child units are not in use by other jobs. This means for core binding (C) all threads of selected cores must be free or for Chiplet/Die binding (X) all cores on that Chiplet/Die as well as all threads within each of those cores must be unused.
 
@@ -344,19 +344,19 @@ Sorting and start and stop positions help especially to group tasks of a paralle
 
 ## Binding Instance
 
-The `-binstance` switch defines the instance that realizes the core binding on a machine. Jobs can distinguish the selected binding method by evaluating the environment variable GCS_BINDING_INSTANCE that is exported into the job environment showing the name of the selected instance.
+The `-binstance` switch defines the instance that realizes the core binding on a machine. Jobs can distinguish the selected binding method by evaluating the environment variable SGE_BINDING_INSTANCE that is exported into the job environment showing the name of the selected instance.
 
 The following binding instances are possible:
 
 - *set* - The binding is applied by Cluster Scheduler. How this is achieved depends on the underlying operating system of the execution host where the submitted job will be started.
-- *env* - Cluster Scheduler will not do the core binding, but the job can do the binding using the information provided by the environment variable GCS_BINDING.
+- *env* - Cluster Scheduler will not do the core binding, but the job can do the binding using the information provided by the environment variable SGE_BINDING_CPUSET or SGE_BIDNING_TOPOLOGY.
 - *pe* - The binding instance pe causes the binding information to be written into the fourth column of the `pe_hostfile`. Here logical socket and core IDs will be printed. Numbering starts at 0 and numbers have no holes. Socket and core IDs are separated by the comma character (:), and those number pairs are separated by colon character (,). ‘0:0,0:1’ means core 0 and 1 on socket 0. Depending in the MPI implementation this addition column will be evaluated to do the core binding. Some MPI implementations require additional switches or environment variables to enable that functionality or socket/core pairs need to be converted into a different format and passed either via switches to the MPI runtime or via *rankfile* file mechanism. Consult your MPI documentation for details.
 
 Independent of the binding instance and if a job is requesting binding, the following environment variables will be available within the job environment:
 
 - SGE_BINDING_INSTANCE - shows the selected binding instance or NONE if no binding is applied.
 - SGE_BINDING_TOPOLOGY - shows the topology string of the host where a job or task is running. Bound units are shown in lowercase letters. Without binding NONE is shown.
-- SGE_BUNDING_CPUSET - shows the cpuset string (as printed by HWLOC) or 0x0 if no binding affinity is applied.
+- SGE_BINDING_CPUSET - shows the cpuset string (as printed by HWLOC) or 0x0 if no binding affinity is applied.
 
 ## Configuration Parameters Influencing Binding
 
