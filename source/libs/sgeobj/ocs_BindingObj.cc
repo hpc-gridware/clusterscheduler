@@ -53,6 +53,13 @@
 #include "msg_common.h"
 #include "sge_conf.h"
 
+void
+ocs::Binding::clear(lListElem *parent, const int nm) {
+   DENTER(TOP_LAYER);
+   lSetObject(parent, nm, nullptr);
+   DRETURN_VOID;
+}
+
 lListElem *
 ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList**answer) {
    DENTER(TOP_LAYER);

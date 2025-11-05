@@ -47,6 +47,7 @@
 
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_BindingInstance.h"
+#include "sgeobj/ocs_BindingObj.h"
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingStop.h"
 #include "sgeobj/ocs_BindingStrategy.h"
@@ -697,7 +698,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
        * and all other -b...-switches that are also related to -binding
        */
       {
-         lListElem *binding_elem = lGetObject(new_job, JB_binding);
+         lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(new_job, JB_binding, answer_list);
 
          if (binding_elem != nullptr) {
             if (ret && strcmp("bamount", param) == 0) {
@@ -771,6 +772,13 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
                   lSetUlong(binding_elem, BN_instance, ocs::BindingInstance::Instance::NONE);
                }
             }
+         }
+
+         // If no binding parameters are set, remove the binding element again
+         if (lGetUlong(binding_elem, BN_amount) == 0) {
+            ocs::Binding::clear(new_job, JB_binding);
+         } else {
+            ocs::Binding::binding_set_missing_defaults(new_job, JB_binding);
          }
       }
 

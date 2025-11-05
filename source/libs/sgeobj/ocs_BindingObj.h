@@ -47,6 +47,7 @@ namespace ocs {
    class Binding {
    public:
       static lListElem *binding_get_or_create_elem(lListElem *parent, int nm, lList **answer);
+      static void clear(lListElem *parent, int nm);
       static bool binding_was_requested(const lListElem *parent, int nm);
       static BindingType::Type binding_get_type(const lListElem *parent, int nm);
       static BindingUnit::Unit binding_get_unit(const lListElem *parent, int nm);
