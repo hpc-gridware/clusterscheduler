@@ -35,6 +35,8 @@
 #
 #  Portions of this software are Copyright (c) 2011 Univa Corporation
 #
+#  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -89,7 +91,7 @@ BasicSettings()
          $ECHO "Failed: $SGE_ARCH platform is not supported."
          $ECHO "Exiting installation."
          exit 2
-         ;;   
+         ;;
       *)
          $ECHO "Can't find binaries for architecture: $SGE_ARCH!"
          $ECHO "Please check your binaries. Installation failed!"
@@ -102,10 +104,10 @@ BasicSettings()
    SPOOLINIT=$SGE_UTILBIN/spoolinit
    HOST=`$SGE_UTILBIN/gethostname -name`
 
-   RM="rm -f"
-   TOUCH="touch"
-   MORE_CMD="more"
-   CHMOD="chmod"
+  RM="rm -f"
+  TOUCH="touch"
+  MORE_CMD="more"
+  CHMOD="chmod"
    INFOTEXT="echo"
 }
 

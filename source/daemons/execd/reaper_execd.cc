@@ -95,6 +95,7 @@
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "msg_execd.h"
+#include "sge_io.h"
 
 #if defined(BINDING_SOLARIS)
 #  include "uti/sge_uidgid.h"
@@ -802,6 +803,17 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
    DRETURN(0);
 }
 
+static void
+write_failed_info(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, const lListElem *jr) {
+   DSTRING_STATIC(dstr_filename, SGE_PATH_MAX);
+   DSTRING_STATIC(dstr_failed, MAX_STRING_SIZE);
+   sge_get_active_job_file_path(&dstr_filename, job_id, ja_task_id, pe_task_id, "failed");
+   sge_dstring_sprintf(&dstr_failed, sge_u32 ":" SFN2 "\n",
+                       lGetUlong(jr, JR_failed), lGetString(jr, JR_err_str));
+   sge_string2file(sge_dstring_get_string(&dstr_failed), sge_dstring_strlen(&dstr_failed),
+                sge_dstring_get_string(&dstr_filename));
+}
+
 /* ------------------------- */
 void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, lListElem *jr)
 {
@@ -826,7 +838,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
 
    pe_task_id_str = jr?lGetString(jr, JR_pe_task_id_str):nullptr;
 
-   // check if job should be kept active
+   // check if the job shall be kept active
    {
       keep_active_t keep_active = mconf_get_keep_active();
       bool job_failed = lGetUlong(jr, JR_failed) != 0 ? true : false;
@@ -835,6 +847,11 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
           sge_getenv("SGE_KEEP_ACTIVE") ||
           (keep_active == KEEP_ACTIVE_ERROR && job_failed)) {
          do_rm_active_dir = false;
+      }
+
+      if (!do_rm_active_dir && job_failed) {
+         // write failure information info a file in the active jobs dir
+         write_failed_info(job_id, ja_task_id, pe_task_id, jr);
       }
    }
 
@@ -893,8 +910,9 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
       /*
       ** Execute command to delete the client's DCE or Kerberos credentials.
       */
-      if (mconf_get_do_credentials())
+      if (mconf_get_do_credentials()) {
          delete_credentials(sge_root, jep);
+      }
 
       /* remove job/task active dir */
       if (do_rm_active_dir) {

@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -87,6 +87,7 @@
 
 #include "comm/commlib.h"
 
+#include "execd.h"
 #include "get_path.h"
 #include "sge_job_qmaster.h"
 #include "tmpdir.h"
@@ -115,8 +116,6 @@ static int ck_login_sh(char *shell);
 
 static int get_nhosts(const lList *gdil_list);
 
-/* from execd.c import the working dir of the execd */
-extern char execd_spool_dir[SGE_PATH_MAX];
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(FREEBSD)
@@ -129,7 +128,7 @@ static long get_next_addgrpid(lList *, long);
 #endif
 #endif
 
-/* 
+/*
    in case of regular jobs the queue is the first entry in the gdil list of the job
    in case of tasks the queue is the appropriate entry in the gdil list of the slave job
 */
@@ -281,7 +280,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
  part of execd. Setup job environment then start shepherd.
 
  If we encounter an error we return an error
- return -1==error 
+ return -1==error
         -2==general error (Halt queue)
         -3==general error (Halt job)
         err_str set to error string
@@ -1522,7 +1521,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       int nargs = 1;
 
       /* for pe tasks we have no args - the daemon (rshd etc.) to start
-       * comes from the cluster configuration 
+       * comes from the cluster configuration
        */
       if (petep != nullptr) {
          args = nullptr;
@@ -1644,9 +1643,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          if ((elem = lGetElemStr(environmentList, VA_variable, "QRSH_PORT")) != nullptr) {
             fprintf(fp, "qrsh_control_port=%s\n", lGetString(elem, VA_value));
          }
-        
+
          snprintf(daemon, sizeof(daemon), "%s/utilbin/%s/", sge_root, arch);
-        
+
          if(JOB_TYPE_IS_QLOGIN(jb_now)) {
             char* qlogin_daemon = mconf_get_qlogin_daemon();
             fprintf(fp, "qlogin_daemon=%s\n", qlogin_daemon);
@@ -1892,8 +1891,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
    {
 
-      /* 
-       * Add the signals to the set of blocked signals. Save previous signal 
+      /*
+       * Add the signals to the set of blocked signals. Save previous signal
        * mask. We do this before the fork() to avoid any race conditions with
        * signals being immediately sent to the shepherd after the fork.
        * After the fork we  need to restore the oldsignal mask in the execd
