@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -36,6 +36,7 @@
 #include <cerrno>
 #include <cstring>
 
+#include "uti/sge.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
@@ -48,9 +49,9 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
 
+#include "execd.h"
 #include "sge_load_sensor.h"
 #include "sge_report_execd.h"
-
 #include "msg_execd.h"
 
 static int ls_send_command(lListElem *elem, const char *command);
@@ -224,26 +225,33 @@ static int sge_ls_status(lListElem *this_ls)
 ******************************************************************************/
 static int sge_ls_start_ls(const char *qualified_hostname, lListElem *this_ls)
 {
+   DENTER(TOP_LAYER);
+
    pid_t pid = -1;
    FILE *fp_in = nullptr;
    FILE *fp_out = nullptr;
    FILE *fp_err = nullptr;
-   char buffer[1024];
    char **envp = nullptr;
+   DSTRING_STATIC(dstr_host, CL_MAXHOSTNAMELEN);
+   DSTRING_STATIC(dstr_spool, SGE_PATH_MAX);
 
-   DENTER(TOP_LAYER);
+   const char *str_host = sge_dstring_sprintf(&dstr_host, "%s=%s", "HOST", qualified_hostname);
+   const char *str_spool = sge_dstring_sprintf(&dstr_spool, "%s=%s/%s", "SGE_JOB_SPOOL_DIR", execd_spool_dir, ACTIVE_DIR);
 
-   snprintf(buffer, sizeof(buffer), "%s=%s", "HOST", qualified_hostname);
-   if (has_to_use_qidle
-       && !strcmp(lGetString(this_ls, LS_name), IDLE_LOADSENSOR_NAME)) {
-      envp = (char **) sge_malloc(sizeof(char *) * 3);
-      envp[0] = buffer;
-      envp[1] = (char *)"XAUTHORITY=/tmp/.xauthority";
-      envp[2] = nullptr;
+   // If we are starting the qidle load sensor, we need to export XAUTHORITY.
+   // @todo Does anything speak against exporting it always?
+   //       We do not really want special handling for one specific load sensor.
+   if (has_to_use_qidle && !strcmp(lGetString(this_ls, LS_name), IDLE_LOADSENSOR_NAME)) {
+      envp = (char **) sge_malloc(sizeof(char *) * 4);
+      envp[0] = (char *)str_host;
+      envp[1] = (char *)str_spool;
+      envp[2] = (char *)"XAUTHORITY=/tmp/.xauthority";
+      envp[3] = nullptr;
    } else {
-      envp = (char **) sge_malloc(sizeof(char *) * 2);
-      envp[0] = buffer;
-      envp[1] = nullptr;
+      envp = (char **) sge_malloc(sizeof(char *) * 3);
+      envp[0] = (char *)str_host;
+      envp[1] = (char *)str_spool;
+      envp[2] = nullptr;
    }
 
    /* we need fds for select() .. */
