@@ -87,6 +87,7 @@
 
 #include "comm/commlib.h"
 
+#include "execd.h"
 #include "get_path.h"
 #include "sge_job_qmaster.h"
 #include "tmpdir.h"
@@ -114,9 +115,6 @@
 static int ck_login_sh(char *shell);
 
 static int get_nhosts(const lList *gdil_list);
-
-/* from execd.c import the working dir of the execd */
-extern char execd_spool_dir[SGE_PATH_MAX];
 
 #if defined(OCS_HWLOC)
 

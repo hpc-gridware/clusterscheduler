@@ -28,12 +28,13 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/sge_daemonize.h"
+/* from execd.cc import the working dir of the execd */
+extern char execd_spool_dir[SGE_PATH_MAX];
 
 int sge_execd_register_at_qmaster(bool is_restart);
 u_long64 get_last_qmaster_register_time();

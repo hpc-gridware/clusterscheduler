@@ -35,6 +35,8 @@
 #
 #  Portions of this software are Copyright (c) 2011 Univa Corporation
 #
+#  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -123,7 +125,6 @@ BasicSettings()
   TOUCH="touch"
   MORE_CMD="more"
   CHMOD="chmod"
-
 }
 
 
