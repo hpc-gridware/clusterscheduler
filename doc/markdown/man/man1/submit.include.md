@@ -219,6 +219,23 @@ modified dynamically through the JSV interface to adapt job placement
 policy without user intervention. (see `-jsv` option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -binstance *instance*
+
+The -binstance switch defines the binding instance that realizes core binding on a machine.
+Jobs can identify the selected binding method by evaluating the environment variable 
+SGE_BINDING_INSTANCE, which is exported into the job environment and shows the name of the 
+selected instance.
+Additionally, the SGE_BINDING_CPUSET or SGE_BINDING_TOPOLOGY variables are set that show
+a CPU mask (as hexadecimal string) or a topology string representing the actual binding 
+of the job. Lower case letters in the topology string indicate that the corresponding units are 
+reserved for this job.
+
+Instances:
+
+* set — Binding is applied by the Cluster Scheduler using the operating system’s native mechanism (usually HWLOC)
+* env — Binding is user-defined; the scheduler provides binding information in GCS_BINDING_CPUSET and SGE_BINDING_TOPOLOGY, but no binding is performed automatically.
+* pe — Binding is MPI-defined; binding data is written to the fourth column of the pe_hostfile as socket:core\[,socket:core...\], with numbering starting at 0 (e.g. 0:0,0:1 = cores 0 and 1 on socket 0). Depending on the MPI implementation, this additional column may be evaluated automatically to perform binding. Some MPI runtimes require additional switches, environment variables, or conversion of the socket/core format for use via runtime options or a rankfile mechanism. Consult your MPI documentation for details.
+
 ## -btype *binding_type*
 
 Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
@@ -1677,6 +1694,15 @@ For `qsh` jobs the *DISPLAY* has to be specified at job submission. If the *DISP
 
 In addition to those environment variables specified to be exported to the job via the `-v` or the `-V` option
 (see above) `qsub`, `qsh`, and `qlogin` add the following variables with the indicated values to the variable list:
+
+## SGE\_BINDING\_INSTANCE
+Shows the selected binding instance or NONE if no binding is applied.
+
+## SGE\_BINDING\_TOPOLOGY
+Shows the topology string of the host where the job or task is running. Bound units are indicated in lowercase letters. If no binding is applied, NONE is shown.
+
+## SGE\_BINDING\_CPUSET
+Shows the cpuset string (as printed by HWLOC) or 0x0 if no binding affinity is applied.
 
 ## SGE\_O\_HOME  
 the home directory of the submitting client.

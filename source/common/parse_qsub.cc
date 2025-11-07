@@ -376,16 +376,16 @@ lList *cull_parse_cmdline(
 
          DPRINTF("\"-binstance %s\"\n", *sp);
          if (strcmp("set", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::SET);
          } else if (strcmp("env", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::ENV);
          } else if (strcmp("pe", *sp) == 0) {
-            ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
+            ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
             lSetInt(ep_opt, SPA_argval_lIntT, ocs::BindingInstance::PE);
          } else {
-            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BINSTANCE_INVALID_S, *sp);
             DRETURN(answer);
          }
 
