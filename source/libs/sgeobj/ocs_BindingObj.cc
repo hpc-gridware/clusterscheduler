@@ -85,7 +85,7 @@ ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList*
    // Set defaults. If not changed job-modify (qalter)  will be able to detect what was not set.
    lSetUlong(binding_elem, BN_new_type, BindingType::UNINITIALIZED);
    lSetUlong(binding_elem, BN_instance, BindingInstance::UNINITIALIZED);
-   lSetUlong(binding_elem, BN_amount, -1);
+   lSetUlong(binding_elem, BN_amount, 0);
    lSetUlong(binding_elem, BN_unit, BindingUnit::UNINITIALIZED);
    lSetString(binding_elem, BN_filter, nullptr);
    lSetString(binding_elem, BN_sort, nullptr);

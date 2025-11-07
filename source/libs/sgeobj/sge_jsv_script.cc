@@ -743,9 +743,9 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
 
             if (ret && strcmp("bstop", param) == 0) {
                if (value != nullptr) {
-                  lSetUlong(binding_elem, BN_start, ocs::BindingStop::from_string(value));
+                  lSetUlong(binding_elem, BN_stop, ocs::BindingStop::from_string(value));
                } else {
-                  lSetUlong(binding_elem, BN_start, ocs::BindingStop::Stop::NONE);
+                  lSetUlong(binding_elem, BN_stop, ocs::BindingStop::Stop::NONE);
                }
             }
 
@@ -1448,7 +1448,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
     * and all other binding information specified with -b...-switches at the command line
     */
    {
-      const lListElem *binding_elem = lGetObject(old_job, JB_binding);
+      const lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(old_job, JB_binding, answer_list);
 
       if (binding_elem != nullptr) {
          // -bamount
