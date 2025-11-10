@@ -6314,6 +6314,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
    // when calculating the max_slots after matching the slave requests we need to add the one slot we might
    // have got for the master task
    int master_slot = 0, master_slot_qend = 0;
+   bool found_master_host = false;  // we didn't have a master host when the function was called but now found it
    // we might not have global or master requests at all
    // so lets assume that a master task can run,
    // if global or master request matching fails then revert master_slot / master_slot_qend to 0
@@ -6358,14 +6359,17 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             DPRINTF("%s: parallel_rc_slots_by_time() slave queue already tagged not to match, skipping\n", object_name);
             continue;
          }
+
+         DPRINTF("   --> need_master: %d, is_master_host: %d, found_master_host: %d, master_slot: %d, ign_sreq: %d",
+            need_master, is_master_host, found_master_host, master_slot,
+            lGetBool(a->pe, PE_ignore_slave_requests_on_master_host));
       }
       // @todo do the same check as above also for the global request
 
       // consider PE setting ign_sreq_on_mhost if we are on the (potential) master host
       if (scope == JRS_SCOPE_SLAVE &&
-          (need_master || is_master_host) &&
           lGetBool(a->pe, PE_ignore_slave_requests_on_master_host)) {
-         if (master_slot != 0) {
+         if ((need_master && found_master_host) || is_master_host) {
             if (strcmp(object_name, SGE_GLOBAL_NAME) == 0) {
                // we are matching the global host here, need to do this in any case
                // even if we are on the master host and ignore slave requests
@@ -6437,6 +6441,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             switch (result) {
                case DISPATCH_OK:
                   master_usage = requests;            // for slave matching need to consider what the master task would consume
+                  found_master_host = true;           // we just found our master host
                   // @todo CS-620 sometimes ri_slots_by_time() seems to return 0 (DISPATCH_OK) instead of DISPATCH_NOT_AT_TIME
                   if (avail == 0) {
                      master_slot = 0;
