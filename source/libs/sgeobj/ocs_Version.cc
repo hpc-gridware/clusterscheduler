@@ -35,11 +35,11 @@
 #endif
 
 // @todo CHANGE THE VERSION NUMBERS HERE. ADD A NEW VERSION TO THE LIST BELOW IF PACKING OR CULL CHANGES.
-// CMakeLists.txt and dist/inst_sge have to be be updated too.
+// dist/inst_sge has to be be updated too.
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 0
 #define OCS_VERSION_PATCH 9
-#define OCS_VERSION_SUFFIX "prealpha"
+#define OCS_VERSION_SUFFIX ""
 
 static const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};

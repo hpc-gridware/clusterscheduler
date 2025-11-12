@@ -34,6 +34,59 @@ reduces job scheduling failures, and maximizes return on investment for
 expensive software licenses by enabling intelligent, license-aware
 workload distribution across HPC clusters.
 
+### Faulty Job Loadsensor
+
+This release of Gridware Cluster Scheduler comes with a load sensor for faulty job handling.
+
+All job spool files (such as the sge_shepherd trace file, error file, usage file, ...) of failed
+jobs are copied to a configurable location. Optionally, the job spool files are then removed
+from the execution host.
+
+To enable the faulty job handling
+
+* edit the load sensor and do your configuration settings
+* activate the load sensor
+* activate the `execd_params KEEP_ACTIVE=ERROR`
+
+```bash
+$ vi $SGE_ROOT/util/resources/loadsensors/faulty_jobs.sh
+...
+# Target directory
+FAULTY_JOBS_DIR="$SGE_ROOT/$SGE_CELL/faulty_jobs"
+# Permissions of the target directory
+FAULTY_JOBS_PERM="700"
+# Shall we delete failed jobs' active job directory? Set to "true" or "false".
+FAULTY_JOBS_DELETE="true"
+# Log file - default: /dev/null, set to a file name for debugging,
+# e.g, /tmp/faulty_jobs.log
+LOGFILE="/dev/null"
+...
+```
+
+```bash
+$ qconf -mconf
+...
+load_sensor $sge_root/util/resources/loadsensors/faulty_jobs.sh
+...
+execd_params KEEP_ACTIVE=ERROR
+...
+```
+
+(Available in Gridware Cluster Scheduler only)
+
+### Decrease Resource Requests of Running Jobs
+
+This release adds the means to decrease the amount of resources used by running jobs.
+
+A typical example is freeing a license resource from a long-running job so that other jobs can consume it.
+
+The new `qalter -when now` switch introduced with this release allows decreasing resource requests; in the example of the license, allows freeing of the license once it is no longer necessary.
+
+See man page `qalter.1` for details.
+
+(Available in Gridware Cluster Scheduler only)
+
+
 ## v9.0.5
 
 ### qtelemetry (Developer Preview)
@@ -182,7 +235,7 @@ A list of all special variables is given in the sge_conf.5 man page in the `prol
 
   - the `sge_qmaster` to crash
   - issues in the internal bookkeeping of the scheduler
-  - jobs to be stuck in the system without beeing able to delete them
+  - jobs to be stuck in the system without being able to delete them
   - ...
 
   Find the full List of fixes in the next chapter.
@@ -557,7 +610,7 @@ qsub -pe mpi 16 -scope master -q io.q -l memory=1G \
      -scope slave -q compute.q -l memory=2G,gpu=1 job_script.sh
 ```
 
-Using the -scope switch has the following constaints:
+Using the -scope switch has the following constraints:
 
 * It cannot be used with sequential jobs.
 * Soft queue (-q) or resource requests (-l) are only allowed in the global scope.
@@ -571,5 +624,5 @@ for backward compatibility, but it is recommended to use the new `-scope master`
 
 Resource requests per scope can also be modified by `qalter` and via JSV scripts.
 
-[//]: # (Eeach file has to end with two emty lines)
+[//]: # (Each file has to end with two emty lines)
 

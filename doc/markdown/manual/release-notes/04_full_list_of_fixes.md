@@ -1,5 +1,73 @@
 # Full List of Fixes
 
+## v9.0.9
+
+### Improvement
+
+[CS-186](https://hpc-gridware.atlassian.net/browse/CS-186) show task concurrency in qstat -j job\_id
+
+[CS-337](https://hpc-gridware.atlassian.net/browse/CS-337) make sure that all dbwriter tests in the checktree\_arco run through with the old reporting file format
+
+[CS-1271](https://hpc-gridware.atlassian.net/browse/CS-1271) One line installer script should check if /etc/hosts is configured correctly to prevent installation issues
+
+[CS-1289](https://hpc-gridware.atlassian.net/browse/CS-1289) add a load sensor for handling failed job information
+
+[CS-1302](https://hpc-gridware.atlassian.net/browse/CS-1302) Add man page for qtelemetry as quickstart guide for an admin
+
+[CS-1378](https://hpc-gridware.atlassian.net/browse/CS-1378) document the error codes which can be reported in the accounting failed attribute
+
+[CS-1483](https://hpc-gridware.atlassian.net/browse/CS-1483) initialize hostname in the component module once per process instead of once per thread
+
+[CS-1485](https://hpc-gridware.atlassian.net/browse/CS-1485) Add support for OCS 9.0.8 in quickinstall
+
+[CS-1543](https://hpc-gridware.atlassian.net/browse/CS-1543) Add a section about license-manager in Admin Guide
+
+[CS-1548](https://hpc-gridware.atlassian.net/browse/CS-1548) Env variables for license-manager should have a prefix SGE\_LM\_
+
+[CS-1592](https://hpc-gridware.atlassian.net/browse/CS-1592) when KEEP\_ACTIVE=ERROR is configured sge\_execd shall write the failure reason to a file in the job spool directory
+
+### New Feature
+
+[CS-946](https://hpc-gridware.atlassian.net/browse/CS-946) As a user I want to decrease requested resources during job runtime to free licenses and memory \(qalter modifies running job\)
+
+[CS-1452](https://hpc-gridware.atlassian.net/browse/CS-1452) Add native integration into FlexLM for simplifying setups
+
+[CS-1473](https://hpc-gridware.atlassian.net/browse/CS-1473) Add external license usage to license manager to minimize problems with external usage or to block licenses for other usage
+
+### Task
+
+[CS-1494](https://hpc-gridware.atlassian.net/browse/CS-1494) add dbwriter to the GCS product build and daily build
+
+[CS-1512](https://hpc-gridware.atlassian.net/browse/CS-1512) remove dependency on libjuti.so
+
+[CS-1534](https://hpc-gridware.atlassian.net/browse/CS-1534) Create a SBOM file for License Manager
+
+[CS-1535](https://hpc-gridware.atlassian.net/browse/CS-1535) Create a man page for License Manager
+
+[CS-1542](https://hpc-gridware.atlassian.net/browse/CS-1542) Add license-manager to GCS packages
+
+[CS-1573](https://hpc-gridware.atlassian.net/browse/CS-1573) Add Open Cluster Scheduler / Gridware Cluster Scheduler support to OpenMPI documentation
+
+[CS-1586](https://hpc-gridware.atlassian.net/browse/CS-1586) verify re-debiting of all jobs after a change to the complex definition
+
+### Bug
+
+[CS-1478](https://hpc-gridware.atlassian.net/browse/CS-1478) In Go DRMAA soft wallclock time is not reported correctly
+
+[CS-1493](https://hpc-gridware.atlassian.net/browse/CS-1493) old reporting file format contains 64bit timestamps
+
+[CS-1511](https://hpc-gridware.atlassian.net/browse/CS-1511) testsuite: temporary directories which are created in a setup\_function are deleted before the actual test starts
+
+[CS-1536](https://hpc-gridware.atlassian.net/browse/CS-1536) the execd\_params INHERIT\_ENV=FALSE does not have effect on qrsh \(with command\)
+
+[CS-1540](https://hpc-gridware.atlassian.net/browse/CS-1540) qrsh -now no waiting for its job to be scheduled might crash on sge\_qmaster migration
+
+[CS-1546](https://hpc-gridware.atlassian.net/browse/CS-1546) Licenses should be configured as consumable JOB in license-manager
+
+[CS-1584](https://hpc-gridware.atlassian.net/browse/CS-1584) Simulated jobs run endlessly when the qmaster is restarted
+
+[CS-1593](https://hpc-gridware.atlassian.net/browse/CS-1593) parallel job stays pending certain scenarios with PE settings ign\_sreq\_on\_mhost=TRUE and job\_is\_first\_task=FALSE
+
 ## v9.0.8
 
 ### Improvement
