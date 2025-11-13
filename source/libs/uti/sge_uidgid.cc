@@ -497,55 +497,37 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    DRETURN(0);
 } /* sge_uid2user() */
 
-/****** uti/uidgid/sge_gid2group() ********************************************
-*  NAME
-*     sge_gid2group() -- Resolves gid to group name. 
-*
-*  SYNOPSIS
-*     int sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) 
-*
-*  FUNCTION
-*     Resolves gid to group name. if 'dst' is nullptr the function checks
-*     only if the gid is resolvable. 
-*
-*  INPUTS
-*     uid_t gid   - group id 
-*     char *dst   - buffer for the group name 
-*     size_t sz   - buffersize 
-*     int retries - number of retries 
-*
-*  NOTES
-*     MT-NOTE: sge_gid2group() is MT safe.
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*         1 - Error
-******************************************************************************/
+/** @brief Resolve gid to group name.
+ *
+ * Resolves gid to group name. If 'dst' is nullptr the function checks only if the gid is resolvable.
+ *
+ * @param gid [in] Group ID to resolve.
+ * @param dst [out] Destination buffer to store the group name.
+ * @param sz [in] Size of the destination buffer.
+ * @param retries [in] Number of retries for resolving the group name.
+ * @retrn 0 on success, 1 on failure.
+ * @note This function is MT safe.
+ */
 int
-sge_gid2group(gid_t gid, char *dst, size_t sz, int retries) {
-   struct group *gr;
-   struct group gr_entry {};
-   char *buf = nullptr;
-   int size = 0;
-
+sge_gid2group(gid_t gid, char *dst, const size_t sz, const int retries) {
    DENTER(UIDGID_LAYER);
 
-   size = get_group_buffer_size();
-   buf = sge_malloc(size);
+   // allocate buffer for group entry
+   auto size = static_cast<size_t>(get_group_buffer_size());
+   char *buf = sge_malloc(size);
    SGE_ASSERT(buf != nullptr);
 
-   gr = sge_getgrgid_r(gid, &gr_entry, buf, size, retries);
-   // TODO: We need to handle the case when the OS is unable to resolve the GID to a name.
+   // try to find group entry. if not found after retries return error.
+   struct group gr_entry {};
+   struct group *gr = sge_getgrgid_r(gid, &gr_entry, &buf, &size, retries);
    if (gr == nullptr) {
       sge_free(&buf);
       DRETURN(1);
    }
 
-   /* cache group name */
+   // copy group name to destination buffer
    sge_strlcpy(dst, gr->gr_name, sz);
    sge_free(&buf);
-
    DRETURN(0);
 }
 
@@ -1001,59 +983,61 @@ sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize
    DRETURN(res);
 } /* sge_getpwnam_r() */
 
-
-/****** uti/uidgid/sge_getgrgid_r() ********************************************
-*  NAME
-*     sge_getgrgid_r() -- Return group informations for a given group ID.
-*
-*  SYNOPSIS
-*     struct group* sge_getgrgid_r(gid_t gid, struct group *pg,
-*                                  char *buffer, size_t bufsize, int retires)
-*
-*  FUNCTION
-*     Search account database for a group. This function is just a wrapper for
-*     'getgrgid_r()', taking into account some additional possible errors.
-*     For a detailed description see 'getgrgid_r()' man page.
-*
-*  INPUTS
-*     gid_t gid         - group ID
-*     struct group *pg  - points to structure which will be updated upon success
-*     char *buffer      - points to memory referenced by 'pg'
-*     size_t buflen     - size of 'buffer' in bytes 
-*     int retries       - number of retries to connect to NIS
-*
-*  RESULT
-*     struct group*  - Pointer to entry matching group informations upon success,
-*                      nullptr otherwise.
-*
-*  NOTES
-*     MT-NOTE: sge_getpwnam_r() is MT safe. 
-*
-*******************************************************************************/
+/** @brief Return group information for a given group ID.
+ *
+ * Search account database for a group. This function is just a wrapper for
+ * getgrgid_r(), taking into account some additional possible errors. For a
+ * detailed description see getgrgid_r() man page.
+ *
+ *  @param gid group ID
+ *  @param pg points to structure which will be updated upon success
+ *  @param buffer points to memory referenced by 'pg'
+ *  @param bufsize size of 'buffer' in bytes
+ *  @param retries number of retries to connect to NIS/LDAP
+ *  @return Pointer to entry matching group information upon success, nullptr otherwise.
+ */
 struct group *
-sge_getgrgid_r(gid_t gid, struct group *pg, char *buffer, size_t buffer_size, int retries) {
-   struct group *res = nullptr;
-
+sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, int retries) {
    DENTER(UIDGID_LAYER);
 
+   // validate pointer parameter
+   if (buffer == nullptr || buffer_size == nullptr) {
+      DRETURN(nullptr);
+   }
+
+   // ensure that buffers are allocated
+   if (*buffer == nullptr || *buffer_size == 0) {
+      *buffer_size = get_group_buffer_size();
+      *buffer = static_cast<char *>(sge_malloc(*buffer_size));
+      SGE_ASSERT(*buffer != nullptr);
+   }
+
+   struct group *res = nullptr;
    while (retries-- && !res) {
-      if (getgrgid_r(gid, pg, buffer, buffer_size, &res) != 0) {
+      if (getgrgid_r(gid, pg, *buffer, *buffer_size, &res) != 0) {
+
+         // check if buffer was too small
          if (errno == ERANGE) {
             retries++;
-            buffer_size += 1024;
-            buffer = (char *) sge_realloc(buffer, buffer_size, 1);
+            *buffer_size += 1024;
+            *buffer = static_cast<char *>(sge_realloc(*buffer, *buffer_size, 1));
+            if (*buffer == nullptr) {
+               res = nullptr;
+               break;
+            }
+         } else {
+            res = nullptr;
          }
-         res = nullptr;
       }
    }
 
-   /* could be that struct is not nullptr but group nam is empty */
-   if (res && !res->gr_name) {
+   // Check the result (pointer and empty string)
+   if (res && (res->gr_name == nullptr || res->gr_name[0] == '\0')) {
       res = nullptr;
    }
 
    DRETURN(res);
-} /* sge_getgrgid_r() */
+}
 
 /****** uti/uidgid/sge_is_user_superuser() *************************************
 *  NAME

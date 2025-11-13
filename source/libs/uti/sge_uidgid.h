@@ -97,7 +97,7 @@ struct passwd *
 sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize);
 
 struct group *
-sge_getgrgid_r(gid_t gid, struct group *pg, char *buffer, size_t bufffer_size, int retries);
+sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, int retries);
 
 bool
 sge_is_user_superuser(const char *name);
