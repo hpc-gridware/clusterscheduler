@@ -41,6 +41,7 @@
 
 #include "cull/cull_list.h"
 
+#include "sgeobj/ocs_CEntry.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_ckpt.h"
@@ -99,21 +100,30 @@ cqueue_verify_ckpt_list(lListElem *cqueue, lList **answer_list, lListElem *attr_
 }
 
 bool
-cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_centry_list)
-{
-   bool ret = true;
-
+cqueue_verify_consumable_config_list(lListElem *cqueue, lList **answer_list, lListElem *attr_elem, const lList *master_centry_list) {
    DENTER(CQUEUE_VERIFY_LAYER);
-   if (cqueue != nullptr && attr_elem != nullptr) {
-      const lList *centry_list = lGetList(attr_elem, ACELIST_value);
 
-      if (centry_list != nullptr) {
-         if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
-            ret = false;
-         }
-      }
+   // early exit if there is nothing to do
+   if (cqueue == nullptr || attr_elem == nullptr) {
+      DRETURN(true);
    }
-   DRETURN(ret);
+
+   // consumable list empty, then all is fine
+   const lList *centry_list = lGetList(attr_elem, ACELIST_value);
+   if (centry_list == nullptr) {
+      DRETURN(true);
+   }
+
+   // reject duplicates in the consumable list
+   if (ocs::CEntry::has_duplicates(centry_list, answer_list, "complex_values")) {
+      DRETURN(false);
+   }
+
+   // check that all centries in the consumable list exist in the master centry list
+   if (!centry_list_do_all_exists(master_centry_list, answer_list, centry_list)) {
+      DRETURN(false);
+   }
+   DRETURN(true);
 }
 
 bool
@@ -296,13 +306,11 @@ cqueue_verify_subordinate_list(lListElem *cqueue, lList **answer_list, lListElem
           * Check for recursions to ourself
           */
          if (strcmp(cqueue_name, so_name) != 0) {
-            const lListElem *cqueue = nullptr;
-
             /*
              * Check if cqueue exists
              */
-            cqueue = cqueue_list_locate(master_cqueue_list, so_name);
-            if (cqueue != nullptr) {
+            const lListElem *lcqueue = cqueue_list_locate(master_cqueue_list, so_name);
+            if (lcqueue != nullptr) {
                /*
                 * Success
                 */

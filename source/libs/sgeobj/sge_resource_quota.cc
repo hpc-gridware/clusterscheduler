@@ -43,6 +43,8 @@
 #include "sched/sge_resource_utilization.h"
 
 #include "sgeobj/sge_resource_quota.h"
+
+#include "ocs_ResourceQuota.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
@@ -428,6 +430,13 @@ bool rqs_verify_attributes(lListElem *rqs, lList **answer_list, bool in_master, 
          } else {
             lSetUlong(rule, RQR_level, RQR_QUEUEI);
          }
+
+         // check for duplicate limits in the to-section of a limits rule
+         if (ocs::ResourceQuota::has_duplicates(limit_list, answer_list, "limit")) {
+            ret = false;
+            break;
+         }
+
 
          for_each_rw(limit, limit_list) {
             const char *name = lGetString(limit, RQRL_name);

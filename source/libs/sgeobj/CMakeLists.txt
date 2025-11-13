@@ -77,9 +77,12 @@ set(LIBRARY_SOURCES
         ocs_BindingType.cc
         ocs_BindingUnit.cc
         ocs_Category.cc
+        ocs_CEntry.cc
         ocs_DataStore.cc
         ocs_GrantedResources.cc
         ocs_Job.cc
+        ocs_ObjectContainer.cc
+        ocs_ResourceQuota.cc
         ocs_Session.cc
         ocs_ShareTree.cc
         ocs_TopologyString.cc

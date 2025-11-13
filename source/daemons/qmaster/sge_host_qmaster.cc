@@ -82,6 +82,7 @@
 #include "configuration_qmaster.h"
 #include "sge_c_gdi.h"
 #include "mail.h"
+#include "ocs_CEntry.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_userset_qmaster.h"
 #include "sge_userprj_qmaster.h"
@@ -1488,6 +1489,11 @@ attr_mod_threshold(lList **alpp, lListElem *ep, lListElem *new_ep, ocs::gdi::Com
       lListElem *tmp_elem = nullptr;
 
       DPRINTF("got new %s\n", attr_name);
+
+      // reject duplicate entries
+      if (ocs::CEntry::has_duplicates(lGetList(ep, EH_consumable_config_list), alpp, "complex_values")) {
+         DRETURN(STATUS_EUNKNOWN);
+      }
 
       // ensure that slots-attribute is part of the list
       if (host_ensure_slots_are_defined(ep, lGetUlong(new_ep, EH_processors))) {

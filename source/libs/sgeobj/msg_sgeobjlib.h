@@ -364,4 +364,7 @@
 #define MSG_CAPACITYEXCEEDED_FSSSIFF    _MESSAGE(64555, _("debiting %f of " SFN " on " SFN " " SFN " for %d slots (+ %f) would exceed remaining capacity of %f"))
 #define MSG_EXCLCAPACITYEXCEEDED_FSSSI _MESSAGE(64556, _("debiting (implicit exclusive) %f of " SFN " on " SFN " " SFN " for %d slots would exceed capacity"))
 
+#define MSG_OBJCONT_DUP_S         _MESSAGE(64557, _("Duplicate entry: " SFQ))
+#define MSG_OBJCONT_DUP_SS        _MESSAGE(64558, _("Duplicate entry " SFQ " in " SFQ))
+
 // clang-format on
