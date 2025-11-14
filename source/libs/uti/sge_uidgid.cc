@@ -428,7 +428,7 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
       if (getgrnam_r(gname, &gr_entry, buffer, size, &gr) != 0) {
          if (errno == ERANGE) {
             retries++;
-            size += 1024;
+            size += 1024 * 32;
             buffer = (char *) sge_realloc(buffer, size, 1);
          }
          gr = nullptr;
