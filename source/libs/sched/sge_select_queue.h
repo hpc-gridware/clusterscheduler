@@ -218,8 +218,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                           const lList *rue_list, const lList *load_attr, bool force_slots,
                           lListElem *host, lListElem *queue,
                           u_long32 layer, double lc_factor, u_long32 tag, bool need_master,
-                          bool is_master_host, bool allow_non_requestable, const char *object_name,
-                          bool isRQ);
+                          bool is_master_host, bool &found_master_host, bool allow_non_requestable,
+                          const char *object_name, bool isRQ);
 
 dispatch_t
 ri_time_by_slots(const sge_assignment_t *a, lListElem *request, const lList *load_attr, const lList *config_attr,

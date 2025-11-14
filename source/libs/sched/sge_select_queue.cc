@@ -171,7 +171,7 @@ parallel_max_host_slots(sge_assignment_t *a, lListElem *host);
 
 static dispatch_t
 parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
-                     bool is_master_queue, bool allow_non_requestable);
+                     bool is_master_queue, bool &found_master_host, bool allow_non_requestable);
 
 static
 void clean_up_parallel_job(sge_assignment_t *a);
@@ -4371,9 +4371,10 @@ host_or_queue_clear_tags(const char *object_name, lListElem *queue, lList *queue
 *******************************************************************************/
 // @todo there is a single call to parallel_host_slots() in parallel_tag_hosts_queues() where we pass false as/
 //       allow_non_requestable - should we remove this parameter?
+// found_master_host: we just found a candidate for the master host
 static dispatch_t
 parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_master,
-                    bool is_master_host, bool allow_non_requestable) {
+                    bool is_master_host, bool &found_master_host, bool allow_non_requestable) {
    DENTER(TOP_LAYER);
 
    int hslots = 0;
@@ -4420,7 +4421,7 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 
       result = parallel_rc_slots_by_time(a, &hslots, config_attr, actual_attr, load_list,
                                false, hep, nullptr, DOMINANT_LAYER_HOST, lc_factor, HOST_TAG,
-                                         need_master, is_master_host, false, eh_name, false);
+                                         need_master, is_master_host, found_master_host, false, eh_name, false);
 
       if (result == DISPATCH_NOT_AT_TIME) {
          host_clear_qinstance_tags(a->queue_list, eh_name, TAG4SCHED_MASTER); // @todo CS-601 also TAG4SCHED_SLAVE?
@@ -4508,7 +4509,10 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
                           bool is_master_host, bool *master_host, category_use_t *use_category,
                           lList **unclear_cqueue_list)
 {
+   DENTER(TOP_LAYER);
+
    bool suited_as_master_host = false;
+   bool found_master_host = false;
    int min_host_slots = 1;
    int max_host_slots = a->slots;
    int accu_queue_slots;
@@ -4518,17 +4522,14 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    lListElem *qep, *next_queue;
    dispatch_t result = DISPATCH_OK;
    const void *queue_iterator = nullptr;
-   int allocation_rule;
 
-   DENTER(TOP_LAYER);
-
-   allocation_rule = sge_pe_slots_per_host(a->pe, a->slots);
+   int allocation_rule = sge_pe_slots_per_host(a->pe, a->slots);
 
    if (ALLOC_RULE_IS_BALANCED(allocation_rule)) {
       min_host_slots = max_host_slots = allocation_rule;
    }
 
-   parallel_host_slots(a, &hslots, hep, need_master, is_master_host, false);
+   parallel_host_slots(a, &hslots, hep, need_master, is_master_host, found_master_host, false);
 
    DPRINTF("HOST %s itself (and queue threshold) will get us %d slots ... we need min %d\n", eh_name, hslots, min_host_slots);
 
@@ -4563,7 +4564,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
          }
 
          DPRINTF("checking queue %s because cqueue %s is not rejected\n", qname, cqname);
-         result = parallel_queue_slots(a, qep, &qslots, need_master, is_master_host, false);
+         result = parallel_queue_slots(a, qep, &qslots, need_master, is_master_host, found_master_host, false);
 
          if (result == DISPATCH_OK && qslots > 0) {
             /* could this host be a master host */
@@ -5082,7 +5083,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 ******************************************************************************/
 static dispatch_t
 parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_master,
-                     bool is_master_queue, bool allow_non_requestable)
+                     bool is_master_queue, bool &found_master_host, bool allow_non_requestable)
 {
    DENTER(TOP_LAYER);
 
@@ -5108,7 +5109,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
       result = parallel_rc_slots_by_time(a, &qslots,
                                          config_attr, actual_attr, nullptr, true, nullptr, qep,
                                          DOMINANT_LAYER_QUEUE, 0, QUEUE_TAG, need_master, is_master_queue,
-                                         false, lGetString(qep, QU_full_name), false);
+                                         found_master_host, false, lGetString(qep, QU_full_name), false);
 
       // we already have tasks running on this qinstance (round_robin), consider the already booked slots
       // @todo in case of round robin: don't we cache the number of possible slots in QU_tag? Really re-calculate them over and over again?
@@ -5399,10 +5400,11 @@ parallel_global_slots(sge_assignment_t *a, int *slots)
       const lList *actual_attr = lGetList(a->gep, EH_resource_utilization);
 
       clear_resource_tags(a->job, GLOBAL_TAG);
+      bool found_master_host = false;    // dummy, we do not decide on the concrete master host on global layer
       result = parallel_rc_slots_by_time(a, &gslots,
                                          config_attr, actual_attr, load_attr, false,
                                          a->gep, nullptr, DOMINANT_LAYER_GLOBAL,
-                                         lc_factor, GLOBAL_TAG, true, false,
+                                         lc_factor, GLOBAL_TAG, true, false, found_master_host,
                                          false, SGE_GLOBAL_NAME, false);
    }
 
@@ -6043,8 +6045,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                           const lList *rue_list, const lList *load_attr, bool force_slots,
                           lListElem *host, lListElem *queue,
                           u_long32 layer, double lc_factor, u_long32 tag, bool need_master,
-                          bool is_master_host, bool allow_non_requestable, const char *object_name,
-                          bool isRQ)
+                          bool is_master_host, bool &found_master_host, bool allow_non_requestable,
+                          const char *object_name, bool isRQ)
 {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(reason, 1024);
@@ -6152,7 +6154,6 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
    // when calculating the max_slots after matching the slave requests we need to add the one slot we might
    // have got for the master task
    int master_slot = 0;
-   bool found_master_host = false;  // we didn't have a master host when the function was called but now found it
    // we might not have global or master requests at all
    // so let's assume that a master task can run,
    // if global or master request matching fails then revert master_slot to 0
@@ -6209,12 +6210,12 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
           lGetBool(a->pe, PE_ignore_slave_requests_on_master_host)) {
          if ((need_master && found_master_host) || is_master_host) {
             if (strcmp(object_name, SGE_GLOBAL_NAME) == 0) {
-               // we are matching the global host here, need to do this in any case
-               // even if we are on the master host and ignore slave requests
-               // we need the result of the global matching when checking the next (slave) host
+               // We are matching the global host here, need to do this in any case.
+               // Even if we are on the master host and ignore slave requests,
+               // we need the result of the global matching when checking the next (slave) host.
                DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE, but need to handle global resources\n", object_name);
             } else {
-               // we can run the master task here, ignore slave request
+               // We can run the master task here, ignore the slave requests.
                DPRINTF("%s: parallel_rc_slots_by_time() ign_sreq_on_mhost TRUE, skipping check on master host/queue\n", object_name);
                continue;
             }
@@ -7001,10 +7002,11 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
    lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
    lAppendElem(tmp_rue_list, tmp_rue_elem);
 
+   bool found_master_host = false; // dummy, when we get here, we already decided if this *is* the master_host
    result = parallel_rc_slots_by_time(a, slots,
                                       tmp_centry_list, tmp_rue_list, nullptr,
                                       false, nullptr, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master, is_master_queue,
-                                      false, SGE_RQS_NAME, true);
+                                      found_master_host, false, SGE_RQS_NAME, true);
 
    lFreeList(&tmp_centry_list);
    lFreeList(&tmp_rue_list);
