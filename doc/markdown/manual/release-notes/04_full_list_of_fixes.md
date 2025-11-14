@@ -68,6 +68,8 @@
 
 [CS-1593](https://hpc-gridware.atlassian.net/browse/CS-1593) parallel job stays pending certain scenarios with PE settings ign\_sreq\_on\_mhost=TRUE and job\_is\_first\_task=FALSE
 
+[CS-1595](https://hpc-gridware.atlassian.net/browse/CS-1595) For users in large user groups qstat / qsub segfaults
+
 ## v9.0.8
 
 ### Improvement
