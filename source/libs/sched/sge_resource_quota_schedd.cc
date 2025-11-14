@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1057,10 +1057,11 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_q
    lSetString(tmp_rue_elem, RUE_name, lGetString(limit, RQRL_name));
    lAppendElem(tmp_rue_list, tmp_rue_elem);
 
+   bool found_master_host = false; // dummy, when we get here, we already decided if this *is* the master_host
    result = parallel_rc_slots_by_time(a, slots,
                                       slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
                                       false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master, is_master_queue,
-                                      false, SGE_RQS_NAME, true);
+                                      found_master_host, false, SGE_RQS_NAME, true);
    
    lFreeList(&tmp_centry_list);
    lFreeList(&tmp_rue_list);
