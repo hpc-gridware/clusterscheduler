@@ -44,5 +44,5 @@
 #define MSG_CONFIG_CANTFINDSCRIPTFILE_U               _MESSAGE(61004, _("can't find script file for job " sge_u32 " - deleting"))
 #define MSG_CONFIG_JOBFILEXHASWRONGFILENAMEDELETING_U _MESSAGE(61005, _("job file \"" sge_u32 "\" has wrong file name - deleting"))
 #define MSG_CONFIG_JOBSPOOLINGLONGDELAY_UUF           _MESSAGE(61006, _("spooling job " sge_u32 "." sge_u32 " took %f seconds"))
-
+#define MSG_SPOOLCLASSIC_CANNOTREADDIR_SS             _MESSAGE(61007, _("can't read directory " SFN ": " SFN))
 // clang-format on

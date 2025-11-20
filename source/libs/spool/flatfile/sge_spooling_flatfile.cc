@@ -47,6 +47,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
 
+#include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -60,6 +61,7 @@
 #include "spool/sge_dirent.h"
 #include "spool/msg_spoollib.h"
 #include "spool/classic/read_write_job.h"
+#include "spool/classic/read_write_ar.h"
 #include "spool/flatfile/msg_spoollib_flatfile.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_spooling_flatfile.h"
@@ -238,9 +240,6 @@ spool_classic_create_context(lList **answer_list, const char *args)
                   field_info[i].instr  = &qconf_rqs_sfi;
                   break;
                case SGE_TYPE_AR:
-                  field_info[i].fields = AR_fields;
-                  field_info[i].instr  = &qconf_sfi;
-                  break;
                case SGE_TYPE_JOB:
                case SGE_TYPE_JATASK:
                case SGE_TYPE_PETASK:
@@ -659,8 +658,8 @@ spool_classic_default_list_func(lList **answer_list,
              directory = RESOURCEQUOTAS_DIR;
              break;
          case SGE_TYPE_AR:
-             directory = AR_DIR;
-             break;
+            ocs::spool::classic::ar_list_read_from_disk(list, "master ar list");
+            break;
          case SGE_TYPE_CENTRY:
              directory = CENTRY_DIR;
              break;
@@ -757,7 +756,7 @@ spool_classic_default_list_func(lList **answer_list,
       }
 #endif
 
-      /* validate complete list */
+      /* validate the complete list */
       if (ret) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -906,8 +905,7 @@ spool_classic_default_read_func(lList **answer_list,
          filename  = key;
          break;
       case SGE_TYPE_AR:
-         directory = AR_DIR;
-         filename  = key;
+         ep = ocs::spool::classic::ar_read_spool_file(SGE_STRTOU_LONG32(key));
          break;
       case SGE_TYPE_CENTRY:
          directory = CENTRY_DIR;
@@ -1155,8 +1153,7 @@ spool_classic_default_write_func(lList **answer_list,
          filename  = key;
          break;
       case SGE_TYPE_AR:
-         directory = AR_DIR;
-         filename  = key;
+         ocs::spool::classic::ar_write_spool_file(object);
          break;
       case SGE_TYPE_CENTRY:
          directory = CENTRY_DIR;
@@ -1171,8 +1168,8 @@ spool_classic_default_write_func(lList **answer_list,
          break;
    }
 
-   /* spool, if possible using default spooling behaviour.
-    * job are spooled in corresponding case branch 
+   /* spool, if possible, using default spooling behavior.
+    * job are spooled in the corresponding case branch
     */
    if (url != nullptr && directory != nullptr && filename != nullptr) {
       const char *tmpfilepath = nullptr;
