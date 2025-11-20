@@ -22,6 +22,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_job.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Category.h"
 
 #include "ocs_CategorySchedd.h"
@@ -30,7 +31,8 @@ int
 ocs::CategorySchedd::job_is_category_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
    auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
-   int ret = lGetBool(cat, CT_rejected);
+   SGE_ASSERT(cat != nullptr);
+   const int ret = lGetBool(cat, CT_rejected);
    DRETURN(ret);
 }
 
@@ -38,7 +40,8 @@ int
 ocs::CategorySchedd::job_is_category_reservation_rejected(const lListElem *job) {
    DENTER(TOP_LAYER);
    auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
-   int ret = lGetBool(cat, CT_reservation_rejected);
+   SGE_ASSERT(cat != nullptr);
+   const int ret = lGetBool(cat, CT_reservation_rejected);
    DRETURN(ret);
 }
 
@@ -46,7 +49,7 @@ void
 ocs::CategorySchedd::job_reject_category(const lListElem *job, bool with_reservation) {
    DENTER(TOP_LAYER);
    auto *cat = static_cast<lListElem *>(lGetRef(job, JB_category));
-
+   SGE_ASSERT(cat != nullptr);
    lSetBool(cat, CT_rejected, true);
    if (with_reservation) {
       lSetBool(cat, CT_reservation_rejected, true);

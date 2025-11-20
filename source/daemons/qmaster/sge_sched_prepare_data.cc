@@ -460,13 +460,13 @@ sge_callback_result
 sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata) {
    DENTER(TOP_LAYER);
 
-   // Find job ID and job where we received an event (add, modify)
    u_long32 job_id = 0;
    lListElem *job = nullptr;
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
+
+      // Find the job for which we received an event (ADD and MOD)
       job_id = lGetUlong(event, ET_intkey);
       job = lGetElemUlongRW(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), JB_job_number, job_id);
-
       if (job == nullptr) {
          DSTRING_STATIC(id_dstring, 64);
          ERROR(MSG_CANTFINDJOBINMASTERLIST_S, job_get_id_string(job_id, 0, nullptr, &id_dstring));

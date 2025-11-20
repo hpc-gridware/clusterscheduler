@@ -49,6 +49,7 @@
 #include "sgeobj/ocs_DataStore.h"
 
 #include "sge_thread_ctrl.h"
+#include "sge_event_master.h"
 
 #ifdef OBSERVE
 #  include "cull/cull_observe.h"
@@ -266,6 +267,8 @@ sge_worker_main(void *arg) {
 
          // handle the request (GDI/Report/Ack ...
          if (packet->request_type == PACKET_GDI_REQUEST) {
+            sge_set_commit_required();
+
             lList *tmp_answer_list = nullptr;
             if (!packet->is_intern_request) {
                packet->pack_header(&tmp_answer_list, &packet->pb);
@@ -277,8 +280,14 @@ sge_worker_main(void *arg) {
                ocs::gdi::Task *task = packet->tasks[i];
                sge_c_gdi_process_in_worker(packet, task, &(task->answer_list), p_monitor, has_next);
             }
+
+            sge_commit(packet->gdi_session);
          } else if (packet->request_type == PACKET_REPORT_REQUEST) {
+            sge_set_commit_required();
+
             sge_c_report(packet, packet->tasks[0], packet->host, packet->commproc, packet->commproc_id, packet->tasks[0]->data_list, p_monitor);
+
+            sge_commit(packet->gdi_session);
          } else if (packet->request_type == PACKET_ACK_REQUEST) {
             sge_c_ack(packet, packet->tasks[0], p_monitor);
          } else {

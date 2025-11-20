@@ -52,7 +52,7 @@ namespace ocs {
       static void
       reattach_job(lList **master_category_list, lListElem *job,
                    const lList *master_userset_list, const lList *master_project_list, const lList *master_rqs_list,
-                   bool send_events, u_long32 gdi_session);
+                   bool send_events, u_long64 now, u_long32 gdi_session);
 
       static void
       refresh_cat_data_in_job(lList *master_category_list, lListElem *job);

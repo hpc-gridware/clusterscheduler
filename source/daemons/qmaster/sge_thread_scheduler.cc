@@ -775,7 +775,7 @@ sge_scheduler_main(void *arg) {
          copy.category_list = lCopyList(nullptr, master_category_list);
          copy.job_list = lCopyList(nullptr, master_job_list);
 
-         // store category reference in each job
+         // We have copied the category list and the job list, so we need to update also the cached category pointers
          ocs::CategoryQmaster::refresh_cat_data_all_jobs(copy.category_list, copy.job_list);
 
          /* no need to copy these lists, they are read only used */

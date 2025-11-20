@@ -140,23 +140,17 @@ sge_callback_result
 job_update_master_list(sge_evc_class_t *evc, sge_object_type type, 
                        sge_event_action action, lListElem *event, void *clientdata)
 {
-   lList **list;
-   const lDescr *list_descr;
-   u_long32 job_id;
-   lListElem *job = nullptr;
+   DENTER(TOP_LAYER);
    lList *ja_tasks = nullptr;
-
    char id_buffer[MAX_STRING_SIZE];
    dstring id_dstring;
 
-   DENTER(TOP_LAYER);
-
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   list_descr = lGetListDescr(lGetList(event, ET_new_version)); 
-   job_id = lGetUlong(event, ET_intkey);
-   job = lGetElemUlongRW(*list, JB_job_number, job_id);
+   lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   u_long32 job_id = lGetUlong(event, ET_intkey);
+   lListElem *job = lGetElemUlongRW(*list, JB_job_number, job_id);
 
    if (action == SGE_EMA_MOD) {
       u_long32 event_type = lGetUlong(event, ET_type);
@@ -188,14 +182,32 @@ job_update_master_list(sge_evc_class_t *evc, sge_object_type type,
           *   object.
           */
 
-          lListElem *modified_job;
+          lListElem *event_job = lFirstRW(lGetList(event, ET_new_version));
+          if (event_job != nullptr) {
+             // Preserve old ja_tasks list. Job update events will not contain them
+             lXchgList(job, JB_ja_tasks, &ja_tasks);
 
-          modified_job = lFirstRW(lGetList(event, ET_new_version));
-          if(job != nullptr && modified_job != nullptr) {
-            /* we want to preserve the old ja_tasks, since job update events to not contain them */
-            lXchgList(job, JB_ja_tasks, &ja_tasks);
-            lSetHost(modified_job, JB_host, lGetHost(job, JB_host));
-            lSetRef(modified_job, JB_category, lGetRef(job, JB_category));
+             // @todo Why is that needed?
+             const bool has_host = lGetPosViaElem(event_job, JB_host, SGE_NO_ABORT) != NoName;
+             if (has_host) {
+                lSetHost(event_job, JB_host, lGetHost(job, JB_host));
+             }
+
+             // find category ID
+             u_long32 category_id = 0;
+             const bool has_category_id = lGetPosViaElem(event_job, JB_category_id, SGE_NO_ABORT) != NoName;
+             if (has_category_id) {
+                category_id = lGetUlong(event_job, JB_category_id);
+             }
+
+             // convert category id to category ref for the modified job within the current client (scheduler, reader, ...)
+             const bool has_category = lGetPosViaElem(event_job, JB_category, SGE_NO_ABORT) != NoName;
+             if (has_category && has_category_id) {
+                const lList *master_category_list = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+                lListElem *category = lGetElemUlongRW(master_category_list, CT_id, category_id);
+
+                lSetRef(event_job, JB_category, category);
+             }
           }
       }
    }

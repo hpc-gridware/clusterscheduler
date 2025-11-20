@@ -606,10 +606,6 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       lList *tmp_list = nullptr;
       lListElem *next;
 
-      if (task->target == ocs::gdi::Target::SGE_ORDER_LIST) {
-         sge_set_commit_required();
-      }
-
       next = lFirstRW(task->data_list);
       while ((ep = next) != nullptr) {
          next = lNextRW(ep);
@@ -672,7 +668,6 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       } /* while loop */
 
       if (task->target == ocs::gdi::Target::SGE_ORDER_LIST) {
-         sge_commit(packet->gdi_session);
          set_next_stree_spooling_time();
          answer_list_add(&(task->answer_list), "OK\n", STATUS_OK, ANSWER_QUALITY_INFO);
       }
@@ -732,8 +727,6 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command:
             break;
       }
    } else {
-      sge_set_commit_required();
-
       for_each_rw(ep, task->data_list) {
          /* try to remove the element */
          switch (task->target) {
@@ -809,8 +802,6 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command:
          } /* switch target */
 
       } /* for_each element */
-
-      sge_commit(packet->gdi_session);
    }
 
    DRETURN_VOID;
@@ -990,9 +981,7 @@ sge_c_gdi_trigger_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
       case ocs::gdi::Target::SGE_CQ_LIST:
       case ocs::gdi::Target::SGE_JB_LIST:
          // state changes of queues and jobs
-         sge_set_commit_required();
          sge_gdi_qmod(packet, task, monitor);
-         sge_commit(packet->gdi_session);
          DRETURN_VOID;
       default:
          // unknown operation for a worker thread
@@ -1218,11 +1207,9 @@ trigger_scheduler_monitoring(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
 static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                           ocs::gdi::Command::Cmd command, ocs::gdi::SubCommand::SubCmd sub_command,
                           monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    lListElem *ep;
    lList *tmp_list = nullptr;
-   bool is_locked = false;
-
-   DENTER(TOP_LAYER);
 
    for_each_rw(ep, task->data_list) {
       if (task->target == ocs::gdi::Target::SGE_CONF_LIST) {
@@ -1243,11 +1230,6 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
       } else if (task->target == ocs::gdi::Target::SGE_SC_LIST) {
          sge_mod_sched_configuration(packet, task, ep, &(task->answer_list), packet->user, packet->host);
       } else {
-         if (!is_locked) {
-            sge_set_commit_required();
-            is_locked = true;
-         }
-
          switch (task->target) {
             case ocs::gdi::Target::SGE_JB_LIST:
                sge_gdi_mod_job(packet, task, ep, &(task->answer_list), sub_command);
@@ -1269,10 +1251,6 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
          }
       }
    } /* for_each */
-
-   if (is_locked) {
-      sge_commit(packet->gdi_session);
-   }
 
    /* postprocessing for the list of requests */
    if (lGetNumberOfElem(tmp_list) != 0) {

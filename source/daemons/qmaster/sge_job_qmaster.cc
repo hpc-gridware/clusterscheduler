@@ -1344,6 +1344,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
                ocs::CategoryQmaster::attach_job(master_category_list, new_job,
                                                 master_userset_list, master_project_list, master_rqs_list,
                                                 true, packet->gdi_session);
+               trigger |= MOD_EVENT;
             }
 
             sge_dstring_free(&category_str);
