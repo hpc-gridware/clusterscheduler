@@ -180,7 +180,7 @@
 *    @todo If a job is rescheduled multiple times, should probably be aggregated.
 *
 *    SGE_OBJECT(JAT_pe_object) - PE Object
-*    PE object granted to this task (PE_Type), only used in execd.
+*    PE object granted to this task (PE_Type) when it was scheduled.
 *
 *    SGE_ULONG(JAT_next_pe_task_id) - Next PE Task Id
 *    Used locally in execd to store next pe task id for this jatask on this execd.
@@ -287,7 +287,7 @@ LISTDEF(JAT_Type)
    SGE_LIST(JAT_task_list, PET_Type, CULL_SUBLIST)
    SGE_LIST(JAT_finished_task_list, FPET_Type, CULL_SUBLIST)
    SGE_LIST(JAT_previous_usage_list, UA_Type, CULL_DEFAULT)
-   SGE_OBJECT(JAT_pe_object, CULL_ANY_SUBTYPE, CULL_SUBLIST)
+   SGE_OBJECT(JAT_pe_object, PE_Type, CULL_SUBLIST)
    SGE_ULONG(JAT_next_pe_task_id, CULL_DEFAULT)
    SGE_ULONG64(JAT_stop_initiate_time, CULL_SUBLIST)
    SGE_DOUBLE(JAT_prio, CULL_DEFAULT)

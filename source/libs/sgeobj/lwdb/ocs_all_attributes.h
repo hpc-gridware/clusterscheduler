@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -97,7 +97,6 @@
 #include "sgeobj/lwdb/ocs_PERM_attributes.h"
 #include "sgeobj/lwdb/ocs_LS_attributes.h"
 #include "sgeobj/lwdb/ocs_RU_attributes.h"
-#include "sgeobj/lwdb/ocs_FES_attributes.h"
 #include "sgeobj/lwdb/ocs_SU_attributes.h"
 #include "sgeobj/lwdb/ocs_SPC_attributes.h"
 #include "sgeobj/lwdb/ocs_SPR_attributes.h"
@@ -233,7 +232,6 @@ constexpr AttributeStatic all_attributes[] = {
       PERM_ATTRIBUTES,
       LS_ATTRIBUTES,
       RU_ATTRIBUTES,
-      FES_ATTRIBUTES,
       SU_ATTRIBUTES,
       SPC_ATTRIBUTES,
       SPR_ATTRIBUTES,

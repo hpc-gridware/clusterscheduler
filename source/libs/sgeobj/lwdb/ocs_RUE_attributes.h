@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   RUE_name = 11100,
+   RUE_name = 11000,
    RUE_utilized_now,
    RUE_utilized_now_resource_map_list,
    RUE_utilized_now_binding_inuse,

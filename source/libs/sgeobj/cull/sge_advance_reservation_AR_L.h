@@ -146,6 +146,9 @@
 *    SGE_OBJECT(AR_binding) - Binding Strategy
 *    Binding strategy for the advance reservation
 *
+*    SGE_OBJECT(AR_pe_object) - PE Object
+*    PE object granted to this AR (PE_Type) when it was scheduled.
+*
 */
 
 enum {
@@ -181,7 +184,8 @@ enum {
    AR_request_set_list,
    AR_joker,
    AR_granted_resources_list,
-   AR_binding
+   AR_binding,
+   AR_pe_object
 };
 
 LISTDEF(AR_Type)
@@ -218,6 +222,7 @@ LISTDEF(AR_Type)
    SGE_LIST(AR_joker, VA_Type, CULL_SPOOL)
    SGE_LIST(AR_granted_resources_list, GRU_Type, CULL_SPOOL)
    SGE_OBJECT(AR_binding, BN_Type, CULL_SPOOL)
+   SGE_OBJECT(AR_pe_object, PE_Type, CULL_SPOOL)
 LISTEND
 
 NAMEDEF(ARN)
@@ -254,6 +259,7 @@ NAMEDEF(ARN)
    NAME("AR_joker")
    NAME("AR_granted_resources_list")
    NAME("AR_binding")
+   NAME("AR_pe_object")
 NAMEEND
 
 #define AR_SIZE sizeof(ARN)/sizeof(char *)

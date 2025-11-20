@@ -447,11 +447,11 @@
 			"name":	"pe_object",
 			"summary":	"PE Object",
 			"description":	[{
-					"line":	"PE object granted to this task (PE_Type), only used in execd."
+					"line":	"PE object granted to this task (PE_Type) when it was scheduled."
 				}],
 			"type":	"lObjectT",
-			"subClassName":	"ANY",
-			"subCullPrefix":	"ANY",
+			"subClassName":	"ParallelEnvironment",
+			"subCullPrefix":	"PE",
 			"flags":	[{
 				"name":	"SPOOL_SUBLIST"
 			}]

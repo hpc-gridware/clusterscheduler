@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ enum {
    PETR_cwd,
    PETR_path_aliases,
    PETR_environment,
-   PETR_submission_time
+   PETR_submission_time,
+   PETR_cred
 };
 
 constexpr const int PETR_Type[] = {
@@ -48,6 +49,7 @@ constexpr const int PETR_Type[] = {
    PETR_path_aliases,
    PETR_environment,
    PETR_submission_time,
+   PETR_cred,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -59,7 +61,8 @@ constexpr const int PETR_Type[] = {
    {PETR_cwd, "PETR_cwd", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PETR_path_aliases, "PETR_path_aliases", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PETR_environment, "PETR_environment", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {PETR_submission_time, "PETR_submission_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {PETR_submission_time, "PETR_submission_time", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PETR_cred, "PETR_cred", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

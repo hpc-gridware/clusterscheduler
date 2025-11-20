@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   AR_id = 12400,
+   AR_id = 12300,
    AR_name,
    AR_account,
    AR_owner,
@@ -61,7 +61,8 @@ enum {
    AR_request_set_list,
    AR_joker,
    AR_granted_resources_list,
-   AR_binding
+   AR_binding,
+   AR_pe_object
 };
 
 constexpr const int AR_Type[] = {
@@ -98,6 +99,7 @@ constexpr const int AR_Type[] = {
    AR_joker,
    AR_granted_resources_list,
    AR_binding,
+   AR_pe_object,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -134,7 +136,8 @@ constexpr const int AR_Type[] = {
    {AR_request_set_list, "AR_request_set_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {AR_joker, "AR_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {AR_granted_resources_list, "AR_granted_resources_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {AR_binding, "AR_binding", AttributeStatic::OBJECT, BN_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
+   {AR_binding, "AR_binding", AttributeStatic::OBJECT, BN_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {AR_pe_object, "AR_pe_object", AttributeStatic::OBJECT, PE_Type, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
 

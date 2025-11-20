@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   CTI_name = 10400
+   CTI_name = 10300
 };
 
 constexpr const int CTI_Type[] = {

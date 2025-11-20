@@ -123,7 +123,7 @@ bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string)
 }
 
 
-static void utilization_print_all(const lList* pe_list, lList *host_list, const lList *queue_list, const lList *ar_list)
+void utilization_print_all(const lList* pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list)
 {
    const lListElem *ep, *cr;
    const char *name;

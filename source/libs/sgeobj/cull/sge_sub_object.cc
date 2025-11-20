@@ -466,6 +466,9 @@ object_get_subtype(int nm)
       case JAT_previous_usage_list:
          ret = UA_Type;
          break;
+      case JAT_pe_object:
+         ret = PE_Type;
+         break;
       case JAT_message_list:
          ret = QIM_Type;
          break;
@@ -639,6 +642,9 @@ object_get_subtype(int nm)
          break;
       case AR_binding:
          ret = BN_Type;
+         break;
+      case AR_pe_object:
+         ret = PE_Type;
          break;
       case EVR_event_list:
          ret = ET_Type;

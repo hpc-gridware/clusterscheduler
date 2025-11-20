@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   REF_ref = 11800
+   REF_ref = 11700
 };
 
 constexpr const int REF_Type[] = {

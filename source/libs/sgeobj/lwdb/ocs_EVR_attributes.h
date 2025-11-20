@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   EVR_operation = 12700,
+   EVR_operation = 12600,
    EVR_timestamp,
    EVR_event_client_id,
    EVR_event_number,

@@ -526,8 +526,10 @@
 #define MSG_CONFIG_CANTWRITEOPERATORLIST              _MESSAGE(33622, _("can't write operator list"))
 #define MSG_CONFIG_NOLOCAL_S                          _MESSAGE(33623, _("local configuration " SFN " not defined - using global configuration"))
 #define MSG_CONFIG_NOGLOBAL                           _MESSAGE(33624, _("global configuration not defined"))
-#define MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU  _MESSAGE(33648, _("can't find queue " SFQ " referenced in job " sge_u32))
+
 #define MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU     _MESSAGE(33647, _("can't find advance reservation " sge_u32 " referenced in job " sge_u32))
+#define MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU  _MESSAGE(33648, _("can't find queue " SFQ " referenced in job " sge_u32))
+#define MSG_AR_HAS_NO_PEOBJECT_US                     _MESSAGE(33649, _("advance reservation " sge_u32 " does not have PE " SFQ " in AR_pe_object"))
 
 #define MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I _MESSAGE(33663, _("system clock has been put back (%d seconds)"))
 #define MSG_SYSTEM_RECEIVEDUNKNOWNEVENT_I          _MESSAGE(33664, _("received unknown event: %d"))

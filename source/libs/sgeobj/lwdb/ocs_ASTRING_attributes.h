@@ -29,7 +29,7 @@
 namespace ocs {
 
 enum {
-   ASTRING_href = 9350,
+   ASTRING_href = 9250,
    ASTRING_value
 };
 

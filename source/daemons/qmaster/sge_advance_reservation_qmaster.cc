@@ -1195,6 +1195,9 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
       result = sge_select_parallel_environment(&a, master_pe_list);
       if (result == DISPATCH_OK) {
          lSetString(ar, AR_granted_pe, lGetString(a.pe, PE_name));
+         // We keep a copy of the granted pe, as we need to use exactly this pe with all its settings
+         // for debiting and undebiting - the original PE from the master pe list might change!
+         lSetObject(ar, AR_pe_object, lCopyElem(a.pe));
       }
    } else {
       result = sge_sequential_assignment(&a);
@@ -1271,35 +1274,40 @@ ar_reserve_queues(lList **alpp, lListElem *ar, u_long64 gdi_session) {
 *******************************************************************************/
 int
 ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
-   lListElem *dummy_job = lCreateElem(JB_Type);
-   int pe_slots = 0;
-   int tmp_slots;
-   const char *granted_pe = lGetString(ar, AR_granted_pe);
+   DENTER(TOP_LAYER);
+
    u_long64 start_time = lGetUlong64(ar, AR_start_time);
    u_long64 duration = lGetUlong64(ar, AR_duration);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
-   const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
-   bool is_master_task = true;
 
-   DENTER(TOP_LAYER);
-
+   lListElem *dummy_job = lCreateElem(JB_Type);
    job_set_hard_resource_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_resource_list)));
    job_set_hard_queue_list(dummy_job, lCopyList(nullptr, lGetList(ar, AR_queue_list)));
 
    lListElem *global_host_ep = host_list_locate(master_exechost_list, SGE_GLOBAL_NAME);
 
+   const char *granted_pe = lGetString(ar, AR_granted_pe);
    lListElem *pe = nullptr;
    if (granted_pe != nullptr) {
-      pe = pe_list_locate(master_pe_list, granted_pe);
+      // for debiting / undebiting we need to use the granted PE with the settings it had at the time of scheduling
+      // esp. for undebiting use the same settings as for debiting;
+      // therefore, we keep a copy of the PE in AR_pe_object
+      pe = lGetObject(ar, AR_pe_object);
       if (pe == nullptr) {
-         ERROR(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
+         CRITICAL(MSG_AR_HAS_NO_PEOBJECT_US, lGetUlong(ar, AR_id), granted_pe);
+#if defined(ENABLE_DEBUG_CHECKS)
+         abort();
+#endif
+         // In product build we continue without PE - this is the old behavior but should never happen
       }
    }
 
-   const lListElem *gdil_ep;
+   int pe_slots = 0;
+   bool is_master_task = true;
    const char *last_hostname = nullptr;
+   const lListElem *gdil_ep;
    for_each_ep(gdil_ep, lGetList(ar, AR_granted_slots)) {
       const char *queue_name = lGetString(gdil_ep, JG_qname);
       lListElem *queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
@@ -1313,12 +1321,12 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       const char *queue_hostname = lGetHost(queue, QU_qhostname);
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
 
-      if (!incslots) {
-         tmp_slots = -lGetUlong(gdil_ep, JG_slots);
-      } else {
+      int tmp_slots;
+      if (incslots) {
          tmp_slots = lGetUlong(gdil_ep, JG_slots);
+      } else {
+         tmp_slots = -lGetUlong(gdil_ep, JG_slots);
       }
-
       pe_slots += tmp_slots;
 
       /* reserve global host */
@@ -1355,11 +1363,21 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       is_master_task = false;
    }
 
-   if (pe != nullptr) {
-      utilization_add(lFirstRW(lGetList(pe, PE_resource_utilization)), start_time,
-                      duration, pe_slots, 0, 0, PE_TAG, granted_pe,
-                      SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr);
-      sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
+   if (granted_pe != nullptr) {
+      // The booking of slots into the PE's resource diagram needs to be done on the actual PE from the master pe list.
+      const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
+      const lListElem *master_pe = pe_list_locate(master_pe_list, granted_pe);
+      if (master_pe == nullptr) {
+         CRITICAL(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
+#if defined(ENABLE_DEBUG_CHECKS)
+         abort();
+#endif
+      } else {
+         utilization_add(lFirstRW(lGetList(master_pe, PE_resource_utilization)), start_time,
+                         duration, pe_slots, 0, 0, PE_TAG, granted_pe,
+                         SCHEDULING_RECORD_ENTRY_TYPE_RESERVING, false, false, nullptr);
+         sge_add_event(0, sgeE_PE_MOD, 0, 0, granted_pe, nullptr, nullptr, pe, gdi_session);
+      }
    }
 
    lFreeElem(&dummy_job);

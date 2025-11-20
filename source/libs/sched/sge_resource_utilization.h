@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,6 +40,7 @@
 /* those are for treating resource utilization */
 bool utilization_print_to_dstring(const lListElem *this_elem, dstring *string);
 void utilization_print(const lListElem *cr, const char *object_name, bool show_binding_inuse);
+void utilization_print_all(const lList* pe_list, const lList *host_list, const lList *queue_list, const lList *ar_list);
 
 int
 utilization_add(lListElem *cr, u_long64 start_time, u_long64 duration, double utilization,

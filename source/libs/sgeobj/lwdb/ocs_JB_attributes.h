@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -114,7 +114,8 @@ enum {
    JB_grp_list,
    JB_joker,
    JB_sync_options,
-   JB_category_id
+   JB_category_id,
+   JB_when
 };
 
 constexpr const int JB_Type[] = {
@@ -204,6 +205,7 @@ constexpr const int JB_Type[] = {
    JB_joker,
    JB_sync_options,
    JB_category_id,
+   JB_when,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -293,7 +295,8 @@ constexpr const int JB_Type[] = {
    {JB_grp_list, "JB_grp_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_joker, "JB_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_sync_options, "JB_sync_options", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_category_id, "JB_category_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false} \
+   {JB_category_id, "JB_category_id", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::UNORDERED_UNIQUE, false, false}, \
+   {JB_when, "JB_when", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

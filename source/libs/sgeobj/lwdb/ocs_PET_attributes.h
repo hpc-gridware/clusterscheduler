@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ enum {
    PET_path_aliases,
    PET_environment,
    PET_do_contact,
+   PET_cred,
    PET_joker
 };
 
@@ -71,6 +72,7 @@ constexpr const int PET_Type[] = {
    PET_path_aliases,
    PET_environment,
    PET_do_contact,
+   PET_cred,
    PET_joker,
    AttributeStatic::END_OF_ATTRIBUTES
 };
@@ -95,6 +97,7 @@ constexpr const int PET_Type[] = {
    {PET_path_aliases, "PET_path_aliases", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_environment, "PET_environment", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_do_contact, "PET_do_contact", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {PET_cred, "PET_cred", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {PET_joker, "PET_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace
