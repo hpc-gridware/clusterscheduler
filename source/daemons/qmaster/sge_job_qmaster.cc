@@ -1314,10 +1314,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             lSetUlong(new_job, JB_version, lGetUlong(new_job, JB_version) + 1);
          }
 
-         // @todo CS-1155: add a transaction?
-         // open a spooling transaction
+         // open a spooling transaction. A event transaction is open automatically within worker threads
          spool_transaction(alpp, spool_get_default_context(), STC_begin);
-
 
          // if the job changed then check if also the category changed and trigger required events
          if ((trigger & (PRIO_EVENT | MOD_EVENT)) > 0) {
@@ -1358,7 +1356,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          if (!dbret) {
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
 
-            // @todo CS-1155: add a transaction?
+            // create a spool transaction. Evenet transaction is opened automatically within worker threads.
             spool_transaction(alpp, spool_get_default_context(), STC_rollback);
 
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
@@ -1437,7 +1435,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
             job_suc_pre_ad(new_job);
          }
 
-         // @todo CS-1155: add a transaction?
          // close the spooling transaction
          spool_transaction(alpp, spool_get_default_context(), STC_commit);
 
