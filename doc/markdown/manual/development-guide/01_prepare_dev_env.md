@@ -135,20 +135,23 @@ where it is found by the cmake build system.
 
 ### maxOS 14/15 (default for darwin-amd64)
 
+Please note that information here might be outdated because macOS is no default build platform anymore. 
+If you need this configuration then please contact sales or support at hpc-gridware.com.
+
 MacPorts is required to install the packages.
+
 
 ```
 XCode
 XCode command line tools
 set SDKROOT to the SDK path that should be used (usually do `export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)`)
 XQuartz (for some testsuite tests)
-port install cmake git autoconf automake gettext munge
+port install cmake git autoconf automake gettext 
+port install munge openssl3 
 port install expect tcl-tk gnuplot perl
 port install pandoc texlive
 port install doxygen graphviz
 ```
-
-@todo development package for OpenSSL
 
 ### macOS 14 
 
