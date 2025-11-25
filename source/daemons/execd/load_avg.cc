@@ -607,8 +607,10 @@ static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
    bool ret = false;
 #if defined(OCS_HWLOC)   
    ret = ocs::Topo::get_new_topology(topology, true);
-#endif   
-   sge_add_str2load_report(lpp, LOAD_ATTR_TOPOLOGY, ret ? topology.c_str() : NONE_STR, qualified_hostname);
+#endif
+   if (ret) {
+      sge_add_str2load_report(lpp, LOAD_ATTR_TOPOLOGY, topology.c_str(), qualified_hostname);
+   }
 }
 
 static int sge_get_loadavg(const char* qualified_hostname, lList **lpp)

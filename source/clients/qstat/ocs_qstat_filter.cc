@@ -1540,7 +1540,7 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
          monitor_dominance(dom, dominant);
 
          std::string details;
-         if (strcmp(lGetString(rep, CE_name), "m_topology") == 0) {
+         if (strcmp(lGetString(rep, CE_name), LOAD_ATTR_TOPOLOGY) == 0) {
             ocs::TopologyString topo_in_use;
             const char *hostname = lGetHost(q, QU_qhostname);
             const lListElem *host = lGetElemHost(qstat_env->exechost_list, EH_name, hostname);
