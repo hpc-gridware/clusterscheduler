@@ -186,6 +186,7 @@
 #define MSG_JOBMATCHINGUNEXPECTEDRESULT                     _MESSAGE(47228, _("job matching returned an unexpected result!"))
 #define MSG_SCHEDD_UNABLE_TO_SETUP_FILTER                   _MESSAGE(47229, _("unable to setup filter objects correctly"))
 #define MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED _MESSAGE(47230, _("queues dropped because they are temporarily not available: "))
+#define MSG_SCHEDD_BINDINGREQNOTFULLFILLED                  _MESSAGE(47231, _("cannot fulfill binding request"))
 
 /* NOTE: Id's from 47231 to 47249 are used in msg_smon.h */
 

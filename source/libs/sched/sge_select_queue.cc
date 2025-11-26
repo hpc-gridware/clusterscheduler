@@ -1522,6 +1522,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
       int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, 1, host, binding_inuse);
 
       if (slots_with_binding == 0) {
+         sge_dstring_sprintf(reason, SFN, MSG_SCHEDD_BINDINGREQNOTFULLFILLED);
          DRETURN(DISPATCH_NEVER_CAT);
       }
    }
@@ -6385,6 +6386,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, max_slots, host, binding_inuse);
 
       if (slots_with_binding == 0) {
+         sge_dstring_sprintf(&reason, SFN, MSG_SCHEDD_BINDINGREQNOTFULLFILLED);
          DRETURN(DISPATCH_NEVER_CAT);
       }
       max_slots = MIN(max_slots, slots_with_binding);
