@@ -1098,36 +1098,25 @@ master_kill_execds(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
 
 /********************************************************************
- Notify execd on a host to shutdown
+ Notify sge_execd on a host to shutdown
  ********************************************************************/
 static void
 notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_jobs, int force) {
-   const char *hostname;
-   u_long execd_alive;
-   const char *action_str;
-   u_long32 state;
-   const lList *mail_users;
-   const lList *gdil;
-   int mail_options;
-   unsigned long last_heard_from;
-   int result;
-   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-
    DENTER(TOP_LAYER);
 
-   action_str = kill_jobs ? MSG_NOTIFY_SHUTDOWNANDKILL : MSG_NOTIFY_SHUTDOWN;
+   const char *action_str = kill_jobs ? MSG_NOTIFY_SHUTDOWNANDKILL : MSG_NOTIFY_SHUTDOWN;
+   const char *hostname = lGetHost(lel, EH_name);
 
-   hostname = lGetHost(lel, EH_name);
-
+   unsigned long last_heard_from;
    cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
                                     (char *) hostname, (char *) prognames[EXECD], 1, &last_heard_from);
-   execd_alive = last_heard_from;
+   bool execd_alive = last_heard_from > 0;
 
    if (!force && !execd_alive) {
       WARNING(MSG_OBJ_NOEXECDONHOST_S, hostname);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
    } else {
-      result = host_notify_about_kill(lel, kill_jobs);
+      int result = host_notify_about_kill(lel, kill_jobs);
       if (result != 0) {
          INFO(MSG_COM_NONOTIFICATION_SSS, action_str, (execd_alive ? "" : MSG_OBJ_UNKNOWN), hostname);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
@@ -1143,24 +1132,18 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
       char sge_mail_body[1024];
 
       /* mark killed jobs as deleted */
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
       lListElem *jep;
       for_each_rw(jep, master_job_list) {
          lListElem *jatep;
-         mail_users = nullptr;
-         mail_options = 0;
+         const lList *mail_users = lGetList(jep, JB_mail_list);
+         u_long32 mail_options = lGetUlong(jep, JB_mail_options);
 
          for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-            gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
-            if (gdil) {
-               if (!(sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname))) {
+            const lList *gdil = lGetList(jatep, JAT_granted_destin_identifier_list);
+            if (gdil != nullptr) {
+               if (sge_hostcmp(lGetHost(lFirst(gdil), JG_qhostname), hostname) == 0) {
                   /*   send mail to users if requested                  */
-                  if (mail_users == nullptr) {
-                     mail_users = lGetList(jep, JB_mail_list);
-                  }
-                  if (mail_options == 0) {
-                     mail_options = lGetUlong(jep, JB_mail_options);
-                  }
-
                   if (VALID(MAIL_AT_ABORT, mail_options) && !(lGetUlong(jatep, JAT_state) & JDELETED)) {
                      lUlong jep_JB_job_number;
                      const char *jep_JB_job_name;
@@ -1176,7 +1159,7 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
                   }
 
                   /* this job has the killed exechost as master host */
-                  state = lGetUlong(jatep, JAT_state);
+                  u_long32 state = lGetUlong(jatep, JAT_state);
                   SETBIT(JDELETED, state);
                   lSetUlong(jatep, JAT_state, state);
 

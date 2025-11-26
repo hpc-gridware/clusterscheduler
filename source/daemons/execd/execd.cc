@@ -377,12 +377,10 @@ int main(int argc, char **argv)
 
    sge_sig_handler_in_main_loop = 1;
 
-   /* Start dispatching */
+   // Start dispatching - sge_execd_process_messages() will only return when sge_execd shall exit.
    execd_exit_state = sge_execd_process_messages();
 
-   /*
-    * This code is only reached when dispatcher terminates and execd goes down.
-    */
+   // This code is only reached when the dispatcher terminates and execd goes down.
 
    /* log if we received SIGPIPE signal */
    if (sge_sig_handler_sigpipe_received) {
@@ -398,6 +396,7 @@ int main(int argc, char **argv)
    ocs::execd_profiling_cleanup();
 
    sge_shutdown(execd_exit_state);
+
    DRETURN(execd_exit_state);
 }
 
@@ -426,6 +425,9 @@ static void execd_exit_func(int i)
       }
    }
 #endif
+
+   // Shutdown commlib connections
+   cl_com_cleanup_commlib();
 
    component_ts0_destroy();
    DRETURN_VOID;

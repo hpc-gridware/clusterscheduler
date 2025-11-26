@@ -74,6 +74,7 @@
 
 int sge_execd_process_messages() {
    DENTER(TOP_LAYER);
+
    monitoring_t monitor;
    bool terminate = false;
    bool do_reconnect = false;
@@ -385,8 +386,7 @@ int sge_execd_process_messages() {
          if (to_do_return_value == 1) {
             terminate = true;
             ret = 0;
-         }
-         if (to_do_return_value == 2) {
+         } else if (to_do_return_value == 2) {
             do_reconnect = true;
          }
       }
