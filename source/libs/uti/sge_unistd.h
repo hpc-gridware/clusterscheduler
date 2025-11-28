@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -99,7 +99,7 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
 
-int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true);
+int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true, bool ignore_notempty = false);
 
 bool sge_unlink(const char *prefix, const char *suffix);
 

@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -656,12 +656,12 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
          }
 
          /*
-          * Following sge_rmdir call may fail. We can ignore this error.
-          * This is only an indicator that another task is running which has 
+          * The following sge_rmdir() call may fail. We can ignore this error.
+          * This is only an indicator that another task is running that has
           * been spooled in the directory.
           */  
          DPRINTF("try to remove (2) " SFN "\n", task_spool_dir);
-         if (sge_rmdir(task_spool_dir, &error_msg, false)) {
+         if (sge_rmdir(task_spool_dir, &error_msg, false, true) != 0) {
             ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_TASK_SPOOL_FILE, error_msg_buffer);
          } 
 
@@ -697,17 +697,21 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
       }
       try_to_remove_sub_dirs = 1;
    }
+
    /*
-    * Following sge_rmdir calls may fail. We can ignore these errors.
-    * This is only an indicator that another job is running which has been
+    * The following sge_rmdir() calls may fail. We can ignore these errors.
+    * This is only an indicator that another job is running that has been
     * spooled in the same directory.
     */
    if (try_to_remove_sub_dirs) {
       DPRINTF("try to remove (3) " SFN "\n", spool_dir_third);
-
-      if (!sge_rmdir(spool_dir_third, nullptr, false)) {
+      if (sge_rmdir(spool_dir_third, nullptr, false, true) != 0) {
+         ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_DIRECTORY, error_msg_buffer);
+      } else {
          DPRINTF("try to remove (4) " SFN "\n", spool_dir_second);
-         sge_rmdir(spool_dir_second, nullptr, false);
+         if (sge_rmdir(spool_dir_second, nullptr, false, true) != 0) {
+            ERROR(MSG_JOB_CANNOT_REMOVE_SS, MSG_JOB_JOB_SPOOL_DIRECTORY, error_msg_buffer);
+         }
       }
    }
 

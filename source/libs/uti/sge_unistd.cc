@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -386,9 +386,10 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  * @param[in] cp path to the directory to be deleted
  * @param[in] error destination for error message if non-nullptr
  * @param[in] recursive if true (default), delete the directory recursively
+ * @param[in] ignore_notempty
  * @return 0 on success, -1 on error
  */
-int sge_rmdir(const char *cp, dstring *error, bool recursive) {
+int sge_rmdir(const char *cp, dstring *error, bool recursive, bool ignore_notempty) {
    DENTER(TOP_LAYER);
 
    if (cp == nullptr) {
@@ -446,9 +447,13 @@ int sge_rmdir(const char *cp, dstring *error, bool recursive) {
 #ifdef TEST
    printf("rmdir %s\n", cp);
 #else
-   if (rmdir(cp)) {
-      sge_dstring_sprintf(error, MSG_FILE_RMDIRFAILED_SS, cp, strerror(errno));
-      DRETURN(-1);
+   if (rmdir(cp) != 0) {
+      if (errno == ENOTEMPTY && ignore_notempty) {
+         DPRINTF("rmdir %s: not empty, ignoring\n", cp);
+      } else {
+         sge_dstring_sprintf(error, MSG_FILE_RMDIRFAILED_SS, cp, strerror(errno));
+         DRETURN(-1);
+      }
    }
 #endif
 
