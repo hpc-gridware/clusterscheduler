@@ -7,7 +7,11 @@ compatibility considerations to be aware of:
 
 - **Legacy Binding Syntax**: The previous `-binding` option has been deprecated and replaced with the new `-b...` 
   option family. Scripts and job submission commands using the old syntax will need to be updated to ensure 
-  compatibility with the new framework.
+  compatibility with the new framework. Please read the "Notes and Caveats" section in the sge_binding(5) manual page
+  we will add examples there that illustrate the transition from legacy to new syntax.
+- **Binding with Processor Sets**: The processor set binding implementation has been removed. The new scheduler based 
+  binding framework is not available for those architectures (like Solaris). If you need this then please contact our
+  support.
 - **Configuration Changes**: OCS and GCS are topology aware which eliminates possible hooks and custom scripts that 
   might have been used in the past to make the feature work. Any custom configurations that relied on the legacy binding
   mechanisms should be reviewed and modified to align with the new resource model.
