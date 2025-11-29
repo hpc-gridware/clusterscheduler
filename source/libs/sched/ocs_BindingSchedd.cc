@@ -159,6 +159,11 @@ bool
 ocs::BindingSchedd::find_final_in_use(const sge_assignment_t *a, TopologyString& binding_in_use, TopologyString& binding_in_use_sorted) {
    DENTER(TOP_LAYER);
 
+   // Remove first core if binding filter is set to 'first_core'
+   if (const int node_id = binding_in_use.find_first_core(); node_id != TopologyString::NO_POS) {
+      binding_in_use.mark_node_as_used_or_unused(node_id, true);
+   }
+
    // Remove all threads that are defined by an optional job specific filter (-bfilter)
    const std::string binding_filter = Job::binding_get_filter(a->job);
    DPRINTF("find_final_in_use: job filter is %s\n", binding_filter.c_str());

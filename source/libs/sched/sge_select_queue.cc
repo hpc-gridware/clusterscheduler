@@ -297,6 +297,7 @@ void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lL
    // initialize binding specific cached values
    a->is_binding_enabled = mconf_is_binding_enabled();
    a->do_binding_on_any_hosts = mconf_schedule_on_any_host();
+   a->filter_first_core = mconf_get_binding_filter() == FIRST_CORE;
 }
 
 /**

@@ -155,13 +155,14 @@ typedef struct {
    lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr  */
    bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
    lList      *binding_to_use;    /* Core/thread binding information                */
+   bool       filter_first_core;  /* globals binding filter: true if first core of first socket should not be used */
    /* ------ scheduler profiling index as picky pack data ------------------------- */
    sched_prof_t *pi;
 } sge_assignment_t;
 
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
-   false, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr}
+   false, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
