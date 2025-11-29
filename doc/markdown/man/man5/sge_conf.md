@@ -1129,6 +1129,31 @@ The first rule allows user *john* to submit 500 jobs per second. The second rule
 The third rule allows the *qstat* commands to query the status via *qstat* for 60000 requests per second. Please note that one *qstat* command can trigger multiple GDI requests at once. For example, *qstat -f* will query up to 15 different objects (job, queue, ehost, cplx etc.) in one command. Therefore, the limit should be set to a value that is high enough to allow users to get all the information they need in one command, or in other words, the
 limit of 60000 get requests will allow about 4000 *qstat -f* commands per second or 60000 *qstat -j* commands per second.
 
+## binding_params
+
+Used to define default binding behavior of jobs in the xxQS_NAMExx qmaster. Changes to the *binding_params* takes immediate effect. The following values are recognized:
+
+***implicit***
+
+default is *false*.  Allows enabling implicit binding requests for jobs that do not have explicit binding requests.  
+For jobs with implicit request the binding amount will correspond to the amount of slots. Implicit binding unit is 
+defined by default_unit.
+
+***default_unit*** 
+
+default is *C*. Defines the default binding unit for implicit binding requests if they are enabled via *implicit* 
+parameter.
+
+***on_any_host***
+
+default is *true*. Enables scheduling of jobs with binding request to hosts that do not report topology information 
+or that do not support binding.
+
+***filter*** 
+
+default is *NONE*. Can be set to *first_core* to disallow binding to the first core of the first socket. This reserves 
+that core for other activities on compute nodes (other processes, interrupt handling, IO, ...)
+
 ## reporting_params
 
 Used to define the behavior of reporting modules in the xxQS_NAMExx qmaster. Changes to the *reporting_params* 
