@@ -390,7 +390,12 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg)
 
                if (signal_job(jobid, jataskid, signo)) {
                   lListElem *jr = get_job_report(jobid, jataskid, nullptr);
-                  remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+                  if (jr == nullptr) {
+                     jr = add_job_report(jobid, jataskid, nullptr, nullptr);
+                  }
+                  if (jr != nullptr) {
+                     remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+                  }
                   job_unknown(jobid, jataskid, nullptr);
                }
             }
