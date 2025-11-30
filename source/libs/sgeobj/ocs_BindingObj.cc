@@ -51,6 +51,7 @@
 #include "sge_answer.h"
 
 #include "msg_common.h"
+#include "ocs_Job.h"
 #include "sge_conf.h"
 
 void
@@ -260,15 +261,30 @@ void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm)
       DRETURN_VOID;
    }
 
-   // no binding element, so we do not need to set defaults for binding
+   // no binding element, so we do not need to set defaults for binding (unless implicit binding is enabled)
    lListElem *binding_elem = lGetObject(parent, nm);
-   if (binding_elem == nullptr) {
+   if (binding_elem == nullptr && !mconf_do_implicit_binding()) {
       DRETURN_VOID;
+   }
+
+   // determine correct binding field (Job or AR)
+   int parent_binding_nm = NoName;
+   if (lGetPosViaElem(parent, JB_binding, SGE_NO_ABORT) >= 0) {
+      parent_binding_nm = JB_binding;
+   } else {
+      parent_binding_nm = AR_binding;
+   }
+
+   // create implicit binding if no binding is given (implicit binding is enabled)
+   if (binding_elem == nullptr) {
+      binding_elem = Job::binding_get_or_create_elem(parent, nullptr);
+      lSetUlong(binding_elem, BN_amount, 1);
+      lSetObject(parent, parent_binding_nm, binding_elem);
    }
 
    // ensure that the binding element is set to nullptr if the amount is 0
    if (lGetUlong(binding_elem, BN_amount) == 0) {
-      lSetObject(parent, JB_binding, nullptr);
+      lSetObject(parent, parent_binding_nm, nullptr);
       DRETURN_VOID;
    }
 
