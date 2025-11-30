@@ -184,7 +184,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
       lListElem *jr = get_job_report(jobid, jataskid, nullptr);
 
       if (jr == nullptr) {
-         ERROR(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, sge_u32c(jobid), sge_u32c(jataskid));
+         ERROR(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, jobid, jataskid);
          jr = add_job_report(jobid, jataskid, nullptr, nullptr);
       }
       if (jr != nullptr) {
