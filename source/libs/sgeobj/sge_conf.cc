@@ -1225,7 +1225,8 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_string_param(s, "filter", binding_filter)) {
-            if (binding_filter != NONE_STR && binding_filter != FIRST_CORE) {
+            if (const char *binding_filter_cstr = binding_filter.c_str();
+                strcasecmp(binding_filter_cstr, NONE_STR) != 0 && strcasecmp(binding_filter_cstr, FIRST_CORE) != 0) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
                                        MSG_CONF_INVALIDPARAM_SSI, "binding_params", "filter", -1);
                binding_filter = NONE_STR;
