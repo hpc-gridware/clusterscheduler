@@ -189,8 +189,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
       static lSortOrder *jr_sort_order = nullptr;
       if (!jr_sort_order) {
          DPRINTF("parsing job report sort order\n");
-         jr_sort_order = lParseSortOrderVarArg(JR_Type, "%I-",
-                                               JR_pe_task_id_str);
+         jr_sort_order = lParseSortOrderVarArg(JR_Type, "%I-", JR_pe_task_id_str);
       }
       lSortList(jrl, jr_sort_order);
    }

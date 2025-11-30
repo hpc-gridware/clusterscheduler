@@ -85,17 +85,17 @@ extern volatile int shut_me_down;
  **************************************************************************/
 int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
 {
+   DENTER(TOP_LAYER);
+
    lListElem *jep;
-   int found = 0;
+   bool found = false;
    u_long32 jobid, signal, jataskid;
    char *qname = nullptr;
-
-   DENTER(TOP_LAYER);
 
    if (unpackint(&(aMsg->buf), &jobid) != 0 ||
        unpackint(&(aMsg->buf), &jataskid) != 0 ||
        unpackstr(&(aMsg->buf), &qname) != 0 || /* mallocs qname !! */
-       unpackint(&(aMsg->buf), &signal)) {     /* signal don't need to be packed �*/
+       unpackint(&(aMsg->buf), &signal)) {     /* signal doesn't need to be packed */
       sge_free(&qname); 
       DRETURN(1);    
    }
@@ -105,7 +105,7 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
    if (aMsg->tag == TAG_SIGJOB) { /* signal a job / task */
       pack_ack(apb, ACK_SIGJOB, jobid, jataskid, nullptr);
 
-      found = (signal_job(jobid, jataskid, signal)==0);
+      found = signal_job(jobid, jataskid, signal) == 0;
    } else {            /* signal a queue */
       pack_ack(apb, ACK_SIGQUEUE, jobid, jataskid, qname);
 
@@ -158,7 +158,7 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
                            sge_execd_deliver_signal(signal, jep, jatep);
                         }   
                      }
-                     found = lGetUlong(jep, JB_job_number);
+                     found = true;
 
                      if (!mconf_get_simulate_jobs()) {
                         job_write_spool_file(jep, 
@@ -178,14 +178,21 @@ int do_signal_queue(struct_msg_t *aMsg, sge_pack_buffer *apb)
       adm_mail_reset(BIT_ADM_QCHANGE);
    }
 
-   /* If this is a queue signal 'found' now holds the number of a job
-      running in this queue. */
+   // Found tells us if a job was signaled (either due to a job signal or a queue signal).
+   // If it was a job signal, but we didn't find the job, then ack it to get rid of it in sge_qmaster.
    if (!found && aMsg->tag == TAG_SIGJOB) {
       // @todo really call remove_acked_job_exit? Won't it be called when qmaster acks the receipt of the unknown report?
       //       or would remove_acked_job_exit try to read final usage etc. - meaning report sth. useful and the job
       //       would not be treated as failed?
       lListElem *jr = get_job_report(jobid, jataskid, nullptr);
-      remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+
+      if (jr == nullptr) {
+         ERROR(MSG_SHEPHERD_MISSINGJOBXYINJOBREPORT_UU, sge_u32c(jobid), sge_u32c(jataskid));
+         jr = add_job_report(jobid, jataskid, nullptr, nullptr);
+      }
+      if (jr != nullptr) {
+         remove_acked_job_exit(jobid, jataskid, nullptr, jr);
+      }
       job_unknown(jobid, jataskid, qname);
    }
 

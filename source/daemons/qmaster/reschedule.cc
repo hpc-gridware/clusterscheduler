@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -566,13 +566,15 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          lSetUlong(this_jatep, JAT_state, state);
 
          pseudo_jr = lCreateElem(JR_Type);
-         lSetUlong(pseudo_jr, JR_job_number, job_number);
-         lSetUlong(pseudo_jr, JR_ja_task_number, task_number);
-         lSetUlong(pseudo_jr, JR_failed, SSTATE_AGAIN);
-         lSetString(pseudo_jr, JR_err_str, (char *) MSG_RU_JR_ERRSTR);
-         lSetString(pseudo_jr, JR_queue_name, lGetString(first_granted_queue, JG_qname));
-         sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
-         lFreeElem(&pseudo_jr);
+         if (pseudo_jr != nullptr) {
+            lSetUlong(pseudo_jr, JR_job_number, job_number);
+            lSetUlong(pseudo_jr, JR_ja_task_number, task_number);
+            lSetUlong(pseudo_jr, JR_failed, SSTATE_AGAIN);
+            lSetString(pseudo_jr, JR_err_str, (char *) MSG_RU_JR_ERRSTR);
+            lSetString(pseudo_jr, JR_queue_name, lGetString(first_granted_queue, JG_qname));
+            sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
+            lFreeElem(&pseudo_jr);
+         }
       }
    }
 

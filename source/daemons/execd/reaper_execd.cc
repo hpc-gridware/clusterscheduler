@@ -902,7 +902,7 @@ void remove_acked_job_exit(u_long32 job_id, u_long32 ja_task_id, const char *pe_
       }   
      
       /* use mail list of job instead of tasks one */
-      if (jr && lGetUlong(jr, JR_state) != JSLAVE) {
+      if (jr != nullptr && lGetUlong(jr, JR_state) != JSLAVE) {
          reaper_sendmail(jep, jr);
       }
 
@@ -1137,28 +1137,30 @@ static lListElem *execd_job_failure(lListElem *jep, lListElem *jatep, lListElem 
    ERROR((failed==SSTATE_FAILURE_BEFORE_JOB)? MSG_SHEPHERD_CANTSTARTJOBXY_US: MSG_SHEPHERD_PROBLEMSAFTERSTART_DS, sge_u32c(jobid), error_string);
 
    jr = get_job_report(jobid, jataskid, petaskid);
-   if (!jr) {
+   if (jr == nullptr) {
       DPRINTF("no job report found to report job start failure!\n");
       jr = add_job_report(jobid, jataskid, petaskid, jep);
    }
-   
-   if (petep != nullptr) {
-      ep = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
-   } else if (jatep != nullptr) {
-      ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
-   }
 
-   if (ep != nullptr) {
-      lSetString(jr, JR_queue_name, lGetString(ep, JG_qname));
-   }
-      
-   lSetUlong(jr, JR_failed, failed);
-   lSetUlong(jr, JR_general_failure, general);
-   lSetString(jr, JR_err_str, error_string);
-  
-   lSetUlong(jr, JR_state, JEXITING);
+   if (jr != nullptr) {
+      if (petep != nullptr) {
+         ep = lFirst(lGetList(petep, PET_granted_destin_identifier_list));
+      } else if (jatep != nullptr) {
+         ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
+      }
 
-   job_related_adminmail(EXECD, jr, job_is_array(jep), lGetString(jep, JB_owner));
+      if (ep != nullptr) {
+         lSetString(jr, JR_queue_name, lGetString(ep, JG_qname));
+      }
+
+      lSetUlong(jr, JR_failed, failed);
+      lSetUlong(jr, JR_general_failure, general);
+      lSetString(jr, JR_err_str, error_string);
+
+      lSetUlong(jr, JR_state, JEXITING);
+
+      job_related_adminmail(EXECD, jr, job_is_array(jep), lGetString(jep, JB_owner));
+   }
 
    DRETURN(jr);
 }
