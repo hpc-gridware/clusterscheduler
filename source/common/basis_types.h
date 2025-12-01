@@ -174,18 +174,6 @@ typedef char stringT[MAX_STRING_SIZE];
 #  define FALSE !TRUE
 #endif
 
-#define GET_SPECIFIC(type, _variable, init_func, _key) \
-   auto _variable = (type *)pthread_getspecific((pthread_key_t)(_key)); \
-   if ((_variable) == nullptr) { \
-      _variable = (type *)malloc(sizeof(type)); \
-      init_func(_variable); \
-      int _ret = pthread_setspecific(_key, (void*)_variable); \
-      if (_ret != 0) { \
-         fprintf(stderr, "pthread_setspecific(%s) failed: %s\n", __func__, strerror(_ret)); \
-         abort(); \
-      } \
-   } \
-   void()
 
 #define HAS_GETPWNAM_R
 #define HAS_GETGRNAM_R

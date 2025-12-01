@@ -202,6 +202,7 @@ sge_setup_qmaster(char *anArgv[]) {
    }
 
    qmaster_init();
+
    sge_write_pid(QMASTER_PID_FILE);
    DRETURN(0);
 }

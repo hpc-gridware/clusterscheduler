@@ -41,6 +41,7 @@
 #include "uti/sge_signal.h"
 #include "uti/sge_string.h"
 #include "uti/sge_hostname.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull.h"
 
@@ -489,7 +490,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, lListElem 
             // this should never happen, but if it does, we have to skip this gdil_ep
             CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
 #if defined (ENABLE_DEBUG_CHECKS)
-            abort();
+            ocs::TerminationManager::trigger_abort();
 #endif
             continue;
          }

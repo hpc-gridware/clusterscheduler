@@ -39,6 +39,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
@@ -976,7 +977,7 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
    if (qstat_env->full_listing & QSTAT_DISPLAY_FULL) {
       if (ctx->queue_elem == nullptr) {
          DPRINTF("Illegal State: ctx->queue_elem is nullptr !!!\n");
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
       DPRINTF("add queue_info for queue %s to queue_list\n", qname );
       
@@ -1007,7 +1008,7 @@ static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, 
       
       if (ctx->queue_elem != nullptr) {
          DPRINTF("Illegal state: ctx->queue_elem has to be nullptr");
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
       
       DPRINTF("Create ctx->queue_elem for queue %s\n", qname);
@@ -1044,7 +1045,7 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
 
    if (ctx->queue_elem == nullptr) {
       DPRINTF("Ilegal state: ctx->queue_elem must not be nullptr");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
    xml_elem = lGetObject(ctx->queue_elem, XMLE_Element);
    attribute_list = lGetListRW(xml_elem, XMLE_List);

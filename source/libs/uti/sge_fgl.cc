@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2023-2024 HPC-Gridware GmbH
+ *  Copyright 2023-2025 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
+#include "uti/sge_mtutil.h"
 
 #define COLLECT_STATS 1
 #define USE_FIFO_LOCK 0 // mem eater if enabled and slow (one queue and conditions for sync)
@@ -254,7 +255,7 @@ static void fgl_add(u_long32 id_root, bool is_rw, fgl_type_t type, u_long32 id_u
    // check fill size of array
    if (pos >= FGL_REQ_MAX) {
       fprintf(stderr, "CRITICAL: table to small. Increase table and recompile.\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    // set fields of new entry

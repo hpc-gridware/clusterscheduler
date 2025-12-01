@@ -41,6 +41,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/sge_mtutil.h"
 
 #include "cull/cull_list.h"
 

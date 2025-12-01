@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -45,6 +45,7 @@
 #include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_TerminationManager.h"
 
 /* enable or disable lock printing*/
 /* #define PRINT_LOCK */
@@ -99,7 +100,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
   
    if (( res = pthread_mutex_lock(mutex)) != 0) {
       CRITICAL(MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
  
    DPRINTF("%s() line %d: locked mutex \"%s\" : " sge_u64 "\n", func, line, mutex_name, sge_get_gmt64());
@@ -122,7 +123,7 @@ void sge_mutex_lock(const char *mutex_name, const char *func, int line, pthread_
    int res = pthread_mutex_lock(mutex);
    if (res != 0) {
       CRITICAL(MSG_LCK_MUTEXLOCKFAILED_SSS, func, mutex_name, strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    DRETURN_VOID;
@@ -171,7 +172,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
    if (( res = pthread_mutex_unlock(mutex)) != 0)
    {
       CRITICAL(MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
 #ifdef PRINT_LOCK
@@ -195,7 +196,7 @@ void sge_mutex_unlock(const char *mutex_name, const char *func, int line, pthrea
 
    if ((res = pthread_mutex_unlock(mutex)) != 0) {
       CRITICAL(MSG_LCK_MUTEXUNLOCKFAILED_SSS, func, mutex_name, strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    DRETURN_VOID;

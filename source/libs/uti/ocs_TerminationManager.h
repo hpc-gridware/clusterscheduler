@@ -58,6 +58,9 @@ namespace ocs {
       trigger_exception();
 
       static void
+      trigger_abort();
+
+      static void
       trigger_stack_overflow(int iterations = 65535);
    };
 }

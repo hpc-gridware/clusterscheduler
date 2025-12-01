@@ -1298,7 +1298,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       if (pe == nullptr) {
          CRITICAL(MSG_AR_HAS_NO_PEOBJECT_US, lGetUlong(ar, AR_id), granted_pe);
 #if defined(ENABLE_DEBUG_CHECKS)
-         abort();
+         ocs::TerminationManager::trigger_abort();
 #endif
          // In product build we continue without PE - this is the old behavior but should never happen
       }
@@ -1370,7 +1370,7 @@ ar_do_reservation(lListElem *ar, bool incslots, u_long64 gdi_session) {
       if (master_pe == nullptr) {
          CRITICAL(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
 #if defined(ENABLE_DEBUG_CHECKS)
-         abort();
+         ocs::TerminationManager::trigger_abort();
 #endif
       } else {
          utilization_add(lFirstRW(lGetList(master_pe, PE_resource_utilization)), start_time,

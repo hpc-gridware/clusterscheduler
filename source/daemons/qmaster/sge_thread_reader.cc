@@ -32,6 +32,7 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "sgeobj/ocs_DataStore.h"
 
@@ -205,7 +206,7 @@ sge_reader_main(void *arg) {
 #if defined (ENABLE_DEBUG_CHECKS)
          if (!is_only_read_request) {
             CRITICAL("reader thread tries to execute write request");
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
 #endif
 

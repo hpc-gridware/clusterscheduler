@@ -781,7 +781,7 @@ static void message_id_once_init() {
 
    if (0 != res) {
       fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "log_buffer_getspecific", strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 }
 

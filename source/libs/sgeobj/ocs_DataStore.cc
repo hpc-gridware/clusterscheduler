@@ -22,6 +22,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_mtutil.h"
 
 #include "basis_types.h"
 #include "sge_object.h"
@@ -129,19 +130,19 @@ namespace ocs {
       if (thread_name != nullptr) {
          if (strcmp(thread_name, "worker") == 0 && ds_id != DataStore::Id::GLOBAL) {
             CRITICAL("Worker thread is trying to access data store %d for list %d", ds_id, type);
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
 
          if (strcmp(thread_name, "reader") == 0) {
             if (ds_id != DataStore::Id::READER) {
                CRITICAL("Reader thread is trying to access data store %d for list %d", ds_id, type);
-               abort();
+               ocs::TerminationManager::trigger_abort();
             }
             // @todo enable once CS-825 is fixed
 #if 0
             if (!for_read) {
                CRITICAL("Reader thread is trying to get master list with write access");
-               abort();
+               ocs::TerminationManager::trigger_abort();
             }
 #endif
          }

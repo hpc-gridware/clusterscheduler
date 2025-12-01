@@ -474,3 +474,9 @@ ocs::TerminationManager::trigger_exception() {
    throw std::runtime_error("This is a test exception that was triggered in ocs::TerminationManager::trigger_exception()");
 }
 
+void
+ocs::TerminationManager::trigger_abort() {
+   show_stacktrace(LOG_CRIT);
+   abort();
+}
+

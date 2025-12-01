@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -46,6 +46,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 /****** uti/profiling/--Profiling ****************************************
 *  NAME
@@ -1541,7 +1542,7 @@ static void init_array(pthread_t num) {
 
    if (sge_prof_array_initialized == 0) {
       CRITICAL("Profiling array is not initialized!\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    pthread_mutex_lock(&thrdInfo_mutex);

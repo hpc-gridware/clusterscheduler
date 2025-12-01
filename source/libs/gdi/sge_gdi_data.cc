@@ -37,6 +37,7 @@
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_mtutil.h"
 
 #include "sge_gdi_data.h"
 

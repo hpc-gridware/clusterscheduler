@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,6 +40,7 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_lock_fifo.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_TerminationManager.h"
 
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -179,7 +180,7 @@ void sge_try_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, 
 
    if (res != 0) {
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
 #ifdef PRINT_LOCK
@@ -324,7 +325,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 
    if (res != 0) {
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
 #ifdef PRINT_LOCK
@@ -375,7 +376,7 @@ void sge_lock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sge_
 
    if (res != 0) {
       DPRINTF(MSG_LCK_RWLOCKFORWRITINGFAILED_SSS, func, locktype_names[aType], strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
 #ifdef SGE_DEBUG_LOCK_TIME
@@ -447,7 +448,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 #endif
    if (res != 0) {
       DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
    DPRINTF("%s() unlocked rwlock \"%s\"\n", func, locktype_names[aType]);
 
@@ -477,7 +478,7 @@ void sge_unlock(sge_locktype_t aType, sge_lockmode_t aMode, const char *func, sg
 #endif
    if (res != 0) {
       DPRINTF(MSG_LCK_RWLOCKUNLOCKFAILED_SSS, func, locktype_names[aType], strerror(res));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    DRETURN_VOID;

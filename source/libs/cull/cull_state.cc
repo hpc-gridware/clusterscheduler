@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -39,6 +39,7 @@
 #include <pthread.h>
 
 #include "uti/sge_stdlib.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/pack.h"
 
@@ -295,7 +296,7 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
 
       if (0 != res) {
          fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "cull_state_getspecific", strerror(res));
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
    }
 

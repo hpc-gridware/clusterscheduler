@@ -46,6 +46,7 @@
 
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull_list.h"
 #include "cull/cull_hash.h"
@@ -620,7 +621,7 @@ cull_pack_elem_partial(sge_pack_buffer *pb, const lListElem *ep,
    PROF_START_MEASUREMENT(SGE_PROF_PACKING);
    if (ep->descr == nullptr) {
       DPRINTF("element descriptor nullptr not allowed !!!\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if ((ret = packint(pb, ep->status)) != PACK_SUCCESS) {

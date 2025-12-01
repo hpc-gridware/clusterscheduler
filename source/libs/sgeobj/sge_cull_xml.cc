@@ -42,6 +42,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_list.h"
@@ -122,7 +123,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
       else {
          sge_dstring_free(&mod_value);
          CRITICAL("xml_addAttribute() called on wrong cull structure");
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
       lAppendElem(attr_list, attr_elem);
    }
@@ -670,8 +671,8 @@ bool escape_string(const char *string, dstring *target){
    
    if (target == nullptr) {
       DPRINTF("no target string in excape_string()\n");
-      abort();
-   } 
+      ocs::TerminationManager::trigger_abort();
+   }
  
    if (string == nullptr){
       DRETURN(false);

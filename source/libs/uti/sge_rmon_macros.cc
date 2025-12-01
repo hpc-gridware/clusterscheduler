@@ -43,6 +43,7 @@
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include <sge_time.h>
 
@@ -85,7 +86,7 @@ rmon_helper_t *rmon_get_helper() {
     if (helper == nullptr) {
         helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
         if (helper == nullptr) {
-           abort();
+           ocs::TerminationManager::trigger_abort();
         }
         memset(helper, 0, sizeof(rmon_helper_t));
         pthread_setspecific(rmon_helper_key, helper);

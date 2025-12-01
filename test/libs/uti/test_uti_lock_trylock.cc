@@ -27,6 +27,7 @@
 
 #include "uti/sge_lock.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 //#define THREAD_COUNT 64
 //#define THREAD_RUN_TIME 120
@@ -123,7 +124,7 @@ static void *thread_function(void *anArg) {
          usleep(getRandomNumber(10, 500));
          if (lock_counter != 1) {
             printf("error: lock_counter in worker should be exactly 1 but it is %ld\n", lock_counter);
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
          decr_counter();
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
@@ -134,7 +135,7 @@ static void *thread_function(void *anArg) {
          usleep(getRandomNumber(10, 1000));
          if (lock_counter < 1 || lock_counter > THREAD_COUNT - 1) {
             printf("error: lock_counter in reader should be bigger that 1 but not bigger than the amount of reader threads (%d) but it is %ld\n", THREAD_COUNT - 1, lock_counter);
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
          decr_counter();
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);

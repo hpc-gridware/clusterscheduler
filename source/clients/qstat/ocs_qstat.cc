@@ -1294,7 +1294,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
       case FULL_JOB_NAME:  name_str = "Full jobname:"; break;
       default:
            DPRINTF("Unknown additional info(%d)\n", name);
-           abort();
+           ocs::TerminationManager::trigger_abort();
    }
    printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s\n", name_str, value == nullptr ? "" : value);
    DRETURN(0);

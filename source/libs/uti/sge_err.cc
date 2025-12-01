@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,6 +40,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/ocs_TerminationManager.h"
 
 #define ERR_LAYER TOP_LAYER
 
@@ -92,7 +93,7 @@ sge_err_get_object(sge_err_object_t **object) {
          *object = new_object;
       } else {
          ERROR("pthread_setspecific failed to initialize sge_err_object_t in %s\n", __func__);
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
    }
    DRETURN(ret);

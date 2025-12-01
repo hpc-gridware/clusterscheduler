@@ -45,6 +45,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull.h"
 
@@ -320,7 +321,7 @@ void assignment_init_ar(sge_assignment_t *a, lList *ar_list) {
          if (a->ar == nullptr) {
             CRITICAL("AR object for AR_id " sge_u32 " not found", a->ar_id);
 #if defined(ENABLE_DEBUG_CHECKS)
-            abort();
+            ocs::TerminationManager::trigger_abort();
 #endif
          }
       }
@@ -402,7 +403,7 @@ find_best_result(dispatch_t r1, dispatch_t r2)
 
    CRITICAL(SFNMAX, MSG_JOBMATCHINGUNEXPECTEDRESULT);
 #if ENABLE_DEBUG_CHECKS
-      abort();
+      ocs::TerminationManager::trigger_abort();
 #endif
    DRETURN(DISPATCH_NEVER);
 }
@@ -694,7 +695,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
       DPRINTF("!!! SELECT PE(" sge_u32 "." sge_u32 ") returns unexpected %d\n", best->job_id, best->ja_task_id, best_result);
 #if ENABLE_DEBUG_CHECKS
       CRITICAL("!!! SELECT PE(" sge_u32 "." sge_u32 ") returns unexpected %d\n", best->job_id, best->ja_task_id, best_result);
-      abort();
+      ocs::TerminationManager::trigger_abort();
 #endif
       break;
    }
@@ -1121,7 +1122,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
          DPRINTF("!!! MAXIMIZE SLOT(%d, %d) returns unexpected %d\n", best->slots, (int)best->start, result);
 #if ENABLE_DEBUG_CHECKS
          CRITICAL("!!! MAXIMIZE SLOT(%d, %d) returns unexpected %d\n", best->slots, (int)best->start, result);
-         abort();
+         ocs::TerminationManager::trigger_abort();
 #endif
          break;
    }
@@ -1512,7 +1513,7 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
          default: /* error */
 #if ENABLE_DEBUG_CHECKS
             CRITICAL("!!! ri_time_by_slots() returned unexpected %d\n", ret);
-            abort();
+            ocs::TerminationManager::trigger_abort();
 #endif
             break;
       }
@@ -4300,7 +4301,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             DPRINTF("!!!!!!!! COMPREHENSIVE ASSIGNMENT(%d) returns unexpected %d\n", a->slots, best_result);
 #if ENABLE_DEBUG_CHECKS
             CRITICAL("!!!!!!!! COMPREHENSIVE ASSIGNMENT(%d) returns unexpected %d\n", a->slots, best_result);
-            abort();
+            ocs::TerminationManager::trigger_abort();
 #endif
             break;
          }
@@ -6445,7 +6446,7 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
 
    if (load_list == nullptr){
       CRITICAL("no load_list specified\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (*load_list != nullptr){
@@ -6692,7 +6693,7 @@ void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list)
 
    if (load_list == nullptr){
       CRITICAL("no load_list specified\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (*load_list == nullptr) {

@@ -46,6 +46,7 @@
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Job.h"
@@ -297,7 +298,7 @@ static void force_job_rlimit(const char* qualified_hostname)
                // this should never happen, but if it does, we have to skip this gdil_ep
                CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");
 #if defined (ENABLE_DEBUG_CHECKS)
-               abort();
+               ocs::TerminationManager::trigger_abort();
 #endif
                continue;
             }

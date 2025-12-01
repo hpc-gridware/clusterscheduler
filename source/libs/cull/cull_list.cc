@@ -48,6 +48,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_db.h"
@@ -1122,7 +1123,7 @@ void lFreeElem(lListElem **ep1) {
    if (ep->descr == nullptr) {
       LERROR(LEDESCRNULL);
       DPRINTF("nullptr descriptor not allowed !!!\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
@@ -1629,7 +1630,7 @@ int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    if (new_ep->status == BOUND_ELEM || new_ep->status == OBJECT_ELEM) {
       DPRINTF("WARNING: tried to insert chained element\n");
       lWriteElem(new_ep);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (ep) {
@@ -1705,7 +1706,7 @@ int lAppendElem(lList *lp, lListElem *ep) {
    /* is the element ep still chained in an other list, this is not allowed ? */
    if (ep->status == BOUND_ELEM || ep->status == OBJECT_ELEM) {
       DPRINTF("WARNING: tried to append chained element\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (lp->last) {
@@ -1770,7 +1771,7 @@ int lRemoveElem(lList *lp, lListElem **ep1) {
 
    if (lp->descr != ep->descr) {
       CRITICAL("Removing element from other list !!!\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (ep->prev) {
@@ -1836,7 +1837,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
 
    if (source->descr != ep->descr) {
       CRITICAL("Dechaining element from other list !!!\n");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (*target == nullptr) {
@@ -1844,7 +1845,7 @@ lDechainList(lList *source, lList **target, lListElem *ep) {
    } else {
       if (lCompListDescr(source->descr, (*target)->descr) != 0) {
          CRITICAL("Dechaining element into a different list !!!\n");
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
    }
 
@@ -1924,7 +1925,7 @@ lListElem *lDechainElem(lList *lp, lListElem *ep) {
    }
    if (lp->descr != ep->descr) {
       CRITICAL("Dechaining element from other list !!!");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (ep->prev) {

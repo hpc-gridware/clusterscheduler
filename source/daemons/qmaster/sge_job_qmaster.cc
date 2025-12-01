@@ -4383,7 +4383,7 @@ job_ja_task_debit(const lListElem *job, const lListElem *ja_task, lList **answer
       if (ar == nullptr) {
          CRITICAL(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, job_id);
 #if defined (ENABLE_DEBUG_CHECKS)
-         abort();
+         ocs::TerminationManager::trigger_abort();
 #endif
       } else {
          ar_global_host = lGetSubHostRW(ar, EH_name, SGE_GLOBAL_NAME, AR_reserved_hosts);
@@ -4400,7 +4400,7 @@ job_ja_task_debit(const lListElem *job, const lListElem *ja_task, lList **answer
       if (queue == nullptr) {
          CRITICAL(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, job_id);
 #if defined (ENABLE_DEBUG_CHECKS)
-         abort();
+         ocs::TerminationManager::trigger_abort();
 #endif
       } else {
          const lList *granted_resources_list = lGetList(ja_task, JAT_granted_resources_list);

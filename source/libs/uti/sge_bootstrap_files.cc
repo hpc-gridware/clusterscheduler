@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -47,6 +47,7 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
+#include "uti/sge_mtutil.h"
 
 #include "uti/msg_utilib.h"
 

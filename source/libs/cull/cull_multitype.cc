@@ -48,6 +48,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/ocs_TerminationManager.h"
 
 #include "cull/msg_cull.h"
 #include "cull/cull_multitypeP.h"
@@ -98,7 +99,7 @@ int incompatibleType(const char *str) {
    for (i = 0; i < 5; i++)
            DPRINTF("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
-   abort();
+   ocs::TerminationManager::trigger_abort();
    DRETURN(-1);
 }
 
@@ -114,7 +115,7 @@ int incompatibleType2(const char *fmt, ...) {
    CRITICAL(SFNMAX, buf);
    fprintf(stderr, SFNMAX, buf);
 
-   abort();
+   ocs::TerminationManager::trigger_abort();
    DRETURN(-1);
 }
 
@@ -127,7 +128,6 @@ int unknownType(const char *str) {
    DPRINTF("Unknown Type in %s.\n", str);
    LERROR(LEUNKTYPE);
    DRETURN(-1);
-   /* abort(); */
 }
 
 /****** cull/multitype/lGetPosViaElem() ****************************************
@@ -156,7 +156,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    if (!element) {
       if (do_abort) {
          CRITICAL(MSG_CULL_POINTER_NULLELEMENTFORX_S, lNm2Str(name));
-         abort();
+         ocs::TerminationManager::trigger_abort();
       }
       DRETURN(-1);
    }
@@ -165,7 +165,7 @@ int lGetPosViaElem(const lListElem *element, int name, int do_abort) {
    if (do_abort && (pos < 0)) {
       /* someone has called lGetPosViaElem() with invalid name */
       CRITICAL(MSG_CULL_XNOTFOUNDINELEMENT_S, lNm2Str(name));
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    DRETURN(pos);
@@ -721,7 +721,7 @@ lUlong lGetPosUlong(const lListElem *ep, int pos) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
       CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG_GOTINVALIDPOSITION);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlongT)
@@ -785,7 +785,7 @@ lUlong64 lGetPosUlong64(const lListElem *ep, int pos) {
       /* someone has called lGetPosUlong64() */
       /* makro with an invalid nm        */
       CRITICAL(SFNMAX, MSG_CULL_GETPOSULONG64_GOTINVALIDPOSITION);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lUlong64T)
@@ -1021,7 +1021,7 @@ lListElem *lGetPosObject(const lListElem *ep, int pos) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
       CRITICAL(SFNMAX, MSG_CULL_GETPOSOBJECT_GOTANINVALIDPOS);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lObjectT)
@@ -1054,7 +1054,7 @@ lList *lGetPosList(const lListElem *ep, int pos) {
       /* someone has called lGetPosUlong() */
       /* makro with an invalid nm        */
       CRITICAL(SFNMAX, MSG_CULL_GETPOSLIST_GOTANINVALIDPOS);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (mt_get_type(ep->descr[pos].mt) != lListT)
@@ -3527,7 +3527,7 @@ lListElem *lAddSubStr(lListElem *ep, int nm, const char *str, int snm,
 
    if (!(ep->descr)) {
       DPRINTF("nullptr descriptor in element not allowed !!!");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    /* run time type checking */
@@ -3580,7 +3580,7 @@ lListElem *lAddSubHost(lListElem *ep, int nm, const char *str, int snm,
 
    if (!(ep->descr)) {
       DPRINTF("nullptr descriptor in element not allowed !!!");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    /* run time type checking */
@@ -4159,7 +4159,7 @@ lListElem *lAddSubUlong(lListElem *ep, int nm, lUlong val, int snm,
 
    if (!(ep->descr)) {
       DPRINTF("nullptr descriptor in element not allowed !!!");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    /* run time type checking */
@@ -4558,7 +4558,7 @@ lListElem *lAddSubUlong64(lListElem *ep, int nm, lUlong64 val, int snm,
 
    if (!(ep->descr)) {
       DPRINTF("nullptr descriptor in element not allowed !!!");
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    /* run time type checking */

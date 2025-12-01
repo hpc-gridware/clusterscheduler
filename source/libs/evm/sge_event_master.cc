@@ -641,7 +641,7 @@ sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost)
 
    if (clio == nullptr) {
       ERROR("nullptr element passed to sge_mod_event_client");
-      abort();
+      ocs::TerminationManager::trigger_abort();
       DRETURN(STATUS_ESEMANTIC);
    }
 

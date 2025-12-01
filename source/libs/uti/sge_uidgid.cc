@@ -209,7 +209,7 @@ sge_switch2admin_user() {
     */
    if (get_admin_user(&uid, &gid) == ESRCH) {
       CRITICAL(SFNMAX, MSG_SWITCH_USER_NOT_INITIALIZED);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    if (!sge_is_start_user_superuser()) {
@@ -290,7 +290,7 @@ sge_switch2start_user() {
 
    if (get_admin_user(&uid, &gid) == ESRCH) {
       CRITICAL(SFNMAX, MSG_SWITCH_USER_NOT_INITIALIZED);
-      abort();
+      ocs::TerminationManager::trigger_abort();
    }
 
    start_uid = getuid();

@@ -1133,7 +1133,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
             // CS-1108: once all cleanup has been done, sge_select_parallel_environment
             // will no longer return DISPATCH_NOT_AT_TIME but DISPATCH_NEVER_CAT
             CRITICAL("===> we should no longer get DISPATCH_NOT_AT_TIME (parallel)");
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
 #endif
       }
@@ -1182,7 +1182,7 @@ select_assign_debit(lList **queue_list, lList **dis_queue_list, lListElem *job, 
             // CS-1108: once all cleanup has been done, sge_select_parallel_environment
             // will no longer return DISPATCH_NOT_AT_TIME but DISPATCH_NEVER_CAT
             CRITICAL("===> we should no longer get DISPATCH_NOT_AT_TIME (sequential)");
-            abort();
+            ocs::TerminationManager::trigger_abort();
          }
 #endif
       }

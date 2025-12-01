@@ -34,6 +34,20 @@
 /*___INFO__MARK_END__*/
 
 #include <pthread.h>
+#include "uti/ocs_TerminationManager.h"
+
+#define GET_SPECIFIC(type, _variable, init_func, _key) \
+   auto _variable = (type *)pthread_getspecific((pthread_key_t)(_key)); \
+   if ((_variable) == nullptr) { \
+      _variable = (type *)malloc(sizeof(type)); \
+      init_func(_variable); \
+      int _ret = pthread_setspecific(_key, (void*)_variable); \
+      if (_ret != 0) { \
+         fprintf(stderr, "pthread_setspecific(%s) failed: %s\n", __func__, strerror(_ret)); \
+         ocs::TerminationManager::trigger_abort(); \
+      } \
+   } \
+   void()
 
 extern void sge_mutex_lock(const char *, const char *, int, pthread_mutex_t *);
 
