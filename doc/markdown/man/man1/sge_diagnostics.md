@@ -72,6 +72,61 @@ The following table lists the error codes and their meaning:
 More details about errors reported by `sge_execd` can be found in the `sge_execd` messages file.   
 For errors reported by `sge_shepherd` please check the `sge_shepherd` trace file or the error mail (if requested at job submission) or administrator mail (if configured in the global configuration).
 
+## Administrator Mail
+
+The administrator mail features a mail message for each failed job.
+The mail message contains
+
+* general information
+  * about the job, e.g., job owner, queue, start time and end time (if available)
+  * about the error, e.g., `failed in prolog:2025-12-02 16:45:32.632767 [6001:104882]: execvp(/no/such/prolog, "/no/such/prolog") failed: No such file or directory`
+  * actions taken due to the error, e.g., `Job 4 caused action: Queue "all.q@<hostname>" set to ERROR`
+* the shepherd `trace` file
+* the shepherd `error` file
+* the `pe_hostfile`
+
+The administrator mail address can be configured in the global configuration file (see `sge_conf.5`).
+
+For most of the error codes the administrator mail is sent for every failed job.
+
+For specific configuration-related failures (prolog and epilog configuration), the administrator mail is sent only once for the first failed job. It will be sent again if the configuration is changed (either a local or global configuration, or a queue is changed).
+
+For a few error codes no administrator mail is sent.
+
+The following table lists the error codes and the frequency of sending. See [Error Codes reported in the failed state of jobs](#error-codes-reported-in-the-failed-state-of-jobs) for a list of the error codes and their meaning.
+
+| Code                       | Frequency |
+|:---------------------------|:----------|
+| SSTATE_FAILURE_BEFORE_JOB  | NEVER     |
+| ESSTATE_NO_SHEPHERD        | NEVER     |
+| ESSTATE_NO_CONFIG          | ALWAYS    |
+| ESSTATE_NO_PID             | ALWAYS    |
+| SSTATE_PROCSET_NOT_SET     | ALWAYS    |
+| SSTATE_BEFORE_PROLOG       | ALWAYS    |
+| SSTATE_PROLOG_FAILED       | ONCE      |
+| SSTATE_BEFORE_PESTART      | ALWAYS    |
+| SSTATE_PESTART_FAILED      | ALWAYS    |
+| SSTATE_BEFORE_JOB          | ALWAYS    |
+| SSTATE_BEFORE_PESTOP       | ALWAYS    |
+| SSTATE_PESTOP_FAILED       | ALWAYS    |
+| SSTATE_BEFORE_EPILOG       | ALWAYS    |
+| SSTATE_EPILOG_FAILED       | ONCE      |
+| SSTATE_PROCSET_NOTFREED    | ALWAYS    |
+| ESSTATE_DIED_THRU_SIGNAL   | ALWAYS    |
+| ESSTATE_SHEPHERD_EXIT      | ALWAYS    |
+| ESSTATE_NO_EXITSTATUS      | ALWAYS    |
+| ESSTATE_UNEXP_ERRORFILE    | ALWAYS    |
+| ESSTATE_UNKNOWN_JOB        | ALWAYS    |
+| ESSTATE_EXECD_LOST_RUNNING | NEVER     |
+| ESSTATE_PTF_CANT_GET_PIDS  | NEVER     |
+| SSTATE_MIGRATE             | NEVER     |
+| SSTATE_AGAIN               | NEVER     |
+| SSTATE_OPEN_OUTPUT         | ALWAYS    |
+| SSTATE_NO_SHELL            | ALWAYS    |
+| SSTATE_NO_CWD              | ALWAYS    |
+| SSTATE_AFS_PROBLEM         | ALWAYS    |
+| SSTATE_APPERROR            | ALWAYS    |
+| SSTATE_CHECK_DAEMON_CONFIG | NEVER     |
 
 # ENVIRONMENTAL VARIABLES
 
