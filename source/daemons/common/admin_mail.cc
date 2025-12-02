@@ -54,6 +54,14 @@
 #include "msg_daemons_common.h"
 #include "uti/sge.h"
 
+/* @todo CS-1697 This list has issues:
+ *    * there is an offset at the beginning: SSTATE_FAILURE_BEFORE_JOB is state 1 - they all seem shifted by one
+*     * SSTATE_PROCSET_NOTSET is missing
+*     * SSTATE_EPILOG_FAILED is duplicated
+*     * SSTATE_ADD_GRP_SET_ERROR is missing
+*     * SSTATE_PROCSET_NOTFREED is missing
+*     * possibly further issues, compare against state definition in execution_states.h
+ */
 int admail_states[MAX_SSTATE + 1] = {
                                       0,
                                       0,
