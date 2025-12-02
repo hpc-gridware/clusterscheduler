@@ -30,7 +30,6 @@
 #include "uti/sge_os.h"
 #include "uti/sge_time.h"
 
-#if defined(LINUX) || defined(SOLARIS)
 static bool
 close_stdin() {
    bool ret = true;
@@ -47,6 +46,8 @@ close_stdin() {
    sge_close_all_fds(keep_open, 3);
    u_long64 end = sge_get_gmt64();
    std::cout << "close_stdin() took " << (end - start) << " µs" << std::endl;
+
+#if defined(LINUX) || defined(SOLARIS)
    std::set open_fds = get_all_fds();
    if (open_fds.size() != 3) {
       std::cerr << "close_stdin(): expected 3 fds to be open, got " << open_fds.size() << ": ";
@@ -69,6 +70,7 @@ close_stdin() {
          ret = false;
       }
    }
+#endif
    return ret;
 }
 
@@ -113,6 +115,7 @@ close_many_fds(std::filesystem::path &test_dir, int num_fds) {
    u_long64 end = sge_get_gmt64();
    std::cout << "close_many_fds() took " << (end - start) << " µs" << std::endl;
 
+#if defined(LINUX) || defined(SOLARIS)
    // Check what is still open via get_all_fds().
    std::set still_open_fds = get_all_fds();
 
@@ -130,17 +133,25 @@ close_many_fds(std::filesystem::path &test_dir, int num_fds) {
          close(fd);
       }
    }
+#else
+   // On other platforms we cannot check which file handles are actually still open.
+   // Close the ones we expect still to be open.
+   for (int i = 0; i < idx; ++i) {
+      int fd = keep_open[i];
+      if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO) {
+         close(fd);
+      }
+   }
+#endif
 
    return ret;
 }
-#endif
 
 int main(int argc, char *argv[]) {
    int ret = EXIT_SUCCESS;
 
    std::cout << "maximum number of fds: " << sge_get_max_fd() << std::endl;
 
-#if defined(LINUX) || defined(SOLARIS)
    if (argc > 1) {
       // If a path to a directory is given, then start a test opening many files
       // and closing them with close_all_fds().
@@ -160,9 +171,6 @@ int main(int argc, char *argv[]) {
          ret = EXIT_FAILURE;
       }
    }
-#else
-   std::cout << "this test is not implemented on platforms other than LINUX and SOLARIS" << std::endl;
-#endif
 
    return ret;
 }
