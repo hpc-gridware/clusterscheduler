@@ -108,6 +108,7 @@ char* mconf_get_qmaster_params();
 char* mconf_get_execd_params();
 char* mconf_get_reporting_params();
 char* mconf_get_binding_params();
+char* mconf_get_jsv_params();
 char* mconf_get_gid_range();
 u_long32 mconf_get_zombie_jobs();
 char* mconf_get_qlogin_daemon();

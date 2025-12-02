@@ -74,60 +74,61 @@
 lList *Execd_Config_List = nullptr;
 
 struct confel {                       /* cluster configuration parameters */
-    char        *execd_spool_dir;     /* sge_spool directory base path */
-    char        *mailer;              /* path to e-mail delivery agent */
-    char        *xterm;               /* xterm path for interactive jobs */
-    char        *load_sensor;         /* path to a load sensor executable */
-    char        *prolog;              /* start before jobscript may be none */
-    char        *epilog;              /* start after jobscript may be none */
-    char        *shell_start_mode;    /* script_from_stdin/posix_compliant/unix_behavior */
-    char        *login_shells;        /* list of shells to call as login shell */
-    u_long32    min_uid;              /* lower bound on UIDs that can qsub */
-    u_long32    min_gid;              /* lower bound on GIDs that can qsub */
-    u_long32    load_report_time;     /* how often to send in load */
-    u_long32    max_unheard;          /* how long before sge_execd considered dead */
-    u_long32    loglevel;             /* qmaster event logging level */
-    char        *enforce_project;     /* SGEEE attribute: "true" or "false" */
-    char        *enforce_user;        /* SGEEE attribute: "true" or "false" */
-    char        *administrator_mail;  /* list of mail addresses */
-    char        *mail_tag;            /* mail tag */
-    lList       *user_lists;          /* allowed user lists */
-    lList       *xuser_lists;         /* forbidden users lists */
-    lList       *projects;            /* allowed project list */
-    lList       *xprojects;           /* forbiddent project list */
-    char        *set_token_cmd;
-    char        *pag_cmd;
-    u_long32    token_extend_time;
-    char        *shepherd_cmd;
-    char        *qmaster_params;
-    char        *execd_params;
-    char        *reporting_params;
-    char        *gid_range;           /* Range of additional group ids */
-    u_long32    zombie_jobs;          /* jobs to save after execution */
-    char        *qlogin_daemon;       /* eg /usr/sbin/in.telnetd */
-    char        *qlogin_command;      /* eg telnet $HOST $PORT */
-    char        *rsh_daemon;          /* eg /usr/sbin/in.rshd */
-    char        *rsh_command;         /* eg rsh -p $PORT $HOST command */
-    char        *jsv_url;             /* jsv url */
-    char        *jsv_allowed_mod;     /* allowed modifications for end users if JSV is enabled */
-    char        *gdi_request_limits;  /* request limits for GDI commands */
-    char        *rlogin_daemon;       /* eg /usr/sbin/in.rlogind */
-    char        *rlogin_command;      /* eg rlogin -p $PORT $HOST */
-    u_long32    reschedule_unknown;   /* timout value used for auto. resch. */ 
-    u_long32    max_aj_instances;     /* max. number of ja instances of a job */
-    u_long32    max_aj_tasks;         /* max. size of an array job */
-    u_long32    max_u_jobs;           /* max. number of jobs per user */
-    u_long32    max_jobs;             /* max. number of jobs in the system */
-    u_long32    max_advance_reservations; /* max. number of advance reservations in the system */
-    u_long32    auto_user_fshare;     /* SGEEE automatic user fshare */
-    u_long32    auto_user_oticket;    /* SGEEE automatic user oticket */
-    char        *auto_user_default_project; /* SGEEE automatic user default project */
-    u_long32    auto_user_delete_time; /* SGEEE automatic user delete time */
-    char        *delegated_file_staging; /*drmaa attribute: "true" or "false" */
-    char        *libjvm_path;         /* libjvm_path for jvm_thread */
-    char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
-    char        *binding_params;      //< string containing al binding specific parameters
-    char        *topology_file;       //< None or path to a hwloc topology file
+   char        *execd_spool_dir;     /* sge_spool directory base path */
+   char        *mailer;              /* path to e-mail delivery agent */
+   char        *xterm;               /* xterm path for interactive jobs */
+   char        *load_sensor;         /* path to a load sensor executable */
+   char        *prolog;              /* start before jobscript may be none */
+   char        *epilog;              /* start after jobscript may be none */
+   char        *shell_start_mode;    /* script_from_stdin/posix_compliant/unix_behavior */
+   char        *login_shells;        /* list of shells to call as login shell */
+   u_long32    min_uid;              /* lower bound on UIDs that can qsub */
+   u_long32    min_gid;              /* lower bound on GIDs that can qsub */
+   u_long32    load_report_time;     /* how often to send in load */
+   u_long32    max_unheard;          /* how long before sge_execd considered dead */
+   u_long32    loglevel;             /* qmaster event logging level */
+   char        *enforce_project;     /* SGEEE attribute: "true" or "false" */
+   char        *enforce_user;        /* SGEEE attribute: "true" or "false" */
+   char        *administrator_mail;  /* list of mail addresses */
+   char        *mail_tag;            /* mail tag */
+   lList       *user_lists;          /* allowed user lists */
+   lList       *xuser_lists;         /* forbidden users lists */
+   lList       *projects;            /* allowed project list */
+   lList       *xprojects;           /* forbiddent project list */
+   char        *set_token_cmd;
+   char        *pag_cmd;
+   u_long32    token_extend_time;
+   char        *shepherd_cmd;
+   char        *qmaster_params;
+   char        *execd_params;
+   char        *reporting_params;
+   char        *gid_range;           /* Range of additional group ids */
+   u_long32    zombie_jobs;          /* jobs to save after execution */
+   char        *qlogin_daemon;       /* eg /usr/sbin/in.telnetd */
+   char        *qlogin_command;      /* eg telnet $HOST $PORT */
+   char        *rsh_daemon;          /* eg /usr/sbin/in.rshd */
+   char        *rsh_command;         /* eg rsh -p $PORT $HOST command */
+   char        *jsv_url;             /* jsv url */
+   char        *jsv_allowed_mod;     /* allowed modifications for end users if JSV is enabled */
+   char        *gdi_request_limits;  /* request limits for GDI commands */
+   char        *rlogin_daemon;       /* eg /usr/sbin/in.rlogind */
+   char        *rlogin_command;      /* eg rlogin -p $PORT $HOST */
+   u_long32    reschedule_unknown;   /* timout value used for auto. resch. */
+   u_long32    max_aj_instances;     /* max. number of ja instances of a job */
+   u_long32    max_aj_tasks;         /* max. size of an array job */
+   u_long32    max_u_jobs;           /* max. number of jobs per user */
+   u_long32    max_jobs;             /* max. number of jobs in the system */
+   u_long32    max_advance_reservations; /* max. number of advance reservations in the system */
+   u_long32    auto_user_fshare;     /* SGEEE automatic user fshare */
+   u_long32    auto_user_oticket;    /* SGEEE automatic user oticket */
+   char        *auto_user_default_project; /* SGEEE automatic user default project */
+   u_long32    auto_user_delete_time; /* SGEEE automatic user delete time */
+   char        *delegated_file_staging; /*drmaa attribute: "true" or "false" */
+   char        *libjvm_path;         /* libjvm_path for jvm_thread */
+   char        *additional_jvm_args; /* additional_jvm_args for jvm_thread */
+   char        *binding_params;      //< string containing al binding specific parameters
+   char        *jsv_params;          //< string containing jsv specific parameters
+   char        *topology_file;       //< None or path to a hwloc topology file
 };
 
 typedef struct confel sge_conf_type;
@@ -137,7 +138,7 @@ static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
-   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr
+   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
 };
 static bool is_new_config = false;
 static bool forbid_reschedule = false;
@@ -374,6 +375,7 @@ static tConfEntry conf_entries[] = {
  { "execd_params",               1, NONE_STR,                  1, nullptr},
  { "reporting_params",           1, REPORTING_PARAMS,          1, nullptr},
  { "binding_params",             0, BINDING_PARAMS_DEFAULT,    1, nullptr},
+ { "jsv_params",                 0, NONE_STR,                  1, nullptr},
  { "gid_range",                  1, NONE_STR,                  1, nullptr},
  { "finished_jobs",              0, FINISHED_JOBS,             1, nullptr},
  { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
@@ -560,6 +562,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "execd_params",  &Master_Config.execd_params, nullptr, 0);
    chg_conf_val(lpCfg, "reporting_params",  &Master_Config.reporting_params, nullptr, 0);
    chg_conf_val(lpCfg, "binding_params",  &Master_Config.binding_params, nullptr, 0);
+   chg_conf_val(lpCfg, "jsv_params",  &Master_Config.jsv_params, nullptr, 0);
    chg_conf_val(lpCfg, "finished_jobs", nullptr, &Master_Config.zombie_jobs, TYPE_INT);
    chg_conf_val(lpCfg, "qlogin_daemon", &Master_Config.qlogin_daemon, nullptr, 0);
    chg_conf_val(lpCfg, "qlogin_command", &Master_Config.qlogin_command, nullptr, 0);
@@ -680,6 +683,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       char* execd_params = mconf_get_execd_params();
       char* reporting_params = mconf_get_reporting_params();
       char* binding_params = mconf_get_binding_params();
+      char* jsv_params = mconf_get_jsv_params();
       u_long32 load_report_time = mconf_get_load_report_time();
 #ifdef LINUX
       bool mtrace_before = enable_mtrace;
@@ -1239,10 +1243,26 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
       conf_context=nullptr;
+
+#if 0
+      // @todo: implement parsing of jsv parameters
+      // @todo: CS-1700: Add possibility to define a timeout for JSVs
+      // @todo: CS-1701: Add possibility to define a threshold for JSV's
+      /* parse JSV parameters */
+      SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+      for (s=sge_strtok_r(jsv_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+         ;
+      }
+      SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+      sge_free_saved_vars(conf_context);
+      conf_context=nullptr;
+#endif
+
       sge_free(&qmaster_params);
       sge_free(&execd_params);
       sge_free(&reporting_params);
       sge_free(&binding_params);
+      sge_free(&jsv_params);
    }
 
    lFreeList(&mlist);
@@ -1276,39 +1296,40 @@ void sge_show_conf()
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    INFO(MSG_CONF_USING_US, Master_Config.loglevel, "loglevel");
-   INFO(MSG_CONF_USING_SS, Master_Config.execd_spool_dir != nullptr ? Master_Config.execd_spool_dir : "none", "execd_spool_dir");
-   INFO(MSG_CONF_USING_SS, Master_Config.mailer != nullptr ? Master_Config.mailer : "none", "mailer");
-   INFO(MSG_CONF_USING_SS, Master_Config.xterm != nullptr ? Master_Config.xterm : "none", "xterm");
-   INFO(MSG_CONF_USING_SS, Master_Config.load_sensor != nullptr ? Master_Config.load_sensor : "none", "load_sensor");
-   INFO(MSG_CONF_USING_SS, Master_Config.prolog != nullptr ? Master_Config.prolog : "none", "prolog");
-   INFO(MSG_CONF_USING_SS, Master_Config.epilog != nullptr ? Master_Config.epilog : "none", "epilog");
-   INFO(MSG_CONF_USING_SS, Master_Config.shell_start_mode != nullptr ? Master_Config.shell_start_mode : "none", "shell_start_mode");
-   INFO(MSG_CONF_USING_SS, Master_Config.login_shells != nullptr ? Master_Config.login_shells : "none", "login_shells");
+   INFO(MSG_CONF_USING_SS, Master_Config.execd_spool_dir != nullptr ? Master_Config.execd_spool_dir : NONE_STR, "execd_spool_dir");
+   INFO(MSG_CONF_USING_SS, Master_Config.mailer != nullptr ? Master_Config.mailer : NONE_STR, "mailer");
+   INFO(MSG_CONF_USING_SS, Master_Config.xterm != nullptr ? Master_Config.xterm : NONE_STR, "xterm");
+   INFO(MSG_CONF_USING_SS, Master_Config.load_sensor != nullptr ? Master_Config.load_sensor : NONE_STR, "load_sensor");
+   INFO(MSG_CONF_USING_SS, Master_Config.prolog != nullptr ? Master_Config.prolog : NONE_STR, "prolog");
+   INFO(MSG_CONF_USING_SS, Master_Config.epilog != nullptr ? Master_Config.epilog : NONE_STR, "epilog");
+   INFO(MSG_CONF_USING_SS, Master_Config.shell_start_mode != nullptr ? Master_Config.shell_start_mode : NONE_STR, "shell_start_mode");
+   INFO(MSG_CONF_USING_SS, Master_Config.login_shells != nullptr ? Master_Config.login_shells : NONE_STR, "login_shells");
    INFO(MSG_CONF_USING_US, Master_Config.min_gid, "min_gid");
    INFO(MSG_CONF_USING_US, Master_Config.min_uid, "min_uid");
-   INFO(MSG_CONF_USING_SS, Master_Config.gid_range != nullptr ? Master_Config.gid_range : "none", "gid_range");
+   INFO(MSG_CONF_USING_SS, Master_Config.gid_range != nullptr ? Master_Config.gid_range : NONE_STR, "gid_range");
    INFO(MSG_CONF_USING_US, Master_Config.load_report_time, "load_report_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.enforce_project != nullptr ? Master_Config.enforce_project : "none", "enforce_project");
-   INFO(MSG_CONF_USING_SS, Master_Config.enforce_user != nullptr ? Master_Config.enforce_user : "none", "enforce_user");
+   INFO(MSG_CONF_USING_SS, Master_Config.enforce_project != nullptr ? Master_Config.enforce_project : NONE_STR, "enforce_project");
+   INFO(MSG_CONF_USING_SS, Master_Config.enforce_user != nullptr ? Master_Config.enforce_user : NONE_STR, "enforce_user");
    INFO(MSG_CONF_USING_US, Master_Config.max_unheard, "max_unheard");
-   INFO(MSG_CONF_USING_SS, Master_Config.administrator_mail != nullptr ? Master_Config.administrator_mail : "none", "administrator_mail");
-   INFO(MSG_CONF_USING_SS, Master_Config.mail_tag != nullptr ? Master_Config.mail_tag : "none", "mail_tag");
-   INFO(MSG_CONF_USING_SS, Master_Config.set_token_cmd != nullptr ? Master_Config.set_token_cmd : "none", "set_token_cmd");
-   INFO(MSG_CONF_USING_SS, Master_Config.pag_cmd != nullptr ? Master_Config.pag_cmd : "none", "pag_cmd");
+   INFO(MSG_CONF_USING_SS, Master_Config.administrator_mail != nullptr ? Master_Config.administrator_mail : NONE_STR, "administrator_mail");
+   INFO(MSG_CONF_USING_SS, Master_Config.mail_tag != nullptr ? Master_Config.mail_tag : NONE_STR, "mail_tag");
+   INFO(MSG_CONF_USING_SS, Master_Config.set_token_cmd != nullptr ? Master_Config.set_token_cmd : NONE_STR, "set_token_cmd");
+   INFO(MSG_CONF_USING_SS, Master_Config.pag_cmd != nullptr ? Master_Config.pag_cmd : NONE_STR, "pag_cmd");
    INFO(MSG_CONF_USING_US, Master_Config.token_extend_time, "token_extend_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.shepherd_cmd != nullptr ? Master_Config.shepherd_cmd : "none", "shepherd_cmd");
-   INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : "none", "reporting_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.binding_params != nullptr ? Master_Config.binding_params : "none", "binding_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.shepherd_cmd != nullptr ? Master_Config.shepherd_cmd : NONE_STR, "shepherd_cmd");
+   INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : NONE_STR, "reporting_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.binding_params != nullptr ? Master_Config.binding_params : NONE_STR, "binding_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.jsv_params != nullptr ? Master_Config.jsv_params : NONE_STR, "jsv_params");
    INFO(MSG_CONF_USING_US, Master_Config.zombie_jobs, "finished_jobs");
-   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : "none", "qlogin_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : "none", "qlogin_command");
-   INFO(MSG_CONF_USING_SS, Master_Config.rsh_daemon != nullptr ? Master_Config.rsh_daemon : "none", "rsh_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.rsh_command != nullptr ? Master_Config.rsh_command : "none", "rsh_command");
-   INFO(MSG_CONF_USING_SS, Master_Config.jsv_url != nullptr ? Master_Config.jsv_url : "none", "jsv_url");
-   INFO(MSG_CONF_USING_SS, Master_Config.jsv_allowed_mod != nullptr ? Master_Config.jsv_allowed_mod : "none", "jsv_allowed_mod");
-   INFO(MSG_CONF_USING_SS, Master_Config.gdi_request_limits != nullptr ? Master_Config.gdi_request_limits : "none", "gdi_request_limits");
-   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_daemon != nullptr ? Master_Config.rlogin_daemon : "none", "rlogin_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_command != nullptr ? Master_Config.rlogin_command : "none", "rlogin_command");
+   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : NONE_STR, "qlogin_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : NONE_STR, "qlogin_command");
+   INFO(MSG_CONF_USING_SS, Master_Config.rsh_daemon != nullptr ? Master_Config.rsh_daemon : NONE_STR, "rsh_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.rsh_command != nullptr ? Master_Config.rsh_command : NONE_STR, "rsh_command");
+   INFO(MSG_CONF_USING_SS, Master_Config.jsv_url != nullptr ? Master_Config.jsv_url : NONE_STR, "jsv_url");
+   INFO(MSG_CONF_USING_SS, Master_Config.jsv_allowed_mod != nullptr ? Master_Config.jsv_allowed_mod : NONE_STR, "jsv_allowed_mod");
+   INFO(MSG_CONF_USING_SS, Master_Config.gdi_request_limits != nullptr ? Master_Config.gdi_request_limits : NONE_STR, "gdi_request_limits");
+   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_daemon != nullptr ? Master_Config.rlogin_daemon : NONE_STR, "rlogin_daemon");
+   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_command != nullptr ? Master_Config.rlogin_command : NONE_STR, "rlogin_command");
    INFO(MSG_CONF_USING_US, Master_Config.reschedule_unknown, "reschedule_unknown");
    INFO(MSG_CONF_USING_US, Master_Config.max_aj_instances, "max_aj_instances");
    INFO(MSG_CONF_USING_US, Master_Config.max_aj_tasks, "max_aj_tasks");
@@ -1317,14 +1338,14 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_US, Master_Config.max_advance_reservations, "max_advance_reservations");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_oticket, "auto_user_oticket");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_fshare, "auto_user_fshare");
-   INFO(MSG_CONF_USING_SS, Master_Config.auto_user_default_project != nullptr ? Master_Config.auto_user_default_project : "none", "auto_user_default_project");
+   INFO(MSG_CONF_USING_SS, Master_Config.auto_user_default_project != nullptr ? Master_Config.auto_user_default_project : NONE_STR, "auto_user_default_project");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_delete_time, "auto_user_delete_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.delegated_file_staging != nullptr ? Master_Config.delegated_file_staging : "none", "delegated_file_staging");
-   INFO(MSG_CONF_USING_SS, Master_Config.libjvm_path != nullptr ? Master_Config.libjvm_path : "none", "libjvm_path");
-   INFO(MSG_CONF_USING_SS, Master_Config.additional_jvm_args != nullptr ? Master_Config.additional_jvm_args : "none", "additional_jvm_args");
+   INFO(MSG_CONF_USING_SS, Master_Config.delegated_file_staging != nullptr ? Master_Config.delegated_file_staging : NONE_STR, "delegated_file_staging");
+   INFO(MSG_CONF_USING_SS, Master_Config.libjvm_path != nullptr ? Master_Config.libjvm_path : NONE_STR, "libjvm_path");
+   INFO(MSG_CONF_USING_SS, Master_Config.additional_jvm_args != nullptr ? Master_Config.additional_jvm_args : NONE_STR, "additional_jvm_args");
 
-   INFO(MSG_CONF_USING_SS, Master_Config.qmaster_params != nullptr ? Master_Config.qmaster_params : "none", "qmaster_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : "none", "execd_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.qmaster_params != nullptr ? Master_Config.qmaster_params : NONE_STR, "qmaster_params");
+   INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : NONE_STR, "execd_params");
 
    userset_list_append_to_dstring(Master_Config.user_lists, &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "user_lists");
@@ -1390,6 +1411,7 @@ static void clean_conf() {
    sge_free(&Master_Config.execd_params);
    sge_free(&Master_Config.reporting_params);
    sge_free(&Master_Config.binding_params);
+   sge_free(&Master_Config.jsv_params);
    sge_free(&Master_Config.gid_range);
    sge_free(&Master_Config.qlogin_daemon);
    sge_free(&Master_Config.qlogin_command);
@@ -1821,6 +1843,17 @@ char* mconf_get_binding_params() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(binding_params);
+}
+
+/* returned pointer needs to be freed */
+char* mconf_get_jsv_params() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   char *jsv_params = sge_strdup(nullptr, Master_Config.jsv_params);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(jsv_params);
 }
 
 /* returned pointer needs to be freed */
