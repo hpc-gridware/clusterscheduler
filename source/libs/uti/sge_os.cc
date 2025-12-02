@@ -27,10 +27,13 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+#include <filesystem>
+#include <string>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -39,6 +42,7 @@
 #include <cctype>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #ifdef SIGTSTP
 
@@ -62,8 +66,6 @@
 #include "sig_handlers.h"
 
 #include "msg_common.h"
-
-static int fd_compare(const void *fd1, const void *fd2);
 
 static void sge_close_fd(int fd);
 
@@ -378,6 +380,7 @@ int sge_get_max_fd() {
    return sysconf(_SC_OPEN_MAX);
 }
 
+#if not defined(LINUX) && not defined(SOLARIS)
 /****** uti/os/fd_compare() ****************************************************
 *  NAME
 *     fd_compare() -- file descriptor compare function for qsort()
@@ -431,7 +434,80 @@ static int fd_compare(const void *fd1, const void *fd2) {
    }
    return 0;
 }
+#endif
 
+#if defined(LINUX) || defined(SOLARIS)
+/**
+ * @brief Get all open file descriptors for a process
+ *
+ * Retrieves all currently open file descriptors for the specified process
+ * by reading the /proc/[pid]/fdinfo directory (or /proc/self/fdinfo if pid is 0).
+ * The function uses opendir() to iterate over the directory entries and
+ * automatically excludes the file descriptor used by the directory stream itself.
+ *
+ * @param pid Process id (0 for current process/self)
+ * @return std::set<int> Set containing all open file descriptor numbers
+ * @note MT-SAFE: get_all_fds() is MT safe
+ * @see sge_close_all_fds()
+ */
+std::set<int> get_all_fds(pid_t pid) {
+   DENTER(TOP_LAYER);
+
+   std::set<int> fds;
+
+   std::filesystem::path proc_path = "/proc/";
+   if (pid == 0) {
+      proc_path += "self/fdinfo";
+   } else {
+      proc_path += std::to_string(pid) + "/fdinfo";
+   }
+#if 0
+   // Unfortunately, we cannot use the C++ directory_iterator for iterating over /proc/*/fdinfo:
+   // It opens itself a file handle which shows up in the /proc/*/fdinfo - but we cannot figure
+   // out which one belongs to the iterator!
+   // With opendir() we can use dirfd() to get the fd of the directory stream itself and can ignore it.
+   try {
+      std::filesystem::directory_iterator iter{proc_path};
+      for (const auto &entry : iter) {
+         int fd = std::stoi(entry.path().filename());
+         fds.insert(fd);
+      }
+   } catch (std::filesystem::filesystem_error &e) {
+      // this should never happen
+   }
+#else
+   DIR *cwd = opendir(proc_path.c_str());
+   if (cwd == nullptr) {
+      DPRINTF("get_all_fds(): cannot open directory %s: %s", proc_path.c_str(), strerror(errno));
+   } else {
+      // Iterate over the directory stream.
+      // Do not use readdir.2 or readdir_r - they are deprecated.
+      // See readdir.3 man page.
+      int cwd_fd = dirfd(cwd);
+      dirent *dent;
+      while ((dent = readdir(cwd)) != nullptr) {
+         if (dent->d_name[0] == '\0') {
+            DPRINTF("get_all_fds(): empty filename in directory %s", proc_path.c_str());
+         } else if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0) {
+            DPRINTF("get_all_fds(): skipping %s", dent->d_name);
+         } else {
+            int fd = std::stoi(dent->d_name);
+            if (fd == cwd_fd) {
+               DPRINTF("get_all_fds(): skipping opendir() internal fd %d", fd);
+            } else {
+               // This is a valid fd, store it in the returned set.
+               fds.insert(fd);
+            }
+         }
+      }
+      closedir(cwd);
+   }
+
+#endif
+
+   DRETURN(fds);
+}
+#endif
 
 /****** uti/os/sge_close_fd() **************************************************
 *  NAME
@@ -455,43 +531,74 @@ static int fd_compare(const void *fd1, const void *fd2) {
 *     uti/os/sge_close_all_fds()
 *******************************************************************************/
 static void sge_close_fd(int fd) {
+   DENTER(TOP_LAYER);
 #ifdef __INSURE__
    if (_insure_is_internal_fd(fd)) {
       return;
    }
 #endif
-   close(fd);
+#if 1
+   if (close(fd) == -1) {
+      DPRINTF("close(%d) failed: %s\n", fd, strerror(errno));
+   }
+#else
+   // @todo When closing all fds is called for fork()/exec(), we could just set the FD_CLOEXEC flag
+   // on the file descriptor. This will not close the fd, but just mark it to be closed on any
+   // of the various exec() calls.
+   // A short test showed that setting the flag instead of closing the fd is about 30% faster.
+   // It would be worth doing only if the caller has a high number of file descriptors open,
+   // which is not the case on the execution side, but might be in sge_qmaster,
+   // e.g., when starting a JSV script in a big cluster.
+   if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
+      DPRINTF("fcntl(%d, F_SETFD, FD_CLOEXEC) failed: %s\n", fd, strerror(errno));
+   }
+#endif
+   DRETURN_VOID;
 }
 
-/****** uti/os/sge_close_all_fds() *********************************************
-*  NAME
-*     sge_close_all_fds() -- close all open file descriptors
-*
-*  SYNOPSIS
-*     void sge_close_all_fds(int* keep_open, unsigned long nr_of_fds) 
-*
-*  FUNCTION
-*     This function is used to close all possible open file descriptors for
-*     the current process. This is done by getting the max. possible file
-*     descriptor count and looping over all file descriptors and calling
-*     sge_close_fd().
-*
-*     It is possible to specify a file descriptor set which should not be
-*     closed.
-*
-*  INPUTS
-*     int* keep_open          - integer array which contains file descriptor
-*                               ids which should not be closed
-*                             - if this value is set to nullptr nr_of_fds is
-*                               ignored
-*     unsigned long nr_of_fds - nr of filedescriptors in the keep_open array
-*
-*  RESULT
-*     void - no result
-*
-*  SEE ALSO
-*     uti/os/sge_close_fd()
-*******************************************************************************/
+/**
+ * @brief close all open file descriptors
+ *
+ * This function is used to close all open file descriptors for
+ * the current process.
+ *
+ * It is possible to pass a list (int array) of file descriptors which shall
+ * be kept open.
+ *
+ * The algorithm used depends on the operating system:
+ *    * On Linux and Solaris we can figure out the actually open file descriptors
+ *      by looping over all files in `/proc/self/fdinfo` and closing them.
+ *    * On other OSes we loop from 0 to the maximum possible file descriptor
+ *      and (try to) close them.
+ *    * On newer Linux versions we could possibly use the `close_range()` function,
+ *      ideally using the flag CLOSE_RANGE_CLOEXEC which will not immediately close
+ *      the fd but just mark it to be closed on `exec()` calls - which is
+ *      a situation where we call `close_all_fds()`.
+ *      But it is not yet available on our default build platform, CentOS 8.
+ *
+ * @param keep_open - optionally: int array of file descriptors to keep open
+ * @param nr_of_keep_open_entries - number of entries in keep_open
+ * @todo What about fcntl(fd, F_SETFD, FD_CLOEXEC)? See comment in sge_close_fd().
+ */
+#if defined(LINUX) || defined(SOLARIS)
+static bool keep_fd_open(int *keep_open, unsigned long nr_of_keep_open_entries, int fd) {
+   for (unsigned long keep_open_array_index = 0; keep_open_array_index < nr_of_keep_open_entries; keep_open_array_index++) {
+      if (keep_open[keep_open_array_index] == fd) {
+         return true;
+      }
+   }
+   return false;
+}
+
+void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
+   std::set all_fds = get_all_fds();
+   for (auto fd : all_fds) {
+      if (keep_open == nullptr || !keep_fd_open(keep_open, nr_of_keep_open_entries, fd)) {
+         sge_close_fd(fd);
+      }
+   }
+}
+#else
 void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
    int maxfd = sge_get_max_fd();
    if (keep_open == nullptr) {
@@ -533,6 +640,7 @@ void sge_close_all_fds(int *keep_open, unsigned long nr_of_keep_open_entries) {
       }
    }
 }
+#endif
 
 /****** uti/os/sge_dup_fd_above_stderr() **************************************
 *  NAME

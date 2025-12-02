@@ -33,8 +33,9 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <sys/time.h>
-#include <unistd.h>
+#include <set>
+
+#include <sys/types.h>
 
 #include "sge_getloadavg.h"
 #include "sge_loadmem.h"
@@ -73,3 +74,7 @@ int sge_get_max_fd();
 int sge_dup_fd_above_stderr(int *fd);
 
 int sge_occupy_first_three();
+
+#if defined(LINUX) || defined(SOLARIS)
+std::set<int> get_all_fds(pid_t pid = 0);
+#endif

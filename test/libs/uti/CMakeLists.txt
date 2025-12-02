@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -67,6 +67,11 @@ if (WITH_MUNGE)
    add_test(NAME test_uti_munge COMMAND test_uti_munge)
 endif()
 
+add_executable(test_uti_os_fds test_uti_os_fds.cc)
+target_include_directories(test_uti_os_fds PRIVATE "./")
+target_link_libraries(test_uti_os_fds PRIVATE uti commlists ${SGE_LIBS})
+add_test(NAME test_uti_os_fds COMMAND test_uti_os_fds)
+
 add_executable(test_uti_profiling test_uti_profiling.cc)
 target_include_directories(test_uti_profiling PRIVATE "./")
 target_link_libraries(test_uti_profiling PRIVATE uti commlists ${SGE_LIBS})
@@ -124,6 +129,7 @@ if (INSTALL_SGE_TEST)
    if (WITH_MUNGE)
       install(TARGETS test_uti_munge DESTINATION testbin/${SGE_ARCH})
    endif()
+   install(TARGETS test_uti_os_fds DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_profiling DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_recursive DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_sl DESTINATION testbin/${SGE_ARCH})
