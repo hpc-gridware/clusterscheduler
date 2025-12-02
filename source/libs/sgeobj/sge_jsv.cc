@@ -388,6 +388,10 @@ jsv_stop(lListElem *jsv, lList **answer_list, bool try_soft_quit) {
       sge_peclose(pid, (FILE *)lGetRef(jsv, JSV_in), 
                   (FILE *)lGetRef(jsv, JSV_out), (FILE *)lGetRef(jsv, JSV_err), &t);
 
+      lSetRef(jsv, JSV_in, nullptr);
+      lSetRef(jsv, JSV_out, nullptr);
+      lSetRef(jsv, JSV_err, nullptr);
+
       INFO(MSG_JSV_STOPPED_S, scriptfile);
 
       jsv_set_pid(jsv, -1);

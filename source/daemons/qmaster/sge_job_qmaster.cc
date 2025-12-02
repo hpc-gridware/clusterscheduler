@@ -223,19 +223,20 @@ int
 sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
                 ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                 monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    int ret;
    bool lret;
    u_long32 start;
    u_long32 end;
    u_long32 step;
-   cl_thread_settings_t *tc = cl_thread_get_thread_config();
+   //cl_thread_settings_t *tc = cl_thread_get_thread_config();
+   std::string jsv_thread_name = "jsv_" + std::string(component_get_thread_name())
+                               + "_" + std::to_string(component_get_thread_id());
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    lList **master_suser_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
-   DENTER(TOP_LAYER);
-
    // JSV verification if enabled
-   if (jsv_is_enabled(tc->thread_name)) {
+   if (jsv_is_enabled(jsv_thread_name.c_str())) {
 
       // job verification so that data that is passed to JSV is correct
       ret = sge_job_verify_adjust(*jep, alpp, lpp, packet, task, monitor);
@@ -247,7 +248,7 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       struct timeval start_time{};
       struct timeval end_time{};
       gettimeofday(&start_time, nullptr);
-      lret = jsv_do_verify(tc->thread_name, jep, alpp, true);
+      lret = jsv_do_verify(jsv_thread_name.c_str(), jep, alpp, true);
       gettimeofday(&end_time, nullptr);
       int jsv_threshold = mconf_get_jsv_threshold();
       if (((end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000) > jsv_threshold || jsv_threshold == 0) {
