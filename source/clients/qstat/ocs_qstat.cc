@@ -1287,7 +1287,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
 {
    DENTER(TOP_LAYER);
 
-   const char *name_str;
+   const char *name_str = nullptr;
    switch (name) {
       case CHECKPOINT_ENV: name_str = "Checkpoint Env.:"; break;
       case MASTER_QUEUE:   name_str = "Master Queue:"; break;
@@ -1296,7 +1296,7 @@ static int job_stdout_additional_info(job_handler_t* handler, job_additional_inf
            DPRINTF("Unknown additional info(%d)\n", name);
            ocs::TerminationManager::trigger_abort();
    }
-   printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s\n", name_str, value == nullptr ? "" : value);
+   printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s\n", name_str == nullptr ? "" : name_str, value == nullptr ? "" : value);
    DRETURN(0);
 }
 
