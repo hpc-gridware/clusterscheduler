@@ -96,6 +96,8 @@ bool
 bootstrap_has_security_mode(bs_sec_mode_t mode);
 int
 bootstrap_get_cert_lifetime();
+int
+bootstrap_get_cert_start_offset();
 
 int
 bootstrap_get_listener_thread_count();

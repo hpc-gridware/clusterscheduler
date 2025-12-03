@@ -83,9 +83,11 @@ namespace ocs::qmaster {
    cert_renewal_initialize() {
       DENTER(TOP_LAYER);
 
-      DPRINTF(SFNMAX "\n", "initializing certificate renewal");
-      te_register_event_handler(cert_renewal_event_handler, TYPE_SSL_CERT_RENEWAL_EVENT);
-      cert_renewal_create_event();
+      if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         DPRINTF(SFNMAX "\n", "initializing certificate renewal");
+         te_register_event_handler(cert_renewal_event_handler, TYPE_SSL_CERT_RENEWAL_EVENT);
+         cert_renewal_create_event();
+      }
 
       DRETURN_VOID;
    }

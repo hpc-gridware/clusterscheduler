@@ -121,6 +121,7 @@ typedef struct {
    std::vector<bool> security_modes;
    char *security_params;
    int certificate_lifetime;
+   int certificate_start_offset;
    int listener_thread_count;
    int worker_thread_count;
    int reader_thread_count;
@@ -143,6 +144,7 @@ static sge_bootstrap_ts1_t sge_bootstrap_tl1 = {
         std::vector(BS_SEC_MODE_NUM_ENTRIES, false),
         nullptr, // security_params
         365 * 24 * 60 * 60, // default certificate lifetime one year
+        -10, // default certificate start offset 10 seconds to the past
         0, // listener_thread_count
         0, // worker_thread_count
         0, // reader_thread_count
@@ -224,6 +226,9 @@ set_security_mode(const char *security_mode) {
 
 #define MIN_CERTIFICATE_LIFETIME (120)
 #define MAX_CERTIFICATE_LIFETIME (365 * 24 * 60 * 60)
+#define MIN_CERTIFICATE_START_OFFSET (-300)
+#define DEFAULT_CERTIFICATE_START_OFFSET (-10)
+#define MAX_CERTIFICATE_START_OFFSET (0)
 static void
 set_security_params(const char *security_params) {
    DENTER(TOP_LAYER);
@@ -243,6 +248,18 @@ set_security_params(const char *security_params) {
                value = MAX_CERTIFICATE_LIFETIME;
             }
             sge_bootstrap_tl1.certificate_lifetime = value;
+         }
+      } else if (strncasecmp(param, "certificate_start_offset=", strlen("certificate_start_offset=")) == 0) {
+         const char *str_value = strchr(param, '=');
+         if (str_value != nullptr) {
+            int value = atoi(str_value + 1);
+            if (value < MIN_CERTIFICATE_START_OFFSET) {
+               value = MIN_CERTIFICATE_START_OFFSET;
+            }
+            if (value > MAX_CERTIFICATE_START_OFFSET) {
+               value = MAX_CERTIFICATE_START_OFFSET;
+            }
+            sge_bootstrap_tl1.certificate_start_offset = value;
          }
       } else {
          DPRINTF("invalid security parameter %s\n", param);
@@ -561,6 +578,17 @@ bootstrap_get_cert_lifetime() {
    int cert_lifetime = sge_bootstrap_tl1.certificate_lifetime;
    pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
    return cert_lifetime;
+}
+
+int
+bootstrap_get_cert_start_offset() {
+   if (!bootstrap_is_initialized()) {
+      bootstrap_ts1_init();
+   }
+   pthread_mutex_lock(&sge_bootstrap_tl1.mutex);
+   int cert_start_offset = sge_bootstrap_tl1.certificate_start_offset;
+   pthread_mutex_unlock(&sge_bootstrap_tl1.mutex);
+   return cert_start_offset;
 }
 
 int

@@ -128,6 +128,8 @@ For TLS security mode the following parameter can be set:
 
 * `certificate_lifetime=<n>`: Defines the lifetime of automatically created certificates in seconds. The default is one year (31536000 seconds), which is also the maximum lifetime for certificates created by xxQS_NAMExx components. Setting this parameter to a lower value will cause more frequent certificate renewals, which may be desired in high-security environments. The minimum lifetime is 120 seconds, which is mostly meant for testing purposes. If a value lower than 120 seconds is set, 120 seconds will be used instead. If a value higher than 31536000 seconds is set, 31536000 seconds will be used instead.
 
+* `certificate_start_offset=<n>`: Defines the offset in seconds for the certificate's notBefore validity timestamp. A negative value (e.g., -10) causes certificates to become valid before the current time, which can prevent certificate validation failures due to clock skew between systems. The default is -10 seconds. Values are valid in a range from -300 (5 minutes) to 0 (exact current time).
+
 ## *listener_threads*
 
 The number of listener threads (allowed: 1-32, default of 4 set by installation).

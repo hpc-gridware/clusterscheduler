@@ -1070,7 +1070,9 @@ namespace ocs::uti {
       // So far all was OK, but we have to create the certificates.
       if (ret && create_certificate_and_key) {
          int certificate_lifetime = bootstrap_get_cert_lifetime();
-         DPRINTF("creating certificate with lifetime %d\n", certificate_lifetime);
+         int certificate_start_offset = bootstrap_get_cert_start_offset();
+         DPRINTF("creating certificate with lifetime %d and a start offset of %d\n",
+                 certificate_lifetime, certificate_start_offset);
 
          // @todo can we create the certificate from some template?
          // @todo additional error handling?
@@ -1085,7 +1087,7 @@ namespace ocs::uti {
 
          X509_set_version_func(x509, 2);
          ASN1_INTEGER_set_func(X509_get_serialNumber_func(x509), 1);
-         X509_gmtime_adj_func(X509_getm_notBefore_func(x509), 0); // @todo could/should we give a negative value here to avoid validity problems with notBefore?
+         X509_gmtime_adj_func(X509_getm_notBefore_func(x509), certificate_start_offset);
          X509_gmtime_adj_func(X509_getm_notAfter_func(x509), certificate_lifetime);
          X509_set_pubkey_func(x509, pkey);
 
