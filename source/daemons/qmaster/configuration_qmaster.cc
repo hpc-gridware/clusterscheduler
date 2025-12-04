@@ -120,43 +120,45 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
    // read the spooled list
    spool_read_list(answer_list, aSpoolContext, config_list, SGE_TYPE_CONFIG);
 
+   // add potentially missing attributes
    lListElem *global = lGetElemHostRW(*config_list, CONF_name, "global");
    if (global != nullptr) {
       const lList *entries = lGetList(global, CONF_entries);
 
-      // add jsv_url if it is missing
-      lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url");
-      if (jsv_url == nullptr) {
+      // add jsv_url
+      if (lListElem *jsv_url = lGetElemStrRW(entries, CF_name, "jsv_url"); jsv_url == nullptr) {
          jsv_url = lAddSubStr(global, CF_name, "jsv_url", CONF_entries, CF_Type);
          lSetString(jsv_url, CF_value, NONE_STR);
       }
 
-      // add jsv_allowed_mod if it is missing
-      lListElem *jsv_allowed_mod = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod");
-      if (jsv_allowed_mod == nullptr) {
+      // add jsv_allowed_mod
+      if (lListElem *jsv_allowed_mod = lGetElemStrRW(entries, CF_name, "jsv_allowed_mod"); jsv_allowed_mod == nullptr) {
          jsv_allowed_mod = lAddSubStr(global, CF_name, "jsv_allowed_mod", CONF_entries, CF_Type);
          lSetString(jsv_allowed_mod, CF_value, JSV_ALLOWED_MOD_DEFAULT);
       }
 
-      // add gdi_request_limits if the attribute is missing
-      lListElem *gdi_request_limits = lGetElemStrRW(entries, CF_name, "gdi_request_limits");
-      if (gdi_request_limits == nullptr) {
+      // add gdi_request_limits
+      if (lListElem *gdi_request_limits = lGetElemStrRW(entries, CF_name, "gdi_request_limits"); gdi_request_limits == nullptr) {
          gdi_request_limits = lAddSubStr(global, CF_name, "gdi_request_limits", CONF_entries, CF_Type);
          lSetString(gdi_request_limits, CF_value, NONE_STR);
       }
 
-      // add gdi_request_limits if the attribute is missing
-      lListElem *binding_params = lGetElemStrRW(entries, CF_name, "binding_params");
-      if (binding_params == nullptr) {
+      // add binding_params
+      if (lListElem *binding_params = lGetElemStrRW(entries, CF_name, "binding_params"); binding_params == nullptr) {
          binding_params = lAddSubStr(global, CF_name, "binding_params", CONF_entries, CF_Type);
          lSetString(binding_params, CF_value, BINDING_PARAMS_DEFAULT);
       }
 
-      // add topology_string if the attribute is missing
-      lListElem *topology_file = lGetElemStrRW(entries, CF_name, "topology_file");
-      if (topology_file == nullptr) {
-         binding_params = lAddSubStr(global, CF_name, "topology_file", CONF_entries, CF_Type);
-         lSetString(binding_params, CF_value, NONE_STR);
+      // add jsv_params
+      if (lListElem *jsv_params = lGetElemStrRW(entries, CF_name, "jsv_params"); jsv_params == nullptr) {
+         jsv_params = lAddSubStr(global, CF_name, "jsv_params", CONF_entries, CF_Type);
+         lSetString(jsv_params, CF_value, JSV_PARAMS_DEFAULT);
+      }
+
+      // add topology_string
+      if (lListElem *topology_file = lGetElemStrRW(entries, CF_name, "topology_file"); topology_file == nullptr) {
+         topology_file = lAddSubStr(global, CF_name, "topology_file", CONF_entries, CF_Type);
+         lSetString(topology_file, CF_value, NONE_STR);
       }
    }
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);

@@ -49,6 +49,7 @@
 #define PDC_DISABLED U_LONG64_MAX
 
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_hosts=true,filter=NONE"
+#define JSV_PARAMS_DEFAULT        NONE_STR
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
 
 typedef enum {
