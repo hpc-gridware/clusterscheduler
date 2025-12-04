@@ -53,8 +53,8 @@
 #include "ocs_BindingObj.h"
 
 lListElem *
-ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, lList**answer) {
-   return Binding::binding_get_or_create_elem(ar, AR_binding, answer);
+ocs::AdvanceReservation::binding_get_or_create_elem(lListElem *ar, lList **answer_list) {
+   return Binding::binding_get_or_create_elem(ar, answer_list, AR_binding);
 }
 
 bool
@@ -107,6 +107,6 @@ ocs::AdvanceReservation::binding_get_amount(const lListElem *ar) {
    return Binding::binding_get_amount(ar, AR_binding);
 }
 
-void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar) {
-   Binding::binding_set_missing_defaults(ar, AR_binding);
+void ocs::AdvanceReservation::binding_set_missing_defaults(lListElem *ar, lList **answer_list) {
+   Binding::binding_set_missing_defaults(ar, answer_list, AR_binding);
 }

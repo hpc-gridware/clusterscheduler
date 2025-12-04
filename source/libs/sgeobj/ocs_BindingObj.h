@@ -46,7 +46,7 @@
 namespace ocs {
    class Binding {
    public:
-      static lListElem *binding_get_or_create_elem(lListElem *parent, int nm, lList **answer);
+      static lListElem *binding_get_or_create_elem(lListElem *parent, lList **answer_list, int nm);
       static void clear(lListElem *parent, int nm);
       static bool binding_was_requested(const lListElem *parent, int nm);
       static BindingType::Type binding_get_type(const lListElem *parent, int nm);
@@ -58,7 +58,7 @@ namespace ocs {
       static std::string binding_get_filter(const lListElem *parent, int nm);
       static u_long32 binding_get_amount(const lListElem *parent, int nm);
       static BindingInstance::Instance binding_get_instance(const lListElem *parent, int nm);
-      static void binding_set_missing_defaults(lListElem *parent, int nm);
+      static void binding_set_missing_defaults(lListElem *parent, lList **answer_list, int nm);
 
    };
 }

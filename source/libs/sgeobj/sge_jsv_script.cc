@@ -698,7 +698,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
        * and all other -b...-switches that are also related to -binding
        */
       {
-         lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(new_job, JB_binding, answer_list);
+         lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(new_job, answer_list, JB_binding);
 
          if (binding_elem != nullptr) {
             if (ret && strcmp("bamount", param) == 0) {
@@ -778,7 +778,7 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
          if (lGetUlong(binding_elem, BN_amount) == 0) {
             ocs::Binding::clear(new_job, JB_binding);
          } else {
-            ocs::Binding::binding_set_missing_defaults(new_job, JB_binding);
+            ocs::Binding::binding_set_missing_defaults(new_job, answer_list, JB_binding);
          }
       }
 
@@ -1448,7 +1448,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
     * and all other binding information specified with -b...-switches at the command line
     */
    {
-      const lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(old_job, JB_binding, answer_list);
+      const lListElem *binding_elem = ocs::Binding::binding_get_or_create_elem(old_job, answer_list, JB_binding);
 
       if (binding_elem != nullptr) {
          // -bamount

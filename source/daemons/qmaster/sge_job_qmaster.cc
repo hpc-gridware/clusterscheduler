@@ -2808,7 +2808,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
 
       lListElem *binding_elem = lGetObject(new_job, JB_binding);
       if (binding_elem != nullptr) {
-         ocs::Job::binding_set_missing_defaults(new_job);
+         ocs::Job::binding_set_missing_defaults(new_job, alpp);
 
          // new binding set
          *trigger |= MOD_EVENT;

@@ -182,8 +182,8 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 }
 
 lListElem *
-ocs::Job::binding_get_or_create_elem(lListElem *job, lList**answer) {
-   return Binding::binding_get_or_create_elem(job, JB_binding, answer);
+ocs::Job::binding_get_or_create_elem(lListElem *job, lList **answer_list) {
+   return Binding::binding_get_or_create_elem(job, answer_list, JB_binding);
 }
 
 bool
@@ -236,7 +236,7 @@ ocs::Job::binding_get_amount(const lListElem *job) {
    return Binding::binding_get_amount(job, JB_binding);
 }
 
-void ocs::Job::binding_set_missing_defaults(lListElem *job) {
-   return Binding::binding_set_missing_defaults(job, JB_binding);
+void ocs::Job::binding_set_missing_defaults(lListElem *job, lList **answer_list) {
+   return Binding::binding_set_missing_defaults(job, answer_list, JB_binding);
 }
 

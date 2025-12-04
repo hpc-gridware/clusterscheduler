@@ -62,11 +62,11 @@ ocs::Binding::clear(lListElem *parent, const int nm) {
 }
 
 lListElem *
-ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList**answer) {
+ocs::Binding::binding_get_or_create_elem(lListElem *parent, lList **answer_list, const int nm) {
    DENTER(TOP_LAYER);
    if (parent == nullptr) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFN, MSG_PARSE_NULLPOINTERRECEIVED);
-      answer_list_add(answer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(nullptr);
    }
 
@@ -79,7 +79,7 @@ ocs::Binding::binding_get_or_create_elem(lListElem *parent, const int nm, lList*
    binding_elem = lCreateElem(BN_Type);
    if (binding_elem == nullptr) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
-      answer_list_add(answer, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
+      answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
       DRETURN(nullptr);
    }
 
@@ -253,7 +253,8 @@ ocs::Binding::binding_get_amount(const lListElem *parent, const int nm) {
    DRETURN(amount);
 }
 
-void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm) {
+void
+ocs::Binding::binding_set_missing_defaults(lListElem *parent, lList **answer_list, const int nm) {
    DENTER(TOP_LAYER);
 
    // if the job has no new binding, we do not need to set defaults
@@ -277,7 +278,7 @@ void ocs::Binding::binding_set_missing_defaults(lListElem *parent, const int nm)
 
    // create implicit binding if no binding is given (implicit binding is enabled)
    if (binding_elem == nullptr) {
-      binding_elem = Job::binding_get_or_create_elem(parent, nullptr);
+      binding_elem = binding_get_or_create_elem(parent, answer_list, parent_binding_nm);
       lSetUlong(binding_elem, BN_amount, 1);
       lSetObject(parent, parent_binding_nm, binding_elem);
    }

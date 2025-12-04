@@ -789,10 +789,9 @@ attr_mod_obj_binding(lList **alpp, lListElem *new_ar, const lListElem *ar) {
          }
       }
 
-      lListElem *binding_elem = lGetObject(new_ar, AR_binding);
-      if (binding_elem != nullptr) {
-         ocs::AdvanceReservation::binding_set_missing_defaults(new_ar);
-      }
+      // make sure that all binding fields have valid values
+      // or apply implicit binding if enabled
+      ocs::AdvanceReservation::binding_set_missing_defaults(new_ar, alpp);
    }
    DRETURN(ret);
 }

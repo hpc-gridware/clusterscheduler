@@ -357,7 +357,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    }
 
    // Check if there are binding parameters that are required but unset
-   ocs::Job::binding_set_missing_defaults(jep);
+   ocs::Job::binding_set_missing_defaults(jep, alpp);
 
    /*
     * fill name and shortcut for all requests
