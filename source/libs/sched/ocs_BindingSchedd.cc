@@ -221,7 +221,7 @@ ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const lListElem *h
    }
 
    // We have a binding request + host does not report topology + admin wants to allow binding job on such hosts
-   if (a->do_binding_on_any_hosts && lGetString(host, EH_internal_topology) == nullptr) {
+   if (a->do_binding_on_any_host && lGetString(host, EH_internal_topology) == nullptr) {
       DRETURN(true);
    }
 

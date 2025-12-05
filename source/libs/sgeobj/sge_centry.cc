@@ -98,10 +98,10 @@ const struct queue2cmplx host_resource[] = {
         {"virtual_total",    0, 0, 0, TYPE_MEM},
         {"virtual_used",     0, 0, 0, TYPE_MEM},
         {"display_win_gui",  0, 0, 0, TYPE_BOO},
-        {"m_core",           0, 0, 0, TYPE_INT},
-        {"m_socket",         0, 0, 0, TYPE_INT},
-        {"m_thread",         0, 0, 0, TYPE_INT},
-        {"m_topology",       0, 0, 0, TYPE_STR}
+        {LOAD_ATTR_CORES,    0, 0, 0, TYPE_INT},
+        {LOAD_ATTR_SOCKETS,  0, 0, 0, TYPE_INT},
+        {LOAD_ATTR_THREADS,  0, 0, 0, TYPE_INT},
+        {LOAD_ATTR_TOPOLOGY, 0, 0, 0, TYPE_STR}
 };
 
 const int max_queue_resources = 24; /* specifies the number of elements in the queue_resource array */

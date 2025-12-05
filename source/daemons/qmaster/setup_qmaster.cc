@@ -862,11 +862,11 @@ setup_qmaster() {
     */
    {
       struct cmplx_tmp new_complexes[] = {
-              {"m_thread",         "thread", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {"m_core",           "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {"m_socket",         "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
-              {"m_topology",       "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
-              {nullptr,            nullptr,  0, 0,          0,             nullptr, 0,        nullptr}
+              {LOAD_ATTR_THREADS,  "thread", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_CORES,    "core",   1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_SOCKETS,  "socket", 1, CMPLXLE_OP, CONSUMABLE_NO, "0",     REQU_YES, "0"},
+              {LOAD_ATTR_TOPOLOGY, "topo",   9, CMPLXEQ_OP, CONSUMABLE_NO, nullptr, REQU_YES, "0"},
+              {nullptr,            nullptr,  0, 0,          0,  nullptr, 0,        nullptr}
       };
       int i;
 

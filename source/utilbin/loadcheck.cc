@@ -161,18 +161,19 @@ int main(int argc, char *argv[])
    }
 
 #if defined(OCS_HWLOC) || defined(BINDING_SOLARIS)
+   const auto format_str = "%-15s %s\n";
    fill_socket_core_topology(&msocket, &mcore, &mthread, &mtopology);
-   if ((pos && !strcmp("m_socket", argv[pos])) || !pos) {
-      printf("m_socket        %s\n", sge_dstring_get_string(&msocket));
+   if ((pos && !strcmp(LOAD_ATTR_SOCKETS, argv[pos])) || !pos) {
+      printf(format_str, LOAD_ATTR_SOCKETS, sge_dstring_get_string(&msocket));
    }
-   if ((pos && !strcmp("m_core", argv[pos])) || !pos) {
-      printf("m_core          %s\n", sge_dstring_get_string(&mcore));
+   if ((pos && !strcmp(LOAD_ATTR_CORES, argv[pos])) || !pos) {
+      printf(format_str, LOAD_ATTR_CORES, sge_dstring_get_string(&mcore));
    }
-   if ((pos && !strcmp("m_thread", argv[pos])) || !pos) {
-      printf("m_thread        %s\n", sge_dstring_get_string(&mthread));
+   if ((pos && !strcmp(LOAD_ATTR_THREADS, argv[pos])) || !pos) {
+      printf(format_str, LOAD_ATTR_THREADS, sge_dstring_get_string(&mthread));
    }
-   if ((pos && !strcmp("m_topology", argv[pos])) || !pos) {
-      printf("m_topology      %s\n", sge_dstring_get_string(&mtopology));
+   if ((pos && !strcmp(LOAD_ATTR_TOPOLOGY, argv[pos])) || !pos) {
+      printf(format_str, LOAD_ATTR_TOPOLOGY, sge_dstring_get_string(&mtopology));
    }   
 #else 
    if ((pos && !strcmp("m_socket", argv[pos])) || !pos) {

@@ -912,6 +912,17 @@ This is used for passing additional parameters to the xxQS_NAMExx execution daem
 If this parameter is set to true, the usage of reserved resources is used for the accounting entries *cpu*, *mem* 
 and *io* instead of the measured usage.
 
+***ENABLE_HWLOC***
+
+If this parameter is set to *true* (default), the execution daemon will use the HWLOC library to detect the hardware 
+topology of the execution host if the HWLOC library is available on the host. If the parameter is set to *false*, 
+the HWLOC library will not be used even if it is available. Disabling the HWLOC library can be useful 
+if the library causes problems on a specific host (incorrect detection of the hardware topology, performance issues, etc.).
+Disabling the HWLOC library will also disable the support for CPU binding of jobs on that host. This means that
+jobs with binding requests will not be started on that host. If an administrator wants to allow starting jobs with 
+CPU binding requests, the *binding_params* parameter *on_any_host* has to be set to *true*.
+Please note that changing the *ENABLE_HWLOC* parameter requires a restart of the execution daemon.
+
 ***IGNORE_NGROUPS_MAX_LIMIT***
 
 If a user is assigned to *NGROUPS_MAX-1* supplementary groups so that xxQS_NAMExx is not able to add an addition one 

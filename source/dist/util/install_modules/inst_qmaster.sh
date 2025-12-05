@@ -783,7 +783,7 @@ PrintConf()
    $ECHO "delegated_file_staging false"
    $ECHO "jsv_url                NONE"
    $ECHO "gdi_request_limits     NONE"
-   $ECHO "binding_params         enabled=true,implicit=false,mode=default,default_unit=C,on_any_hosts=true,filter=NONE"
+   $ECHO "binding_params         enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
    $ECHO "topology_file          NONE"
 }
 

@@ -278,6 +278,7 @@ static bool set_lib_path = false;
 /* This should match the default set in
  * shepherd/builtin_starter.c:inherit_env(). */
 static bool inherit_env = true;
+static bool enable_hwloc = true;
 static bool enable_submit_lib_path = false;
 static bool enable_submit_ld_preload = false;
 
@@ -936,6 +937,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       use_qsub_gid = false;
       prof_execd_thrd = false;
       inherit_env = true;
+      enable_hwloc = true;
       set_lib_path = false;
       do_accounting = true;
       do_reporting = false;
@@ -1068,6 +1070,9 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_bool_param(s, "INHERIT_ENV", &inherit_env)) {
+            continue;
+         }
+         if (parse_bool_param(s, "ENABLE_HWLOC", &enable_hwloc)) {
             continue;
          }
          if (!strncasecmp(s, "PDC_INTERVAL", sizeof("PDC_INTERVAL")-1)) {
@@ -2590,6 +2595,16 @@ bool mconf_get_inherit_env() {
    ret = inherit_env;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+bool mconf_get_enable_hwloc() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   const bool ret = enable_hwloc;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
    DRETURN(ret);
 }
 

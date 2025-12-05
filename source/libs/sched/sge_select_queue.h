@@ -140,7 +140,7 @@ typedef struct {
    bool       is_soft;            /* true, if job has soft requests                 */
    u_long64   now;                /* now time for immediate jobs                    */
    bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
-   bool do_binding_on_any_hosts;  //< cached value of the corresponding configuration parameter
+   bool do_binding_on_any_host;   //< cached value of the corresponding configuration parameter
    /* ------ this section is for caching of intermediate results ------------------ */
    lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */

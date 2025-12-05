@@ -572,13 +572,25 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
 
 bool
 ocs::Topo::get_new_topology(std::string &topo_str, bool data_nodes) {
+   // Check if HWLOC is enabled for this host
+   if (!mconf_get_enable_hwloc()) {
+      return false;
+   }
+
+   // Check if HWLOC is available
    if (!has_topology_information()) {
       return false;
    }
 
+   // Detect CPU kinds
    CpuKind::detect_via_hwloc();
+
+   // Retrieve the topology string (requires CPU kinds to be detected first)
    get_sub_topology(topo_str, topo_hwloc_topology, hwloc_get_root_obj(topo_hwloc_topology), 0, data_nodes);
+
+   // Release CPU kind data
    CpuKind::release_data();
+
    return true;
 }
 

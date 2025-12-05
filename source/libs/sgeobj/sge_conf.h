@@ -48,7 +48,7 @@
 
 #define PDC_DISABLED U_LONG64_MAX
 
-#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_hosts=true,filter=NONE"
+#define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
 #define JSV_PARAMS_DEFAULT        NONE_STR
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
 
@@ -170,6 +170,7 @@ int mconf_get_max_dynamic_event_clients();
 void mconf_set_max_dynamic_event_clients(int value);
 bool mconf_get_set_lib_path();
 bool mconf_get_inherit_env();
+bool mconf_get_enable_hwloc();
 int mconf_get_spool_time();
 int mconf_get_max_ds_deviation();
 u_long32 mconf_get_monitor_time();
