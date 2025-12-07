@@ -104,6 +104,10 @@ curl -s https://raw.githubusercontent.com/hpc-gridware/quickinstall/refs/heads/m
 - [Go Cluster Scheduler API](https://github.com/hpc-gridware/go-clusterscheduler)
 
 ## Cluster Scheduler Related Blog-Posts of HPC-Gridware
+
+- [Professional Workload Management for NVIDIA DGX SPARK: Desktop and Edge to Datacenter Scalability](https://hpc-gridware.com/professional-workload-management-for-nvidia-dgx-spark-desktop-and-edge-to-datacenter-scalability/)
+- [Gridware Cluster Scheduler 9.0.9: Smarter License Management and Enhanced Debugging](https://hpc-gridware.com/gridware-cluster-scheduler-9-0-9/)
+- [Introducing Qontrol: Modern Web UI for Gridware Cluster Scheduler](https://hpc-gridware.com/introducing-qontrol-modern-web-ui-for-gridware-cluster-scheduler/)
 - [Maximize Your Software License Investment with Gridware Cluster Scheduler](https://hpc-gridware.com/maximize-your-software-license-investment-with-gridware-cluster-scheduler/)
 - [Understanding Multi-Node Jobs in Gridware Cluster Scheduler and Open Cluster Scheduler](https://hpc-gridware.com/understanding-multi-node-jobs-in-gridware-cluster-scheduler-and-open-cluster-scheduler/)
 - [Unleashing the Full Power of NVIDIA GPUs with Gridware Cluster Scheduler: Transforming HPC and AI Workflows](https://www.hpc-gridware.com/unleashing-the-full-power-of-nvidia-gpus-with-gridware-cluster-scheduler-transforming-hpc-and-ai-workflows/)
