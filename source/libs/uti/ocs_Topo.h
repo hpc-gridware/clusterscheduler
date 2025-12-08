@@ -53,7 +53,7 @@ namespace ocs {
 
       static void get_sub_topology(std::string& topo_string, hwloc_topology_t topology, hwloc_obj_t obj, int depth, bool no_data_nodes);
 
-      static bool get_new_topology(std::string &topology, bool data_nodes = false);
+      static bool get_new_topology(std::string &topology, bool data_nodes = false, bool enable_hwloc = true);
       static bool get_topology(std::string &topology);
       static bool get_topology(char **topology, int *length); // @todo switch to the func above
 

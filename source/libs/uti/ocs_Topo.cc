@@ -571,9 +571,9 @@ void ocs::Topo::get_sub_topology(std::string& topo_string, hwloc_topology_t topo
 }
 
 bool
-ocs::Topo::get_new_topology(std::string &topo_str, bool data_nodes) {
+ocs::Topo::get_new_topology(std::string &topo_str, const bool data_nodes, const bool enable_hwloc) {
    // Check if HWLOC is enabled for this host
-   if (!mconf_get_enable_hwloc()) {
+   if (!enable_hwloc) {
       return false;
    }
 

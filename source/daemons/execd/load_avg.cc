@@ -613,7 +613,7 @@ static void sge_get_topology(const char* qualified_hostname, lList **lpp) {
 
    // get topology string
 #if defined(OCS_HWLOC)
-   ret = ocs::Topo::get_new_topology(topology, true);
+   ret = ocs::Topo::get_new_topology(topology, true, mconf_get_enable_hwloc());
 #endif
 
    // add topology to load report
