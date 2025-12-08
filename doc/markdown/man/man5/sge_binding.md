@@ -393,7 +393,7 @@ This forces binding to stop at the end of the current socket, preventing allocat
 
 ***Example: Explicit binding request for a job***
 
-n earlier versions of Grid Engine, it was possible to explicitly request individual cores. Such requests only made sense if the job was scheduled to a specific host — or to a host with a predictable binding layout.
+In earlier versions of Grid Engine, it was possible to explicitly request individual cores. Such requests only made sense if the job was scheduled to a specific host — or to a host with a predictable binding layout.
 
 In xxQS_NAMExx, this behavior can be emulated for any binding unit by using a binding filter. The filter masks certain units, leaving the remainder available for selection by the packed binding strategy.
 

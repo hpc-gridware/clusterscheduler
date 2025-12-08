@@ -1268,6 +1268,8 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
       DRETURN_VOID;
    }
 
+   // sort ids in ascending order for easier processing
+   std::ranges::sort(ids);
    size_t pos = 0;
 
    // we mark only those core/thread types (power or efficiency) that were requested
