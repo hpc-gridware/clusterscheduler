@@ -219,6 +219,10 @@ modified dynamically through the JSV interface to adapt job placement
 policy without user intervention. (see `-jsv` option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
 
+If a server JSV script is present, all attempts to modify binding-specific parameters using 
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global 
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
+
 ## -binstance *instance*
 
 The -binstance switch defines the binding instance that realizes core binding on a machine.
@@ -235,6 +239,15 @@ Instances:
 * set — Binding is applied by the Cluster Scheduler using the operating system’s native mechanism (usually HWLOC)
 * env — Binding is user-defined; the scheduler provides binding information in GCS_BINDING_CPUSET and SGE_BINDING_TOPOLOGY, but no binding is performed automatically.
 * pe — Binding is MPI-defined; binding data is written to the fourth column of the pe_hostfile as socket:core\[,socket:core...\], with numbering starting at 0 (e.g. 0:0,0:1 = cores 0 and 1 on socket 0). Depending on the MPI implementation, this additional column may be evaluated automatically to perform binding. Some MPI runtimes require additional switches, environment variables, or conversion of the socket/core format for use via runtime options or a rankfile mechanism. Consult your MPI documentation for details.
+
+All *`-b...`* switches, including `-binstance`, can be modified dynamically
+through the JSV interface to adapt job placement policy without user
+intervention. (see `-jsv` option below or find more information concerning
+JSV in xxqs_name_sxx_jsv(1)).
+
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
 
 ## -btype *binding_type*
 
@@ -289,6 +302,10 @@ All *`-b...`* switches, including `-btype`, can be
 modified dynamically through the JSV interface to adapt job placement
 policy without user intervention. (see `-jsv` option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
+
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
 
 ## -bunit *binding_unit*
 
@@ -380,6 +397,10 @@ through the JSV interface to adapt job placement policy without user
 intervention. (see `-jsv` option below or find more information concerning
 JSV in xxqs_name_sxx_jsv(1))
 
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
+
 ## -bfilter *filter_expression*
 
 Available for `qsub`, `qrsh`, `qsh`, `qlogin`, and `qalter` only.
@@ -422,7 +443,9 @@ through the JSV interface to adapt job placement policy without user
 intervention. (see `-jsv` option below or find more information concerning
 JSV in xxqs_name_sxx_jsv(1))
 
----
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
 
 ## -bsort *binding_sort_order*
 
@@ -510,7 +533,9 @@ through the **JSV interface** to adapt job placement policy without user
 intervention (see the `-jsv` option below or refer to
 `xxqs_name_sxx_jsv(1)` for more information).
 
----
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
 
 ## -bstart *unit*, -bstop *unit*
 
@@ -574,6 +599,10 @@ dynamically through the JSV interface to adapt job placement policy without
 user intervention. (see `-jsv` option below or find more information
 concerning JSV in xxqs_name_sxx_jsv(1))
 
+If a server JSV script is present, all attempts to modify binding-specific parameters using
+`qalter` are rejected unless the *jsv_allowed_mod* parameter in the global
+configuration (see xxqs_name_sxx_conf(5)) includes the entry *binding*.
+
 ## -binding [ *binding_instance* ] *binding_strategy*
 
 Not available anymore. Use the following options instead: `-bunit`, `-bamount`, `-btype`, `-bfilter`, `-binstance`.
@@ -582,8 +611,8 @@ Gridware Cluster Scheduler additionally provides: `-bsort`, `-bstart`, `-bstop`.
 Starting with **OCS 9.0.1** and **GCS 9.1**, CPU binding is managed directly by the scheduler.  
 Binding requests are treated as **resource requirements**; jobs start only when
 the requested topology region can be guaranteed.  
-This approach treats CPU components such as sockets, cores, threads, and memory
-units as consumable resources managed by the scheduler.
+This approach treats CPU components such as sockets, dies, cores, threads, and memory
+units (NUMA nodes and L2/L3 caches) as consumable resources managed by the scheduler.
 
 ## -b *y\[es\]* \| *n\[o\]*
 

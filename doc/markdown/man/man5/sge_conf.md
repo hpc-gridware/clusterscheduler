@@ -1144,26 +1144,36 @@ limit of 60000 get requests will allow about 4000 *qstat -f* commands per second
 
 Used to define default binding behavior of jobs in the xxQS_NAMExx qmaster. Changes to the *binding_params* takes immediate effect. The following values are recognized:
 
-***implicit***
-
-default is *false*.  Allows enabling implicit binding requests for jobs that do not have explicit binding requests.  
-For jobs with implicit request the binding amount will correspond to the amount of slots. Implicit binding unit is 
-defined by default_unit.
-
 ***default_unit*** 
 
 default is *C*. Defines the default binding unit for implicit binding requests if they are enabled via *implicit* 
 parameter.
 
+***filter***
+
+default is *NONE*. Can be set to *first_core* to disallow binding to the first core of the first socket. This reserves
+that core for other activities on compute nodes (other processes, interrupt handling, IO, ...)
+
+***implicit***
+
+default is *false*.  Allows enabling implicit binding requests for jobs that do not have explicit binding requests.  
+For jobs with implicit request the binding amount will correspond to the amount of slots. Implicit binding unit is
+defined by default_unit.
+
+***mode*** 
+default is *DEFAULT*. Influences the topology reporting of the execution hosts. Possible values are: 
+*DEFAULT*, *OCS* and *GCS*. In Open Cluster Scheduler (OCS) the value for *DEFAULT* correspond with *OCS* mode. In Gridware
+Cluster Scheduler (GCS) the value for *DEFAULT* corresponds to *GCS* mode. 
+The Gridware Cluster Scheduler product allows to change the mode to *OCS* so that the products topology reporting
+remains compatible to OCS installations. In *OCS* mode memory units (NUMA nodes or CPU caches) are not reported.
+*GCS* mode is not available in Open Cluster Scheduler installations. Attempts to set the mode to *GCS* in OCS installations
+will be ignored.
+Changing this parameter requires a restart of the sge_qmaster(8) process to take effect.
+
 ***on_any_host***
 
 default is *true*. Enables scheduling of jobs with binding request to hosts that do not report topology information 
 or that do not support binding.
-
-***filter*** 
-
-default is *NONE*. Can be set to *first_core* to disallow binding to the first core of the first socket. This reserves 
-that core for other activities on compute nodes (other processes, interrupt handling, IO, ...)
 
 ## reporting_params
 
@@ -1389,10 +1399,15 @@ The syntax of the *jsv_url* is specified in xxqs_name_sxx_types(1).
 
 If there is a server JSV script defined with *jsv_url* parameter, then all qalter(1) modification requests for jobs are
 rejected by qmaster. With the *jsv_allowed_mod* parameter an administrator has the possibility to allow a set of 
-switches which can then be used with clients to modify certain job attributes. The value for this parameter has to be 
-a comma separated list of JSV job parameter names as they are documented in qsub(1) or the value *none* to indicate 
-that no modification should be allowed. *none* Please note that even if *none* is specified the switches 
-`-w` and `-t` are allowed for qalter.
+switches which can then be used with clients to modify certain job attributes. 
+
+The value for this parameter has to be a comma separated list of JSV job parameter names as they are documented in 
+qsub(1) or the value *none* to indicate that no modification should be allowed. Please note that even if *none* is 
+specified the switches `-w` and `-t` are allowed for qalter.
+
+Please note that for certain switches or switch combinations there are exceptions where the name that has to be 
+specified here does not correspond to the name of the switch as documented in qsub(1). Exceptions are also mentioned
+in the qsub(1) documentation.
 
 ## libjvm_path
 
