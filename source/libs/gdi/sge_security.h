@@ -45,7 +45,8 @@
 #   include "krb_lib.h"
 #endif
 
-#define SGE_SEC_BUFSIZE 1024
+// 1k is sufficient for about 100 groups 
+#define SGE_SEC_BUFSIZE (1024*10)
 
 void sge_security_exit(int i);
 
