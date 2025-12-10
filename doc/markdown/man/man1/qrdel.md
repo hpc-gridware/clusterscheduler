@@ -27,6 +27,8 @@ Only if all jobs referring to an AR are removed from the xxQS_NAMExx database wi
 `Qrdel` deletes ARs in the order in which the AR identifiers are presented. Find additional information 
 concerning *wc_user_list* and *wc_ar_list* in xxqs_name_sxx_types(1).
 
+`Qrdel` operations can only be executed from submit hosts.
+
 # OPTIONS
 
 ## -f  

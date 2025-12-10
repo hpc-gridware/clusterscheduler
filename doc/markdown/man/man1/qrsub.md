@@ -32,6 +32,8 @@ ARs will be deleted either automatically when the end time is reached, or manual
 first all jobs requesting the AR will be removed and then AR itself. Already granted ARs can be shown
 with `qrstat`.
 
+`Qrsub` and `qrdel` operations can only be executed from submit hosts.
+
 Note: To make AR behavior predictable, it is necessary to have reserved resources available at the time of AR start. 
 This is done by keeping jobs with an unlimited runtime limit separated from ARs, and not considering resources used 
 by such jobs for reservation.
