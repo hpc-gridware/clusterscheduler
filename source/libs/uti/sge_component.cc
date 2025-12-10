@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <cstring>
+#include <sstream>
 #include <pthread.h>
 
 #include "ocs_Munge.h"
@@ -34,6 +35,8 @@
 #include "msg_utilib.h"
 
 #include "sge_component.h"
+
+#include "ocs_Encoder.h"
 
 #define MAX_LOG_BUFFER (8*1024)
 #define MAX_COMP_NAME 32
@@ -51,8 +54,8 @@ typedef struct {
    int amount; ///< Number of supplementary groups.
    ocs_grp_elem_t *grp_array; ///< Array containing supplementary group IDs and names.
 
-   dstring unencrypted_auth_info;  ///< dstring for building and caching the unencrypted auth_info string
-   const char *cached_auth_info;   ///< cached encrypted auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted
+   std::string unencoded_auth_info;  ///< string for building and caching the auth_info string (not encoded)
+   std::string encoded_auth_info;   ///< cached auth_info (when not using Munge it does never change again - for Munge every request is uniquely encrypted)
 } sge_component_user_t;
 
 #define COMPONENT_MUTEX_NAME "component_mutex"
@@ -253,9 +256,9 @@ static void component_ts0_init_user() {
    user->supplementary_grp_initialized = false;
    set_supplementray_groups(user, 0, nullptr);
 
-   // we'll initialize the unencrypted auth info when first needed
-   sge_dstring_init_dynamic(&user->unencrypted_auth_info, 0);
-   user->cached_auth_info = nullptr;
+   // initialize auth info strings
+   user->unencoded_auth_info.clear();
+   user->encoded_auth_info.clear();
 }
 
 /**
@@ -284,8 +287,8 @@ static void component_ts0_init_supplementary_groups() {
  * The function is called from component_ts0_destroy().
  */
 static void component_ts0_destroy_user(component_user_type_t user_type) {
-   sge_dstring_free(&component_ts0_data.users[user_type].unencrypted_auth_info);
-   sge_free(&component_ts0_data.users[user_type].cached_auth_info);
+   component_ts0_data.users[user_type].unencoded_auth_info.clear();
+   component_ts0_data.users[user_type].encoded_auth_info.clear();
    if (component_ts0_data.users[user_type].supplementary_grp_initialized) {
       sge_free(&component_ts0_data.users[user_type].grp_array);
    }
@@ -810,7 +813,7 @@ component_get_auth_info() {
    sge_component_user_t *user = &component_ts0_data.users[component_ts0_data.current_user];
 
    // initialize the unencrypted auth info if not already done
-   if (sge_dstring_strlen(&user->unencrypted_auth_info) == 0) {
+   if (user->unencoded_auth_info.empty()) {
       if (!user->user_initialized) {
          component_ts0_init_user();
       }
@@ -844,14 +847,15 @@ component_get_auth_info() {
          groupname = fake_groupname;
       }
 #endif
-      constexpr char sep = static_cast<char>(0xff);
-      sge_dstring_sprintf(&user->unencrypted_auth_info, uid_t_fmt "%c" gid_t_fmt "%c%s%c%s%c%d",
-                          uid, sep, gid, sep, username, sep, groupname, sep, user->amount);
 
+      // write user/group info into a string
+      constexpr char sep = static_cast<char>(0xff);
+      std::ostringstream user_group_stream;
+      user_group_stream << uid << sep << gid << sep << username << sep << groupname << sep << user->amount;
       for (int i = 0; i < user->amount; i++) {
-         sge_dstring_sprintf_append(&user->unencrypted_auth_info, "%c" gid_t_fmt "%c%s",
-                                    sep, user->grp_array[i].id, sep, user->grp_array[i].name);
+         user_group_stream << sep << user->grp_array[i].id << sep << user->grp_array[i].name;
       }
+      user->unencoded_auth_info = user_group_stream.str();
    }
 
    if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
@@ -860,8 +864,8 @@ component_get_auth_info() {
       // even if the user information and the payload will never change
       // munge certificates are valid for a limited time only and for a single use
       char *munge_auth_info = nullptr;
-      munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
-         sge_dstring_get_string(&user->unencrypted_auth_info), sge_dstring_strlen(&user->unencrypted_auth_info) + 1);
+      const munge_err_t err = ocs::uti::Munge::munge_encode_func(&munge_auth_info, nullptr,
+         user->unencoded_auth_info.c_str(), static_cast<int>(user->unencoded_auth_info.length() + 1));
       if (err != EMUNGE_SUCCESS) {
          ERROR(MSG_UTI_MUNGE_ENCODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
       } else {
@@ -871,18 +875,14 @@ component_get_auth_info() {
       ERROR(SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
 #endif
    } else {
-      if (user->cached_auth_info == nullptr) {
-         // encrypt and store the information once - it will never change
-         size_t size = sge_dstring_strlen(&user->unencrypted_auth_info) * 3;
-         char *obuffer = sge_malloc(size);
-         SGE_ASSERT(obuffer != nullptr);
-         if (sge_encrypt(sge_dstring_get_string(&user->unencrypted_auth_info), obuffer, size)) {
-            user->cached_auth_info = obuffer;
-         }
+      // encrypt and store the information once - it will never change
+      if (user->encoded_auth_info.empty()) {
+         ocs::Encoder::encode(user->unencoded_auth_info, user->encoded_auth_info);
       }
+
       // if available we return the cached auth info
-      if (user->cached_auth_info != nullptr) {
-         ret = strdup(user->cached_auth_info);
+      if (!user->encoded_auth_info.empty()) {
+         ret = strdup(user->encoded_auth_info.c_str());
       }
    }
 
@@ -913,7 +913,6 @@ component_get_auth_info() {
 bool
 component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char *user, size_t user_len, gid_t *gid, char *group, size_t group_len, int *amount, ocs_grp_elem_t **grp_array) {
    DENTER(TOP_LAYER);
-   char auth_buffer[2 * SGE_SEC_BUFSIZE];
 
    if (auth_info == nullptr) {
       sge_dstring_sprintf(error_dstr, SFNMAX, MSG_AUTHINFO_IS_NULL);
@@ -921,29 +920,30 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
    }
 
    // decrypt received auth_info
+   std::string auth_buffer_str;
    uid_t munge_uid{0};
    gid_t munge_gid{0};
    bool use_munge = bootstrap_has_security_mode(BS_SEC_MODE_MUNGE);
    if (use_munge) {
 #if defined(OCS_WITH_MUNGE)
-      munge_err_t err;
       char *local_auth_buffer{nullptr};
       int local_len{0};
-      err = ocs::uti::Munge::munge_decode_func(auth_info, nullptr, (void **)(&local_auth_buffer), &local_len,
-         &munge_uid, &munge_gid);
+      const auto err = ocs::uti::Munge::munge_decode_func(auth_info, nullptr,
+                                                          reinterpret_cast<void **>(&local_auth_buffer), &local_len,
+                                                          &munge_uid, &munge_gid);
       if (err != EMUNGE_SUCCESS) {
          sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_DECODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
          DRETURN(false);
       }
-      sge_strlcpy(auth_buffer, local_auth_buffer, sizeof(auth_buffer));
+      auth_buffer_str = local_auth_buffer;
       sge_free(&local_auth_buffer);
 #else
       sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
       DRETURN(false);
 #endif
    } else {
-      int dlen = 0;
-      if (!sge_decrypt(auth_info, strlen(auth_info), auth_buffer, &dlen)) {
+      std::string auth_info_str(auth_info);
+      if (!ocs::Encoder::decode(auth_info_str, auth_buffer_str)) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
          DRETURN(false);
       }
@@ -953,7 +953,7 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
    saved_vars_s *context = nullptr;
    constexpr char separator[] = "\xff";
    const char *token;
-   const char *next_token = sge_strtok_r(auth_buffer, separator, &context);
+   const char *next_token = sge_strtok_r(auth_buffer_str.c_str(), separator, &context);
    int pos = 0;
    while ((token = next_token) != nullptr) {
       switch (pos) {

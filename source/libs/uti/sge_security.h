@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#define SGE_SEC_BUFSIZE 1024
+#include <string>
 
 void sge_security_exit(int i);
 
@@ -41,10 +41,6 @@ void sge_security_exit(int i);
 /* int 0 on success, -1 on failure */
 int sge_ssl_setup_security_path(const char *progname, const char *username);
 #endif
-
-bool sge_encrypt(const char *intext, char *outbuf, int outsize);
-bool sge_decrypt(char *intext, int inlen, char *out_buffer, int *outsize);
-bool change_encoding(char *cbuf, int* csize, unsigned char* ubuf, int* usize, int mode);
 
 bool
 sge_security_verify_user(const char *host, const char *commproc, u_long32 id, const char *user);

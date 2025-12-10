@@ -22,6 +22,7 @@
 set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
         config_file.cc
+        ocs_Encoder.cc
         ocs_JsonUtil.cc
         ocs_Munge.cc
         ocs_OpenSSL.cc
