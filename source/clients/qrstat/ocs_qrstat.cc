@@ -148,6 +148,10 @@ int main(int argc, const char **argv) {
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
+   // initialize (must be done before `goto error_exit`)
+   qrstat_env_t qrstat_env;
+   qrstat_filter_init(&qrstat_env);
+
    if (ocs::gdi::ClientBase::setup_and_enroll(QRSTAT, MAIN_THREAD, &answer_list) != ocs::gdi::AE_OK) {
       answer_list_output(&answer_list);
       goto error_exit;
@@ -189,8 +193,6 @@ int main(int argc, const char **argv) {
    /*
     * stage 2: evalutate switches and modify qrstat_env
     */
-   qrstat_env_t qrstat_env;
-   qrstat_filter_init(&qrstat_env);
 
    if (!sge_parse_qrstat(&answer_list, &qrstat_env, &pcmdline)) {
       answer_list_output(&answer_list);
