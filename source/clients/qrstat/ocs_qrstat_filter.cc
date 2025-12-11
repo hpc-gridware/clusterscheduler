@@ -44,15 +44,14 @@
 #include "basis_types.h"
 
 void
-qrstat_filter_init(qrstat_env_t *qrstat_env)
-{
-   qrstat_env->user_list = nullptr;
-   qrstat_env->ar_id_list = nullptr;
+qrstat_filter_init(qrstat_env_t *qrstat_env) {
    qrstat_env->is_explain = false;
    qrstat_env->is_xml = false;
    qrstat_env->is_summary = false;
    qrstat_env->header_printed = false;
 
+   qrstat_env->user_list = nullptr;
+   qrstat_env->ar_id_list = nullptr;
    qrstat_env->ar_list = nullptr;
    qrstat_env->what_AR_Type = nullptr;
    qrstat_env->where_AR_Type = nullptr;
