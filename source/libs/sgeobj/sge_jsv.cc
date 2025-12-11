@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
@@ -1117,7 +1117,7 @@ jsv_do_verify(const char *context, lListElem **job,
             if (lGetBool(jsv, JSV_restart)) {
                bool soft_shutdown = lGetBool(jsv, JSV_soft_shutdown) ? true : false;
 
-               DPRINTF("JSV has to be rstarted\n");
+               DPRINTF("JSV has to be restarted\n");
                INFO(MSG_JSV_RESTART_S, context);
                ret &= jsv_stop(jsv, answer_list, soft_shutdown);
             }
