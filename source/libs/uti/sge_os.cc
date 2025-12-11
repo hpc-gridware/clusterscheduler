@@ -288,7 +288,7 @@ int sge_checkprog(pid_t pid, const char *name, const char *pscommand) {
 *     int mode   - mode for open
 *
 *  RESULT
-*     int - target fd number if everything was ok,
+*     int - target fd number if there was an error
 *           else -1
 *
 *  NOTES
@@ -457,9 +457,9 @@ std::set<int> get_all_fds(pid_t pid) {
 
    std::filesystem::path proc_path = "/proc/";
    if (pid == 0) {
-      proc_path += "self/fdinfo";
+      proc_path += "self/fd";
    } else {
-      proc_path += std::to_string(pid) + "/fdinfo";
+      proc_path += std::to_string(pid) + "/fd";
    }
 #if 0
    // Unfortunately, we cannot use the C++ directory_iterator for iterating over /proc/*/fdinfo:

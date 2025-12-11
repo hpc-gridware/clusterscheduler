@@ -2816,10 +2816,9 @@ static int start_async_command(const char *descr, char *cmd)
       /* we have to provide the async command with valid io file handles
        * else it might fail
        */
-      if((open("/dev/null", O_RDONLY, 0) != 0) ||
-         (open("/dev/null", O_WRONLY, 0) != 1) ||
-         (open("/dev/null", O_WRONLY, 0) != 2)) {
-         shepherd_trace("error opening std* file descriptors");
+      int failed_fd = sge_occupy_first_three();
+      if (failed_fd != -1) {
+         shepherd_trace("error opening std* file descriptor %d", failed_fd);
          exit(1);
       }
 
