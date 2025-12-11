@@ -21,7 +21,6 @@
 #include <array>
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "uti/sge_rmon_macros.h"
 
