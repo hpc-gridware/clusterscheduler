@@ -1,5 +1,56 @@
 # Full List of Fixes
 
+## v9.0.10
+
+### Improvement
+
+[CS-1694](https://hpc-gridware.atlassian.net/browse/CS-1694) document when administrator\_mail is sent
+
+[CS-1702](https://hpc-gridware.atlassian.net/browse/CS-1702) Add host list and queue name selection to qgpu install
+
+[CS-1721](https://hpc-gridware.atlassian.net/browse/CS-1721) Grafana default dashboard should select queue list in a more stable way
+
+### Task
+
+[CS-1602](https://hpc-gridware.atlassian.net/browse/CS-1602) Add license-manager to ulx-amd64 packages
+
+### Bug
+
+[CS-1591](https://hpc-gridware.atlassian.net/browse/CS-1591) qtelemetry reports power consumption for GPUs in float not int
+
+[CS-1594](https://hpc-gridware.atlassian.net/browse/CS-1594) closing all file descriptors \(e.g. in sge\_execd / sge\_shepherd\) depends on the open files limit and can take quite some time
+
+[CS-1595](https://hpc-gridware.atlassian.net/browse/CS-1595) For users in large user groups qstat / qsub segfaults
+
+[CS-1599](https://hpc-gridware.atlassian.net/browse/CS-1599) testsuite needs to clear the CHECK\_JOB\_OUTPUT\_DIR after tests finished
+
+[CS-1603](https://hpc-gridware.atlassian.net/browse/CS-1603) Certain FlexLM licenses are not recognized by license-manager
+
+[CS-1605](https://hpc-gridware.atlassian.net/browse/CS-1605) LicenseManager load sensor reported value is missleading
+
+[CS-1608](https://hpc-gridware.atlassian.net/browse/CS-1608) LicenseManager should skip local value changes when values are identical
+
+[CS-1609](https://hpc-gridware.atlassian.net/browse/CS-1609) Prefix for licenses is not honored in all cases
+
+[CS-1610](https://hpc-gridware.atlassian.net/browse/CS-1610) qpu install should skip non-gpu hosts faster
+
+[CS-1611](https://hpc-gridware.atlassian.net/browse/CS-1611) Grafana Dashboard might use a different data source for host and cluster queue list filters
+
+[CS-1687](https://hpc-gridware.atlassian.net/browse/CS-1687) error logging about spooling when running array tasks
+
+[CS-1688](https://hpc-gridware.atlassian.net/browse/CS-1688) potential core dump of sge\_execd when accessing job report \(JR\_failed\)
+
+[CS-1690](https://hpc-gridware.atlassian.net/browse/CS-1690) sge\_shepherd -help should exit with code 0
+
+[CS-1691](https://hpc-gridware.atlassian.net/browse/CS-1691) core of qrstat if specified switch is not supported
+
+[CS-1696](https://hpc-gridware.atlassian.net/browse/CS-1696) cannot submit jobs and potential sge\_qmaster crash under load when a master jsv script is configured
+
+[CS-1698](https://hpc-gridware.atlassian.net/browse/CS-1698) Potential access of closed file descriptor in master if JSV child process was already terminated
+
+[CS-1723](https://hpc-gridware.atlassian.net/browse/CS-1723) huge amount of supplementary groups for user lets fail client commands with: failed to extract authentication information
+
+
 ## v9.0.9
 
 ### Improvement
