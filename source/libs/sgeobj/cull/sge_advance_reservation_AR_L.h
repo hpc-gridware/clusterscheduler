@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -146,6 +146,9 @@
 *    SGE_OBJECT(AR_binding) - Binding Strategy
 *    Binding strategy for the advance reservation
 *
+*    SGE_STRING(AR_project) - Project
+*    Project the AR was submitted to.
+*
 *    SGE_OBJECT(AR_pe_object) - PE Object
 *    PE object granted to this AR (PE_Type) when it was scheduled.
 *
@@ -185,6 +188,7 @@ enum {
    AR_joker,
    AR_granted_resources_list,
    AR_binding,
+   AR_project,
    AR_pe_object
 };
 
@@ -222,6 +226,7 @@ LISTDEF(AR_Type)
    SGE_LIST(AR_joker, VA_Type, CULL_SPOOL)
    SGE_LIST(AR_granted_resources_list, GRU_Type, CULL_SPOOL)
    SGE_OBJECT(AR_binding, BN_Type, CULL_SPOOL)
+   SGE_STRING(AR_project, CULL_SPOOL)
    SGE_OBJECT(AR_pe_object, PE_Type, CULL_SPOOL)
 LISTEND
 
@@ -259,6 +264,7 @@ NAMEDEF(ARN)
    NAME("AR_joker")
    NAME("AR_granted_resources_list")
    NAME("AR_binding")
+   NAME("AR_project")
    NAME("AR_pe_object")
 NAMEEND
 

@@ -434,6 +434,16 @@
 			"flags":	[{
 				"name":	"SPOOL"
 			}]
+		}, {
+			"name":	"project",
+			"summary":	"Project",
+			"description":	[{
+				"line":	"Project the AR was submitted to."
+			}],
+			"type":	"lStringT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
 	 	}, {
 			"name":	"pe_object",
 			"summary":	"PE Object",
