@@ -253,6 +253,9 @@ object_get_subtype(int nm)
       case OQ_binding_to_use:
          ret = ST_Type;
          break;
+      case OQ_granted_rsmaps:
+         ret = RESL_Type;
+         break;
       case US_entries:
          ret = UE_Type;
          break;
@@ -282,6 +285,9 @@ object_get_subtype(int nm)
          break;
       case JG_binding_to_use:
          ret = ST_Type;
+         break;
+      case JG_granted_rsmaps:
+         ret = RESL_Type;
          break;
       case SPA_argval_lListT:
          ret = ST_Type;
@@ -327,6 +333,12 @@ object_get_subtype(int nm)
          break;
       case GRU_binding_inuse:
          ret = ST_Type;
+         break;
+      case RESL_properties:
+         ret = CE_Type;
+         break;
+      case RESL_utilization:
+         ret = RUE_Type;
          break;
       case STN_children:
          ret = STN_Type;

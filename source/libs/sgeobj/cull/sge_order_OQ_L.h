@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@
 *
 * Job start orders and also orders for reprioritization contain per queue information.
 * One or more objects of type OrderQueue are contained in the queuelist attribute of an order.
+* This information will be copied to the JAT_granted_destin_identifier_list of a running
+* job (array task).
 *
 *    SGE_ULONG(OQ_slots) - Slots
 *    The number of slots a job occupies in the queue / queue instance.
@@ -58,6 +60,10 @@
 *    SGE_LIST(OQ_binding_to_use) - Binding that should be used
 *    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
 *
+*    SGE_LIST(OQ_granted_rsmaps) - Granted RSMAP IDs
+*    List of RSMAP IDs granted to this job / specific tasks of a parallel job,
+*    which are running on the specific queue instance / host described by this object.
+*
 */
 
 enum {
@@ -68,7 +74,8 @@ enum {
    OQ_oticket,
    OQ_fticket,
    OQ_sticket,
-   OQ_binding_to_use
+   OQ_binding_to_use,
+   OQ_granted_rsmaps
 };
 
 LISTDEF(OQ_Type)
@@ -80,6 +87,7 @@ LISTDEF(OQ_Type)
    SGE_DOUBLE(OQ_fticket, CULL_DEFAULT)
    SGE_DOUBLE(OQ_sticket, CULL_DEFAULT)
    SGE_LIST(OQ_binding_to_use, ST_Type, CULL_DEFAULT)
+   SGE_LIST(OQ_granted_rsmaps, RESL_Type, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(OQN)
@@ -91,6 +99,7 @@ NAMEDEF(OQN)
    NAME("OQ_fticket")
    NAME("OQ_sticket")
    NAME("OQ_binding_to_use")
+   NAME("OQ_granted_rsmaps")
 NAMEEND
 
 #define OQ_SIZE sizeof(OQN)/sizeof(char *)

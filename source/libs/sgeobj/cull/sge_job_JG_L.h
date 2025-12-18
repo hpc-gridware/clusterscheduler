@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2025 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -80,6 +80,10 @@
 *    SGE_LIST(JG_binding_to_use) - Binding that should be used
 *    One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding
 *
+*    SGE_LIST(JG_granted_rsmaps) - Granted RSMAP IDs
+*    List of RSMAP IDs granted to this job / specific tasks of a parallel job,
+*    which are running on the specific queue instance / host described by this object.
+*
 */
 
 enum {
@@ -96,7 +100,8 @@ enum {
    JG_jcoticket,
    JG_jcfticket,
    JG_processors,
-   JG_binding_to_use
+   JG_binding_to_use,
+   JG_granted_rsmaps
 };
 
 LISTDEF(JG_Type)
@@ -114,6 +119,7 @@ LISTDEF(JG_Type)
    SGE_DOUBLE(JG_jcfticket, CULL_DEFAULT)
    SGE_STRING(JG_processors, CULL_DEFAULT)
    SGE_LIST(JG_binding_to_use, ST_Type, CULL_SUBLIST)
+   SGE_LIST(JG_granted_rsmaps, RESL_Type, CULL_SUBLIST)
 LISTEND
 
 NAMEDEF(JGN)
@@ -131,6 +137,7 @@ NAMEDEF(JGN)
    NAME("JG_jcfticket")
    NAME("JG_processors")
    NAME("JG_binding_to_use")
+   NAME("JG_granted_rsmaps")
 NAMEEND
 
 #define JG_SIZE sizeof(JGN)/sizeof(char *)

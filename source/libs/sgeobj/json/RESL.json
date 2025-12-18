@@ -3,8 +3,11 @@
 	"summary":	"Resource List",
 	"description":	[{
 			"line":	"Consumable Resource Map Resource List."
-			}, { "line":	"Holds all consumable resource map identifiers"
-			}, { "line":	"of a particular job / array task."
+			}, { "line":	"Holds all consumable resource map identifiers which are"
+			}, { "line":	"available on a host (Referenced in CE_Type / the complex_list of a host)."
+			}, { "line":	"It is also used to store the RSMAP IDs of resources which are"
+			}, { "line":	"granted to a job / array task / pe task; referenced in GRU_Type, which in turn"
+			}, { "line":	"is referenced in gdil (JG_Type) and in ja_tasks' granted_resources list (JAT_Type)."
 		}],
 	"cullPrefix":	"RESL",
 	"attributes":	[{
@@ -12,21 +15,76 @@
 			"summary":	"Value",
 			"description":	[{
 					"line":	"The ID value of the RSMAP consumable complex."
-               }, { "line": "@todo Is it the primary key? Would it be worth to have an index on it?"
+               }, { "line": "@todo rename it to id? That's what it is in the RSMAP."
 				}],
 			"type":	"lStringT",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
 		}, {
+			"name":	"id_instance",
+			"summary":	"ID Instance",
+			"description":	[{
+				"line": "We can have multiple RSMAP entries with the same ID. E.g., we have 4 P40 GPUs in a host."
+			}, { "line": "To be able to distinguish between them, we store an instance number in this attribute."
+			}, { "line": "The first (possibly only) entry has instance 0."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
+		}, {
+			"name":	"pe_task_id",
+			"summary":	"PE Task ID",
+			"description":	[{
+				 "line": "When RESL is part of the GDIL or the Granted Resources list of a parallel job,"
+			}, { "line": "we store here the PE task ID of the parallel task that owns this RSMAP ID."
+			}, { "line": "Where we don't need it (in the complex_values list of a host, or if it is a per HOST consumable),"
+			}, { "line": "the value is 0."
+			}],
+			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
+		}, {
 			"name":	"amount",
 			"summary":	"Resource Amount",
 			"description":	[{
-					"line":	"The number of resources with this name."
-				}],
+				 	 "line": "The number of resources with this name."
+				}, { "line": "@todo once we schedule individual RSMAP entries, we can probably remove this attribute - it will always be 1."
+			}],
 			"type":	"lUlongT",
+			"flags":	[{
+				"name":	"SPOOL"
+			}]
+		}, {
+			"name":	"properties",
+			"summary":	"Resource Properties",
+			"description":	[{
+			   		 "line":	"Here we store properties of an individual resource, e.g., a GPU or a network device."
+			    }, { "line":	"Properties can be arbitrary attributes of a resource, e.g., the amount of memory of a GPU,"
+				}, { "line":	"the bandwidth of a network device, the affinity to CPU cores, etc."
+				}, { "line":	"The properties list contains ComplexEntry objects."
+				}, { "line":	"They can have different types, e.g., string for a GPU model or the affinity mask,"
+				}, { "line":	"double for numerical values like the bandwidth or the memory amount."
+				}],
+			"type":	"lListT",
+			"subClassName":	"ComplexEntry",
+			"subCullPrefix":	"CE",
 			"flags":	[{
 					"name":	"SPOOL"
 				}]
+		}, {
+			"name":	"utilization",
+			"summary":	"Resource Utilization",
+			"description":	[{
+				"line":	"contains per consumable information about resource utilization for this RSMAP ID"
+			}],
+			"type":	"lListT",
+			"subClassName":	"RUE",
+			"subCullPrefix":	"RUE",
+			"flags":	[{
+				"name":	"JGDI_HIDDEN"
+			}]
 		}]
 }

@@ -221,7 +221,7 @@
 					"line": "on host level only: RSMAP id list"
 				}],
 			"type":	"lListT",
-			"subClassName":	"RESL",
+			"subClassName":	"ResourceList",
 			"subCullPrefix":	"RESL",
 			"flags":	[{
 					"name":	"JGDI_CONF"

@@ -165,5 +165,18 @@
 			"flags":	[{
 				"name":	"SPOOL_SUBLIST"
 			}]
+		}, {
+			"name":	"granted_rsmaps",
+			"summary":	"Granted RSMAP IDs",
+			"description":	[{
+				    "line":	"List of RSMAP IDs granted to this job / specific tasks of a parallel job,"
+			   }, { "line":	"which are running on the specific queue instance / host described by this object."
+			}],
+			"type":	"lListT",
+			"subClassName":	"ResourceList",
+			"subCullPrefix":	"RESL",
+			"flags":	[{
+				"name":	"SPOOL_SUBLIST"
+			}]
 		}]
 }

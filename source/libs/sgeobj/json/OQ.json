@@ -2,8 +2,10 @@
 	"className":	"OrderQueue",
 	"summary":	"Queue Info in an Order",
 	"description":	[{
-			"line":	"Job start orders and also orders for reprioritization contain per queue information."
+				 "line":	"Job start orders and also orders for reprioritization contain per queue information."
 			}, { "line":	"One or more objects of type OrderQueue are contained in the queuelist attribute of an order."
+			}, { "line":	"This information will be copied to the JAT_granted_destin_identifier_list of a running"
+			}, { "line":	"job (array task)."
 		}],
 	"cullPrefix":	"OQ",
 	"attributes":	[{
@@ -72,6 +74,17 @@
 			"type":	"lListT",
 			"subClassName":	"ST",
 			"subCullPrefix":	"ST",
+			"flags":	[]
+		}, {
+			"name":	"granted_rsmaps",
+			"summary":	"Granted RSMAP IDs",
+			"description":	[{
+				     "line":	"List of RSMAP IDs granted to this job / specific tasks of a parallel job,"
+				}, { "line":	"which are running on the specific queue instance / host described by this object."
+			}],
+			"type":	"lListT",
+			"subClassName":	"ResourceList",
+			"subCullPrefix":	"RESL",
 			"flags":	[]
 		}]
 }
