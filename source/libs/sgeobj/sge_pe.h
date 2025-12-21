@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -60,6 +60,9 @@ pe_validate_slots(lList **alpp, u_long32 slots);
 
 int 
 pe_validate_urgency_slots(lList **alpp, const char *s);
+
+bool
+pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bool output_errors = false);
 
 int 
 pe_urgency_slots(const lListElem *pe, 

@@ -965,7 +965,7 @@
 #define MSG_SEC_DELCREDNOBIN_US           _MESSAGE(60413, _("could not delete credentials for job " sge_u32 " - " SFN " binary does not exist"))
 #define MSG_SEC_PUTCREDSTDERR_S           _MESSAGE(60414, _("put_cred stderr: " SFN))
 #define MSG_SEC_NOSTARTCMD4GETCRED_SU     _MESSAGE(60415, _("can't start command " SFQ " for job " sge_u32 " to get credentials"))
-#define MSG_PE_ALLOCRULE_SS               _MESSAGE(60416, _("parameter allocation_rule of pe " SFQ ": " SFN))
+#define MSG_PE_ALLOCRULE_S                _MESSAGE(60416, _("incorrect allocation_rule " SFQ ))
 #define MSG_GDI_OUTOFMEMORY               _MESSAGE(60418, _("out of memory"))
 #define MSG_COM_UNPACKINT_I               _MESSAGE(60419, _("unpacking integer %d failed"))
 #define MSG_COM_UNPACKOBJ_S               _MESSAGE(60420, _("unpacking a " SFN " object failed"))

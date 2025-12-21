@@ -378,7 +378,7 @@ ERROR
 
    there are two classes of errors:
       -1 a lack of an __allowed__ variable in the config_list   - execd damaged
-      1  an syntax error or a request of a not allowed variable - pe damaged
+      1  a syntax error or a request of a not allowed variable - pe damaged
   
 REM
    

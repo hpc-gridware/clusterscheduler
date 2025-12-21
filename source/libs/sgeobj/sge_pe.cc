@@ -296,24 +296,7 @@ int pe_validate(lListElem *pep, lList **alpp, int startup, const lList *master_u
 
    /* -------- allocation_rule */
    s = lGetString(pep, PE_allocation_rule);
-   if (s == nullptr) {
-      if (alpp == nullptr) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe");
-      } else {
-         answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_SGETEXT_MISSINGCULLFIELD_SS,
-                                 lNm2Str(PE_allocation_rule), "validate_pe");
-      }
-      DRETURN(STATUS_EEXIST);
-   }
-
-   if (replace_params(s, nullptr, 0, pe_alloc_rule_variables)) {
-      if (alpp == nullptr) {
-         ERROR(MSG_PE_ALLOCRULE_SS, pe_name, err_msg);
-      } else {
-         answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_PE_ALLOCRULE_SS, pe_name, err_msg);
-      }
+   if (!pe_validate_allocation_rule(alpp, s, alpp == nullptr)) {
       DRETURN(STATUS_EEXIST);
    }
 
@@ -412,6 +395,49 @@ int pe_validate_urgency_slots(lList **answer_list, const char *s)
    }
 
    DRETURN(STATUS_OK);
+}
+
+/**
+ * @brief validate an allocation rule
+ *
+ * Validates an allocation rule, which can be configured in a parallel environment
+ * or be passed as a parameter to the `-par` submit option.
+ *
+ * @param answer_list      - answer list used for reporting errors
+ * @param allocation_rule  - the allocation rule to check
+ * @param output_errors    - if true, then errors will be output via ERROR macro (possibly in addition to
+ *                           adding them to an answer_list).
+ * @return true if the allocation rule is valid, else false
+ */
+bool
+pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bool output_errors) {
+   DENTER(TOP_LAYER);
+
+   bool ret = true;
+
+   if (allocation_rule == nullptr) {
+      if (output_errors) {
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "pe_validate_allocation_rule");
+      }
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_SGETEXT_MISSINGCULLFIELD_SS,
+                              lNm2Str(PE_allocation_rule), "pe_validate_allocation_rule");
+      ret = false;
+   } else {
+      // can be a number or one of the placeholders $pe_slots, $fill_up, $round_robin
+      if (isdigit(allocation_rule[0]) == 0) {
+         if (strcmp(allocation_rule, "$pe_slots") != 0 && strcmp(allocation_rule, "$fill_up") != 0 &&
+             strcmp(allocation_rule, "$round_robin") != 0) {
+            if (output_errors) {
+               ERROR(MSG_PE_ALLOCRULE_S, allocation_rule);
+            }
+            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_ALLOCRULE_S,
+                                    allocation_rule);
+            ret = false;
+         }
+      }
+   }
+
+   DRETURN(ret);
 }
 
 /****** sgeobj/pe/pe_list_do_all_exist() **************************************

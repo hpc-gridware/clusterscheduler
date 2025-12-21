@@ -154,15 +154,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    /* -------- PE_allocation_rule */
    if (lGetPosViaElem(pe, PE_allocation_rule, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_allocation_rule);
-      if (s == nullptr) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe");
-         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-         DRETURN(STATUS_EEXIST);
-      }
-
-      if (replace_params(s, nullptr, 0, pe_alloc_rule_variables)) {
-         ERROR(MSG_PE_ALLOCRULE_SS, pe_name, err_msg);
-         answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      if (!pe_validate_allocation_rule(alpp, s, true)) {
          DRETURN(STATUS_EEXIST);
       }
       lSetString(new_pe, PE_allocation_rule, s);
@@ -172,7 +164,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *
    if (lGetPosViaElem(pe, PE_urgency_slots, SGE_NO_ABORT) >= 0) {
       s = lGetString(pe, PE_urgency_slots);
       if (s == nullptr) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_allocation_rule), "validate_pe");
+         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, lNm2Str(PE_urgency_slots), "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
