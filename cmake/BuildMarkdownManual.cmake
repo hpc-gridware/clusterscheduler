@@ -51,7 +51,7 @@ function(build_markdown_specification file title located_in_extensions)
             ${CMAKE_SOURCE_DIR}/../gcs-extensions/doc/markdown/specification/copyright.md
             ${CMAKE_SOURCE_DIR}/../gcs-extensions/doc/markdown/specification/typographic_conventions.md
             ${CMAKE_SOURCE_DIR}/../gcs-extensions/doc/markdown/specification/head.tex
-            ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/scripts/pandoc_manual.sh
+            ${CMAKE_SOURCE_DIR}/../clusterscheduler/doc/scripts/pandoc_specification.sh
             COMMAND ${CMAKE_SOURCE_DIR}/doc/scripts/pandoc_specification.sh ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${file} ${title} ${CMAKE_PROJECT_VERSION} ${DATETIME} ${located_in_extensions} ${build_open_source_version}
     )
 endfunction()

@@ -52,6 +52,7 @@ OPTIONS="--pdf-engine=xelatex -H ${SETTINGS_FILE}"
 OPTIONS="$OPTIONS --highlight-style espresso"
 OPTIONE="$OPTIONS -V colorlinks=true -V urlcolor=NavyBlue -V toccolor=red"
 OPTIONS="$OPTIONS --table-of-contents"
+OPTIONS="$OPTIONS --toc-depth=6"
 OPTIONS="$OPTIONS --number-sections"
 OPTIONS="$OPTIONS -V subparagraph"
 
