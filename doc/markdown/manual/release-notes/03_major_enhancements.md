@@ -1,172 +1,104 @@
 # Major Enhancements
 
-## v9.1.0prealpha1
+## v9.1.0beta1
 
-### Advanced Binding Framework
+### Advanced Binding Framework for Topology-Aware Job Placement
 
-OCS and GCS 9.1.0 introduce a completely redesigned **binding framework**
-that manages CPU, cache, and memory-domain placement as a first-class
-scheduling concept. Binding is no longer handled implicitly by the
-execution daemon; it is now a **scheduler-driven resource model**,
-enabling predictable, topology-aware job placement — including full
-compatibility with **reservations**, **advance reservations**, and other
-complex scheduling policies.
+Open Cluster Scheduler and Gridware Cluster Scheduler 9.1.0 introduce a completely redesigned **binding framework** that elevates CPU, cache, and memory-domain placement to a **first-class scheduling concept**. Binding is now **scheduler-driven**, rather than being handled implicitly by execution daemons, enabling deterministic and topology-aware job placement.
 
-The new implementation treats **binding units** (threads, cores, sockets,
-L2/L3 caches, dies, and NUMA domains) as **consumable resources** that
-are detected, sorted, and assigned during scheduling. This design allows
-precise control over *where* and *how* jobs run within each host.
+The scheduler treats **binding units**—including threads, cores, sockets, dies, caches (L2/L3), and NUMA domains—as **consumable resources** that are detected, sorted, reserved, and assigned during scheduling. This enables precise control over how and where jobs/tasks execute within a host and ensures compatibility with advanced scheduling features such as **reservations** and **advance reservations**.
 
-- **New `-b...` option family** replaces the legacy `-binding` syntax:
+Key capabilities include:
 
-    * `-bamount` — number of binding units per slot or host
-    * `-bunit` — topology level (thread, core, socket, die, L2, L3, NUMA)
-    * `-btype` — apply binding per slot or host
-    * `-bfilter` — pre-filter eligible units
-    * `-bsort` — define fill-up order of free vs. used resources
-    * `-bstart` / `-bstop` — restrict binding to a defined topology range
-    * `-binstance` — define the component that implements binding
-      (`hwloc`, PE/MPI, or custom)
+- New `-b...` option family replacing legacy `-binding` syntax:
+  - `-bamount`, `-bunit`, `-btype`
+  - `-bfilter`, `-bsort`
+  - `-bstart`, `-bstop`
+  - `-binstance` (hwloc, PE/MPI, or custom binding implementation)
+- Full scheduler integration — binding requests are resolved before dispatch
+- Reservation of binding units to prevent oversubscription
+- Extended topology awareness (cache hierarchy, dies, NUMA domains)
+- Hybrid CPU support (performance vs efficiency cores)
+- Highly configurable binding strategies for performance‑critical workloads.
 
-- **Full scheduler integration** — binding requests are resolved before
-  job dispatch; jobs start only when the requested topology region is
-  guaranteed.
-- **Reservation of binding units** — prevents oversubscription and
-  ensures exclusive access to requested hardware regions.
-- **Topology awareness** — automatic detection of sockets, CPUs, and
-  threads (OCS) plus cache hierarchy, die, and NUMA layout (GCS) enables
-  intelligent placement decisions.
-- **Hybrid-CPU support** — distinction between performance and efficiency
-  units on heterogeneous architectures.
-- **Enhanced control** — users can define detailed binding strategies to
-  maximize performance for multi-core and hybrid workloads.
+*(Full enterprise functionality is available in Gridware Cluster Scheduler; Limited placement support is available in Open Cluster Scheduler)*
 
-For comprehensive details on the new binding framework, including
-configuration and usage examples, refer to:
+### Enhanced NVIDIA GPU Support with qgpu
 
-- `qsub(1)` and `sge_binding(5)` manual pages
-- The blog series on [hpc-gridware.com](https://hpc-gridware.com) covering the new binding framework
- 
-(Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
+With the release of patch 9.0.2, we made the first step towards better NVIDIA GPU support by introducing GPU resource requests and scheduling based on NVIDIA GPU properties. This has been further improved in this release.
 
-### Departments, Users and Jobs — Department View *(Beta)*
+The `qgpu` command has been added to simplify workload management for GPU resources. The `qgpu` command allows administrators to manage GPU resources more efficiently. It is available for Linux _amd64_ and Linux _arm64_. `qgpu` is a multi-purpose command which can act as a `load sensor` reporting the characteristics and metrics of NVIDIA GPU devices. For that it depends on NVIDIA DCGM to be installed on the GPU nodes. It also works as a `prolog` and `epilog` for jobs to setup NVIDIA runtime and environment variables. Further it sets up per job GPU accounting so that the GPU usage and power consumption is automatically reported in the accounting being visible in the standard `qacct -j` output. It supports all NVIDIA GPUs which are supported by NVIDIA's DCGM. For more information about `qgpu` please refer to the `Admin Guide`.
 
-*(This feature is still in beta and may change or be removed in future
-releases.)*
+(Available in Gridware Cluster Scheduler only)
 
-The **Department View** (`-sdv`), first introduced in Gridware Cluster
-Scheduler v9.0.2, has been further enhanced in this release.
+### Further Improved License Management (FlexNet license-manager integration)
 
-Cluster administrators can now configure whether users access the
-**Classic View**, where all hosts, queues, and jobs are visible to
-everyone, or the **Department View**, where users only see cluster
-objects associated with their assigned department(s).  
-Even if administrators do not enforce Department View globally, users can
-enable it individually to simplify the interface and reduce the number of
-visible objects in large clusters.
+This release refines **automated FlexNet license management** for Gridware Cluster Scheduler (GCS), enabling tighter integration between **FlexNet license servers** and **job scheduling decisions**.
 
-Key Features:
+**Key Features include :**
 
-- **User–Department Mapping**  
-  Each user is assigned to one or more departments. Users without an
-  explicit assignment are automatically placed in the *default
-  department*.  
-  Users belonging to multiple departments must specify the target
-  department when submitting a job using `qsub -dept`, ensuring that each
-  job is correctly charged and tracked.
+- **Automated License Discovery and Configuration**
+  The new `license-manager` command-line tool automatically queries FlexNet license servers and synchronizes license availability with GCS. It discovers available licenses, creates corresponding GCS complexes with the `lm_` prefix, (configurable) and maintains accurate license counts without manual configuration.
+- **Real-Time License Monitoring**
+  Operating as a GCS load sensor, the license-manager reports current license availability in real-time, allowing the scheduler to make informed job placement decisions based on actual license capacity. This prevents job failures due to license exhaustion and optimizes license utilization across the cluster.
+- **External License Tracking**
+  The tool provides integration for tracking licenses consumed by non-GCS processes, ensuring accurate accounting of total license availability and preventing over-subscription when external applications share the same license pool.
 
-- **Department-based Access Control**  
-  Departments (or ACLs) can be assigned to cluster objects such as the
-  global configuration, hosts, queues, projects, or resource quota sets.
-  This restricts both access rights and visibility of those objects when
-  Department View is enabled.  
-  (See *user_lists* in `sge_conf(5)`, `sge_host_conf(5)`,
-  `sge_queue_conf(5)`, `sge_pe(5)`, and `sge_resource_quota(5)`.)
+By eliminating manual license complex configuration and aligning scheduling decisions with real-time license capacity, this enhancement reduces scheduling failures, improves cluster throughput, and maximizes return on investment for costly commercial software licenses in HPC environments.
 
-- **Command-line Activation**  
-  Users can activate Department View via command-line tools
-  (`qhost`, `qstat`, `qselect`, …) using the `-sdv` switch.
+(Available in Gridware Cluster Scheduler only)
 
-- **Administrative Enforcement**  
-  Managers can define default configurations (`sge_qstat`,
-  `sge_select`, …) to enforce Department View for specific users,
-  automatically hiding all cluster objects outside the assigned
-  department(s).
+### Prometheus and Grafana Metrics Exporter (qtelemetry now in beta)
 
-- **Manager Visibility**  
-  Cluster managers always retain full visibility of all objects,
-  regardless of Department View settings.
+> **Important:**
+  **qtelemetry** left development state and is now available as beta. The interface, available metrics, and configuration options might still change in future releases. Feedback from early adopters is highly encouraged to guide further development.
 
-(Available in Open Cluster Scheduler and Gridware Cluster Scheduler.)
+This release brings **qtelemetry** into beta state, a new **metrics exporter** for Gridware Cluster Scheduler (GCS). qtelemetry enables administrators and developers to collect, export, and visualize cluster metrics for **monitoring, observability, and performance analysis**.
 
-### Prevent Denial of Service Attacks
+qtelemetry is designed for easy integration with modern monitoring stacks and provides immediate visibility into cluster health and workload behavior.
 
-The **Gridware Cluster Scheduler** now includes protection against
-Denial of Service (DoS) attacks by limiting the number of requests
-accepted by the `xxqs_name_sxx_qmaster(8)` daemon per second.  
-This limit is controlled via the `gdi_request_limits` parameter, which is
-configured in the global cluster configuration.
+Key features include:
 
-Parameter Syntax:
+- Native integration with Prometheus and Grafana
+  - Metrics are exposed in a format suitable for direct ingestion by Prometheus.
+  - A pre-configured Grafana dashboard is available for rapid visualization.
+- Comprehensive cluster metrics export, including:
+  - Host metrics: CPU load, memory usage, GPU availability, and additional host-level statistics.
+  - Job metrics: Queued, running, errored jobs, job waiting times, and other job lifecycle metrics. 
+  - qmaster statistics: CPU and memory usage of sge_qmaster, as well as spooling filesystem information.
+- Optional per-job metrics
+  - Enables detailed, per-job observability.
+  - Recommended only for very small workloads, as metric cardinality can grow significantly.
+- Grafana dashboard support
+  - Built-in compatibility with a pre-configured Grafana dashboard for Gridware Cluster Scheduler: https://grafana.com/grafana/dashboards/23208-gridware-cluster-scheduler-org/
+  
+(Available in Gridware Cluster Scheduler only)
 
-```
-gdi_request_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
-limit_rule := source ':' type ':' object ':' user ':' host '=' limit .
-```
+### Protection Against Denial-of-Service (DoS) Attacks
 
-Each *limit_rule* defines a filtering pattern and a corresponding limit.
-The fields `source`, `type`, `object`, `user`, and `host` act as filter
-criteria. Wildcards (`*`) are supported, as well as **user lists** for
-`user` and **host groups** for `host`.  
-The `limit` specifies the maximum number of requests accepted per second.
+This release introduces **request-rate limiting** to protect the qmaster daemon against Denial-of-Service (DoS) scenarios. Administrators can define fine-grained limits on the number of GDI requests accepted per second using the `gdi_request_limits` parameter.
 
-Detailed syntax information is available in `xxqs_name_sxx_conf(5)`.
+Features include:
 
-Example:
+- Per-source, per-user, per-host, and per-object request filtering
+- Support for wildcards, user lists, and host groups
+- Clear error reporting when limits are exceeded
 
-```
-gdi_request_limits=*:add:job:john:*=500,
-                   *:add:job:eng-users:@eng-hosts=100,
-                   *:add:job:*:*=50,
-                   qstat:get:*:*:*=60000
-```
+This mechanism ensures scheduler stability while allowing normal high-volume operations such as large-scale `qstat` usage.
 
-Explanation:
-- **Rule 1:** Allows user `john` to submit up to **500 jobs per second**.
-- **Rule 2:** Allows all users in the `eng-users` list to submit **100 jobs
-  per second** on hosts in the `@eng-hosts` group.
-- **Rule 3:** Allows all other users to submit **50 jobs per second**.
-- **Rule 4:** Allows **60,000 `qstat` requests per second**.
+*(Available in Gridware Cluster Scheduler only)*
 
-If a user exceeds the configured limit, the corresponding command-line tool displays an error message identifying the violated rule.
+### TLS Encryption of Component Communication (Experimental)
 
-Practical Consideration:
+> **Important:** This feature is currently marked as **experimental** and is **disabled by default**. The functionality has passed internal testing but has not yet undergone extensive real-world validation. As soon as we got enough feedback from users, we will promote it to a stable feature with one of the next patch releases.
 
-Be aware that a single command, such as `qstat`, can generate multiple
-GDI requests depending on its options. For instance,  
-`qstat -f` may query up to **15 different objects** (jobs, queues,
-execution hosts, etc.) in one call.
+xxQS_NAMExx now supports **TLS encryption** for all internal component communication. This feature is **experimental** and **disabled by default**.
 
-Therefore, limits should be chosen to permit normal user activity.  
-For example, a limit of **60,000 `get` requests** allows approximately:
+Highlights:
 
-- 5,000 `qstat -f` commands per second, or
-- 60,000 `qstat -j` commands per second.
-- 
-(Available in Gridware Cluster Scheduler)
-
-### TLS Encryption of Component Communication
-
-xxQS_NAMExx now supports **TLS encryption** for all communication between
-its components. TLS can be enabled during installation or later by
-modifying the **bootstrap file** and restarting all xxQS_NAMExx services.
-
-The required certificates are **generated and renewed automatically**.
-Certificate lifetime and renewal intervals are configurable in the
-bootstrap file.
-
-This feature is currently marked as **experimental** and is **disabled by
-default**.
+- Automatic certificate generation and renewal
+- Configurable certificate lifetime and renewal intervals
+- Enablement via installation workflow or bootstrap configuration
 
 For configuration and deployment details, refer to:
 
@@ -175,58 +107,115 @@ For configuration and deployment details, refer to:
 
 (Available in Gridware Cluster Scheduler)
 
-### Munge Authentication
+### Munge Authentication Support
 
-xxQS_NAMExx now supports **Munge authentication**.  
-[Munge](https://dun.github.io/munge/) is a lightweight authentication
-service that provides a secure and efficient mechanism for validating
-users and services within a cluster environment.
+Support for **Munge authentication** has been added, providing a lightweight and secure authentication mechanism suitable for HPC environments.
 
-Munge can be used to authenticate users across all xxQS_NAMExx components.
-Authentication can be enabled during installation or later by modifying
-the **bootstrap file** and restarting all xxQS_NAMExx services.
+Authentication can be enabled during installation or via bootstrap configuration changes.
+
+*(Available in Open Cluster Scheduler and Gridware Cluster Scheduler)*
 
 For configuration and setup details, refer to:
 
+- [Munge](https://dun.github.io/munge/
 - *Installation Guide*, chapters **“Planning the Installation”** and **“Installing Munge”**
 
 (Available in Open Cluster Scheduler and Gridware Cluster Scheduler.)
 
 ### Systemd Integration
 
-xxQS_NAMExx is now fully integrated with **systemd**, the system and
-service manager used by most modern Linux distributions.  
-This integration allows xxQS_NAMExx to be managed as a native systemd
-service, providing improved control over startup, shutdown, and daemon
-lifecycle management.
+xxQS_NAMExx is now fully integrated with **systemd**, the system and service manager used by most modern Linux distributions.  This integration allows xxQS_NAMExx to be managed as a native systemd service, providing improved control over startup, shutdown, and daemon lifecycle management.
 
-In addition, xxQS_NAMExx jobs can optionally be executed under systemd
-control. This enables fine-grained resource management, including **core
-binding**, **device isolation**, and **cgroup-based accounting**.  
-By default, jobs are run under systemd control (when available). This
-behavior can be changed by setting the `USE_SYSTEMD` parameter in
-`execd_params`.
+In addition, xxQS_NAMExx jobs can optionally be executed under systemd control. This enables fine-grained resource management, including **core binding**, **device isolation**, and **cgroup-based accounting**.  By default, jobs are run under systemd control (when available). This behavior can be changed by setting the `USE_SYSTEMD` parameter in `execd_params`.
 
-Job resource usage statistics can also be collected via systemd.  
-Because systemd usage reporting is less detailed than xxQS_NAMExx’s
-built-in data collector, it is possible to revert to the native collector
-or use a **hybrid collection mode** in which xxQS_NAMExx supplements data
-that systemd does not provide.  
-The mode of usage collection is configurable via the
-`USAGE_COLLECTION` parameter in `execd_params`.
+Job resource usage statistics can also be collected via systemd.  Because systemd usage reporting is less detailed than xxQS_NAMExx’s built-in data collector, it is possible to revert to the native collector or use a **hybrid collection mode** in which xxQS_NAMExx supplements data that systemd does not provide.  The mode of usage collection is configurable via the `USAGE_COLLECTION` parameter in `execd_params`.
 
-For configuration and operational details, refer to the  
-*Installation Guide*, *Administration Guide*, and relevant man pages.
+For configuration and operational details, refer to the *Installation Guide*, *Administration Guide*, and relevant man pages.
 
 (Available in Open Cluster Scheduler and Gridware Cluster Scheduler.)
 
-### qsub -sync r
+### Faulty Job Loadsensor
+
+This release of Gridware Cluster Scheduler comes with a load sensor for faulty job handling.
+
+All job spool files (such as the sge_shepherd trace file, error file, usage file, ...) of failed
+jobs are copied to a configurable location. Optionally, the job spool files are then removed
+from the execution host.
+
+To enable the faulty job handling
+
+* edit the load sensor and do your configuration settings
+* activate the load sensor
+* activate the `execd_params KEEP_ACTIVE=ERROR`
+
+  ```bash
+  $ vi $SGE_ROOT/util/resources/loadsensors/faulty_jobs.sh
+  ...
+  # Target directory
+  FAULTY_JOBS_DIR="$SGE_ROOT/$SGE_CELL/faulty_jobs"
+  # Permissions of the target directory
+  FAULTY_JOBS_PERM="700"
+  # Shall we delete failed jobs' active job directory? Set to "true" or "false".
+  FAULTY_JOBS_DELETE="true"
+  # Log file - default: /dev/null, set to a file name for debugging,
+  # e.g, /tmp/faulty_jobs.log
+  LOGFILE="/dev/null"
+  ...
+  ```
+
+  ```bash
+  $ qconf -mconf
+  ...
+  load_sensor $sge_root/util/resources/loadsensors/faulty_jobs.sh
+  ...
+  execd_params KEEP_ACTIVE=ERROR
+  ...
+  ```
+
+(Available in Gridware Cluster Scheduler only)
+
+### Decrease Resource Requests of Running Jobs
+
+This release adds the means to decrease the amount of resources used by running jobs.
+
+A typical example is freeing a license resource from a long-running job so that other jobs can consume it.
+
+The new `qalter -when now` switch introduced with this release allows decreasing resource requests; in the example of the license, allows freeing of the license once it is no longer necessary.
+
+See man page `qalter.1` for details.
+
+(Available in Gridware Cluster Scheduler only)
+
+### Wait for Certain Job States
 
 Additionally to the existing `qsub -sync y` option, new options have been introduced that allow to wait for certain job states.
 
 `qsub -sync r` will wait for the job to be in the running state. In case of array jobs the command will wait for the start of the first task of the job.
 
 (Available in Open Cluster Scheduler and Gridware Cluster Scheduler)
+
+### Departments, Users and Jobs — Department View *(Experimental)*
+
+> **Important:** This feature is experimental and not covered by standard support. It will be removed in v9.2.0 and replaced by a fully supported PIM/RBAC-based multi-tenancy framework.
+
+The **Department View** (`-sdv`), first introduced in Gridware Cluster Scheduler v9.0.2, has been further enhanced in this release.
+
+Cluster administrators can now configure whether users access the **Classic View**, where all hosts, queues, and jobs are visible to everyone, or the **Department View**, where users only see cluster objects associated with their assigned department(s). Even if administrators do not enforce Department View globally, users can enable it individually to simplify the interface and reduce the number of visible objects in large clusters.
+
+Key Features:
+
+- **User–Department Mapping**  
+  Each user is assigned to one or more departments. Users without an explicit assignment are automatically placed in the *default department*. Users belonging to multiple departments must specify the target department when submitting a job using `qsub -dept`, ensuring that each job is correctly charged and tracked.
+- **Department-based Access Control**  
+  Departments (or ACLs) can be assigned to cluster objects such as the global configuration, hosts, queues, projects, or resource quota sets. This restricts both access rights and visibility of those objects when Department View is enabled.  (See *user_lists* in `sge_conf(5)`, `sge_host_conf(5)`, `sge_queue_conf(5)`, `sge_pe(5)`, and `sge_resource_quota(5)`.)
+- **Command-line Activation**  
+  Users can activate Department View via command-line tools (`qhost`, `qstat`, `qselect`, …) using the `-sdv` switch.
+- **Administrative Enforcement**  
+  Managers can define default configurations (`sge_qstat`, `sge_select`, …) to enforce Department View for specific users, automatically hiding all cluster objects outside the assigned department(s).
+- **Manager Visibility**  
+  Cluster managers always retain full visibility of all objects, regardless of Department View settings.
+
+(Available in Gridware Cluster Scheduler.)
 
 [//]: # (Each file has to end with two empty lines)
 

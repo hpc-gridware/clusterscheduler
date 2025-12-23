@@ -2,7 +2,7 @@
 
 ## Binding
 
-With the introduction of the new advanced binding framework in version 9.1.0prealpha1, there are important 
+With the introduction of the new advanced binding framework in version 9.1.0, there are important 
 compatibility considerations to be aware of:
 
 - **Legacy Binding Syntax**: The previous `-binding` option has been deprecated and replaced with the new `-b...` 
