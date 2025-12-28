@@ -29,7 +29,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,14 +40,12 @@
 #include <csignal>
 #include <cstring>
 
+#include <termios.h>
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
 #elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
 #  include <sys/ioctl.h>
-#else
-#  include <termio.h>
 #endif
 
 #include "uti/sge_io.h"

@@ -29,7 +29,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -85,14 +85,10 @@
 #include "msg_qsh.h"
 #include "msg_common.h"
 
+#include <termios.h>
 #if defined(DARWIN)
-#  include <termios.h>
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
-#elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
-#else
-#  include <termio.h>
 #endif
 
 #include "sge_ijs_comm.h"

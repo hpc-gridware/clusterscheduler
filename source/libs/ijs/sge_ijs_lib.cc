@@ -9,20 +9,16 @@
  *
  *  Copyright (c) 2011 Univa Corporation.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <termios.h>
 #if defined(DARWIN)
 #  include <sys/ioctl.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>
-#  include <termio.h>
-#elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
-#else
-#  include <termio.h>
 #endif
 
 #include "uti/sge_rmon_macros.h"
