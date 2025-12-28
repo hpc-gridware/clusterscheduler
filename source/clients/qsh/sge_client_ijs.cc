@@ -40,14 +40,12 @@
 #include <csignal>
 #include <cstring>
 
+#include <termios.h>
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
 #elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
 #  include <sys/ioctl.h>
-#else
-#  include <termio.h>
 #endif
 
 #include "uti/sge_io.h"

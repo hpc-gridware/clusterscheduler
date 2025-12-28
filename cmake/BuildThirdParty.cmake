@@ -49,7 +49,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         ${berkeleydb_path})
             else ()
                 if(SGE_ARCH STREQUAL "lx-riscv64")
-                  set(CUSTOM_CFLAGS CFLAGS=-Wno-implicit-int)
+                  set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types")
                 endif()
                 list(APPEND 3rdparty_list 3rd_party_berkeleydb)
                 externalproject_add(

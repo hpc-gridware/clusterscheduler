@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,20 +38,14 @@
 #include <fcntl.h>
 #include <cstring>
 
+#include <termios.h>
 #if defined(DARWIN)
-#  include <termios.h>
 #  include <sys/ioctl.h>
 #  include <grp.h>
 #elif defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>
-#  include <termio.h>
 #elif defined(FREEBSD) || defined(NETBSD)
 #  include <libutil.h>
-#  include <termios.h>
-#else
-
-#  include <termio.h>
-
 #endif
 
 #include "uti/sge_rmon_macros.h"

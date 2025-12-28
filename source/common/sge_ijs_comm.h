@@ -35,6 +35,10 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#if defined(LINUX)
+#include <pty.h>
+#endif
+
 #include "uti/sge_dstring.h"
 
 #include "comm/cl_data_types.h"

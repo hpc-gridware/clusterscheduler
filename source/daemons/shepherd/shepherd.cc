@@ -29,7 +29,7 @@
  *
  * Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -79,14 +79,10 @@
 #include "sgeobj/sge_report.h"
 #include "sgeobj/sge_feature.h"
 
+#include <termios.h>
 #if defined(DARWIN)
-#  include <termios.h>
 #  include <sys/ttycom.h>
-#  include <sys/ioctl.h>    
-#elif defined(FREEBSD) || defined(NETBSD)
-#  include <termios.h>
-#else
-#  include <termio.h>
+#  include <sys/ioctl.h>
 #endif
 
 #include "sge_ijs_threads.h"
