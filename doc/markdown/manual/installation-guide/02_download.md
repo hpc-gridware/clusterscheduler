@@ -48,7 +48,7 @@ Once you have downloaded all packages, you can test and install them at the desi
     % su
     # cd <install-dir>
     # tar xfz gcs-*.tar.gz
-    # SGE_ROOT=<install-dir>
+    # export SGE_ROOT=<install-dir>
     # util/setfileperm.sh $SGE_ROOT
     ```
    
