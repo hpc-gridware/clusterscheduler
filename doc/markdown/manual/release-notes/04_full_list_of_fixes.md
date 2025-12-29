@@ -850,5 +850,7 @@
 
 [CS-1729](https://hpc-gridware.atlassian.net/browse/CS-1729) it is possible to set a pe's allocation\_rule to an arbitrary string
 
+[CS-1733](https://hpc-gridware.atlassian.net/browse/CS-1733) missing export statement in install guide
+
 [//]: # (Each file has to end with two empty lines)
 
