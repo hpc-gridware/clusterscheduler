@@ -30,7 +30,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -96,7 +96,7 @@ typedef struct recv_message_s {
 } recv_message_t;
 
 
-int comm_init_lib(dstring *err_msg);
+int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func = nullptr);
 int comm_cleanup_lib(dstring *err_msg);
 
 int comm_open_connection(bool                 b_server, 

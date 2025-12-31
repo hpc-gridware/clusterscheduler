@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -4914,6 +4914,8 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
    if (un_resolved_hostname != nullptr || component_name != nullptr || component_id != 0) {
       CL_LOG(CL_LOG_DEBUG, "message filtering not supported");
    }
+
+   bool done_on_app_condition_triggered = false;
    do {
       leave_reason = CL_RETVAL_OK;
       /* return if there are no connections in list */
@@ -5054,9 +5056,20 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
             prevent this we do the core part of the trigger and wait
             for the timeout or till a new message was received */
          if (cl_com_create_threads == CL_RW_THREAD) {
-            cl_thread_wait_for_thread_condition(handle->app_condition,
+            if (cl_thread_wait_for_thread_condition(handle->app_condition,
                                                 handle->select_sec_timeout,
-                                                handle->select_usec_timeout);
+                                                handle->select_usec_timeout) == CL_RETVAL_OK) {
+               // The app_condition is triggered by commlib itself when new messages are received,
+               // but also by application code, e.g., to wake up a thread from receiving messages.
+               // If the app_condition was triggered, but no new messages were received,
+               // we leave the while loop waiting for messages.
+               pthread_mutex_lock(handle->messages_ready_mutex);
+               if (handle->messages_ready_for_read == 0) {
+                  CL_LOG(CL_LOG_INFO, "app_condition has been triggered and no new messages, leaving while loop (1)");
+                  done_on_app_condition_triggered = true;
+               }
+               pthread_mutex_unlock(handle->messages_ready_mutex);
+            }
          }
       } else {
          pthread_mutex_unlock(handle->messages_ready_mutex);
@@ -5086,8 +5099,22 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                return_value = cl_thread_wait_for_thread_condition(handle->app_condition,
                                                                   handle->select_sec_timeout,
                                                                   handle->select_usec_timeout);
+
                if (return_value == CL_RETVAL_CONDITION_WAIT_TIMEOUT) {
                   CL_LOG(CL_LOG_INFO, "APPLICATION GOT CONDITION WAIT TIMEOUT");
+               }
+
+               if (return_value == CL_RETVAL_OK) {
+                  // The app_condition is triggered by commlib itself when new messages are received,
+                  // but also by application code, e.g., to wake up a thread from receiving messages.
+                  // If the app_condition was triggered, but no new messages were received,
+                  // we leave the while loop waiting for messages.
+                  pthread_mutex_lock(handle->messages_ready_mutex);
+                  if (handle->messages_ready_for_read == 0) {
+                     CL_LOG(CL_LOG_INFO, "app_condition has been triggered and no new messages, leaving while loop (2)");
+                     done_on_app_condition_triggered = true;
+                  }
+                  pthread_mutex_unlock(handle->messages_ready_mutex);
                }
                break;
          }
@@ -5104,8 +5131,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
             return CL_RETVAL_SYNC_RECEIVE_TIMEOUT;
          }
       }
-   } while (synchron && !cl_com_get_ignore_timeouts_flag());
-
+   } while (synchron && !cl_com_get_ignore_timeouts_flag() && !done_on_app_condition_triggered);
    /*
     * when leave_reason is CL_RETVAL_CONNECTION_NOT_FOUND the connection list
     * is empty return this as indication for an error otherwise return
@@ -5115,10 +5141,9 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
    if (leave_reason == CL_RETVAL_OK) {
       return CL_RETVAL_NO_MESSAGE;
    }
+
    return leave_reason;
 }
-
-
 
 /*
  *   o search for endpoint with matching hostname, component name or component id
@@ -7746,6 +7771,8 @@ static void cl_commlib_app_message_queue_cleanup(cl_com_handle_t *handle) {
 *
 *  NOTES
 *     MT-NOTE: cl_com_messages_in_send_queue() is MT safe
+*     @todo It only returns the number of messages in the *first* connection.
+*           What if we have multiple connections?
 *
 *  SEE ALSO
 *     cl_commlib/cl_commlib_send_message

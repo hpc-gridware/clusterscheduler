@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -328,7 +328,7 @@ typedef struct cl_com_handle {
    cl_max_count_t max_con_close_mode;  /*  state of auto close at max connection count */
    cl_xml_connection_autoclose_t auto_close_mode; /* used to enable/disable autoclose of connections opend from this handle to services */
    int max_write_threads;    /* maximum number of send threads */
-   int max_read_threads;     /* maximum number of receive threas */
+   int max_read_threads;     /* maximum number of receive threads */
    int select_sec_timeout;
    int select_usec_timeout;
    int connection_timeout;   /* timeout to shutdown connected clients when no messages arive */

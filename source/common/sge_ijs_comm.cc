@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -65,7 +65,6 @@
 #include "sge_ijs_comm.h"
 
 extern sig_atomic_t received_signal;
-
 /*
  * TODO: Cleanup / Headers
  * This is just slightly modified copy of the gdi commlib error handling,
@@ -309,6 +308,7 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
 *
 *  INPUTS
 *     dstring *err_msg - Gets the error reason in case of error.
+*     cl_log_func_t    - a commlib logging function which will print CL_LOG messages
 *
 *  RESULT
 *     int - COMM_RETVAL_OK: 
@@ -324,19 +324,20 @@ int my_log_list_flush_list(cl_raw_list_t* list_p) {
 *  SEE ALSO
 *    communication/comm_cleanup_lib()
 *******************************************************************************/
-int comm_init_lib(dstring *err_msg)
+int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func)
 {
    int ret, ret_val = COMM_RETVAL_OK;
 
    DENTER(TOP_LAYER);
 
-   /*
-    * To enable commlib logging to a file (see my_log_list_flush_list()
-    * for the file path), exchange this line with the one below.
-    * Caution: On some architectures, logging causes problems! 
-    */
-   /*ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_DEBUG, my_log_list_flush_list);*/
-   ret = cl_com_setup_commlib(CL_RW_THREAD, CL_LOG_OFF, nullptr);
+   // When we pass a logging function to see commlib logging
+   // (in sge_shepherd, when compiled with EXTENSIVE_TRACING)
+   // we want to see INFO logging.
+   cl_log_type debug_level = CL_LOG_OFF;
+   if (commlib_log_func != nullptr) {
+      debug_level = CL_LOG_INFO;
+   }
+   ret = cl_com_setup_commlib(CL_RW_THREAD, debug_level, commlib_log_func);
    if (ret != CL_RETVAL_OK) {
       sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
       DPRINTF("cl_com_setup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
@@ -768,9 +769,9 @@ int comm_ignore_timeouts(bool b_ignore, dstring *err_msg)
    
    cl_com_ignore_timeouts(b_ignore);
    if (ret != CL_RETVAL_OK) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         DPRINTF("cl_com_ignore_timeouts() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
-         ret_val = COMM_CANT_SET_IGNORE_TIMEOUTS;
+      sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
+      DPRINTF("cl_com_ignore_timeouts() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
+      ret_val = COMM_CANT_SET_IGNORE_TIMEOUTS;
    }
    DRETURN(ret_val);
 }
@@ -1223,40 +1224,44 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
 *******************************************************************************/
 int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
 {
-   unsigned long elems = 0;
-   int           ret = 0, retries = 0;
+   int retries = 0;
 
-   elems = cl_com_messages_in_send_queue(handle);
+   unsigned long elems = cl_com_messages_in_send_queue(handle);
    while (elems > 0) {
       /*
        * Don't set the cl_commlib_trigger()-call to be blocking and
        * get rid of the usleep() - it's much slower!
        * The last cl_commlib_trigger()-call will take 1 s.
        */
-      ret = cl_commlib_trigger(handle, 0);
+      int trigger_ret = cl_commlib_trigger(handle, 0);
       /* 
        * Bail out if trigger fails with an error that indicates that we
        * won't be able to send the messages in the near future.
        */
-      if (ret != CL_RETVAL_OK && 
-          ret != CL_RETVAL_SELECT_TIMEOUT &&
-          ret != CL_RETVAL_SELECT_INTERRUPT) {
-         sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
-         retries = ret;  
-         break;   
+      if (trigger_ret != CL_RETVAL_OK &&
+          trigger_ret != CL_RETVAL_SELECT_TIMEOUT &&
+          trigger_ret != CL_RETVAL_SELECT_INTERRUPT &&
+          trigger_ret != CL_RETVAL_THREADS_ENABLED) {
+         sge_dstring_sprintf(err_msg, cl_get_error_text(trigger_ret));
+         sge_dstring_sprintf_append(err_msg, " - after %d retries", retries);
+         return trigger_ret;
       }
+
       elems = cl_com_messages_in_send_queue(handle);
       /* 
        * We just tried to send the messages and it wasn't possible to send
        * all messages - give the network some time to recover.
+       * @todo CS-1739 cl_commlib_trigger() does *not* wait until all messages are sent!
+       * @todo Shall we have a maximum number of retries? A timeout?
+       *       But if the qrsh client is suspended, we probably need to wait until it is unsuspended again.
        */
       /* TODO (NEW): make this work correctly by calling check_client_alive */
       if (elems > 0) {
          usleep(10000);
-         retries--;
+         retries++;
       }
    }
-   return retries;
+   return -retries;
 }
 
 /****** sge_ijs_comm/comm_recv_message() **************************************
@@ -1323,7 +1328,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
                                     nullptr,       /* unresolved_hostname, */
                                     nullptr,       /* component_name, */
                                     0,          /* component_id, */
-                                    false,
+                                    b_synchron,
                                     0,
                                     &message,
                                     &sender);
@@ -1356,7 +1361,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
       }
    }
 
-   if(sender != nullptr) {
+   if (sender != nullptr) {
       cl_com_free_endpoint(&sender);
    }
    
@@ -1407,6 +1412,10 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
          }
       }
    } else {
+      // @todo CS-1739 do we need the cl_commlib_trigger, when we are using multi-threaded commlib?
+      // if b_synchron is 0, then it does essentially nothing
+      // otherwise it waits, until a message is available - the same which is done by cl_commlib_receive_message()
+      // itself
       cl_commlib_trigger(handle, b_synchron);
    }
    DRETURN(ret_val);

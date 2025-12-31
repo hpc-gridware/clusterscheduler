@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -4447,6 +4447,13 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
             sge_free_saved_vars(context);
          }
 
+         // @todo Why are we setting gdi timeout here?
+         //       It is set explicitly from GDI by calling cl_com_set_synchron_receive_timeout()
+         //       when it is re-set here to defaults, this overwrites explicit settings
+         //       e.g., in sge_shepherd_ijs.cc setting the synchron_receive_timeout to 1.
+         //       Testsuite test issue_2372 is testing "gdi_timeout", it works fine with the following
+         //       code disabled.
+#if 0
          {
             char *gdi_timeout = nullptr;
             cl_com_get_parameter_list_value("gdi_timeout", &gdi_timeout);
@@ -4456,6 +4463,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                sge_free(&gdi_timeout);
             }
          }
+#endif
 
          cl_com_free_crm_message(&crm_message);
          CL_LOG_INT(CL_LOG_INFO, "our local comp_id is:", (int) connection->local->comp_id);
