@@ -96,7 +96,7 @@ typedef struct recv_message_s {
 } recv_message_t;
 
 
-int comm_init_lib(dstring *err_msg);
+int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func = nullptr);
 int comm_cleanup_lib(dstring *err_msg);
 
 int comm_open_connection(bool                 b_server,

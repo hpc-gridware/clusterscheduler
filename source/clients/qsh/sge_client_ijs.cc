@@ -292,7 +292,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
        */
       received_window_change_signal = 0;
       if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0) {
-         DPRINTF("sendig WINDOW_SIZE_CTRL_MSG with new window size: %d, %d, %d, %d to shepherd\n",
+         DPRINTF("sending WINDOW_SIZE_CTRL_MSG with new window size: %d, %d, %d, %d to shepherd\n",
                  ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
 
          snprintf(buf, sizeof(buf), "WS %d %d %d %d", ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
