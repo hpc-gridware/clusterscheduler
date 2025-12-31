@@ -39,12 +39,12 @@ This release refines **automated FlexNet license management** for Gridware Clust
 
 - **Automated License Discovery and Configuration**
   The new `license-manager` command-line tool automatically queries FlexNet license servers and synchronizes license availability with GCS. It discovers available licenses, creates corresponding GCS complexes with the `lm_` prefix, (configurable) and maintains accurate license counts without manual configuration.
-- **Real-Time License Monitoring**
-  Operating as a GCS load sensor, the license-manager reports current license availability in real-time, allowing the scheduler to make informed job placement decisions based on actual license capacity. This prevents job failures due to license exhaustion and optimizes license utilization across the cluster.
+- **License Monitoring**
+  Operating as a GCS load sensor, the license-manager reports current license availability, allowing the scheduler to make informed job placement decisions based on actual license capacity. This prevents job failures due to license exhaustion and optimizes license utilization across the cluster.
 - **External License Tracking**
-  The tool provides integration for tracking licenses consumed by non-GCS processes, ensuring accurate accounting of total license availability and preventing over-subscription when external applications share the same license pool.
+  The tool provides integration for configuring licenses consumed by non-GCS processes, ensuring accurate accounting of total license availability and preventing over-subscription when external applications share the same license pool.
 
-By eliminating manual license complex configuration and aligning scheduling decisions with real-time license capacity, this enhancement reduces scheduling failures, improves cluster throughput, and maximizes return on investment for costly commercial software licenses in HPC environments.
+By eliminating manual license complex configuration and aligning scheduling decisions with real-time license capacity, this enhancement reduces configuration overhead and scheduling failures, improves cluster throughput, and maximizes return on investment for costly commercial software licenses in HPC environments. The discovered and tracked licenses are available in `qtelemetry` metrics for monitoring and observability.
 
 (Available in Gridware Cluster Scheduler only)
 
@@ -109,7 +109,10 @@ For configuration and deployment details, refer to:
 
 ### Munge Authentication Support
 
-Support for **Munge authentication** has been added, providing a lightweight and secure authentication mechanism suitable for HPC environments.
+Support for **Munge authentication** has been added, providing a lightweight and
+secure authentication mechanism suitable for HPC environments. Switching to
+munge authentication is highly recommended when using containers inside the
+cluster or enabling user namespace.
 
 Authentication can be enabled during installation or via bootstrap configuration changes.
 
