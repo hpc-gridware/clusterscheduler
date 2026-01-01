@@ -1307,7 +1307,7 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
           trigger_ret != CL_RETVAL_SELECT_TIMEOUT &&
           trigger_ret != CL_RETVAL_SELECT_INTERRUPT &&
           trigger_ret != CL_RETVAL_THREADS_ENABLED) {
-         sge_dstring_sprintf(err_msg, "comm_flush_write_messages(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret));
+         sge_dstring_sprintf(err_msg, "comm_flush_write_messages(): cl_commlib_trigger() failed: %s", cl_get_error_text(trigger_ret));
          sge_dstring_sprintf_append(err_msg, " - after %d retries", retries);
          return trigger_ret;
       }
