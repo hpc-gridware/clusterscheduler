@@ -126,6 +126,41 @@ extern int           received_signal; /* defined in shepherd.c */
 *  SEE ALSO
 *******************************************************************************/
 #ifdef EXTENSIVE_TRACING
+// This function will output commlib logging to the shepherd trace file
+// when EXTENSIVE_TRACING is enabled.
+static int
+shepherd_log_list_flush_list(cl_raw_list_t* list_p) {
+
+   if (list_p == nullptr) {
+      return CL_RETVAL_LOG_NO_LOGLIST;
+   }
+
+   int ret_val;
+   if ((ret_val = cl_raw_list_lock(list_p)) != CL_RETVAL_OK) {
+      return ret_val;
+   }
+
+   // Log all entries of the log list via shepherd_trace().
+   cl_log_list_elem_t *elem = nullptr;
+   while ((elem = cl_log_list_get_first_elem(list_p)) != nullptr) {
+      if (elem->log_parameter == nullptr) {
+         shepherd_trace("COMMLIB|%s|%s|%s",
+                        cl_thread_convert_state_id(elem->log_thread_state),
+                        cl_log_list_convert_type_id(elem->log_type),
+                        elem->log_message);
+      } else {
+         shepherd_trace("COMMLIB|%s|%s|%s %s",
+                        cl_thread_convert_state_id(elem->log_thread_state),
+                        cl_log_list_convert_type_id(elem->log_type),
+                        elem->log_message, elem->log_parameter);
+      }
+
+      cl_log_list_del_log(list_p);
+   }
+
+   return cl_raw_list_unlock(list_p);
+}
+
 static int trace_buf(const char *buffer, int length, const char *format, ...)
 {
    int         ret;
@@ -467,7 +502,17 @@ static void* pty_to_commlib(void *t_conf)
             shepherd_trace("pty_to_commlib: send_buf() failed -> exiting");
             do_exit = 1;
          }
-         comm_flush_write_messages(g_comm_handle, &err_msg);
+         int flush_ret = comm_flush_write_messages(g_comm_handle, &err_msg);
+         if (flush_ret > 0) {
+            // comm_flush_write_messages reported an error - log to trace file
+            shepherd_trace("pty_to_commlib: comm_flush_write_messages() returned error %d: %s",
+                           flush_ret, sge_dstring_get_string(&err_msg));
+
+         } else if (flush_ret < 0) {
+#ifdef EXTENSIVE_TRACING
+            shepherd_trace("pty_to_commlib: comm_flush_write_messages() did %d retries", -flush_ret);
+#endif
+         }
       }
    }
 
@@ -537,21 +582,32 @@ static void* commlib_to_pty(void *t_conf)
       shepherd_trace("commlib_to_pty: no valid handle for stdin available. Exiting!");
    }
 
+   // Set timeout for synchronous receiving of messages.
    cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
 
    while (do_exit == 0) {
-      /* wait blocking for a message from commlib */
+      // We wait synchronously (blocking) for a message from commlib, timeout is 1s.
       recv_mess.cl_message = nullptr;
       recv_mess.data       = nullptr;
       sge_dstring_free(&err_msg);
       sge_dstring_sprintf(&err_msg, "");
 
+#ifdef EXTENSIVE_TRACING
+      shepherd_trace("commlib_to_pty: calling comm_recv_message() synchronously, timeout %d",
+                     g_comm_handle->synchron_receive_timeout);
+#endif
+
       ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
 
-      /* 
-       * Check if the thread was cancelled. Exit thread if it was.
-       * It shouldn't be neccessary to do the check here, as the cancel state 
-       * of the thread is 1, i.e. the thread may be cancelled at any time,
+#ifdef EXTENSIVE_TRACING
+      shepherd_trace("commlib_to_pty: comm_recv_message() returned %d, err_msg: %s",
+                     ret, sge_dstring_get_string(&err_msg));
+#endif
+
+      /*
+       * Check if the thread was canceled. Exit the thread if it was.
+       * It shouldn't be necessary to do the check here, as the cancel state
+       * of the thread is 1, i.e., the thread may be canceled at any time,
        * but this doesn't work on some architectures (Darwin, older Solaris).
        */
       thread_testcancel(t_conf);
@@ -559,10 +615,6 @@ static void* commlib_to_pty(void *t_conf)
          do_exit = 1;
          continue;
       }
-#ifdef EXTENSIVE_TRACING
-      shepherd_trace("commlib_to_pty: comm_recv_message() returned %d, err_msg: %s",
-                     ret, sge_dstring_get_string(&err_msg));
-#endif
 
       if (ret != COMM_RETVAL_OK) {
          /* handle error cases */
@@ -788,7 +840,12 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
     */
    sge_dstring_sprintf(err_msg, "");
 
+
+#ifdef EXTENSIVE_TRACING
+   ret = comm_init_lib(err_msg, shepherd_log_list_flush_list);
+#else
    ret = comm_init_lib(err_msg);
+#endif
    if (ret != COMM_RETVAL_OK) {
       shepherd_trace("parent: init comm lib failed: %d", ret);
       return 1;
@@ -935,8 +992,13 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    /*
     * This will wake up all threads waiting for a message 
     */
+#ifdef EXTENSIVE_TRACING
+   shepherd_trace("parent: calling cl_thread_trigger_thread_condition()");
+#endif
    cl_thread_trigger_thread_condition(g_comm_handle->app_condition, 1);
-
+#ifdef EXTENSIVE_TRACING
+   shepherd_trace("parent: after cl_thread_trigger_thread_condition()");
+#endif
 
    close(g_p_ijs_fds->pty_master);
 
@@ -951,7 +1013,6 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    cl_thread_join(thread_commlib_to_pty);
    cl_thread_cleanup(thread_pty_to_commlib);
    cl_thread_cleanup(thread_commlib_to_pty);
-
 
 #if 0
 {
@@ -1046,7 +1107,7 @@ int close_parent_loop(int exit_status)
 
    sge_free(&g_hostname);
    sge_dstring_free(&err_msg);
-   shepherd_trace("parent: leaving closinge_parent_loop()");
+   shepherd_trace("parent: leaving close_parent_loop()");
    return 0;
 }
 

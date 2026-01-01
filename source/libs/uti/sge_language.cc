@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -754,7 +754,7 @@ const char *sge_gettext__(const char *x) {
       z = sge_language_functions.gettext_func(x);
    } else {
       z = x;
-      DPRINTF_("sge_gettext() called without valid gettext function pointer!\n");
+      //DPRINTF_("sge_gettext() called without valid gettext function pointer!\n");
    }
 
    /*z = gettext(x);*/

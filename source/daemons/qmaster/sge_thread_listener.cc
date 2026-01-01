@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -113,7 +113,8 @@ sge_listener_terminate() {
 #if 0
          // signal (broadcast) the commlib handle app_condition variable
          // this will make it leave waiting for new messages in sge_qmaster_process_message->sge_gdi_get_any_request()
-         // @todo that's the theory, but it doesn't work
+         // @todo CS-982 that's the theory, but it doesn't work
+         //       => should work now with the fix of CS-1735
          // as it is now shutting down the listener threads takes some time (> 1 second)
          cl_thread_trigger_thread_condition(handle->app_condition, 1);
 #endif
