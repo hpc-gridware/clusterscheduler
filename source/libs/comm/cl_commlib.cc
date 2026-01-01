@@ -5059,6 +5059,9 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
             if (cl_thread_wait_for_thread_condition(handle->app_condition,
                                                 handle->select_sec_timeout,
                                                 handle->select_usec_timeout) == CL_RETVAL_OK) {
+               // The following code would speed up shutdown of qrsh and also of listener threads,
+               // but breaks drmaa code - needs further analysis.
+#if 0
                // The app_condition is triggered by commlib itself when new messages are received,
                // but also by application code, e.g., to wake up a thread from receiving messages.
                // If the app_condition was triggered, but no new messages were received,
@@ -5066,9 +5069,10 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                pthread_mutex_lock(handle->messages_ready_mutex);
                if (handle->messages_ready_for_read == 0) {
                   CL_LOG(CL_LOG_INFO, "app_condition has been triggered and no new messages, leaving while loop (1)");
-                  done_on_app_condition_triggered = true;
+                  //done_on_app_condition_triggered = true;
                }
                pthread_mutex_unlock(handle->messages_ready_mutex);
+#endif
             }
          }
       } else {
@@ -5103,7 +5107,9 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                if (return_value == CL_RETVAL_CONDITION_WAIT_TIMEOUT) {
                   CL_LOG(CL_LOG_INFO, "APPLICATION GOT CONDITION WAIT TIMEOUT");
                }
-
+               // The following code would speed up shutdown of qrsh and also of listener threads,
+               // but breaks drmaa code - needs further analysis.
+#if 0
                if (return_value == CL_RETVAL_OK) {
                   // The app_condition is triggered by commlib itself when new messages are received,
                   // but also by application code, e.g., to wake up a thread from receiving messages.
@@ -5116,6 +5122,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                   }
                   pthread_mutex_unlock(handle->messages_ready_mutex);
                }
+#endif
                break;
          }
          /* at this point the handle->connection_list must be unlocked */
