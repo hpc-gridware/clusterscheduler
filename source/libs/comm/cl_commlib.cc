@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -5059,7 +5059,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
             if (cl_thread_wait_for_thread_condition(handle->app_condition,
                                                 handle->select_sec_timeout,
                                                 handle->select_usec_timeout) == CL_RETVAL_OK) {
-               // The following code would speed up shutdown of qrsh and also of listener threads,
+               // @todo CS-1740 The following code would speed up shutdown of qrsh and also of listener threads,
                // but breaks drmaa code - needs further analysis.
 #if 0
                // The app_condition is triggered by commlib itself when new messages are received,
@@ -5107,7 +5107,7 @@ int cl_commlib_receive_message(cl_com_handle_t *handle,
                if (return_value == CL_RETVAL_CONDITION_WAIT_TIMEOUT) {
                   CL_LOG(CL_LOG_INFO, "APPLICATION GOT CONDITION WAIT TIMEOUT");
                }
-               // The following code would speed up shutdown of qrsh and also of listener threads,
+               // @todo CS-1740 The following code would speed up shutdown of qrsh and also of listener threads,
                // but breaks drmaa code - needs further analysis.
 #if 0
                if (return_value == CL_RETVAL_OK) {
