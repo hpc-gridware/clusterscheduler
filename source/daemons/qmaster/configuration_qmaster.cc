@@ -351,7 +351,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    }
 
    /*
-   ** is the configuration change relevant for the qmaster itsself?
+   ** is the configuration change relevant for the qmaster itself?
    ** if so, initialise conf struct anew
    */
    if (strcmp(unique_name, SGE_GLOBAL_NAME) == 0 || sge_hostcmp(unique_name, qualified_hostname) == 0) {
@@ -381,11 +381,10 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       /* 'max_unheard' may have changed */
       cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1), HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
 
-      /* updating the commlib parameterlist and gdi_timeout with new or changed parameters */
+      /* updating the commlib parameter list and gdi_timeout with new or changed parameters */
       qmaster_params = mconf_get_qmaster_params();
       cl_com_update_parameter_list(qmaster_params);
       sge_free(&qmaster_params);
-
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();

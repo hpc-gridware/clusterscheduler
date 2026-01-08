@@ -71,6 +71,8 @@
 /*
  * Compile with EXTENSIVE_TRACING defined to get lots of trace messages from
  * the two worker threads.
+ * @note Some tests will fail when compiled with extensive tracing, e.g.,
+ * the qrsh_terminate and qrsh_suspend check_functions of the qrsh test.
  */
 #undef EXTENSIVE_TRACING
 #if 0
@@ -985,6 +987,9 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    shepherd_trace("parent: shutting down commlib_to_pty thread");
    cl_thread_shutdown(thread_commlib_to_pty);
 
+   // Workaround for CS-982 - the trigger_thread_condition below does *not* wake up commlib_to_pty thread.
+   cl_com_ignore_timeouts(true);
+
    /*
     * This will wake up all threads waiting for a message
     */
@@ -996,6 +1001,12 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    shepherd_trace("parent: after cl_thread_trigger_thread_condition()");
 #endif
 
+   close(g_p_ijs_fds->pty_master);
+
+   close(g_p_ijs_fds->pipe_in);
+   close(g_p_ijs_fds->pipe_out);
+   close(g_p_ijs_fds->pipe_err);
+
    /*
     * Wait until threads have shut down and call cleanup functions
     */
@@ -1004,11 +1015,9 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    cl_thread_cleanup(thread_pty_to_commlib);
    cl_thread_cleanup(thread_commlib_to_pty);
 
-   close(g_p_ijs_fds->pty_master);
+   // Rollback workaround for CS-982
+   cl_com_ignore_timeouts(false);
 
-   close(g_p_ijs_fds->pipe_in);
-   close(g_p_ijs_fds->pipe_out);
-   close(g_p_ijs_fds->pipe_err);
 
 #if 0
 {

@@ -1482,7 +1482,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
       // if b_synchron is 0, then it does essentially nothing
       // otherwise it waits, until a message is available - the same which is done by cl_commlib_receive_message()
       // itself
-      cl_commlib_trigger(handle, b_synchron);
+      cl_commlib_trigger(handle, 0);
    }
    DRETURN(ret_val);
 }

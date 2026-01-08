@@ -4546,8 +4546,9 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
             CL_LOG_INT(CL_LOG_INFO, "requested local component id from server is", (int) connection->local->comp_id);
          }
 
-         /* here we are fetching the parameter from crm_message, parse it into tokens an
-            set the parameter list values */
+         // here we fetch the parameter from crm_message,
+         // parse it into tokens and
+         // set the parameter list values
          if (crm_message->params != nullptr && *crm_message->params != '\0') {
             char *token = nullptr;
             struct saved_vars_s *context = nullptr;
