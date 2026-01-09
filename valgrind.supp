@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024-2026 HPC-Gridware GmbH
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -335,4 +335,23 @@
    fun:__txn_checkpoint
    fun:__txn_checkpoint_pp
    ...
+}
+
+{
+   @todo CS-1743 Double free of thread static data - false positive?
+   Memcheck:Free
+   fun:_ZdlPvm
+   fun:_ZNSt15__new_allocatorIcE10deallocateEPcm
+   fun:deallocate
+   fun:deallocate
+   fun:_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_destroyEm
+   fun:_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_disposeEv
+   fun:_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev
+   fun:_ZN20sge_component_user_tD1Ev
+   fun:_ZN15component_ts0_tD1Ev
+   fun:__run_exit_handlers
+   fun:exit
+   fun:_Z8sge_exiti
+   fun:_Z12sge_shutdowni
+   fun:main
 }
