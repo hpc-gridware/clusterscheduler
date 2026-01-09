@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -82,7 +82,9 @@ namespace ocs::spool::classic {
 
       bool ret = true;
 
-      *ar_list = lCreateList(list_name, AR_Type);
+      if (*ar_list == nullptr) {
+         *ar_list = lCreateList(list_name, AR_Type);
+      }
       if (*ar_list == nullptr) {
          ret = false;
       }
