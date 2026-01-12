@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -62,7 +62,6 @@ int log_state_get_log_verbose();
 void
 sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 
-/* extern stringTlong SGE_EVENT; */
 #define SGE_EVENT component_get_log_buffer()
 #define SGE_EVENT_SIZE component_get_log_buffer_size()
 
@@ -85,10 +84,11 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     void PROFILING(char *buffer, const char* formatstring, ...) 
 *
 *  FUNCTION
-*     Log a profiling message 
+*     Log a profiling message .
+*     When PROFILING is called, it will always be logged, independent on the log_level.
 *
 *  INPUTS
-*     buffer       - e.g SGE_EVENT
+*     buffer       - e.g., SGE_EVENT
 *     formatstring - printf formatstring
 *     ...
 ******************************************************************************/
@@ -99,7 +99,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
    sge_set_message_id_output(1); \
    snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
    sge_set_message_id_output(0); \
-   sge_log(LOG_PROF, SGE_EVENT, __FILE__, __LINE__); \
+   sge_log(LOG_PROF, log_buffer, __FILE__, __LINE__); \
 } void()
 #else
 #   define PROFILING(...) { \
@@ -133,7 +133,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
    sge_set_message_id_output(1); \
    snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
    sge_set_message_id_output(0); \
-   sge_log(LOG_CRIT, SGE_EVENT, __FILE__, __LINE__); \
+   sge_log(LOG_CRIT, log_buffer, __FILE__, __LINE__); \
 } void()
 #else
 #   define CRITICAL(...) { \
@@ -167,7 +167,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
    sge_set_message_id_output(1); \
    snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
    sge_set_message_id_output(0); \
-   sge_log(LOG_ERR, SGE_EVENT, __FILE__, __LINE__);          \
+   sge_log(LOG_ERR, log_buffer, __FILE__, __LINE__);          \
 } void()
 #else
 #   define ERROR(...) { \
@@ -201,7 +201,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
    sge_set_message_id_output(1); \
    snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
    sge_set_message_id_output(0); \
-   sge_log(LOG_WARNING, SGE_EVENT, __FILE__, __LINE__);     \
+   sge_log(LOG_WARNING, log_buffer, __FILE__, __LINE__);     \
 } void()
 #else
 #   define WARNING(...) { \
@@ -222,6 +222,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *
 *  FUNCTION
 *     Log a notice message
+*     @todo NOTICE is actually not used, consider removing it.
 *
 *  INPUTS
 *     buffer       - e.g SGE_EVENT
@@ -229,10 +230,12 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 #   define NOTICE(...) { \
-   char *log_buffer = component_get_log_buffer(); \
-   size_t log_buffer_size = component_get_log_buffer_size(); \
-   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
-   sge_log(LOG_NOTICE, log_buffer, __FILE__, __LINE__); \
+   if (LOG_NOTICE <= MAX(log_state_get_log_level(), LOG_WARNING)) { \
+      char *log_buffer = component_get_log_buffer(); \
+      size_t log_buffer_size = component_get_log_buffer_size(); \
+      snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+      sge_log(LOG_NOTICE, log_buffer, __FILE__, __LINE__); \
+   } \
 } void()
 
 /****** uti/log/INFO() ********************************************************
@@ -252,7 +255,7 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
 *     ...
 ******************************************************************************/
 /*
- * I18N/L10N was missing for INFO messages.
+ * @todo CS-1744 I18N/L10N was missing for INFO messages.
  * But enabling it leads to all clients printing "ok" as last output line
  * coming from MSG_GDI_OKNL being generated as ANSWER_QUALITY_END in sge_c_gdi()
  * might possibly need changes in some answer_list logging function?
@@ -264,10 +267,19 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
       sge_set_message_id_output(1); \
       snprintf(log_buffer, log_buffer_size, __VA_ARGS__); \
       sge_set_message_id_output(0); \
-      sge_log(LOG_INFO, SGE_EVENT, __FILE__, __LINE__);     \
+      sge_log(LOG_INFO, log_buffer, __FILE__, __LINE__);     \
    } \
 } void()
 #else
+#   define INFO(...) { \
+if (LOG_INFO <= MAX(log_state_get_log_level(), LOG_WARNING)) { \
+   char *log_buffer = component_get_log_buffer(); \
+   size_t log_buffer_size = component_get_log_buffer_size(); \
+   snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
+   sge_log(LOG_INFO, log_buffer, __FILE__, __LINE__); \
+} \
+} void()
+#endif
 */
 #   define INFO(...) { \
    char *log_buffer = component_get_log_buffer(); \
@@ -275,7 +287,6 @@ sge_log(u_long32 log_level, const char *msg, const char *file, int line);
    snprintf(log_buffer, log_buffer_size, __VA_ARGS__);      \
    sge_log(LOG_INFO, log_buffer, __FILE__, __LINE__); \
 } void()
-/* #endif */
 
 /****** uti/log/DEBUG() ******************************************************
 *  NAME
