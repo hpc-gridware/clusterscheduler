@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -67,6 +67,7 @@ gdi_data_get_last_commlib_error();
 void
 gdi_data_set_last_commlib_error(int last_commlib_error);
 
+#ifdef SECURE
 const char *
 gdi_data_get_ssl_private_key();
 
@@ -84,6 +85,7 @@ gdi_data_get_csp_path_obj();
 
 void
 gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj);
+#endif
 
 u_long32
 gdi_data_get_next_request_id();

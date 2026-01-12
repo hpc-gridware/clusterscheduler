@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -775,6 +775,7 @@ ocs::gdi::ClientBase::setup(int component_id, u_long32 thread_id, lList **answer
       DRETURN(AE_ERROR);
    }
 
+#ifdef SECURE
    gdi_data_set_csp_path_obj(sge_csp_path_class_create(gdi_data_get_error_handle()));
    if (!gdi_data_get_csp_path_obj()) {
       // EB: TODO: I18N + replace by an end user error message
@@ -782,6 +783,7 @@ ocs::gdi::ClientBase::setup(int component_id, u_long32 thread_id, lList **answer
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_CRITICAL);
       DRETURN(AE_ERROR);
    }
+#endif
 
    component_set_exit_func(gdi_default_exit_func);
 

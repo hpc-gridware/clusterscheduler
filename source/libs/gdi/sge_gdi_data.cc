@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -59,7 +59,9 @@ typedef struct {
    u_long64 timestamp_qmaster_file;
    char *ssl_private_key;
    char *ssl_certificate;
+#ifdef SECURE
    sge_csp_path_class_t *csp_path_obj;
+#endif
 } sge_gdi_ts_t;
 
 // once initializer
@@ -124,7 +126,11 @@ gdi_data_ts_init() {
 static void
 gdi_data_ts_destroy() {
    DENTER(TOP_LAYER);
+
+#ifdef SECURE
    sge_csp_path_class_destroy(&ts.csp_path_obj);
+#endif
+
    pthread_mutex_destroy(&ts.mutex);
 
    /* @todo CS-591 don't we have to free all the other attributes as well?
@@ -221,6 +227,7 @@ gdi_data_set_last_commlib_error(int last_commlib_error) {
    tl->last_commlib_error = last_commlib_error;
 }
 
+#ifdef SECURE
 const char *
 gdi_data_get_ssl_private_key() {
    return ts.ssl_private_key;
@@ -250,6 +257,7 @@ void
 gdi_data_set_csp_path_obj(sge_csp_path_class_t *csp_path_obj) {
    ts.csp_path_obj = csp_path_obj;
 }
+#endif
 
 // @todo still required?
 u_long32
