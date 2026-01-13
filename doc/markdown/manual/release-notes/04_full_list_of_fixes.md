@@ -852,5 +852,7 @@
 
 [CS-1733](https://hpc-gridware.atlassian.net/browse/CS-1733) missing export statement in install guide
 
+[CS-1735](https://hpc-gridware.atlassian.net/browse/CS-1735) qrsh doing massive output reports a commlib read error and truncates output
+
 [//]: # (Each file has to end with two empty lines)
 
