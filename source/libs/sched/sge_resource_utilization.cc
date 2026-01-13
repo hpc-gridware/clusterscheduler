@@ -1103,6 +1103,8 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             const char *eh_name = lGetHost(gdil_ep, JG_qhostname);
             bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
+            // CS-1745: what about the parallel environment utilization for AR jobs?
+
             if ((qep = lGetSubStrRW(a->ar, QU_full_name, qname, AR_reserved_queues)) != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       QU_consumable_config_list, QU_resource_utilization, qname, a->start,
@@ -1116,7 +1118,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             lListElem *host = lGetSubHostRW(a->ar, EH_name, eh_name, AR_reserved_hosts);
             if (host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
-                                      EH_consumable_config_list, EH_resource_utilization, SGE_GLOBAL_NAME, a->start,
+                                      EH_consumable_config_list, EH_resource_utilization, eh_name, a->start,
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task, do_per_host_booking);
             }
             is_master_task = false;
