@@ -1764,6 +1764,16 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 }
 
 #if defined(OCS_WITH_OPENSSL)
+bool cl_commlib_handle_ssl_client_context_refreshed(cl_com_handle_t *handle) {
+   bool ret = false;
+
+   if (handle->ssl_client_context != nullptr) {
+      ret = handle->ssl_client_context->is_cert_file_updated();
+   }
+
+   return ret;
+}
+
 int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
    int return_value = CL_RETVAL_OK;
 
@@ -1782,7 +1792,7 @@ int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
       } else {
          // if we have a new context, replace the old one by it
          if (handle->ssl_client_context != nullptr) {
-            delete handle->ssl_client_context;
+            ocs::uti::OpenSSL::OpenSSLContext::mark_context_for_deletion(handle->ssl_client_context);
          }
          handle->ssl_client_context = new_context;
       }

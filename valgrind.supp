@@ -355,3 +355,59 @@
    fun:_Z12sge_shutdowni
    fun:main
 }
+
+# @todo The following issue is reported from time to time - some 5 times for a full testsuite run
+#       Couldn't find a situation where a packet would not be freed once it is handled in a worker or reader thread.
+#       Are we freeing the queues and possibly not handled packages at sge_qmaster shutdown?
+#       Cannot activate this suppression rule as it would affect every packet received by a listener thread
+#       and would mask potential leaks we might introduce in further development.
+#{
+#   a packet received by a listener thread is not freed again
+#   Memcheck:Leak
+#   match-leak-kinds: definite
+#   fun:_Znwm
+#   fun:_ZL13do_gdi_packetPN3ocs3gdi16ClientServerBase12struct_msg_tEP12monitoring_t
+#   fun:_Z27sge_qmaster_process_messageP12monitoring_t
+#   fun:_Z17sge_listener_mainPv
+#   fun:start_thread
+#   fun:clone
+#}
+
+{
+   Leak_PossiblyLost: the commlib trigger thread not freed at sge_execd shutdown, false positive?
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create@@GLIBC_2.34
+   fun:_Z15cl_thread_setupP23cl_thread_settings_typeP16cl_raw_list_typePKciPFPvS5_EPFvS0_ES5_18cl_thread_type_def
+   fun:_Z28cl_thread_list_create_threadP16cl_raw_list_typePP23cl_thread_settings_typeS0_PKciPFPvS6_EPFvS2_ES6_18cl_thread_type_def
+   fun:_Z20cl_com_setup_commlib18cl_thread_mode_def11cl_log_typePFiP16cl_raw_list_typeE
+   fun:_ZN3ocs3gdi10ClientBase14prepare_enrollEPP6_lList
+   fun:main
+}
+
+{
+   We pass a block local stack variable as buffer into gethostbyname_r(), this must be something internal in gethostbyname_r().
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:__libc_alloc_buffer_allocate
+   fun:alloc_buffer_allocate
+   fun:__resolv_conf_allocate
+   fun:__resolv_conf_load
+   fun:__resolv_conf_get_current
+   fun:__res_vinit
+   fun:maybe_init
+   fun:context_get
+   fun:context_get
+   fun:__resolv_context_get
+   fun:gethostbyname_r@@GLIBC_2.2.5
+   fun:_Z17sge_gethostbynamePKcPi
+   fun:_ZL24component_ts0_init_hostsv
+   fun:_Z32component_get_qualified_hostnamev
+   fun:_Z28reresolve_qualified_hostnamev
+}

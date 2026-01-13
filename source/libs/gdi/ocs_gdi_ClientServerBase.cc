@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2025-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -612,12 +612,7 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
       DRETURN(CL_RETVAL_UNKNOWN); // @todo add new commlib error code
    }
 
-   // set up a ssl_config to pass cert and key path to commlib
-   // we must pass different certs to commlib:
-   // - if we are server: use our own cert and key
-   // - if we are client: use qmaster cert to verify qmaster
-   // - we might need both, e.g. for sge_execd
-   // - and what if the qmaster name changes? Then we need to update the client cert.
+   // update up a client ssl_config to pass cert path to commlib
    std::string client_cert_path;
    ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;

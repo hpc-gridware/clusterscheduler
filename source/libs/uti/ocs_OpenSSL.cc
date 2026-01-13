@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -897,6 +897,36 @@ namespace ocs::uti {
    }
 
    /**
+    * @brief was the client certificate for this context updated?
+    *
+    * Compares the timestamp of the client certificate used in this context (if it is a client context)
+    * against an earlier read timestamp - if it changed, then return true.
+    *
+    * @return true if the cert file was updated, else false
+    */
+   bool OpenSSL::OpenSSLContext::is_cert_file_updated() {
+      DENTER(TOP_LAYER);
+      bool ret = false;
+
+      // we check the public cert file only if we are client
+      if (!is_server) {
+         // check if the file timestamp of the certificate is newer than before
+         try {
+            auto certificate_time = std::filesystem::last_write_time(cert_path);
+            if (certificate_time > client_certificate_time) {
+               DPRINTF("certificate file %s has been updated");
+               client_certificate_time = certificate_time;
+               ret = true;
+            }
+         } catch (const std::filesystem::filesystem_error &e) {
+            DPRINTF("reading last_write_time of %s failed: %s", cert_path.c_str(), e.what());
+         }
+      }
+
+      DRETURN(ret);
+   }
+
+   /**
     * @brief Checks if certificate recreation is required by reading and analyzing the certificate file.
     *
     * This function performs a thorough check by:
@@ -916,6 +946,7 @@ namespace ocs::uti {
     * @note Sets the renewal_time member variable when a valid certificate is found.
     * @note Returns true (needs recreation) on any error reading or parsing the certificate.
     * @see certificate_recreate_required()
+    * @todo do this only if it is a server context?
     */
    bool OpenSSL::OpenSSLContext::certificate_recreate_required(dstring *error_dstr) {
       DENTER(TOP_LAYER);
@@ -1259,6 +1290,16 @@ namespace ocs::uti {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS, cert_path.c_str(),
                                 ERR_reason_error_string_func(ERR_get_error_func()));
             ret = false;
+         }
+      }
+
+      // When the certificate is OK, remember the time stamp of the file.
+      // We want to know when it gets updated, @see is_cert_file_updated().
+      if (ret) {
+         try {
+            client_certificate_time = std::filesystem::last_write_time(cert_path);
+         } catch (const std::filesystem::filesystem_error &e) {
+            DPRINTF("reading last_write_time of %s failed: %s", cert_path.c_str(), e.what());
          }
       }
 

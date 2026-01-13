@@ -966,7 +966,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
          gdi_data_set_timestamp_qmaster_file(0);
       }
 
-      if (gdi_data_get_master_host() == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= sge_gmt32_to_gmt64(30)) {
+      if (old_master_host == nullptr || now - gdi_data_get_timestamp_qmaster_file() >= sge_gmt32_to_gmt64(30)) {
          /* re-read act qmaster file (max. every 30 seconds) */
          DPRINTF("re-read actual qmaster file\n");
          gdi_data_set_timestamp_qmaster_file(now);
@@ -984,7 +984,10 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
          /*
          ** TODO: thread locking needed here ?
          */
-         gdi_set_master_host(master_name);
+         // only overwrite the master host name in gdi if it actually changed
+         if (old_master_host == nullptr || strcmp(old_master_host, master_name) != 0) {
+            gdi_set_master_host(master_name);
+         }
 
          // Update the client certificate if the qmaster host name changed.
          // Old_master_host is nullptr in the first call, here nothing is to be done.
@@ -992,16 +995,16 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
    #if defined(OCS_WITH_OPENSSL)
             // Need a new context
             //       - when the master host changed
-            //       - when the certificate was renewed - how to find that out? Certificate file timestamp?
-            //       for now simply always create a new context
+            //       - when the client certificate was renewed
             // Only update the SSL context if we already had one == when commlib was already initialized.
             cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
             if (handle != nullptr) {
-               if (old_master_host != nullptr /* && strcmp(old_master_host, master_name) != 0 */) {
+               bool master_host_changed = old_master_host != nullptr && strcmp(old_master_host, master_name) != 0;
+               bool certificate_updated = cl_commlib_handle_ssl_client_context_refreshed(handle);
+               if (master_host_changed || certificate_updated) {
                   lList *answer_list = nullptr;
                   int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
                   if (cl_ret != CL_RETVAL_OK) {
-                     //DPRINTF(SFNMAX, "gdi_setup_tls_config failed: %s\n", cl_get_error_text(cl_ret));
                      answer_list_output(&answer_list);
                      DRETURN(nullptr);
                   }

@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -86,6 +86,7 @@ cl_com_handle_t *cl_com_get_handle(const char *component_name,
                                    unsigned long component_id);  /* CR check */
 
 #if defined(OCS_WITH_OPENSSL)
+bool cl_commlib_handle_ssl_client_context_refreshed(cl_com_handle_t *handle);
 int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle);
 int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle);
 #endif

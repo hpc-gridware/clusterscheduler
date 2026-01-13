@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -175,6 +175,7 @@ namespace ocs::uti {
       class OpenSSLContext {
          static std::vector<OpenSSLContext *> contexts_to_delete;
          bool is_server;
+         std::filesystem::file_time_type client_certificate_time;
          u_long64 renewal_time;
          int connection_count;
          SSL_CTX *ssl_ctx;
@@ -209,6 +210,7 @@ namespace ocs::uti {
          const char *get_cert_file() { return cert_path.c_str(); }
          time_t get_renewal_time() { return renewal_time; }
          bool certificate_recreate_required();
+         bool is_cert_file_updated();
       };
 
       class OpenSSLConnection {
