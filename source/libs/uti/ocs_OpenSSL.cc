@@ -2081,7 +2081,7 @@ namespace ocs::uti {
                   if (wait_for_socket_ready(err, error_dstr)) {
                      if (sge_get_gmt64() >= timeout) {
                         sge_dstring_sprintf(error_dstr, MSG_OPENSSL_TIMEOUT_IN_CONNECT_II,
-                                            SGE_OPENSSL_RETRY_TIMEOUT_CLIENT, repetitions);
+                                            SGE_OPENSSL_RETRY_TIMEOUT_CLIENT / 1000000, repetitions);
                         DPRINTF("  --> %s\n", sge_dstring_get_string(error_dstr));
                         ret = false;
                      } else {
