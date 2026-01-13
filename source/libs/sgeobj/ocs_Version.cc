@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 1
 #define OCS_VERSION_PATCH 0
-#define OCS_VERSION_SUFFIX "prealpha"
+#define OCS_VERSION_SUFFIX "beta1"
 
 const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
-const uint32_t OCS_VERSION{0x10009001};
+const uint32_t OCS_VERSION{0x10009100};
 
 static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR{
    { 0x10000000, "5.0"},
