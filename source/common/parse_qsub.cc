@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -2371,37 +2371,31 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
 {
    DENTER(TOP_LAYER);
 
-   if (!lpp || !envp) {
+   if (lpp == nullptr || envp == nullptr) {
       DRETURN(1);
    }
 
-   if (!*lpp) {
+   if (*lpp == nullptr) {
       *lpp = lCreateList("env list", VA_Type);
-      if (!*lpp) {
+      if (*lpp == nullptr) {
          DRETURN(3);
       }
    }
 
    for (; *envp; envp++) {
-      char *env_name;
-      char *env_description;
-      char *env_entry;
-      lListElem *ep;
       struct saved_vars_s *context = nullptr;
 
-      ep = lCreateElem(VA_Type);
-      lAppendElem(*lpp, ep);
-
-      env_entry = sge_strdup(nullptr, *envp);
+      char *env_entry = sge_strdup(nullptr, *envp);
       SGE_ASSERT((env_entry));
 
-      env_name = sge_strtok_r(env_entry, "=", &context);
+      char *env_name = sge_strtok_r(env_entry, "=", &context);
       SGE_ASSERT((env_name));
-      lSetString(ep, VA_variable, env_name);
+      lListElem *ep = lAddElemStr(lpp, VA_variable, env_name, VA_Type);
 
-      env_description = sge_strtok_r((char *) 0, "\n", &context);
-      if (env_description)
+      char *env_description = sge_strtok_r((char *) 0, "\0", &context);
+      if (env_description != nullptr) {
          lSetString(ep, VA_value, env_description);
+      }
       sge_free(&env_entry);
       sge_free_saved_vars(context);
    }
