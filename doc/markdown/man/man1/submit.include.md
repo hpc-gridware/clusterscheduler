@@ -1520,6 +1520,13 @@ checkpointing job. The variable has the value 0 otherwise.
 ## SHELL  
 The user's login shell. Note: This is not necessarily the shell in use for the job.
 
+## TERM
+For interactive jobs (`qrsh`, `qlogin`) the `TERM` environment variable is set to the value of `TERM`
+from the environment of the shell from which the job was started.
+
+If `TERM` is not set in the environment of the shell from which the job was started,
+the `TERM` variable is inherited from the `sge_execd`'s environment, unless `execd_param INHERIT_ENV=FALSE` is set.
+
 ## TMPDIR  
 The absolute path to the job's temporary working directory.
 

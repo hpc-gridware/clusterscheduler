@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/                                   
@@ -1758,51 +1758,55 @@ void job_initialize_env(lListElem *job, lList **answer_list,
                         const char *unqualified_hostname,
                         const char *qualified_hostname)
 {
-   lList *env_list = nullptr;
+   DENTER(TOP_LAYER);
+
    dstring buffer = DSTRING_INIT;
-   DENTER(TOP_LAYER);  
-    
+
+   lList *env_list = nullptr;
    lXchgList(job, JB_env_list, &env_list);
-   {   
-      int i = -1;
-      const char* env_name[] = {"HOME", "LOGNAME", "PATH", 
-                                "SHELL", "TZ", "MAIL", nullptr};
 
-      while (env_name[++i] != nullptr) {
-         const char *env_value = sge_getenv(env_name[i]);
+   // Copy specific environment variables into the job environment
+   // as SGE_O_* variables.
+   int i = -1;
+   const char* env_name[] = {"HOME", "LOGNAME", "PATH",
+                             "SHELL", "TZ", "MAIL", nullptr};
 
-         sge_dstring_sprintf(&buffer, "%s%s%s", VAR_PREFIX, "O_",
-                             env_name[i]);
-         var_list_set_string(&env_list, sge_dstring_get_string(&buffer),
-                             env_value);
-      }
-   }
-   {
-      const char* host = sge_getenv("HOST"); /* ??? */
-
-      if (host == nullptr) {
-         host = unqualified_hostname;
-      }
-      var_list_set_string(&env_list, VAR_PREFIX "O_HOST", host);
-   } 
-   {
-      char tmp_str[SGE_PATH_MAX + 1];
-
-      if (!getcwd(tmp_str, sizeof(tmp_str))) {
-         answer_list_add(answer_list, MSG_ANSWER_GETCWDFAILED, 
-                         STATUS_EDISK, ANSWER_QUALITY_ERROR);
-         goto error;
-      }
-      path_alias_list_get_path(path_alias_list, nullptr,
-                               tmp_str, qualified_hostname,
-                               &buffer);
-      var_list_set_string(&env_list, VAR_PREFIX "O_WORKDIR", 
-                          sge_dstring_get_string(&buffer));
+   while (env_name[++i] != nullptr) {
+      const char *env_value = sge_getenv(env_name[i]);
+      const char *env_var = sge_dstring_sprintf(&buffer, "%s%s%s", VAR_PREFIX, "O_", env_name[i]);
+      var_list_set_string(&env_list, env_var, env_value);
    }
 
-error:
+   // Add TERM to the job environment.
+   // If TERM is not set, it will be inherited from sge_execd's environment (unless execd_param INHERIT_ENV=FALSE).
+   u_long32 job_type = lGetUlong(job, JB_type);
+   if (JOB_TYPE_IS_QLOGIN(job_type) || JOB_TYPE_IS_QRLOGIN(job_type) || JOB_TYPE_IS_QRSH(job_type)) {
+      const char *term = sge_getenv("TERM");
+      if (term != nullptr) {
+         var_list_set_string(&env_list, "TERM", term);
+      }
+   }
+
+
+   // Add SGE_O_HOST either from environment HOST or set it to the unqualified host name.
+   const char* host = sge_getenv("HOST");
+   if (host == nullptr) {
+      host = unqualified_hostname;
+   }
+   var_list_set_string(&env_list, VAR_PREFIX "O_HOST", host);
+
+   // Add SGE_O_WORKDIR from the current working directory.
+   char tmp_str[SGE_PATH_MAX + 1];
+   if (getcwd(tmp_str, sizeof(tmp_str)) == nullptr) {
+      answer_list_add(answer_list, MSG_ANSWER_GETCWDFAILED, STATUS_EDISK, ANSWER_QUALITY_ERROR);
+   } else {
+      path_alias_list_get_path(path_alias_list, nullptr, tmp_str, qualified_hostname, &buffer);
+      var_list_set_string(&env_list, VAR_PREFIX "O_WORKDIR", sge_dstring_get_string(&buffer));
+   }
+
    sge_dstring_free(&buffer);
    lXchgList(job, JB_env_list, &env_list);
+
    DRETURN_VOID;
 }
 
