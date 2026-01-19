@@ -105,6 +105,8 @@ proc jsv_on_verify {} {
          jsv_sub_del_param "ac" "b"
       }
       jsv_sub_add_param "ac" "c"
+      set do_correct 1
+      jsv_log_info "ac resource requirements updated (a incremented, b removed, c added)"
    }
 
    if {$do_wait == 1} {
