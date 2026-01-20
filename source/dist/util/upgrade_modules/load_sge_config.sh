@@ -76,7 +76,7 @@ LogIt()
 
    #log file contains all messages
    echo "${urgency} $message" >> $MESSAGE_FILE_NAME
-   #log when urgency and level is meet   
+   #log when urgency and level is meet
    case "${urgency}${LOGGER_LEVEL}" in
       CC|CW|CI)
          $INFOTEXT "[CRITICAL] $message"
@@ -86,7 +86,7 @@ LogIt()
       ;;
       II)
          $INFOTEXT "[INFO] $message"
-		;;  
+		;;
    esac
 }
 
@@ -111,8 +111,8 @@ RemoveLineWithMatch()
 ReplaceLineWithMatch()
 {
    repFile="${1:?Need the file name to operate}"
-   repExpr="${2:?Need an expression, where to replace}" 
-   replace="${3:?Need the replacement text}" 
+   repExpr="${2:?Need an expression, where to replace}"
+   replace="${3:?Need the replacement text}"
 
    #Return if no match
    grep ${repExpr} $repFile >/dev/null 2>&1
@@ -142,9 +142,9 @@ ReplaceLineWithMatch()
 ReplaceOrAddLine()
 {
    repFile="${1:?Need the file name to operate}"
-   repExpr="${2:?Need an expression, where to replace}" 
-   replace="${3:?Need the replacement text}" 
-   
+   repExpr="${2:?Need an expression, where to replace}"
+   replace="${3:?Need the replacement text}"
+
    #Does the pattern exists
    grep "${repExpr}" "${repFile}" > /dev/null 2>&1
    if [ $? -eq 0 ]; then #match
@@ -154,7 +154,7 @@ ReplaceOrAddLine()
    fi
 }
 
-#UpdateConfiguration - Change IJS settings and 
+#UpdateConfiguration - Change IJS settings and
 #                      for copy configuration execd_spool, admin_mail, gid_range
 UpdateConfiguration()
 {
@@ -171,14 +171,14 @@ UpdateConfiguration()
       if [ -n "$ADMIN_MAIL" ]; then
          ReplaceOrAddLine ${modFile} 'administrator_mail.*'     "administrator_mail              $ADMIN_MAIL"
       fi
-      
+
       if [ "$newIJS" = true ]; then # new IJS settings
          ReplaceOrAddLine ${modFile} 'qlogin_command.*' "qlogin_command               builtin"
          ReplaceOrAddLine ${modFile} 'qlogin_daemon.*'  "qlogin_daemon                builtin"
-		
+
          ReplaceOrAddLine ${modFile} 'rlogin_command.*' "rlogin_command               builtin"
          ReplaceOrAddLine ${modFile} 'rlogin_daemon.*'  "rlogin_daemon                builtin"
-		
+
          ReplaceOrAddLine ${modFile} 'rsh_command.*'    "rsh_command                  builtin"
          ReplaceOrAddLine ${modFile} 'rsh_daemon.*'     "rsh_daemon                   builtin"
       fi
@@ -190,14 +190,14 @@ UpdateConfiguration()
       if [ "$newIJS" = true ]; then # new IJS settings
          RemoveLineWithMatch ${modFile} 'qlogin_command.*'
          RemoveLineWithMatch ${modFile} 'qlogin_daemon.*'
-		
+
          RemoveLineWithMatch ${modFile} 'rlogin_command.*'
          RemoveLineWithMatch ${modFile} 'rlogin_daemon.*'
-		
+
          RemoveLineWithMatch ${modFile} 'rsh_command.*'
          RemoveLineWithMatch ${modFile} 'rsh_daemon.*'
       fi
-      #We need to change local execd spool dirs for copy mode 
+      #We need to change local execd spool dirs for copy mode
       if [ "$mode" = copy ]; then
          local_dir=`grep execd_spool_dir ${modFile} 2>/dev/null | awk '{print $2}'`
          if [ -n "$local_dir" ]; then
@@ -227,7 +227,7 @@ ModifyData()
    #test only, comment in production
    case "$modOpt" in
       -Ae)
-         #FlatFile ${modFile} 
+         #FlatFile ${modFile}
          RemoveLineWithMatch ${modFile} 'load_values.*'
          RemoveLineWithMatch ${modFile} 'processors.*'
       ;;
@@ -235,7 +235,7 @@ ModifyData()
 	      UpdateConfiguration $loadFile
          ;;
    esac
-   
+
    return $ret
 }
 
@@ -249,7 +249,7 @@ ResolveResult()
    resRet="${4:?Need a return code to show the last result}"
    LogIt "I" "ResolveResult ret:$resRet,  opt:$resOpt, file:$resFile, msg:${resMsg}"
 
-   obj=`echo ${resMsg} | awk -F'"' '{ print $2 }'` 
+   obj=`echo ${resMsg} | awk -F'"' '{ print $2 }'`
    obj=${obj:-unknown}
 
    #we are expecting troubles, possitive match required
@@ -261,7 +261,7 @@ ResolveResult()
             *'already exists')
                LogIt "I" "$obj already exists, accepted"
                return 0
-            ;;     
+            ;;
          esac
 		;;
       -Ahgrp)
@@ -353,8 +353,8 @@ ResolveResult()
             ;;
             *'added'*)
                LogIt "I" "$obj added message accepted"
-               #rqs shows added always, need to be eliminated 
-               return 0 
+               #rqs shows added always, need to be eliminated
+               return 0
             ;;
             'error: invalid option argument "-Arqs"'*)
                LogIt "I" "skipping the -Arqs option"
@@ -366,12 +366,12 @@ ResolveResult()
          case "$resMsg" in
             *'added'*)
                LogIt "I" "$obj added message accepted"
-               #rqs shows added always, need to be eliminated 
-               return 0 
+               #rqs shows added always, need to be eliminated
+               return 0
             ;;
          esac
-       ;;  
-      -Ackpt)  
+       ;;
+      -Ackpt)
          case "$resMsg" in
             *'already exists')
                LogIt "I" "$obj already exists, trying to modify -Mckpt"
@@ -381,7 +381,7 @@ ResolveResult()
             ;;
          esac
       ;;
-      -Aq)  
+      -Aq)
          case "$resMsg" in
             *'already exists')
                LogIt "I" "$obj already exists, trying to modify -Mq"
@@ -432,7 +432,7 @@ ResolveResult()
                LoadConfigFile "$resFile" "$resOpt"
                ret=$?
                return $ret
-            ;;   
+            ;;
             *'already exists')
                LogIt "I" "$obj already exists, trying to modify -Mconf"
                LoadConfigFile "$resFile" "-Mconf"
@@ -440,7 +440,7 @@ ResolveResult()
                return $ret
             ;;
             *'will not be effective before sge_execd restart'*)
-               #regular upgrade message 
+               #regular upgrade message
                LogIt "I" "message accepted"
                return 0
             ;;
@@ -464,15 +464,15 @@ ResolveResult()
                LoadConfigFile "$resFile" "$resOpt"
                ret=$?
                return $ret
-            ;;   
+            ;;
             *'will not be effective before sge_execd restart'*)
-               #regular upgrade message 
+               #regular upgrade message
                LogIt "I" "message accepted"
                return 0
             ;;
          esac
       ;;
-      -Mc)  
+      -Mc)
          case "$resMsg" in
             '')
                LogIt "I" "empty output from -Mc option accepted"
@@ -485,33 +485,33 @@ ResolveResult()
    case "$resMsg" in
       *'unknown attribute name'*)
          #this is a donwngrade option
-         #FlatFile ${resFile} 
+         #FlatFile ${resFile}
          RemoveLineWithMatch ${resFile} ${obj}
          LogIt "I" "$obj attribute was removed, trying again"
          LoadConfigFile "$resFile" "$resOpt"
          ret=$?
          return $ret
-      ;; 
+      ;;
       *'added'*)
          LogIt "I" "added $obj accepted"
          addedConf=1
          return 0
       ;;
-      *'modified'*)                 
+      *'modified'*)
          LogIt "I" "modified $obj accepted"
          return 0
       ;;
-      *'changed'*)                 
+      *'changed'*)
          LogIt "I" "changed $obj accepted"
          return 0
       ;;
-      *'does not exist') 
+      *'does not exist')
          #some object doesnot exists, must be reloaded
          LogIt "W" "$obj object does not exist. [REPEAT REQUIRED]"
          repeat=1
          return 1
       ;;
-   esac  
+   esac
    return $ret
 }
 
@@ -520,7 +520,7 @@ LoadConfigFile()
 {
    loadFile="${1:?Need the file name}"
    loadOpt="${2:?Need an option}"
-	
+
    #do not load empty files
    if [ -f "$loadFile" -a ! -s "$loadFile" ]; then
       LogIt "W" "File $loadFile is empty. Skipping ..."
@@ -533,15 +533,15 @@ LoadConfigFile()
    fi
 
    configLevel=`expr ${configLevel} + 1`
-   
 
-   ModifyData "$loadOpt" "$loadFile" 
+
+   ModifyData "$loadOpt" "$loadFile"
    loadMsg=`$QCONF $loadOpt $loadFile 2>&1`
-   
+
    ResolveResult "$loadOpt" "$loadFile" "$loadMsg" "$ret"
    ret=$?
 
-   if [ "$ret" != "0" ]; then 
+   if [ "$ret" != "0" ]; then
       errorMsg="Load operation failed: qconf $loadOpt $loadFile -> $loadMsg"
       LogIt "W" "$errorMsg"
    fi
@@ -567,7 +567,7 @@ LoadListFromLocation()
    done
 
    LogIt "I" "qconf $qconfOpt $loadLoc"
-   
+
    #File list
    if [ -f "$loadLoc" ]; then
       list=`$CAT $loadLoc`
@@ -576,7 +576,7 @@ LoadListFromLocation()
       fi
 
       for item in $list; do
-         LoadConfigFile $item $qconfOpt	
+         LoadConfigFile $item $qconfOpt
          if [ $? -ne 0 ]; then
             failed=1
          fi
@@ -589,8 +589,8 @@ LoadListFromLocation()
       fi
 
       for item in ${loadLoc}/*; do
-         #we prefer full file names 
-         full=`ls $item` 
+         #we prefer full file names
+         full=`ls $item`
          LoadConfigFile $full $qconfOpt
          if [ $? -ne 0 ]; then
             failed=1
@@ -598,12 +598,12 @@ LoadListFromLocation()
       done
    else
       #Not a file or directory (skip)
-      errorMsg = "wrong directory or file: $loadLoc"
+      errorMsg="wrong directory or file: $loadLoc"
       LogIt "W" "$errorMsg"
    fi
-   
+
    if [ $failed -eq  0 ]; then
-      SUCCEEDED_LOADLOC="$SUCCEEDED_LOADLOC $loadLoc" 
+      SUCCEEDED_LOADLOC="$SUCCEEDED_LOADLOC $loadLoc"
    fi
 
    return $ret
@@ -633,7 +633,7 @@ LoadConfigurations()
 
    # -Mc fname <modify complex>
    LoadConfigFile "$dir/centry" "-Mc"
-   
+
    # -Ae fname    <add execution host>
    LoadListFromLocation "$dir/execution" "-Ae"
 
@@ -685,12 +685,12 @@ LoadOnce()
    #clean the error code
    errorMsg=''
 
-   LoadConfigurations "$dir"      
+   LoadConfigurations "$dir"
 
    # no added configuration, stop to repeat
    if [ $addedConf = 0 ]; then
       repeat=0
-   fi   
+   fi
 }
 
 
@@ -706,13 +706,13 @@ IterativeLoad()
       loadLevel=`expr ${loadLevel} + 1`
       if [ "${loadLevel}" -gt 10 ]; then
          LogIt "C" "Too deep in Load Level"
-         EXIT 1   
-      fi 
+         EXIT 1
+      fi
       LogIt "W" "[REPEAT LOAD]"
       LoadOnce "$dir"
-   done    
+   done
 
-   if [ -n "$errorMsg" ]; then 
+   if [ -n "$errorMsg" ]; then
       LogIt "C" "$errorMsg"
       EXIT 1
    fi
@@ -772,7 +772,7 @@ while [ $ARGC -gt 0 ]; do
          shift
 	 if [ "$1" != "upgrade" -a "$1" != "copy" ]; then
             LogIt "W" "LOAD invoked with invalid mode "$1" using $mode"
-         else 
+         else
             LogIt "I" "LOAD invoked with -mode $1"
             mode="$1"
          fi
@@ -781,7 +781,7 @@ while [ $ARGC -gt 0 ]; do
          shift
          if [ "$1" != "true" -a "$1" != "false" ]; then
             LogIt "W" "LOAD invoked with invalid newijs "$1" using $newIJS"
-         else 
+         else
             LogIt "I" "LOAD invoked with -newijs true"
             newIJS="$1"
          fi

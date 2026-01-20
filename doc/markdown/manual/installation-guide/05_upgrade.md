@@ -68,12 +68,15 @@ The upgrade is done with following steps:
 
 3. The following list of settings will conflict with your old installation. You will need to decide on new values before starting the upgrade process: 
 
-   - Installation location ($SGE_ROOT)
-   - Cell name ($SGE_CELL)
-   - Cluster name ($SGE_CLUSTER_NAME)
+   - Installation location (\$SGE_ROOT)
+   - Cell name (\$SGE_CELL)
+   - Cluster name (\$SGE_CLUSTER_NAME)
    - Port numbers for the master and execution services (\$SGE_QMASTER_PORT, \$SGE_EXECD_PORT)
    - Spool directories for the master and execution services
-   - Group id range for used for job tracking
+   - Group ID range for used for job tracking
+   - Next job ID that should be used in the new cluster
+   - Next advance reservation ID that should be used in the new cluster
+   - Systemd's slice name used for resource management (if applicable)
 
 4. Login to your master machine as root and save all configuration files and objects of the old cluster by executing the following commands:
 
@@ -86,9 +89,10 @@ The upgrade is done with following steps:
 
 5. Unpack the new version of the software into the new $SGE_ROOT directory.
 
-6. Start the upgrade process by running the following command in the new cluster:
+6. Start the upgrade process as root by running the following command in the new cluster:
 
    ```
+   $ export SGE_ROOT=<new_installation_location>
    $ cd $SGE_ROOT
    $ ./inst_sge -upd 
    ```

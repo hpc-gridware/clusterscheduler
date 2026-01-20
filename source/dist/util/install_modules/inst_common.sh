@@ -2232,6 +2232,50 @@ GetDefaultSliceName()
    return 0
 }
 
+GetSystemdRootName()
+{
+   not_exists_error=$1
+
+   # if SGE_ROOT_VAL is defined, we use it
+   if [ -n "$SGE_ROOT_VAL" ]; then
+      echo "$SGE_ROOT_VAL"
+      return 0
+   fi
+
+   # otherwise we try to use SGE_ROOT
+   if [ -n "$SGE_ROOT" ]; then
+      echo "$SGE_ROOT"
+      return 0
+   fi
+
+   if [ "$not_exists_error" = "true" ]; then
+      $INFOTEXT "GetSystemdRootName error: expected SGE_ROOT_VAL or SGE_ROOT"
+      exit 1
+   fi
+}
+
+GetSystemdCellName()
+{
+   not_exists_error=$1
+
+   # if SGE_CELL_VAL is defined, we use it
+   if [ -n "$SGE_CELL_VAL" ]; then
+      echo "$SGE_CELL_VAL"
+      return 0
+   fi
+
+   # otherwise we try to use SGE_CELL
+   if [ -n "$SGE_CELL" ]; then
+      echo "$SGE_CELL"
+      return 0
+   fi
+
+   if [ "$not_exists_error" = "true" ]; then
+      $INFOTEXT "GetSystemdRootName error: expected SGE_CELL_VAL or SGE_CELL"
+      exit 1
+   fi
+}
+
 GetSystemdSliceName()
 {
    not_exists_error=$1
@@ -2267,6 +2311,8 @@ SetupSystemdSliceName()
    # if we are on a systemd system, we need to define the slice name
    if [ "$RC_FILE" = "systemd" ]; then
       SLICE_NAME=`GetSystemdSliceName "false"`
+      SLICE_ROOT=`GetSystemdRootName "false"`
+      SLICE_CELL=`GetSystemdCellName "false"`
       # if slice name is not yet defined, we ask the user for it
       if [ $? -ne 0 ]; then
          # query toplevel slice name
@@ -2292,8 +2338,8 @@ SetupSystemdSliceName()
             fi
          done
 
-         # store the slice name in $SGE_ROOT/$SGE_CELL/common/slice_name
-         SafelyCreateFile "$SGE_ROOT/$SGE_CELL/common/slice_name" 644 "$SLICE_NAME"
+         # store the slice name
+         SafelyCreateFile "$SLICE_ROOT/$SLICE_CELL/common/slice_name" 644 "$SLICE_NAME"
       fi
    fi
 }
@@ -2319,13 +2365,15 @@ InstallSystemdUnitFile()
    esac
 
    SLICE_NAME=`GetSystemdSliceName "true"`
-   $INFOTEXT "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
-   $INFOTEXT -log "Using slice name from $SGE_ROOT/$SGE_CELL/common/slice_name: %s" $SLICE_NAME
+   SLICE_ROOT=`GetSystemdRootName "true"`
+   SLICE_CELL=`GetSystemdCellName "true"`
+   $INFOTEXT "Using slice name from $SLICE_ROOT/$SLICE_CELL/common/slice_name: %s" $SLICE_NAME
+   $INFOTEXT -log "Using slice name from $SLICE_ROOT/$SLICE_CELL/common/slice_name: %s" $SLICE_NAME
 
    # replace variables in the template, store the result in a tmp file
    TMP_UNIT_FILE="/tmp/sge_${DAEMON_NAME}_unit_file.$$"
-   sed -e "s%GENROOT%${SGE_ROOT_VAL}%g" \
-       -e "s%GENCELL%${SGE_CELL_VAL}%g" \
+   sed -e "s%GENROOT%${SLICE_ROOT}%g" \
+       -e "s%GENCELL%${SLICE_CELL}%g" \
        -e "s%GENPRODUCT%Cluster Scheduler%g" \
        -e "s%GENSLICE%${SLICE_NAME}%" \
        $template_file > $TMP_UNIT_FILE

@@ -544,6 +544,8 @@ if [ "$UPDATE" = true ]; then
    CopyCA execd
    CopyCA submit
    CheckRunningDaemon sge_qmaster
+
+   # Load the configuration from the backup
    $INFOTEXT -u "Last step - load configuration from the backup"
    $INFOTEXT -n "\nload command: $SGE_ROOT/util/upgrade_modules/load_sge_config.sh $UPGRADE_BACKUP_DIR -mode \"$UPGRADE_MODE\" -log C -newijs \"$newIJS\" -gid_range \"${CFG_GID_RANGE}\" -admin_mail \"${CFG_MAIL_ADDR}\" -execd_spool_dir \"${CFG_EXE_SPOOL}\" \n"
    $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
@@ -555,6 +557,8 @@ if [ "$UPDATE" = true ]; then
    $SGE_STARTUP_FILE -qmaster stop
    $SGE_STARTUP_FILE -qmaster start
    exit_val=$?
+
+   # Post update notes that describe further required steps for the execd's and other components
    if [ "$POST_UPDATE" != true ]; then
       $INFOTEXT -n "\nIf loading the configuration succeeded run these additional commands:\n" \
       "REQUIRED:\n" \
