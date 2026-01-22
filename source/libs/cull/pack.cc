@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -39,12 +39,6 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <rpc/rpc.h>
-#include <rpc/types.h>
-
-#if defined(LINUXRISCV64)
-#  include <rpc/xdr.h>
-#endif
 
 #if defined(SOLARIS) || defined(DARWIN)
 #define htobe64(x) htonll(x)
@@ -332,8 +326,6 @@ int repackint(sge_pack_buffer *pb, u_long32 i) {
 }
 
 int packint64(sge_pack_buffer *pb, u_long64 i) {
-   u_long64 J = 0;
-
    DENTER(PACK_LAYER);
 
    if (!pb->just_count) {
@@ -348,7 +340,7 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
       }
 
       /* copy in packing buffer */
-      J = htobe64(i);
+      u_long64 J = htobe64(i);
       memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), (INTSIZE * 2));
       pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);
    }
@@ -366,10 +358,6 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
    PACK_FORMAT
  */
 int packdouble(sge_pack_buffer *pb, double d) {
-/* CygWin does not know RPC u. XDR */
-   char buf[32];
-   XDR xdrs;
-
    DENTER(PACK_LAYER);
 
    if (!pb->just_count) {
@@ -384,24 +372,11 @@ int packdouble(sge_pack_buffer *pb, double d) {
       }
 
       /* copy in packing buffer */
-      xdrmem_create(&xdrs, (caddr_t) buf, sizeof(buf), XDR_ENCODE);
-
-      if (!(xdr_double(&xdrs, &d))) {
-         DPRINTF("error - XDR of double failed\n");
-         xdr_destroy(&xdrs);
-         DRETURN(PACK_FORMAT);
-      }
-
-      if (xdr_getpos(&xdrs) != DOUBLESIZE) {
-         DPRINTF("error - size of XDRed double is %d\n", xdr_getpos(&xdrs));
-         xdr_destroy(&xdrs);
-         DRETURN(PACK_FORMAT);
-      }
-
-      memcpy(pb->cur_ptr, buf, DOUBLESIZE);
-      pb->cur_ptr = &(pb->cur_ptr[DOUBLESIZE]);
-
-      xdr_destroy(&xdrs);
+      uint64_t storage;
+      std::memcpy(&storage, &d, 2 * INTSIZE);
+      uint64_t network_storage = htobe64(storage);
+      std::memcpy(pb->cur_ptr, &network_storage, 2 * INTSIZE);
+      pb->cur_ptr = &(pb->cur_ptr[2 * INTSIZE]);
    }
    pb->bytes_used += DOUBLESIZE;
 
@@ -584,9 +559,6 @@ int unpackint64(sge_pack_buffer *pb, u_long64 *ip) {
 
  */
 int unpackdouble(sge_pack_buffer *pb, double *dp) {
-   XDR xdrs;
-   char buf[32];
-
    DENTER(PACK_LAYER);
 
    /* are there enough bytes ? */
@@ -596,26 +568,14 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
    }
 
    /* copy double */
-
-   /* CygWin does not know RPC u. XDR */
-#if !defined(WIN32)                   /* XDR not called */
-   memcpy(buf, pb->cur_ptr, DOUBLESIZE);
-   xdrmem_create(&xdrs, buf, DOUBLESIZE, XDR_DECODE);
-   if (!(xdr_double(&xdrs, dp))) {
-      *dp = 0;
-      DPRINTF("error unpacking XDRed double\n");
-      xdr_destroy(&xdrs);
-      DRETURN(PACK_FORMAT);
-   }
-#endif /* WIN32 */
+   uint64_t network_storage;
+   std::memcpy(&network_storage, pb->cur_ptr, 2 * INTSIZE);
+   uint64_t storage = be64toh(network_storage);
+   std::memcpy(dp, &storage, 2 * INTSIZE);
 
    /* update cur_ptr & bytes_unpacked */
    pb->cur_ptr = &(pb->cur_ptr[DOUBLESIZE]);
    pb->bytes_used += DOUBLESIZE;
-
-#if !defined(WIN32)                   /* XDR not called */
-   xdr_destroy(&xdrs);
-#endif /* WIN32 */
 
    DRETURN(PACK_SUCCESS);
 }

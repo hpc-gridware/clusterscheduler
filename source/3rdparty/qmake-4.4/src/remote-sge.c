@@ -32,10 +32,6 @@ Boston, MA 02111-1307, USA.  */
 #include <limits.h>   /* PATH_MAX */
 #include <signal.h>   /* kill */
 
-#ifdef LINUX
-#include <rpc/types.h> /* MAXHOSTNAMELEN */
-#endif
-
 /****** Interactive/qmake/--Introduction ***************************************
 *
 *  NAME
@@ -328,7 +324,7 @@ static void remote_exit(int code, const char *message, const char *reason)
    }
 
    if(message) {
-      fprintf(stderr, message);
+      fprintf(stderr, "%s", message);
    }
 
    if(reason) {

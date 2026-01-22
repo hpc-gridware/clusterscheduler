@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -72,10 +72,6 @@ function(architecture_specific_settings)
       add_compile_options(-pthread)
       add_link_options(-pthread -rdynamic)
 
-      set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-      set(TIRPC_LIB tirpc PARENT_SCOPE)
-      message(STATUS "using libtirpc")
-
       set(WITH_JEMALLOC OFF PARENT_SCOPE)
       set(WITH_MTMALLOC OFF PARENT_SCOPE)
       set(JNI_ARCH "linux" PARENT_SCOPE)
@@ -141,19 +137,6 @@ function(architecture_specific_settings)
          add_link_options("-fsanitize=undefined")
          add_compile_options("-fsanitize=address")
          add_link_options("-fsanitize=address")
-      endif ()
-
-      # newer Linuxes require libtirp header and library
-      if (EXISTS /usr/include/tirpc OR EXISTS /usr/lib64/libtirpc.so)
-         set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-         message(STATUS "using libtirpc")
-      elseif (EXISTS /usr/include/ntirpc AND EXISTS /usr/lib/x86_64-linux-gnu/libtirpc.so.3)
-         set(TIRPC_INCLUDES /usr/include/ntirpc PARENT_SCOPE)
-         set(TIRPC_LIB ntirpc PARENT_SCOPE)
-         message(STATUS "using libntirpc")
-      else ()
-         message(STATUS "no libtirpc or libntirpc found")
       endif ()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
