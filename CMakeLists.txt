@@ -1,20 +1,20 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
-#  
-#  Copyright 2023-2025 HPC-Gridware GmbH
-#  
+#
+#  Copyright 2023-2026 HPC-Gridware GmbH
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#  
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#  
+#
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
@@ -165,7 +165,6 @@ if (PROJECT_FEATURES MATCHES "gcs-extensions")
          ${PROJECT_SOURCE_DIR}/source/daemons/execd
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
-         ${TIRPC_INCLUDES}
          ${PROJECT_3RDPARTY_DIR}/include
          ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
    add_compile_definitions(ADD_GRIDWARE_COPYRIGHT)
@@ -177,7 +176,6 @@ else()
          ${PROJECT_SOURCE_DIR}/source/daemons/execd
          ${PROJECT_SOURCE_DIR}/source/daemons/qmaster
          ${PROJECT_SOURCE_DIR}/source/libs
-         ${TIRPC_INCLUDES}
          ${PROJECT_3RDPARTY_DIR}/include
          ${CPM_PACKAGE_rapidjson_SOURCE_DIR}/include)
 endif()
@@ -322,9 +320,9 @@ if (WITH_PYTHON)
 endif ()
 
 if (SGE_ARCH MATCHES "fbsd-amd64")
-   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} kvm ${CMAKE_DL_LIBS} m execinfo)
+   set(SGE_LIBS_SHARED pthread kvm ${CMAKE_DL_LIBS} m execinfo)
 else ()
-   set(SGE_LIBS_SHARED pthread ${TIRPC_LIB} ${CMAKE_DL_LIBS} ${NSL_LIB} m)
+   set(SGE_LIBS_SHARED pthread ${CMAKE_DL_LIBS} ${NSL_LIB} m)
 endif ()
 set(SGE_LIBS ${SGE_JEMALLOC_LIB} ${SGE_LIBS_SHARED})
 

@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -39,12 +39,6 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <rpc/rpc.h>
-#include <rpc/types.h>
-
-#if defined(LINUXRISCV64)
-#  include <rpc/xdr.h>
-#endif
 
 #if defined(SOLARIS) || defined(DARWIN)
 #define htobe64(x) htonll(x)
@@ -77,7 +71,7 @@
 *     CULL_Packing -- platform independent exchange format
 *
 *  FUNCTION
-*     The cull packing functions provide a framework for a 
+*     The cull packing functions provide a framework for a
 *     platform independent data representation.
 *
 *     Data is written into a packbuffer. Individual data words
@@ -86,7 +80,7 @@
 *     Data in the packbuffer can be compressed.
 *
 *  NOTES
-*     Other platform independent formats, like XML, should be 
+*     Other platform independent formats, like XML, should be
 *     implemented.
 *
 *  SEE ALSO
@@ -108,34 +102,34 @@ int pack_get_chunk() {
 *     init_packbuffer() -- initialize packing buffer
 *
 *  SYNOPSIS
-*     int init_packbuffer(sge_pack_buffer *pb, int initial_size, 
+*     int init_packbuffer(sge_pack_buffer *pb, int initial_size,
 *                         bool just_count, bool with_auth_info)
 *
 *  FUNCTION
 *     Initialize a packing buffer.
 *     Allocates the necessary memory. If more memory is needed during the use
-*     of the packbuffer, it will be reallocated increasing the size by 
+*     of the packbuffer, it will be reallocated increasing the size by
 *     chunk_size (see function pack_set_chunk).
 *
-*     Since version 6.0, version information is provided in the packbuffer and 
+*     Since version 6.0, version information is provided in the packbuffer and
 *     is included in sent messages.
-*     For best possible backward interoperability with former versions, an 
-*     integer with value 0 is padded before the version information as first 
+*     For best possible backward interoperability with former versions, an
+*     integer with value 0 is padded before the version information as first
 *     word in the packbuffer. This triggeres error handling in former versions.
 *
-*     Functions using packing buffers in GDI or related code should use the 
+*     Functions using packing buffers in GDI or related code should use the
 *     function ocs::gdi::Client::sge_gdi_packet_get_pb_size() to find the correct
-*     "initial_size".  
+*     "initial_size".
 *
 *  INPUTS
 *     sge_pack_buffer *pb - the packbuffer to initialize
-*     int initial_size    - the amount of memory to be allocated at 
+*     int initial_size    - the amount of memory to be allocated at
 *                           initialization.
-*                           If a value of 0 is given as initial_size, a size 
-*                           of chunk_size (global variable, see function 
+*                           If a value of 0 is given as initial_size, a size
+*                           of chunk_size (global variable, see function
 *                           pack_set_chunk) will be used.
 *     bool just_count     - if true, no memory will be allocated and the
-*                           "just_count" property of the packbuffer will 
+*                           "just_count" property of the packbuffer will
 *                           be set.
 *     bool with_auth_info - if true, the packbuffer will be initialized with
 *                           authentication information (user and group information)
@@ -150,7 +144,7 @@ int pack_get_chunk() {
 *
 *  NOTES
 *     MT-NOTE: init_packbuffer() is MT safe (assumptions)
-*  
+*
 *  SEE ALSO
 *     cull/pack/-Packing-typedefs
 *     cull/pack/pack_set_chunk()
@@ -371,8 +365,6 @@ int repackint(sge_pack_buffer *pb, u_long32 i) {
 }
 
 int packint64(sge_pack_buffer *pb, u_long64 i) {
-   u_long64 J = 0;
-
    DENTER(PACK_LAYER);
 
    if (!pb->just_count) {
@@ -387,7 +379,7 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
       }
 
       /* copy in packing buffer */
-      J = htobe64(i);
+      u_long64 J = htobe64(i);
       memcpy(pb->cur_ptr, (((char *) &J) + INTOFF), (INTSIZE * 2));
       pb->cur_ptr = &(pb->cur_ptr[(INTSIZE * 2)]);
    }
@@ -405,10 +397,6 @@ int packint64(sge_pack_buffer *pb, u_long64 i) {
    PACK_FORMAT
  */
 int packdouble(sge_pack_buffer *pb, double d) {
-/* CygWin does not know RPC u. XDR */
-   char buf[32];
-   XDR xdrs;
-
    DENTER(PACK_LAYER);
 
    if (!pb->just_count) {
@@ -423,24 +411,11 @@ int packdouble(sge_pack_buffer *pb, double d) {
       }
 
       /* copy in packing buffer */
-      xdrmem_create(&xdrs, (caddr_t) buf, sizeof(buf), XDR_ENCODE);
-
-      if (!(xdr_double(&xdrs, &d))) {
-         DPRINTF("error - XDR of double failed\n");
-         xdr_destroy(&xdrs);
-         DRETURN(PACK_FORMAT);
-      }
-
-      if (xdr_getpos(&xdrs) != DOUBLESIZE) {
-         DPRINTF("error - size of XDRed double is %d\n", xdr_getpos(&xdrs));
-         xdr_destroy(&xdrs);
-         DRETURN(PACK_FORMAT);
-      }
-
-      memcpy(pb->cur_ptr, buf, DOUBLESIZE);
-      pb->cur_ptr = &(pb->cur_ptr[DOUBLESIZE]);
-
-      xdr_destroy(&xdrs);
+      uint64_t storage;
+      std::memcpy(&storage, &d, 2 * INTSIZE);
+      uint64_t network_storage = htobe64(storage);
+      std::memcpy(pb->cur_ptr, &network_storage, 2 * INTSIZE);
+      pb->cur_ptr = &(pb->cur_ptr[2 * INTSIZE]);
    }
    pb->bytes_used += DOUBLESIZE;
 
@@ -623,9 +598,6 @@ int unpackint64(sge_pack_buffer *pb, u_long64 *ip) {
 
  */
 int unpackdouble(sge_pack_buffer *pb, double *dp) {
-   XDR xdrs;
-   char buf[32];
-
    DENTER(PACK_LAYER);
 
    /* are there enough bytes ? */
@@ -635,26 +607,14 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
    }
 
    /* copy double */
-
-   /* CygWin does not know RPC u. XDR */
-#if !defined(WIN32)                   /* XDR not called */
-   memcpy(buf, pb->cur_ptr, DOUBLESIZE);
-   xdrmem_create(&xdrs, buf, DOUBLESIZE, XDR_DECODE);
-   if (!(xdr_double(&xdrs, dp))) {
-      *dp = 0;
-      DPRINTF("error unpacking XDRed double\n");
-      xdr_destroy(&xdrs);
-      DRETURN(PACK_FORMAT);
-   }
-#endif /* WIN32 */
+   uint64_t network_storage;
+   std::memcpy(&network_storage, pb->cur_ptr, 2 * INTSIZE);
+   uint64_t storage = be64toh(network_storage);
+   std::memcpy(dp, &storage, 2 * INTSIZE);
 
    /* update cur_ptr & bytes_unpacked */
    pb->cur_ptr = &(pb->cur_ptr[DOUBLESIZE]);
    pb->bytes_used += DOUBLESIZE;
-
-#if !defined(WIN32)                   /* XDR not called */
-   xdr_destroy(&xdrs);
-#endif /* WIN32 */
 
    DRETURN(PACK_SUCCESS);
 }
@@ -760,17 +720,17 @@ const char *cull_pack_strerror(int errnum) {
 
 /****** cull/pack/pb_are_equivalent() *****************************************
 *  NAME
-*     pb_are_equivalent() -- check if both buffers are equivalent 
+*     pb_are_equivalent() -- check if both buffers are equivalent
 *
 *  SYNOPSIS
-*     bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) 
+*     bool pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2)
 *
 *  FUNCTION
-*     Check if size and content of both packbuffers is equivalent 
+*     Check if size and content of both packbuffers is equivalent
 *
 *  INPUTS
-*     sge_pack_buffer *pb1 - packbuffer 
-*     sge_pack_buffer *pb2 - packbuffer 
+*     sge_pack_buffer *pb1 - packbuffer
+*     sge_pack_buffer *pb2 - packbuffer
 *
 *  RESULT
 *     bool - equivalent?
@@ -790,18 +750,18 @@ pb_are_equivalent(sge_pack_buffer *pb1, sge_pack_buffer *pb2) {
 
 /****** cull/pack/pb_print_to() ***********************************************
 *  NAME
-*     pb_print_to() -- Print content of packbuffer 
+*     pb_print_to() -- Print content of packbuffer
 *
 *  SYNOPSIS
-*     void pb_print_to(sge_pack_buffer *pb, FILE* file) 
+*     void pb_print_to(sge_pack_buffer *pb, FILE* file)
 *
 *  FUNCTION
-*     Print content of packbuffer into file 
+*     Print content of packbuffer into file
 *
 *  INPUTS
-*     sge_pack_buffer *pb - packbuffer pointer 
-*     bool only_header    - show only summary information 
-*     FILE* file          - file stream (e.g. stderr) 
+*     sge_pack_buffer *pb - packbuffer pointer
+*     bool only_header    - show only summary information
+*     FILE* file          - file stream (e.g. stderr)
 *
 *  RESULT
 *     void - NONE

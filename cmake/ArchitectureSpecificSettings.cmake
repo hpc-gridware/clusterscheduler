@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #
-#  Copyright 2023-2025 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -135,23 +135,6 @@ function(architecture_specific_settings)
          add_link_options("-fsanitize=address")
       endif ()
 
-      # newer Linuxes require libtirp header and library
-      if (EXISTS /usr/include/tirpc OR EXISTS /usr/lib64/libtirpc.so)
-         set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-         message(STATUS "using libtirpc")
-      elseif (EXISTS /usr/include/ntirpc AND EXISTS /usr/lib/x86_64-linux-gnu/libtirpc.so.3)
-         set(TIRPC_INCLUDES /usr/include/ntirpc PARENT_SCOPE)
-         set(TIRPC_LIB ntirpc PARENT_SCOPE)
-         message(STATUS "using libntirpc")
-      elseif (EXISTS /usr/include/tirpc AND EXISTS /usr/lib/x86_64-linux-gnu/libtirpc.so.3)
-         set(TIRPC_INCLUDES /usr/include/tirpc PARENT_SCOPE)
-         set(TIRPC_LIB tirpc PARENT_SCOPE)
-         message(STATUS "using libtirpc")
-      else ()
-         message(STATUS "no libtirpc or libntirpc found")
-      endif ()
-
       # build with systemd?
       # @todo we might want to check the api version, we need at least
       #       - 235: here FreezeUnit and ThawUnit were added (not required, we work around this not being available)
@@ -169,6 +152,7 @@ function(architecture_specific_settings)
          add_compile_options(-fPIC)
          set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
+
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
          # we need patchelf for setting the run path in the db_* tools
          # but patchelf is not available on CentOS 7 x86
