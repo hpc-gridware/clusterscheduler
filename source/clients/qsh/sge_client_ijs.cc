@@ -28,8 +28,8 @@
  *   All Rights Reserved.
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
- * 
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -67,6 +67,7 @@ static unsigned int g_pid = 0; /* set by main thread, read by worker thread */
 static int  g_raw_mode_state = 0; /* set by main thread, read by worker thread */
 static int  g_suspend_remote = 0; /* set by main thread, read by worker thread */
 static COMM_HANDLE *g_comm_handle = nullptr;
+static int g_wakeup_pipe[2] = { -1, -1 }; /* pipe to wake up worker thread */
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -145,7 +146,7 @@ static void broken_pipe_handler(int sig)
 *     static void signal_handler(int sig)
 *
 *  FUNCTION
-*     Handler for all signals that quit the program. These signals are trapped 
+*     Handler for all signals that quit the program. These signals are trapped
 *     in order to restore the terminal modes.
 *
 *  INPUTS
@@ -188,7 +189,7 @@ void set_signal_handlers()
    memset(&old_handler, 0, sizeof(old_handler));
    memset(&new_handler, 0, sizeof(new_handler));
 
-   /* Is SIGHUP necessary? 
+   /* Is SIGHUP necessary?
     * Yes: termio(7I) says:
     * "When a modem disconnect is detected, a SIGHUP signal is sent
     *  to the terminal's controlling process.
@@ -286,7 +287,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
    if (received_window_change_signal) {
       /*
        * here we can have a race condition between the two working threads,
-       * but it doesn't matter - in the worst case, the new window size gets 
+       * but it doesn't matter - in the worst case, the new window size gets
        * submitted two times.
        */
       received_window_change_signal = 0;
@@ -338,8 +339,13 @@ void* tty_to_commlib(void *t_conf)
    DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
 
    thread_func_startup(t_conf);
-   
-   /* 
+
+   // create a pipe to wake up this thread
+   if (pipe(g_wakeup_pipe) < 0) {
+      DPRINTF("tty_to_commlib: pipe() failed: %s\n", strerror(errno));
+   }
+
+   /*
     * allocate working buffer
     */
    bool do_exit = false;
@@ -349,6 +355,10 @@ void* tty_to_commlib(void *t_conf)
       if (g_nostdin == 0) {
          /* wait for input on tty */
          FD_SET(STDIN_FILENO, &read_fds);
+      }
+      if (g_wakeup_pipe[0] != -1) {
+         /* wait for input on wakeup pipe */
+         FD_SET(g_wakeup_pipe[0], &read_fds);
       }
       struct timeval       timeout;
       timeout.tv_sec  = 1;
@@ -369,9 +379,10 @@ void* tty_to_commlib(void *t_conf)
             }
         }
 			}
-      
+
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
-      int ret = select(STDIN_FILENO+1, &read_fds, nullptr, nullptr, &timeout);
+      int ret = select(MAX(STDIN_FILENO, g_wakeup_pipe[0]) + 1, &read_fds, nullptr, nullptr, &timeout);
+      DPRINTF("select returned %d\n", ret);
 
       thread_testcancel(t_conf);
       client_check_window_change(g_comm_handle);
@@ -392,29 +403,36 @@ void* tty_to_commlib(void *t_conf)
             /* We should never get here if STDIN is closed */
             DPRINTF("tty_to_commlib: STDIN ready to read while it should be closed!!!\n");
          }
-         DPRINTF("tty_to_commlib: trying to read() from stdin\n");
-         int nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
-         pbuf[nread] = '\0';
-         sge_dstring_append (&dbuf, pbuf);
-         DPRINTF("tty_to_commlib: nread = %d\n", nread);
+         if (FD_ISSET(STDIN_FILENO, &read_fds)) {
+            DPRINTF("tty_to_commlib: trying to read() from stdin\n");
+            int nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
+            pbuf[nread] = '\0';
+            sge_dstring_append (&dbuf, pbuf);
+            DPRINTF("tty_to_commlib: nread = %d\n", nread);
 
-         if (nread < 0 && (errno == EINTR || errno == EAGAIN)) {
-            DPRINTF("tty_to_commlib: EINTR or EAGAIN\n");
-            /* do nothing */
-         } else if (nread <= 0) {
-            do_exit = true;
-         } else {
-            DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
-            if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
-                if (comm_write_message(g_comm_handle, g_hostname,
-                    COMM_CLIENT, 1, (unsigned char*)pbuf, 
-                    (unsigned long)nread, STDIN_DATA_MSG, &err_msg) != (unsigned long)nread) {
-                  DPRINTF("tty_to_commlib: couldn't write all data\n");
-                } else {
-                  DPRINTF("tty_to_commlib: data successfully written\n");
-                }
+            if (nread < 0 && (errno == EINTR || errno == EAGAIN)) {
+               DPRINTF("tty_to_commlib: EINTR or EAGAIN\n");
+               /* do nothing */
+            } else if (nread <= 0) {
+               do_exit = true;
+            } else {
+               DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
+               if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
+                   if (comm_write_message(g_comm_handle, g_hostname,
+                       COMM_CLIENT, 1, (unsigned char*)pbuf,
+                       (unsigned long)nread, STDIN_DATA_MSG, &err_msg) != (unsigned long)nread) {
+                     DPRINTF("tty_to_commlib: couldn't write all data\n");
+                   } else {
+                     DPRINTF("tty_to_commlib: data successfully written\n");
+                   }
+               }
+               comm_flush_write_messages(g_comm_handle, &err_msg);
             }
-            comm_flush_write_messages(g_comm_handle, &err_msg);
+         } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
+            // If we received something on the wakeup pipe, we shall exit.
+            // We will probably never get here as thread_testcancel() above will already terminate the thread.
+            DPRINTF("wakeup pipe was triggered, exiting tty_to_commlib thread\n");
+            do_exit = true;
          }
          sge_dstring_free(&dbuf);
       } else {
@@ -442,7 +460,7 @@ void* tty_to_commlib(void *t_conf)
 
    /* clean up */
    thread_func_cleanup(t_conf);
-   
+
    DPRINTF("tty_to_commlib: exiting tty_to_commlib thread!\n");
    DRETURN(nullptr);
 }
@@ -557,9 +575,9 @@ void* commlib_to_tty(void *t_conf)
                break;
             case REGISTER_CTRL_MSG:
                /* control message */
-               /* a client registered with us. With the next loop, the 
+               /* a client registered with us. With the next loop, the
                 * cl_commlib_trigger function will send the WINDOW_SIZE_CTRL_MSG
-                * (and perhaps some data messages),  which is already in the 
+                * (and perhaps some data messages),  which is already in the
                 * send_messages list of the connection, to the client.
                 */
                DPRINTF("commlib_to_tty: received register message!\n");
@@ -572,7 +590,7 @@ void* commlib_to_tty(void *t_conf)
             case UNREGISTER_CTRL_MSG:
                /* control message */
                /* the client wants to quit, as this is the last message the client
-                * sends, we can be sure to have received all messages from the 
+                * sends, we can be sure to have received all messages from the
                 * client. We answer with a UNREGISTER_RESPONSE_CTRL_MSG so
                 * the client knows that it can quit now. We can quit, also.
                 */
@@ -589,7 +607,7 @@ void* commlib_to_tty(void *t_conf)
                 * If the job was signalled, the exit code is 128+signal.
                 */
                sscanf(buf, "%d", &g_exit_status);
-               comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, 
+               comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
                   (unsigned char*)" ", 1, UNREGISTER_RESPONSE_CTRL_MSG, &err_msg);
 
                DPRINTF("commlib_to_tty: received exit_status from shepherd: %d\n", g_exit_status);
@@ -745,9 +763,9 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
 
    /*
     * From here on, the two worker threads are doing all the work.
-    * This main thread is just waiting until the client closes the 
-    * connection to us, which causes the commlib_to_tty thread to 
-    * exit. Then it closes the tty_to_commlib thread, too, and 
+    * This main thread is just waiting until the client closes the
+    * connection to us, which causes the commlib_to_tty thread to
+    * exit. Then it closes the tty_to_commlib thread, too, and
     * cleans up everything.
     */
    DPRINTF("waiting for end of commlib_to_tty thread\n");
@@ -756,14 +774,19 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
    DPRINTF("shutting down tty_to_commlib thread\n");
    thread_shutdown(pthread_tty_to_commlib);
 
-   /*
-    * Close stdin to awake the tty_to_commlib-thread from the select() call.
-    * thread_shutdown() doesn't work on all architectures.
-    */
-   close(STDIN_FILENO);
+   // write a byte into the wakeup pipe to wake up the tty_to_commlib thread
+   if (g_wakeup_pipe[1] != -1) {
+      DPRINTF("tty_to_commlib: writing wakeup byte to pipe\n");
+      if (write(g_wakeup_pipe[1], "x", 1) < 0) {
+         DPRINTF("tty_to_commlib: write() to wakeup pipe failed: %s\n", strerror(errno));
+      }
+   } else {
+      DPRINTF("tty_to_commlib: g_wakeup_pipe[1] is -1, not writing wakeup byte\n");
+   }
 
    DPRINTF("waiting for end of tty_to_commlib thread\n");
    thread_join(pthread_tty_to_commlib);
+   DPRINTF("tty_to_commlib thread terminated\n");
 cleanup:
    /*
     * Set our terminal back to 'unraw' mode. Should be done automatically
@@ -773,7 +796,7 @@ cleanup:
    DPRINTF("terminal_leave_raw_mode() returned %s (%d)\n", strerror(ret), ret);
    if (ret != 0) {
       sge_dstring_sprintf(p_err_msg, "error resetting terminal mode: %s (%d)", strerror(ret), ret);
-      ret_val = 7; 
+      ret_val = 7;
    }
 
    *p_exit_status = g_exit_status;
@@ -793,7 +816,7 @@ cleanup:
 *
 *  FUNCTION
 *     Starts the commlib server for the commlib connection between the shepherd
-*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command. 
+*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
 *     Over this connection the stdin/stdout/stderr input/output is transferred.
 *
 *  INPUTS
@@ -813,7 +836,7 @@ cleanup:
 *           2: Can't set connection parameters
 *
 *  NOTES
-*     MT-NOTE: start_builtin_ijs_server() is not MT safe 
+*     MT-NOTE: start_builtin_ijs_server() is not MT safe
 *
 *  SEE ALSO
 *     sge_client_ijs/run_ijs_server()
@@ -827,7 +850,7 @@ int start_ijs_server(bool csp_mode, const char* username,
 
    DENTER(TOP_LAYER);
 
-   /* we must copy the hostname here to a global variable, because the 
+   /* we must copy the hostname here to a global variable, because the
     * worker threads need it later.
     * It gets freed in force_ijs_server_shutdown().
     * TODO: Cleaner solution for this!
@@ -854,7 +877,7 @@ int start_ijs_server(bool csp_mode, const char* username,
 *                          interactive job support
 *
 *  SYNOPSIS
-*     int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg) 
+*     int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 *
 *  FUNCTION
 *     Stops the commlib server for the commlib connection between the shepherd
@@ -873,7 +896,7 @@ int start_ijs_server(bool csp_mode, const char* username,
 *              see p_err_msg for details
 *
 *  NOTES
-*     MT-NOTE: stop_ijs_server() is not MT safe 
+*     MT-NOTE: stop_ijs_server() is not MT safe
 *
 *  SEE ALSO
 *     sge_client_ijs/start_ijs_server()
@@ -912,8 +935,8 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 *                                    interactive job support to shut down
 *
 *  SYNOPSIS
-*     int force_ijs_server_shutdown(COMM_HANDLE **phandle, const char 
-*     *this_component, dstring *p_err_msg) 
+*     int force_ijs_server_shutdown(COMM_HANDLE **phandle, const char
+*     *this_component, dstring *p_err_msg)
 *
 *  FUNCTION
 *     Forces the commlib server for the builtin interactive job support to shut
@@ -931,7 +954,7 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg)
 *           2: Can't shut down connection, see p_err_msg for details
 *
 *  NOTES
-*     MT-NOTE: force_ijs_server_shutdown() is not MT safe 
+*     MT-NOTE: force_ijs_server_shutdown() is not MT safe
 *
 *  SEE ALSO
 *     sge_client_ijs/start_ijs_server()
