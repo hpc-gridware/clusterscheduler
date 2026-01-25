@@ -30,7 +30,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -66,7 +66,7 @@
 #define COMM_CANT_CLEANUP_COMMLIB         3
 #define COMM_CANT_CREATE_HANDLE           4
 #define COMM_CANT_SHUTDOWN_HANDLE         5
-#define COMM_CANT_OPEN_CONNECTION         6 
+#define COMM_CANT_OPEN_CONNECTION         6
 #define COMM_CANT_CLOSE_CONNECTION        7
 #define COMM_CANT_SETUP_SSL               8
 #define COMM_CANT_SET_CONNECTION_PARAM    9
@@ -99,14 +99,14 @@ typedef struct recv_message_s {
 int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func = nullptr);
 int comm_cleanup_lib(dstring *err_msg);
 
-int comm_open_connection(bool                 b_server, 
+int comm_open_connection(bool                 b_server,
                          bool                 b_secure,
                          const char           *this_component,
-                         int                  port, 
+                         int                  port,
                          const char           *other_component,
                          char                 *hostname,
                          const char           *user_name,
-                         COMM_HANDLE          **handle, 
+                         COMM_HANDLE          **handle,
                          dstring              *err_msg);
 
 int comm_get_application_error(dstring *err_msg);
@@ -120,33 +120,22 @@ int comm_set_connection_param(COMM_HANDLE *handle, int param, int value,
                               dstring *err_msg);
 int comm_ignore_timeouts(bool b_ignore, dstring *err_msg);
 
-int comm_wait_for_connection(COMM_HANDLE *handle, const char *component, 
+int comm_wait_for_connection(COMM_HANDLE *handle, const char *component,
                              int wait_secs, const char **host, dstring *err_msg);
-int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component, 
-                                int wait_secs, dstring *err_msg);
 int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg);
-
-int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg);
-
 
 unsigned long comm_write_message(COMM_HANDLE *handle,
                   const char *unresolved_hostname,
                   const char *component_name,
                   unsigned long component_id,
-                  unsigned char *buffer, 
-                  unsigned long size, 
+                  unsigned char *buffer,
+                  unsigned long size,
                   unsigned char type,
                   dstring *err_msg);
 
-int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg);
+int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg);
 
-int comm_recv_message(COMM_HANDLE *handle, 
-                 bool b_synchron, 
-                 recv_message_t *recv_mess, 
-                 dstring *err_msg);
+int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *err_msg);
 
 int comm_free_message(recv_message_t *recv_mess, dstring *err_msg);
-int check_client_alive(COMM_HANDLE *handle,
-                       const char *component_name,
-                       char *hostname,
-                       dstring *err_msg);
+int check_client_alive(COMM_HANDLE *handle, const char *component_name, char *hostname, dstring *err_msg);

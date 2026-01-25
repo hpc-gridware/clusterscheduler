@@ -1,19 +1,19 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -276,40 +276,40 @@ gdi_is_alive(lList **answer_list) {
 *
 *  SYNOPSIS
 *     lList* gdi_extract_answer(u_long32 cmd, u_long32 target,
-*                                   int id, lList* mal, lList** olpp) 
+*                                   int id, lList* mal, lList** olpp)
 *
 *  FUNCTION
-*     This function extracts the answer for each invidual request on 
-*     previous sge_gdi_multi() calls. 
+*     This function extracts the answer for each invidual request on
+*     previous sge_gdi_multi() calls.
 *
 *  INPUTS
-*     lList** alpp    - 
+*     lList** alpp    -
 *        List for answers if an error occurs in gdi_extract_answer
-*        This list gets allocated by GDI. The caller is responsible for 
-*        freeing. A response is a list element containing a field with a 
-*        status value (AN_status). The value STATUS_OK is used in case of 
-*        success. STATUS_OK and other values are defined in sge_answerL.h. 
-*        The second field (AN_text) in a response list element is a string 
+*        This list gets allocated by GDI. The caller is responsible for
+*        freeing. A response is a list element containing a field with a
+*        status value (AN_status). The value STATUS_OK is used in case of
+*        success. STATUS_OK and other values are defined in sge_answerL.h.
+*        The second field (AN_text) in a response list element is a string
 *        that describes the performed operation or a description of an error.
 *
-*     u_long32 cmd    - 
-*        bitmask which decribes the operation 
+*     u_long32 cmd    -
+*        bitmask which decribes the operation
 *        (see sge_gdi_multi)
 *
-*     u_long32 target - 
+*     u_long32 target -
 *        unique id to identify masters list
-*        (see sge_gdi_multi) 
+*        (see sge_gdi_multi)
 *
-*     int id          - 
+*     int id          -
 *        unique id returned by a previous
-*        sge_gdi_multi() call. 
+*        sge_gdi_multi() call.
 *
 *     lList* mal      - List of answer/response lists returned from
 *        sge_gdi_multi(mode=SGE_GDI_SEND)
 *
-*     lList** olpp    - 
-*        This parameter is used to get a list in case of SGE_GDI_GET command. 
-         The caller is responsible for freeing by using lFreeList(). 
+*     lList** olpp    -
+*        This parameter is used to get a list in case of SGE_GDI_GET command.
+         The caller is responsible for freeing by using lFreeList().
 *
 *  RESULT
 *     true   in case of success
@@ -417,9 +417,9 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 *     sge_gdi_wait() -- wait till a GDI request is finished
 *
 *  SYNOPSIS
-*     bool 
+*     bool
 *     sge_gdi_wait(sge_gdi_ctx_class_t* ctx, lList **alpp, lList **malpp,
-*                   state_gdi_multi *state) 
+*                   state_gdi_multi *state)
 *
 *  FUNCTION
 *     This functions waits until a GDI multi request is handled by
@@ -428,22 +428,22 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 *     or till a detailed list of error messages, describing the reason
 *     why the request could not be executed, is available.
 *
-*     Input parameters for this function are the GDI context "ctx" 
-*     and the "state" structure which has to be initialized by calling 
+*     Input parameters for this function are the GDI context "ctx"
+*     and the "state" structure which has to be initialized by calling
 *     sge_gdi_multi(... mode=SGE_GDI_RECORED...) zero or multiple times
 *     and sge_gdi_multi(... mode=SGE_GDI_SEND...) once.
 *
 *     If the function itself fails it will append answer list messages
 *     to "alpp" and return this "false" as return value". Otherwise
-*     the multi answer list "malpp" will be initialized, which can later 
+*     the multi answer list "malpp" will be initialized, which can later
 *     on be evaluated with gdi_extract_answer(), and the function
 *     will return with "true".
 *
 *  INPUTS
-*     sge_gdi_ctx_class_t* ctx - context object 
-*     lList **alpp             - answer list for this function 
-*     lList **malpp            - multi answer list 
-*     state_gdi_multi *state   - gdi state variable 
+*     sge_gdi_ctx_class_t* ctx - context object
+*     lList **alpp             - answer list for this function
+*     lList **malpp            - multi answer list
+*     state_gdi_multi *state   - gdi state variable
 *
 *  RESULT
 *     bool - error state
@@ -482,7 +482,7 @@ int sge_gdi_multi(lList **alpp, int mode, u_long32 target, u_long32 cmd, lList *
 *           gdi_extract_answer(&answer_job, SGE_GDI_GET, SGE_CQ_LIST,
 *                                  job_request_id, multi_answer_list, &list_job);
 *
-*           if (!local_ret || answer_list_has_error(&answer_cqueue) || 
+*           if (!local_ret || answer_list_has_error(&answer_cqueue) ||
 *               answer_list_has_error(&answer_job) || answer_list_has_error(&local_answer_list)) {
 *              ERROR("GDI multi request failed");
 *           } else {
@@ -538,7 +538,7 @@ sge_gdi_wait(lList **malpp, state_gdi_multi *state) {
  *
  *  NOTES
  *     MT-NOTE: sge_send_gdi_request() is MT safe (assumptions)
- *     
+ *
  *     The function does *not* wait until the message is actually sent!
  *---------------------------------------------------------*/
 int
@@ -632,6 +632,8 @@ sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffe
             event client code should be re-written, not to use this synchron flag set to false
     */
    if (synchron == 0) {
+      // @todo do the commlib_trigger only with single threaded commlib?
+      //       with multi-threaded commlib and synchron 0 it does nothing
       cl_commlib_trigger(handle, 0);
    }
 
@@ -761,12 +763,12 @@ dump_send_info(const char *comp_host, const char *comp_name, int comp_id, cl_xml
 
 /*
 ** NAME
-**   gdi_tsm   - trigger scheduler monitoring 
+**   gdi_tsm   - trigger scheduler monitoring
 ** PARAMETER
 **   schedd_name   - scheduler name  - ignored!
 **   cell          - ignored!
 ** RETURN
-**   answer list 
+**   answer list
 ** EXTERNAL
 **
 ** DESCRIPTION
@@ -782,13 +784,13 @@ lList *gdi_tsm() {
 
 /*
 ** NAME
-**   gdi_kill  - send shutdown/kill request to scheduler, master, execds 
+**   gdi_kill  - send shutdown/kill request to scheduler, master, execds
 ** PARAMETER
 **   id_list     - id list, EH_Type or EV_Type
 **   cell          - cell, ignored!!!
 **   option_flags  - 0
-**   action_flag   - combination of MASTER_KILL, SCHEDD_KILL, EXECD_KILL, 
-**                                       JOB_KILL 
+**   action_flag   - combination of MASTER_KILL, SCHEDD_KILL, EXECD_KILL,
+**                                       JOB_KILL
 ** RETURN
 **   answer list
 ** EXTERNAL
@@ -877,18 +879,18 @@ lList *gdi_kill(lList *id_list, u_long32 action_flag) {
 *     int sge_gdi_get_permission(int option);
 *
 *  FUNCTION
-*     This function asks the qmaster for the permission (PERM_Type) 
-*     list. The option flag specifies which right should be checked. 
-*     It can be MANAGER_CHECK or/and OPERATOR_CHECK at this time. If 
+*     This function asks the qmaster for the permission (PERM_Type)
+*     list. The option flag specifies which right should be checked.
+*     It can be MANAGER_CHECK or/and OPERATOR_CHECK at this time. If
 *     the caller has access the function returns true.
-* 
+*
 *  INPUTS
 *     int option - check flag (MANAGER_CHECK or OPERATOR_CHECK)
 *
 *  RESULT
-*     bool true if caller has the right, false if not (false if qmaster 
+*     bool true if caller has the right, false if not (false if qmaster
 *     not reachable)
-* 
+*
 *  SEE ALSO
 *     gdilib/sge_gdi_get_mapping_name()
 *     gdilib/PERM_LOWERBOUND
@@ -940,7 +942,7 @@ sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *is_operator,
   and passes the result on to send_message
   Always use this function instead of gdi_send_message directly, even
   if compression is turned off.
-  
+
     NOTES
        MT-NOTE: gdi_send_message_pb() is MT safe (assumptions)
 **********************************************************************/
@@ -963,7 +965,7 @@ gdi_send_message_pb(int synchron, const char *tocomproc, int toid, const char *t
    COMMLIB/SECURITY WRAPPERS
    FIXME: FUNCTIONPOINTERS SHOULD BE SET IN sge_security_initialize !!!
 
-   Test dlopen functionality, stub libs or check if openssl calls can be added 
+   Test dlopen functionality, stub libs or check if openssl calls can be added
    without infringing a copyright
 
    NOTES
@@ -983,7 +985,7 @@ gdi_send_message(int synchron, const char *tocomproc, int toid, const char *toho
 
 
    /* CR- TODO: This is for tight integration of qrsh -inherit
-    *       
+    *
     *       All GDI functions normally connect to qmaster, but
     *       qrsh -inhert want's to talk to execd. A second handle
     *       is created. All gdi functions should accept a pointer
@@ -1054,7 +1056,7 @@ gdi_send_message(int synchron, const char *tocomproc, int toid, const char *toho
 }
 
 
-/* 
+/*
  *  TODO: rewrite this function
  *  NOTES
  *     MT-NOTE: gdi_receive_message() is MT safe (major assumptions!)
@@ -1201,6 +1203,7 @@ gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
  *   -6   endpoint not unique
  *   -7   no permission to get configuration
  *   -8   access denied error on commlib layer
+ *   @todo Introduce an enum with error codes.
  * EXTERNAL
  *
  * DESCRIPTION
@@ -1361,7 +1364,7 @@ int gdi_wait_for_conf(lList **conf_list) {
 
    while ((ret = gdi_get_configuration(qualified_hostname, &global, &local))) {
       if (ret == -6 || ret == -7) {
-         /* confict: endpoint not unique or no permission to get config */
+         // conflict: endpoint not unique or no permission to get config
          DRETURN(-1);
       }
 
@@ -1373,6 +1376,9 @@ int gdi_wait_for_conf(lList **conf_list) {
 
       DTRACE;
       cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
+      // @todo Wait for some communication to happen (commlib app_condition triggered)
+      //       Why? We wait for the reply of a GET CONF above.
+      //       And commlib is initialized multithreaded way, so no need to trigger anything.
       ret_val = cl_commlib_trigger(handle, 1);
       switch (ret_val) {
          case CL_RETVAL_SELECT_TIMEOUT:
@@ -1547,7 +1553,7 @@ static pthread_mutex_t general_communication_error_mutex = PTHREAD_MUTEX_INITIAL
 
 /* local static struct to store communication errors. The boolean
  * values com_access_denied and com_endpoint_not_unique will never be
- * restored to false again 
+ * restored to false again
  */
 typedef struct sge_gdi_com_error_type {
    int com_error;                        /* current commlib error */
@@ -1573,7 +1579,7 @@ static sge_gdi_com_error_t sge_gdi_communication_error = {CL_RETVAL_OK,
 *     sge_dump_message_tag() -- get tag name string
 *
 *  SYNOPSIS
-*     const char* sge_dump_message_tag(int tag) 
+*     const char* sge_dump_message_tag(int tag)
 *
 *  FUNCTION
 *     This is a function used for getting a printable string output for the
@@ -1587,7 +1593,7 @@ static sge_gdi_com_error_t sge_gdi_communication_error = {CL_RETVAL_OK,
 *     const char* - name of tag
 *
 *  NOTES
-*     MT-NOTE: sge_dump_message_tag() is MT safe 
+*     MT-NOTE: sge_dump_message_tag() is MT safe
 *******************************************************************************/
 const char *sge_dump_message_tag(unsigned long tag) {
    switch (tag) {
@@ -1640,17 +1646,17 @@ const char *sge_dump_message_tag(unsigned long tag) {
 *     general_communication_error() -- callback for communication errors
 *
 *  SYNOPSIS
-*     static void general_communication_error(int cl_error, 
-*                                             const char* error_message) 
+*     static void general_communication_error(int cl_error,
+*                                             const char* error_message)
 *
 *  FUNCTION
 *     This function is used by cl_com_set_error_func() to set the default
-*     application error function for communication errors. On important 
+*     application error function for communication errors. On important
 *     communication errors the communication lib will call this function
 *     with a corresponding error number (within application context).
 *
 *     This function should never block. Treat it as a kind of signal handler.
-*    
+*
 *     The error_message parameter is freed by the commlib.
 *
 *  INPUTS
@@ -1658,7 +1664,7 @@ const char *sge_dump_message_tag(unsigned long tag) {
 *     const char* error_message - additional error text message
 *
 *  NOTES
-*     MT-NOTE: general_communication_error() is MT safe 
+*     MT-NOTE: general_communication_error() is MT safe
 *     (static struct variable "sge_gdi_communication_error" is used)
 *
 *
@@ -1742,7 +1748,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
 
 
       /*
-       * now log the error if not already reported the 
+       * now log the error if not already reported the
        * least CL_DEFINE_MESSAGE_DUP_LOG_TIMEOUT seconds
        */
       if (!commlib_error->cl_already_logged &&
@@ -1804,7 +1810,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
 *     sge_get_com_error_flag() -- return gdi error flag state
 *
 *  SYNOPSIS
-*     bool sge_get_com_error_flag(sge_gdi_stored_com_error_t error_type) 
+*     bool sge_get_com_error_flag(sge_gdi_stored_com_error_t error_type)
 *
 *  FUNCTION
 *     This function returns the error flag for the specified error type
@@ -1816,7 +1822,7 @@ general_communication_error(const cl_application_error_list_elem_t *commlib_erro
 *     bool - true: error has occurred, false: error never occurred
 *
 *  NOTES
-*     MT-NOTE: sge_get_com_error_flag() is MT safe 
+*     MT-NOTE: sge_get_com_error_flag() is MT safe
 *
 *  SEE ALSO
 *     sge_any_request/general_communication_error()
@@ -1826,9 +1832,9 @@ bool sge_get_com_error_flag(u_long32 progid, sge_gdi_stored_com_error_t error_ty
    bool ret_val = false;
    sge_mutex_lock("general_communication_error_mutex", __func__, __LINE__, &general_communication_error_mutex);
 
-   /* 
+   /*
     * never add a default case for that switch, because of compiler warnings
-    * for un-"cased" values 
+    * for un-"cased" values
     */
 
    /* TODO: remove component_get_component_id()/progid cases for QMASTER and EXECD after BT: 6350264, IZ: 1893 is fixed */

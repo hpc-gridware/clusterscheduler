@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -209,7 +209,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
    }
 
    /*
-   ** reresolve qualified hostname with use of host aliases 
+   ** reresolve qualified hostname with use of host aliases
    ** (corresponds to reresolve_me_qualified_hostname)
    */
    cl_ret = reresolve_qualified_hostname();
@@ -356,7 +356,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
                                           (int)sge_qmaster_port, /* create service on qmaster port */
                                           CL_TCP_DEFAULT,   /* use standard connect mode */
                                           (char *) component_get_component_name(),
-                                          my_component_id,  /* this endpoint is called "qmaster" 
+                                          my_component_id,  /* this endpoint is called "qmaster"
                                                                and has id 1 */
                                           1,
                                           0); /* select timeout is set to 1 second 0 usec */
@@ -429,6 +429,7 @@ int gdi_client_prepare_enroll(lList **answer_list) {
       DPRINTF("waiting for 60 seconds, because environment SGE_TEST_SOCKET_BIND is set\n");
       while (handle != nullptr && now.tv_sec - handle->start_time.tv_sec <= 60) {
          DPRINTF("timeout: " sge_U32CFormat "\n", sge_u32c(now.tv_sec - handle->start_time.tv_sec));
+         // wait for some communication to happen (commlib app_condition triggered)
          cl_commlib_trigger(handle, 1);
          gettimeofday(&now, nullptr);
       }

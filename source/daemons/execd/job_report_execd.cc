@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -74,7 +74,7 @@ bool sge_get_flush_jr_flag() {
    return flush_jr;
 }
 
-void 
+void
 flush_job_report(lListElem *jr)
 {
    if (jr != nullptr) {
@@ -98,7 +98,7 @@ void trace_jr()
          DPRINTF("Jobtask " sge_u32"." sge_u32" task %s\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number), s);
       } else {
          DPRINTF("Jobtask " sge_u32"." sge_u32"\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number));
-      }   
+      }
    }
    DRETURN_VOID;
 }
@@ -107,12 +107,12 @@ void trace_jr()
 lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaskid, const lListElem *jep)
 {
    lListElem *jr, *jatep = nullptr;
- 
+
    DENTER(TOP_LAYER);
 
    if (jr_list == nullptr)
       jr_list = lCreateList("job report list", JR_Type);
-  
+
    if (jr_list == nullptr || (jr=lCreateElem(JR_Type)) == nullptr) {
       ERROR(SFNMAX, MSG_JOB_TYPEMALLOC);
       DRETURN(nullptr);
@@ -133,16 +133,16 @@ lListElem *add_job_report(u_long32 jobid, u_long32 jataskid, const char *petaski
          lListElem *petep = nullptr;
          if (petaskid != nullptr) {
             petep = ja_task_search_pe_task(jatep, petaskid);
-         }   
+         }
          job_report_init_from_job(jr, jep, jatep, petep);
       }
    }
- 
+
    DRETURN(jr);
 }
 
 lListElem *
-get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id) 
+get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
 {
    lListElem *jr;
    const void *iterator = nullptr;
@@ -155,7 +155,7 @@ get_job_report(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id)
          if (pe_task_id == nullptr) {
             break;
          } else {
-            if (sge_strnullcmp(pe_task_id, lGetString(jr, JR_pe_task_id_str)) 
+            if (sge_strnullcmp(pe_task_id, lGetString(jr, JR_pe_task_id_str))
                 == 0) {
                 break;
             }
@@ -198,21 +198,21 @@ void cleanup_job_report(u_long32 jobid, u_long32 jataskid)
    NAME
 
       add_usage()
-   
+
    DESCR
 
-      Adds ulong attribute 'name' to the usage list of a 
+      Adds ulong attribute 'name' to the usage list of a
       job report 'jr'. If no 'uval_as_str' or it is not
-      convertable into a ulong 'uval_as_ulong' is used 
+      convertable into a ulong 'uval_as_ulong' is used
       as value for UA_value.
 
-   RETURN      
+   RETURN
 
       0 on success
       -1 on error
    ------------------------------------------------------------ */
-/* JG: TODO (397): move to libs/gdi/sge_usage.* */   
-int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val) 
+/* JG: TODO (397): move to libs/gdi/sge_usage.* */
+int add_usage(lListElem *jr, const char *name, const char *val_as_str, double val)
 {
    lListElem *usage;
 
@@ -235,12 +235,12 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
       double parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
          ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, sge_u32c(lGetUlong(jr, JR_job_number))); /* use default value */
-         lSetDouble(usage, UA_value, val); 
+         lSetDouble(usage, UA_value, val);
          DRETURN(-1);
       }
       val = parsed;
    }
-      
+
    lSetDouble(usage, UA_value, val);
 
    DRETURN(0);
@@ -249,16 +249,16 @@ int add_usage(lListElem *jr, const char *name, const char *val_as_str, double va
 
 /* ------------------------------------------------------------
 
-NAME 
-   
+NAME
+
    execd_c_ack()
 
 DESCRIPTION
-   
+
    These requests are triggered by our job report list
    that is sent periodically. They are responses of
    Qmaster in different cases. But they get sent as one
-   message, to save communication. 
+   message, to save communication.
 
 RETURN
 
@@ -273,9 +273,9 @@ int do_ack(struct_msg_t *aMsg)
    const char *pe_task_id_str;
 
    DENTER(TOP_LAYER);
- 
+
    DPRINTF("------- GOT ACK'S ---------\n");
- 
+
    /* we get a bunch of ack's */
    while (pb_unused(&(aMsg->buf)) > 0) {
 
@@ -285,14 +285,14 @@ int do_ack(struct_msg_t *aMsg)
       }
 
       switch (lGetUlong(ack, ACK_type)) {
- 
+
          case ACK_JOB_EXIT:
 /*
 **          This is the answer of qmaster if we report a job as exiting
 **          - job gets removed from job report list and from job list
-**          - job gets cleaned from file system                       
-**          - retry is triggered by next job report sent to qmaster 
-**            containing this job as "exiting"                  
+**          - job gets cleaned from file system
+**          - retry is triggered by next job report sent to qmaster
+**            containing this job as "exiting"
 */
             jobid = lGetUlong(ack, ACK_id);
             jataskid = lGetUlong(ack, ACK_id2);
@@ -308,7 +308,7 @@ int do_ack(struct_msg_t *aMsg)
             }
 
             break;
- 
+
          case ACK_JOB_REPORT_RESEND:
 /*
 **          sent by qmaster instead of ACK_JOB_EXIT to make execd
@@ -327,19 +327,19 @@ int do_ack(struct_msg_t *aMsg)
             }
 
             break;
- 
+
          case ACK_SIGNAL_JOB:
 /*
 **          This is the answer of qmaster
 **          if we report a job as running
-**          while qmaster does not know  
-**          this job                     
-**          - no "unknown job" is added  
-**            to the job report          
-**          - retry is triggered by next 
-**            job report sent to qmaster 
-**            containing this job as     
-**            "running"                  
+**          while qmaster does not know
+**          this job
+**          - no "unknown job" is added
+**            to the job report
+**          - retry is triggered by next
+**            job report sent to qmaster
+**            containing this job as
+**            "running"
 */
             {
                u_long32 signo  = SGE_SIGKILL;
@@ -363,7 +363,7 @@ int do_ack(struct_msg_t *aMsg)
          case ACK_LOAD_REPORT:
             execd_merge_load_report(lGetUlong(ack, ACK_id));
             break;
- 
+
 /*
  * This is the answer of qmaster
  * when we report a slave job,
@@ -385,7 +385,7 @@ int do_ack(struct_msg_t *aMsg)
       }
 
       lFreeElem(&ack);
-      /* 
+      /*
        * delete job's spooling directory may take some time
        * (NFS directory case). We have to trigger communication
        * to be sure not to get communication timeouts when we have
@@ -393,6 +393,8 @@ int do_ack(struct_msg_t *aMsg)
        * NOT synchron which means that the commlib will return
        * when there is nothing to do
        */
+      // @todo doesn't sge_execd use the multithreaded commlib? Why then call cl_commlib_trigger?
+      //       with synchron 0 it does nothing
       cl_commlib_trigger(cl_com_get_handle("execd", 1) ,0);
    }
 

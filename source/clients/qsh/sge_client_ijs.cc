@@ -426,7 +426,7 @@ void* tty_to_commlib(void *t_conf)
                      DPRINTF("tty_to_commlib: data successfully written\n");
                    }
                }
-               comm_flush_write_messages(g_comm_handle, &err_msg);
+               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
             // If we received something on the wakeup pipe, we shall exit.
@@ -504,7 +504,7 @@ void* commlib_to_tty(void *t_conf)
       recv_mess.data = nullptr;
 
       DPRINTF("commlib_to_tty: recv_message()\n");
-      ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
+      ret = comm_recv_message(g_comm_handle, &recv_mess, &err_msg);
       if (ret != COMM_RETVAL_OK) {
          /* check if we are still connected to anybody. */
          /* if not - exit. */
@@ -575,8 +575,8 @@ void* commlib_to_tty(void *t_conf)
                break;
             case REGISTER_CTRL_MSG:
                /* control message */
-               /* a client registered with us. With the next loop, the
-                * cl_commlib_trigger function will send the WINDOW_SIZE_CTRL_MSG
+               /* A client registered with us. The commlib write thread
+                * will send the WINDOW_SIZE_CTRL_MSG
                 * (and perhaps some data messages),  which is already in the
                 * send_messages list of the connection, to the client.
                 */
@@ -611,7 +611,7 @@ void* commlib_to_tty(void *t_conf)
                   (unsigned char*)" ", 1, UNREGISTER_RESPONSE_CTRL_MSG, &err_msg);
 
                DPRINTF("commlib_to_tty: received exit_status from shepherd: %d\n", g_exit_status);
-               comm_flush_write_messages(g_comm_handle, &err_msg);
+               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
                do_exit = 1;
 #if 0
                cl_log_list_set_log_level(cl_com_get_log_list(), CL_LOG_OFF);
