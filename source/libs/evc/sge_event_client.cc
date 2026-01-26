@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1538,6 +1538,7 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
                 */
                cl_com_handle_t* com_handle = cl_com_get_handle(component_get_component_name(), 0);
                if (com_handle != nullptr) {
+                  // @todo is this required in all cases? Only if we are using commlib single threaded, check this?
                   cl_commlib_trigger(com_handle, 1);
                } else {
                   /* We have no commlib handle, do a sleep() */

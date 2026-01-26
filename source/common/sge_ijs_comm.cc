@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -51,6 +51,7 @@
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_time.h"
 
 #include "gdi/msg_gdilib.h"
 
@@ -887,172 +888,95 @@ int comm_wait_for_connection(COMM_HANDLE *handle,
                              const char **host,
                              dstring *err_msg)
 {
-   int                     waited_usec = 0;
-   int                     ret = 0;
-   int                     ret2 = 0;
-   int                     ret_val = COMM_RETVAL_OK;
-   cl_raw_list_t           *endpoint_list = nullptr;
-   cl_endpoint_list_elem_t *endpoint;
-
    DENTER(TOP_LAYER);
 
    if (handle == nullptr) {
       return COMM_INVALID_PARAMETER;
    }
 
-   /*
-    * In the while loop, do this:
-    * Call cl_commlib_trigger(), ignore the return value (it will never return 99)
-    * Get the list of endpoints of expected kind
-    * If endpointlist is returned and contains 0 elements, sleep for
-    * 10 milliseconds and loop again.
-    */
-   while ((ret2=cl_commlib_trigger(handle, 0)) != 99
-          && (ret = cl_commlib_search_endpoint(handle, nullptr,
-             (char*)component, 0, true, &endpoint_list)) == CL_RETVAL_OK
-          && endpoint_list != nullptr
-          && endpoint_list->elem_count == 0
-          && waited_usec/1000000 < wait_secs) {
+   int ret_val = COMM_RETVAL_OK;
 
+   // Wait for a client to connect.
+   // We get the commlib endpoint list and if there is an endpoint registered we are done.
+   // Until an endpoint appears or an error happens we wait with cl_commlib_trigger (synchronously).
+   cl_raw_list_t *endpoint_list = nullptr;
+   // Wait with timeout.
+   u_long64 now = sge_get_gmt64();
+   u_long64 timeout = now + sge_gmt32_to_gmt64(wait_secs);
+   while (ret_val == COMM_RETVAL_OK && now < timeout) {
+      // From commlib get an endpoint list containing the connected clients matching component and component_id.
+      int cl_ret = cl_commlib_search_endpoint(handle, nullptr, (char *)component,
+                                  0, true, &endpoint_list);
+      if (cl_ret != CL_RETVAL_OK) {
+         // Fetching the endpoint list failed.
+         sge_dstring_sprintf(err_msg, cl_get_error_text(cl_ret));
+         DPRINTF("cl_commlib_search_endpoint() failed: %s (%d)\n", sge_dstring_get_string(err_msg), cl_ret);
+         ret_val = COMM_CANT_SEARCH_ENDPOINT;
+      } else {
+         if (endpoint_list != nullptr) {
+            DPRINTF("cl_commlib_search_endpoint succeeded, %d connections\n", endpoint_list->elem_count);
+            if (endpoint_list->elem_count > 0) {
+               // A client matching our constraints has connected - we are done with waiting.
+               break;
+            }
+         }
+      }
+
+      // cl_commlib_search_endpoint() will always return a list, even if it is empty - need to free it.
       cl_endpoint_list_cleanup(&endpoint_list);
-      usleep(10000);
-      waited_usec += 10000;
+
+      if (ret_val == COMM_RETVAL_OK) {
+         // Wait for something to happen in commlib (app_condition triggered) with 1s timeout.
+         // This might return with errors, e.g., no file handles existing yet to do poll() on, which is OK.
+         // In this case we do a short sleep to make sure we do not run at 100% cpu load.
+         // As long as no client connected, we expect a select timeout to happen after 1s.
+         int trigger_ret = cl_commlib_trigger(handle, 1);
+         if (trigger_ret != CL_RETVAL_OK && trigger_ret != CL_RETVAL_SELECT_TIMEOUT) {
+            DPRINTF("cl_commlib_trigger failed: %s\n", cl_get_error_text(trigger_ret));
+            usleep(10000);
+         }
+      }
+
+      if (received_signal != 0) {
+         DPRINTF("Received signal %d while waiting for client connection\n", received_signal);
+      }
+      // Allow pressing CTRL-C while waiting for a client connection.
       if (received_signal == SIGINT) {
-         break;
+         sge_dstring_sprintf(err_msg, "interrupted by SIGINT");
+         ret_val = COMM_SELECT_INTERRUPT;
+      }
+
+      now = sge_get_gmt64();
+   }
+
+   if (ret_val == COMM_RETVAL_OK) {
+      if (now >= timeout) {
+         // No client connected within the given wait_time.
+         sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for connection");
+         DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
+         ret_val = COMM_GOT_TIMEOUT;
       }
    }
-   if (waited_usec/1000000 >= wait_secs) {
-      sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for connection");
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_GOT_TIMEOUT;
-   } else if (ret2 != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, "comm_wait_for_connection(): error in cl_commlib_trigger(): %s", cl_get_error_text(ret2));
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_CANT_TRIGGER;
-   } else if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, "comm_wait_for_connection(): wait_for_connection: search_endpoint error: %s", cl_get_error_text(ret));
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_CANT_SEARCH_ENDPOINT;
-   }
-   if (endpoint_list != nullptr) {
-      /* A client connected to us, get its hostname */
-      if (endpoint_list->elem_count > 0) {
-         endpoint = cl_endpoint_list_get_first_elem(endpoint_list);
-         sge_free(host);
-         *host = strdup(endpoint->endpoint->comp_host);
-         DPRINTF("A client from host %s has connected\n", *host);
+
+   if (ret_val == COMM_RETVAL_OK) {
+      if (endpoint_list != nullptr) {
+         if (endpoint_list->elem_count > 0) {
+            /* A client connected to us, get its hostname */
+            cl_endpoint_list_elem_t *endpoint = cl_endpoint_list_get_first_elem(endpoint_list);
+            sge_free(host);
+            *host = strdup(endpoint->endpoint->comp_host);
+            DPRINTF("A client from host %s has connected\n", *host);
+         }
+         cl_endpoint_list_cleanup(&endpoint_list);
       }
-      cl_endpoint_list_cleanup(&endpoint_list);
    }
+
+   // When we got here without error, check if there was some application error.
+   // Can this really happen?
    if (ret_val == COMM_RETVAL_OK) {
       ret_val = comm_get_application_error(err_msg);
    }
-   DRETURN(ret_val);
-}
 
-/****** sge_ijs_comm/comm_wait_for_no_connection() ****************************
-*  NAME
-*     comm_wait_for_no_connection() -- Wait until no client is connected any
-*                                      more
-*
-*  SYNOPSIS
-*     int comm_wait_for_no_connection(COMM_HANDLE *handle, const char
-*     *component, int wait_secs, dstring *err_msg)
-*
-*  FUNCTION
-*     Waits until no client is connected to us any more.
-*
-*  INPUTS
-*     COMM_HANDLE *handle   - Handle of the connection.
-*     const char *component - Filter for clients with this component name
-*     int wait_secs         - Wait at most wait_secs seconds.
-*     dstring *err_msg      - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              No client is connected to us.
-*
-*           COMM_GOT_TIMEOUT:
-*              'wait_seconds' have elapsed.
-*
-*           COMM_CANT_TRIGGER:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_SEARCH_ENDPOINT:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_wait_for_no_connection() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_wait_for_connection()
-*******************************************************************************/
-int comm_wait_for_no_connection(COMM_HANDLE *handle, const char *component,
-                                int wait_secs, dstring *err_msg)
-{
-   int                     waited_usec = 0;
-   int                     ret = 0;
-   int                     ret2 = 0;
-   int                     ret_val = COMM_RETVAL_OK;
-   cl_raw_list_t           *endpoint_list = nullptr;
-   bool                    do_exit = false;
-
-   DENTER(TOP_LAYER);
-
-   /*
-    * In the while loop, do this:
-    * Call cl_commlib_trigger(), ignore the return value (it won't return 99)
-    * Get the list of endpoints of expected kind
-    * If endpointlist is returned and contains >0 elements, sleep for
-    * 10 milliseconds and loop again.
-    */
-
-   while (!do_exit) {
-      /* Let commlib update it's lists */
-      ret2 = cl_commlib_trigger(handle, 0);
-      /* Get list of all endpoints */
-      ret  = cl_commlib_search_endpoint(handle, nullptr, (char*)component, 0, true,
-                                        &endpoint_list);
-
-      if (ret == CL_RETVAL_OK
-          && endpoint_list != nullptr
-          && endpoint_list->elem_count > 0
-          && waited_usec/1000000 < wait_secs) {
-         cl_endpoint_list_cleanup(&endpoint_list);
-         endpoint_list = nullptr;
-         usleep(10000);
-         waited_usec += 10000;
-         if (received_signal == SIGINT) {
-            do_exit = true;
-            continue;
-         }
-      } else {
-         DPRINTF("No known endpoint left or timeout -> exit loop\n");
-         do_exit = true;
-         continue;
-      }
-   }
-
-   DPRINTF("wait_for_no_connection: after while\n");
-   if (waited_usec/1000000 >= wait_secs) {
-      sge_dstring_sprintf(err_msg, "Timeout occurred while waiting for no connection");
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_GOT_TIMEOUT;
-   }
-   if (ret2 != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, "comm_wait_for_no_connection(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret2));
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_CANT_TRIGGER;
-   }
-   if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, "comm_wait_for_no_connection(): cl_commlib_search_endpoint() failed: %s", cl_get_error_text(ret));
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_CANT_SEARCH_ENDPOINT;
-   }
-   if (endpoint_list != nullptr) {
-      DPRINTF("comm_wait_for_no_connection(): cleaning up endpoint list\n");
-      cl_endpoint_list_cleanup(&endpoint_list);
-   }
    DRETURN(ret_val);
 }
 
@@ -1109,58 +1033,6 @@ int comm_get_connection_count(const COMM_HANDLE *handle, dstring *err_msg)
       }
    }
 
-   DRETURN(ret_val);
-}
-
-/****** sge_ijs_comm/comm_trigger() *******************************************
-*  NAME
-*     comm_trigger() -- Trigger communication library
-*
-*  SYNOPSIS
-*     int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg)
-*
-*  FUNCTION
-*     Triggers the communication library  to do pending tasks.
-*
-*  INPUTS
-*     COMM_HANDLE *handle  - Handle of the connection.
-*     int         synchron - Set to != 0 to wait until all pending
-*                            messages are sent, == 0 to just do one
-*                            piece of work and return then.
-*     dstring     *err_msg - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              Trigger was successful.
-*
-*           COMM_GOT_TIMEOUT:
-*              'wait_seconds' have elapsed.
-*
-*           COMM_CANT_TRIGGER:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_SEARCH_ENDPOINT:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_trigger() is not MT safe
-*******************************************************************************/
-int comm_trigger(COMM_HANDLE *handle, int synchron, dstring *err_msg)
-{
-   int ret;
-   int ret_val = COMM_RETVAL_OK;
-
-   DENTER(TOP_LAYER);
-
-   ret = cl_commlib_trigger(handle, synchron);
-   if (ret != CL_RETVAL_OK) {
-      sge_dstring_sprintf(err_msg, "comm_trigger(): cl_commlib_trigger() failed: %s", cl_get_error_text(ret));
-      DPRINTF(SFNMAX "\n", sge_dstring_get_string(err_msg));
-      ret_val = COMM_CANT_TRIGGER;
-   }
-   if (ret_val == COMM_RETVAL_OK) {
-      ret_val = comm_get_application_error(err_msg);
-   }
    DRETURN(ret_val);
 }
 
@@ -1257,26 +1129,23 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
    DRETURN(nwritten);
 }
 
-/****** sge_ijs_comm/comm_flush_write_messages() ******************************
+/****** sge_ijs_comm/comm_wait_for_all_messages_sent() ******************************
 *  NAME
-*     comm_flush_write_messages() -- Flush all messages still in the write list
-*                                    of the communication library
+*     wait_for_all_messages_sent() -- Wait until all messages have been sent
 *
 *  SYNOPSIS
-*     int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
+*     int wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
 *
 *  FUNCTION
-*     Flushes all messages still in the write list of the communication library.
-*     comm_write_message() adds a message to the write list and tries to send
-*     it immediately. This isn't always possible, so comm_flush_write_messages()
-*     makes sure all messages are really written.
+*     Waits until all sent messages have actually been sent by the commlib write thread
+*     or an error occurs.
 *
 *  INPUTS
 *     COMM_HANDLE *handle - Handle of the connection.
 *     dstring *err_msg    - Contains error message in case of error.
 *
 *  RESULT
-*     int - 0: Ok, all messages were flushed.
+*     int - 0: Ok, all messages were sent.
 *          <0: Retries needed to flush all messages * -1
 *          >0: An error occurred, error number is a commlib error.
 *
@@ -1286,23 +1155,19 @@ unsigned long comm_write_message(COMM_HANDLE *handle,
 *  SEE ALSO
 *     communication/comm_write_message
 *******************************************************************************/
-int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
+int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
 {
    DENTER(TOP_LAYER);
    int retries = 0;
 
    unsigned long elems = cl_com_messages_in_send_queue(handle);
    while (elems > 0) {
-      /*
-       * Don't set the cl_commlib_trigger()-call to be blocking and
-       * get rid of the usleep() - it's much slower!
-       * The last cl_commlib_trigger()-call will take 1 s.
-       */
-      int trigger_ret = cl_commlib_trigger(handle, 0);
-      /*
-       * Bail out if trigger fails with an error that indicates that we
-       * won't be able to send the messages in the near future.
-       */
+      // Wait for something to happen within commlib, with timeout (1s).
+      // This waits for the commlib app_condition to be triggered, either as we received, or we sent messages.
+      int trigger_ret = cl_commlib_trigger(handle, 1);
+
+       // Bail out if trigger fails with an error that indicates that we
+       // won't be able to send the messages in the near future.
       if (trigger_ret != CL_RETVAL_OK &&
           trigger_ret != CL_RETVAL_SELECT_TIMEOUT &&
           trigger_ret != CL_RETVAL_SELECT_INTERRUPT &&
@@ -1312,17 +1177,10 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
          return trigger_ret;
       }
 
+       // @todo Shall we have a maximum number of retries? A timeout?
+       //       But if the qrsh client is suspended, we probably need to wait until it is unsuspended again.
       elems = cl_com_messages_in_send_queue(handle);
-      /*
-       * We just tried to send the messages and it wasn't possible to send
-       * all messages - give the network some time to recover.
-       * @todo CS-1739 cl_commlib_trigger() does *not* wait until all messages are sent!
-       * @todo Shall we have a maximum number of retries? A timeout?
-       *       But if the qrsh client is suspended, we probably need to wait until it is unsuspended again.
-       */
-      /* TODO (NEW): make this work correctly by calling check_client_alive */
       if (elems > 0) {
-         usleep(10000);
          retries++;
       }
    }
@@ -1343,8 +1201,6 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
 *
 *  INPUTS
 *     COMM_HANDLE *handle          - Handle of the connection.
-*     bool b_synchron              - true: Wait until a complete message was read
-*                                    false: Get what's available and return.
 *     recv_message_t *recv_mess    - The message gets filled into this struct.
 *                                    The caller has to free buffers.
 *     dstring *err_msg             - Gets the error reason in case of error.
@@ -1368,9 +1224,7 @@ int comm_flush_write_messages(COMM_HANDLE *handle, dstring *err_msg)
 *  SEE ALSO
 *     communication/comm_send_message, communication/comm_free_message
 *******************************************************************************/
-int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
-                      recv_message_t *recv_mess, dstring *err_msg)
-{
+int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *err_msg) {
    int  ret_val = COMM_RETVAL_OK;
    int  ret = 0;
    char sub_type[10];
@@ -1394,7 +1248,7 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
                                     nullptr,       /* unresolved_hostname, */
                                     nullptr,       /* component_name, */
                                     0,          /* component_id, */
-                                    b_synchron,
+                                    true,
                                     0,
                                     &message,
                                     &sender);
@@ -1477,13 +1331,8 @@ int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
                break;
          }
       }
-   } else {
-      // @todo CS-1739 do we need the cl_commlib_trigger, when we are using multi-threaded commlib?
-      // if b_synchron is 0, then it does essentially nothing
-      // otherwise it waits, until a message is available - the same which is done by cl_commlib_receive_message()
-      // itself
-      cl_commlib_trigger(handle, 0);
    }
+
    DRETURN(ret_val);
 }
 

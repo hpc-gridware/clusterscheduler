@@ -28,7 +28,7 @@
  *  All Rights Reserved.
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -503,7 +503,7 @@ static void* pty_to_commlib(void *t_conf)
             shepherd_trace("pty_to_commlib: send_buf() failed -> exiting");
             do_exit = 1;
          }
-         int flush_ret = comm_flush_write_messages(g_comm_handle, &err_msg);
+         int flush_ret = comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
          if (flush_ret > 0) {
             // comm_flush_write_messages reported an error - log to trace file
             shepherd_trace("pty_to_commlib: comm_flush_write_messages() returned error %d: %s",
@@ -596,7 +596,7 @@ static void* commlib_to_pty(void *t_conf)
                      g_comm_handle->synchron_receive_timeout);
 #endif
 
-      ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
+      ret = comm_recv_message(g_comm_handle, &recv_mess, &err_msg);
 
 #ifdef EXTENSIVE_TRACING
       shepherd_trace("commlib_to_pty: comm_recv_message() returned %d, err_msg: %s",
@@ -1072,7 +1072,7 @@ int close_parent_loop(int exit_status)
       shepherd_trace("waiting for UNREGISTER_RESPONSE_CTRL_MSG");
       while (count < RESPONSE_MSG_TIMEOUT) {
          memset(&recv_mess, 0, sizeof(recv_message_t));
-         ret = comm_recv_message(g_comm_handle, true, &recv_mess, &err_msg);
+         ret = comm_recv_message(g_comm_handle, &recv_mess, &err_msg);
          count++;
          if (recv_mess.type == UNREGISTER_RESPONSE_CTRL_MSG) {
             shepherd_trace("Received UNREGISTER_RESPONSE_CTRL_MSG");

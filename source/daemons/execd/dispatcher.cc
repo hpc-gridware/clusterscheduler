@@ -27,10 +27,11 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
+
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
@@ -230,6 +231,9 @@ int sge_execd_process_messages() {
                do_reconnect = true;
                break;
          }
+         // @todo doesn't sge_execd use the multithreaded commlib? Why then call cl_commlib_trigger?
+         //       to wait for the next message to arrive?
+         //       better use synchron 1 on the gdi_receive_message above?
          cl_commlib_trigger(cl_com_get_handle(component_get_component_name(), 0), 1);
       }
 

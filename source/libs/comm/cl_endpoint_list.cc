@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -137,16 +137,16 @@ int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
    cl_endpoint_list_elem_t *elem = nullptr;
 
    if (list_p == nullptr) {
-      /* we expect an address of an pointer */
+      // we expect an address of a pointer
       return CL_RETVAL_PARAMS;
    }
 
    if (*list_p == nullptr) {
-      /* we expect an initalized pointer */
+      // we expect an initialized pointer
       return CL_RETVAL_PARAMS;
    }
 
-   /* delete all entries in list */
+   // delete all entries in the list
    cl_raw_list_lock(*list_p);
    while ((elem = cl_endpoint_list_get_first_elem(*list_p)) != nullptr) {
       cl_raw_list_remove_elem(*list_p, elem->raw_elem);
@@ -155,7 +155,7 @@ int cl_endpoint_list_cleanup(cl_raw_list_t **list_p) {
    }
    cl_raw_list_unlock(*list_p);
 
-   /* clean list private data */
+   // clean list private data
    ldata = (cl_endpoint_list_data_t *)(*list_p)->list_data;
    if (ldata != nullptr) {
       if (ldata->ht != nullptr) {
