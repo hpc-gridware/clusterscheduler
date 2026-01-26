@@ -68,11 +68,13 @@ endif ()
 
 # if build type has not been specified then do a Debug build by default
 if (NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE
-         "Debug"
-         CACHE STRING "select build type between Debug and Release" FORCE)
+   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "select build type between Debug and Release" FORCE)
 endif ()
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DENABLE_DEBUG_CHECKS")
+
+# If we are doing a Debug build, then enable DEBUG checks (often this is abort() when a critical error is detected).
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DENABLE_DEBUG_CHECKS")
+endif()
 
 # 3RD_PARTY OPTIONS
 option(WITH_OS_3RDPARTY "Use 3rdparty libraries provided by OS packages" OFF)
