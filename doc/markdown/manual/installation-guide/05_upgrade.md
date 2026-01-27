@@ -82,7 +82,7 @@ The upgrade is done with following steps:
 
    ```
    $ cd $SGE_ROOT
-   $ ./util/upgrade_modules/save_sge_config.sh <directory>
+   $ ./util/upgrade_modules/save_config.sh <directory>
    ``` 
    
    The specified directory will contain a snapshot of your cluster configuration. Changes made to the old cluster after this point in time will not be part of the new cluster setup.
@@ -144,7 +144,7 @@ Here are the steps required to complete the in-place upgrade:
 
    ```
    $ cd $SGE_ROOT
-   $ ./util/upgrade_modules/save_sge_config.sh <directory>
+   $ ./util/upgrade_modules/save_config.sh <directory>
    ```
    
 6. Shutdown execution, shadow and master services on all machines.
