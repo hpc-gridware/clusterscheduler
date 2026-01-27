@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -487,41 +487,53 @@ namespace ocs {
    * in a time window starting at midnight. The length of the time window is
    * defined in INTERMEDIATE_ACCT_WINDOW.
    *
+   * @note For debugging this feature set the define TEST_INTERMEDIATE_HOURLY - see below.
+   *       This will write intermediate accounting records not only daily,
+   *       but every hour.
+   *
    * @param job
    * @param ja_task
    * @param pe_task
    * @return true, if writing of an intermediate accounting record is required, else false
    */
+#if 0
+#define TEST_INTERMEDIATE_HOURLY
+#endif
    bool ReportingFileWriter::is_intermediate_acct_required(const lListElem *job, const lListElem *ja_task,
                                                            const lListElem *pe_task) {
-      bool ret = false;
-      time_t last_intermediate, now, start_time;
-      struct tm tm_last_intermediate{}, tm_now{};
-
       DENTER(TOP_LAYER);
 
-      /* valid input data? */
+      // Valid input data?
       if (job == nullptr || ja_task == nullptr) {
          /* @todo I18N */
          WARNING("reporting_is_intermediate_acct_required: invalid input data\n");
+#if defined (ENABLE_DEBUG_CHECKS)
+         abort();
+#endif
          DRETURN(false);
       }
 
-      /*
-       * optimization: only do the following actions "shortly after midnight"
-       */
+      // If reporting isn't active, we needn't write intermediate usage.
+      if (!mconf_get_do_reporting()) {
+         DRETURN(false);
+      }
+
+      time_t last_intermediate, now, start_time;
+      struct tm tm_last_intermediate{}, tm_now{};
+
+      // Optimization: Only do the following actions "shortly after midnight".
       now = time(nullptr);
       localtime_r(&now, &tm_now);
-#if 1
-      if (tm_now.tm_hour != 0 || tm_now.tm_min > INTERMEDIATE_ACCT_WINDOW) {
+      if (
+#if not defined(TEST_INTERMEDIATE_HOURLY) // For development and debugging: Write intermediate data every hour.
+         tm_now.tm_hour != 0 ||
+#endif
+         tm_now.tm_min > INTERMEDIATE_ACCT_WINDOW) {
          DRETURN(false);
       }
-#endif
 
-      /*
-       * optimization: do not write intermediate usage for jobs that just
-       * "started a short time before"
-       */
+       // Optimization: Do not write intermediate usage for jobs that just
+       // "started a short time before".
       if (pe_task != nullptr) {
          start_time = sge_gmt64_to_time_t(lGetUlong64(pe_task, PET_start_time));
       } else {
@@ -532,29 +544,25 @@ namespace ocs {
          DRETURN(false);
       }
 
-      /*
-       * try to read time of an earlier intermediate report
-       * if no intermediate report has been written so far, use start time
-       */
+       // Try to read time of an earlier intermediate report.
+       // If no intermediate report has been written so far, use the job's / pe task's start time.
       if (pe_task != nullptr) {
-         last_intermediate = (time_t) usage_list_get_ulong_usage(lGetList(pe_task, PET_reported_usage),
-                                                                 LAST_INTERMEDIATE, 0);
+         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(lGetList(pe_task, PET_reported_usage),
+                                                                 LAST_INTERMEDIATE, 0));
       } else {
-         last_intermediate = (time_t) usage_list_get_ulong_usage(lGetList(ja_task, JAT_reported_usage_list),
-                                                                 LAST_INTERMEDIATE, 0);
+         last_intermediate = sge_gmt64_to_time_t(usage_list_get_ulong64_usage(lGetList(ja_task, JAT_reported_usage_list),
+                                                                 LAST_INTERMEDIATE, 0));
       }
-
       if (last_intermediate == 0) {
          last_intermediate = start_time;
       }
 
-      /* compare day portion of last_intermediate vs. current time
-       * if day changed, we have to write an intermediate report
-       */
+      // Compare the day portion of last_intermediate vs. current time.
+      // If the day (in hourly debug mode: the hour) changed, we have to write an intermediate report.
+      bool ret = false;
       localtime_r(&last_intermediate, &tm_last_intermediate);
-      /* new day? */
       if (
-#if 0 /* for development and debugging: write intermediate data every hour */
+#if defined(TEST_INTERMEDIATE_HOURLY) /* for development and debugging: write intermediate data every hour */
           tm_last_intermediate.tm_hour < tm_now.tm_hour ||
 #endif
           tm_last_intermediate.tm_yday < tm_now.tm_yday || tm_last_intermediate.tm_year < tm_now.tm_year) {

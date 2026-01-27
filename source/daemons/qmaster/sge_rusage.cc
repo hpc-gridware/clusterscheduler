@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -360,6 +360,8 @@ bool
 sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *jr, lListElem *job,
                  lListElem *ja_task, const char *category_str, std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
                  bool intermediate, bool is_reporting) {
+   DENTER(TOP_LAYER);
+
    const lList *usage_list = nullptr; /* usage list of ja_task or pe_task */
    lList *reported_list = nullptr; /* already reported usage of ja_task or pe_task */
    char *qname = nullptr;
@@ -375,8 +377,6 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    bool do_accounting_summary = false;
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
-
-   DENTER(TOP_LAYER);
 
    if (jr == nullptr || job == nullptr || ja_task == nullptr) {
       DRETURN(false);
@@ -442,7 +442,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * The LAST_INTERMEDIATE timestamp of the previous intermediate
        * record is the start_time of the current interval.
        */
-      start_time = usage_list_get_ulong64_usage(reported_list, LAST_INTERMEDIATE, 0),
+      start_time = usage_list_get_ulong64_usage(reported_list, LAST_INTERMEDIATE, 0);
 
       /* now set actual time as time of last intermediate usage report */
       usage_list_set_ulong64_usage(reported_list, LAST_INTERMEDIATE, now);

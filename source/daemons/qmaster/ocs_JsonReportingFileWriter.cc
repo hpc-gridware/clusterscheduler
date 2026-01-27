@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ namespace ocs {
       // we need to protect the usage_pattern_list via the config_mutex
       sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
       ret = sge_write_rusage(nullptr, &writer, job_report, job, ja_task, category_string, &usage_pattern_list, 0,
-                             false, true);
+                             intermediate, true);
       sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
       if (ret) {
