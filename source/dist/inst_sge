@@ -557,24 +557,29 @@ if [ "$UPDATE" = true ]; then
    CopyCA submit
    CheckRunningDaemon sge_qmaster
 
+   tmp_file="/tmp/upgrade_config_${current_date}.log"
 
    # Upgrade/Downgrade the OCS/GCS configuration if necessary
    $INFOTEXT -u "Upgrading/Downgrading OCS/GCS configuration"
-   #$INFOTEXT -u "$SGE_ROOT/util/upgrade_modules/upgrade_config.sh $UPGRADE_BACKUP_DIR $tmp_file $UPGRADE_BACKUP_DIR -log C -mode $UPGRADE_MODE -newijs $newIJS -execd_spool_dir $CFG_EXE_SPOOL  -gid_range $CFG_GID_RANGE -admin_mail $CFG_MAIL_ADDR"
    $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
-   tmp_file="/tmp/upgrade_config_${current_date}.log"
-   "$SGE_ROOT/util/upgrade_modules/upgrade_config.sh" "$UPGRADE_BACKUP_DIR" \
-      "$tmp_file" "$UPGRADE_BACKUP_DIR" \
+   "$SGE_ROOT/util/upgrade_modules/upgrade_config.sh" "$UPGRADE_BACKUP_DIR" "$tmp_file" "$UPGRADE_BACKUP_DIR" \
       -log "C" -mode "$UPGRADE_MODE" -newijs "$newIJS" -execd_spool_dir "$CFG_EXE_SPOOL" \
       -gid_range "$CFG_GID_RANGE" -admin_mail "$CFG_MAIL_ADDR"
    ExecuteAsAdmin cp "$tmp_file" "$SGE_ROOT"
 
    # Load the configuration from the backup
    $INFOTEXT -u "Load configuration from the backup"
-   #$INFOTEXT -u "$SGE_ROOT/util/upgrade_modules/load_config.sh $UPGRADE_BACKUP_DIR -log C -mode $UPGRADE_MODE -newijs $newIJS -execd_spool_dir $CFG_EXE_SPOOL -gid_range $CFG_GID_RANGE -admin_mail $CFG_MAIL_ADDR"
    $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
-   "$SGE_ROOT/util/upgrade_modules/load_config.sh" "$UPGRADE_BACKUP_DIR" -log "C" -mode "$UPGRADE_MODE" \
--newijs "$newIJS" -execd_spool_dir "$CFG_EXE_SPOOL" -gid_range "$CFG_GID_RANGE" -admin_mail "$CFG_MAIL_ADDR"
+   "$SGE_ROOT/util/upgrade_modules/load_config.sh" "$UPGRADE_BACKUP_DIR" "$tmp_file" \
+      -log "C" -mode "$UPGRADE_MODE" -on_error continue -newijs "$newIJS" -execd_spool_dir "$CFG_EXE_SPOOL" \
+      -gid_range "$CFG_GID_RANGE" -admin_mail "$CFG_MAIL_ADDR"
+   ret=$?
+   if [ $ret -ne 0 ]; then
+      $INFOTEXT "Error: Loading the configuration failed! Please check the log file $SGE_ROOT/load_config.log"
+      $INFOTEXT "The cluster might be in an inconsistent state!"
+      exit $ret
+   fi
+
    #Need to restart the qmaster to use the new config
 
    $INFOTEXT -n "\nRestarting qmaster due to the changed configuration\n"

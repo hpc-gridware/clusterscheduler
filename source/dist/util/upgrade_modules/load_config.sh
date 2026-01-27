@@ -42,6 +42,7 @@ if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
    $INFOTEXT "Set your SGE_ROOT, SGE_CELL first!"
    exit 1
 fi
+cd $SGE_ROOT
 
 ARCH=`$SGE_ROOT/util/arch`
 CAT=cat
@@ -49,6 +50,7 @@ MKDIR=mkdir
 LS=ls
 QCONF=$SGE_ROOT/bin/$ARCH/qconf
 HOST=`$SGE_ROOT/utilbin/$ARCH/gethostname -aname`
+ON_ERROR="abort"
 
 . "$SGE_ROOT/util/install_modules/inst_common.sh"
 BasicSettings
@@ -59,7 +61,16 @@ SUCCEEDED_LOADLOC=""
 Usage()
 {
    myname=`basename $0`
-   $INFOTEXT "Usage: $myname [-log I|W|C] [-mode upgrade|copy] [-newijs true|false] [-execd_spool_dir <value>] [-admin_mail <value>] [-gid_range <integer_range_value>] [-help]\n" \
+   $INFOTEXT "Usage: $myname <dir> <log_file>\n" \
+             "          [-log I|W|C]\n" \
+             "          [-mode upgrade|copy]\n" \
+             "          [-on_error abort|continue|cont_if_exist]\n" \
+             "          [-newijs true|false]\n" \
+             "          [-execd_spool_dir <value>]\n" \
+             "          [-admin_mail <value>]\n" \
+             "          [-gid_range <integer_range_value>]\n" \
+             "          [-help]\n" \
+             "\n" \
              "\nExample:\n" \
              "   $myname -log C -mode copy -newijs true -execd_spool_dir /sge/real_execd_spool -admin_mail user@host.com -gid_range 23000-24000\nLoads the configuration according to the following rules:\n" \
              "   Shows only critical errors\n" \
@@ -163,137 +174,203 @@ ResolveResult()
          #We can ignore  (already exists)
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, accepted"
-               return 0
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: $resOpt $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, accepted"
+                  return 0
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
 		;;
-      -Ahgrp)
-         #The proccessors and load values must be frees
+      -Acal)
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mhgrp"
-               LoadConfigFile "$resFile" "-Mhgrp"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: calendar $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mcal"
+                  LoadConfigFile "$resFile" "-Mcal"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
+            ;;
+         esac
+      ;;
+      -Aconf)
+         case "$resMsg" in
+            *'already exists')
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: configuration $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mconf"
+                  LoadConfigFile "$resFile" "-Mconf"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
+            ;;
+            *'will not be effective before sge_execd restart'*)
+               #regular upgrade message
+               return 0
+            ;;
+         esac
+      ;;
+      -Ackpt)
+         case "$resMsg" in
+            *'already exists')
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: ckpt. environment $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mckpt"
+                  LoadConfigFile "$resFile" "-Mckpt"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
       -Ae)
-         #The proccessors and load values must be frees
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Me"
-               LoadConfigFile "$resFile" "-Me"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: execution host $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Me"
+                  LoadConfigFile "$resFile" "-Me"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
-      -Acal)
+      -Ahgrp)
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mcal"
-               LoadConfigFile "$resFile" "-Mcal"
-               ret=$?
-               return $ret
-            ;;
-         esac
-      ;;
-      -Auser)
-         case "$resMsg" in
-            *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Muser"
-               LoadConfigFile "$resFile" "-Muser"
-               ret=$?
-               return $ret
-            ;;
-         esac
-      ;;
-      -Au)
-         case "$resMsg" in
-            *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mu"
-               LoadConfigFile "$resFile" "-Mu"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: host group $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mhgrp"
+                  LoadConfigFile "$resFile" "-Mhgrp"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
       -Aprj)
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mprj"
-               LoadConfigFile "$resFile" "-Mprj"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: project $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mprj"
+                  LoadConfigFile "$resFile" "-Mprj"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
+            ;;
+         esac
+      ;;
+      -Auser)
+         case "$resMsg" in
+            *'already exists')
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: user $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Muser"
+                  LoadConfigFile "$resFile" "-Muser"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
+            ;;
+         esac
+      ;;
+      -Au)
+         case "$resMsg" in
+            *'already exists')
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: userset $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mu"
+                  LoadConfigFile "$resFile" "-Mu"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
       -Ap)
          case "$resMsg" in
-            *'"accounting_summary" is missing'*)
-               echo 'accounting_summary   FALSE' >> "$resFile"
-               LogIt "I" "accounting_summary added, trying again"
-               LoadConfigFile "$resFile" "-Ap"
-               ret=$?
-               return $ret
-            ;;
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mp"
-               LoadConfigFile "$resFile" "-Mp"
-               ret=$?
-               return $ret
-            ;;
-         esac
-      ;;
-      -Arqs)
-         case "$resMsg" in
-            *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mrqs"
-               LoadConfigFile "$resFile" "-Mrqs"
-               ret=$?
-               return $ret
-            ;;
-            *'added'*)
-               LogIt "I" "$obj added message accepted"
-               #rqs shows added always, need to be eliminated
-               return 0
-            ;;
-            'error: invalid option argument "-Arqs"'*)
-               LogIt "I" "skipping the -Arqs option"
-               return 0
-            ;;
-         esac
-      ;;
-      -Mrqs)
-         case "$resMsg" in
-            *'added'*)
-               LogIt "I" "$obj added message accepted"
-               #rqs shows added always, need to be eliminated
-               return 0
-            ;;
-         esac
-       ;;
-      -Ackpt)
-         case "$resMsg" in
-            *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mckpt"
-               LoadConfigFile "$resFile" "-Mckpt"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: parallel object $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mp"
+                  LoadConfigFile "$resFile" "-Mp"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
       -Aq)
          case "$resMsg" in
             *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mq"
-               LoadConfigFile "$resFile" "-Mq"
-               ret=$?
-               return $ret
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: queue $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mq"
+                  LoadConfigFile "$resFile" "-Mq"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
             'Subordinated cluster queue'*)
+               # is is no error case that would require an abort
                obj=`echo $resMsg | awk '{print $4}' | awk -F\" '{ print $2}'`
                LogIt "W" "Non-existing subordinated queue $obj encountered, creating dummy queue [REPEAT REQUIRED]"
                $QCONF -sq | sed "s/^qname.*/qname                    $obj/g" > ${DIR}/queue.tmp 2>/dev/null
@@ -301,11 +378,30 @@ ResolveResult()
                rm -f ${DIR}/queue.tmp
                repeat=1
                return 1
+            ;;
+         esac
+      ;;
+      -Arqs)
+         case "$resMsg" in
+            *'already exists')
+               if [ "$ON_ERROR" = "abort" ]; then
+                  LogIt "C" "Aborting on error as requested: RQS $obj already exists"
+                  EXIT 1
+               elif [ "$ON_ERROR" = "continue" ]; then
+                  LogIt "W" "$obj already exists, trying to modify -Mrqs"
+                  LoadConfigFile "$resFile" "-Mrqs"
+                  ret=$?
+                  return $ret
+               else
+                  LogIt "I" "$obj already exists, accepted"
+                  return 0
+               fi
             ;;
          esac
       ;;
       -Mq)
          case "$resMsg" in
+            # is is no error case that would require an abort
             'Subordinated cluster queue'*)
                obj=`echo $resMsg | awk '{print $4}' | awk -F\" '{ print $2}'`
                LogIt "W" "Non-existing subordinated queue $obj encountered, creating dummy queue [REPEAT REQUIRED]"
@@ -317,61 +413,10 @@ ResolveResult()
             ;;
          esac
       ;;
-   	#If -Aconf fails we try modify
-      -Aconf)
-         case "$resMsg" in
-            *'value == nullptr for attribute'*)
-               unknown=`echo ${resMsg} | awk -F'"' '{ print $2 }'`
-               ReplaceLineWithMatch ${resFile} "${unknown}*" "#${unknown}"
-               LogIt "I" "$obj commented, trying to again"
-               LoadConfigFile "$resFile" "$resOpt"
-               ret=$?
-               return $ret
-            ;;
-            'denied: the path given for'*)
-               #FlatFile ${resFile}
-               ReplaceLineWithMatch "$resFile" 'qlogin_daemon.*' 'qlogin_daemon   /usr/sbin/in.telnetd'
-               ReplaceLineWithMatch "$resFile" 'rlogin_daemon.*' 'rlogin_daemon   /usr/sbin/in.rlogind'
-               LogIt "I" "wrong path corrected, trying again"
-               LoadConfigFile "$resFile" "$resOpt"
-               ret=$?
-               return $ret
-            ;;
-            *'already exists')
-               LogIt "I" "$obj already exists, trying to modify -Mconf"
-               LoadConfigFile "$resFile" "-Mconf"
-               ret=$?
-               return $ret
-            ;;
-            *'will not be effective before sge_execd restart'*)
-               #regular upgrade message
-               LogIt "I" "message accepted"
-               return 0
-            ;;
-         esac
-      ;;
       -Mconf)
          case "$resMsg" in
-            *'value == nullptr for attribute'*)
-               unknown=`echo ${resMsg} | awk -F'"' '{ print $2 }'`
-               ReplaceLineWithMatch ${resFile} "${unknown}*" "#${unknown}"
-               LogIt "I" "$obj commented, trying to again"
-               LoadConfigFile "$resFile" "$resOpt"
-               ret=$?
-               return $ret
-            ;;
-            'denied: the path given for'*)
-               #FlatFile ${resFile}
-               ReplaceLineWithMatch "$resFile" 'qlogin_daemon.*' 'qlogin_daemon   builtin'
-               ReplaceLineWithMatch "$resFile" 'rlogin_daemon.*' 'rlogin_daemon   builtin'
-               LogIt "I" "wrong path corrected, trying again"
-               LoadConfigFile "$resFile" "$resOpt"
-               ret=$?
-               return $ret
-            ;;
             *'will not be effective before sge_execd restart'*)
                #regular upgrade message
-               LogIt "I" "message accepted"
                return 0
             ;;
          esac
@@ -388,13 +433,16 @@ ResolveResult()
 
    case "$resMsg" in
       *'unknown attribute name'*)
-         #this is a donwngrade option
-         #FlatFile ${resFile}
-         RemoveLineWithMatch ${resFile} "" ${obj}
-         LogIt "I" "$obj attribute was removed, trying again"
-         LoadConfigFile "$resFile" "$resOpt"
-         ret=$?
-         return $ret
+         if [ "$ON_ERROR" = "abort" ] || [ "$ON_ERROR" = "cont_if_exist" ]; then
+            LogIt "C" "Aborting on error as requested: unknown attribute $obj"
+            EXIT 1
+         elif [ "$ON_ERROR" = "continue" ]; then
+            RemoveLineWithMatch ${resFile} "" ${obj}
+            LogIt "I" "$obj attribute was removed, trying again"
+            LoadConfigFile "$resFile" "$resOpt"
+            ret=$?
+            return $ret
+         fi
       ;;
       *'added'*)
          LogIt "I" "added $obj accepted"
@@ -427,7 +475,7 @@ LoadConfigFile()
 
    #do not load empty files
    if [ -f "$loadFile" -a ! -s "$loadFile" ]; then
-      LogIt "W" "File $loadFile is empty. Skipping ..."
+      LogIt "I" "File $loadFile is empty. Skipping ..."
       return 0
    fi
 
@@ -635,7 +683,8 @@ if [ "$1" = -help -o $# -eq 0 ]; then
 fi
 
 DIR="${1:?The load directory is required}"
-shift
+LOG_FILE_NAME="${2:?A log file path and name is required}"
+shift 2
 
 LOGGER_LEVEL="W"
 mode=upgrade
@@ -646,7 +695,7 @@ GID_RANGE=""
 
 DATE=`date '+%Y-%m-%d_%H:%M:%S'`
 
-MESSAGE_FILE_NAME="/tmp/sge_backup_load_${DATE}.log"
+MESSAGE_FILE_NAME="/tmp/load_config_${DATE}.log"
 
 ARGC=$#
 while [ $ARGC -gt 0 ]; do
@@ -691,6 +740,17 @@ while [ $ARGC -gt 0 ]; do
          shift
          LogIt "I" "LOAD invoked with -gid_range $1"
          GID_RANGE="$1"
+         ;;
+      -on_error)
+         shift
+         if [ "$1" != "abort" -a "$1" != "continue" -a "$1" != "cont_if_exist" ]; then
+            LogIt "C" "LOAD invoked with -on_error $1"
+            EXIT 1
+         else
+            LogIt "I" "LOAD invoked with -on_error $1"
+            ON_ERROR="$1"
+         fi
+         ON_ERROR="$1"
          ;;
       *)
          echo "Invalid argument \'$1\'"
