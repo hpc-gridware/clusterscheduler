@@ -370,7 +370,7 @@ if [ "$START_CLUSTER" = "true" ]; then
    exit
 fi
 
-#Upgrade from 6.0+ to 6.2
+# Upgrade from 9.0.0 to a newer minor or major version
 if [ "$UPDATE" = true ]; then
    AUTO=false
    EXECD=undef
@@ -379,11 +379,16 @@ if [ "$UPDATE" = true ]; then
 
    LicenseAgreement
    WelcomeTheUserUpgrade
-   #Ask for backup_dir
-   GetBackupDirectory
-   #Old rc scripts must be long gone!
 
-   #Source sge_root, sge_cell, qmaster, execd port from the backup
+   # Ask for the backup dir and get the UPGRADE_BACKUP_DIR variable
+   # Clone that directory and continue with the clone to upgrade
+   GetBackupDirectory
+   original_backup_directory=$UPGRADE_BACKUP_DIR
+   current_date=`date '+%Y-%m-%d_%H:%M:%S'`
+   cloned_backup_directory=`CloneDir ${UPGRADE_BACKUP_DIR} ${current_date}`
+   UPGRADE_BACKUP_DIR=$cloned_backup_directory
+
+   # Read sge_root, sge_cell, qmaster, execd port from the backup
    SGE_ROOT=`pwd | sed 's/\/tmp_mnt//'`
    bck_sge_root=`cat "${UPGRADE_BACKUP_DIR}/sge_root" | awk -F= '{print $2}' | awk -F\; '{print $1}' 2>/dev/null`
    . "${UPGRADE_BACKUP_DIR}/sge_cell"
@@ -396,7 +401,8 @@ if [ "$UPDATE" = true ]; then
    GetCell
    QMASTER=install
    euid=`$SGE_UTILBIN/uidgid -euid`
-   #Real upgrade from 6.0+ to 6.2 from here (same SGE_ROOT,SGE_CELL)
+
+   # Check preconditions for upgrade depending on mode (upgrade vs. copy)
    if [ "$SGE_ROOT" = "$bck_sge_root" -a "$SGE_CELL" = "$bck_sge_cell" ]; then
       UPGRADE_MODE="upgrade"
       #Stop if not a qmaster host
@@ -422,8 +428,10 @@ if [ "$UPDATE" = true ]; then
                    "and restart the upgrade.\n" "$SGE_ROOT/$SGE_CELL"
       exit 2
    fi
+
+   # Depending on mode we might need new ports
    if [ "$UPGRADE_MODE" != "upgrade" ]; then
-      #Just copy the configuration to a new SGE_CELL
+      # Just copy the configuration to a new SGE_CELL
       UPGRADE_MODE="copy"
       if [ -n "$SGE_QMASTER_PORT" ]; then
          SGE_QMASTER_PORT=`expr $SGE_QMASTER_PORT + 10`
@@ -434,8 +442,7 @@ if [ "$UPDATE" = true ]; then
       fi
       GetExecdPort
    else
-      #UPGRADE MODE
-      #Backup could be created with /etc/services values, (not saved) we rather ask for new value
+      # Backup could be created with /etc/services values, (not saved) we rather ask for new value
       if [ -z "$SGE_QMASTER_PORT" ]; then
          GetQmasterPort
       fi
@@ -445,6 +452,8 @@ if [ "$UPDATE" = true ]; then
    fi
 
    SetCellDependentVariables
+
+   # Get QMaster spool dir and check admin user
    if [ "$UPGRADE_MODE" = upgrade ]; then
       #Get backuped admin user
       GetBackupedAdminUser
@@ -458,6 +467,7 @@ if [ "$UPDATE" = true ]; then
       #Ask for new QMaster spool dir
       GetQmasterSpoolDir $euid
    fi
+
    #TODO: Check if no jobs. qmaster.pid?
    SGE_CLUSTER_NAME=`cat "$SGE_ROOT/$SGE_CELL/common/cluster_name" 2>/dev/null`
    if [ -z "$SGE_CLUSTER_NAME" -a -f "$UPGRADE_BACKUP_DIR/cell/cluster_name" ]; then
@@ -474,7 +484,8 @@ if [ "$UPDATE" = true ]; then
       ProcessSGEClusterName qmaster
    fi
    SetPermissions
-   #Detect the product mode
+
+   # Detect the product mode
    PRODUCT_MODE=`BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "security_mode"`
    if [ "$UPGRADE_MODE" = "copy" ]; then
       case $PRODUCT_MODE in
@@ -493,13 +504,14 @@ if [ "$UPDATE" = true ]; then
       esac
       SetProductMode
    else
-      #We don't care about switches, setup is going to be reused
+      # We don't care about switches, setup is going to be reused
       AFS=false
       CSP=false
       TLS=false
       MUNGE=false
    fi
-   #Load and upgrade old cell
+
+   # Load and upgrade old cell
    RestoreCell "${UPGRADE_BACKUP_DIR}/cell"
    if [ -d "$QMDIR" ]; then
       ExecuteAsAdmin rm -rf "$QMDIR/*"   # remove old qmaster spool dir
@@ -545,14 +557,26 @@ if [ "$UPDATE" = true ]; then
    CopyCA submit
    CheckRunningDaemon sge_qmaster
 
-   # Load the configuration from the backup
-   $INFOTEXT -u "Last step - load configuration from the backup"
-   $INFOTEXT -n "\nload command: $SGE_ROOT/util/upgrade_modules/load_sge_config.sh $UPGRADE_BACKUP_DIR -mode \"$UPGRADE_MODE\" -log C -newijs \"$newIJS\" -gid_range \"${CFG_GID_RANGE}\" -admin_mail \"${CFG_MAIL_ADDR}\" -execd_spool_dir \"${CFG_EXE_SPOOL}\" \n"
+
+   # Upgrade/Downgrade the OCS/GCS configuration if necessary
+   $INFOTEXT -u "Upgrading/Downgrading OCS/GCS configuration"
+   #$INFOTEXT -u "$SGE_ROOT/util/upgrade_modules/upgrade_config.sh $UPGRADE_BACKUP_DIR $tmp_file $UPGRADE_BACKUP_DIR -log C -mode $UPGRADE_MODE -newijs $newIJS -execd_spool_dir $CFG_EXE_SPOOL  -gid_range $CFG_GID_RANGE -admin_mail $CFG_MAIL_ADDR"
    $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
-   #Load configuration, show only critical errors
-   "$SGE_ROOT/util/upgrade_modules/load_sge_config.sh" "$UPGRADE_BACKUP_DIR" -log "C" -mode "$UPGRADE_MODE" \
+   tmp_file="/tmp/upgrade_config_${current_date}.log"
+   "$SGE_ROOT/util/upgrade_modules/upgrade_config.sh" "$UPGRADE_BACKUP_DIR" \
+      "$tmp_file" "$UPGRADE_BACKUP_DIR" \
+      -log "C" -mode "$UPGRADE_MODE" -newijs "$newIJS" -execd_spool_dir "$CFG_EXE_SPOOL" \
+      -gid_range "$CFG_GID_RANGE" -admin_mail "$CFG_MAIL_ADDR"
+   ExecuteAsAdmin cp "$tmp_file" "$SGE_ROOT"
+
+   # Load the configuration from the backup
+   $INFOTEXT -u "Load configuration from the backup"
+   #$INFOTEXT -u "$SGE_ROOT/util/upgrade_modules/load_config.sh $UPGRADE_BACKUP_DIR -log C -mode $UPGRADE_MODE -newijs $newIJS -execd_spool_dir $CFG_EXE_SPOOL -gid_range $CFG_GID_RANGE -admin_mail $CFG_MAIL_ADDR"
+   $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to continue >> "
+   "$SGE_ROOT/util/upgrade_modules/load_config.sh" "$UPGRADE_BACKUP_DIR" -log "C" -mode "$UPGRADE_MODE" \
 -newijs "$newIJS" -execd_spool_dir "$CFG_EXE_SPOOL" -gid_range "$CFG_GID_RANGE" -admin_mail "$CFG_MAIL_ADDR"
    #Need to restart the qmaster to use the new config
+
    $INFOTEXT -n "\nRestarting qmaster due to the changed configuration\n"
    $SGE_STARTUP_FILE -qmaster stop
    $SGE_STARTUP_FILE -qmaster start

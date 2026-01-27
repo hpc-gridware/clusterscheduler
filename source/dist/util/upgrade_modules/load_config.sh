@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # SGE configuration script (Installation/Uninstallation/Upgrade/Downgrade)
-# Scriptname: load_sge_config.sh
+# Scriptname: load_config.sh
 # Module: common functions
 #
 #___INFO__MARK_BEGIN__
@@ -44,12 +44,15 @@ if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
 fi
 
 ARCH=`$SGE_ROOT/util/arch`
-
 CAT=cat
 MKDIR=mkdir
 LS=ls
 QCONF=$SGE_ROOT/bin/$ARCH/qconf
 HOST=`$SGE_ROOT/utilbin/$ARCH/gethostname -aname`
+
+. "$SGE_ROOT/util/install_modules/inst_common.sh"
+BasicSettings
+GetAdminUser
 
 SUCCEEDED_LOADLOC=""
 
@@ -90,24 +93,6 @@ LogIt()
    esac
 }
 
-
-#Remove line with maching expression
-RemoveLineWithMatch()
-{
-   remFile="${1:?Need the file name to operate}"
-   remExpr="${2:?Need an expression, where to remove lines}"
-
-   #Return if no match
-   grep "${remExpr}" $remFile >/dev/null 2>&1
-   if [ $? -ne 0 ]; then
-      return
-   fi
-
-   sed -e "/${remExpr}/d" $remFile > ${remFile}.tmp
-   mv -f ${remFile}.tmp  ${remFile}
-}
-
-
 ReplaceLineWithMatch()
 {
    repFile="${1:?Need the file name to operate}"
@@ -139,84 +124,6 @@ ReplaceLineWithMatch()
    mv -f "${repFile}.tmp"  "${repFile}"
 }
 
-ReplaceOrAddLine()
-{
-   repFile="${1:?Need the file name to operate}"
-   repExpr="${2:?Need an expression, where to replace}"
-   replace="${3:?Need the replacement text}"
-
-   #Does the pattern exists
-   grep "${repExpr}" "${repFile}" > /dev/null 2>&1
-   if [ $? -eq 0 ]; then #match
-      ReplaceLineWithMatch "$repFile" "$repExpr" "$replace"
-   else                  #line does not exist
-      echo "$replace" >> "$repFile"
-   fi
-}
-
-#UpdateConfiguration - Change IJS settings and
-#                      for copy configuration execd_spool, admin_mail, gid_range
-UpdateConfiguration()
-{
-   modFile=$1
-   #Add new default to the global configuration
-   if [ `echo $modFile | awk -F"/" '{ print $NF }'` = "global" ]; then
-      #GLOBAL
-      if [ -n "$EXECD_SPOOL_DIR" ]; then
-         ReplaceOrAddLine ${modFile} 'execd_spool_dir.*'     "execd_spool_dir              $EXECD_SPOOL_DIR"
-      fi
-      if [ -n "$GID_RANGE" ]; then
-         ReplaceOrAddLine ${modFile} 'gid_range.*'     "gid_range              $GID_RANGE"
-      fi
-      if [ -n "$ADMIN_MAIL" ]; then
-         ReplaceOrAddLine ${modFile} 'administrator_mail.*'     "administrator_mail              $ADMIN_MAIL"
-      fi
-
-      if [ "$newIJS" = true ]; then # new IJS settings
-         ReplaceOrAddLine ${modFile} 'qlogin_command.*' "qlogin_command               builtin"
-         ReplaceOrAddLine ${modFile} 'qlogin_daemon.*'  "qlogin_daemon                builtin"
-
-         ReplaceOrAddLine ${modFile} 'rlogin_command.*' "rlogin_command               builtin"
-         ReplaceOrAddLine ${modFile} 'rlogin_daemon.*'  "rlogin_daemon                builtin"
-
-         ReplaceOrAddLine ${modFile} 'rsh_command.*'    "rsh_command                  builtin"
-         ReplaceOrAddLine ${modFile} 'rsh_daemon.*'     "rsh_daemon                   builtin"
-      fi
-
-      ReplaceOrAddLine ${modFile} 'max_advance_reservations.*'    "max_advance_reservations     0"
-
-   else
-      #LOCAL configurations
-      if [ "$newIJS" = true ]; then # new IJS settings
-         RemoveLineWithMatch ${modFile} 'qlogin_command.*'
-         RemoveLineWithMatch ${modFile} 'qlogin_daemon.*'
-
-         RemoveLineWithMatch ${modFile} 'rlogin_command.*'
-         RemoveLineWithMatch ${modFile} 'rlogin_daemon.*'
-
-         RemoveLineWithMatch ${modFile} 'rsh_command.*'
-         RemoveLineWithMatch ${modFile} 'rsh_daemon.*'
-      fi
-      #We need to change local execd spool dirs for copy mode
-      if [ "$mode" = copy ]; then
-         local_dir=`grep execd_spool_dir ${modFile} 2>/dev/null | awk '{print $2}'`
-         if [ -n "$local_dir" ]; then
-            local_dir=`dirname $local_dir 2>/dev/null`
-            if [ -n "$local_dir" ]; then
-               if [ -n "$SGE_CLUSTER_NAME" ]; then
-                  local_dir="${local_dir}/${SGE_CLUSTER_NAME}"
-               elif [ -n "$SGE_QMASTER_PORT" ]; then
-                  local_dir="${local_dir}/${SGE_QMASTER_PORT}"
-               else
-                  local_dir="${local_dir}/${SGE_CELL}"
-               fi
-               ReplaceOrAddLine ${modFile} 'execd_spool_dir.*'  "execd_spool_dir                $local_dir"
-            fi
-	      fi
-      fi
-   fi
-}
-
 #Modify before load
 ModifyData()
 {
@@ -228,12 +135,9 @@ ModifyData()
    case "$modOpt" in
       -Ae)
          #FlatFile ${modFile}
-         RemoveLineWithMatch ${modFile} 'load_values.*'
-         RemoveLineWithMatch ${modFile} 'processors.*'
+         RemoveLineWithMatch ${modFile} "" 'load_values.*'
+         RemoveLineWithMatch ${modFile} "" 'processors.*'
       ;;
-      -Aconf)
-	      UpdateConfiguration $loadFile
-         ;;
    esac
 
    return $ret
@@ -392,9 +296,9 @@ ResolveResult()
             'Subordinated cluster queue'*)
                obj=`echo $resMsg | awk '{print $4}' | awk -F\" '{ print $2}'`
                LogIt "W" "Non-existing subordinated queue $obj encountered, creating dummy queue [REPEAT REQUIRED]"
-               $QCONF -sq | sed "s/^qname.*/qname                    $obj/g" > ${BCK_DIR}/queue.tmp 2>/dev/null
-               $QCONF -Aq ${BCK_DIR}/queue.tmp >/dev/null 2>&1
-               rm -f ${BCK_DIR}/queue.tmp
+               $QCONF -sq | sed "s/^qname.*/qname                    $obj/g" > ${DIR}/queue.tmp 2>/dev/null
+               $QCONF -Aq ${DIR}/queue.tmp >/dev/null 2>&1
+               rm -f ${DIR}/queue.tmp
                repeat=1
                return 1
             ;;
@@ -405,9 +309,9 @@ ResolveResult()
             'Subordinated cluster queue'*)
                obj=`echo $resMsg | awk '{print $4}' | awk -F\" '{ print $2}'`
                LogIt "W" "Non-existing subordinated queue $obj encountered, creating dummy queue [REPEAT REQUIRED]"
-               $QCONF -sq | sed "s/^qname.*/qname                    $obj/g" > ${BCK_DIR}/queue.tmp 2>/dev/null
-               $QCONF -Aq ${BCK_DIR}/queue.tmp >/dev/null 2>&1
-               rm -f ${BCK_DIR}/queue.tmp
+               $QCONF -sq | sed "s/^qname.*/qname                    $obj/g" > ${DIR}/queue.tmp 2>/dev/null
+               $QCONF -Aq ${DIR}/queue.tmp >/dev/null 2>&1
+               rm -f ${DIR}/queue.tmp
                repeat=1
                return 1
             ;;
@@ -486,7 +390,7 @@ ResolveResult()
       *'unknown attribute name'*)
          #this is a donwngrade option
          #FlatFile ${resFile}
-         RemoveLineWithMatch ${resFile} ${obj}
+         RemoveLineWithMatch ${resFile} "" ${obj}
          LogIt "I" "$obj attribute was removed, trying again"
          LoadConfigFile "$resFile" "$resOpt"
          ret=$?
@@ -719,9 +623,6 @@ IterativeLoad()
 }
 
 EXIT() {
-   if [ -n "$BCK_DIR" ]; then
-      rm -rf "$BCK_DIR" 2>/dev/null
-   fi
    exit "$1"
 }
 
@@ -744,16 +645,6 @@ ADMIN_MAIL=""
 GID_RANGE=""
 
 DATE=`date '+%Y-%m-%d_%H:%M:%S'`
-BCK_DIR="/tmp/sge_backup_$DATE"
-if [ ! -d "$BCK_DIR" ]; then
-   mkdir -p $BCK_DIR
-else
-   $INFOTEXT "Creating directory $BCK_DIR failed - already exists. Try again!"
-   exit 1
-fi
-cp -fR "${DIR}"/* "$BCK_DIR"
-#Make files readable for all
-chmod -R g+r,o+r "$BCK_DIR"/*
 
 MESSAGE_FILE_NAME="/tmp/sge_backup_load_${DATE}.log"
 
@@ -827,18 +718,18 @@ fi
 tmp_adminhost=`$QCONF -sh | grep "^${HOST}$"`
 if [ "$tmp_adminhost" != "$HOST" ]; then
    $INFOTEXT "ERROR: Load must be started on admin host (qmaster host recommended)."
-   LogIt "C" "Can't start load_sge_config.sh on $HOST: not an admin host"
+   LogIt "C" "Can't start load_config.sh on $HOST: not an admin host"
    EXIT 1
 fi
 
-LOAD_VERSION=`cat ${BCK_DIR}/version`
-LogIt "I" "LOAD $DIR backup from $BCK_DIR"
+LOAD_VERSION=`cat ${DIR}/version`
+LogIt "I" "LOAD $DIR"
 LogIt "I" "$CURRENT_VERSION"
 LogIt "I" "$LOAD_VERSION"
 
 $INFOTEXT "Loading saved cluster configuration from $DIR (log in $MESSAGE_FILE_NAME)..."
 
-IterativeLoad "${BCK_DIR}"
+IterativeLoad "${DIR}"
 
 LogIt "I" "LOADING FINISHED"
 $INFOTEXT "Done"

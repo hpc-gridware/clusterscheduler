@@ -2310,9 +2310,9 @@ SetupSystemdSliceName()
 {
    # if we are on a systemd system, we need to define the slice name
    if [ "$RC_FILE" = "systemd" ]; then
-      SLICE_NAME=`GetSystemdSliceName "false"`
       SLICE_ROOT=`GetSystemdRootName "false"`
       SLICE_CELL=`GetSystemdCellName "false"`
+      SLICE_NAME=`GetSystemdSliceName "false"`
       # if slice name is not yet defined, we ask the user for it
       if [ $? -ne 0 ]; then
          # query toplevel slice name
@@ -4509,10 +4509,9 @@ ReplaceOrAddLine()
 }
 
 #Remove line with maching expression
-RemoveLineWithMatch()
-{
+RemoveLineWithMatch() {
    remFile="${1:?Need the file name to operate}"
-   filePerms="${2:?Need file final permissions}"
+   filePerms=$2
    remExpr="${3:?Need an expression, where to remove lines}"
    
    #Return if no match
@@ -4526,5 +4525,29 @@ RemoveLineWithMatch()
    ExecuteAsAdmin chmod 666 ${remFile}.tmp
    sed -e "/${remExpr}/d" "$remFile" > "${remFile}.tmp"
    ExecuteAsAdmin mv -f "${remFile}.tmp"  "${remFile}"
+
+   if [ -z "${filePerms}" ]; then
+      filePerms="644"
+   fi
    ExecuteAsAdmin chmod "${filePerms}" "${remFile}"
+}
+
+#Clones the given directory to a temporary directory in /tmp/cs_<date>
+CloneDir() {
+   dir="${1:?Directory missing as first argument}"
+   date="${2:?Date missing as second argument}"
+
+   # create the directory to copy the backup to
+   clone_dir="/tmp/cs_$date"
+   if [ ! -d "$clone_dir" ]; then
+      ExecuteAsAdmin mkdir -p "$clone_dir"
+   else
+      $INFOTEXT "Directory $clone_dir already exists!"
+      exit 1
+   fi
+
+   # copy the backup to the clone directory
+   ExecuteAsAdmin cp -a "${dir}"/* "$clone_dir"
+
+   echo "$clone_dir"
 }
