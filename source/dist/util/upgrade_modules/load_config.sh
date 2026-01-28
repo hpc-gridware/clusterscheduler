@@ -135,26 +135,6 @@ ReplaceLineWithMatch()
    mv -f "${repFile}.tmp"  "${repFile}"
 }
 
-#Modify before load
-ModifyData()
-{
-   modOpt="${1:?An option is required}"
-   modFile="${2:?The file name is required}"
-   #echo "ModifyData opt:$modOpt file:$modFile"
-
-   #test only, comment in production
-   case "$modOpt" in
-      -Ae)
-         #FlatFile ${modFile}
-         RemoveLineWithMatch ${modFile} "" 'load_values.*'
-         RemoveLineWithMatch ${modFile} "" 'processors.*'
-      ;;
-   esac
-
-   return $ret
-}
-
-
 #Resolve a result during Loading
 ResolveResult()
 {
@@ -486,8 +466,6 @@ LoadConfigFile()
 
    configLevel=`expr ${configLevel} + 1`
 
-
-   ModifyData "$loadOpt" "$loadFile"
    loadMsg=`$QCONF $loadOpt $loadFile 2>&1`
 
    ResolveResult "$loadOpt" "$loadFile" "$loadMsg" "$ret"

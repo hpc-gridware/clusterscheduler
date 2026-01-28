@@ -44,14 +44,17 @@ if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
    $INFOTEXT "Set your SGE_ROOT, SGE_CELL first!"
    exit 1
 fi
+cd $SGE_ROOT
 
 ARCH=`$SGE_ROOT/util/arch`
-
 MKDIR=mkdir
 QCONF=$SGE_ROOT/bin/$ARCH/qconf
 QHOST=$SGE_ROOT/bin/$ARCH/qhost
 HOST=`$SGE_ROOT/utilbin/$ARCH/gethostname -aname`
 
+. "$SGE_ROOT/util/install_modules/inst_common.sh"
+BasicSettings
+GetAdminUser
 
 Usage()
 {
@@ -86,7 +89,13 @@ DumpItemToFile()
    dir=$2
    opt=$3
 
-   $QCONF $opt $item > $dir/${item}
+   if [ "$opt" = "-se" ]; then
+      # For execution hosts we need to filter out load values and processors
+      # those attributes cannot be read back during import
+      $QCONF $opt $item 2>/dev/null | grep -v "^load_values" |grep -v "^processors" > $dir/${item}
+   else
+      $QCONF $opt $item > $dir/${item}
+   fi
    if [ $? -ne 0 ]; then
       $INFOTEXT "Operation failed: $QCONF $opt > $dir/${item}"
       return 1
@@ -252,17 +261,6 @@ OLD_SGE_LINE="$SGE_SINGLE_LINE"
 SGE_SINGLE_LINE=1
 export SGE_SINGLE_LINE
 
-#There are the show options, which are not used
-#
-#     -sds                          <show detached settings>
-#     -secl                         <show event clients>
-#     -sep                          <show licensed processors>
-#     -shgrp_tree group             <show host group tree>
-#     -shgrp_resolved               <show host group hosts>
-#     -sobjl obj_spec attr_name val <show object list>
-#     -sstnode node_path,...        <show share tree node>
-#     -sss                          <show scheduler status>
-
 #     -sh                           <show administrative hosts>
 DumpOptionToFile "-sh" "$DEST_DIR/admin_hosts"
 
@@ -277,53 +275,12 @@ DumpOptionToFile "-so" "$DEST_DIR/operators"
 
 #     -sc                           <show complexes>
 DumpOptionToFile "-sc" "$DEST_DIR/centry"
-#add display_win_gui if missing
-cat  "$DEST_DIR/centry" | grep "^display_win_gui " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-display_win_gui     dwg        BOOL        ==    YES         NO         0        0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
-#add m_thread if missing (new in 8.0.0)
-cat  "$DEST_DIR/centry" | grep "^m_thread " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-m_thread            thread     INT         <=    YES         NO         0        0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
-
-#add m_core if missing (new in 62u5)
-cat  "$DEST_DIR/centry" | grep "^m_core " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-m_core              core       INT         <=    YES         NO         0        0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
-#add m_socket if missing (new in 62u5)
-cat  "$DEST_DIR/centry" | grep "^m_socket " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-m_socket            socket     INT         <=    YES         NO         0        0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
-#add m_topology if missing (new in 62u5)
-cat  "$DEST_DIR/centry" | grep "^m_topology " > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-   cp "$DEST_DIR/centry" "$DEST_DIR/centry.bak"
-   sed '3i\
-m_topology          topo       RESTRING    ==    YES         NO         NONE     0'  "$DEST_DIR/centry.bak" > "$DEST_DIR/centry" 
-   rm -f "$DEST_DIR/centry.bak"
-fi
 
 #     -sel                          <show execution hosts>
 list=`$QCONF -sel 2>/dev/null`
 #     -se hostname                  <show execution host>
 DumpListToLocation "$list" $DEST_DIR/execution "-se"
-DumpOptionToFile "-se global" $DEST_DIR/execution/global 
+DumpItemToFile "global" $DEST_DIR/execution "-se"
 
 #     -scall                        <show calendar list>
 list=`$QCONF -scall 2>/dev/null`
@@ -357,7 +314,7 @@ DumpListToLocation "$list" $DEST_DIR/projects "-sprj"
 list=`$QCONF -sconfl 2>/dev/null`
 #    -sconf [host,...|global]      <show configuration>
 DumpListToLocation "$list" $DEST_DIR/configurations "-sconf"
-DumpOptionToFile "-sconf global" "$DEST_DIR/configurations/global"
+DumpItemToFile "global" $DEST_DIR/configurations "-sconf"
 
 #     -spl                          <show PE-list>
 list=`$QCONF -spl 2>/dev/null`
@@ -368,13 +325,6 @@ DumpListToLocation "$list" $DEST_DIR/pe "-sp"
 list=`$QCONF -sul 2>/dev/null`
 #     -su acl_name                  <show user ACL>
 DumpListToLocation "$list" $DEST_DIR/usersets "-su"
-if [  ! -f $DEST_DIR/usersets/arusers ]; then   #add arusers ACL for 6.2+
-   echo "name       arusers
-type       ACL
-oticket    0
-fshare     0
-entries    NONE" > $DEST_DIR/usersets/arusers
-fi
 
 #     -sql                          <show queue list>
 list=`$QCONF -sql 2>/dev/null`
