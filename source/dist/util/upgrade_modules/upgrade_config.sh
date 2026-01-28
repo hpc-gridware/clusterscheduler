@@ -298,7 +298,7 @@ TriggerUpOrDowngradeStep() {
    do_upgrade_downgrade_ret=$?
    if [ $do_upgrade_downgrade_ret -eq 0 ]; then
       LogIt "I" "Final target version '$target_version' reached."
-      return 0
+      return 99
    elif [ $do_upgrade_downgrade_ret -eq 1 ]; then
       TriggerUpOrDowngradeFunc "$current_version" "$target_version" 1
       return $?
@@ -321,7 +321,10 @@ TriggerUpOrDowngrade() {
       next_version=$(VersionString2Next "$current_version" "$target_version" 1)
       TriggerUpOrDowngradeStep "$current_version" "$target_version"
       result=$?
-      if [ $result -ne 0 ]; then
+      if [ $result -eq 99 ]; then
+         do_loop="false"
+         return 0
+      elif [ $result -ne 0 ]; then
          do_loop="false"
          return $result
       fi
