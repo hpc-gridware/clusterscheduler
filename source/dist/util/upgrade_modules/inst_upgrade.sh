@@ -154,24 +154,24 @@ dbwriter.conf"
    #Modify bootstrap file
    ExecuteAsAdmin $CHMOD 666 "$SGE_ROOT/$SGE_CELL/common/bootstrap"
    #Version string
-   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'Version.*' "Version: $SGE_VERSION"
+   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'Version.*' "Version: $SGE_VERSION" 666
    #ADMIN_USER
    if [ $ADMINUSER != default ]; then
       admin_user_value="admin_user              $ADMINUSER"
    else
       admin_user_value="admin_user              none"
    fi
-   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'admin_user.*' "$admin_user_value"
+   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'admin_user.*' "$admin_user_value" 666
    #TODO: default_domain, ignore_fqdn?
    #BINARY PATH
-   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'binary_path.*' "binary_path             $SGE_ROOT/bin"
+   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'binary_path.*' "binary_path             $SGE_ROOT/bin" 666
    #QMASTER SPOOL DIR
-   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'qmaster_spool_dir.*' "qmaster_spool_dir       $QMDIR"
+   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'qmaster_spool_dir.*' "qmaster_spool_dir       $QMDIR" 666
    #PRODUCT MODE
-   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'security_mode.*' "security_mode           $PRODUCT_MODE"
+   ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'security_mode.*' "security_mode           $PRODUCT_MODE" 666
    
    #Remove gdi_threads if present
-   RemoveLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 666 'gdi_threads.*'
+   RemoveLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'gdi_threads.*' 666
    
    #Add threads info if missing
    cat $SGE_ROOT/$SGE_CELL/common/bootstrap | grep "threads" >/dev/null 2>&1
@@ -352,9 +352,9 @@ sched_configuration"
    fi
 	
    if [ "$keep" = false ]; then
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_method.*' "spooling_method         $SPOOLING_METHOD"
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_lib.*'    "spooling_lib            $SPOOLING_LIB"
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_params.*' "spooling_params         $SPOOLING_ARGS"
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_method.*' "spooling_method         $SPOOLING_METHOD" 644
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_lib.*'    "spooling_lib            $SPOOLING_LIB" 644
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_params.*' "spooling_params         $SPOOLING_ARGS" 644
    fi
 }
 

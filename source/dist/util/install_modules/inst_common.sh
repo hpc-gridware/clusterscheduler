@@ -4456,9 +4456,14 @@ PropertiesGetValue()
 ReplaceLineWithMatch()
 {
    repFile="${1:?Need the file name to operate}"
-   filePerms="${2:?Need file final permissions}"
-   repExpr="${3:?Need an expression, where to replace}" 
-   replace="${4:?Need the replacement text}" 
+   repExpr="${2:?Need an expression, where to replace}"
+   replace="${3:?Need the replacement text}"
+   filePerms="$4"
+
+   # Set default permissions
+   if [ -z "${filePerms}" ]; then
+      filePerms="644"
+   fi
 
    #Return if no match
    grep "${repExpr}" $repFile >/dev/null 2>&1
@@ -4494,14 +4499,19 @@ ReplaceLineWithMatch()
 ReplaceOrAddLine()
 {
    repFile="${1:?Need the file name to operate}"
-   filePerms="${2:?Need file final permissions}"
-   repExpr="${3:?Need an expression, where to replace}" 
-   replace="${4:?Need the replacement text}"
-   
+   repExpr="${2:?Need an expression, where to replace}"
+   replace="${3:?Need the replacement text}"
+   filePerms="$4"
+
+   # Set default permissions
+   if [ -z "${filePerms}" ]; then
+      filePerms="644"
+   fi
+
    #Does the pattern exists
    grep "${repExpr}" "${repFile}" > /dev/null 2>&1
    if [ $? -eq 0 ]; then #match
-      ReplaceLineWithMatch "$repFile" "$filePerms" "$repExpr" "$replace"
+      ReplaceLineWithMatch "$repFile" "$repExpr" "$replace" "$filePerms"
    else                  #line does not exist
       #copy tmp, add, replace
       echo "$replace" >> "$repFile"
@@ -4511,9 +4521,14 @@ ReplaceOrAddLine()
 #Remove line with maching expression
 RemoveLineWithMatch() {
    remFile="${1:?Need the file name to operate}"
-   filePerms=$2
-   remExpr="${3:?Need an expression, where to remove lines}"
-   
+   remExpr="${2:?Need an expression, where to remove lines}"
+   filePerms="$3"
+
+   # Set default permissions
+   if [ -z "${filePerms}" ]; then
+      filePerms="644"
+   fi
+
    #Return if no match
    grep "${remExpr}" $remFile >/dev/null 2>&1
    if [ $? -ne 0 ]; then
@@ -4526,9 +4541,6 @@ RemoveLineWithMatch() {
    sed -e "/${remExpr}/d" "$remFile" > "${remFile}.tmp"
    ExecuteAsAdmin mv -f "${remFile}.tmp"  "${remFile}"
 
-   if [ -z "${filePerms}" ]; then
-      filePerms="644"
-   fi
    ExecuteAsAdmin chmod "${filePerms}" "${remFile}"
 }
 
@@ -4550,4 +4562,19 @@ CloneDir() {
    ExecuteAsAdmin cp -a "${dir}"/* "$clone_dir"
 
    echo "$clone_dir"
+}
+
+GetAttrValue() {
+   file="${1:?Filename missing as first argument in GetAttrValue}"
+   name="${2:?Attribute name missing as second argument in GetAttrValue}"
+
+   line=$(cat "$file" | grep "^$name")
+   if [ $? -eq 0 ]; then
+      value=$(echo "$line" | tr -s ' ' | cut -f 2- -d ' ')
+   else
+      # no error if attribute not found
+      value=""
+   fi
+
+   echo "$value"
 }

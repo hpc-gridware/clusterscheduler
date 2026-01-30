@@ -347,9 +347,10 @@ UpOrDowngradeGeneral()
    # EXECUTION HOST CONFIG
    # files contain attributes that cannot be set during upgrade.
    # These attributes are dynamic and get their values from the execution daemon at runtime.
-   for item in "$working_dir/execution/"*; do
-      RemoveLineWithMatch ${working_dir}/execution/$item "" 'load_values.*'
-      RemoveLineWithMatch ${working_dir}/execution/$item "" 'processors.*'
+   for ibj_name in "$working_dir/execution/"*; do
+      file="$working_dir/execution/$item"
+      RemoveLineWithMatch ${file} 'load_values.*' ""
+      RemoveLineWithMatch ${file} 'processors.*' ""
    done
 
    # CONFIGURATION OBJECTS
@@ -386,12 +387,12 @@ UpOrDowngradeGeneral()
       else
          # Remove local settings for interactive job support
          if [ "$newIJS" = true ]; then
-            RemoveLineWithMatch ${file} "" 'qlogin_command.*'
-            RemoveLineWithMatch ${file} "" 'qlogin_daemon.*'
-            RemoveLineWithMatch ${file} "" 'rlogin_command.*'
-            RemoveLineWithMatch ${file} "" 'rlogin_daemon.*'
-            RemoveLineWithMatch ${file} "" 'rsh_command.*'
-            RemoveLineWithMatch ${file} "" 'rsh_daemon.*'
+            RemoveLineWithMatch ${file} 'qlogin_command.*' ""
+            RemoveLineWithMatch ${file} 'qlogin_daemon.*' ""
+            RemoveLineWithMatch ${file} 'rlogin_command.*' ""
+            RemoveLineWithMatch ${file} 'rlogin_daemon.*' ""
+            RemoveLineWithMatch ${file} 'rsh_command.*' ""
+            RemoveLineWithMatch ${file} 'rsh_daemon.*' ""
          fi
 
          # Change local execd-spool dirs to unique names in the new cluster
@@ -418,7 +419,7 @@ UpOrDowngradeGeneral()
 }
 
 # shellcheck disable=SC2317
-UpOrDowngradeTo90000()
+UpOrDowngradeTo900000()
 {
    do_upgrade="${1:?Missing upgrade/downgrade parameter}"
    working_dir="${2:?Missing working dir parameter}"
@@ -427,21 +428,101 @@ UpOrDowngradeTo90000()
       # NA - First version of OCS/GCS
       :
    else
-      LogIt "I" "Downgrade to 90000"
+      LogIt "I" "Downgrade to 900000 started"
+
+      # Downgrade Step 1: Execution Host Config
+      # no need to readd dynamic attributes exec object attributes (load_values and processors)
+      # Even if we would add them back, they would be ignored by the load_config during downgrade.
+      :
+
+      # Downgrade Step 2: Configuration Objects
+      for obj_name in "$working_dir/configurations/"*; do
+         file="$working_dir/configurations/$filename"
+
+         # In global configuration remove jsv_params
+         if [ "$obj_name" = "global" ]; then
+            RemoveLineWithMatch "${file}" 'jsv_params.*' ""
+            RemoveLineWithMatch "${file}" 'mail_tag.*' ""
+            RemoveLineWithMatch "${file}" 'topology_file.*' ""
+            RemoveLineWithMatch "${file}" 'gdi_request_limits.*' ""
+            RemoveLineWithMatch "${file}" 'binding_params.*' ""
+         fi
+      done
+
+      LogIt "I" "Downgrade to 900000 finished"
    fi
 
    return 0
 }
 
 # shellcheck disable=SC2317
-UpOrDowngradeTo90100() {
+UpOrDowngradeTo901000() {
    do_upgrade="${1:?Missing upgrade/downgrade parameter}"
    working_dir="${2:?Missing working dir parameter}"
 
    if [ "$do_upgrade" -eq 1 ]; then
-      LogIt "I" "Upgrade to 90100"
+      LogIt "I" "Upgrade to 9.1.x (901000) started"
+
+      # Upgrade Step 1: Execution Host Objects
+      for file in "$working_dir/execution/"*; do
+         # Release 9.0.0 till 9.0.11 had a bug in the save_config script that caused host objects to contain
+         # two attributes that cannot be set during upgrade. These attributes are dynamic and get their values
+         # from the execution daemon at runtime (load_values and processors).
+         RemoveLineWithMatch "${file}" 'load_values.*' ""
+         RemoveLineWithMatch "${file}" 'processors.*' ""
+
+         # Add/Update complex_values attribute (slots=2147483647) will be reset to number of cores by execd at runtime
+         obj_name=$(basename "$file")
+         if [ "$obj_name" != "global" ]; then
+            complex_values=$(GetAttrValue "$file" 'complex_values')
+            if [ -z "$complex_values" ] || [ "$complex_values" = "NONE" ]; then
+               ReplaceOrAddLine "${file}" 'complex_values.*' "complex_values slots=2147483647"
+            else
+               ReplaceOrAddLine "${file}" 'complex_values.*' "complex_values $complex_values,slots=2147483647"
+            fi
+         fi
+      done
+
+      # Upgrade Step 2: Configuration Objects
+      for file in "$working_dir/configurations/"*; do
+         obj_name=$(basename "$file")
+
+         # In global configuration
+         if [ "$obj_name" = "global" ]; then
+
+            # Attributes where NONE is now uppercase. Lowercase are also supported for backward compatibility.
+            if [ "$(GetAttrValue "${file}" 'auto_user_default_project')" = "none" ]; then
+               ReplaceOrAddLine "${file}" 'auto_user_default_project.*' "auto_user_default_project NONE"
+            fi
+            if [ "$(GetAttrValue "${file}" 'jsv_url')" = "none" ]; then
+               ReplaceOrAddLine "${file}" 'jsv_url.*' "jsv_url NONE"
+            fi
+
+            # Add new attributes with default values
+            ReplaceOrAddLine "${file}" 'jsv_params.*' "jsv_params NONE"
+            ReplaceOrAddLine "${file}" 'topology_file.*' "topology_file NONE"
+            ReplaceOrAddLine "${file}" 'gdi_request_limits.*' "gdi_request_limits NONE"
+            ReplaceOrAddLine "${file}" 'mail_tag.*' "mail_tag NONE"
+
+            # Modify binding_params to enable C-binding but disable implicit binding by default
+            ReplaceOrAddLine "${file}" 'binding_params.*' "binding_params enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
+
+            # Remove reprioritize attribute (not used anymore)
+            RemoveLineWithMatch "${file}" 'reprioritize.*' ""
+
+            # Modify execd_params to enable hybrid mode for online usage collection
+            execd_params=$(GetAttrValue "$file" 'execd_params')
+            if [ -z "$execd_params" ] || [ "$execd_params" = "NONE" ]; then
+               ReplaceOrAddLine "${file}" 'execd_params.*' "execd_params USAGE_COLLECTION=HYBRID"
+            else
+               ReplaceOrAddLine "${file}" 'execd_params.*' "execd_params $execd_params,USAGE_COLLECTION=HYBRID"
+            fi
+         fi
+      done
+
+      LogIt "I" "Upgrade to 9.1.x (901000) finished"
    else
-      LogIt "I" "Downgrade to 90100"
+      :
    fi
 
    return 0
@@ -458,7 +539,6 @@ fi
 DIR="${1:?The backup directory is required}"
 LOG_FILE_NAME="${2:?A log file path and name is required}"
 TARGET_VERSION=""
-
 shift 2
 
 ARGC=$#

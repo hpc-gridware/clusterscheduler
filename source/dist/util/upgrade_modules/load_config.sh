@@ -104,37 +104,6 @@ LogIt()
    esac
 }
 
-ReplaceLineWithMatch()
-{
-   repFile="${1:?Need the file name to operate}"
-   repExpr="${2:?Need an expression, where to replace}"
-   replace="${3:?Need the replacement text}"
-
-   #Return if no match
-   grep ${repExpr} $repFile >/dev/null 2>&1
-   if [ $? -ne 0 ]; then
-      return
-   fi
-   SEP="|"
-   echo "$repExpr $replace" | grep "|" >/dev/null 2>&1
-   if [ $? -eq 0 ]; then
-      echo "$repExpr $replace" | grep "%" >/dev/null 2>&1
-      if [ $? -ne 0 ]; then
-         SEP="%"
-      else
-         echo "$repExpr $replace" | grep "?" >/dev/null 2>&1
-         if [ $? -ne 0 ]; then
-            SEP="?"
-         else
-            LogIt "C" "$repExpr $replace contains |,% and ? character cannot use sed"
-         fi
-      fi
-   fi
-   #We need to change the file
-   sed -e "s${SEP}${repExpr}${SEP}${replace}${SEP}g" "$repFile" > "${repFile}.tmp"
-   mv -f "${repFile}.tmp"  "${repFile}"
-}
-
 #Resolve a result during Loading
 ResolveResult()
 {
@@ -417,7 +386,7 @@ ResolveResult()
             LogIt "C" "Aborting on error as requested: unknown attribute $obj"
             EXIT 1
          elif [ "$ON_ERROR" = "continue" ]; then
-            RemoveLineWithMatch ${resFile} "" ${obj}
+            RemoveLineWithMatch ${resFile} ${obj} ""
             LogIt "I" "$obj attribute was removed, trying again"
             LoadConfigFile "$resFile" "$resOpt"
             ret=$?
@@ -528,8 +497,9 @@ LoadListFromLocation()
       done
    else
       #Not a file or directory (skip)
-      errorMsg="wrong directory or file: $loadLoc"
-      LogIt "W" "$errorMsg"
+      #errorMsg="wrong directory or file: $loadLoc"
+      #LogIt "W" "$errorMsg"
+      :
    fi
 
    if [ $failed -eq  0 ]; then

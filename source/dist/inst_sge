@@ -522,9 +522,9 @@ if [ "$UPDATE" = true ]; then
       SelectNewSpooling `BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "spooling_method"`
    else
       SetSpoolingOptions `BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "spooling_method"`
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_method.*' "spooling_method         $SPOOLING_METHOD"
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_lib.*'    "spooling_lib            $SPOOLING_LIB"
-      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 644 'spooling_params.*' "spooling_params         $SPOOLING_ARGS"
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_method.*' "spooling_method $SPOOLING_METHOD" 644
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_lib.*'    "spooling_lib $SPOOLING_LIB" 644
+      ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_params.*' "spooling_params $SPOOLING_ARGS" 644
    fi
    InitSpoolingDatabase
    SavedOrNewIJS
