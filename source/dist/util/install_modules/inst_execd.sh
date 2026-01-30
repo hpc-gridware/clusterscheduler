@@ -392,7 +392,7 @@ CheckHostNameResolving()
 UpdateConfiguration()
 {
    cat $2 | while read line; do
-      ReplaceOrAddLine "$1" 666 `echo $line | awk '{print $1}'`'.*' "$line"
+      ReplaceOrAddLine "$1" `echo $line | awk '{print $1}'`'.*' "$line" 666
    done
 }
 
