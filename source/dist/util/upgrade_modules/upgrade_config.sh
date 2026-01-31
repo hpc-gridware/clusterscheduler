@@ -19,29 +19,24 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-INFOTEXT=echo
-CAT=cat
-MKDIR=mkdir
-LS=ls
-SCRIPTNAME=`basename "$0"`
+INFOTEXT="echo"
 
-if [ -z "$SGE_ROOT" -o -z "$SGE_CELL" ]; then
+if [ -z "$SGE_ROOT" ] || [ -z "$SGE_CELL" ]; then
    $INFOTEXT "Set your SGE_ROOT, SGE_CELL first!"
    exit 1
 fi
-cd $SGE_ROOT
+cd "$SGE_ROOT" || exit
 
 ROOTDIR=$SGE_ROOT
-CELLDIR=$SGE_CELL
-ARCH=`$ROOTDIR/util/arch`
+ARCH=$("$ROOTDIR"/util/arch)
 QCONF=$ROOTDIR/bin/$ARCH/qconf
 QCONF_NAME="qconf"
 QMASTER_NAME="qmaster"
 PRODUCT_SHORTCUT="sge"
 
-HOST=`$ROOTDIR/utilbin/$ARCH/gethostname -aname`
+HOST=$("$ROOTDIR"/utilbin/"$ARCH"/gethostname -aname)
 
-. $ROOTDIR/util/install_modules/inst_common.sh
+. "$ROOTDIR"/util/install_modules/inst_common.sh
 BasicSettings
 GetAdminUser
 
@@ -51,7 +46,7 @@ GetAdminUser
 
 Usage()
 {
-   myname=`basename $0`
+   myname=$(basename "$0")
    $INFOTEXT "Usage: $myname <dir> <log_file> <date>\n" \
              "         [-admin_mail <value>]\n" \
              "         [-gid_range <integer_range_value>]\n" \
@@ -78,7 +73,8 @@ LogIt()
    message="${2:?Message is required}"
 
    #log file contains all messages
-   echo "${urgency} $message" >> $LOG_FILE_NAME
+   echo "${urgency} $message" >> "$LOG_FILE_NAME"
+
    #log when urgency and level is meet
    case "${urgency}${LOGGER_LEVEL}" in
       CC|CW|CI)
@@ -93,17 +89,19 @@ LogIt()
    esac
 }
 
-#################################################################################
+###################################################################################################
 # Version comparison functions
-#################################################################################
+###################################################################################################
 
+## @brief Extract product name from version string
 VersionString2Product() {
    version_string="${1:?Missing version string}"
 
-   product=$(echo $version_string | sed -n 's/\([a-zA-Z]*\) \([0-9.]*\)\(.*\)/\1/p')
-   echo $product
+   product=$(echo "$version_string" | sed -n 's/\([a-zA-Z]*\) \([0-9.]*\)\(.*\)/\1/p')
+   echo "$product"
 }
 
+## @brief Extract version number from version string
 VersionString2VersionNumber() {
    version_string="${1:?Missing version string}"
 
@@ -111,6 +109,7 @@ VersionString2VersionNumber() {
    echo "$version_number"
 }
 
+## @brief Extract suffix from version string
 VersionString2Suffix() {
    version_string="${1:?Missing version string}"
 
@@ -118,17 +117,25 @@ VersionString2Suffix() {
    echo "$suffix"
 }
 
+## @brief Get value from upgrade table at given coordinates
 TableCoordinates2Value() {
    table_name="${1:?Missing table name parameter}"
    line="${2:?Missing line parameter}"
    column="${3:?Missing column parameter}"
 
+   # Normalize table name
    table_name=$(echo "$table_name" | tr '[:upper:]' '[:lower:]')
+   if [ "$table_name" = "ocs" ]; then
+      table_name="gcs"
+   fi
+
+   # Get field from table
    filename="$SGE_ROOT/util/upgrade_modules/upgrade_table_${table_name}.csv"
    field=$(grep -v '^#' "$filename" | sed -n "${line}p"  | cut -d";" -f "$column")
    echo "$field"
 }
 
+## @brief Get field from upgrade table for given version string
 Table2Field() {
    table_name="${1:?Missing table name parameter}"
    version_string="${2:?Missing version string}"
@@ -152,11 +159,11 @@ Table2Field() {
                # return the line number for column 0
                field=$i
             else
-               field=$(TableCoordinates2Value "$table_name" "$i" $column)
+               field=$(TableCoordinates2Value "$table_name" "$i" "$column")
             fi
             do_loop="false"
          else
-            i=$(expr "$i" + 1)
+            i=$(($i + 1))
          fi
       fi
    done
@@ -164,6 +171,7 @@ Table2Field() {
    echo "$field"
 }
 
+## @brief Get version integer from upgrade table for given version string
 Table2VersionInteger() {
    table_name="${1:?Missing table name parameter}"
    version_string="${2:?Missing version string}"
@@ -172,6 +180,7 @@ Table2VersionInteger() {
    echo "$version_integer"
 }
 
+## @brief Get line number from upgrade table for given version string
 Table2LineNumber() {
    table_name="${1:?Missing table name parameter}"
    version_string="${2:?Missing version string}"
@@ -200,13 +209,13 @@ VersionString2Next() {
    value_type_to_return="${3:?Missing value type}"
 
    # Find current version details
-   current_product=`VersionString2Product "$current_version"`
-   current_integer=`Table2VersionInteger "$current_product" "$current_version"`
-   current_line_number=`Table2LineNumber "$current_product" "$current_version"`
+   current_product=$(VersionString2Product "$current_version")
+   current_integer=$(Table2VersionInteger "$current_product" "$current_version")
+   current_line_number=$(Table2LineNumber "$current_product" "$current_version")
 
    # Find target version details
-   target_product=`VersionString2Product "$target_version"`
-   target_integer=`Table2VersionInteger "$target_product" "$target_version"`
+   target_product=$(VersionString2Product "$target_version")
+   target_integer=$(Table2VersionInteger "$target_product" "$target_version")
 
    # Initialize return values with defaults
    next_version=0
@@ -238,18 +247,18 @@ VersionString2Next() {
 
    # Determine upgrade or downgrade or no action or skip if already an error
    if [ $do_upgrade_downgrade_ret -eq 0 ]; then
-      current_int=$((current_integer + 0))
-      target_int=$((target_integer + 0))
+      current_int=$(($current_integer + 0))
+      target_int=$(($target_integer + 0))
       if [ $current_int -lt $target_int ]; then
          # Performing upgrade from '$current_version' to next version '$next_version'
          do_upgrade_downgrade_ret=1
-         line_number=$(expr "$current_line_number" + 1)
+         line_number=$(($current_line_number + 1))
          next_version=$(TableCoordinates2Value "$current_product" "$line_number" 1)
          next_version_integer=$(TableCoordinates2Value "$current_product" "$line_number" 2)
       elif [ $current_int -gt $target_int ]; then
          # Performing upgrade from '$current_version' to previous version '$next_version'
          do_upgrade_downgrade_ret=2
-         line_number=$(expr "$current_line_number" - 1)
+         line_number=$(($current_line_number - 1))
          next_version=$(TableCoordinates2Value "$current_product" "$line_number" 1)
          next_version_integer=$(TableCoordinates2Value "$current_product" "$line_number" 2)
       else
@@ -268,6 +277,7 @@ VersionString2Next() {
    fi
 }
 
+## @brief Trigger upgrade/downgrade function for next version step
 TriggerUpOrDowngradeFunc() {
    current_version="${1:?Missing current version string}"
    target_version="${2:?Missing target version string}"
@@ -278,8 +288,7 @@ TriggerUpOrDowngradeFunc() {
    function_name="UpOrDowngradeTo${next_version_integer}"
    if type "$function_name" >/dev/null 2>&1; then
       LogIt "I" "Starting $function_name to change '$current_version' to '$next_version'."
-      $function_name "$do_upgrade" "${DIR}"
-      if [ $? -eq 0 ]; then
+      if $function_name "$do_upgrade" "${DIR}"; then
          echo "$next_version" > "${working_dir}/version"
       else
          LogIt "C" "Upgrade step failed in function '$function_name'."
@@ -290,6 +299,7 @@ TriggerUpOrDowngradeFunc() {
    fi
 }
 
+## @brief Trigger upgrade/downgrade step
 TriggerUpOrDowngradeStep() {
    current_version="${1:?Missing current version string}"
    target_version="${2:?Missing target version string}"
@@ -311,6 +321,7 @@ TriggerUpOrDowngradeStep() {
    fi
 }
 
+## @brief Trigger upgrade/downgrade process
 TriggerUpOrDowngrade() {
    current_version="${1:?Missing current version string}"
    target_version="${2:?Missing target version string}"
@@ -334,10 +345,11 @@ TriggerUpOrDowngrade() {
    return $?
 }
 
-#################################################################################
-# Upgrade functions
-#################################################################################
+###################################################################################################
+# Upgrade/Downgrade functions
+###################################################################################################
 
+## @brief General upgrade/downgrade tasks to be performed for all version changes
 UpOrDowngradeGeneral()
 {
    working_dir="${1:?Missing working dir parameter}"
@@ -347,10 +359,9 @@ UpOrDowngradeGeneral()
    # EXECUTION HOST CONFIG
    # files contain attributes that cannot be set during upgrade.
    # These attributes are dynamic and get their values from the execution daemon at runtime.
-   for ibj_name in "$working_dir/execution/"*; do
-      file="$working_dir/execution/$item"
-      RemoveLineWithMatch ${file} 'load_values.*' ""
-      RemoveLineWithMatch ${file} 'processors.*' ""
+   for file in "$working_dir/execution/"*; do
+      RemoveLineWithMatch "${file}" 'load_values.*' ""
+      RemoveLineWithMatch "${file}" 'processors.*' ""
    done
 
    # CONFIGURATION OBJECTS
@@ -383,23 +394,23 @@ UpOrDowngradeGeneral()
             ReplaceOrAddLine "${file}" 'administrator_mail.*' "administrator_mail $ADMIN_MAIL"
          fi
 
-         ReplaceOrAddLine ${file} 'max_advance_reservations.*' "max_advance_reservations 0"
+         ReplaceOrAddLine "${file}" 'max_advance_reservations.*' "max_advance_reservations 0"
       else
          # Remove local settings for interactive job support
          if [ "$newIJS" = true ]; then
-            RemoveLineWithMatch ${file} 'qlogin_command.*' ""
-            RemoveLineWithMatch ${file} 'qlogin_daemon.*' ""
-            RemoveLineWithMatch ${file} 'rlogin_command.*' ""
-            RemoveLineWithMatch ${file} 'rlogin_daemon.*' ""
-            RemoveLineWithMatch ${file} 'rsh_command.*' ""
-            RemoveLineWithMatch ${file} 'rsh_daemon.*' ""
+            RemoveLineWithMatch "${file}" 'qlogin_command.*' ""
+            RemoveLineWithMatch "${file}" 'qlogin_daemon.*' ""
+            RemoveLineWithMatch "${file}" 'rlogin_command.*' ""
+            RemoveLineWithMatch "${file}" 'rlogin_daemon.*' ""
+            RemoveLineWithMatch "${file}" 'rsh_command.*' ""
+            RemoveLineWithMatch "${file}" 'rsh_daemon.*' ""
          fi
 
          # Change local execd-spool dirs to unique names in the new cluster
          if [ "$mode" = copy ]; then
-            local_dir=`grep execd_spool_dir ${file} 2>/dev/null | awk '{print $2}'`
+            local_dir=$(grep execd_spool_dir "$file" 2>/dev/null | awk '{print $2}')
             if [ -n "$local_dir" ]; then
-               local_dir=`dirname $local_dir 2>/dev/null`
+               local_dir=$(dirname "$local_dir" 2>/dev/null)
                if [ -n "$local_dir" ]; then
                   if [ -n "$SGE_CLUSTER_NAME" ]; then
                      local_dir="${local_dir}/${SGE_CLUSTER_NAME}"
@@ -408,7 +419,7 @@ UpOrDowngradeGeneral()
                   else
                      local_dir="${local_dir}/${SGE_CELL}"
                   fi
-                  ReplaceOrAddLine ${file} 'execd_spool_dir.*' "execd_spool_dir $local_dir"
+                  ReplaceOrAddLine "${file}" 'execd_spool_dir.*' "execd_spool_dir $local_dir"
                fi
             fi
          fi
@@ -418,6 +429,7 @@ UpOrDowngradeGeneral()
    return 0
 }
 
+## @brief switch between 8.x.x -> 9.0.0 or vice versa (both not implemented)
 # shellcheck disable=SC2317
 UpOrDowngradeTo900000()
 {
@@ -428,45 +440,27 @@ UpOrDowngradeTo900000()
       # NA - First version of OCS/GCS
       :
    else
-      LogIt "I" "Downgrade to 900000 started"
-
-      # Downgrade Step 1: Execution Host Config
-      # no need to readd dynamic attributes exec object attributes (load_values and processors)
-      # Even if we would add them back, they would be ignored by the load_config during downgrade.
-      :
-
-      # Downgrade Step 2: Configuration Objects
-      for obj_name in "$working_dir/configurations/"*; do
-         file="$working_dir/configurations/$filename"
-
-         # In global configuration remove jsv_params
-         if [ "$obj_name" = "global" ]; then
-            RemoveLineWithMatch "${file}" 'jsv_params.*' ""
-            RemoveLineWithMatch "${file}" 'mail_tag.*' ""
-            RemoveLineWithMatch "${file}" 'topology_file.*' ""
-            RemoveLineWithMatch "${file}" 'gdi_request_limits.*' ""
-            RemoveLineWithMatch "${file}" 'binding_params.*' ""
-         fi
-      done
-
-      LogIt "I" "Downgrade to 900000 finished"
+      LogIt "E" "Downgrade to 9.0.x not supported"
+      return 1
    fi
 
    return 0
 }
 
+## @brief switch between 9.0.x -> 9.1.0 or vice versa
 # shellcheck disable=SC2317
 UpOrDowngradeTo901000() {
-   do_upgrade="${1:?Missing upgrade/downgrade parameter}"
-   working_dir="${2:?Missing working dir parameter}"
+   do_upgrade="${1:?Missing upgrade/downgrade parameter}"; # 1=upgrade, 0=downgrade
+   working_dir="${2:?Missing working dir parameter}"; # directory containing the backup files
 
    if [ "$do_upgrade" -eq 1 ]; then
       LogIt "I" "Upgrade to 9.1.x (901000) started"
 
       # Upgrade Step 1: Execution Host Objects
+      LogIt "I" "Modifying execution host objects to remove deprecated attributes and add new ones"
       for file in "$working_dir/execution/"*; do
          # Release 9.0.0 till 9.0.11 had a bug in the save_config script that caused host objects to contain
-         # two attributes that cannot be set during upgrade. These attributes are dynamic and get their values
+         # attributes that cannot be set during upgrade. These attributes are dynamic and get their values
          # from the execution daemon at runtime (load_values and processors).
          RemoveLineWithMatch "${file}" 'load_values.*' ""
          RemoveLineWithMatch "${file}" 'processors.*' ""
@@ -484,6 +478,7 @@ UpOrDowngradeTo901000() {
       done
 
       # Upgrade Step 2: Configuration Objects
+      LogIt "I" "Modifying configuration objects to add new attributes and modify existing ones"
       for file in "$working_dir/configurations/"*; do
          obj_name=$(basename "$file")
 
@@ -507,7 +502,7 @@ UpOrDowngradeTo901000() {
             # Modify binding_params to enable C-binding but disable implicit binding by default
             ReplaceOrAddLine "${file}" 'binding_params.*' "binding_params enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=false,filter=NONE"
 
-            # Remove reprioritize attribute (not used anymore)
+            # Remove reprioritize attribute (deprecated and not used anymore)
             RemoveLineWithMatch "${file}" 'reprioritize.*' ""
 
             # Modify execd_params to enable hybrid mode for online usage collection
@@ -520,18 +515,40 @@ UpOrDowngradeTo901000() {
          fi
       done
 
+      # Upgrade Step 3: Bootstrap File (reader (new) and worker threads increased to 4)
+      LogIt "I" "Modifying bootstrap file to increase listener, reader and worker threads to 4"
+      bootstrap_file="$working_dir/cell/bootstrap"
+      ReplaceOrAddLine "${bootstrap_file}" 'listener_threads.*' "listener_threads 4"
+      ReplaceOrAddLine "${bootstrap_file}" 'reader_threads.*' "reader_threads 4"
+      ReplaceOrAddLine "${bootstrap_file}" 'worker_threads.*' "worker_threads 4"
+
       LogIt "I" "Upgrade to 9.1.x (901000) finished"
    else
-      :
+      LogIt "E" "Downgrade to 9.1.x not supported"
+      return 1
    fi
 
    return 0
 }
 
-########
-# MAIN #
-########
-if [ "$1" = -help -o $# -eq 0 ]; then
+## @brief switch between 9.1.x -> 9.2.0 or vice versa (not implemented)
+# shellcheck disable=SC2317
+UpOrDowngradeTo902000() {
+   do_upgrade="${1:?Missing upgrade/downgrade parameter}"; # 1=upgrade, 0=downgrade
+   working_dir="${2:?Missing working dir parameter}"; # directory containing the backup files
+
+   if [ "$do_upgrade" -eq 1 ]; then
+      LogIt "E" "Upgrade to 9.2.x (902000) not implemented (CS-1771)"
+   else
+      LogIt "E" "Downgrade to 9.2.x not supported"
+      return 1
+   fi
+}
+
+###################################################################################################
+# MAIN
+###################################################################################################
+if [ "$1" = -help ] || [ $# -eq 0 ]; then
    Usage
    exit 0
 fi
@@ -542,7 +559,7 @@ TARGET_VERSION=""
 shift 2
 
 ARGC=$#
-while [ $ARGC -gt 0 ]; do
+while [ "$ARGC" -gt 0 ]; do
    case $1 in
       -target)
          shift
@@ -551,16 +568,16 @@ while [ $ARGC -gt 0 ]; do
          ;;
       -log)
          shift
-         if [ "$1" != "C" -a "$1" != "W" -a "$1" != "I" ]; then
-            LogIt "W" "UPGRADE invoked with invalid log level "$1" using W"
+         if [ "$1" != "C" ] && [ "$1" != "W" ] && [ "$1" != "I" ]; then
+            LogIt "W" "UPGRADE invoked with invalid log level $1 using W"
          else
             LOGGER_LEVEL="$1"
          fi
          ;;
       -mode)
          shift
-         if [ "$1" != "upgrade" -a "$1" != "copy" ]; then
-            LogIt "W" "UPGRADE invoked with invalid mode "$1" using $mode"
+         if [ "$1" != "upgrade" ] && [ "$1" != "copy" ]; then
+            LogIt "W" "UPGRADE invoked with invalid mode $1 using $mode"
          else
             LogIt "I" "UPGRADE invoked with -mode $1"
             mode="$1"
@@ -568,8 +585,8 @@ while [ $ARGC -gt 0 ]; do
          ;;
       -newijs)
          shift
-         if [ "$1" != "true" -a "$1" != "false" ]; then
-            LogIt "W" "UPGRADE invoked with invalid newijs "$1" using $newIJS"
+         if [ "$1" != "true" ] && [ "$1" != "false" ]; then
+            LogIt "W" "UPGRADE invoked with invalid newijs $1 using $newIJS"
          else
             LogIt "I" "UPGRADE invoked with -newijs true"
             newIJS="$1"
@@ -591,52 +608,50 @@ while [ $ARGC -gt 0 ]; do
          GID_RANGE="$1"
          ;;
    esac
-   ARGC=`expr $ARGC - 2`
+   ARGC=$(($ARGC - 2))
    shift
 done
 
 # Find current version
-CURRENT_VERSION=$(cat ${DIR}/version)
-product=`VersionString2Product "$CURRENT_VERSION"`
-version=`VersionString2VersionNumber "$CURRENT_VERSION"`
-suffix=`VersionString2Suffix "$CURRENT_VERSION"`
-integer=`Table2VersionInteger "$product" "$CURRENT_VERSION"`
+CURRENT_VERSION=$(cat "${DIR}"/version)
+product=$(VersionString2Product "$CURRENT_VERSION")
+version=$(VersionString2VersionNumber "$CURRENT_VERSION")
+suffix=$(VersionString2Suffix "$CURRENT_VERSION")
+integer=$(Table2VersionInteger "$product" "$CURRENT_VERSION")
 LogIt "I" "Current version: product='$product' version='$version' suffix='$suffix' integer='$integer'"
-
 
 # Determine target version
 if [ -z "$TARGET_VERSION" ]; then
-   TARGET_VERSION=`$QCONF -help | sed  -n '1,1 p'` 2>&1
-   if [ $? -ne 0 ]; then
+   if ! TARGET_VERSION=$($QCONF -help | sed -n '1,1p'); then
       LogIt "C" "$QCONF_NAME -help failed"
       LogIt "C" "$QMASTER_NAME is not installed"
       EXIT 1
    fi
 fi
-product=`VersionString2Product "$TARGET_VERSION"`
-version=`VersionString2VersionNumber "$TARGET_VERSION"`
-suffix=`VersionString2Suffix "$TARGET_VERSION"`
-integer=`Table2VersionInteger "$product" "$TARGET_VERSION"`
+product=$(VersionString2Product "$TARGET_VERSION")
+version=$(VersionString2VersionNumber "$TARGET_VERSION")
+suffix=$(VersionString2Suffix "$TARGET_VERSION")
+integer=$(Table2VersionInteger "$product" "$TARGET_VERSION")
 LogIt "I" "Target version: product='$product' version='$version' suffix='$suffix' integer='$integer'"
 
-admin_hosts=`$QCONF -sh 2>/dev/null`
+admin_hosts=$($QCONF -sh 2>/dev/null)
 if [ -z "$admin_hosts" ]; then
    $INFOTEXT "ERROR: $QCONF_NAME -sh failed. Qmaster is probably not running?"
    LogIt "C" "$QMASTER_NAME is not running"
    EXIT 1
 fi
-tmp_adminhost=`$QCONF -sh | grep "^${HOST}$" 2>/dev/null`
+tmp_adminhost=$($QCONF -sh | grep "^${HOST}$" 2>/dev/null)
 if [ "$tmp_adminhost" != "$HOST" ]; then
    $INFOTEXT "ERROR: Load must be started on admin host ($QMASTER_NAME host recommended)."
    LogIt "C" "Can't start load_${PRODUCT_SHORTCUT}_config.sh on $HOST: not an admin host"
    EXIT 1
 fi
 
-TriggerUpOrDowngrade "$CURRENT_VERSION" "$TARGET_VERSION" "$DIR"
-if [ $? -ne 0 ]; then
-   LogIt "C" "Upgrading failed"
-   EXIT 1
-else
+# Start upgrade/downgrade process
+if TriggerUpOrDowngrade "$CURRENT_VERSION" "$TARGET_VERSION" "$DIR"; then
    LogIt "I" "Finished upgrading"
    EXIT 0
+else
+   LogIt "C" "Upgrading failed"
+   EXIT 1
 fi
