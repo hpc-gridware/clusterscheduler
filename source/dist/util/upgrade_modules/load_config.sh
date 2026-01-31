@@ -372,7 +372,15 @@ ResolveResult()
       ;;
       -Mc)
          case "$resMsg" in
-            '')
+            *'to complex entry list'*)
+               # success message for adding complex entries
+               return 0
+            ;;
+            *'from complex list'*)
+               # success message for removal of complex entries
+               return 0
+            ;;
+            *'has not been changed'*)
                LogIt "I" "empty output from -Mc option accepted"
                return 0
             ;;

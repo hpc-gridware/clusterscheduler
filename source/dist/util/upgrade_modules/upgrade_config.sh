@@ -522,6 +522,11 @@ UpOrDowngradeTo901000() {
       ReplaceOrAddLine "${bootstrap_file}" 'reader_threads.*' "reader_threads 4"
       ReplaceOrAddLine "${bootstrap_file}" 'worker_threads.*' "worker_threads 4"
 
+      # Upgrade Step 4: Centry File (remove m_topology_in_use complex)
+      LogIt "I" "Modifying centry file to remove deprecated m_topology_inuse complex"
+      centry_file="$working_dir/centry"
+      RemoveLineWithMatch "${centry_file}" 'm_topology_inuse.*' ""
+
       LogIt "I" "Upgrade to 9.1.x (901000) finished"
    else
       LogIt "E" "Downgrade to 9.1.x not supported"
