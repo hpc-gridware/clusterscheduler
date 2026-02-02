@@ -67,7 +67,7 @@ void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task);
 
 void
-sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session);
+sge_update_load_values(const char *rhost, const char *real_host, lList *lp, u_long64 gdi_session);
 
 void
 sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);

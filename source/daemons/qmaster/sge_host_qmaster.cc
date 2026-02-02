@@ -690,11 +690,12 @@ sge_mark_unheard(lListElem *hep, u_long64 gdi_session) {
    using the load report list lp
 */
 void
-sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
+sge_update_load_values(const char *rhost, const char* real_host, lList *lp, u_long64 gdi_session) {
    lListElem *ep, **hepp = nullptr;
    lListElem *lep;
    lListElem *global_ep = nullptr;
    lListElem *host_ep = nullptr;
+   lListElem *real_ep = nullptr;
    bool statics_changed = false;
    lList *answer_list = nullptr;
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
@@ -711,6 +712,11 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
    if (host_ep == nullptr) {
       /* report from unknown host arrived, ignore it */
       DRETURN_VOID;
+   }
+
+   // get real host element if we handle a simulated host
+   if (real_host != nullptr) {
+      real_ep = lGetElemHostRW(master_ehost_list, EH_name, real_host);
    }
 
    /* 
@@ -747,6 +753,22 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
          hepp = &host_ep;
       }
 
+      // The topology string that we receive from execd contains more information than we need
+      // Filter the information and only keep the topology string as load value
+      // Store the full string in the host element
+      if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
+         // If we have a real host (simulated host case), get the topology from the internally stored full string
+         if (real_ep != nullptr) {
+            value = lGetString(real_ep, EH_internal_topology);
+         }
+
+         // Keep the original value in the host element and a product-specific version as load value
+         ocs::TopologyString topology(value);
+         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
+         lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
+         value = lGetString(ep, LR_value);
+      }
+
       /* update load value list of reported host */
       if (*hepp == nullptr || sge_hostcmp(host, lGetHost(*hepp, EH_name)) != 0) {
          if (*hepp != nullptr) {
@@ -764,18 +786,6 @@ sge_update_load_values(const char *rhost, lList *lp, u_long64 gdi_session) {
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
          }
-      }
-
-      // The topology string that we receive from execd contains more information than we need
-      // Filter the information and only keep the topology string as load value
-      // Store the full string in the host element
-      if (strcmp(LOAD_ATTR_TOPOLOGY, name) == 0) {
-         ocs::TopologyString topology(value);
-
-         // Keep the original value in the host element and a product-specific version as load value
-         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
-         lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
-         value = lGetString(ep, LR_value);
       }
 
       if (is_static == 2) {

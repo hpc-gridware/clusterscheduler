@@ -201,7 +201,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
                   is_pb_used = true;
                   init_packbuffer(&pb, 1024);
                }
-               sge_update_load_values(rhost, lGetListRW(report, REP_list), packet->gdi_session);
+               sge_update_load_values(rhost, nullptr, lGetListRW(report, REP_list), packet->gdi_session);
 
                if (mconf_get_simulate_execds()) {
                   const lList *master_exechost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -223,7 +223,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
                                  lSetHost(clp, LR_host, sim_host);
                               }
                            }
-                           sge_update_load_values(sim_host, lGetListRW(report, REP_list), packet->gdi_session);
+                           sge_update_load_values(sim_host, real_host, lGetListRW(report, REP_list), packet->gdi_session);
                         }
                      }
                   }
