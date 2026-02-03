@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1205,7 +1205,7 @@ int ptf_job_complete(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_i
       sge_switch2admin_user();
 
 #if defined (OCS_WITH_SYSTEMD)
-      if (ocs::uti::Systemd::is_systemd_available()) {
+      if (ocs::execd::execd_use_systemd()) {
          ocs::execd::ptf_get_usage_from_systemd();
       }
 #endif
@@ -1336,7 +1336,7 @@ void ptf_update_job_usage()
    // Whether a job gets usage via systemd can be determined from the systemd scope stored in the array task
    // or pe task object.
 #if defined (OCS_WITH_SYSTEMD)
-   if (ocs::uti::Systemd::is_systemd_available()) {
+   if (ocs::execd::execd_use_systemd()) {
       PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
       ocs::execd::ptf_get_usage_from_systemd();
       PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);

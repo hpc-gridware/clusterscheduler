@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -124,9 +124,9 @@ namespace ocs::uti {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_SYSTEMD_CANNOT_DETECT_CGROUP_VERSION);
          ret = false;
       }
-      DPRINTF("==> cgroup version: %d", cgroup_version);
+      DPRINTF("==> cgroup version: %d\n", cgroup_version);
 
-      // In order to use systemd, we need to be root (for writing operations)
+      // To use systemd, we need to be root (for writing operations)
       if (ret && getuid() != 0) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_SYSTEMD_NOT_ROOT);
          ret = false;
@@ -324,7 +324,7 @@ namespace ocs::uti {
 
       if (ret) {
          // We will need the slice name for the service name, read it once.
-         // If we have a slice name, we can figure out if we are running as service.
+         // If we have a slice name, we can figure out if we are running as a service.
          service_name = service_name_in;
          std::string slice_file_name = get_slice_file_name();
          ret = read_one_line_file(slice_file_name, slice_name);
@@ -379,6 +379,7 @@ namespace ocs::uti {
          lib_handle = nullptr;
       }
 
+      DPRINTF("Systemd::initialize() returning %d\n", ret);
       return ret;
    }
 

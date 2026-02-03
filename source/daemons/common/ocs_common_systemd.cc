@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ namespace ocs::common {
          // When we are using systemd we usually do not use PDC for usage collection,
          // except when we configured in execd_params USAGE_COLLECTION to use PDC or HYBRID.
 #if defined(OCS_WITH_SYSTEMD)
-         if (mconf_get_enable_systemd() &&
-             ocs::uti::Systemd::is_systemd_available()) {
+         if (mconf_get_enable_systemd() && ocs::uti::Systemd::is_systemd_available()) {
             ret = false;
             if (usage_collection == USAGE_COLLECTION_PDC || usage_collection == USAGE_COLLECTION_HYBRID) {
                ret = true;

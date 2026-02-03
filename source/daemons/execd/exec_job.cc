@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1365,7 +1365,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    //    - devices_allow
 #ifdef OCS_WITH_SYSTEMD
    {
-      bool enable_systemd = mconf_get_enable_systemd() && ocs::uti::Systemd::is_systemd_available();
+      bool enable_systemd = ocs::execd::execd_use_systemd();
       fprintf(fp, "enable_systemd=%d\n", enable_systemd ? 1 : 0);
 
       if (enable_systemd) {
@@ -1376,6 +1376,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          if (ocs::Job::job_get_systemd_slice_and_scope(jep, jatep, petep, systemd_slice, systemd_scope, &error_dstr)) {
             fprintf(fp, "systemd_slice=%s\n", systemd_slice.c_str());
             fprintf(fp, "systemd_scope=%s\n", systemd_scope.c_str());
+
+            if (petep == nullptr) {
+               lSetString(jatep, JAT_systemd_scope, systemd_scope.c_str());
+            } else {
+               lSetString(petep, PET_systemd_scope, systemd_scope.c_str());
+            }
          }
 
          // device isolation
@@ -1386,11 +1392,6 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "devices_allow=%s\n", devices_allow != nullptr ? devices_allow : "");
          } else {
             fprintf(fp, "devices_allow=\n");
-         }
-         if (petep == nullptr) {
-            lSetString(jatep, JAT_systemd_scope, systemd_scope.c_str());
-         } else {
-            lSetString(petep, PET_systemd_scope, systemd_scope.c_str());
          }
 
          // in case of tightly integrated parallel jobs, we need to store the systemd slice.

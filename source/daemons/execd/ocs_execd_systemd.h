@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 
 namespace ocs::execd {
 
+   bool
+   execd_use_systemd();
    bool
    execd_use_pdc_for_usage_collection();
    bool

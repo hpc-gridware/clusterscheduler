@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2025-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -123,60 +123,73 @@ ocs::Job::job_get_systemd_slice_and_scope(const lListElem *job, const lListElem 
 
 #if defined(OCS_WITH_SYSTEMD)
 
-   bool is_array = job_is_array(job);
-   bool is_tightly_integrated = false;
-   if (ja_task != nullptr) {
-      const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
-      if (pe != nullptr) {
-         is_tightly_integrated = lGetBool(pe, PE_control_slaves);
-      }
+   // If the systemd integration could not be initialized
+   // (e.g., symbols not being loaded, or there is no toplevel systemd slice)
+   // then we cannot build the job slice name and scope.
+   if (!ocs::uti::Systemd::is_systemd_available()) {
+      DPRINTF("Systemd is not available");
+      ret = false;
    }
 
-   std::string toplevel_slice = ocs::uti::Systemd::get_slice_name();
-   slice = toplevel_slice + "-jobs";
-   scope = toplevel_slice + ".";
-   if (is_array) {
-      std::string jobtask_id = std::to_string(lGetUlong(job, JB_job_number)) + "." + std::to_string(lGetUlong(ja_task, JAT_task_number));
-      // array job
-      if (is_tightly_integrated) {
-         // array PE job, we have master and slave tasks
-         // ocs8012-jobs-1234.1.slice, ocs8012.1234.1.master.scope or ocs8012.1234.1.<num>.<hostname>.scope
-         slice += "-" + jobtask_id;
-         if (pe_task == nullptr) {
-            scope += jobtask_id + ".master";
-         } else {
-            scope += jobtask_id + '.' + lGetString(pe_task, PET_id);
+   if (ret) {
+      bool is_array = job_is_array(job);
+      bool is_tightly_integrated = false;
+      if (ja_task != nullptr) {
+         const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
+         if (pe != nullptr) {
+            is_tightly_integrated = lGetBool(pe, PE_control_slaves);
          }
-      } else {
-         // just an array job
-         // ocs8012-jobs.slice, ocs8012.1234.1.scope
-         scope += jobtask_id;
       }
-   } else {
-      std::string job_id = std::to_string(lGetUlong(job, JB_job_number));
-      if (is_tightly_integrated) {
-         // sequential PE job, we have master and slave tasks
-         // ocs8012-jobs-1234.slice, ocs8012.master.scope or ocs8012.<num>.<hostname>.scope
-         slice += "-" + job_id;
-         if (pe_task == nullptr) {
-            scope += job_id + ".master";
-         } else {
-            scope += job_id + '-' + lGetString(pe_task, PET_id);
-         }
-      } else {
-         // just a sequential job
-         // ocs8012-jobs.slice, ocs8012.1234.scope
-         scope += job_id;
-      }
-   }
 
-   slice += ".slice";
-   scope += ".scope";
+      std::string toplevel_slice = ocs::uti::Systemd::get_slice_name();
+      slice = toplevel_slice + "-jobs";
+      scope = toplevel_slice + ".";
+      if (is_array) {
+         std::string jobtask_id = std::to_string(lGetUlong(job, JB_job_number)) + "." + std::to_string(lGetUlong(ja_task, JAT_task_number));
+         // array job
+         if (is_tightly_integrated) {
+            // array PE job, we have master and slave tasks
+            // ocs8012-jobs-1234.1.slice, ocs8012.1234.1.master.scope or ocs8012.1234.1.<num>.<hostname>.scope
+            slice += "-" + jobtask_id;
+            if (pe_task == nullptr) {
+               scope += jobtask_id + ".master";
+            } else {
+               scope += jobtask_id + '.' + lGetString(pe_task, PET_id);
+            }
+         } else {
+            // just an array job
+            // ocs8012-jobs.slice, ocs8012.1234.1.scope
+            scope += jobtask_id;
+         }
+      } else {
+         std::string job_id = std::to_string(lGetUlong(job, JB_job_number));
+         if (is_tightly_integrated) {
+            // sequential PE job, we have master and slave tasks
+            // ocs8012-jobs-1234.slice, ocs8012.master.scope or ocs8012.<num>.<hostname>.scope
+            slice += "-" + job_id;
+            if (pe_task == nullptr) {
+               scope += job_id + ".master";
+            } else {
+               scope += job_id + '-' + lGetString(pe_task, PET_id);
+            }
+         } else {
+            // just a sequential job
+            // ocs8012-jobs.slice, ocs8012.1234.scope
+            scope += job_id;
+         }
+      }
+
+      slice += ".slice";
+      scope += ".scope";
+   }
 #else
-   slice.clear();
-   scope.clear();
    ret = false;
 #endif
+
+   if (!ret) {
+      slice.clear();
+      scope.clear();
+   }
 
    DRETURN(ret);
 }

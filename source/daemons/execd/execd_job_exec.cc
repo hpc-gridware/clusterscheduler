@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "uti/ocs_Systemd.h"
 #include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
@@ -378,7 +379,7 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
 
 #if defined (OCS_WITH_SYSTEMD)
    if (slave) {
-      bool enable_systemd = mconf_get_enable_systemd();
+      bool enable_systemd = ocs::execd::execd_use_systemd();
       if (enable_systemd) {
          ocs::execd::execd_store_tight_pe_slice(jelem, jatep);
       }

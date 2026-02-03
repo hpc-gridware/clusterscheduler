@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ namespace ocs::execd {
       const lListElem *pe = lGetObject(ja_task, JAT_pe_object);
       if (pe != nullptr && lGetBool(pe, PE_control_slaves)) {
          // tightly integrated parallel job, store the slice name
-         if (slice_name != nullptr) {
+         if (slice_name != nullptr && *slice_name != '\0') {
             lSetString(ja_task, JAT_systemd_slice, slice_name);
          } else {
             // no slice name given, build it ourselves
@@ -198,7 +198,7 @@ namespace ocs::execd {
       // We might need to remove a systemd slice (in case this is the master task of a tightly integrated pe job).
       // Only if there are no more pe tasks left in the job.
       if (pe_task_id == nullptr) {
-         bool enable_systemd = mconf_get_enable_systemd();
+         bool enable_systemd = ocs::execd::execd_use_systemd();
          if (enable_systemd) {
             lListElem *job = nullptr;
             lListElem *ja_task = nullptr;
@@ -395,6 +395,23 @@ namespace ocs::execd {
    }
 
 #endif
+   /*!
+    * @brief Check if execd should use Systemd.
+    *
+    * This function checks if Systemd integration is available and
+    * if Systemd support is enabled in the global/local configuration.
+    * It returns true if Systemd is available and enabled, otherwise false.
+    *
+    * @return true if Systemd is used by execd, false otherwise.
+    */
+   bool
+   execd_use_systemd() {
+#if defined OCS_WITH_SYSTEMD
+      return ocs::uti::Systemd::is_systemd_available() && mconf_get_enable_systemd();
+#else
+      return false;
+#endif
+   }
 
    /*!
     * @brief Check if execd should use PDC for usage collection.
@@ -425,8 +442,7 @@ namespace ocs::execd {
       // we use systemd for usage collection.
       // Except when we explicitly disabled it in execd_params USAGE_COLLECTION.
 #if defined(OCS_WITH_SYSTEMD)
-      if (mconf_get_enable_systemd() &&
-          ocs::uti::Systemd::is_systemd_available()) {
+      if (ocs::execd::execd_use_systemd()) {
          ret = true;
          usage_collection_t uc = mconf_get_usage_collection();
          if (uc == USAGE_COLLECTION_NONE || uc == USAGE_COLLECTION_PDC) {
@@ -452,7 +468,7 @@ namespace ocs::execd {
       bool hybrid_mode = mconf_get_usage_collection() == USAGE_COLLECTION_HYBRID;
 
    #if defined(OCS_WITH_SYSTEMD)
-         hybrid_mode &= ocs::uti::Systemd::is_systemd_available();
+         hybrid_mode &= ocs::execd::execd_use_systemd();
    #endif
 
          return hybrid_mode;
