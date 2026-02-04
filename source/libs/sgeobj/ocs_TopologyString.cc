@@ -367,7 +367,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
             value.erase(0, value.find_first_not_of(" \t"));
             value.erase(value.find_last_not_of(" \t") + 1);
 
-            result[name] = value;
+            result[name] = std::stol(value);
          }
       }
 
@@ -410,21 +410,21 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                }
                node.characteristics[BOUND_PREFIX] = std::to_string(bound_children);
 
-               // Initialize counters for ALL node types in the tree
-               std::unordered_map<char, int> bound_type_counts;
-               std::unordered_map<char, int> free_type_counts;
-               for (char type : all_node_types) {
-                  bound_type_counts[type] = 0;
-                  free_type_counts[type] = 0;
-               }
+            // Initialize counters for ALL node types in the tree
+            std::unordered_map<char, long> bound_type_counts;
+            std::unordered_map<char, long> free_type_counts;
+            for (char type : all_node_types) {
+               bound_type_counts[type] = 0;
+               free_type_counts[type] = 0;
+            }
 
-               // If this node is bound/free, count it for its type
-               char lowercase_type = std::tolower(node.c);
-               if (std::islower(node.c)) {
-                  bound_type_counts[lowercase_type] = 1;
-               } else {
-                  free_type_counts[lowercase_type] = 1;
-               }
+            // If this node is bound/free, count it for its type
+            char lowercase_type = std::tolower(node.c);
+            if (std::islower(node.c)) {
+               bound_type_counts[lowercase_type] = 1;
+            } else {
+               free_type_counts[lowercase_type] = 1;
+            }
 
                // Add counts from child nodes for all node types
                for (const auto& child : node.nodes) {
@@ -433,22 +433,22 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                      static size_t bound_prefix_length = BOUND_PREFIX.size();
                      static size_t free_prefix_length = FREE_PREFIX.size();
 
-                     if (key.size() > bound_prefix_length && key.substr(0, bound_prefix_length) == BOUND_PREFIX) {
-                        char type_char = key[bound_prefix_length];
-                        bound_type_counts[type_char] += std::stoi(value);
-                     }
-                     else if (key.size() > free_prefix_length && key.substr(0, free_prefix_length) == FREE_PREFIX) {
-                        char type_char = key[free_prefix_length];
-                        free_type_counts[type_char] += std::stoi(value);
-                     }
+                  if (key.size() > bound_prefix_length && key.substr(0, bound_prefix_length) == BOUND_PREFIX) {
+                     char type_char = key[bound_prefix_length];
+                     bound_type_counts[type_char] += value;
+                  }
+                  else if (key.size() > free_prefix_length && key.substr(0, free_prefix_length) == FREE_PREFIX) {
+                     char type_char = key[free_prefix_length];
+                     free_type_counts[type_char] += value;
                   }
                }
+            }
 
-               // Store all accumulated bound and free type counts for ALL node types
-               for (char type : all_node_types) {
-                  node.characteristics[BOUND_PREFIX + std::string(1, type)] = std::to_string(bound_type_counts[type]);
-                  node.characteristics[FREE_PREFIX + std::string(1, type)] = std::to_string(free_type_counts[type]);
-               }
+            // Store all accumulated bound and free type counts for ALL node types
+            for (char type : all_node_types) {
+               node.characteristics[BOUND_PREFIX + std::string(1, type)] = bound_type_counts[type];
+               node.characteristics[FREE_PREFIX + std::string(1, type)] = free_type_counts[type];
+            }
 
                result.push_back(node);
             }
@@ -518,12 +518,12 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
 
                      auto it_a = a.characteristics.find(sort_key);
                      if (it_a != a.characteristics.end()) {
-                        value_a = std::stoi(it_a->second);
+                        value_a = it_a->second;
                      }
 
                      auto it_b = b.characteristics.find(sort_key);
                      if (it_b != b.characteristics.end()) {
-                        value_b = std::stoi(it_b->second);
+                        value_b = it_b->second;
                      }
 
 #if 0
@@ -672,7 +672,7 @@ ocs::TopologyString::find_first_unused_thread(int *id, int *socket, int *core, i
                // For position, use the node ID
                auto it = node.characteristics.find(ID_PREFIX);
                if (it != node.characteristics.end()) {
-                  *id = std::stoi(it->second);
+                  *id = it->second;
                } else {
                   *id = NO_POS;
                }
@@ -786,7 +786,7 @@ ocs::TopologyString::find_first_core() const {
             auto it = n.characteristics.find(ID_PREFIX);
             if (it != n.characteristics.end()) {
                try {
-                  id = std::stoi(it->second);
+                  id = it->second;
                } catch (...) {
                   id = NO_POS;
                }
@@ -803,7 +803,7 @@ ocs::TopologyString::find_first_core() const {
    };
 
    if (!nodes.empty()) {
-      find_core(nodes);
+      (void)find_core(nodes);
    }
 
    return id;
@@ -861,7 +861,7 @@ ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mar
          if (it != n.characteristics.end()) {
             int nid = 0;
             try {
-               nid = std::stoi(it->second);
+               nid = it->second;
             } catch (...) {
                nid = 0;
             }
@@ -1012,7 +1012,7 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(lListElem *elem, const in
  * @return true if the topology tree is empty, false otherwise
  */
 bool
-ocs::TopologyString::is_empty() {
+ocs::TopologyString::is_empty() const {
    DENTER(TOP_LAYER);
    DRETURN(nodes.empty());
 }
@@ -1042,7 +1042,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
    }
 
    // Helpers to read subtree counters for predicates
-   auto get_counter = [&](const std::unordered_map<std::string, std::string>& ch, const std::string& prefix, char node_letter) -> int {
+   auto get_counter = [&](const std::unordered_map<std::string, long>& ch, const std::string& prefix, char node_letter) -> long {
       char node_letter_down = static_cast<char>(std::tolower(static_cast<unsigned char>(node_letter)));
       std::string key = prefix + std::string(1, node_letter_down);
       auto it = ch.find(key);
@@ -1050,7 +1050,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
          return 0;
       }
       try {
-         return std::stoi(it->second);
+         return it->second;
       } catch (...) {
          return 0;
       }
@@ -1171,12 +1171,14 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
             }
          }
 
+#if 0
          DPRINTF("Topology: Visiting node %c id=%s start_node=%p stop_node=%p ids_found=%zu\n",
                   n.c,
                   (n.characteristics.find(ID_PREFIX) != n.characteristics.end()) ? n.characteristics.at(ID_PREFIX).c_str() : "N/A",
                   start_node,
                   stop_node,
                   ids.size());
+#endif
 
          // we are between start and end => collect IDs
          if (start_node != nullptr && stop_node == nullptr) {
@@ -1212,7 +1214,7 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
                auto it = n.characteristics.find(ID_PREFIX);
                if (it != n.characteristics.end()) {
                   try {
-                     ids.push_back(std::stoi(it->second));
+                     ids.push_back(it->second);
                   } catch (...) {
                      // malformed id, keep empty
                   }

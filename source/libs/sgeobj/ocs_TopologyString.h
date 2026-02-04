@@ -39,7 +39,7 @@ namespace ocs {
       struct Node {
          char c; //< Character representing the node type
          std::vector<Node> nodes; //< Child nodes
-         std::unordered_map<std::string, std::string> characteristics; //< Characteristics of the node, e.g., size, status
+         std::unordered_map<std::string, long> characteristics; //< Characteristics of the node, e.g., size, status
       };
 
       // Prefixes for characteristics
@@ -104,7 +104,7 @@ namespace ocs {
       void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used);
       void invert_binding();
       [[nodiscard]] std::vector<std::pair<int, int>> get_socket_and_cores_or_thread_tuples(bool collect_cores) const;
-      bool is_empty();
+      bool is_empty() const;
 
       BindingUnit::Unit adapt_binding_unit(BindingUnit::Unit unit) const;
    };
