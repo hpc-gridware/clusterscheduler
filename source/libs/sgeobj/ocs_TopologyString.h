@@ -101,7 +101,7 @@ namespace ocs {
       void mark_nodes_as_used_or_unused(const TopologyString &topo, bool mark_used);
 
       [[nodiscard]] std::vector<int> find_n_packed_units(unsigned bamount, BindingUnit::Unit bunit, BindingStart::Start bstart, BindingStop::Stop stop) const;
-      void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used);
+      void mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used, bool handle_characteristics = true);
       void invert_binding();
       [[nodiscard]] std::vector<std::pair<int, int>> get_socket_and_cores_or_thread_tuples(bool collect_cores) const;
       bool is_empty() const;

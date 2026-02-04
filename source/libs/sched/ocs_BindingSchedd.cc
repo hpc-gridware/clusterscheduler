@@ -273,9 +273,9 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
    binding_unit = tmp_binding_in_use.adapt_binding_unit(binding_unit);
 
    // handle different binding types
-   BindingType::Type binding_type = Job::binding_get_type(a->job);
-   BindingStart::Start binding_start = Job::binding_get_start(a->job);
-   BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
+   const BindingType::Type binding_type = Job::binding_get_type(a->job);
+   const BindingStart::Start binding_start = Job::binding_get_start(a->job);
+   const BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
    if (binding_type == BindingType::HOST) {
 
       // host binding can handle all slots per definition
@@ -302,7 +302,7 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
       }
 
       if (max_slots > 0) {
-         double min = std::min<double>(max_slots, slots);
+         const double min = std::min<double>(max_slots, slots);
          DPRINTF("max_binding_idleness: units found for slots-binding of %f/%f slots\n", min, slots);
          DRETURN(min);
       }
@@ -386,7 +386,11 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
       // create a binding mask that only contains those units that we will bind for this host binding
       TopologyString binding_to_use(topo_in_use.to_string(true, true, true, false, false, true));
-      binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+
+      // mark the found units as used in the binding mask but do not update characteristics this is too costly and not needed
+      bool handle_characteristics = false;
+
+      binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true, handle_characteristics);
       DPRINTF("find_binding: host binding for this job will be %s\n", binding_to_use.to_product_topology_string().c_str());
 
       // store the binding decision in the assignment structure
@@ -402,11 +406,14 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
          next_binding_id_for_task = lGetNumberOfElem(lGetList(binding_done, BN_specific_binding_list));
       }
 
+      // ignore characteristics when handling binding masks.
+      bool handle_characteristics = false;
+
       // Use the current binding on the host as a starting point for the binding decision
       // or continue binding at that position where it previously finished on that host (e.g. PE round_robin)
       TopologyString host_binding_to_use;
       if (binding_done == nullptr) {
-         host_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, false));
+         host_binding_to_use.reset_topology(topo_in_use.to_string(true, true, handle_characteristics, false, false, false));
       } else {
          host_binding_to_use.reset_topology(lGetString(binding_done, BN_specific_binding));
       }
@@ -426,16 +433,16 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
          // create a binding mask that only contains those units that we will bind for this task (slot)
          // and store it in the assignment structure for later use in the gdil element
-         task_binding_to_use.reset_topology(topo_in_use.to_string(true, true, true, false, false, true));
-         task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+         task_binding_to_use.reset_topology(topo_in_use.to_string(true, true, handle_characteristics, false, false, true));
+         task_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true, handle_characteristics);
          if (binding_done == nullptr) {
             binding_done = lAddElemHost(&(a->binding_to_use), BN_specific_hostname, hostname, BN_Type);
          }
          lListElem *binding_for_task = lAddSubUlong(binding_done, ST_id, next_binding_id_for_task++, BN_specific_binding_list, ST_Type);
-         lSetString(binding_for_task, ST_name, task_binding_to_use.to_string(true, true, true, false, false, false).c_str());
+         lSetString(binding_for_task, ST_name, task_binding_to_use.to_string(true, true, handle_characteristics, false, false, false).c_str());
 
          // add the task binding to the host binding mask
-         host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true);
+         host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true, handle_characteristics);
 
          // add the task binding to the actual binding lists (unsorted and sorted) so that we can continue
          // finding the next binding for the next task on the remaining units
@@ -450,7 +457,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
       // store the combined host binding decision in the assignment structure
       if (binding_done) {
-         lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, true, false, false, false).c_str());
+         lSetString(binding_done, BN_specific_binding, host_binding_to_use.to_string(true, true, handle_characteristics, false, false, false).c_str());
          DPRINTF("find_binding: slot binding for all tasks on will give us binding %s\n", host_binding_to_use.to_product_topology_string().c_str());
       }
 

@@ -332,8 +332,8 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    int id_counter = 1;  // Start numbering from 1
 
    // Helper function to parse characteristics within square brackets
-   std::function<std::unordered_map<std::string, std::string>(void)> parse_characteristics = [&]() -> std::unordered_map<std::string, std::string> {
-      std::unordered_map<std::string, std::string> result;
+   std::function<std::unordered_map<std::string, long>(void)> parse_characteristics = [&]() -> std::unordered_map<std::string, long> {
+      std::unordered_map<std::string, long> result;
 
       std::string chars_str;
       while (pos < topology.size() && topology[pos] != ']') {
@@ -377,38 +377,38 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    // Define a recursive lambda function to parse nodes
    std::function<std::vector<Node>(void)> parse_nodes = [&]() -> std::vector<Node> {
       std::vector<Node> result;
+      const size_t topo_size = topology.size();
 
-      while (pos < topology.size()) {
+      while (pos < topo_size) {
          char c = topology[pos++];
 
-         if (c == '(') {
-            // Start of a new node
-            if (pos < topology.size()) {
-               Node node;
-               node.c = topology[pos++]; // Read the node type
+         // Start of a new node
+         if (c == '(' && pos < topo_size) {
+            Node node;
+            node.c = topology[pos++]; // Read the node type
 
-               // Check if the next character is '[' which indicates the start of characteristics
-               if (pos < topology.size() && topology[pos] == '[') {
-                  pos++; // Skip the opening bracket
-                  node.characteristics = parse_characteristics();
-               } else {
-                  node.characteristics = std::unordered_map<std::string, std::string>();
+            // Check if the next character is '[' which indicates the start of characteristics
+            if (pos < topo_size && topology[pos] == '[') {
+               pos++; // Skip the opening bracket
+               node.characteristics = parse_characteristics();
+            } else {
+               node.characteristics.clear();
+            }
+
+            // Add the sequential ID as a characteristic
+            node.characteristics[ID_PREFIX] = id_counter++;
+
+            // Parse all child nodes
+            node.nodes = parse_nodes();
+
+            // Count bound children and store as characteristic #b
+            int bound_children = 0;
+            for (const auto& child : node.nodes) {
+               if (std::islower(child.c)) {
+                  bound_children++;
                }
-
-               // Add the sequential ID as a characteristic
-               node.characteristics[ID_PREFIX] = std::to_string(id_counter++);
-
-               // Parse all child nodes
-               node.nodes = parse_nodes();
-
-               // Count bound children and store as characteristic #b
-               int bound_children = 0;
-               for (const auto& child : node.nodes) {
-                  if (std::islower(child.c)) {
-                     bound_children++;
-                  }
-               }
-               node.characteristics[BOUND_PREFIX] = std::to_string(bound_children);
+            }
+            node.characteristics[BOUND_PREFIX] = bound_children;
 
             // Initialize counters for ALL node types in the tree
             std::unordered_map<char, long> bound_type_counts;
@@ -426,12 +426,12 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                free_type_counts[lowercase_type] = 1;
             }
 
-               // Add counts from child nodes for all node types
-               for (const auto& child : node.nodes) {
-                  // Process bound node counts
-                  for (const auto& [key, value] : child.characteristics) {
-                     static size_t bound_prefix_length = BOUND_PREFIX.size();
-                     static size_t free_prefix_length = FREE_PREFIX.size();
+            // Add counts from child nodes for all node types
+            for (const auto& child : node.nodes) {
+               // Process bound node counts
+               for (const auto& [key, value] : child.characteristics) {
+                  static size_t bound_prefix_length = BOUND_PREFIX.size();
+                  static size_t free_prefix_length = FREE_PREFIX.size();
 
                   if (key.size() > bound_prefix_length && key.substr(0, bound_prefix_length) == BOUND_PREFIX) {
                      char type_char = key[bound_prefix_length];
@@ -450,8 +450,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
                node.characteristics[FREE_PREFIX + std::string(1, type)] = free_type_counts[type];
             }
 
-               result.push_back(node);
-            }
+            result.push_back(std::move(node));
          } else if (c == ')') {
             // End of current level
             return result;
@@ -555,10 +554,6 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
                      } else {
                         return value_a > value_b;
                      }
-                     return false;
-
-                     // Sort in descending order by the free characteristic
-                     //return value_a > value_b;
                   }
 
                   // If one matches and the other doesn't, put matching nodes first
@@ -693,7 +688,7 @@ ocs::TopologyString::find_first_unused_thread(int *id, int *socket, int *core, i
    };
 
    // Start the search from the root
-   bool found = find_thread(nodes);
+   const bool found = find_thread(nodes);
 
    if (!found) {
       // No thread found
@@ -1262,8 +1257,10 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
  * @param ids A vector of IDs representing the nodes to mark
  * @param unit The binding unit type (e.g., socket, core, thread)
  * @param mark_used If true, mark nodes as used; if false, mark nodes as unused
+ * @param handle_characteristics If true, refresh internal characteristics after marking (default)
  */
-void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, BindingUnit::Unit unit, bool mark_used) {
+void
+ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, const BindingUnit::Unit unit, const bool mark_used, const bool handle_characteristics) {
    DENTER(TOP_LAYER);
 
    if (ids.empty() || nodes.empty()) {
@@ -1287,7 +1284,7 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
          auto it = n.characteristics.find(ID_PREFIX);
          if (it != n.characteristics.end()) {
             try {
-               id = std::stoi(it->second);
+               id = it->second;
             } catch (...) {
                // malformed id, keep empty
             }
@@ -1338,9 +1335,11 @@ void ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, Bi
    correct_topology_upper_lower();
 
    // Refresh internal counters/characteristics by rebuilding from a full structured representation
-   std::string rebuilt = to_string( true, true, true,
-                                    false, false, false);
-   parse_to_tree(rebuilt);
+   if (handle_characteristics) {
+      const std::string rebuilt = to_string(true, true, handle_characteristics,
+                                            false, false, false);
+      parse_to_tree(rebuilt);
+   }
 
    DRETURN_VOID;
 }
@@ -1428,7 +1427,7 @@ ocs::TopologyString::get_socket_and_cores_or_thread_tuples(const bool collect_co
 
             // insert only unique tuples
             if (unique_ids.insert(tuple).second) {
-               ids.emplace_back(tuple);
+               ids.emplace_back(std::move(tuple));
             }
 
             break;
@@ -1499,26 +1498,16 @@ ocs::TopologyString::adapt_binding_unit(BindingUnit::Unit unit) const {
    }
 
    // prepare a topo string with only upper case letters to check available memory units
-   std::string topo_str = to_string(true, false, false,
+   const std::string topo_str = to_string(true, false, false,
              false, false, true);
-   bool is_power_unit = BindingUnit::is_power_unit(unit);
-
-   // by default, we enforce mapping of memory units to hardware units in OCS
-   // because only GCS with extensions can handle memory units
-   bool enforce_mapping = true;
-#if defined(WITH_EXTENSIONS)
-   enforce_mapping = false;
-#endif
+   const bool is_power_unit = BindingUnit::is_power_unit(unit);
 
    // adapt memory units to next plausible hardware units if they are not available on a host
-   if ((unit == BindingUnit::Unit::CNUMA || unit == BindingUnit::Unit::ENUMA)
-       && (enforce_mapping || topo_str.find('N') == std::string::npos)) {
+   if ((unit == BindingUnit::Unit::CNUMA || unit == BindingUnit::Unit::ENUMA) && topo_str.find('N') == std::string::npos) {
       unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
-   } else if ((unit == BindingUnit::Unit::CCACHE3 || unit == BindingUnit::Unit::ECACHE3)
-              && (enforce_mapping && topo_str.find('X') == std::string::npos)) {
+   } else if ((unit == BindingUnit::Unit::CCACHE3 || unit == BindingUnit::Unit::ECACHE3) && topo_str.find('X') == std::string::npos) {
       unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
-   } else if ((unit == BindingUnit::Unit::CCACHE2 || unit == BindingUnit::Unit::ECACHE2)
-              && (enforce_mapping &&  topo_str.find('Y') == std::string::npos)) {
+   } else if ((unit == BindingUnit::Unit::CCACHE2 || unit == BindingUnit::Unit::ECACHE2) && topo_str.find('Y') == std::string::npos) {
       unit = is_power_unit ? BindingUnit::Unit::CCORE : BindingUnit::Unit::ECORE;
    }
    DRETURN(unit);
