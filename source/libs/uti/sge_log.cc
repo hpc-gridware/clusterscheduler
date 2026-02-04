@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <fcntl.h>
+#include <fnmatch.h>
 #include <pthread.h>
 
 #include "uti/msg_utilib.h"
@@ -48,6 +49,7 @@
 #include "uti/sge_uidgid.h"
 
 #include "sge.h"
+#include "ocs_DebugParam.h"
 
 typedef struct {
    pthread_mutex_t mutex;
@@ -62,6 +64,13 @@ static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LO
 static void
 sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
            const char *unqualified_hostname, int level, const char *msg) {
+
+   // filter by thread name pattern
+   if (const char *thread_name_pattern = ocs::DebugParam::get_thread_name_pattern();
+       thread_name_pattern != nullptr && fnmatch(thread_name_pattern, prog_or_thread_name, 0) != 0) {
+      return;
+   }
+
    if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {
       int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
       if (fd  >= 0) {

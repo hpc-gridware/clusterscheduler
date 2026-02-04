@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fnmatch.h>
 #include <pthread.h>
 #include <sstream>
 #include <thread>
@@ -43,6 +44,7 @@
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/ocs_DebugParam.h"
 #include "uti/ocs_TerminationManager.h"
 
 #include <sge_time.h>
@@ -355,15 +357,20 @@ void rmon_mprintf(const char *fmt, ...) {
 }
 
 static void rmon_mprintf_va(const char *fmt, va_list args) {
-    char msgbuf[RMON_BUF_SIZE];
-    rmon_helper_t *helper = rmon_get_helper();
-    strcpy(msgbuf, empty);
-    vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) -10, fmt, args);
-    if ((helper != nullptr) && (strlen(helper->thread_name) > 0)) {
-        mwrite(msgbuf, helper->thread_name, helper->thread_id);
-    } else {
-        mwrite(msgbuf, nullptr, -1);
-    }
+   char msgbuf[RMON_BUF_SIZE];
+   const rmon_helper_t *helper = rmon_get_helper();
+   strcpy(msgbuf, empty);
+   vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) -10, fmt, args);
+   if (helper != nullptr && strlen(helper->thread_name) > 0) {
+      // filter by thread name pattern
+      if (const char *thread_name_pattern = ocs::DebugParam::get_thread_name_pattern();
+          thread_name_pattern != nullptr && fnmatch(thread_name_pattern, helper->thread_name, 0) != 0) {
+         return;
+      }
+      mwrite(msgbuf, helper->thread_name, helper->thread_id);
+   } else {
+      mwrite(msgbuf, nullptr, -1);
+   }
 }
 
 /****** rmon_macros/mwrite() ***************************************************
