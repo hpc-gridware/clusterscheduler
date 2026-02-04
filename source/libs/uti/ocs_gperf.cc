@@ -95,7 +95,7 @@ sge_gperf_start_profiling(sge_gperf_per_thread_t &per_thread_data, const std::st
          per_thread_data.gperf_name = gperf_name;
       }
 
-      std::string filename = "/tmp/" + thread_name + "-" + std::to_string(sge_get_gmt64())+ "-" + gperf_name;
+      std::string filename = "/tmp/" + thread_name + "-" + gperf_name;
 
       if (!per_thread_data.gperf_started) {
          INFO("Starting profiling %s", filename.c_str());
