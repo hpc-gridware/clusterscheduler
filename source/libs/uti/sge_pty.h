@@ -32,17 +32,5 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int ptym_open(char *pts_name);
-
-int ptys_open(int fdm, char *pts_name);
-
-pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg);
-
-pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out, int *fd_pipe_err,
-                  dstring *err_msg);
-
 int terminal_enter_raw_mode();
-
 int terminal_leave_raw_mode();
-
-ssize_t writen(int fd, const void *buf, size_t n);

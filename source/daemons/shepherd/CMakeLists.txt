@@ -21,6 +21,7 @@
 # source/daemons/shepherd
 add_executable(sge_shepherd
       builtin_starter.cc
+      ocs_shepherd_pty.cc
       setjoblimit.cc
       setrlimits.cc
       sge_fileio.cc
