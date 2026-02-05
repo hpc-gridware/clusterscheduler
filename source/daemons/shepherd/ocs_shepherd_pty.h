@@ -21,16 +21,20 @@
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
  *
- *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
+ *  The Initial Developer of the Original Code is: Sun Microsystems, Inc.
  *
- *   Copyright: 2001 by Sun Microsystems, Inc.
+ *  Copyright: 2001 by Sun Microsystems, Inc.
  *
- *   All Rights Reserved.
+ *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ * Portions of this software are Copyright (c) 2011 Univa Corporation
+ *
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int terminal_enter_raw_mode();
-int terminal_leave_raw_mode();
+pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg);
+
+pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out, int *fd_pipe_err, dstring *err_msg);
+

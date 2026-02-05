@@ -214,6 +214,7 @@ set_security_mode(const char *security_mode) {
       } else if (strcmp(mode, "kerberos") == 0) {
          sge_bootstrap_tl1.security_modes[BS_SEC_MODE_KERBEROS] = true;
       } else {
+         // @todo do not complain about "none"
          DPRINTF("invalid security mode %s\n", mode);
       }
       // next mode
