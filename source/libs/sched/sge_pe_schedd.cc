@@ -49,61 +49,66 @@
 #include "schedd_message.h"
 #include "msg_schedd.h"
 
- /* -------------------------------------------------
-   
-   get number of slots per host from alloc rule 
-
-   a return value of >0 allocate exactly this number at each host 
-                      0 indicates an unknown allocation rule
-                     -1 = ALLOC_RULE_FILLUP indicates that simply hosts should 
-                         be filled up sequentially 
-                     -2 = ALLOC_RULE_ROUNDROBIN indicates that a round robin 
-                        algorithm with all available host is used 
-*/
-int sge_pe_slots_per_host(
-const lListElem *pep,
-int slots 
-) {
-   const char *alloc_rule;
-   int ret = 0;
-
+/** @brief Get the number of slots per host based on the allocation rule of the parallel environment
+ *
+ * The function checks the allocation rule of the given parallel environment and determines how many slots
+ * should be allocated per host based on that rule. The allocation rule can be a specific number,
+ * "$pe_slots", "$fill_up", or "$round_robin". If the allocation rule is a number, it checks if the total
+ * number of slots can be distributed using that number. If the allocation rule is "$pe_slots", it returns
+ * the total number of slots. If the allocation rule is "$fill_up" or "$round_robin", it returns the corresponding
+ * constant. If the allocation rule is invalid, it logs an error and returns 0.
+ *
+ * @param pep   The parallel environment element containing the allocation rule
+ * @param slots The total number of slots to be allocated
+ * @return The number of slots per host based on the allocation rule, or 0 if the allocation rule is invalid
+ *    ALLOC_RULE_FILLUP (-1) if the allocation rule is "$fill_up"
+ *    ALLOC_RULE_ROUNDROBIN (-2) if the allocation rule is "$round_robin"
+ *    a positive integer if the allocation rule is a valid number
+ *    0 if the allocation rule is invalid
+ *    1 if the parallel environment is null (indicating a sequential job)
+ */
+int
+pe_allocation_rule_slots(const lListElem *pep, int slots ) {
    DENTER(TOP_LAYER);
 
-   if (!pep) { /* seq jobs */
+   // Sequential job
+   if (pep == nullptr) {
       DRETURN(1);
    }
 
-   alloc_rule = lGetString(pep, PE_allocation_rule);
-
+   // Allocation rule is a number
+   const char *alloc_rule = lGetString(pep, PE_allocation_rule);
    if (isdigit((int)alloc_rule[0])) {
-      ret = atoi(alloc_rule);
-      if (ret==0) {
+      const int alloc_rule_value = atoi(alloc_rule);
+
+      // check if the allocation rule is valid
+      if (alloc_rule_value == 0) {
          ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
+         DRETURN(0);
       }
    
-      /* can we divide */
-      if ( (slots % ret)!=0 ) {
+      // check if the number of slots can be distributed using the given allocation rule
+      if (slots % alloc_rule_value != 0) {
          DPRINTF("pe >%s<: cant distribute %d slots using \"%s\" as alloc rule\n", lGetString(pep, PE_name), slots, alloc_rule);
-         ret = 0; 
+         DRETURN(0);
       }
 
-      DRETURN(ret);
+      DRETURN(alloc_rule_value);
    }
 
-   if  (!strcasecmp(alloc_rule, "$pe_slots")) {
+   if (!strcasecmp(alloc_rule, "$pe_slots")) {
       DRETURN(slots);
    }
 
-   if  (!strcasecmp(alloc_rule, "$fill_up")) {
+   if (!strcasecmp(alloc_rule, "$fill_up")) {
       DRETURN(ALLOC_RULE_FILLUP);
    }
       
-   if  (!strcasecmp(alloc_rule, "$round_robin")) {
+   if (!strcasecmp(alloc_rule, "$round_robin")) {
       DRETURN(ALLOC_RULE_ROUNDROBIN);
    }
 
    ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
-
    DRETURN(0);
 }
 

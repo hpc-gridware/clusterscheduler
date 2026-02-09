@@ -19,6 +19,9 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "ocs_DebugParam.h"
+
+#include <cstdio>
+
 #include "sge_stdlib.h"
 
 /** @brief Get thread name pattern from environment variable SGE_DEBUG_THREAD_NAME_PATTERN
@@ -36,4 +39,22 @@ ocs::DebugParam::get_thread_name_pattern() {
    }
 
    return thread_name_pattern;
+}
+
+/** @brief Check if the component is running in ND mode based on environment variable SGE_ND
+ *
+ *  The check is only performed once and the result is cached for subsequent calls.
+ *
+ *  @return true if the component is running in ND mode, false otherwise
+ */
+bool ocs::DebugParam::is_component_in_nd_mode() {
+   static bool initialized = false;
+   static bool in_nd_mode = false;
+
+   if (!initialized) {
+      const char *env = sge_getenv("SGE_ND");
+      in_nd_mode = (env != nullptr);
+      initialized = true;
+   }
+   return in_nd_mode;
 }

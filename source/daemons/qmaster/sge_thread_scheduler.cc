@@ -39,6 +39,7 @@
 
 #include "comm/cl_commlib.h"
 
+#include "uti/ocs_DebugParam.h"
 #include "uti/ocs_cond.h"
 #include "uti/ocs_gperf.h"
 #include "uti/sge_bootstrap.h"
@@ -815,7 +816,8 @@ sge_scheduler_main(void *arg) {
                  lGetNumberOfLeafs(nullptr, copy.share_tree, STN_children)
                  );
 
-         if (getenv("SGE_ND") == nullptr) {
+         bool in_nd_mode = ocs::DebugParam::is_component_in_nd_mode();
+         if (!in_nd_mode) {
             schedd_log("-------------START-SCHEDULER-RUN-------------", nullptr, evc->monitor_next_run);
          }
 
@@ -908,7 +910,7 @@ sge_scheduler_main(void *arg) {
                       prof_total, prof_init, prof_copy, prof_run, prof_free,
                       lGetNumberOfElem(master_job_list), lGetNumberOfElem(master_category_list), 0);
          }
-         if (getenv("SGE_ND") != nullptr) {
+         if (in_nd_mode) {
             printf("--------------STOP-SCHEDULER-RUN-------------\n");
          } else {
             schedd_log("--------------STOP-SCHEDULER-RUN-------------", nullptr, evc->monitor_next_run);

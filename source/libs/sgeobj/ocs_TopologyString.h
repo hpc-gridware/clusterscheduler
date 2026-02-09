@@ -20,6 +20,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -32,21 +33,68 @@
 #include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_BindingStop.h"
 
+#define DATA_NODE_CHARACTERS_DEFINE "NABUVWXYZ"
+#define HARDWARE_NODE_CHARACTERS_DEFINE "SCEFGHT"
+#define NO_POS_DEFINE (-1)
+
+static constexpr unsigned char ascii_to_upper(const unsigned char ch) {
+   return (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 'A') : ch;
+}
+
+static constexpr unsigned char ascii_to_lower(const unsigned char ch) {
+   return (ch >= 'A' && ch <= 'Z') ? (ch - 'A' + 'a') : ch;
+}
+
+static constexpr std::array<int, 256>
+make_char_to_index() {
+   std::array<int, 256> arr{};
+   for (int i = 0; i < 256; ++i) {
+      arr[i] = NO_POS_DEFINE;
+   }
+   int idx = 0;
+   for (const unsigned char ch : std::string(HARDWARE_NODE_CHARACTERS_DEFINE DATA_NODE_CHARACTERS_DEFINE)) {
+      const auto upper = ascii_to_upper(ch);
+      const auto lower = ascii_to_lower(ch);
+      if (arr[upper] == NO_POS_DEFINE) {
+         arr[upper] = idx++;
+      }
+      if (arr[lower] == NO_POS_DEFINE) {
+         arr[lower] = idx++;
+      }
+                                              }
+   return arr;
+}
+constexpr auto char_to_index = make_char_to_index();
+
+static constexpr int
+get_char_to_index_size() {
+   int max_index = -1;
+   for (int i = 0; i < 256; ++i) {
+      if (char_to_index[i] > max_index) {
+         max_index = char_to_index[i];
+      }
+   }
+   return max_index + 1;
+}
+
+constexpr auto char_to_index_size = get_char_to_index_size();
+
 namespace ocs {
    // Product internal topology string representation
    // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
    class TopologyString {
-      struct Node {
-         char c; //< Character representing the node type
-         std::vector<Node> nodes; //< Child nodes
-         std::unordered_map<std::string, long> characteristics; //< Characteristics of the node, e.g., size, status
-      };
 
-      // Prefixes for characteristics
-      static const std::string PREFIX;
-      static const std::string FREE_PREFIX;
-      static const std::string BOUND_PREFIX;
-      static const std::string ID_PREFIX;
+
+      class Node {
+      public:
+         unsigned char c; //< Character representing the node type
+         int id; //< Unique ID of the node
+         std::vector<Node> nodes; //< Child nodes
+         std::array<int, char_to_index_size> char_to_count; //< Count of child nodes by character (both upper and lower case)
+#ifdef WITH_BINDING_NODES_CHARACTERISTICS
+         std::unordered_map<std::string, long> characteristics; //< Characteristics of the node, e.g., size
+#endif
+      };
 
       // Tree structure representing the topology
       std::vector<Node> nodes;
@@ -54,10 +102,11 @@ namespace ocs {
       // Some internal service methods
       void parse_to_tree(const std::string &topology);
       void sort_tree_nodes(char node_type, char sort_characteristic, bool ascending = true);
+
    public:
       // Maximum length of a topology string
       static constexpr size_t MAX_LENGTH = 2560;
-      static constexpr int NO_POS = -1;
+      static constexpr int NO_POS = NO_POS_DEFINE;
 
       // Static constants for node characters
       static const std::string DATA_NODE_CHARACTERS;
@@ -92,7 +141,6 @@ namespace ocs {
       void correct_topology_upper_lower();
 
       bool find_first_unused_thread(int *pos, int *socket, int *core, int *thread) const;
-      [[nodiscard]] int find_first_unused_thread() const;
       [[nodiscard]] int find_first_core() const;
 
       void mark_node_as_used_or_unused(int id, bool mark_used);

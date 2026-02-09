@@ -75,6 +75,7 @@
 #include "sge.h"
 #include "msg_common.h"
 #include "msg_execd.h"
+#include "ocs_DebugParam.h"
 
 #ifdef COMPILE_DC
 #   include "ptf.h"
@@ -214,7 +215,8 @@ int main(int argc, char **argv)
 #endif
 
    /* prepare daemonize */
-   if (!getenv("SGE_ND")) {
+   bool in_nd_mode = ocs::DebugParam::is_component_in_nd_mode();
+   if (!in_nd_mode) {
       sge_daemonize_prepare();
    }
 
@@ -291,7 +293,7 @@ int main(int argc, char **argv)
    }
 
    /* finalize daemonize */
-   if (!getenv("SGE_ND")) {
+   if (!in_nd_mode) {
       sge_daemonize_finalize();
    }
 

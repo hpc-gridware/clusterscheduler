@@ -23,6 +23,7 @@ namespace ocs {
    class DebugParam {
    public:
       static const char *get_thread_name_pattern();
+      static bool is_component_in_nd_mode();
    };
 
 }

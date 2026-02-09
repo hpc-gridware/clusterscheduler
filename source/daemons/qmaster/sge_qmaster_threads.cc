@@ -60,6 +60,7 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "msg_daemons_common.h"
+#include "ocs_DebugParam.h"
 
 /****** qmaster/sge_qmaster_main/sge_gdi_kill_master() *************************
 *  NAME
@@ -170,7 +171,7 @@ sge_daemonize_qmaster() {
 
    DENTER(TOP_LAYER);
 
-   if (getenv("SGE_ND") != nullptr) {
+   if (ocs::DebugParam::is_component_in_nd_mode()) {
       DPRINTF("sge_qmaster is not daemonized\n");
       DRETURN(false);
    }

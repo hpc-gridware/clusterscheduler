@@ -35,7 +35,8 @@
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_str.h"
 
-#include "../../libs/sched/ocs_BindingSchedd.h"
+#include "ocs_BindingSchedd.h"
+#include "sge_pe_schedd.h"
 
 #include "sgeobj/sge_conf.h"
 
@@ -228,6 +229,32 @@ ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const lListElem *h
    DRETURN(false);
 }
 
+int
+ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a, int slots_max_available) {
+   DENTER(TOP_LAYER);
+
+   // if we do not know the number of available slots (e.g. value is not stored in resource diagram)
+   // then we assume that there is no limit.
+   if (slots_max_available > 0) {
+      slots_max_available = std::numeric_limits<int>::max();
+      DPRINTF("slots_reduced_to_available_maximum: no information about available slots, assume no limit\n");
+   }
+
+   // the available maximum will now be reduced to the max number as specified by the allocation rule
+   if (const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
+      max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
+      DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slotat a time\n");
+      DRETURN(1);
+   } else if (max_slots_according_to_allocation_rule > 0) {
+      DPRINTF("slots_reduced_to_available_maximum: allocation rule allows only %d slots\n", max_slots_according_to_allocation_rule);
+      DRETURN(MIN(slots_max_available, max_slots_according_to_allocation_rule));
+   }
+
+   // for ALLOC_RULE_FILLUP or if value is unknown
+   DPRINTF("slots_reduced_to_available_maximum: allocation rule is fill up or unknown, so we can try to handle all available slots\n");
+   DRETURN(slots_max_available);
+}
+
 // @brief Tries a binding for `slots` and returns the number of slots where a binding could be found
 double
 ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *host, double slots, const TopologyString &binding_in_use) {
@@ -246,14 +273,8 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const lListElem *ho
       DRETURN(slots);
    }
 
-   // @todo instead of maximizing the number of slots we should get slots > 0 as input
-   // if no slots are specified (PE scheduling), then we try to maximize slots.
-   if (slots == 0.0) {
-      slots = static_cast<double>(std::numeric_limits<int>::max());
-      DPRINTF("max_binding_idleness: try to find binding for %f slots with binding %s\n", slots, binding_in_use.to_product_topology_string().c_str());
-   } else {
-      DPRINTF("max_binding_idleness: try to find binding for requested %f slots with binding %s\n", slots, binding_in_use.to_product_topology_string().c_str());
-   }
+   // Reduce slots to available maximum (available or according to allocation rule)
+   slots = slots_reduced_to_available_maximum(a, static_cast<int>(slots));
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
@@ -323,6 +344,7 @@ std::string vector_to_string(const std::vector<int>& vec) {
     return oss.str();
 }
 
+
 /** @brief Apply the binding strategy and store the decision in the assignment structure
  */
 int
@@ -351,6 +373,9 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       DPRINTF("find_binding: host binding already done for host %s\n", hostname);
       DRETURN(slots);
    }
+
+   // Reduce slots to available maximum (available or according to allocation rule)
+   slots = slots_reduced_to_available_maximum(a, slots);
 
    // Use the given binding in use and apply additional filter based on context and do sort
    TopologyString topo_in_use_sorted;

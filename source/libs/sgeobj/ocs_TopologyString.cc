@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <functional>
 #include <iostream>
@@ -31,10 +32,8 @@
 #include <set>
 #include <bitset>
 
-#include "uti/sge_string.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
-#include "uti/ocs_Topo.h"
 
 #include "ocs_BindingStop.h"
 #include "ocs_BindingStart.h"
@@ -42,13 +41,9 @@
 #include "ocs_TopologyString.h"
 #include "sge_conf.h"
 
-const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = "NABUVWXYZ";
-const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = "SCEFGHT";
+const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = DATA_NODE_CHARACTERS_DEFINE;
+const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = HARDWARE_NODE_CHARACTERS_DEFINE;
 const std::string ocs::TopologyString::STRUCTURE_CHARACTERS = "()";
-const std::string ocs::TopologyString::PREFIX = "#";
-const std::string ocs::TopologyString::FREE_PREFIX = PREFIX + "f";
-const std::string ocs::TopologyString::BOUND_PREFIX = PREFIX + "b";
-const std::string ocs::TopologyString::ID_PREFIX = PREFIX + "i";
 
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
 ocs::TopologyString::TopologyString(const std::string& topology) {
@@ -163,6 +158,7 @@ ocs::TopologyString::is_same_topology(const TopologyString& topo1, const Topolog
  * @param with_tree_format If true, format the output in a tree-like structure with indentation
  * @param show_as_unused If true, show all nodes as unused (uppercase letters)
  * @param show_single_threads If true, show single threads even if they are the only node
+ * @param show_2nd_level_with_one_node If false, do not show Y nodes with only one child node (core)
  * @return The string representation of the topology
  */
 std::string
@@ -191,14 +187,15 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
 
           for (const auto& node : current_nodes) {
              bool show_data_nodes = true;
+             const auto upper_c = static_cast<char>(std::toupper(node.c));
 
              // Skip data nodes if requested
-             if (!with_data_nodes && DATA_NODE_CHARACTERS.find(std::toupper(node.c)) != std::string::npos) {
+             if (!with_data_nodes && DATA_NODE_CHARACTERS.find(upper_c) != std::string::npos) {
                 show_data_nodes = false;
              }
 
              // Skip Y nodes with only one child node (core)
-             if (!show_2nd_level_with_one_node && show_data_nodes && std::toupper(node.c) == 'Y') {
+             if (!show_2nd_level_with_one_node && show_data_nodes && upper_c == 'Y') {
                 // Check if all child nodes have only one child
                 if (node.nodes.size() == 1) {
                    show_data_nodes = false;
@@ -219,21 +216,18 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                 // Print structure if requested
 
                 if (show_as_unused) {
-                   oss << static_cast<char>(std::toupper(node.c));
+                   oss << upper_c;
                 } else {
                    oss << node.c;
                 }
 
+#ifdef WITH_BINDING_NODES_CHARACTERISTICS
                 // Print characteristics if requested
                 if (with_characteristics && !node.characteristics.empty()) {
                    std::ostringstream oss_characteristics;
 
                    bool first = true;
                    for (const auto& [name, value] : node.characteristics) {
-                      // Skip internal characteristics
-                      if (!with_internal_characteristics && name[0] == PREFIX[0]) {
-                         continue;
-                      }
                       if (!first) {
                          oss_characteristics << ",";
                       }
@@ -246,6 +240,7 @@ ocs::TopologyString::to_string(bool with_data_nodes, bool with_structure,
                       oss << "]";
                    }
                 }
+#endif
              }
 
              // Add a newline after each node
@@ -321,7 +316,7 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    }
 
    // First, scan the topology to identify all unique node types
-   std::set<char> all_node_types;
+   std::set<unsigned char> all_node_types;
    for (size_t i = 0; i < topology.size(); i++) {
       if (i > 0 && topology[i-1] == '(' && topology[i] != '(' && topology[i] != ')' && topology[i] != '[') {
          all_node_types.insert(std::tolower(topology[i]));
@@ -331,8 +326,9 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
    size_t pos = 0;
    int id_counter = 1;  // Start numbering from 1
 
+#ifdef WITH_BINDING_NODES_CHARACTERISTICS
    // Helper function to parse characteristics within square brackets
-   std::function<std::unordered_map<std::string, long>(void)> parse_characteristics = [&]() -> std::unordered_map<std::string, long> {
+   const std::function parse_characteristics = [&]() -> std::unordered_map<std::string, long> {
       std::unordered_map<std::string, long> result;
 
       std::string chars_str;
@@ -374,80 +370,67 @@ void ocs::TopologyString::parse_to_tree(const std::string& topology) {
       return result;
    };
 
+#else
+
+   const std::function skip_characteristics = [&]() -> void {
+      while (pos < topology.size() && topology[pos] != ']') {
+         pos++; // Skip until we find the closing bracket or reach the end of the string
+      }
+
+      if (pos < topology.size() && topology[pos] == ']') {
+         pos++; // Skip the closing bracket
+      }
+   };
+
+#endif
+
    // Define a recursive lambda function to parse nodes
-   std::function<std::vector<Node>(void)> parse_nodes = [&]() -> std::vector<Node> {
+   std::function<std::vector<Node>()> parse_nodes = [&]() -> std::vector<Node> {
       std::vector<Node> result;
       const size_t topo_size = topology.size();
 
       while (pos < topo_size) {
-         char c = topology[pos++];
-
          // Start of a new node
-         if (c == '(' && pos < topo_size) {
+         if (const char c = topology[pos++];
+             c == '(' && pos < topo_size) {
             Node node;
+
+            // Read the node type
             node.c = topology[pos++]; // Read the node type
 
             // Check if the next character is '[' which indicates the start of characteristics
             if (pos < topo_size && topology[pos] == '[') {
                pos++; // Skip the opening bracket
+#ifdef WITH_BINDING_NODES_CHARACTERISTICS
                node.characteristics = parse_characteristics();
+#else
+               skip_characteristics();
+#endif
             } else {
+#ifdef WITH_BINDING_NODES_CHARACTERISTICS
                node.characteristics.clear();
+#endif
             }
 
-            // Add the sequential ID as a characteristic
-            node.characteristics[ID_PREFIX] = id_counter++;
+            // Each node gets a unique ID
+            node.id = id_counter++;
 
             // Parse all child nodes
             node.nodes = parse_nodes();
 
-            // Count bound children and store as characteristic #b
-            int bound_children = 0;
+            // Initialize all counter for this node
+            for (int i = 0; i < char_to_index_size; i++) {
+               node.char_to_count[i] = 0;
+            }
+
+            // Count this node itself
+            node.char_to_count[char_to_index[node.c]] = 1;
+
+            // Add counts from child nodes
             for (const auto& child : node.nodes) {
-               if (std::islower(child.c)) {
-                  bound_children++;
+               for (int i = 0; i < char_to_index_size; i++) {
+                  node.char_to_count[i] += child.char_to_count[i];
                }
-            }
-            node.characteristics[BOUND_PREFIX] = bound_children;
-
-            // Initialize counters for ALL node types in the tree
-            std::unordered_map<char, long> bound_type_counts;
-            std::unordered_map<char, long> free_type_counts;
-            for (char type : all_node_types) {
-               bound_type_counts[type] = 0;
-               free_type_counts[type] = 0;
-            }
-
-            // If this node is bound/free, count it for its type
-            char lowercase_type = std::tolower(node.c);
-            if (std::islower(node.c)) {
-               bound_type_counts[lowercase_type] = 1;
-            } else {
-               free_type_counts[lowercase_type] = 1;
-            }
-
-            // Add counts from child nodes for all node types
-            for (const auto& child : node.nodes) {
-               // Process bound node counts
-               for (const auto& [key, value] : child.characteristics) {
-                  static size_t bound_prefix_length = BOUND_PREFIX.size();
-                  static size_t free_prefix_length = FREE_PREFIX.size();
-
-                  if (key.size() > bound_prefix_length && key.substr(0, bound_prefix_length) == BOUND_PREFIX) {
-                     char type_char = key[bound_prefix_length];
-                     bound_type_counts[type_char] += value;
-                  }
-                  else if (key.size() > free_prefix_length && key.substr(0, free_prefix_length) == FREE_PREFIX) {
-                     char type_char = key[free_prefix_length];
-                     free_type_counts[type_char] += value;
-                  }
-               }
-            }
-
-            // Store all accumulated bound and free type counts for ALL node types
-            for (char type : all_node_types) {
-               node.characteristics[BOUND_PREFIX + std::string(1, type)] = bound_type_counts[type];
-               node.characteristics[FREE_PREFIX + std::string(1, type)] = free_type_counts[type];
             }
 
             result.push_back(std::move(node));
@@ -481,11 +464,11 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
    }
 
    // Convert to lowercase for consistent comparison
-   char node_type_lower = std::tolower(node_type);
-   char sort_type_lower = std::tolower(sort_characteristic);
+   const auto node_type_lower = static_cast<char>(std::tolower(node_type));
+   const auto sort_type_lower = static_cast<char>(std::tolower(sort_characteristic));
 
    // Create the characteristic name for sorting
-   std::string sort_key = FREE_PREFIX + std::string(1, sort_type_lower);
+   const unsigned char sort_key = sort_type_lower;
 
    // Define a recursive function to sort nodes at each level
    std::function<void(std::vector<Node>&)> sort_nodes = [&](std::vector<Node>& current_nodes) {
@@ -511,48 +494,28 @@ void ocs::TopologyString::sort_tree_nodes(const char node_type, const char sort_
                   bool b_matches = std::tolower(b.c) == node_type_lower;
 
                   if (a_matches && b_matches) {
-                     // Get the values from characteristics
-                     int value_a = 0;
-                     int value_b = 0;
 
-                     auto it_a = a.characteristics.find(sort_key);
-                     if (it_a != a.characteristics.end()) {
-                        value_a = it_a->second;
+                     // Special handling for power cores: If one has power cores and the other doesn't, the one with power cores should come first.
+                     int value_a_C = a.char_to_count[char_to_index[static_cast<unsigned char>('C')]];
+                     int value_a_c = a.char_to_count[char_to_index[static_cast<unsigned char>('c')]];
+                     int value_b_C = b.char_to_count[char_to_index[static_cast<unsigned char>('C')]];
+                     int value_b_c = b.char_to_count[char_to_index[static_cast<unsigned char>('c')]];
+                     if (value_a_C + value_a_c == 0 && value_b_C + value_b_c > 0) {
+                        return false; // a has no power cores, b has power cores, so a should come after b
+                     } else if (value_a_C + value_a_c > 0 && value_b_C + value_b_c == 0) {
+                        return true; // a has power cores, b has no power cores, so a should come before b
                      }
 
-                     auto it_b = b.characteristics.find(sort_key);
-                     if (it_b != b.characteristics.end()) {
-                        value_b = it_b->second;
-                     }
+                     // Within the groups of non-power cores there is no order to be maintained, so we can skip sorting them E/F/G cores
+                     ;
 
-#if 0
-                     // Maintain current order (according to node ID) if values are equal (stable sort)
-                     if (value_a == value_b) {
-                        int node_id_a = -1;
-                        int node_id_b = -1;
-
-                        auto it = a.characteristics.find(ocs::TopologyString::ID_PREFIX);
-                        if (it != a.characteristics.end()) {
-                           node_id_a = std::stoi(it->second);
-                        }
-                        it = b.characteristics.find(ocs::TopologyString::ID_PREFIX);
-                        if (it != b.characteristics.end()) {
-                           node_id_b = std::stoi(it->second);
-                        }
-
-                        if (node_id_a < node_id_b) {
-                           return true;
-                        }
-
-                        return false;
-                     }
-#endif
-
-                     // Sort in ascending order by the free characteristic (free threads)
+                     // Get the values from characteristics for the sort key specified by the user (e.g., free threads)
+                     int value_a = a.char_to_count[char_to_index[static_cast<unsigned char>(sort_key)]];
+                     int value_b = b.char_to_count[char_to_index[static_cast<unsigned char>(sort_key)]];
                      if (ascending) {
-                        return value_a < value_b;
-                     } else {
                         return value_a > value_b;
+                     } else {
+                        return value_a < value_b;
                      }
                   }
 
@@ -597,7 +560,7 @@ void ocs::TopologyString::sort_tree(const std::string& sort_criterias, const cha
       DRETURN_VOID;
    }
 
-   // Sort each node type in the order specified by capitalisation of the characters
+   // Sort each node type in the order specified by capitalization of the characters
    // Lowercase means ascending order, which means less used nodes first
    for (const char sort_criteria : sort_criterias) {
       const bool ascending = std::islower(sort_criteria);
@@ -622,8 +585,7 @@ void ocs::TopologyString::sort_tree(const std::string& sort_criterias, const cha
  * If the topology string is malformed or does not contain a thread, the function
  * returns false and sets the position, socket, core, and thread to -1.
  *
- * @param topology_dstr The topology string to search in.
- * @param pos Pointer to store the position of the found thread.
+ * @param id Pointer to store the ID of the found thread.
  * @param socket Pointer to store the socket number of the found thread.
  * @param core Pointer to store the core number of the found thread.
  * @param thread Pointer to store the thread number of the found thread.
@@ -648,7 +610,7 @@ ocs::TopologyString::find_first_unused_thread(int *id, int *socket, int *core, i
    find_thread = [&](const std::vector<Node>& current_nodes) -> bool {
       for (const auto& node : current_nodes) {
          // Check node type and update counters
-         char upper_c = std::toupper(node.c);
+         const auto upper_c = static_cast<char>(std::toupper(node.c));
          if (upper_c == 'S') {
             s++;
             c = NO_POS; // reset core when a new socket is found
@@ -663,15 +625,7 @@ ocs::TopologyString::find_first_unused_thread(int *id, int *socket, int *core, i
                *socket = s;
                *core = c;
                *thread = t;
-
-               // For position, use the node ID
-               auto it = node.characteristics.find(ID_PREFIX);
-               if (it != node.characteristics.end()) {
-                  *id = it->second;
-               } else {
-                  *id = NO_POS;
-               }
-
+               *id = node.id;
                return true; // Thread found
             }
          }
@@ -743,30 +697,11 @@ void ocs::TopologyString::correct_topology_upper_lower() {
     DRETURN_VOID;
 }
 
-/** @brief Find the first unused thread in the topology tree
- *
- * This function searches for the first occurrence of an unused thread (uppercase 'T') in the
- * topology tree. It returns the ID of the thread if found, or NO_POS if no unused thread exists.
- *
- * @todo Can be removed when core implementation is finished
- * @return The ID of the first unused thread, or NO_POS if none exists.
- */
-int
-ocs::TopologyString::find_first_unused_thread() const {
-   int id, s, c, t;
-
-   if (find_first_unused_thread(&id, &s, &c, &t)) {
-      return id;
-   }
-   return NO_POS;
-}
-
 /** @brief Find the first core in the topology tree
  *
  * This function searches for the first occurrence of a core (either 'C' or 'E') in the
  * topology tree. It returns the ID of the core if found, or NO_POS if no core exists.
  *
- * @todo Can be removed when core implementation is finished
  * @return The ID of the first core, or NO_POS if none exists.
  */
 int
@@ -778,14 +713,7 @@ ocs::TopologyString::find_first_core() const {
       for (const auto& n : list) {
          char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
          if (up == 'C' || up == 'E') {
-            auto it = n.characteristics.find(ID_PREFIX);
-            if (it != n.characteristics.end()) {
-               try {
-                  id = it->second;
-               } catch (...) {
-                  id = NO_POS;
-               }
-            }
+            id = n.id;
             return true;
          }
          if (!n.nodes.empty()) {
@@ -852,19 +780,10 @@ ocs::TopologyString::mark_node_as_used_or_unused(const int id, const bool do_mar
    bool found = false;
    std::function<void(std::vector<Node>&)> find_and_mark = [&](std::vector<Node>& current_nodes) {
       for (auto& n : current_nodes) {
-         auto it = n.characteristics.find(ID_PREFIX);
-         if (it != n.characteristics.end()) {
-            int nid = 0;
-            try {
-               nid = it->second;
-            } catch (...) {
-               nid = 0;
-            }
-            if (nid == id) {
-               mark_used(n);
-               found = true;
-               return;
-            }
+         if (n.id == id) {
+            mark_used(n);
+            found = true;
+            return;
          }
          if (!n.nodes.empty()) {
             find_and_mark(n.nodes);
@@ -1037,80 +956,71 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
    }
 
    // Helpers to read subtree counters for predicates
-   auto get_counter = [&](const std::unordered_map<std::string, long>& ch, const std::string& prefix, char node_letter) -> long {
-      char node_letter_down = static_cast<char>(std::tolower(static_cast<unsigned char>(node_letter)));
-      std::string key = prefix + std::string(1, node_letter_down);
-      auto it = ch.find(key);
-      if (it == ch.end()) {
-         return 0;
-      }
-      try {
-         return it->second;
-      } catch (...) {
-         return 0;
-      }
+   auto get_counter = [&](const Node& node, const unsigned char node_letter) -> long {
+      int index = char_to_index[static_cast<unsigned char>(node_letter)];
+      return node.char_to_count[index];
    };
 
-   auto is_free_X_socket = [&](const Node& n, char core_letter) -> bool {
+   auto is_free_X_socket = [&](const Node& n, const unsigned char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'S') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
-             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
-             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+      return get_counter(n, 't') == 0 &&
+             get_counter(n, std::tolower(core_letter)) == 0 &&
+             get_counter(n, std::toupper(core_letter)) > 0;
    };
-   auto is_free_X_cache2 = [&](const Node& n, char core_letter) -> bool {
+   auto is_free_X_cache2 = [&](const Node& n, const unsigned char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'Y') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
-             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
-             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+      return get_counter(n, 't') == 0 &&
+             get_counter(n, std::tolower(core_letter)) == 0 &&
+             get_counter(n, std::toupper(core_letter)) > 0;
    };
-   auto is_free_X_cache3 = [&](const Node& n, char core_letter) -> bool {
+   auto is_free_X_cache3 = [&](const Node& n, const unsigned char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'X') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
-             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
-             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+      return get_counter(n, 't') == 0 &&
+             get_counter(n, std::tolower(core_letter)) == 0 &&
+             get_counter(n, std::toupper(core_letter)) > 0;
    };
-   auto is_free_X_numa = [&](const Node& n, char core_letter) -> bool {
+   auto is_free_X_numa = [&](const Node& n, const unsigned char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'N') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0 &&
-             get_counter(n.characteristics, BOUND_PREFIX, core_letter) == 0 &&
-             get_counter(n.characteristics, FREE_PREFIX, core_letter) > 0;
+      return get_counter(n, 't') == 0 &&
+             get_counter(n, std::tolower(core_letter)) == 0 &&
+             get_counter(n, std::toupper(core_letter)) > 0;
    };
    auto is_used_socket = [&](const Node& n) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'S') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+      return get_counter(n, 't') > 0;
    };
    auto is_used_numa = [&](const Node& n) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'N') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+      return get_counter(n, 't') > 0;
    };
    auto is_used_cache3 = [&](const Node& n) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'X') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+      return get_counter(n, 't') > 0;
    };
    auto is_used_cache2 = [&](const Node& n) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       if (up != 'Y') return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+      return get_counter(n, 't') > 0;
    };
    auto is_free_X_core = [&](const Node& n, char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       char core_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(core_letter)));
       if (up != core_letter_up) return false;
       // free core: no bound threads in its subtree
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') == 0;
+      return get_counter(n, 't') == 0;
    };
    auto is_used_X_core = [&](const Node& n, char core_letter) -> bool {
       char up = static_cast<char>(std::toupper(static_cast<unsigned char>(n.c)));
       char core_letter_up = static_cast<char>(std::toupper(static_cast<unsigned char>(core_letter)));
       if (up != core_letter_up) return false;
-      return get_counter(n.characteristics, BOUND_PREFIX, 't') > 0;
+      return get_counter(n, 't') > 0;
    };
    auto is_free_thread = [&](const Node& n) -> bool {
       return n.c == 'T';
@@ -1179,41 +1089,23 @@ ocs::TopologyString::find_n_packed_units(const unsigned bamount, const BindingUn
          if (start_node != nullptr && stop_node == nullptr) {
             bool add_id = false;
 
-            if (bunit == BindingUnit::Unit::CSOCKET && is_free_X_socket(n, 'C')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ESOCKET && is_free_X_socket(n, 'E')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::CCORE && is_free_X_core(n, 'C')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ECORE && is_free_X_core(n, 'E')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::CTHREAD && is_free_thread(n) && core_letter == 'C') {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ETHREAD && is_free_thread(n) && core_letter == 'E') {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::CCACHE2 && is_free_X_cache2(n, 'C')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ECACHE2 && is_free_X_cache2(n, 'E')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::CCACHE3 && is_free_X_cache3(n, 'C')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ECACHE3 && is_free_X_cache3(n, 'E')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::CNUMA && is_free_X_numa(n, 'C')) {
-               add_id = true;
-            } else if (bunit == BindingUnit::Unit::ENUMA && is_free_X_numa(n, 'E')) {
+            if ((bunit == BindingUnit::Unit::CSOCKET && is_free_X_socket(n, 'C'))
+               || (bunit == BindingUnit::Unit::ESOCKET && is_free_X_socket(n, 'E'))
+               || (bunit == BindingUnit::Unit::CCORE && is_free_X_core(n, 'C'))
+               || (bunit == BindingUnit::Unit::ECORE && is_free_X_core(n, 'E'))
+               || (bunit == BindingUnit::Unit::CTHREAD && is_free_thread(n) && core_letter == 'C')
+               || (bunit == BindingUnit::Unit::ETHREAD && is_free_thread(n) && core_letter == 'E')
+               || (bunit == BindingUnit::Unit::CCACHE2 && is_free_X_cache2(n, 'C'))
+               || (bunit == BindingUnit::Unit::ECACHE2 && is_free_X_cache2(n, 'E'))
+               || (bunit == BindingUnit::Unit::CCACHE3 && is_free_X_cache3(n, 'C'))
+               || (bunit == BindingUnit::Unit::ECACHE3 && is_free_X_cache3(n, 'E'))
+               || (bunit == BindingUnit::Unit::CNUMA && is_free_X_numa(n, 'C'))
+               || (bunit == BindingUnit::Unit::ENUMA && is_free_X_numa(n, 'E'))) {
                add_id = true;
             }
 
             if (add_id) {
-               auto it = n.characteristics.find(ID_PREFIX);
-               if (it != n.characteristics.end()) {
-                  try {
-                     ids.push_back(it->second);
-                  } catch (...) {
-                     // malformed id, keep empty
-                  }
-               }
+               ids.push_back(n.id);
             }
          }
 
@@ -1280,19 +1172,9 @@ ocs::TopologyString::mark_units_as_used_or_unused(std::vector<int> &ids, const B
 
    std::function<void(std::vector<Node>&, bool, char)> process_node = [&](std::vector<Node>& list, bool ancestor_was_marked, char parent_letter) {
       for (auto& n : list) {
-         int id = NO_POS;
-         auto it = n.characteristics.find(ID_PREFIX);
-         if (it != n.characteristics.end()) {
-            try {
-               id = it->second;
-            } catch (...) {
-               // malformed id, keep empty
-            }
-         }
-
          // tag node if id is in vector of ids
          bool do_mark = false;
-         if (pos < ids.size() && id != NO_POS && id == ids[pos]) {
+         if (pos < ids.size() && n.id == ids[pos]) {
             do_mark = true;
             ++pos;
          }
@@ -1503,9 +1385,8 @@ ocs::TopologyString::adapt_binding_unit(BindingUnit::Unit unit) const {
    const bool is_power_unit = BindingUnit::is_power_unit(unit);
 
    // adapt memory units to next plausible hardware units if they are not available on a host
-   if ((unit == BindingUnit::Unit::CNUMA || unit == BindingUnit::Unit::ENUMA) && topo_str.find('N') == std::string::npos) {
-      unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
-   } else if ((unit == BindingUnit::Unit::CCACHE3 || unit == BindingUnit::Unit::ECACHE3) && topo_str.find('X') == std::string::npos) {
+   if (((unit == BindingUnit::Unit::CNUMA || unit == BindingUnit::Unit::ENUMA) && topo_str.find('N') == std::string::npos)
+      || ((unit == BindingUnit::Unit::CCACHE3 || unit == BindingUnit::Unit::ECACHE3) && topo_str.find('X') == std::string::npos)) {
       unit = is_power_unit ? BindingUnit::Unit::CSOCKET : BindingUnit::Unit::ESOCKET;
    } else if ((unit == BindingUnit::Unit::CCACHE2 || unit == BindingUnit::Unit::ECACHE2) && topo_str.find('Y') == std::string::npos) {
       unit = is_power_unit ? BindingUnit::Unit::CCORE : BindingUnit::Unit::ECORE;

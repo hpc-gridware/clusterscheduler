@@ -3670,7 +3670,7 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
       *max_slotsp = 0;
       for (slots = min_slots; slots <= max_slots; slots++) {
          // sort out slot numbers that would conflict with allocation rule
-         if (sge_pe_slots_per_host(pe, slots) == 0) {
+         if (pe_allocation_rule_slots(pe, slots) == 0) {
             continue;
          }
 
@@ -4012,9 +4012,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       bool suited_as_master_host;
       bool have_master_host = false;
 
-      int allocation_rule, minslots;
-      allocation_rule = sge_pe_slots_per_host(a->pe, a->slots);
-      minslots = ALLOC_RULE_IS_BALANCED(allocation_rule)?allocation_rule:1;
+      int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
+      int minslots = ALLOC_RULE_IS_BALANCED(allocation_rule)?allocation_rule:1;
 
       dstring rule_name = DSTRING_INIT;
       dstring rue_name = DSTRING_INIT;
@@ -4526,7 +4525,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    dispatch_t result = DISPATCH_OK;
    const void *queue_iterator = nullptr;
 
-   int allocation_rule = sge_pe_slots_per_host(a->pe, a->slots);
+   int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
 
    if (ALLOC_RULE_IS_BALANCED(allocation_rule)) {
       min_host_slots = max_host_slots = allocation_rule;
@@ -6053,8 +6052,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(reason, 1024);
-   int avail = 0;
-   int max_slots = INT_MAX;
+   int available = 0;
+   int max_available_slots = INT_MAX;
    const lListElem *actual;
    lListElem *cep, *req;
    dispatch_t result, ret = DISPATCH_OK;
@@ -6081,7 +6080,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
          lSetDouble(implicit_slots_request, CE_doubleval, 1);
       }
 
-      result = ri_slots_by_time(a, &avail, rue_list, implicit_slots_request, load_attr, total_list,
+      result = ri_slots_by_time(a, &available, rue_list, implicit_slots_request, load_attr, total_list,
                                 nullptr, host, queue, layer, lc_factor,
                                 &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {
@@ -6098,8 +6097,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
          DRETURN(result);
       }
 
-      max_slots      = MIN(max_slots,      avail);
-      DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, SGE_ATTR_SLOTS, max_slots);
+      max_available_slots = MIN(max_available_slots, available);
+      DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, SGE_ATTR_SLOTS, max_available_slots);
    }
 
    /* --- default requests except slots which we handled above */
@@ -6124,7 +6123,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                lSetString(cep, CE_stringval, def_req);
                lSetDouble(cep, CE_doubleval, request);
 
-               result = ri_slots_by_time(a, &avail, rue_list, cep, load_attr, total_list, nullptr,
+               result = ri_slots_by_time(a, &available, rue_list, cep, load_attr, total_list, nullptr,
                                          host, queue, layer, lc_factor,
                                          &reason, allow_non_requestable, false, object_name, binding_inuse);
                if (result != DISPATCH_OK) {
@@ -6139,8 +6138,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                   //              or a queue - we have it
                   DRETURN(DISPATCH_NEVER_CAT);
                }
-               max_slots = MIN(max_slots, avail);
-               DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, name, (int)max_slots);
+               max_available_slots = MIN(max_available_slots, available);
+               DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, name, (int)max_available_slots);
             }
          }
       }
@@ -6234,7 +6233,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
       for_each_rw (req, requests) {
          name = lGetString(req, CE_name);
          DPRINTF("    ==> %s: %s = %s = %f\n", object_name, name, lGetString(req, CE_stringval), lGetDouble(req, CE_doubleval));
-         result = ri_slots_by_time(a, &avail, rue_list, req, load_attr, total_list, master_usage,
+         result = ri_slots_by_time(a, &available, rue_list, req, load_attr, total_list, master_usage,
                                    host, queue, layer, lc_factor,
                                    &reason, allow_non_requestable, false, object_name, binding_inuse);
          DPRINTF("  -> ri_slots_by_time returned %d\n", result);
@@ -6269,7 +6268,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                   master_usage = requests;            // for slave matching need to consider what the master task would consume
                   found_master_host = true;           // we just found our master host
                   // @todo CS-620 sometimes ri_slots_by_time() seems to return 0 (DISPATCH_OK) instead of DISPATCH_NOT_AT_TIME
-                  if (avail == 0) {
+                  if (available == 0) {
                      master_slot = 0;
                      master_usage = nullptr;
                      host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
@@ -6307,20 +6306,20 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             case DISPATCH_OK:          // matches now
                ret = result;
 
-               DPRINTF("%s: explicit request for %s gets us %d slots\n", object_name, name, avail);
+               DPRINTF("%s: explicit request for %s gets us %d slots\n", object_name, name, available);
                if (lGetUlong(req, CE_tagged) < tag && tag != RQS_TAG)
                   lSetUlong(req, CE_tagged, tag);
 
                // slave requests matched we might have to add one slot for the master task
                if (scope != JRS_SCOPE_MASTER) {
                   if (scope == JRS_SCOPE_SLAVE) {
-                     if (avail < INT_MAX) {
-                        avail += master_slot;
+                     if (available < INT_MAX) {
+                        available += master_slot;
                      }
                   }
-                  max_slots = MIN(max_slots, avail);
+                  max_available_slots = MIN(max_available_slots, available);
                }
-               DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, name, max_slots);
+               DPRINTF("%s: parallel_rc_slots_by_time(%s) %d\n", object_name, name, max_available_slots);
                print_tagged4schedule(queue);
                break;
 
@@ -6339,7 +6338,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             case DISPATCH_MISSING_ATTR: /* the requested element does not exist */
                if (tag == QUEUE_TAG && lGetUlong(req, CE_tagged) == NO_TAG) {
                   if (lGetUlong(req, CE_consumable) == CONSUMABLE_JOB) {
-                     max_slots = MIN(max_slots, avail);
+                     max_available_slots = MIN(max_available_slots, available);
                      // only suitable for slave tasks
                      // @todo we did this already above, why repeat it? Can it get overwritten in between?
                      host_or_queue_clear_tags(object_name, queue, a->queue_list, TAG4SCHED_MASTER);
@@ -6385,16 +6384,16 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
    // do the binding
    if (layer == DOMINANT_LAYER_HOST) {
-      int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, max_slots, host, binding_inuse);
+      int slots_with_binding = ocs::BindingSchedd::apply_strategy(a, max_available_slots, host, binding_inuse);
 
       if (slots_with_binding == 0) {
          sge_dstring_sprintf(&reason, SFN, MSG_SCHEDD_BINDINGREQNOTFULLFILLED);
          DRETURN(DISPATCH_NEVER_CAT);
       }
-      max_slots = MIN(max_slots, slots_with_binding);
+      max_available_slots = MIN(max_available_slots, slots_with_binding);
    }
 
-   *slots = max_slots;
+   *slots = max_available_slots;
 
    DRETURN(ret);
 }
@@ -6964,14 +6963,13 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue)
 {
+   DENTER(TOP_LAYER);
    lList *tmp_centry_list = lCreateList("", CE_Type);
    lList *tmp_rue_list = lCreateList("", RUE_Type);
    lListElem *tmp_centry_elem = nullptr;
    lListElem *tmp_rue_elem = nullptr;
    const lList *rue_list = lGetList(limit, RQRL_usage);
    dispatch_t result = DISPATCH_NEVER_CAT;
-
-   DENTER(TOP_LAYER);
 
    /* create tmp_centry_list */
    tmp_centry_elem = lCopyElem(centry);

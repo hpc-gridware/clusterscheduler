@@ -33,6 +33,9 @@ namespace ocs {
 
       static bool
       ignore_binding(const sge_assignment_t *a, const lListElem *host);
+
+      static int
+      slots_reduced_to_available_maximum(const sge_assignment_t *a, int slots_max_available);
    public:
 
       static double
