@@ -362,11 +362,6 @@ static void rmon_mprintf_va(const char *fmt, va_list args) {
    strcpy(msgbuf, empty);
    vsnprintf(&msgbuf[4], (RMON_BUF_SIZE) -10, fmt, args);
    if (helper != nullptr && strlen(helper->thread_name) > 0) {
-      // filter by thread name pattern
-      if (const char *thread_name_pattern = ocs::DebugParam::get_thread_name_pattern();
-          thread_name_pattern != nullptr && fnmatch(thread_name_pattern, helper->thread_name, 0) != 0) {
-         return;
-      }
       mwrite(msgbuf, helper->thread_name, helper->thread_id);
    } else {
       mwrite(msgbuf, nullptr, -1);
@@ -400,20 +395,28 @@ static void rmon_mprintf_va(const char *fmt, va_list args) {
 *     MT-NOTE: mingled.
 *
 *******************************************************************************/
-static void mwrite(char *message, const char *thread_name, int thread_id) {
-    flockfile(rmon_fp);
-    DSTRING_STATIC(dstr, 32);
-    if (thread_name != nullptr) {
-        fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), thread_name, thread_id);
-    } else {
-        std::ostringstream oss_thread_id;
-        oss_thread_id << std::this_thread::get_id();
-        fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), oss_thread_id.str().c_str(), thread_id);
-    }
-    fprintf(rmon_fp, "%s", message);
-    fflush(rmon_fp);
+static void
+mwrite(char *message, const char *thread_name, int thread_id) {
 
-    funlockfile(rmon_fp);
+   // filter by thread name pattern
+   if (const char *thread_name_pattern = ocs::DebugParam::get_thread_name_pattern();
+       thread_name_pattern != nullptr && thread_name != nullptr &&
+       fnmatch(thread_name_pattern, thread_name, 0) != 0) {
+      return;
+   }
+
+   flockfile(rmon_fp);
+   DSTRING_STATIC(dstr, 32);
+   if (thread_name != nullptr) {
+      fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), thread_name, thread_id);
+   } else {
+      std::ostringstream oss_thread_id;
+      oss_thread_id << std::this_thread::get_id();
+      fprintf(rmon_fp, "%-27s %16.16s %02d ", sge_ctime64(sge_get_gmt64(), &dstr), oss_thread_id.str().c_str(), thread_id);
+   }
+   fprintf(rmon_fp, "%s", message);
+   fflush(rmon_fp);
+   funlockfile(rmon_fp);
 }
 
 /****** rmon_macros/set_debug_level_from_env() *********************************

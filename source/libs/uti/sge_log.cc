@@ -67,7 +67,7 @@ sge_do_log(u_long32 prog_number, const char *prog_or_thread_name, int thread_id,
 
    // filter by thread name pattern
    if (const char *thread_name_pattern = ocs::DebugParam::get_thread_name_pattern();
-       thread_name_pattern != nullptr && fnmatch(thread_name_pattern, prog_or_thread_name, 0) != 0) {
+       thread_name_pattern != nullptr && prog_or_thread_name != nullptr && fnmatch(thread_name_pattern, prog_or_thread_name, 0) != 0) {
       return;
    }
 

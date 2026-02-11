@@ -60,6 +60,7 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const lListEl
    // the utilization from the host itself. This might still be uninitialized.
    if (in_reservation_mode) {
       DPRINTF("Host's %s reservation binding util. is:  %s\n", lGetHost(host, EH_name), host_in_use.to_product_topology_string().c_str());
+      found_now_utilization = true;
    } else {
       const lListElem *utilization_slots = lGetSubStr(host, RUE_name, SGE_ATTR_SLOTS, EH_resource_utilization);
       if (utilization_slots != nullptr) {
@@ -235,7 +236,7 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
 
    // if we do not know the number of available slots (e.g. value is not stored in resource diagram)
    // then we assume that there is no limit.
-   if (slots_max_available > 0) {
+   if (slots_max_available <= 0) {
       slots_max_available = std::numeric_limits<int>::max();
       DPRINTF("slots_reduced_to_available_maximum: no information about available slots, assume no limit\n");
    }
@@ -400,6 +401,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
    BindingStart::Start binding_start = Job::binding_get_start(a->job);
    BindingStop::Stop binding_end = Job::binding_get_stop(a->job);
    if (binding_type == BindingType::HOST) {
+      DPRINTF("Host based binding with %d slots requested\n", slots);
 
       // find the requested binding using the sorted topology string
       auto ids = topo_in_use_sorted.find_n_packed_units(binding_amount, binding_unit, binding_start, binding_end);
@@ -424,6 +426,8 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
       lSetList(binding_done, BN_specific_binding_list, nullptr);
       DRETURN(slots);
    } else if (binding_type == BindingType::SLOT) {
+
+      DPRINTF("Slots based binding with %d slots requested\n", slots);
 
       // Find the initial ID for the next task binding if there are already bindings otherwise start with 0
       u_long32 next_binding_id_for_task = 0;
