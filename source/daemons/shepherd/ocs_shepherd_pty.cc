@@ -29,7 +29,7 @@
  *
  * Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -59,6 +59,7 @@
 
 int g_newpgrp = -1;
 
+#if not defined(FREEBSD)
 /****** uti/pty/ptym_open() ****************************************************
 *  NAME
 *     ptym_open() -- Opens a pty master device
@@ -257,6 +258,7 @@ ptys_open(int fdm, char *pts_name) {
 
    return fds;
 }
+#endif
 
 #endif
 
