@@ -37,10 +37,12 @@
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <filesystem>
 #include <unistd.h>
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <fcntl.h>
 
 #include <termios.h>
 #if defined(DARWIN)
@@ -57,6 +59,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_signal.h"
 
+#include "config_file.h"
 #include "sge_ijs_comm.h"
 #include "sge_ijs_threads.h"
 #include "basis_types.h"
@@ -285,6 +288,10 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
    return ret;
 }
 
+int is_fd_valid(int fd) {
+   return fcntl(fd, F_GETFL) != -1 || errno != EBADF;
+}
+
 /****** pty_to_commlib() *******************************************************
 *  NAME
 *     pty_to_commlib() -- pty_to_commlib thread entry point and main loop
@@ -333,17 +340,38 @@ static void* pty_to_commlib(void *t_conf)
       /* Fill fd_set for select */
       FD_ZERO(&read_fds);
 
+      int valid_fds = 0;
+      // In case of -pty yes we read only from the pty_master handle.
       if (g_p_ijs_fds->pty_master != -1) {
-         FD_SET(g_p_ijs_fds->pty_master, &read_fds);
+         if (is_fd_valid(g_p_ijs_fds->pty_master)) {
+            FD_SET(g_p_ijs_fds->pty_master, &read_fds);
+            valid_fds++;
+         } else {
+            shepherd_trace("pty_to_commlib: ==> pty_master is not valid");
+         }
       }
+      // Without PTY we read from the pipes which are connected to the output and error stream.
       if (g_p_ijs_fds->pipe_out != -1) {
-         FD_SET(g_p_ijs_fds->pipe_out, &read_fds);
+         if (is_fd_valid(g_p_ijs_fds->pipe_out)) {
+            FD_SET(g_p_ijs_fds->pipe_out, &read_fds);
+         } else {
+            shepherd_trace("pty_to_commlib: ==> pipe_out is not valid");
+         }
       }
       if (g_p_ijs_fds->pipe_err != -1) {
-         FD_SET(g_p_ijs_fds->pipe_err, &read_fds);
+         if (is_fd_valid(g_p_ijs_fds->pipe_err)) {
+            FD_SET(g_p_ijs_fds->pipe_err, &read_fds);
+            valid_fds++;
+         } else {
+            shepherd_trace("pty_to_commlib: ==> pipe_err is not valid");
+         }
       }
       fd_max = MAX(g_p_ijs_fds->pty_master, g_p_ijs_fds->pipe_out);
       fd_max = MAX(fd_max, g_p_ijs_fds->pipe_err);
+      shepherd_trace("pty_to_commlib: ==> we have %d valid fds to wait on", valid_fds);
+      if (valid_fds == 0) {
+         do_exit = 1;
+      }
 
 #ifdef EXTENSIVE_TRACING
       shepherd_trace("pty_to_commlib: g_p_ijs_fds->pty_master = %d, "
@@ -395,12 +423,11 @@ static void* pty_to_commlib(void *t_conf)
       if (ret < 0) {
          /* select error */
 #ifdef EXTENSIVE_TRACING
-         shepherd_trace("pty_to_commlib: select() returned %d, reason: %d, %s",
-                        ret, errno, strerror(errno));
+         shepherd_trace("pty_to_commlib: select() returned %d, reason: %d, %s", ret, errno, strerror(errno));
 #endif
          if (errno == EINTR) {
             /* If we have a buffer, send it now (as we don't want to care about
-             * how long we acutally waited), then just continue, the top of the
+             * how long we actually waited), then just continue, the top of the
              * loop will handle signals.
              * b_select_timeout tells the bottom of the loop to send the buffer.
              */
@@ -473,15 +500,16 @@ static void* pty_to_commlib(void *t_conf)
                g_p_ijs_fds->pipe_to_child = -1;
             }
          }
-      }
+      } // At least one file handle was ready to read.
+
       /* Always send stderr buffer immediately */
       if (stderr_bytes != 0) {
          ret = send_buf(stderr_buf, stderr_bytes, STDERR_DATA_MSG);
+         shepherd_trace("pty_to_commlib: send %d bytes of stderr data", stderr_bytes);
          if (ret == 0) {
             stderr_bytes = 0;
          } else {
-            shepherd_trace("pty_to_commlib: send_buf() returned %d "
-                           "-> exiting", ret);
+            shepherd_trace("pty_to_commlib: send_buf() returned %d " "-> exiting", ret);
             do_exit = 1;
          }
       }
@@ -493,6 +521,7 @@ static void* pty_to_commlib(void *t_conf)
       if (stdout_bytes >= 256 ||
           (b_select_timeout && stdout_bytes > 0) ||
           (do_exit == 1 && stdout_bytes > 0)) {
+         shepherd_trace("pty_to_commlib: sending %d bytes of stdout data", stdout_bytes);
 #ifdef EXTENSIVE_TRACING
          shepherd_trace("pty_to_commlib: sending stdout buffer");
 #endif
@@ -512,6 +541,8 @@ static void* pty_to_commlib(void *t_conf)
 #ifdef EXTENSIVE_TRACING
             shepherd_trace("pty_to_commlib: comm_flush_write_messages() did %d retries", -flush_ret);
 #endif
+         } else {
+            shepherd_trace("pty_to_commlib: comm_flush_write_messages() succeeded without retries");
          }
       }
    }
@@ -585,6 +616,13 @@ static void* commlib_to_pty(void *t_conf)
    // Set timeout for synchronous receiving of messages.
    cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
 
+   bool b_close_stdin = false;
+   // @todo only when we have a pty
+   const char *qrsh_pid_file = search_conf_val("qrsh_pid_file");
+   if (qrsh_pid_file == nullptr) {
+      shepherd_trace("cannot read qrsh_pid_file from config");
+   }
+
    while (do_exit == 0) {
       // We wait synchronously (blocking) for a message from commlib, timeout is 1s.
       recv_mess.cl_message = nullptr;
@@ -596,6 +634,50 @@ static void* commlib_to_pty(void *t_conf)
       shepherd_trace("commlib_to_pty: calling comm_recv_message() synchronously, timeout %d",
                      g_comm_handle->synchron_receive_timeout);
 #endif
+
+      // @todo if we shall close STDIN (add flag b_close_stdin),
+      //       then check if the qrsh_pid file has already been written,
+      //       if yes, then close stdin.
+      // @todo To close the input of the terminal, need to close the *slave_fd*.
+      //       Is this the case here?
+      if (b_close_stdin) {
+         // Get the path to the qrsh pid file.
+         // Only if it exists close the fd_write.
+         shepherd_trace("==> b_close_stdin = true");
+         if (qrsh_pid_file != nullptr) {
+            // We know the path to the qrsh_pid_file - only close fd_write if qrsh_pid_file exists.
+            // This means that the qrsh_starter child has been forked and the actual job has probably been started.
+            // If we close fd_write immediately, then output will be truncated.
+            shepherd_trace("==> we have qrsh_pid_file %s", qrsh_pid_file);
+            std::filesystem::path qrsh_pid_path{qrsh_pid_file};
+            if (std::filesystem::exists(qrsh_pid_path)) {
+               shepherd_trace("==> qrsh_pid_file exists");
+               auto qrsh_pid_ftime = std::filesystem::last_write_time(qrsh_pid_path);
+               auto qrsh_pid_time = std::chrono::file_clock::to_sys(qrsh_pid_ftime);
+               auto now = std::chrono::system_clock::now();
+               auto qrsh_pid_age = now - qrsh_pid_time;
+               auto qrsh_pid_age_ms = std::chrono::duration_cast<std::chrono::milliseconds>(qrsh_pid_age).count();
+               shepherd_trace("==> qrsh_pid_file was written %ld ms ago", qrsh_pid_age_ms);
+               // Only if the file is older than 1s delete the file.
+               if (qrsh_pid_age_ms > 1000) {
+                  shepherd_trace("==> deleting qrsh_pid_file");
+                  SGE_CLOSE(fd_write);
+                  // Closing is done, no need to repeat.
+                  b_close_stdin = false;
+               } else {
+                  shepherd_trace("==> not yet deleting qrsh_pid_file");
+               }
+            } else {
+               shepherd_trace("==> qrsh_pid_file does not yet exist, not closing fd_write");
+            }
+         } else {
+            // We cannot read the qrsh_pid_file - just close the fd_write.
+            shepherd_trace("==> we have no qrsh_pid_file - closing fd_write");
+            SGE_CLOSE(fd_write);
+            // Closing is done, no need to repeat.
+            b_close_stdin = false;
+         }
+      }
 
       ret = comm_recv_message(g_comm_handle, &recv_mess, &err_msg);
 
@@ -625,8 +707,7 @@ static void* commlib_to_pty(void *t_conf)
                 * If we were already connected, it means the connection was closed.
                 */
                if (b_was_connected == 1) {
-                  shepherd_trace("commlib_to_pty: was connected, "
-                                 "but lost connection -> exiting");
+                  shepherd_trace("commlib_to_pty: was connected, but lost connection -> exiting");
                   do_exit = 1;
                }
                break;
@@ -641,8 +722,7 @@ static void* commlib_to_pty(void *t_conf)
                    */
                   if (!b_sent_to_child) {
                      if (write(g_p_ijs_fds->pipe_to_child, "noshell = 9", 11) != 11) {
-                        shepherd_trace("commlib_to_pty: error in communicating "
-                           "with child -> exiting");
+                        shepherd_trace("commlib_to_pty: error in communicating with child -> exiting");
                      } else {
                         b_sent_to_child = true;
                      }
@@ -734,7 +814,48 @@ static void* commlib_to_pty(void *t_conf)
                 * This is needed for GE-3580
                 */
                shepherd_trace("commlib_to_pty: received stdin_close message");
-               SGE_CLOSE(fd_write);
+               // @todo here we close the stdin of the child process
+               //       it is a terminal! So the process might be terminated with SIGHUP!
+               //       would maybe reattaching the terminal to this process help?
+               // Problem: It looks as if we close the stdin before the actual job is even started.
+               //          The IO is probably buffered, so we already received all data?
+               // If we have no PTY, then just close the stdin of the job.
+               // If we have a PTY, then sent EOT. A client reading from stdin will respect it (wishful thinking, cat does ...)
+               //                   closing stdin of the job would generate a SIG_HUP and probably already the shepherd
+               //                   child will exit before even spawning the job.
+               //                   Block the SIGHUP? At least until the qrsh_starter has forked and passed the PTY
+               //                   to its child?
+               // Another approach: Do not even read data from commlib before the qrsh child has started up?
+               //                   Wait until the qrsh pid file has been written?
+               //                   Might have quite some performance impact.
+               // Or: Just set a flag that fd_write shall be closed,
+               //     later on close, but *only* if the qrsh_pid file exists (== the job has really been started)
+               //     BUT: We need to close it, otherwise the job will never terminate, if it is something like cat.
+//               if (g_p_ijs_fds->pty_master == -1) {
+                  //SGE_CLOSE(fd_write);
+                  //fd_write = -1;
+               b_close_stdin = true;
+#if 0
+               if (g_p_ijs_fds->pty_master == -1) {
+                  // send EOT (must be on a new line)
+                  char buf[2];
+                  buf[0] = '\n';
+                  buf[1] = 0x04;
+                  if (sge_writenbytes(fd_write, buf, 2) != 2) {
+                     shepherd_trace("commlib_to_pty: error writing to stdin of child: %d, %s", errno, strerror(errno));
+                  }
+                  shepherd_trace("commlib_to_pty: sent EOT to stdin of child");
+               }
+#endif
+//               } else {
+ //                 // send EOT
+  //                char EOT = 0x04;
+   //               if (sge_writenbytes(fd_write, &EOT, 1) != 1) {
+    //                 shepherd_trace("commlib_to_pty: error writing to stdin of "
+     //                               "child: %d, %s", errno, strerror(errno));
+      //            }
+       //           shepherd_trace("commlib_to_pty: sent EOT to stdin of child");
+        //       }
                b_was_connected = 1;
                break;
 

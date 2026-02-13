@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -50,15 +50,25 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
+#include "uti/sge_pty.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "msg_qrsh_starter.h"
 
 #define MAKEEXITSTATUS(x) (x << 8)
+
+#if 0
+// For debugging purposes a trace file (/tmp/qrsh_starter.log)
+// can be written by qrsh_starter.
+// Enable setting of ENABLE_QRSH_STARTER_TRACNING and
+// add qrsh_trace() calls as required.
+#define ENABLE_QRSH_STARTER_TRACING
+#endif
 
 static pid_t child_pid = 0;
 
@@ -130,6 +140,46 @@ static void qrsh_error(const char *fmt, ...)
 
    close(file);
 }
+
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+/**
+ * @brief Write a trace/debug line for qrsh_starter to a temporary log file.
+ *
+ * Formats the given printf-style message and appends it to
+ * /tmp/qrsh_starter.log, prefixed with a timestamp as well as the effective
+ * user id and process id (same format as shepherd_trace).
+ *
+ * This helper is intended for ad-hoc troubleshooting of terminal/pty handling
+ * and startup sequencing.
+ *
+ * @param format printf-style format string (may be nullptr)
+ * @param ...    arguments referenced by @p format
+ */
+static void
+qrsh_trace (const char *format, ...) {
+   dstring dstr = DSTRING_INIT;
+
+   if (format != nullptr) {
+      va_list     ap;
+
+      va_start(ap, format);
+      sge_dstring_vsprintf(&dstr, format, ap);
+      va_end(ap);
+   }
+
+   DSTRING_STATIC(dstr_filename, SGE_PATH_MAX);
+   sge_dstring_sprintf(&dstr_filename, "/tmp/qrsh_starter.log");
+   FILE *f = fopen(sge_dstring_get_string(&dstr_filename), "a");
+   if (f != nullptr) {
+      DSTRING_STATIC(ds_time, 64);
+      fprintf(f, "%s [" uid_t_fmt ":" pid_t_fmt "]: %s\n", sge_ctime64(0, &ds_time), geteuid(), getpid(),
+              sge_dstring_get_string(&dstr));
+      fclose(f);
+   }
+
+   sge_dstring_free(&dstr);
+}
+#endif
 
 /****** Interactive/qrsh/setEnvironment() ***************************************
 *
@@ -618,37 +668,75 @@ static char *join_command(int argc, char **argv) {
 *
 ****************************************************************************
 */
-static int startJob(char *command, char *wrapper, int noshell)
+static int
+startJob(char *command, char *wrapper, int noshell)
 {
+   bool have_pty = false;
+   const char *pty_config = search_conf_val("pty");
+   if (pty_config != nullptr && atoi(pty_config) == 1) {
+      have_pty = true;
+   }
 
    child_pid = fork();
-   if(child_pid == -1) {
+   if (child_pid == -1) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTFORKCHILD_S, strerror(errno));
       return EXIT_FAILURE;
    }
 
-   if(child_pid) {
+   if (child_pid) {
       /* parent */
       int status;
-
-#if defined(LINUX)
-      int ttyfd;
-#endif
 
       signal(SIGINT,  forward_signal);
       signal(SIGQUIT, forward_signal);
       signal(SIGTERM, forward_signal);
+      // Make sure that the parent does not terminate due to a SIGHUP (from terminal handling)
+      signal(SIGHUP, forward_signal);
 
-      /* preserve pseudo terminal */
-#if defined(LINUX)
-      ttyfd = open("/dev/tty", O_RDWR);
-      if (ttyfd != -1) {
-         tcsetpgrp(ttyfd, child_pid);
-         close(ttyfd); 
+      // Forward further signals we might receive from the shepherd: SIGUSR1 and SIGUSR2
+      signal(SIGUSR1, forward_signal);
+      signal(SIGUSR2, forward_signal);
+
+      // If we have a pty, then make the child process (the job) and its process group
+      // the foreground process (group) on the terminal.
+      if (have_pty) {
+         int ttyfd = open("/dev/tty", O_RDWR);
+         if (ttyfd != -1) {
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+            qrsh_trace("attaching terminal fd %d to child process group %d", ttyfd, child_pid);
+#endif
+            if (tcsetpgrp(ttyfd, child_pid) == -1) {
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+               qrsh_trace("  -> failed %d: %s", errno, strerror(errno));
+#endif
+            }
+            close(ttyfd); ttyfd = -1;
+         }
+      }
+
+      while(waitpid(child_pid, &status, 0) != child_pid && errno == EINTR);
+
+      // We would usually have to reattach the terminal to the parent process after the child exited.
+      // But it does not work, esp. when the stdin is closed by qrsh -> sge_shepherd, then the terminal
+      // does no longer exist.
+#if 0
+      if (have_pty && ttyfd != -1) {
+         if (isatty(ttyfd)) {
+            qrsh_trace("re-attaching terminal fd %d to parent process group %d", ttyfd, getpgrp());
+            if (tcsetpgrp(ttyfd, getpgrp()) == -1) {
+               qrsh_trace("  -> failed %d: %s", errno, strerror(errno));
+            }
+         } else {
+            qrsh_trace("terminal fd %d is not a terminal any more", ttyfd);
+         }
+         close(ttyfd);
       }
 #endif
 
-      while(waitpid(child_pid, &status, 0) != child_pid && errno == EINTR);
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+      qrsh_trace("child exit status was %d: signalled: %d, exit code: %d", status, WIFSIGNALED(status), WIFEXITED(status));
+#endif
+
       return(status);
    } else {
       /* child */
@@ -742,6 +830,17 @@ static int startJob(char *command, char *wrapper, int noshell)
 #endif
 
       SETPGRP;
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+      qrsh_trace("Child: PID=%d, PGID=%d, SID=%d\n", child_pid, getpgid(child_pid), getsid(child_pid));
+#endif
+
+      if (have_pty) {
+         // If we have a pty, we need to set it into raw mode.
+         // Otherwise, the terminal IO is buffered
+         // and the shepherd IJS support might read the same job output multiple times.
+         terminal_enter_raw_mode();
+      }
+
       execvp(cmd, (char *const *)args);
       /* exec failed */
       fprintf(stderr, MSG_QRSH_STARTER_EXECCHILDFAILED_S, args[0], strerror(errno));
@@ -894,6 +993,27 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
    }
 
+#if 0
+   // If we have a pty, then block SIGHUP?
+   // Otherwise, a job (cat) will be killed with SIGHUP as soon as STDIN_FILENO is closed
+   // by the sge_shepherd commlib_to_pty thread.
+   // Seems to be an issue of cat, with a simple shell script copying stdin to stdout this does not happen.
+   // Make it optional?
+   sigset_t mask;
+
+   // Initialize the signal mask
+   sigemptyset(&mask);
+
+   // Add SIGHUP to the mask
+   sigaddset(&mask, SIGHUP);
+
+   // Block SIGHUP
+   sigprocmask(SIG_BLOCK, &mask, nullptr);
+      //perror("sigprocmask");
+      //return 1;
+   //}
+#endif
+
    /* setup environment */
    command = setEnvironment(argv[1], &wrapper);
    if(command == nullptr) {
@@ -908,13 +1028,6 @@ int main(int argc, char *argv[])
 
    /* start job */
    exitCode = startJob(command, wrapper, noshell);
-
-   /* JG: TODO: At this time, we could already pass the exitCode to qrsh.
-    *           Currently, this is done by shepherd, but only after 
-    *           qrsh_starter and rshd exited.
-    *           If we pass exitCode to qrsh, we also have to implement the
-    *           shepherd_about_to_exit mechanism here.
-    */
 
    /* write exit code and exit */
    return writeExitCode(EXIT_SUCCESS, exitCode);

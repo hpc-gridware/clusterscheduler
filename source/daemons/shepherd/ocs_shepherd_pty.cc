@@ -50,6 +50,7 @@
 #  include <libutil.h>
 #endif
 
+#include "uti/sge_pty.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -121,7 +122,14 @@ ptym_open(char *pts_name, uid_t uid)
 #else
 static int
 ptym_open(char *pts_name, uid_t uid) {
-   int fdm = posix_openpt(O_RDWR);
+   // Flags:
+   //    O_RDWR   Open the device for both reading and writing.  It is usual to specify this flag.
+   //    O_NOCTTY Do not make this device the controlling terminal for the process.
+   //
+   // The parent process does not want the PTY as controlling terminal.
+   // The child process explicitly opens the slave side and makes it the controlling terminal for its (newly created)
+   // process group.
+   int fdm = posix_openpt(O_RDWR | O_NOCTTY);
    if (fdm < 0) {
       shepherd_trace("posix_openpt() failed %d: %s", errno, strerror(errno));
       return -1;
@@ -229,12 +237,14 @@ static int
 ptys_open(int fdm, char *pts_name) {
    int fds;
 
+   shepherd_trace("child_process: before opening %s: isatty(STDIN_FILENO) = %d", pts_name, isatty(STDIN_FILENO));
    /* following should allocate controlling terminal */
    if ((fds = open(pts_name, O_RDWR)) < 0) {
       shepherd_trace("open(%s) failed %d: %s", pts_name, errno, strerror(errno));
       close(fdm);
       return -5;
    }
+   shepherd_trace("child_process: isatty(fds) = %d", isatty(fds));
 #if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
    if (ioctl(fds, I_PUSH, "ptem") < 0) {
       shepherd_trace("ioctl(ptem) failed %d: %s", errno, strerror(errno));
@@ -338,6 +348,7 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       close(fdm);
       return -1;
    } else if (pid == 0) {     /* child */
+      // Create a new session and process group.
       if ((g_newpgrp = setsid()) < 0) {
          sge_dstring_sprintf(err_msg, "setsid() error: %d, %s", errno, strerror(errno));
          return -1;
@@ -354,6 +365,18 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
 #endif
       close(fdm);
 
+      // Set raw mode = without buffering.
+      // When we received job input from qrsh we want the IJS thread (commlib_to_pty) to wait until the job has
+      // actually started and reads the input. Otherwise qrsh might read all input (e.g. redirected from a file)
+      // and on EOF send a STDIN_CLOSE_MSG => commlib_to_pty will close stdin, the job will get a SIGHUP before
+      // it even fully started up.
+      // And reading from a buffered terminal will partly duplicate the data read by pty_to_commlib thread.
+#if 0
+      if (terminal_enter_raw_mode() != 0) {
+         shepherd_trace("setting terminal to raw mode failed");
+      }
+#endif
+
       /*
        * Set the remote pty to break lines with NL, not CR NL. This ensures
        * line breaks are not modified when e.g.  "cat file.txt" is run in
@@ -368,8 +391,7 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       /* 44BSD way to acquire controlling terminal */
       /* !CIBAUD to avoid doing this under SunOS */
       if (ioctl(fds, TIOCSCTTY, (char *) nullptr) < 0) {
-         sge_dstring_sprintf(err_msg, "TIOCSCTTY error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "TIOCSCTTY error: %d, %s", errno, strerror(errno));
          return -1;
       }
 #endif
@@ -403,8 +425,12 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       if (fds > STDERR_FILENO) {
          close(fds);
       }
+
+      shepherd_trace("child_process: after dup2: isatty(STDIN_FILENO) = %d", isatty(STDIN_FILENO));
+
       return 0;      /* child returns 0 just like fork() */
    } else {          /* parent */
+      shepherd_trace("parent_process: isatty(STDIN_FILENO) = %d", isatty(STDIN_FILENO));
       *ptrfdm = fdm; /* return fd of master */
       close(fd_pipe_err[1]);
       fd_pipe_err[1] = -1;

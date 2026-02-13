@@ -29,7 +29,7 @@
  *
  * Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -310,29 +310,37 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    SIGIGNORE(SIGWINCH);
 
    /* close parents end of our copy of the pipe */
-   shepherd_trace("child: closing parents end of the pipe");
+   shepherd_trace("child: closing parents end of the pipe_to_child");
    close(fd_pipe_to_child[1]);
    fd_pipe_to_child[1] = -1;
 
    /* wait until parent has registered at the server */
-   shepherd_trace("child: trying to read from parent through the pipe");
-   ret = read(fd_pipe_to_child[0], tmpbuf, 11);
-   if (ret <= 0) {
-      shepherd_trace("child: error communicating with parent: %d, %s", 
-                     errno, strerror(errno));
-      ret = -1;
-   } else {
-      /* close other side of our copy of the pipe */
-      close(fd_pipe_to_child[0]);
-      fd_pipe_to_child[0] = -1;
-      shepherd_trace("child: parent sent us '%s'", tmpbuf);
-      sscanf(tmpbuf, "noshell = %d", &g_noshell);
-      if (g_noshell != 0 && g_noshell != 1) {
-         shepherd_trace("child: parent didn't register to server. %d, %s", 
-                        errno, strerror(errno));
-         ret = -1;
+   shepherd_trace("child: trying to read from parent through the pipe_to_child");
+   bool repeat;
+   do {
+      repeat = false;
+      ret = read(fd_pipe_to_child[0], tmpbuf, 11);
+      if (ret <= 0) {
+         if (errno == EINTR) {
+            shepherd_trace("child: read was interrupted, probably by signal %d, retry", received_signal);
+            repeat = true;
+         } else {
+            shepherd_trace("child: error communicating with parent: %d, %s", errno, strerror(errno));
+            ret = -1;
+         }
+      } else {
+         /* close other side of our copy of the pipe */
+         close(fd_pipe_to_child[0]);
+         fd_pipe_to_child[0] = -1;
+         shepherd_trace("child: parent sent us '%s'", tmpbuf);
+         sscanf(tmpbuf, "noshell = %d", &g_noshell);
+         if (g_noshell != 0 && g_noshell != 1) {
+            shepherd_trace("child: parent didn't register to server. %d, %s", errno, strerror(errno));
+            ret = -1;
+         }
       }
-   }
+   } while (repeat);
+
    return ret;
 }
 
@@ -1126,11 +1134,9 @@ static int start_child(
           * and child can start the job.
           */
          ret = pipe(fd_pipe_to_child);
-         shepherd_trace("pipe to child uses fds %d and %d",
-                        fd_pipe_to_child[0], fd_pipe_to_child[1]);
+         shepherd_trace("pipe to child uses fds %d and %d", fd_pipe_to_child[0], fd_pipe_to_child[1]);
          if (ret < 0) {
-            shepherd_error(1, "can't create pipe to child! %s (%d)",
-                           strerror(errno), errno);
+            shepherd_error(1, "can't create pipe to child! %s (%d)", strerror(errno), errno);
             return 1;
          }
 
@@ -1149,6 +1155,8 @@ static int start_child(
       } 
 
       if (pid==0) { /* child */
+         // Why do we wait until the connection to qrsh is up?
+         // To avoid starting the job when the qrsh client has terminated in the meantime?
          if (g_new_interactive_job_support && is_interactive) {
             ret = wait_until_parent_has_registered_to_server(fd_pipe_to_child);
             if (ret < 0) {
@@ -1171,6 +1179,16 @@ static int start_child(
 
    /* parent */
    shepherd_trace("parent: forked \"%s\" with pid %d", childname, pid);
+
+   // @todo
+   // Assign the terminal to the child's process group
+   // Should not be necessary:
+   //     - fd_pty_master was explicitly opened with O_NOCTTY, so we are not attached to the terminal here
+   //     - the child process opens the terminal (ptys_open), then it should be attatched to it.
+   // @todo do it in fork_pty?
+//   if (fd_pty_master != -1) {
+//      tcsetpgrp(STDIN_FILENO, pid);
+//   }
 
    change_shepherd_signal_mask();
    
@@ -1246,6 +1264,12 @@ static int start_child(
       /* wait blocking until the child process has ended */
       status = wait_my_builtin_ijs_child(pid, childname, timeout,
                   &ckpt_info, &ijs_fds, &rusage, &dstr_error);
+      // @todo
+      // Restore the terminal to the parent's process group
+      // tcsetpgrp(STDIN_FILENO, getpgrp());
+      // @todo hasn't fd_pty_master already been closed in wait_my_builtin_ijs_child?
+      // close(fd_pty_master);
+      // ===> NO, wouldn't work, as client calls setsid() we cannot re-claim the pty.
    }
    alarm(0);
    end_time = sge_get_gmt64();
@@ -2257,6 +2281,7 @@ static void handle_signals_and_methods(
           */
       }
    }
+   // @todo don't we have to reset received_signal to 0 after we handled it?
          
    /* here we reap the control action methods */
    for (i=0; i<3; i++) {
