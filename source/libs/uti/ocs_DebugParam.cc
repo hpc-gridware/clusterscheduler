@@ -32,10 +32,12 @@
  */
 const char *
 ocs::DebugParam::get_thread_name_pattern() {
+   static bool initialized = false;
    static const char *thread_name_pattern = nullptr;
 
-   if (thread_name_pattern == nullptr) {
+   if (!initialized) {
       thread_name_pattern = sge_getenv("SGE_DEBUG_THREAD_NAME_PATTERN");
+      initialized = true;
    }
 
    return thread_name_pattern;

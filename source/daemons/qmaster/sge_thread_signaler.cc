@@ -53,6 +53,7 @@
 #include "sge_thread_main.h"
 #include "sge_thread_signaler.h"
 #include "msg_qmaster.h"
+#include "ocs_DebugParam.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -154,6 +155,11 @@ sge_signaler_main(void *arg) {
    sigaddset(&sig_set, SIGINT);
    sigaddset(&sig_set, SIGTERM);
 
+   // in ND mode (debug mode) also SIGHUP is used to trigger shutdown, so add it to the signal set
+   if (ocs::DebugParam::is_component_in_nd_mode()) {
+      sigaddset(&sig_set, SIGHUP);
+   }
+
    /* register at profiling module */
    set_thread_name(pthread_self(), "Signal Thread");
    conf_update_thread_profiling("Signal Thread");
@@ -171,6 +177,7 @@ sge_signaler_main(void *arg) {
       switch (sig_num) {
          case SIGINT:
          case SIGTERM:
+         case SIGHUP:
             /*
              * Notify the main thread. It is waiting and will shut down all other threads if it gets signalled
              */
