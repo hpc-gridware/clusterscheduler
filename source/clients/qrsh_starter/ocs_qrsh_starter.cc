@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -50,15 +50,24 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "uti/sge_unistd.h"
-#include "uti/sge_uidgid.h"
 #include "uti/sge_stdio.h"
+#include "uti/sge_time.h"
+#include "uti/sge_uidgid.h"
+#include "uti/sge_unistd.h"
 
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "msg_qrsh_starter.h"
 
 #define MAKEEXITSTATUS(x) (x << 8)
+
+#if 0
+// For debugging purposes, qrsh_starter
+// can write a trace file (/tmp/qrsh_starter.log).
+// Enable the setting of ENABLE_QRSH_STARTER_TRACNING and
+// add qrsh_trace() calls as required.
+#define ENABLE_QRSH_STARTER_TRACING
+#endif
 
 static pid_t child_pid = 0;
 
@@ -67,13 +76,13 @@ static pid_t child_pid = 0;
 *     qrsh_error() -- propagate qrsh startup error to shepherd and qrsh client
 *
 *  SYNOPSIS
-*     static 
-*     void qrsh_error(const char *fmt, ...) 
+*     static
+*     void qrsh_error(const char *fmt, ...)
 *
 *  FUNCTION
 *     Writes the passed error message to a special error file in the jobs
 *     temporary directory.
-*     Separate error files are written for jobs and tasks (started by 
+*     Separate error files are written for jobs and tasks (started by
 *     qrsh -inherit).
 *
 *  INPUTS
@@ -131,6 +140,46 @@ static void qrsh_error(const char *fmt, ...)
    close(file);
 }
 
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+/**
+ * @brief Write a trace/debug line for qrsh_starter to a temporary log file.
+ *
+ * Formats the given printf-style message and appends it to
+ * /tmp/qrsh_starter.log, prefixed with a timestamp as well as the effective
+ * user id and process id (same format as shepherd_trace).
+ *
+ * This helper is intended for ad-hoc troubleshooting of terminal/pty handling
+ * and startup sequencing.
+ *
+ * @param format printf-style format string (may be nullptr)
+ * @param ...    arguments referenced by @p format
+ */
+static void
+qrsh_trace (const char *format, ...) {
+   dstring dstr = DSTRING_INIT;
+
+   if (format != nullptr) {
+      va_list     ap;
+
+      va_start(ap, format);
+      sge_dstring_vsprintf(&dstr, format, ap);
+      va_end(ap);
+   }
+
+   DSTRING_STATIC(dstr_filename, SGE_PATH_MAX);
+   sge_dstring_sprintf(&dstr_filename, "/tmp/qrsh_starter.log");
+   FILE *f = fopen(sge_dstring_get_string(&dstr_filename), "a");
+   if (f != nullptr) {
+      DSTRING_STATIC(ds_time, 64);
+      fprintf(f, "%s [" uid_t_fmt ":" pid_t_fmt "]: %s\n", sge_ctime64(0, &ds_time), geteuid(), getpid(),
+              sge_dstring_get_string(&dstr));
+      fclose(f);
+   }
+
+   sge_dstring_free(&dstr);
+}
+#endif
+
 /****** Interactive/qrsh/setEnvironment() ***************************************
 *
 *  NAME
@@ -153,11 +202,11 @@ static void qrsh_error(const char *fmt, ...)
 *     Special handling for variable QRSH_WRAPPER: this is a wrapper to be called
 *     instead of a shell to execute the command.
 *     If this variable is contained in the environment, it will be returned in
-*     the parameter wrapper. Memory will be allocated to hold the variable, it 
+*     the parameter wrapper. Memory will be allocated to hold the variable, it
 *     is in the responsibility of the caller to free this memory.
-*     Special handling for variable DISPLAY: if it is already set, do not 
+*     Special handling for variable DISPLAY: if it is already set, do not
 *     overwrite it. Usually  it is not set, but if ssh is used as transport
-*     mechanism for qrsh, the ssh -X option can be used to enable 
+*     mechanism for qrsh, the ssh -X option can be used to enable
 *     X11 forwarding.
 *
 *  INPUTS
@@ -192,15 +241,15 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
    }
 
    snprintf(envFileName, SGE_PATH_MAX, "%s/environment", jobdir);
-  
+
    /* check if environment file exists and
     * retrieve file size. We will take file size as maximum possible line length
     */
    if (SGE_STAT(envFileName, &statbuf) != 0) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, envFileName, strerror(errno));
       return nullptr;
-   } 
-   
+   }
+
    size = statbuf.st_size;
    line = sge_malloc(size + 1);
    if (line == nullptr) {
@@ -227,7 +276,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
       if (strncmp(line, "DISPLAY=", 8) == 0 && !set_display) {
          continue;
       }
-      
+
       if (strncmp(line, "QRSH_COMMAND=", 13) == 0) {
          if ((command = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
@@ -243,7 +292,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
             if ((*wrapper = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
                qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
                sge_free(&line);
-               FCLOSE(envFile); 
+               FCLOSE(envFile);
                return nullptr;
             }
             strcpy(*wrapper, line + 13);
@@ -260,20 +309,20 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
          }
          if (put_ret == 0) {
             sge_free(&line);
-            FCLOSE(envFile); 
+            FCLOSE(envFile);
             return nullptr;
          }
       }
    }
 
    sge_free(&line);
-   FCLOSE(envFile); 
+   FCLOSE(envFile);
 
-   /* 
+   /*
     * Use starter_method if it is supplied
     * and not overridden by QRSH_WRAPPER
     */
-    
+
    if (*wrapper == nullptr) {
       char *starter_method = get_conf_val("starter_method");
       if (starter_method != nullptr && strcasecmp(starter_method, "none") != 0) {
@@ -282,9 +331,9 @@ static char *setEnvironment(const char *jobdir, char **wrapper)
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_SHELL_PATH", ""); sge_putenv(buffer);
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_SHELL_START_MODE", "unix_behavior"); sge_putenv(buffer);
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_USE_LOGIN_SHELL", "false"); sge_putenv(buffer);
-      } 
+      }
    }
-   
+
    return command;
 FCLOSE_ERROR:
    qrsh_error(MSG_FILE_ERRORCLOSEINGXY_SS, envFileName, strerror(errno));
@@ -296,7 +345,7 @@ FCLOSE_ERROR:
 *     readConfig() -- read the jobs configuration
 *
 *  SYNOPSIS
-*     static int readConfig(const char *jobdir) 
+*     static int readConfig(const char *jobdir)
 *
 *  FUNCTION
 *     Reads the jobs configuration (<job spool dir>/config).
@@ -329,11 +378,11 @@ static int readConfig(const char *jobdir)
 *     changeDirectory() -- change to directory named in job config
 *
 *  SYNOPSIS
-*     static int changeDirectory() 
+*     static int changeDirectory()
 *
 *  FUNCTION
-*     Reads the target working directory for a qrsh job from the jobs 
-*     configuration and tries to 
+*     Reads the target working directory for a qrsh job from the jobs
+*     configuration and tries to
 *     change the current working directory.
 *
 *  RESULT
@@ -389,7 +438,7 @@ static int changeDirectory()
 *
 ****************************************************************************
 */
-static int write_pid_file(pid_t pid) 
+static int write_pid_file(pid_t pid)
 {
    char *pid_file_name = nullptr;
    int pid_file;
@@ -448,11 +497,11 @@ static void forward_signal(int sig)
 *     split_command() -- split commandline into tokens
 *
 *  SYNOPSIS
-*     static int split_command(char *command, char ***cmdargs) 
+*     static int split_command(char *command, char ***cmdargs)
 *
 *  FUNCTION
-*     The command to be executed by qrsh_starter may contain multiple 
-*     arguments, quotes, double quotes, back quotes etc. within the 
+*     The command to be executed by qrsh_starter may contain multiple
+*     arguments, quotes, double quotes, back quotes etc. within the
 *     arguments ...
 *     To preserve all this information, qrsh writes the command line arguments
 *     to an environment variable QRSH_COMMAND and separates the arguments by
@@ -491,7 +540,7 @@ static int split_command(char *command, char ***cmdargs) {
    /* copy arguments */
    argc = 0;
    args = (char **)sge_malloc(counter * sizeof(char *));
-   
+
    if(args == nullptr) {
       return 0;
    }
@@ -505,7 +554,7 @@ static int split_command(char *command, char ***cmdargs) {
          s[i] = 0;
             args[argc++] = &s[i+1];
       }
-   } 
+   }
 
 #if 0
    /* debug code */
@@ -526,7 +575,7 @@ static int split_command(char *command, char ***cmdargs) {
 *     join_command() -- join arguments to a single string
 *
 *  SYNOPSIS
-*     static char* join_command(int argc, char **argv) 
+*     static char* join_command(int argc, char **argv)
 *
 *  FUNCTION
 *     Joins arguments given in an argument vector (string array) to a single
@@ -549,7 +598,7 @@ static char *join_command(int argc, char **argv) {
    int i;
    int length = 0;
    char *buffer;
-   
+
    /* calculate needed size */
    for(i = 0; i < argc; i++) {
       length += strlen(argv[i]);
@@ -583,12 +632,12 @@ static char *join_command(int argc, char **argv) {
 *     static int startJob(char *command, char *wrapper, int noshell);
 *
 *  FUNCTION
-*     Starts the commands and arguments to be executed as 
-*     specified in parameter <command>. 
+*     Starts the commands and arguments to be executed as
+*     specified in parameter <command>.
 *     If the parameter noshell is set to 1, the command is directly called
 *     by exec.
 *     If a wrapper is specified (parameter wrapper, set by environment
-*     variable QRSH_WRAPPER), this wrapper is called and is passed the 
+*     variable QRSH_WRAPPER), this wrapper is called and is passed the
 *     command to execute as commandline parameters.
 *     If neither noshell nor wrapper is set, a users login shell is called
 *     with the parameters -c <command>.
@@ -602,7 +651,7 @@ static char *join_command(int argc, char **argv) {
 *
 *  RESULT
 *     status of the child process after it terminated
-*     or EXIT_FAILURE, if the process of starting the child 
+*     or EXIT_FAILURE, if the process of starting the child
 *     failed because of one of the following error situations:
 *        - fork failed
 *        - the pid of the child process cannot be written to pid file
@@ -622,33 +671,37 @@ static int startJob(char *command, char *wrapper, int noshell)
 {
 
    child_pid = fork();
-   if(child_pid == -1) {
+   if (child_pid == -1) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTFORKCHILD_S, strerror(errno));
       return EXIT_FAILURE;
    }
 
-   if(child_pid) {
+   if (child_pid) {
       /* parent */
       int status;
-
-#if defined(LINUX)
-      int ttyfd;
-#endif
 
       signal(SIGINT,  forward_signal);
       signal(SIGQUIT, forward_signal);
       signal(SIGTERM, forward_signal);
 
-      /* preserve pseudo terminal */
+      // preserve pseudo terminal
+      // @todo What about other OSes?
+      //       Should we better pass the path to the slave pty device via command line?
+      //       And only if we actually have a pty?
 #if defined(LINUX)
-      ttyfd = open("/dev/tty", O_RDWR);
+      int ttyfd = open("/dev/tty", O_RDWR);
       if (ttyfd != -1) {
          tcsetpgrp(ttyfd, child_pid);
-         close(ttyfd); 
+         close(ttyfd);
       }
 #endif
 
       while(waitpid(child_pid, &status, 0) != child_pid && errno == EINTR);
+
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+      qrsh_trace("child exit status was %d: signalled: %d, exit code: %d", status, WIFSIGNALED(status), WIFEXITED(status));
+#endif
+
       return(status);
    } else {
       /* child */
@@ -690,20 +743,20 @@ static int startJob(char *command, char *wrapper, int noshell)
             qrsh_error(MSG_QRSH_STARTER_CANNOTGETUSERINFO_S, strerror(errno));
             exit(EXIT_FAILURE);
          }
-         
+
          shell = pw->pw_shell;
-         
+
          if(shell == nullptr) {
             qrsh_error(MSG_QRSH_STARTER_CANNOTDETERMSHELL_S, "/bin/sh");
             shell = "/bin/sh";
-         } 
+         }
       }
-     
+
       if((args = (const char **)sge_malloc((cmdargc + 3) * sizeof(char *))) == nullptr) {
          qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
          exit(EXIT_FAILURE);
-      }         
-    
+      }
+
       if(wrapper == nullptr) {
          if(noshell) {
             cmd = cmdargs[0];
@@ -730,18 +783,22 @@ static int startJob(char *command, char *wrapper, int noshell)
 {
    /* debug code */
    int i;
-   
+
    fflush(stdout) ; fflush(stderr);
    printf("qrsh_starter: executing %s\n", cmd);
    for(i = 1; args[i] != nullptr; i++) {
       printf("args[%d] = %s\n", i, args[i]);
    }
    printf("\n");
-   fflush(stdout) ; fflush(stderr); 
-} 
+   fflush(stdout) ; fflush(stderr);
+}
 #endif
 
       SETPGRP;
+#if defined(ENABLE_QRSH_STARTER_TRACING)
+      qrsh_trace("Child: PID=%d, PGID=%d, SID=%d\n", child_pid, getpgid(child_pid), getsid(child_pid));
+#endif
+
       execvp(cmd, (char *const *)args);
       /* exec failed */
       fprintf(stderr, MSG_QRSH_STARTER_EXECCHILDFAILED_S, args[0], strerror(errno));
@@ -750,7 +807,7 @@ static int startJob(char *command, char *wrapper, int noshell)
    }
 
    /* will never be reached */
-   return EXIT_FAILURE; 
+   return EXIT_FAILURE;
 }
 
 /****** Interactive/qrsh/writeExitCode() ***************************************
@@ -780,8 +837,8 @@ static int startJob(char *command, char *wrapper, int noshell)
 *
 ****************************************************************************
 */
-static int writeExitCode(int myExitCode, int programExitCode) 
-{   
+static int writeExitCode(int myExitCode, int programExitCode)
+{
    int exitCode;
    char exitCode_str[20];
    char *tmpdir = nullptr;
@@ -799,9 +856,9 @@ static int writeExitCode(int myExitCode, int programExitCode)
       qrsh_error(MSG_CONF_NOCONFVALUE_S, "qrsh_tmpdir");
       return EXIT_FAILURE;
    }
-  
+
    taskid = get_conf_val("pe_task_id");
-   
+
    if(taskid != nullptr) {
       snprintf(fileName, SGE_PATH_MAX, "%s/qrsh_exit_code.%s", tmpdir, taskid);
    } else {
@@ -814,7 +871,7 @@ static int writeExitCode(int myExitCode, int programExitCode)
       sge_dstring_free(&ds);
       return EXIT_FAILURE;
    }
- 
+
    snprintf(exitCode_str, 20, "%d", exitCode);
    if ((size_t)write(file, exitCode_str, strlen(exitCode_str)) != strlen(exitCode_str)) {
       dstring ds = DSTRING_INIT;
@@ -822,7 +879,7 @@ static int writeExitCode(int myExitCode, int programExitCode)
       sge_dstring_free(&ds);
    }
    SGE_CLOSE(file);
-   
+
    return EXIT_SUCCESS;
 }
 
@@ -846,11 +903,11 @@ static int writeExitCode(int myExitCode, int programExitCode)
 *     On exit of the command, or if an error occurs, an exit code is written
 *     to the file $TMPDIR/qrsh_exit_code.
 *
-*     qrsh_starter is called from qrsh to start the remote processes in 
+*     qrsh_starter is called from qrsh to start the remote processes in
 *     the correct environment.
 *
 *  INPUTS
-*     environment file - file with environment information, each line 
+*     environment file - file with environment information, each line
 *                        contains a tuple <name>=<value>
 *     noshell          - if this parameter is passed, the command will be
 *                        executed standalone
@@ -862,7 +919,7 @@ static int writeExitCode(int myExitCode, int programExitCode)
 *  EXAMPLE
 *     setenv QRSH_COMMAND "echo test"
 *     env > ~/myenvironment
-*     rsh <hostname> qrsh_starter ~/myenvironment 
+*     rsh <hostname> qrsh_starter ~/myenvironment
 *
 *  SEE ALSO
 *     Interactive/qsh/--Interactive
@@ -879,7 +936,7 @@ int main(int argc, char *argv[])
    /* check for correct usage */
    if(argc < 2) {
       fprintf(stderr, "usage: %s <job spooldir> [noshell]\n", argv[0]);
-      exit(EXIT_FAILURE);        
+      exit(EXIT_FAILURE);
    }
 
    /* check for noshell */
@@ -894,12 +951,32 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
    }
 
+#if 0
+   // If we have a pty, then block SIGHUP?
+   // Otherwise, a job (cat) will be killed with SIGHUP as soon as STDIN_FILENO is closed
+   // by the sge_shepherd commlib_to_pty thread.
+   // @todo Make it optional? Via execd_params? Or better per job?
+   sigset_t mask;
+
+   // Initialize the signal mask
+   sigemptyset(&mask);
+
+   // Add SIGHUP to the mask
+   sigaddset(&mask, SIGHUP);
+
+   // Block SIGHUP
+   sigprocmask(SIG_BLOCK, &mask, nullptr);
+      //perror("sigprocmask");
+      //return 1;
+   //}
+#endif
+
    /* setup environment */
    command = setEnvironment(argv[1], &wrapper);
    if(command == nullptr) {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
-   }   
+   }
 
    if(!changeDirectory()) {
       writeExitCode(EXIT_FAILURE, 0);
@@ -908,13 +985,6 @@ int main(int argc, char *argv[])
 
    /* start job */
    exitCode = startJob(command, wrapper, noshell);
-
-   /* JG: TODO: At this time, we could already pass the exitCode to qrsh.
-    *           Currently, this is done by shepherd, but only after 
-    *           qrsh_starter and rshd exited.
-    *           If we pass exitCode to qrsh, we also have to implement the
-    *           shepherd_about_to_exit mechanism here.
-    */
 
    /* write exit code and exit */
    return writeExitCode(EXIT_SUCCESS, exitCode);
