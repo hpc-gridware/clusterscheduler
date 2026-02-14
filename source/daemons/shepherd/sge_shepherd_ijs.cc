@@ -396,12 +396,11 @@ static void* pty_to_commlib(void *t_conf)
       if (ret < 0) {
          /* select error */
 #ifdef EXTENSIVE_TRACING
-         shepherd_trace("pty_to_commlib: select() returned %d, reason: %d, %s",
-                        ret, errno, strerror(errno));
+         shepherd_trace("pty_to_commlib: select() returned %d, reason: %d, %s", ret, errno, strerror(errno));
 #endif
          if (errno == EINTR) {
             /* If we have a buffer, send it now (as we don't want to care about
-             * how long we acutally waited), then just continue, the top of the
+             * how long we actually waited), then just continue, the top of the
              * loop will handle signals.
              * b_select_timeout tells the bottom of the loop to send the buffer.
              */
@@ -474,15 +473,18 @@ static void* pty_to_commlib(void *t_conf)
                g_p_ijs_fds->pipe_to_child = -1;
             }
          }
-      }
+      } // At least one file handle was ready to read.
+
       /* Always send stderr buffer immediately */
       if (stderr_bytes != 0) {
          ret = send_buf(stderr_buf, stderr_bytes, STDERR_DATA_MSG);
+#ifdef EXTENSIVE_TRACING
+         shepherd_trace("pty_to_commlib: send %d bytes of stderr data", stderr_bytes);
+#endif
          if (ret == 0) {
             stderr_bytes = 0;
          } else {
-            shepherd_trace("pty_to_commlib: send_buf() returned %d "
-                           "-> exiting", ret);
+            shepherd_trace("pty_to_commlib: send_buf() returned %d " "-> exiting", ret);
             do_exit = 1;
          }
       }
@@ -495,7 +497,7 @@ static void* pty_to_commlib(void *t_conf)
           (b_select_timeout && stdout_bytes > 0) ||
           (do_exit == 1 && stdout_bytes > 0)) {
 #ifdef EXTENSIVE_TRACING
-         shepherd_trace("pty_to_commlib: sending stdout buffer");
+         shepherd_trace("pty_to_commlib: sending %d bytes of stdout data", stdout_bytes);
 #endif
          ret = send_buf(stdout_buf, stdout_bytes, STDOUT_DATA_MSG);
          stdout_bytes = 0;
@@ -512,6 +514,10 @@ static void* pty_to_commlib(void *t_conf)
          } else if (flush_ret < 0) {
 #ifdef EXTENSIVE_TRACING
             shepherd_trace("pty_to_commlib: comm_flush_write_messages() did %d retries", -flush_ret);
+#endif
+         } else {
+#ifdef EXTENSIVE_TRACING
+            shepherd_trace("pty_to_commlib: comm_flush_write_messages() succeeded without retries");
 #endif
          }
       }
@@ -624,8 +630,7 @@ static void* commlib_to_pty(void *t_conf)
                 * If we were already connected, it means the connection was closed.
                 */
                if (b_was_connected == 1) {
-                  shepherd_trace("commlib_to_pty: was connected, "
-                                 "but lost connection -> exiting");
+                  shepherd_trace("commlib_to_pty: was connected, but lost connection -> exiting");
                   do_exit = 1;
                }
                break;
@@ -640,8 +645,7 @@ static void* commlib_to_pty(void *t_conf)
                    */
                   if (!b_sent_to_child) {
                      if (write(g_p_ijs_fds->pipe_to_child, "noshell = 9", 11) != 11) {
-                        shepherd_trace("commlib_to_pty: error in communicating "
-                           "with child -> exiting");
+                        shepherd_trace("commlib_to_pty: error in communicating with child -> exiting");
                      } else {
                         b_sent_to_child = true;
                      }

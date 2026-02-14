@@ -1282,6 +1282,8 @@ Available for `qrsh` and `qlogin` only.
 `-pty no` enforces the job to be started without a pty. By default, `qrsh` without a command and `qlogin` start the 
 job in a pty, `qrsh` with a command starts the job without a pty.
 
+Use `-pty yes` only for applications that explicitly require a pseudo terminal and can handle its behavior, e.g., by properly reacting to signals like `SIGHUP`. Many non-terminal-aware applications do not handle `SIGHUP` and may exit unexpectedly when such signals occur.
+
 This parameter is not available in the JSV context. (see `-jsv` option above or find more information concerning JSV 
 in xxqs_name_sxx_jsv(1))
 

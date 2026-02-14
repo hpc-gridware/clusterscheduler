@@ -59,15 +59,17 @@
 
 /* module variables */
 static char *g_hostname  = nullptr;
-static int  g_exit_status = 0; /* set by worker thread, read by main thread */
-static int  g_nostdin     = 0; /* set by main thread, read by worker thread */
-static int  g_noshell     = 0; /* set by main thread, read by worker thread */
-static int  g_is_rsh      = 0; /* set by main thread, read by worker thread */
-static unsigned int g_pid = 0; /* set by main thread, read by worker thread */
-static int  g_raw_mode_state = 0; /* set by main thread, read by worker thread */
-static int  g_suspend_remote = 0; /* set by main thread, read by worker thread */
+static int  g_exit_status = 0; // set by worker thread, read by main thread
+static int  g_nostdin     = 0; // set by main thread, read by worker thread
+static int  g_noshell     = 0; // set by main thread, read by worker thread
+static int  g_is_rsh      = 0; // set by main thread, read by worker thread
+static unsigned int g_pid = 0; // set by main thread, read by worker thread
+static int  g_raw_mode_state = 0; // set by main thread, read by worker thread
+static int  g_suspend_remote = 0; // set by main thread, read by worker thread
 static COMM_HANDLE *g_comm_handle = nullptr;
-static int g_wakeup_pipe[2] = { -1, -1 }; /* pipe to wake up worker thread */
+static int g_wakeup_pipe[2] = { -1, -1 }; // pipe to wake up worker thread */
+static bool g_client_connected = false;  // set to true by commlib_to_tty thread once the client (sge_shepherd) connected
+static bool g_do_exit = false;           // set by the run_ijs_server (the parent thread) to tell the worker threads to shutdown
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -308,6 +310,23 @@ static void client_check_window_change(COMM_HANDLE *handle)
    DRETURN_VOID;
 }
 
+static void
+wakeup_tty_to_commlib_thread(const char *source) {
+   DENTER(TOP_LAYER);
+
+   // write a byte into the wakeup pipe to wake up the tty_to_commlib thread
+   if (g_wakeup_pipe[1] != -1) {
+      DPRINTF("%s: writing wakeup byte to pipe\n", source);
+      if (write(g_wakeup_pipe[1], "x", 1) < 0) {
+         DPRINTF("%s: write() to wakeup pipe failed: %s\n", source, strerror(errno));
+      }
+   } else {
+      DPRINTF("%s: g_wakeup_pipe[1] is -1, not writing wakeup byte\n", source);
+   }
+
+   DRETURN_VOID;
+}
+
 /****** tty_to_commlib() *******************************************************
 *  NAME
 *     tty_to_commlib() -- tty_to_commlib thread entry point and main loop
@@ -330,8 +349,7 @@ static void client_check_window_change(COMM_HANDLE *handle)
 *
 *  SEE ALSO
 *******************************************************************************/
-void* tty_to_commlib(void *t_conf)
-{
+void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
    char pbuf[BUFSIZE];
@@ -340,19 +358,17 @@ void* tty_to_commlib(void *t_conf)
 
    thread_func_startup(t_conf);
 
-   // create a pipe to wake up this thread
-   if (pipe(g_wakeup_pipe) < 0) {
-      DPRINTF("tty_to_commlib: pipe() failed: %s\n", strerror(errno));
-   }
-
    /*
     * allocate working buffer
     */
    bool do_exit = false;
    while (!do_exit) {
+      // This thread should only start its processing once the commlib_to_tty thread received a
+      // REGISTER_CTRL_MSG from the sge_shepherd and replied to it
+      // We wait on the wakeup_pipe for a byte sent from the commlib_to_tty thread.
       fd_set read_fds;
       FD_ZERO(&read_fds);
-      if (g_nostdin == 0) {
+      if (g_nostdin == 0 && g_client_connected) {
          /* wait for input on tty */
          FD_SET(STDIN_FILENO, &read_fds);
       }
@@ -382,10 +398,14 @@ void* tty_to_commlib(void *t_conf)
 
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
       int ret = select(MAX(STDIN_FILENO, g_wakeup_pipe[0]) + 1, &read_fds, nullptr, nullptr, &timeout);
-      DPRINTF("select returned %d\n", ret);
+      DPRINTF("tty_to_commlib: select returned %d\n", ret);
 
       thread_testcancel(t_conf);
-      client_check_window_change(g_comm_handle);
+
+      // Check for window changed events and send them to the client - but only if a client is connected.
+      if (g_client_connected) {
+         client_check_window_change(g_comm_handle);
+      }
 
       if (received_signal == SIGHUP ||
           received_signal == SIGINT ||
@@ -405,9 +425,9 @@ void* tty_to_commlib(void *t_conf)
          }
          if (FD_ISSET(STDIN_FILENO, &read_fds)) {
             DPRINTF("tty_to_commlib: trying to read() from stdin\n");
-            int nread = read(STDIN_FILENO, pbuf, BUFSIZE-1);
+            int nread = read(STDIN_FILENO, pbuf, BUFSIZE - 1);
             pbuf[nread] = '\0';
-            sge_dstring_append (&dbuf, pbuf);
+            sge_dstring_append(&dbuf, pbuf);
             DPRINTF("tty_to_commlib: nread = %d\n", nread);
 
             if (nread < 0 && (errno == EINTR || errno == EAGAIN)) {
@@ -431,8 +451,11 @@ void* tty_to_commlib(void *t_conf)
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
             // If we received something on the wakeup pipe, we shall exit.
             // We will probably never get here as thread_testcancel() above will already terminate the thread.
-            DPRINTF("wakeup pipe was triggered, exiting tty_to_commlib thread\n");
-            do_exit = true;
+            DPRINTF("tty_to_commlib: wakeup pipe was triggered\n");
+            if (g_do_exit) {
+               DPRINTF("tty_to_commlib: exit was requested\n");
+               do_exit = true;
+            }
          }
          sge_dstring_free(&dbuf);
       } else {
@@ -451,7 +474,7 @@ void* tty_to_commlib(void *t_conf)
    } /* while (!do_exit) */
 
    /* Send STDIN_CLOSE_MSG to the shepherd. That causes the shepherd to close its filedescriptor, also. */
-   if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)" ",
+   if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char *) " ",
                       1, STDIN_CLOSE_MSG, &err_msg) != 1) {
       DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
    } else {
@@ -518,7 +541,6 @@ void* commlib_to_tty(void *t_conf)
       DPRINTF("commlib_to_tty: received a message\n");
 
       thread_testcancel(t_conf);
-      client_check_window_change(g_comm_handle);
 
       if (received_signal == SIGHUP ||
           received_signal == SIGINT ||
@@ -586,6 +608,11 @@ void* commlib_to_tty(void *t_conf)
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
                   (unsigned char*)buf, strlen(buf)+1, SETTINGS_CTRL_MSG, &err_msg);
                DPRINTF("commlib_to_tty: sent SETTINGS_CTRL_MSG, ret = %d\n", ret);
+               // Wait for the messages to really have left commlib.
+               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+               // Now we can wake up the tty_to_commlib thread, and it can start reading from stdin.
+               g_client_connected = true;
+               wakeup_tty_to_commlib_thread("commlib_to_tty");
                break;
             case UNREGISTER_CTRL_MSG:
                /* control message */
@@ -731,6 +758,17 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
       }
    }
 
+   // Create a pipe to wake up the tty_to_commlib thread we start below.
+   // It needs to be woken up in two situations:
+   // 1. It shall only start reading from stdin and sending this data once a client (sge_shepherd)
+   //    connected and did the first protocol steps. It waits for this state by reading from the wakeup pipe.
+   // 2. Once the client is connected the tty_to_commlib thread waits for data from stdin and on the wakeup pipe.
+   //    This allows us to wake it up (for termination) when the client disconnected.
+   if (pipe(g_wakeup_pipe) < 0) {
+      DPRINTF("tty_to_commlib: pipe() failed: %s\n", strerror(errno));
+      // @todo we should return here, no use to continue
+   }
+
    /*
     * Setup thread list and create two worker threads
     */
@@ -772,17 +810,10 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host,
    thread_join(pthread_commlib_to_tty);
 
    DPRINTF("shutting down tty_to_commlib thread\n");
+   g_do_exit = true;
    thread_shutdown(pthread_tty_to_commlib);
 
-   // write a byte into the wakeup pipe to wake up the tty_to_commlib thread
-   if (g_wakeup_pipe[1] != -1) {
-      DPRINTF("tty_to_commlib: writing wakeup byte to pipe\n");
-      if (write(g_wakeup_pipe[1], "x", 1) < 0) {
-         DPRINTF("tty_to_commlib: write() to wakeup pipe failed: %s\n", strerror(errno));
-      }
-   } else {
-      DPRINTF("tty_to_commlib: g_wakeup_pipe[1] is -1, not writing wakeup byte\n");
-   }
+   wakeup_tty_to_commlib_thread("run_ijs_server");
 
    DPRINTF("waiting for end of tty_to_commlib thread\n");
    thread_join(pthread_tty_to_commlib);

@@ -121,7 +121,14 @@ ptym_open(char *pts_name, uid_t uid)
 #else
 static int
 ptym_open(char *pts_name, uid_t uid) {
-   int fdm = posix_openpt(O_RDWR);
+   // Flags:
+   //    O_RDWR   Open the device for both reading and writing.  It is usual to specify this flag.
+   //    O_NOCTTY Do not make this device the controlling terminal for the process.
+   //
+   // The parent process does not want the PTY as controlling terminal.
+   // The child process explicitly opens the slave side and makes it the controlling terminal for its (newly created)
+   // process group.
+   int fdm = posix_openpt(O_RDWR | O_NOCTTY);
    if (fdm < 0) {
       shepherd_trace("posix_openpt() failed %d: %s", errno, strerror(errno));
       return -1;
@@ -338,6 +345,7 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       close(fdm);
       return -1;
    } else if (pid == 0) {     /* child */
+      // Create a new session and process group.
       if ((g_newpgrp = setsid()) < 0) {
          sge_dstring_sprintf(err_msg, "setsid() error: %d, %s", errno, strerror(errno));
          return -1;
@@ -368,8 +376,7 @@ pid_t fork_pty(int *ptrfdm, int *fd_pipe_err, dstring *err_msg) {
       /* 44BSD way to acquire controlling terminal */
       /* !CIBAUD to avoid doing this under SunOS */
       if (ioctl(fds, TIOCSCTTY, (char *) nullptr) < 0) {
-         sge_dstring_sprintf(err_msg, "TIOCSCTTY error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "TIOCSCTTY error: %d, %s", errno, strerror(errno));
          return -1;
       }
 #endif
