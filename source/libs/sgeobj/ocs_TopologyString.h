@@ -20,6 +20,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <unordered_map>
@@ -48,11 +49,14 @@ static constexpr unsigned char ascii_to_lower(const unsigned char ch) {
 static constexpr std::array<int, 256>
 make_char_to_index() {
    std::array<int, 256> arr{};
-   for (int i = 0; i < 256; ++i) {
-      arr[i] = NO_POS_DEFINE;
-   }
+
+   // initialize the array
+   arr.fill(NO_POS_DEFINE);
+
+   // set the index for each letter that we support in TopologyStrings
    int idx = 0;
-   for (const unsigned char ch : std::string(HARDWARE_NODE_CHARACTERS_DEFINE DATA_NODE_CHARACTERS_DEFINE)) {
+   for (constexpr std::string_view chars = HARDWARE_NODE_CHARACTERS_DEFINE DATA_NODE_CHARACTERS_DEFINE;
+        const unsigned char ch : chars) {
       const auto upper = ascii_to_upper(ch);
       const auto lower = ascii_to_lower(ch);
       if (arr[upper] == NO_POS_DEFINE) {
@@ -68,13 +72,7 @@ constexpr auto char_to_index = make_char_to_index();
 
 static constexpr int
 get_char_to_index_size() {
-   int max_index = -1;
-   for (int i = 0; i < 256; ++i) {
-      if (char_to_index[i] > max_index) {
-         max_index = char_to_index[i];
-      }
-   }
-   return max_index + 1;
+   return *std::ranges::max_element(char_to_index) + 1;
 }
 
 constexpr auto char_to_index_size = get_char_to_index_size();
