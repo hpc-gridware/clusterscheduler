@@ -1,5 +1,45 @@
 # Full List of Fixes
 
+## v9.0.11
+
+### Improvement
+
+[CS-1739](https://hpc-gridware.atlassian.net/browse/CS-1739) cleanup in builtin interactive job support: do not call cl\_commlib\_trigger\(\)
+
+### New Feature
+
+[CS-1499](https://hpc-gridware.atlassian.net/browse/CS-1499) Add PostgreSQL ARCoDB support to Go Cluster Scheduler API
+
+### Task
+
+[CS-1758](https://hpc-gridware.atlassian.net/browse/CS-1758) remove dependency on libtirp
+
+### Bug
+
+[CS-1387](https://hpc-gridware.atlassian.net/browse/CS-1387) qrsh takes up to 1s to terminate after job end
+
+[CS-1725](https://hpc-gridware.atlassian.net/browse/CS-1725) the md5sum.txt for OCS contains the md5 sums for unavailable packages
+
+[CS-1727](https://hpc-gridware.atlassian.net/browse/CS-1727) qrsh session does not inherit TERM from submit host
+
+[CS-1732](https://hpc-gridware.atlassian.net/browse/CS-1732) broken build when \(deprecated\) include file termio.h does not exist
+
+[CS-1733](https://hpc-gridware.atlassian.net/browse/CS-1733) missing export statement in install guide
+
+[CS-1735](https://hpc-gridware.atlassian.net/browse/CS-1735) qrsh doing massive output reports a commlib read error and truncates output
+
+[CS-1749](https://hpc-gridware.atlassian.net/browse/CS-1749) qrsh -V does not handle multi line environment variables \(and shell functions\)
+
+[CS-1760](https://hpc-gridware.atlassian.net/browse/CS-1760) with reporting disabled there is increased spooling activity at midnight for 10 minutes
+
+[CS-1761](https://hpc-gridware.atlassian.net/browse/CS-1761) Debug checks are active even in a Release build
+
+[CS-1778](https://hpc-gridware.atlassian.net/browse/CS-1778) the pseudo terminal slave device created for jobs with option -pty y has  wrong ownership
+
+[CS-1789](https://hpc-gridware.atlassian.net/browse/CS-1789) qrsh -help does not show the -scope switch
+
+[CS-1791](https://hpc-gridware.atlassian.net/browse/CS-1791) Update Admin Guide with new qgpu parameters
+
 ## v9.0.10
 
 ### Improvement
