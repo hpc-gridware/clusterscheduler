@@ -1083,7 +1083,11 @@ This parameter controls how xxqs_name_sxx_execd collects the online usage inform
 
 ## gdi_request_limits
 
-This value is a global configuration parameter only, and is used to prevent denial-of-service attacks on the xxqs_name_sxx_qmaster(8) process.
+This parameter is a global configuration setting used to protect the xxqs_name_sxx_qmaster(8) daemon against denial-of-service attacks caused by excessive GDI requests.
+
+It allows the administrator to limit incoming GDI requests from users without manager privileges, based on request attributes.
+
+The syntax of this parameter is as follows:
 
     gdi_request_limits := limit_rule [ ',' limit_rule ]* | 'NONE' .
 
