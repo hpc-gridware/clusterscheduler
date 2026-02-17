@@ -6,10 +6,6 @@
 
 [CS-1739](https://hpc-gridware.atlassian.net/browse/CS-1739) cleanup in builtin interactive job support: do not call cl\_commlib\_trigger\(\)
 
-### New Feature
-
-[CS-1499](https://hpc-gridware.atlassian.net/browse/CS-1499) Add PostgreSQL ARCoDB support to Go Cluster Scheduler API
-
 ### Task
 
 [CS-1758](https://hpc-gridware.atlassian.net/browse/CS-1758) remove dependency on libtirp
@@ -37,8 +33,6 @@
 [CS-1778](https://hpc-gridware.atlassian.net/browse/CS-1778) the pseudo terminal slave device created for jobs with option -pty y has  wrong ownership
 
 [CS-1789](https://hpc-gridware.atlassian.net/browse/CS-1789) qrsh -help does not show the -scope switch
-
-[CS-1791](https://hpc-gridware.atlassian.net/browse/CS-1791) Update Admin Guide with new qgpu parameters
 
 ## v9.0.10
 
