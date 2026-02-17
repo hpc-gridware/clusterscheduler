@@ -35,7 +35,7 @@
 #
 #  Portions of this software are Copyright (c) 2011 Univa Corporation
 #
-#  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+#  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
 #
 ##########################################################################
 #___INFO__MARK_END__
@@ -2295,9 +2295,14 @@ GetSystemdSliceName()
          exit 1
       fi
       if [ "$AUTO" = "true" ]; then
-         # if we are in auto mode, we return what has been configured in the auto config file
+         # If we are in auto mode, we return what has been configured in the auto config file.
+         if [ -z "$SLICE_NAME" ]; then
+            # If SLICE_NAME was not set in the auto config file then use the default slice name.
+            SLICE_NAME=`GetDefaultSliceName`
+         fi
          $ECHO "$SLICE_NAME"
       else
+         # We are in interactive mode, return an empty string and exit code 1 to query SLICE_NAME from the user.
          $ECHO ""
       fi
       return 1
