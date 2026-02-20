@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -43,10 +43,6 @@
 #include <netinet/in.h>
 
 #include "comm/cl_communication.h"
-#include "sge_unistd.h"
-
-/* char introducing a hostgroup name */
-#define HOSTGROUP_INITIAL_CHAR '@'
 
 /* host information based on the hostent structure */
 typedef struct host {
@@ -69,8 +65,6 @@ int sge_hostcmp(const char *h1, const char *h2);
 int sge_hostmatch(const char *h1, const char *h2);
 
 void sge_hostcpy(char *dst, const char *raw);
-
-bool is_hgroup_name(const char *name);
 
 /* resolver library wrappers */
 struct hostent *sge_gethostbyname_retry(const char *name);

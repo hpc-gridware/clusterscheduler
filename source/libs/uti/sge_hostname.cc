@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -41,13 +41,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include "ocs_Bootstrap.h"
+#include "ocs_Pattern.h"
 
 #if defined(SGE_MT)
 #include <pthread.h>
 #endif
 
 #include "uti/msg_utilib.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -191,7 +192,6 @@ int sge_get_qmaster_port(bool *from_services) {
          sge_exit(1);
       }
    } else {
-      DPRINTF("returning port value: %d\n", int_port);
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
@@ -257,7 +257,6 @@ int sge_get_execd_port() {
          sge_exit(1);
       }
    } else {
-      DPRINTF("returning port value: %d\n", int_port);
       /* set new timeout time */
       gettimeofday(&now, nullptr);
       next_timeout = now.tv_sec + SGE_PORT_CACHE_TIMEOUT;
@@ -788,42 +787,55 @@ void sge_free_hostent(struct hostent **he_to_del) {
 *     MT-NOTE: sge_hostcpy() is MT safe
 ******************************************************************************/
 void sge_hostcpy(char *dst, const char *raw) {
-   bool ignore_fqdn = bootstrap_get_ignore_fqdn();
-   bool is_hgrp = is_hgroup_name(raw);
-   const char *default_domain;
+   if (!dst || !raw) {
+      return;
+   }
 
-   if (dst == nullptr || raw == nullptr) {
+   constexpr size_t N = CL_MAXHOSTNAMELEN;
+
+   if (ocs::is_hgroup_name(raw)) {
+      sge_strlcpy(dst, raw, N);
       return;
    }
-   if (is_hgrp) {
-      /* hostgroup name: not in FQDN format, copy the entire string*/
-      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
-      return;
-   }
+
+   const bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
+   const char* default_domain = ocs::Bootstrap::get_default_domain();
+   const bool have_default_domain = default_domain && SGE_STRCASECMP(default_domain, NONE_STR) != 0;
+
+   // Find first '.' once (raw scan only once)
+   const char* dot = std::strchr(raw, '.');
+
    if (ignore_fqdn) {
-      char *s = nullptr;
-      /* standard: simply ignore FQDN */
+      // copy only up to dot (or full string if no dot), bounded
+      size_t len = dot ? static_cast<size_t>(dot - raw) : std::strlen(raw);
+      if (len >= N) {
+         len = N - 1;
+      }
+      std::memcpy(dst, raw, len);
+      dst[len] = '\0';
+      return;
+   }
 
-      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
-      if ((s = strchr(dst, '.'))) {
-         *s = '\0';
+   if (have_default_domain && !dot) {
+      // Append ".<default_domain>" without snprintf
+      size_t raw_len = std::strlen(raw);
+      if (raw_len >= N) {
+         raw_len = N - 1;
+      }
+      std::memcpy(dst, raw, raw_len);
+      dst[raw_len] = '\0';
+
+      // add '.' + domain if there is room
+      if (raw_len + 1 < N) {
+         dst[raw_len] = '.';
+         dst[raw_len + 1] = '\0';
+         sge_strlcpy(dst + raw_len + 1, default_domain, N - (raw_len + 1));
       }
       return;
    }
-   if ((default_domain = bootstrap_get_default_domain()) != nullptr &&
-       SGE_STRCASECMP(default_domain, "none") != 0) {
 
-      /* exotic: honor FQDN but use default_domain */
-      if (!strchr(raw, '.')) {
-         snprintf(dst, CL_MAXHOSTNAMELEN, "%s.%s", raw, default_domain);
-      } else {
-         sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
-      }
-   } else {
-      /* hardcore: honor FQDN, don't use default_domain */
-
-      sge_strlcpy(dst, raw, CL_MAXHOSTNAMELEN);
-   }
+   // Default: just copy
+   sge_strlcpy(dst, raw, N);
 }
 
 /****** uti/hostname/sge_hostcmp() ********************************************
@@ -853,23 +865,57 @@ void sge_hostcpy(char *dst, const char *raw) {
 *  NOTES:
 *     MT-NOTE: sge_hostcmp() is MT safe
 ******************************************************************************/
-int sge_hostcmp(const char *h1, const char *h2) {
-   int cmp = -1;
-   char h1_cpy[CL_MAXHOSTNAMELEN + 1], h2_cpy[CL_MAXHOSTNAMELEN + 1];
-
-
+int sge_hostcmp(const char* h1, const char* h2) {
    DENTER(BASIS_LAYER);
 
-   if (h1 != nullptr && h2 != nullptr) {
-      sge_hostcpy(h1_cpy, h1);
-      sge_hostcpy(h2_cpy, h2);
-
-      cmp = SGE_STRCASECMP(h1_cpy, h2_cpy);
-
-      DPRINTF("sge_hostcmp(%s, %s) = %d\n", h1_cpy, h2_cpy);
+   // Early exit if input is invalid
+   if (h1 == nullptr || h2 == nullptr) {
+      DRETURN(-1);
    }
 
-   DRETURN(cmp);
+   // Fast-path for equality
+   if (h1 == h2) {
+      DRETURN(0);
+   }
+
+   // Host group names are compared as they are, no normalization
+   const bool h1_is_group = ocs::is_hgroup_name(h1);
+   const bool h2_is_group = ocs::is_hgroup_name(h2);
+   if (h1_is_group || h2_is_group) {
+      DRETURN(SGE_STRCASECMP(h1, h2));
+   }
+
+   // Have the hostnames a domain suffix
+   const bool h1_has_dot = (std::strchr(h1, '.') != nullptr);
+   const bool h2_has_dot = (std::strchr(h2, '.') != nullptr);
+
+   // Only matters if at least one has a domain suffix
+   const bool ignore_fqdn = (h1_has_dot || h2_has_dot) ? ocs::Bootstrap::get_ignore_fqdn() : false;
+
+   // Only matters if at least one name has no domain suffix
+   const bool have_default_domain = (!h1_has_dot || !h2_has_dot) ? ocs::Bootstrap::has_default_domain() : false;
+
+   // Determine if normalization is needed for either hostname
+   const bool h1_needs_norm = (ignore_fqdn && h1_has_dot) || (have_default_domain && !h1_has_dot);
+   const bool h2_needs_norm = (ignore_fqdn && h2_has_dot) || (have_default_domain && !h2_has_dot);
+   if (!h1_needs_norm && !h2_needs_norm) {
+      DRETURN(SGE_STRCASECMP(h1, h2));
+   }
+
+   // Normalize those strings were it is required and compare them
+   const char* a = h1;
+   const char* b = h2;
+   char h1_cpy[CL_MAXHOSTNAMELEN + 1];
+   char h2_cpy[CL_MAXHOSTNAMELEN + 1];
+   if (h1_needs_norm) {
+      sge_hostcpy(h1_cpy, h1);
+      a = h1_cpy;
+   }
+   if (h2_needs_norm) {
+      sge_hostcpy(h2_cpy, h2);
+      b = h2_cpy;
+   }
+   DRETURN(SGE_STRCASECMP(a, b));
 }
 
 /****** uti/hostname/sge_hostmatch() ********************************************
@@ -900,11 +946,9 @@ int sge_hostcmp(const char *h1, const char *h2) {
 *     MT-NOTE: sge_hostmatch() is MT safe
 ******************************************************************************/
 int sge_hostmatch(const char *h1, const char *h2) {
+   DENTER(BASIS_LAYER);
    int cmp = -1;
    char h1_cpy[CL_MAXHOSTNAMELEN + 1], h2_cpy[CL_MAXHOSTNAMELEN + 1];
-
-
-   DENTER(BASIS_LAYER);
 
    if (h1 != nullptr && h2 != nullptr) {
       sge_hostcpy(h1_cpy, h1);
@@ -916,34 +960,4 @@ int sge_hostmatch(const char *h1, const char *h2) {
    }
 
    DRETURN(cmp);
-}
-
-
-/****** uti/hostname/is_hgroup_name() ****************************************
-*  NAME
-*     is_hgroup_name() -- Is the given name a hostgroup name 
-*
-*  SYNOPSIS
-*     bool is_hgroup_name(const char *name) 
-*
-*  FUNCTION
-*     Is the given name a hostgroup name 
-*
-*  NOTE
-*     This function is also used for usergroup in resource quota sets
-*
-*  INPUTS
-*     const char *name - hostname or hostgroup name 
-*
-*  RESULT
-*     bool - true for hostgroupnames otherwise false
-******************************************************************************/
-bool
-is_hgroup_name(const char *name) {
-   bool ret = false;
-
-   if (name != nullptr) {
-      ret = (name[0] == HOSTGROUP_INITIAL_CHAR);
-   }
-   return ret;
 }
