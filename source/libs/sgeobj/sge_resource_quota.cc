@@ -24,10 +24,10 @@
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
  * 
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,17 +35,15 @@
 #include <cstring>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "sched/sge_resource_utilization.h"
-
 #include "sgeobj/sge_resource_quota.h"
 
 #include "ocs_ResourceQuota.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
@@ -1103,7 +1101,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 
    DENTER(TOP_LAYER);
 
-   if (!sge_is_pattern(value)) {
+   if (!ocs::is_pattern(value)) {
       /* used in scheduler/qmaster and qquota */
       if (lGetElemStr(scope, ST_name, value) != nullptr) {
          found = true;
@@ -1119,10 +1117,12 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                break;
             }
 
-            if (!is_hgroup_name(value) && is_hgroup_name(cp)) {
+            const bool value_is_hgroup = ocs::is_hgroup_name(value);
+            const bool cp_is_hgroup = ocs::is_hgroup_name(cp);
+            if (!value_is_hgroup && cp_is_hgroup) {
                group_name = cp;
                query = value;
-            } else if (is_hgroup_name(value) && !is_hgroup_name(cp)) {
+            } else if (value_is_hgroup && !cp_is_hgroup) {
                group_name = value;
                query = cp;
             }
@@ -1132,7 +1132,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                if (filter_type == FILTER_USERS) {
                   /* the userset name does not contain the preattached \@ sign */
                   group_name++; 
-                  if (!sge_is_pattern(group_name)) {
+                  if (!ocs::is_pattern(group_name)) {
                      if ((group_ep = lGetElemStrRW(master_userset_list, US_name, group_name)) != nullptr) {
                         if (sge_contained_in_access_list(query, group, grp_list, group_ep) == 1) {
                            found = true;
@@ -1155,14 +1155,14 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                } else { /* FILTER_HOSTS */
                   lListElem *hgroup = nullptr;
                   lList *host_list = nullptr;
-                  if (!sge_is_pattern(group_name)) {
+                  if (!ocs::is_pattern(group_name)) {
                      if ((hgroup = hgroup_list_locate(master_hgroup_list, group_name))) { 
                         hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                         if (host_list != nullptr && lGetElemHost(host_list, HR_name, query) != nullptr) {
                            lFreeList(&host_list);
                            found = true;
                            break;
-                        } else if (sge_is_pattern(query)) {
+                        } else if (ocs::is_pattern(query)) {
                            lListElem *host_ep;
                            for_each_rw(host_ep, host_list) {
                               if (fnmatch(query, lGetHost(host_ep, HR_name), 0) == 0) {
@@ -1185,7 +1185,7 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                               lFreeList(&host_list);
                               found = true;
                               break;
-                           } else if (sge_is_pattern(query)) {
+                           } else if (ocs::is_pattern(query)) {
                               const lListElem *host_ep;
                               for_each_ep(host_ep, host_list) {
                                  if (fnmatch(query, lGetHost(host_ep, HR_name), 0) == 0) {
@@ -1230,14 +1230,16 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
                }
             }
          }
-         if (sge_is_pattern(cp) && (fnmatch(cp, value, 0) == 0)) {
+         if (ocs::is_pattern(cp) && (fnmatch(cp, value, 0) == 0)) {
             found = true;
             break;
          }
-         if (!is_hgroup_name(value) && is_hgroup_name(cp)) {
+         const bool value_is_hgroup = ocs::is_hgroup_name(value);
+         const bool cp_is_hgroup = ocs::is_hgroup_name(cp);
+         if (!value_is_hgroup && cp_is_hgroup) {
             group_name = cp;
             query = value;
-         } else if (is_hgroup_name(value) && !is_hgroup_name(cp)) {
+         } else if (value_is_hgroup && !cp_is_hgroup) {
             group_name = value;
             query = cp;
          }
@@ -1322,32 +1324,26 @@ rqs_match_user_host_scope(const lList *scope, int filter_type, const char *value
 bool
 rqs_is_matching_rule(lListElem *rule, const char *user, const char *group, const lList *grp_list,
                      const char *project, const char *pe, const char *host, const char *queue,
-                     const lList *master_userset_list, const lList *master_hgroup_list)
-{
-      DENTER(TOP_LAYER);
+                     const lList *master_userset_list, const lList *master_hgroup_list) {
+   DENTER(TOP_LAYER);
 
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group, grp_list)) {
-         DPRINTF("user doesn't match\n");
-         DRETURN(false);
-      }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr, nullptr)) {
-         DPRINTF("project doesn't match\n");
-         DRETURN(false);
-      }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr, nullptr)) {
-         DPRINTF("pe doesn't match\n");
-         DRETURN(false);
-      }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr, nullptr)) {
-         DPRINTF("queue doesn't match\n");
-         DRETURN(false);
-      }
-      if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr, nullptr)) {
-         DPRINTF("host doesn't match\n");
-         DRETURN(false);
-      }
+   if (!rqs_filter_match(lGetObject(rule, RQR_filter_users), FILTER_USERS, user, master_userset_list, nullptr, group, grp_list)) {
+      DRETURN(false);
+   }
+   if (!rqs_filter_match(lGetObject(rule, RQR_filter_projects), FILTER_PROJECTS, project, nullptr, nullptr, nullptr, nullptr)) {
+      DRETURN(false);
+   }
+   if (!rqs_filter_match(lGetObject(rule, RQR_filter_pes), FILTER_PES, pe, nullptr, nullptr, nullptr, nullptr)) {
+      DRETURN(false);
+   }
+   if (!rqs_filter_match(lGetObject(rule, RQR_filter_queues), FILTER_QUEUES, queue, nullptr, nullptr, nullptr, nullptr)) {
+      DRETURN(false);
+   }
+   if (!rqs_filter_match(lGetObject(rule, RQR_filter_hosts), FILTER_HOSTS, host, nullptr, master_hgroup_list, nullptr, nullptr)) {
+      DRETURN(false);
+   }
 
-      DRETURN(true);
+   DRETURN(true);
 }
 
 
@@ -1388,7 +1384,7 @@ rqs_match_host_scope(const lList *scope, const char *name, const lList *master_h
       DRETURN(true);
    }
    
-   if (sge_is_pattern(name) || is_hgroup_name(name)) {
+   if (ocs::is_pattern(name) || ocs::is_hgroup_name(name)) {
       DRETURN(rqs_match_user_host_scope(scope, FILTER_HOSTS, name, nullptr, master_hgroup_list, nullptr, is_xscope, grp_list));
    }
 

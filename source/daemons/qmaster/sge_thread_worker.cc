@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
+#include "ocs_Bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
@@ -46,9 +46,7 @@
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "sgeobj/ocs_Session.h"
-#include "sgeobj/ocs_DataStore.h"
 
-#include "sge_thread_ctrl.h"
 #include "sge_event_master.h"
 
 #ifdef OBSERVE
@@ -85,7 +83,7 @@ sge_worker_cleanup_monitor(void *arg) {
 
 void
 sge_worker_initialize() {
-   const int max_initial_worker_threads = bootstrap_get_worker_thread_count();
+   const int max_initial_worker_threads = ocs::Bootstrap::get_worker_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);

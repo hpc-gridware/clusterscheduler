@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_env.h"
@@ -106,10 +107,10 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", tocomproc);
-         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+         if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
-         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         } else if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_TLS)) {
 #if defined(OCS_WITH_OPENSSL)
             DPRINTF("using communication lib with TLS framework (execd_handle)\n");
             communication_framework = CL_CT_SSL_TLS;
@@ -241,10 +242,10 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
          int commlib_error = CL_RETVAL_OK;
          cl_framework_t communication_framework = CL_CT_TCP;
          DEBUG("creating handle to \"%s\"\n", fromcommproc);
-         if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+         if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_CSP)) {
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL;
-         } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         } else if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_TLS)) {
 #if defined (OCS_WITH_OPENSSL)
             DPRINTF("using communication lib with SSL framework (execd_handle)\n");
             communication_framework = CL_CT_SSL_TLS;

@@ -34,6 +34,7 @@
 
 #include <cstring>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -445,7 +446,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
       char *wc_cqueue = strdup(qref_pattern);
       wc_cqueue[ s - qref_pattern ] = '\0';
       /* reject the cluster queue expression support */
-      boo = sge_eval_expression(TYPE_STR,wc_cqueue, cqname, nullptr);
+      boo = sge_eval_expression(TYPE_STR, wc_cqueue, cqname, nullptr);
       sge_free(&wc_cqueue);
       if (!boo) {
          if (!hostname || !qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
@@ -455,7 +456,7 @@ qref_cq_rejected(const char *qref_pattern, const char *cqname,
    } else {
       /* use entire qref as wc_queue */
      /* cqueue expression support */
-      if (!sge_eval_expression(TYPE_STR,qref_pattern, cqname, nullptr)) {
+      if (!sge_eval_expression(TYPE_STR, qref_pattern, cqname, nullptr)) {
          DRETURN(false);
       }
    }
@@ -589,12 +590,16 @@ qref_list_host_rejected(const char *href, const char *hostname, const lList *hgr
 
    if (href[0] == '@') { /* wc_hostgroup */
       const char *wc_hostgroup = &href[1];
+      bool is_expression = ocs::is_expression(wc_hostgroup);
+
       const lListElem *hgroup;
       for_each_ep(hgroup, hgroup_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
+
          DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
+
          /* use hostgroup expression */
-         if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], nullptr) == 0) {
+         if (sge_eval_expression(TYPE_HOST, wc_hostgroup, &hgroup_name[1], nullptr, true, is_expression) == 0) {
             const lListElem *h;
             for_each_ep(h, lGetList(hgroup, HGRP_host_list)) {
                if (!qref_list_host_rejected(lGetHost(h, HR_name), hostname, hgroup_list)) {
@@ -802,38 +807,29 @@ qref_list_resolve_hostname(lList *this_list)
 
 /* QR_name might be a pattern */
 void
-qref_resolve_hostname(lListElem *this_elem)
-{
+qref_resolve_hostname(lListElem *this_elem) {
+   DENTER(TOP_LAYER);
    dstring cqueue_name = DSTRING_INIT;
    dstring host_or_hgroup = DSTRING_INIT;
-   const char *name = nullptr;
-   const char *unresolved_name = nullptr;
+   const char *name = lGetString(this_elem, QR_name);
    bool has_hostname;
    bool has_domain;
-   
-   DENTER(TOP_LAYER);
-   name = lGetString(this_elem, QR_name);
 
-   if (cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
-                     &has_hostname, &has_domain)) {
-      unresolved_name = sge_dstring_get_string(&host_or_hgroup);
+   if (cqueue_name_split(name, &cqueue_name, &host_or_hgroup, &has_hostname, &has_domain)) {
+      const char *unresolved_name = sge_dstring_get_string(&host_or_hgroup);
       /* Find all CQ names which match 'cq_pattern' */
-      if (has_hostname && unresolved_name != nullptr &&!sge_is_expression(unresolved_name)) {
+      if (has_hostname && !ocs::is_expression(unresolved_name)) {
          char resolved_name[CL_MAXHOSTNAMELEN+1];
          int back = getuniquehostname(unresolved_name, resolved_name, 0);
 
          if (back == CL_RETVAL_OK) {
             dstring new_qref_pattern = DSTRING_INIT;
             if (sge_dstring_strlen(&cqueue_name) == 0) {
-                sge_dstring_sprintf(&new_qref_pattern, "@%s",
-                                    resolved_name);
+                sge_dstring_sprintf(&new_qref_pattern, "@%s", resolved_name);
             } else {
-               sge_dstring_sprintf(&new_qref_pattern, "%s@%s",
-                                   sge_dstring_get_string(&cqueue_name),
-                                   resolved_name);
+               sge_dstring_sprintf(&new_qref_pattern, "%s@%s", sge_dstring_get_string(&cqueue_name), resolved_name);
             }
-            lSetString(this_elem, QR_name, 
-                       sge_dstring_get_string(&new_qref_pattern));
+            lSetString(this_elem, QR_name, sge_dstring_get_string(&new_qref_pattern));
             sge_dstring_free(&new_qref_pattern);
          }
       }

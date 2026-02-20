@@ -40,16 +40,14 @@
 #include <math.h>
 #include <cfloat>
 
-#include "uti/sge_bootstrap.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
-#include "uti/sge_unistd.h"
 
 #include "comm/commlib.h"
 
@@ -57,7 +55,6 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
@@ -83,6 +80,7 @@
 
 #include "msg_common.h"
 #include "msg_clients_common.h"
+#include "ocs_Bootstrap.h"
 
 
 static int sge_print_queues(lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl, 
@@ -319,7 +317,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
    dstring rs = DSTRING_INIT;
    u_long32 dominant = 0;
    int ret = QHOST_SUCCESS;
-   bool ignore_fqdn = bootstrap_get_ignore_fqdn();
+   bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
    bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
    bool hide_data = !host_is_visible(hep, is_manager, dept_view, acl_list);
@@ -1004,7 +1002,7 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
 
       for_each_rw(ep, user_list) {
          const char *user_name = lGetString(ep, ST_name);
-         if (sge_is_pattern(user_name)) {
+         if (ocs::is_pattern(user_name)) {
             nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
          } else {
             nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);

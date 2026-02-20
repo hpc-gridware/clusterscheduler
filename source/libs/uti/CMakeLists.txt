@@ -22,6 +22,7 @@
 set(LIBRARY_NAME uti)
 set(LIBRARY_SOURCES
         config_file.cc
+        ocs_Bootstrap.cc
         ocs_DebugParam.cc
         ocs_Encoder.cc
         ocs_JsonUtil.cc
@@ -34,7 +35,6 @@ set(LIBRARY_SOURCES
         sge_afsutil.cc
         sge_arch.cc
         sge_bitfield.cc
-        sge_bootstrap.cc
         sge_bootstrap_env.cc
         sge_bootstrap_files.cc
         sge_component.cc

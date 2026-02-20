@@ -45,7 +45,6 @@
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
@@ -102,6 +101,7 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
+#include "ocs_Bootstrap.h"
 #include "ocs_GrantedResources.h"
 #include "ocs_TopologyString.h"
 
@@ -347,8 +347,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const char *sge_root = bootstrap_get_sge_root();
    const char *qualified_hostname = component_get_qualified_hostname();
    const char *default_cell = bootstrap_get_sge_cell();
-   const char *binary_path = bootstrap_get_binary_path();
-   const char *admin_user = bootstrap_get_admin_user();
+   const char *binary_path = ocs::Bootstrap::get_binary_path();
+   const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *masterhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    bool csp_mode = false;
    bool tls_mode = false;
@@ -1580,7 +1580,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    /* if "pag_cmd" is not set, do not use AFS setup for this host */
    pag_cmd = mconf_get_pag_cmd();
-   if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
        strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       fprintf(fp, "use_afs=1\n");
 
@@ -1706,18 +1706,18 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    /* should the addgrp-id be used to kill processes? */
    fprintf(fp, "enable_addgrp_kill=%d\n", (int) mconf_get_enable_addgrp_kill());
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
       csp_mode = true;
    }
    fprintf(fp, "csp=%d\n", (int) csp_mode);
-   if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
       tls_mode = true;
    }
    fprintf(fp, "tls=%d\n", (int) tls_mode);
 
    /* with new interactive job support, shepherd needs ignore_fqdn and default_domain */
-   fprintf(fp, "ignore_fqdn=%d\n", bootstrap_get_ignore_fqdn());
-   fprintf(fp, "default_domain=%s\n", bootstrap_get_default_domain());
+   fprintf(fp, "ignore_fqdn=%d\n", ocs::Bootstrap::get_ignore_fqdn());
+   fprintf(fp, "default_domain=%s\n", ocs::Bootstrap::get_default_domain());
 
    lFreeList(&environmentList);
    FCLOSE(fp);
@@ -1787,7 +1787,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DRETURN(-2);
       }
    }
-   else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
+   else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
       snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
       if (SGE_STAT(dce_wrapper_cmd, &buf)) {
          snprintf(err_str, err_length, MSG_DCE_NOSHEPHERDWRAP_SS, dce_wrapper_cmd, strerror(errno));
@@ -1795,7 +1795,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
-   } else if (bootstrap_has_security_mode(BS_SEC_MODE_AFS) && pag_cmd &&
+   } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
               strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       int fd, len;
       const char *cp;
@@ -1978,8 +1978,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
     * access to DFS or AFS file systems
     */
    if (starting_shepherd_ok) {
-      if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-           bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
+      if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+           ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
           lGetString(jep, JB_cred)) {
 
          char ccname[1024];
@@ -2001,12 +2001,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(shepherd_cmd, ps_name, nullptr);
-      } else if (mconf_get_do_credentials() && bootstrap_has_security_mode(BS_SEC_MODE_DCE)) {
+      } else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
          DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
          execlp(dce_wrapper_cmd, ps_name, nullptr);
-      } else if (!bootstrap_has_security_mode(BS_SEC_MODE_AFS) || !pag_cmd ||
+      } else if (!ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) || !pag_cmd ||
                  !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
          DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),

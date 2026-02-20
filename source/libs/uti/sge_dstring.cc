@@ -36,6 +36,8 @@
 #include <cstdio>
 #include <ctime>
 
+#include <uti/ocs_Pattern.h>
+
 /* do not compile in monitoring code */
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
@@ -832,7 +834,7 @@ sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[], bool quote_wh
          }
       }
       if (quote_patterns) {
-         if (sge_is_pattern(argv[i])) {
+         if (ocs::is_pattern(argv[i])) {
             do_quote = true;
          }
       }

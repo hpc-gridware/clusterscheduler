@@ -66,6 +66,7 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
 
 #define QINSTANCE_LAYER BASIS_LAYER
@@ -536,10 +537,11 @@ qinstance_list_find_matching(const lList *this_list, lList **answer_list,
          hostname_pattern = host;
       }
 
+      const bool hostname_pattern_is_expression = ocs::is_expression(hostname_pattern);
       for_each_ep(qinstance, this_list) {
          const char *hostname = lGetHost(qinstance, QU_qhostname);
          /* use qinstance expression */
-         if (!sge_eval_expression(TYPE_HOST, hostname_pattern, hostname, answer_list)) {
+         if (!sge_eval_expression(TYPE_HOST, hostname_pattern, hostname, answer_list, true, hostname_pattern_is_expression)) {
             lAddElemStr(qref_list, QR_name, lGetString(qinstance, QU_full_name), QR_Type);
          }
       }

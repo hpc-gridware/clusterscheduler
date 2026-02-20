@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,12 +38,13 @@
 #include <cstring>
 #include <cctype>
 
+#include "uti/ocs_Bootstrap.h"
+#include "uti/sge_component.h"
 #include "uti/sge_time.h"
 #include "uti/sge_arch.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_signal.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_string.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
@@ -1176,9 +1177,9 @@ int main(int argc, char *argv[]) {
 #ifdef SECURE
       got_no_framework = 1;
 #endif
-      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+      if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
          option_ssl = 1;
-      } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+      } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
          option_tls = 1;
       } else {
          option_tcp = 1;

@@ -35,13 +35,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_host.h"
@@ -51,7 +49,6 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_userset.h"
 
 #include "sched/sge_urgency.h"
 #include "sched/sge_job_schedd.h"

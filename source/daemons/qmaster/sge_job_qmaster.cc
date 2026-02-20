@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,8 +38,8 @@
 #include <cerrno>
 #include <cctype>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -838,7 +838,7 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
       DPRINTF("Add all users given in userlist to filter\n");
       for_each_ep(user, user_list) {
          const char *user_name = lGetString(user, ST_name);
-         if (sge_is_pattern(user_name)) {
+         if (ocs::is_pattern(user_name)) {
             new_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
          } else {
             new_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);

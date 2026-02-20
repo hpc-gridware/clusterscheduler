@@ -41,7 +41,7 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_string.h"
+#include "uti/ocs_Pattern.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_eval_expression.h"
@@ -82,47 +82,28 @@ const int eTypes[] = {T_NOT, T_OR, T_AND, T_BRACEOPEN, T_BRACECLOSE, T_END};
 const char *tTypes[] = { "!<pattern>", "|<pattern>", "&<pattern>", "(", ")", "<end>",
 "<pattern>", "<error>" };
 
-
-/****** sgeobj/sge_eval_expression/sge_eval_expression() **********************
-*  NAME
-*     sge_eval_expression() -- boolean expression extension 
-*
-*  SYNOPSIS
-*     int sge_eval_expression(u_long32 type, 
-*                             const char *expr, 
-*                             const char *value)
-*
-*  FUNCTION
-*     boolean expression extension of regular expression evaluation function 
-*     fnmatch()
-*
-*  INPUTS
-*     u_long32 type - type of resource
-*     const char *expr - expression string to be evaluated
-*     const char *value - value string to be compared for
-*     lList **answer_list - answer list to pass back error messages
-*
-*  RESULT
-*     int - result if expression is true or
-*         0 - strings are the same or both nullptr
-*         1 - if is false
-*        -1 - for empty expression, null, or other error
-*
-*  SEE ALSO
-*     uti/hostname/sge_hostcmp()
-*     fnmatch()
-*
-*  NOTES:
-*     MT-NOTE: sge_eval_expression() is MT safe
-*****************************************************************************/
+/** @brief Evaluate a boolean expression with fnmatch patterns.
+ *
+ * The expression can contain those characters recognized by ocs::is_expression()
+ *
+ * The function will return 0 if the expression evaluates to true, 1 if it evaluates to false,
+ * and -1 in case of an error (e.g., syntax error, null values, etc.).
+ *
+ * @param type The type of resource being evaluated (e.g., TYPE_CSTR, TYPE_HOST).
+ * @param expr The expression string to be evaluated.
+ * @param value The value string to be compared against the expression.
+ * @param answer_list An optional list to which error messages can be added.
+ * @param use_is_expression A flag indicating whether to use the is_expression argument to determine if the expr contains patterns.
+ * @param is_expression A flag indicating whether the expression is already known to contain patterns (if use_is_expression is true).
+ * @return int The result of the evaluation: 0 if true, 1 if false, -1 if error.
+ */
 int 
-sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **answer_list) 
-{
+sge_eval_expression(const u_long32 type, const char *expr, const char *value, lList **answer_list,
+                    const bool use_is_expression, const bool is_expression) {
+   DENTER(BASIS_LAYER);
    int match;
    char pattern_buf[MAX_STRING_SIZE], value_buf[MAX_STRING_SIZE];
-   
-   DENTER(BASIS_LAYER);
-   
+
    /* Null values are supported in str_cmp_null way */
    if (expr==nullptr && value!=nullptr) {
       DRETURN(-1);
@@ -153,14 +134,14 @@ sge_eval_expression(u_long32 type, const char *expr, const char *value, lList **
 	   token.value=value;         /* the copybuffer will be on demand */
 	   token.expr=expr;           /* copy per partes to pattern_buf */
 	   token.pattern=pattern_buf;
-	   token.s=token.expr;        /* Set the index. */
+	   token.s=expr;              /* Set the index. */
 	   token.tt=T_END;            /* Type of token */
 	   token.et=T_EXP;            /* Type of expected token */
 	   token.type=type;
 	   token.answer_list=answer_list;
-	   token.has_patterns = sge_is_expression(token.expr); /*  pattern is detected latter */
+	   token.has_patterns = use_is_expression ? is_expression : ocs::is_expression(expr);
 
-	   if(token.has_patterns){
+	   if (token.has_patterns){
 	      uncaseValue(&token,value_buf);   /* Check the value needs to be lowered */
 	      match = OrExpression(&token, false);
 	      /*

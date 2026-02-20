@@ -39,4 +39,4 @@
 #include "uti/sge_dstring.h"
 
 /* Exported function */
-int sge_eval_expression(u_long32 type, const char *, const char *, lList **);
+int sge_eval_expression(u_long32 type, const char *, const char *, lList **, bool use_is_expression = false, bool is_expression = false);

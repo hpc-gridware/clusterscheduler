@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,12 +35,9 @@
 #include <cstring>
 #include <pthread.h>
 
-#include "uti/sge_bootstrap.h"
-#include "uti/ocs_cond.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_thread_ctrl.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_report.h"
@@ -54,7 +51,6 @@
 #include "basis_types.h"
 #include "ocs_ReportingFileWriter.h"
 #include "setup_qmaster.h"
-#include "sge_qmaster_timed_event.h"
 #include "sge_thread_main.h"
 #include "sge_thread_event_master.h"
 #include "msg_qmaster.h"

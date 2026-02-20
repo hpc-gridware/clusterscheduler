@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -42,7 +42,6 @@
 #include "uti/ocs_DebugParam.h"
 #include "uti/ocs_cond.h"
 #include "uti/ocs_gperf.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -75,6 +74,7 @@
 #include "sge.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "ocs_Bootstrap.h"
 #include "ocs_gperf.h"
 
 #define SCHEDULER_TIMEOUT_S 10
@@ -277,7 +277,7 @@ sge_scheduler_initialize(lList **answer_list) {
        * There is no option. We have to start it.
        */
       if (Master_Scheduler.use_bootstrap) {
-         start_thread = ((bootstrap_get_scheduler_thread_count() > 0) ? true : false);
+         start_thread = ocs::Bootstrap::get_scheduler_thread_count() > 0;
          Master_Scheduler.use_bootstrap = false;
       }
 

@@ -22,6 +22,7 @@
 #include <sstream>
 #include <pthread.h>
 
+#include "ocs_Bootstrap.h"
 #include "ocs_Munge.h"
 #include "sge_hostname.h"
 #include "sge_log.h"
@@ -858,7 +859,7 @@ component_get_auth_info() {
       user->unencoded_auth_info = user_group_stream.str();
    }
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
 #if defined(OCS_WITH_MUNGE)
       // we need to encode the auth info in every call to this function
       // even if the user information and the payload will never change
@@ -923,7 +924,7 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
    std::string auth_buffer_str;
    uid_t munge_uid{0};
    gid_t munge_gid{0};
-   bool use_munge = bootstrap_has_security_mode(BS_SEC_MODE_MUNGE);
+   bool use_munge = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE);
    if (use_munge) {
 #if defined(OCS_WITH_MUNGE)
       char *local_auth_buffer{nullptr};

@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,7 +37,6 @@
 #include <cstring>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
@@ -63,6 +62,7 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "msg_utilbin.h"
+#include "ocs_Bootstrap.h"
 
 static int spool_object_list(const char *directory,
                              const spooling_field *fields, 
@@ -96,15 +96,15 @@ static void usage(const char *argv0)
 
 static int init_framework()
 {
+   DENTER(TOP_LAYER);
    int ret = EXIT_FAILURE;
 
    lList *answer_list = nullptr;
    lListElem *spooling_context = nullptr;
-   const char *spooling_method = bootstrap_get_spooling_method();
-   const char *spooling_lib = bootstrap_get_spooling_lib();
-   const char *spooling_params = bootstrap_get_spooling_params();
+   const char *spooling_method = ocs::Bootstrap::get_spooling_method();
+   const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
+   const char *spooling_params = ocs::Bootstrap::get_spooling_params();
 
-   DENTER(TOP_LAYER);
 
    /* create spooling context */
    spooling_context = spool_create_dynamic_context(&answer_list, 

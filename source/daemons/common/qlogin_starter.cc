@@ -52,7 +52,6 @@
 
 #include "uti/sge_stdio.h"
 #include "uti/sge_uidgid.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/config_file.h"
 #include "uti/sge_arch.h"
 

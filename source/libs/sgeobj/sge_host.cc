@@ -44,6 +44,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -257,7 +258,7 @@ int sge_resolve_host(lListElem *ep, int nm) {
          break;
    }
    /* Check to find hostname only if it was not contained in expression */
-   if (hostname != nullptr && !sge_is_expression(hostname)) {
+   if (!ocs::is_expression(hostname)) {
       ret = sge_resolve_hostname(hostname, unique, nm);
 
       if (ret == CL_RETVAL_OK) {

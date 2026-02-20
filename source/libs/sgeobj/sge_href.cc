@@ -27,12 +27,13 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -202,7 +203,7 @@ href_list_compare(const lList *this_list, lList **answer_list,
       const char *host_or_group = lGetHost(this_elem, HR_name);
 
       if (!href_list_has_member(list, host_or_group)) {
-         if (is_hgroup_name(host_or_group)) {
+         if (ocs::is_hgroup_name(host_or_group)) {
             if (add_groups != nullptr) {
                ret = href_list_add(add_groups, answer_list, host_or_group);
             }
@@ -210,7 +211,7 @@ href_list_compare(const lList *this_list, lList **answer_list,
             ret = href_list_add(add_hosts, answer_list, host_or_group);
          }
       } else {
-         if (is_hgroup_name(host_or_group)) {
+         if (ocs::is_hgroup_name(host_or_group)) {
             if (equity_groups != nullptr) {
                ret = href_list_add(equity_groups, answer_list, host_or_group);
             }
@@ -423,7 +424,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
        */
       for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
-         bool is_group = is_hgroup_name(name);
+         bool is_group = ocs::is_hgroup_name(name);
          lListElem *hgroup = nullptr;  /* HGRP_name */
 
          /*
@@ -449,7 +450,7 @@ href_list_find_references(const lList *this_list, lList **answer_list,
             for_each_ep(href2, href_list2) {
                const char *name2 = lGetHost(href2, HR_name);
 
-               if (is_hgroup_name(name2)) {
+               if (ocs::is_hgroup_name(name2)) {
                   if (used_groups != nullptr) {
                      href_list_add(used_groups, answer_list, name2); 
                   }
@@ -601,7 +602,7 @@ href_list_find_referencees(const lList *this_list, lList **answer_list,
       for_each_ep(href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
-         if (is_hgroup_name(name)) {
+         if (ocs::is_hgroup_name(name)) {
             const lListElem *hgroup;   /* HGRP_Type */
 
             for_each_ep(hgroup, master_list) {
@@ -731,7 +732,7 @@ href_list_resolve_hostnames(lList *this_list, lList **answer_list,
       for_each_rw (href, this_list) {
          const char *name = lGetHost(href, HR_name);
 
-         if (!is_hgroup_name(name)) {
+         if (!ocs::is_hgroup_name(name)) {
             char resolved_name[CL_MAXHOSTNAMELEN+1];
             int back = getuniquehostname(name, resolved_name, 0);
 

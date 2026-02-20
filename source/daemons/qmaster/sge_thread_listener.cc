@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
+#include "uti/ocs_Bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
@@ -67,7 +67,7 @@ sge_listener_cleanup_monitor(monitoring_t *monitor) {
 
 void
 sge_listener_initialize() {
-   const int max_initial_listener_threads = bootstrap_get_listener_thread_count();
+   const int max_initial_listener_threads = ocs::Bootstrap::get_listener_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);

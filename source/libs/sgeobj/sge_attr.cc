@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -36,10 +36,10 @@
 #include <cstring>
 #include <sys/types.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
 #include "comm/commlib.h"
@@ -48,7 +48,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_href.h"
-#include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
@@ -313,7 +312,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
       bool created_list = false;
 
       href = lGetHost(*attr, href_nm);
-      is_hgroup = is_hgroup_name(href);
+      is_hgroup = ocs::is_hgroup_name(href);
 
       if (*this_list == nullptr) {
          *this_list = lCreateList("", descriptor);
@@ -372,8 +371,7 @@ attr_list_add(lList **this_list, lList **answer_list, lListElem **attr,
                for_each_rw(attr_elem, *this_list) {
                   const char *href = lGetHost(attr_elem, ASTR_href); 
 
-                  if (strcmp(href, HOSTREF_DEFAULT) && 
-                      is_hgroup_name(href)) {
+                  if (strcmp(href, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href)) {
                      lret &= href_list_add(&href_list, nullptr, href);
                   }
                }
@@ -530,8 +528,7 @@ attr_list_find_value(const lList *this_list, lList **answer_list,
          for_each_ep(href, this_list) {
             const char *href_name = lGetHost(href, href_nm);
 
-            if (strcmp(href_name, HOSTREF_DEFAULT) && 
-                is_hgroup_name(href_name)) {
+            if (strcmp(href_name, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href_name)) {
                lList *tmp_href_list = nullptr;
                lListElem *tmp_href = nullptr;
                lList *host_list = nullptr;
@@ -674,7 +671,7 @@ attr_list_append_to_dstring(const lList *this_list, dstring *string,
       } else {
          dstring *ds; /* will be reference to the corresponding dstring container */
         
-         if (is_hgroup_name(href)) {
+         if (ocs::is_hgroup_name(href)) {
             ds = string;
             if (found_group || found_default) {
                sge_dstring_append_char(ds, ',');

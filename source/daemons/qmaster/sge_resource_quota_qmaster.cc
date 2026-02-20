@@ -27,13 +27,14 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -483,7 +484,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
    for_each_ep(scope_ep, filter_scope) {
       scope = lGetString(scope_ep, ST_name);
       if (filter_nm == RQR_filter_users) {
-         if (!is_hgroup_name(scope)) {
+         if (!ocs::is_hgroup_name(scope)) {
             continue;
          } else {
             scope++; /* sge intern usergroups don't have the preleading @ sign */
@@ -504,7 +505,7 @@ filter_diff_usersets_or_projects_scope(lList *filter_scope, int filter_nm, lList
          ret = false;
          break;
       } else {
-         if (sge_is_pattern(scope)) {
+         if (ocs::is_pattern(scope)) {
             const lListElem *ep;
             for_each_ep(ep, master_list) {
                const char *ep_entry = lGetString(ep, nm);

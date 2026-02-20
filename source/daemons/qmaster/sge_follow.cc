@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,8 +37,6 @@
 #include <pthread.h>
 
 #include "uti/sge_bitfield.h"
-#include "uti/sge_string.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -61,7 +59,6 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_advance_reservation.h"
-#include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_DataStore.h"
 

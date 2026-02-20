@@ -49,6 +49,8 @@
 
 #include <sge_log.h>
 
+#include "ocs_Bootstrap.h"
+
 enum {
    TEST_host = 1,
    TEST_string,
@@ -185,7 +187,7 @@ int main(int argc, char *argv[]) {
 
    lInit(nmv);
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
 #if defined (OCS_WITH_MUNGE)
       DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
       if (!ocs::uti::Munge::initialize(&error_dstr)) {

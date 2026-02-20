@@ -38,7 +38,6 @@
 #include <cstdlib>
 #include <cerrno>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_io.h"
 #include "uti/sge_language.h"
 #include "uti/sge_log.h"
@@ -54,7 +53,6 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_mailrec.h"
@@ -63,7 +61,6 @@
 #include "symbols.h"
 #include "parse_qsub.h"
 #include "parse_job_cull.h"
-#include "unparse_job_cull.h"
 
 #include "msg_common.h"
 

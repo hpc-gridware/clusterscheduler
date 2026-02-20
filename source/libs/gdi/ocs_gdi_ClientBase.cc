@@ -36,6 +36,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "uti/ocs_Bootstrap.h"
+
 #if defined(SOLARIS64) || defined(SOLARIS86) || defined(SOLARISAMD64)
 #  include <stropts.h>
 #  include <termio.h>
@@ -45,13 +47,11 @@
 
 #include "uti/ocs_Munge.h"
 #include "uti/msg_utilib.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_csp_path.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_security.h"
 #include "uti/sge_string.h"
@@ -459,10 +459,10 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 
    /* setup the resolve method */
 
-   if (!bootstrap_get_ignore_fqdn()) {
+   if (!Bootstrap::get_ignore_fqdn()) {
       resolve_method = CL_LONG;
    }
-   const char *help = bootstrap_get_default_domain();
+   const char *help = Bootstrap::get_default_domain();
    if (help != nullptr) {
       if (SGE_STRCASECMP(help, NONE_STR) != 0) {
          default_domain = help;
@@ -501,7 +501,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       DRETURN(cl_ret);
    }
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+   if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_MUNGE)) {
 #if defined (OCS_WITH_MUNGE)
       if (!ocs::uti::Munge::is_initialized()) {
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
@@ -536,7 +536,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       /*
       ** CSP initialize
       */
-      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+      if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_CSP)) {
          communication_framework = CL_CT_SSL;
 #ifdef SECURE
          cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
@@ -590,7 +590,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
       }
 
       // new SSL encryption mode
-      if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+      if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_TLS)) {
          communication_framework = CL_CT_SSL_TLS;
 #if defined(OCS_WITH_OPENSSL)
          // sge_qmaster is not really a client, BUT in case master (from act_qmaster file) != qualified_hostname
@@ -991,7 +991,7 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
 
          // Update the client certificate if the qmaster host name changed.
          // Old_master_host is nullptr in the first call, here nothing is to be done.
-         if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+         if (Bootstrap::has_security_mode(Bootstrap::BS_SEC_MODE_TLS)) {
    #if defined(OCS_WITH_OPENSSL)
             // Need a new context
             //       - when the master host changed

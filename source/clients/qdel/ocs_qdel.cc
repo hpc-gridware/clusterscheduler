@@ -37,7 +37,6 @@
 #include <cctype>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"

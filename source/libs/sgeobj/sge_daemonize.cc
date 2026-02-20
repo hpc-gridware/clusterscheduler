@@ -47,7 +47,6 @@
 #include "comm/commlib.h"
 
 #include "uti/msg_utilib.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"

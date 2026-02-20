@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,7 +40,6 @@
 #include <fcntl.h>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
@@ -69,6 +68,7 @@
 #include "shutdown.h"
 #include "msg_common.h"
 #include "msg_shadowd.h"
+#include "ocs_Bootstrap.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -242,11 +242,12 @@ main(int argc, char **argv) {
    }
 #endif
 
-   if (bootstrap_get_qmaster_spool_dir() != nullptr) {
+   const char *qmaster_spool_dir = ocs::Bootstrap::get_qmaster_spool_dir();
+   if (qmaster_spool_dir != nullptr) {
       const char *shadowd_name = SGE_SHADOWD;
 
       /* is there a running shadowd on this host (with unqualified name) */
-      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_unqualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, qmaster_spool_dir, component_get_unqualified_hostname());
 
       DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
@@ -260,7 +261,7 @@ main(int argc, char **argv) {
       ocs::gdi::ClientBase::prepare_enroll(&alp);
 
       /* is there a running shadowd on this host (with aliased name) */
-      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, bootstrap_get_qmaster_spool_dir(), component_get_qualified_hostname());
+      snprintf(shadowd_pidfile, sizeof(shadowd_pidfile), "%s/" SHADOWD_PID_FILE, qmaster_spool_dir, component_get_qualified_hostname());
       DPRINTF("pidfilename: %s\n", shadowd_pidfile);
       if ((shadowd_pid = sge_readpid(shadowd_pidfile))) {
          DPRINTF("shadowd_pid: " pid_t_fmt "\n", shadowd_pid);
@@ -277,17 +278,17 @@ main(int argc, char **argv) {
       sge_exit(0);
    }
 
-   if (bootstrap_get_qmaster_spool_dir() == nullptr) {
+   if (qmaster_spool_dir == nullptr) {
       CRITICAL(MSG_SHADOWD_CANTREADQMASTERSPOOLDIRFROMX_S, bootstrap_get_bootstrap_file());
       sge_exit(1);
    }
 
-   if (chdir(bootstrap_get_qmaster_spool_dir())) {
-      CRITICAL(MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, bootstrap_get_qmaster_spool_dir());
+   if (chdir(qmaster_spool_dir)) {
+      CRITICAL(MSG_SHADOWD_CANTCHANGETOQMASTERSPOOLDIRX_S, qmaster_spool_dir);
       sge_exit(1);
    }
 
-   if (sge_set_admin_username(bootstrap_get_admin_user(), err_str, sizeof(err_str))) {
+   if (sge_set_admin_username(ocs::Bootstrap::get_admin_user(), err_str, sizeof(err_str))) {
       CRITICAL(SFNMAX, err_str);
       sge_exit(1);
    }
@@ -364,7 +365,7 @@ main(int argc, char **argv) {
                                            bootstrap_get_act_qmaster_file(),
                                            bootstrap_get_shadow_masters_file(),
                                            component_get_qualified_hostname(),
-                                           bootstrap_get_binary_path());
+                                           ocs::Bootstrap::get_binary_path());
 
                if (ret == 0) {
                   /* we can start a qmaster on this host */

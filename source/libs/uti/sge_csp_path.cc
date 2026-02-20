@@ -42,8 +42,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "sge.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_csp_path.h"
 #include "uti/sge_hostname.h"

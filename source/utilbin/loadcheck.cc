@@ -42,7 +42,6 @@
 
 #include "uti/ocs_Topo.h"
 #include "uti/sge_arch.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_language.h"
 #include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"

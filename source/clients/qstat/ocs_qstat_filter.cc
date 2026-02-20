@@ -36,8 +36,8 @@
 #include <cstring>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_parse_num_par.h"
@@ -755,7 +755,7 @@ static int filter_jobs(qstat_env_t *qstat_env, lList **alpp) {
       for_each_rw(up, qstat_env->user_list) {
          const char *user = lGetString(up, ST_name);
          if (user != nullptr) {
-            bool is_pattern = sge_is_pattern(user);
+            bool is_pattern = ocs::is_pattern(user);
             for_each_rw (jep, qstat_env->job_list) {
                int match;
                if (is_pattern) {
@@ -1079,7 +1079,7 @@ static int qstat_env_get_all_lists(qstat_env_t* qstat_env, bool need_job_list, l
    if (zombie_l && show_zombies) {
       for_each_ep(ep, user_list) {
          const char *user_name = lGetString(ep, ST_name);
-         if (sge_is_pattern(user_name)) {
+         if (ocs::is_pattern(user_name)) {
             nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
          } else {
             nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
@@ -2769,7 +2769,7 @@ lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
 
       for_each_ep(ep, user_list) {
          const char *user = lGetString(ep, ST_name);
-         if (sge_is_pattern(user)) {
+         if (ocs::is_pattern(user)) {
             tmp_nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user);
          } else {
             tmp_nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user);

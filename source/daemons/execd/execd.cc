@@ -36,6 +36,7 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_Systemd.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
@@ -234,7 +235,7 @@ int main(int argc, char **argv)
 
    // initialize the admin user
    char err_str[MAX_STRING_SIZE];
-   const char *admin_user = bootstrap_get_admin_user();
+   const char *admin_user = ocs::Bootstrap::get_admin_user();
    if (sge_set_admin_username(admin_user, err_str, sizeof(err_str))) {
       CRITICAL(SFNMAX, err_str);
       sge_exit(1);
@@ -308,7 +309,7 @@ int main(int argc, char **argv)
 
    /* test load sensor (internal or external) */
    {
-      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), bootstrap_get_binary_path());
+      lList *report_list = sge_build_load_report(component_get_qualified_hostname(), ocs::Bootstrap::get_binary_path());
       lFreeList(&report_list);
    }
 

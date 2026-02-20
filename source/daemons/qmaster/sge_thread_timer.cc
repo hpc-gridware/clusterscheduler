@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,11 +35,9 @@
 #include <pthread.h>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
-#include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
@@ -48,7 +46,6 @@
 #include "comm/cl_commlib.h"
 
 #include "uti/sge_profiling.h"
-#include "uti/sge_os.h"
 #include "uti/sge_thread_ctrl.h"
 
 #include "gdi/ocs_gdi_security.h"

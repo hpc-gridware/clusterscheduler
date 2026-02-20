@@ -27,14 +27,14 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
 #include <pwd.h>
 
-#include "uti/sge_log.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
@@ -226,7 +226,7 @@ bool sge_parse_qrsub(lList *pcmdline, lList **alpp, lListElem **ar)
          name++;
       }
 
-      if (!is_hgroup_name(name)) {
+      if (!ocs::is_hgroup_name(name)) {
          struct passwd *pw;
          struct passwd pw_struct;
          char *buffer;

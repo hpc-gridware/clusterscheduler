@@ -44,8 +44,8 @@
 
 #include "cull/cull.h"
 
+#include "uti/sge.h"
 #include "uti/config_file.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -57,6 +57,7 @@
 
 #include "comm/commlib.h"
 
+#include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
@@ -64,8 +65,6 @@
 #include "sgeobj/sge_userset.h"
 
 #include "basis_types.h"
-#include "ocs_TopologyString.h"
-#include "uti/sge.h"
 
 #define SGE_BIN "bin"
 #define STREESPOOLTIMEDEF 240

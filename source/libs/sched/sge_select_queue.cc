@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,6 +37,7 @@
 #include <cfloat>
 #include <climits>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
@@ -50,10 +51,8 @@
 #include "cull/cull.h"
 
 #include "sgeobj/ocs_BindingType.h"
-#include "sgeobj/ocs_BindingStart.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_TopologyString.h"
-#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
@@ -6817,7 +6816,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
             for_each_ep(acl_ep, acl_list) {
                const char* user = lGetString(acl_ep, ARA_name);
 
-               if (!is_hgroup_name(user)) {
+               if (!ocs::is_hgroup_name(user)) {
                   if (strcmp(a->user, user) == 0) {
                      break;
                   }
@@ -6847,7 +6846,7 @@ static dispatch_t match_static_advance_reservation(const sge_assignment_t *a)
             for_each_ep(acl_ep, acl_list) {
                const char *user = lGetString(acl_ep, ARA_name);
 
-               if (!is_hgroup_name(user)) {
+               if (!ocs::is_hgroup_name(user)) {
                   if (strcmp(a->user, user) == 0) {
                      break;
                   }

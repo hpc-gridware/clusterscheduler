@@ -34,13 +34,11 @@
 /*___INFO__MARK_END__*/
 
 #include <cassert>
-#include <cstdio>
 #include <syslog.h>
 
 #include "basis_types.h"
 #include "msg_utilib.h"
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_component.h"
 
 #define LOG_PROF       0      /* no action, but it has to be printed allways */

@@ -27,13 +27,14 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -124,7 +125,7 @@ userset_list_validate_access(const lList *acl_list, int nm, lList **alpp, const 
    const lListElem *usp;
    for_each_ep(usp, acl_list) {
       char *user = (char *) lGetString(usp, nm);
-      if (is_hgroup_name(user)){
+      if (ocs::is_hgroup_name(user)){
          user++;  /* jump ower the @ sign */
          if (!lGetElemStr(master_userset_list, US_name, user)) {
             ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>");
@@ -300,7 +301,7 @@ find_name_as_group(const char *group_name_without_prefix, const lList *user_grou
    const char *group = sge_dstring_sprintf(&group_entry, "@%s", group_name_without_prefix);
    if (lGetElemStr(user_group_list, UE_name, group) != nullptr) {
       found = true;
-   } else if (sge_is_pattern(group_name_without_prefix)) {
+   } else if (ocs::is_pattern(group_name_without_prefix)) {
       const lListElem *acl_entry;
       for_each_ep(acl_entry, user_group_list) {
          const char *entry_name = lGetString(acl_entry, UE_name);
@@ -320,7 +321,7 @@ find_name_as_user(const char *user_name, const lList *user_group_list) {
    bool found = false;
    if (lGetElemStr(user_group_list, UE_name, user_name) != nullptr) {
       found = true;
-   } else if (sge_is_pattern(user_name)) {
+   } else if (ocs::is_pattern(user_name)) {
       const lListElem *acl_entry;
       for_each_ep(acl_entry, user_group_list) {
          const char *entry_name = lGetString(acl_entry, UE_name);

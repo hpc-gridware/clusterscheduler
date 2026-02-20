@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,6 +37,7 @@
 
 #include <cstdio>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -84,7 +85,7 @@
 *******************************************************************************/
 bool hgroup_check_name(lList **answer_list, const char* name)
 {
-   if (!is_hgroup_name(name)) {
+   if (!ocs::is_hgroup_name(name)) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_HGRP_INVALIDHOSTGROUPNAME_S, name);
@@ -490,7 +491,7 @@ hgroup_list_exists(const lList *this_list, lList **answer_list,
       for_each_ep(href, href_list) {
          const char *name = lGetHost(href, HR_name);
 
-         if (is_hgroup_name(name)) {
+         if (ocs::is_hgroup_name(name)) {
             lListElem *hgroup = hgroup_list_locate(this_list, name);
          
             if (hgroup == nullptr) {
@@ -543,12 +544,13 @@ hgroup_list_find_matching_and_resolve(const lList *this_list,
    DENTER(HGROUP_LAYER);
    if (this_list != nullptr && hgroup_pattern != nullptr) {
       const lListElem *hgroup;
+      const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
          
          /* use hostgroup expression */
-         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, nullptr)) {
+         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, nullptr, true, hgroup_pattern_is_expression)) {
             lList *tmp_used_hosts = nullptr;
             const lListElem *tmp_href = nullptr;
 
@@ -604,12 +606,13 @@ hgroup_list_find_matching(const lList *this_list, lList **answer_list,
    DENTER(HGROUP_LAYER);
    if (this_list != nullptr && hgroup_pattern != nullptr) {
       const lListElem *hgroup;
+      const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for_each_ep(hgroup, this_list) {
          const char *hgroup_name = lGetHost(hgroup, HGRP_name);
 
    /* use hostgroup expression */
-         if (!sge_eval_expression(TYPE_HOST,hgroup_pattern, hgroup_name, nullptr)) {
+         if (!sge_eval_expression(TYPE_HOST, hgroup_pattern, hgroup_name, nullptr, true, hgroup_pattern_is_expression)) {
             if (href_list != nullptr) {
                lAddElemHost(href_list, HR_name, hgroup_name, HR_Type);
             }

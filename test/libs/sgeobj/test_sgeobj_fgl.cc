@@ -22,7 +22,6 @@
 #include "cstdlib"
 #include "pthread.h"
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_fgl.h"
 #include "uti/sge_rmon_macros.h"

@@ -37,7 +37,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 

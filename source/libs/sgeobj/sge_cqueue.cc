@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,6 +35,7 @@
 #include <cstring>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -59,7 +60,6 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_hgroup.h"
-#include "sgeobj/sge_calendar.h"
 #include "sgeobj/sge_qref.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_eval_expression.h"
@@ -1028,7 +1028,7 @@ cqueue_verify_attributes(lListElem *cqueue, lList **answer_list,
                      ret = false;
                      break;
                   }
-                  if (is_hgroup_name(hostname)) {
+                  if (ocs::is_hgroup_name(hostname)) {
                      if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
                         const lListElem *hgroup = hgroup_list_locate(master_hgroup_list, hostname);
 
@@ -1145,11 +1145,12 @@ cqueue_list_find_all_matching_references(const lList *this_list,
    DENTER(CQUEUE_LAYER);
    if (this_list != nullptr && cqueue_pattern != nullptr && qref_list != nullptr) {
       const lListElem *cqueue;
+      const bool cqueue_pattern_is_expression = ocs::is_expression(cqueue_pattern);
 
       for_each_ep(cqueue, this_list) {
          const char *cqueue_name = lGetString(cqueue, CQ_name);
          /* use cqueue expression */         
-         if (!sge_eval_expression(TYPE_STR, cqueue_pattern, cqueue_name, nullptr)) {
+         if (!sge_eval_expression(TYPE_STR, cqueue_pattern, cqueue_name, nullptr, true, cqueue_pattern_is_expression)) {
             if (*qref_list == nullptr) {
                *qref_list = lCreateList("", QR_Type);
             }
@@ -1731,7 +1732,7 @@ cqueue_sick(lListElem *cqueue, lList **answer_list,
             const char *name = lGetHost(attr, cqueue_attribute_array[index].href_attr);
 
             next_attr = lNextRW(attr);
-            if (is_hgroup_name(name)) {
+            if (ocs::is_hgroup_name(name)) {
                if (strcmp(name, HOSTREF_DEFAULT)) {
                   lListElem *hgroup = nullptr;
                   lList *used_hgroup_hosts = nullptr;

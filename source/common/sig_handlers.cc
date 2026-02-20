@@ -35,7 +35,6 @@
 #include <csignal>
 #include <cstdlib>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "comm/commlib.h"

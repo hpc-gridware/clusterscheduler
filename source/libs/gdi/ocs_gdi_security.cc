@@ -41,9 +41,9 @@
 
 #include "../cull/cull.h"
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/sge_afsutil.h"
 #include "uti/sge_arch.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
@@ -184,7 +184,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
 
    DENTER(TOP_LAYER);
    
-   if (bootstrap_has_security_mode(BS_SEC_MODE_AFS)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS)) {
       snprintf(binary, sizeof(binary), "%s/util/get_token_cmd", sge_root);
 
       if (sge_get_token_cmd(binary, nullptr, 0) != 0) {
@@ -215,8 +215,8 @@ int set_sec_cred(const char *sge_root, const char *mastername, lListElem *job, l
     *  be nice if there was a generic job submittal function.
     */
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-       bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+       ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) {
       snprintf(binary, sizeof(binary), "%s/utilbin/%s/get_cred", sge_root, sge_get_arch());
 
       if (sge_get_token_cmd(binary, nullptr, 0) != 0) {
@@ -296,8 +296,8 @@ bool cache_sec_cred(const char* sge_root, lListElem *jep, const char *rhost)
     *
     */
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-       bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+       ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) {
 
       pid_t command_pid=-1;
       FILE *fp_in, *fp_out, *fp_err;
@@ -363,8 +363,8 @@ void delete_credentials(const char *sge_root, lListElem *jep)
    /* 
     * Execute command to delete the client's DCE or Kerberos credentials.
     */
-   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
+   if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+        ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
         lGetString(jep, JB_cred)) {
 
       pid_t command_pid=-1;
@@ -436,8 +436,8 @@ int store_sec_cred(const char* sge_root, lListElem *jep, int do_authentication, 
 
    DENTER(TOP_LAYER);
 
-   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
+   if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+        ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
        (do_authentication || lGetString(jep, JB_cred))) {
 
       pid_t command_pid;
@@ -547,8 +547,8 @@ int store_sec_cred2(const char* sge_root, const char* unqualified_hostname, lLis
    
    DENTER(TOP_LAYER);
 
-   if ((bootstrap_has_security_mode(BS_SEC_MODE_DCE) ||
-        bootstrap_has_security_mode(BS_SEC_MODE_KERBEROS)) &&
+   if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+        ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
        (cred = lGetString(jelem, JB_cred)) && cred[0]) {
 
       pid_t command_pid;

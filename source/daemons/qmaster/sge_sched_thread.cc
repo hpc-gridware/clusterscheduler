@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,7 +38,6 @@
 #  include <sys/stream.h>
 #endif
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_profiling.h"
@@ -58,10 +57,8 @@
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_order.h"
-#include "sgeobj/sge_grantedres.h"
 
 #include "evc/sge_event_client.h"
-#include "evm/sge_event_master.h"
 
 #include "sched/sge_orders.h"
 #include "sched/sge_job_schedd.h"

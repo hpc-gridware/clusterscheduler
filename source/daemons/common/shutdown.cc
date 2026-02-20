@@ -49,6 +49,7 @@
 #include <uti/sge_string.h>
 
 #include "msg_daemons_common.h"
+#include "uti/ocs_Bootstrap.h"
 
 void starting_up()
 {
@@ -60,16 +61,16 @@ void starting_up()
    
    DSTRING_STATIC(ds1, 256);
    feature_get_product_name(FS_VERSION, &ds1);
-   const char *security_mode = bootstrap_get_security_mode();
-   if (sge_strnullcasecmp(NONE_STR, security_mode) != 0) {
-      sge_dstring_sprintf_append(&ds1, " (%s)", security_mode);
+   std::string security_mode = ocs::Bootstrap::get_security_modes();
+   if (security_mode != NONE_STR) {
+      sge_dstring_sprintf_append(&ds1, " (%s)", security_mode.c_str());
    }
    DSTRING_STATIC(ds2, 256);
    INFO(MSG_STARTUP_STARTINGUP_SSS, feature_get_product_name(FS_SHORT, &ds2), sge_dstring_get_string(&ds1), sge_get_arch());
 
 
    // log if we are using Munge
-   if (bootstrap_has_security_mode(BS_SEC_MODE_MUNGE)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
       INFO(SFNMAX, MSG_STARTUP_USING_MUNGE);
    }
 
@@ -101,9 +102,9 @@ void sge_shutdown(int i)
    u_long32 old_ll = log_state_get_log_level();
    DSTRING_STATIC(ds, 256);
    feature_get_product_name(FS_VERSION, &ds);
-   const char *security_mode = bootstrap_get_security_mode();
-   if (sge_strnullcasecmp(NONE_STR, security_mode) != 0) {
-      sge_dstring_sprintf_append(&ds, " (%s)", security_mode);
+   std::string security_mode = ocs::Bootstrap::get_security_modes();
+   if (security_mode != NONE_STR) {
+      sge_dstring_sprintf_append(&ds, " (%s)", security_mode.c_str());
    }
 
    log_state_set_log_level(LOG_INFO);

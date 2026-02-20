@@ -56,11 +56,9 @@
 /* MT-NOTE: parse_job_identifier() is not MT safe */
 static bool parse_job_identifier(const char *id, u_long32 *job_id, u_long32 *ja_task_id)
 {
-   char *copy = nullptr;
-
    DENTER(TOP_LAYER);
 
-   copy = strdup(id);
+   char *copy = strdup(id);
    *job_id = atoi(strtok(copy, "."));
    *ja_task_id = atoi(strtok(nullptr, "."));
    sge_free(&copy);
@@ -104,13 +102,13 @@ static bool parse_job_identifier(const char *id, u_long32 *job_id, u_long32 *ja_
 *******************************************************************************/
 bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool reschedule) 
 {
+   DENTER(TOP_LAYER);
    u_long32 job_id, ja_task_id;
    lList *ref_list = nullptr, *alp;
    lListElem *ref_ep;
    char job_id_str[100];
    ocs::gdi::Client::sge_gdi_ctx_class_t *ctx = evc->get_gdi_ctx(evc);
 
-   DENTER(TOP_LAYER);
 
    /* reschedule not yet implemented */
    if(reschedule) {
@@ -170,13 +168,12 @@ bool sge_ssi_job_cancel(sge_evc_class_t *evc, const char *job_identifier, bool r
 *******************************************************************************/
 bool sge_ssi_job_start(sge_evc_class_t *evc, const char *job_identifier, const char *pe, task_map tasks[])
 {
+   DENTER(TOP_LAYER);
    u_long32 job_id, ja_task_id;
    lListElem *job, *ja_task;
    lList *order_list = nullptr; /* list to be sent to qmaster */
    lList *granted = nullptr;    /* granted queues */
    int i;
-
-   DENTER(TOP_LAYER);
 
    if(!parse_job_identifier(job_identifier, &job_id, &ja_task_id)) {
       DRETURN(false);

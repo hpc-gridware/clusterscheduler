@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cerrno>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -508,7 +509,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
 
       for_each_ep(user, user_list) {
          const char *user_name = lGetString(user, ST_name);
-         bool is_pattern = sge_is_pattern(user_name);
+         bool is_pattern = ocs::is_pattern(user_name);
 
          if (is_pattern && !manop_is_manager(packet, master_manager_list)) {
             ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, "modify all advance reservations");
@@ -530,7 +531,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
             ar_where = lOrWhere(ar_where, new_where);
          }
       }
-   } else if (sge_is_pattern(id_str)) {
+   } else if (ocs::is_pattern(id_str)) {
       /* if no userlist and wildcard jobs was requested only delete the own ars */
       lCondition *new_where = nullptr;
       new_where = lWhere("%T(%I == %s)", AR_Type, AR_owner, packet->user);

@@ -42,7 +42,6 @@
 #include <cstring>
 
 #include "uti/ocs_Systemd.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_io.h"

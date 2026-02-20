@@ -34,8 +34,8 @@
 
 #include <cfloat>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
-
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -305,7 +305,7 @@ int sge_job_slot_request(const lListElem *job, const lList *pe_list)
    } 
 
    /* parallel job with slot range request */
-   if (!sge_is_pattern(pe_name))
+   if (!ocs::is_pattern(pe_name))
       pep = pe_list_locate(pe_list, pe_name);
    else {
       /* use the first matching pe */

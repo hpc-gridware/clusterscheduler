@@ -37,10 +37,9 @@
 #include <cstring>
 #include <unistd.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
-
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
@@ -4187,7 +4186,7 @@ void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
 static void
 job_add_str_to_command_line(dstring *dstr, const char *str) {
    if (str != nullptr) {
-      bool do_quote = sge_has_whitespace(str) || sge_is_pattern(str);
+      bool do_quote = sge_has_whitespace(str) || ocs::is_pattern(str);
       if (do_quote) {
          sge_dstring_append_char(dstr, '\'');
       }

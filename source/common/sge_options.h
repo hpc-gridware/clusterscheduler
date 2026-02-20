@@ -35,7 +35,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_component.h"
 
 enum {

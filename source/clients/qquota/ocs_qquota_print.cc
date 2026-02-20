@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,7 +37,7 @@
 #include <math.h>
 #include <fnmatch.h>
 
-#include "uti/sge_bootstrap.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -45,9 +45,7 @@
 #include "sched/sort_hosts.h"
 #include "sched/sge_select_queue.h"
 
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_userset.h"
@@ -238,7 +236,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                        /* check user name */
                                        cp = qquota_get_next_filter(user, rue_name);
                                        /* usergroups have the same beginning character @ as host groups */
-                                       if (is_hgroup_name(qquota_filter.user)) {
+                                       if (ocs::is_hgroup_name(qquota_filter.user)) {
                                           lListElem *ugroup = nullptr;
 
                                           if ((ugroup = lGetElemStrRW(userset_list, US_name, &qquota_filter.user[1])) != nullptr) {
@@ -248,7 +246,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                           }
                                        } else {
                                           if (strcmp(user, "-") != 0 && strcmp(qquota_filter.user, "*") != 0) {
-                                             if (sge_is_pattern(qquota_filter.user)) {
+                                             if (ocs::is_pattern(qquota_filter.user)) {
                                                 if (fnmatch(qquota_filter.user, user, 0) != 0) {
                                                    continue;
                                                 }
@@ -280,7 +278,7 @@ bool qquota_output(lList *host_list, lList *resource_match_list, lList *user_lis
                                        }
                                        /* check host name */
                                        cp = qquota_get_next_filter(host, cp);
-                                       if (is_hgroup_name(qquota_filter.host)) {
+                                       if (ocs::is_hgroup_name(qquota_filter.host)) {
                                           lListElem *hgroup = nullptr;
 
                                           if ((hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host)) != nullptr) {

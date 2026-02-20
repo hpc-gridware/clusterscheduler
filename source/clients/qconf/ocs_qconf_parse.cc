@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,6 +37,7 @@
 #include <cctype>
 #include <fnmatch.h>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_edit.h"
 #include "uti/sge_io.h"
@@ -61,7 +62,6 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_calendar.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -2861,7 +2861,7 @@ int sge_parse_qconf(char *argv[])
                      is_cqueue = (strcmp(host_hgroup, HOSTREF_DEFAULT) == 0) ? true : false;
                      is_domain = false;
                      if (!is_cqueue) {
-                        is_domain = is_hgroup_name(host_hgroup);
+                        is_domain = ocs::is_hgroup_name(host_hgroup);
                      }
                      is_qinstance = (!is_domain && !is_cqueue) ? true : false;
 

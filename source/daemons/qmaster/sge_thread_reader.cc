@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,11 +21,12 @@
 #include <pthread.h>
 #include <cstring>
 
+#include "ocs_Bootstrap.h"
+
 #ifdef WITH_PYTHON_IN_QMASTER
 #  include <pybind11/embed.h>
 #endif
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
@@ -72,7 +73,7 @@ sge_reader_cleanup_monitor(void *arg) {
 
 void
 sge_reader_initialize() {
-   const int max_initial_reader_threads = bootstrap_get_reader_thread_count();
+   const int max_initial_reader_threads = ocs::Bootstrap::get_reader_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
    DENTER(TOP_LAYER);

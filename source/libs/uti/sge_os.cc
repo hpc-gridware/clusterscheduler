@@ -54,13 +54,10 @@
 #   include <sys/termios.h>
 #endif
 
-#include "uti/msg_utilib.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
-#include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
 #include "sig_handlers.h"

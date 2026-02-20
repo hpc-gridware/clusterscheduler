@@ -38,12 +38,9 @@
 #include "comm/cl_communication.h"
 
 #include "uti/sge_log.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 
-#include "sgeobj/parse.h"
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 

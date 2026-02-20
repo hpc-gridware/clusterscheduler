@@ -33,7 +33,6 @@
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_bitfield.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"

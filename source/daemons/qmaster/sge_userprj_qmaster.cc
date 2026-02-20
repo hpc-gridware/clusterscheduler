@@ -70,6 +70,7 @@
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "ocs_Bootstrap.h"
 
 
 static int
@@ -444,7 +445,7 @@ verify_project_list(lList **alpp, const lList *name_list, const lList *prj_list,
 void
 sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
    u_long64 auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
-   const char *admin = bootstrap_get_admin_user();
+   const char *admin = ocs::Bootstrap::get_admin_user();
    const char *qmaster_host = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);
@@ -582,7 +583,7 @@ static int do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lLis
    gdi_object_t *userList = nullptr;
    lList *tmpAnswer = nullptr;
    lList *ppList = nullptr;
-   const char *admin_user = bootstrap_get_admin_user();
+   const char *admin_user = ocs::Bootstrap::get_admin_user();
    const char *qualified_hostname = component_get_qualified_hostname();
 
    DENTER(TOP_LAYER);

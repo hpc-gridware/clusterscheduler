@@ -37,7 +37,6 @@
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/ocs_cond.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_mtutil.h"
@@ -45,7 +44,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 
@@ -61,7 +59,6 @@
 #include "parse_job_cull.h"
 #include "ocs_client_parse.h"
 #include "ocs_client_job.h"
-#include "parse_qsub.h"
 #include "msg_clients_common.h"
 #include "msg_qsub.h"
 #include "msg_qmaster.h"

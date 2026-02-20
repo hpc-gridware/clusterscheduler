@@ -27,14 +27,13 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_component.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_time.h"
 
 #include "cull/cull.h"
@@ -52,19 +51,20 @@
 #include "evm/sge_event_master.h"
 #include "sge_persistence_qmaster.h"
 #include "msg_qmaster.h"
+#include "ocs_Bootstrap.h"
 
 static unsigned long spooling_wait_time = 0;
 
 bool
 sge_initialize_persistence(lList **answer_list) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
    lListElem *spooling_context;
-   const char *spooling_method = bootstrap_get_spooling_method();
-   const char *spooling_lib = bootstrap_get_spooling_lib();
-   const char *spooling_params = bootstrap_get_spooling_params();
+   const char *spooling_method = ocs::Bootstrap::get_spooling_method();
+   const char *spooling_lib = ocs::Bootstrap::get_spooling_lib();
+   const char *spooling_params = ocs::Bootstrap::get_spooling_params();
 
-   DENTER(TOP_LAYER);
 
    if (getenv("SGE_TEST_SPOOLING_WAIT_TIME") != nullptr) {
       spooling_wait_time = atoi(getenv("SGE_TEST_SPOOLING_WAIT_TIME"));

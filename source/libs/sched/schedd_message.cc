@@ -354,14 +354,11 @@ lListElem *schedd_mes_obtain_package(int *global_mes_count, int *job_mes_count)
 *******************************************************************************/
 void schedd_mes_add(lList **monitor_alpp, bool monitor_next_run, u_long32 job_id, u_long32 message_number, ...)
 {
-   u_long32 schedd_job_info;
-
    DENTER(TOP_LAYER);
 
-   schedd_job_info = sconf_get_schedd_job_info();
+   u_long32 schedd_job_info = sconf_get_schedd_job_info();
 
-   if (monitor_alpp != nullptr || monitor_next_run ||
-       (job_id != 0 && schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
+   if (monitor_alpp != nullptr || monitor_next_run || (job_id != 0 && schedd_job_info != SCHEDD_JOB_INFO_FALSE)) {
       va_list args;
       const char *fmt;
 

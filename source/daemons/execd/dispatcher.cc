@@ -36,7 +36,6 @@
 #include <unistd.h>
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_profiling.h"
@@ -64,6 +63,7 @@
 #include "execd_get_new_conf.h"
 #include "execd_ck_to_do.h"
 #include "load_avg.h"
+#include "ocs_Bootstrap.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -87,7 +87,7 @@ int sge_execd_process_messages() {
 #if defined(OCS_WITH_OPENSSL)
    bool tls_security = bootstrap_has_security_mode(BS_SEC_MODE_TLS);
 #endif
-   bool munge_security = bootstrap_has_security_mode(BS_SEC_MODE_MUNGE);
+   bool munge_security = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE);
 
    sge_monitor_init(&monitor, "sge_execd_process_messages", NONE_EXT, EXECD_WARNING, EXECD_ERROR, nullptr);
 

@@ -39,14 +39,14 @@
 
 #include "comm/cl_commlib.h"
 
-#include "sge_bootstrap.h"
 #include "sge_hostname.h"
 #include "sge_log.h"
 #include "sge_rmon_macros.h"
-#include "sge_stdio.h"
 #include "sge_uidgid.h"
 
 #include "sge_security.h"
+
+#include "ocs_Bootstrap.h"
 
 #ifdef CRYPTO
 #include <openssl/evp.h>
@@ -529,7 +529,7 @@ sge_security_verify_user(const char *host, const char *commproc, u_long32 id, co
       DRETURN(false);
    }
 
-   const char *admin_user = bootstrap_get_admin_user();
+   const char *admin_user = ocs::Bootstrap::get_admin_user();
    if (is_daemon(commproc) && strcmp(gdi_user, admin_user) != 0 && !sge_is_user_superuser(gdi_user)) {
       DRETURN(false);
    }

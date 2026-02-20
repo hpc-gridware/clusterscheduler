@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cctype>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -2160,7 +2161,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       while ((elem1 = elem2) != nullptr) {
          elem2 = lNextRW(elem1);
 
-         if (sge_is_pattern(lGetString(elem1, ST_name))) {
+         if (ocs::is_pattern(lGetString(elem1, ST_name))) {
             lDechainElem(jid_list, elem1);
             removed_pattern = true;
          }

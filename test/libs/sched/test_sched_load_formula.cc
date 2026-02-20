@@ -32,7 +32,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_centry.h"

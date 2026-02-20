@@ -34,7 +34,6 @@
 
 #include <cstring>
 
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_edit.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -61,6 +60,7 @@
 
 #include "ocs_qconf_cqueue.h"
 #include "msg_qconf.h"
+#include "ocs_Pattern.h"
 
 static void insert_custom_complex_values_writer(spooling_field *fields);
 static int write_QU_consumable_config_list(const lListElem *ep, int nm,
@@ -627,6 +627,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                lFreeList(&qref_list);
             } else if (has_hostname) {
                const char *h_pattern = sge_dstring_get_string(&host_domain);
+               bool h_pattern_is_expression = ocs::is_expression(h_pattern);
                bool is_first = true;
 
                for_each_ep(qref, qref_list) {
@@ -644,7 +645,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                         const char *hostname = nullptr;
 
                         hostname = lGetHost(qinstance, QU_qhostname);
-                        if (!sge_eval_expression(TYPE_HOST, h_pattern, hostname, nullptr)) {
+                        if (!sge_eval_expression(TYPE_HOST, h_pattern, hostname, nullptr, true, h_pattern_is_expression)) {
                            const char *filename;
                            spooling_field *fields = sge_build_QU_field_list(true, false);
 

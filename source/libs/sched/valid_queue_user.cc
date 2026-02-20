@@ -27,19 +27,19 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_advance_reservation.h"
 
@@ -87,7 +87,7 @@ bool sge_ar_have_users_access(lList **alpp, lListElem *ar, const char *name, con
       user = lGetString(acl_entry, ARA_name);
 
       DPRINTF("check permissions for user %s\n", user);
-      if (!is_hgroup_name(user)) {
+      if (!ocs::is_hgroup_name(user)) {
          if (sge_has_access_(user, lGetString(acl_entry, ARA_group), nullptr,
                              acl_list, xacl_list,master_userset_list) == 0) {
              answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 

@@ -628,17 +628,16 @@ void rqs_can_optimize(const lListElem *rule, bool *host, bool *queue, sge_assign
 *  NOTES
 *     MT-NOTE: check_and_debit_rqs_slots() is MT safe
 *******************************************************************************/
-void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue,
-      int *slots, dstring *rule_name, dstring *rue_name, dstring *limit_name)
-{
+void
+parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, int *slots,
+                                   dstring *rule_name, dstring *rue_name, dstring *limit_name) {
+   DENTER(TOP_LAYER);
    const lListElem *rqs, *rule;
    const char* user = a->user;
    const char* group = a->group;
    const lList *grp_list = a->grp_list;
    const char* project = a->project;
    const char* pe = a->pe_name;
-
-   DENTER(TOP_LAYER);
 
    /* first step - see how many slots are left */
    for_each_ep(rqs, a->rqs_list) {
@@ -650,10 +649,9 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
       sge_dstring_clear(rule_name);
       rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
-         const lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         if ((rql = lGetElemStr(a->limit_list, RQL_name, sge_dstring_get_string(limit_name)))) {
+         if (const lListElem *rql = lGetElemStr(a->limit_list, RQL_name, sge_dstring_get_string(limit_name)); rql != nullptr) {
             *slots = MIN(*slots, lGetInt(rql, RQL_slots));
          } else {
             *slots = 0;
@@ -669,18 +667,18 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    if (*slots != 0) {
       for_each_ep(rqs, a->rqs_list) {
 
-         /* ignore disabled rule sets */
+         // ignore disabled rule sets
          if (!lGetBool(rqs, RQS_enabled)) {
             continue;
          }
+
          sge_dstring_clear(rule_name);
          rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
          if (rule != nullptr) {
-            lListElem *rql;
             rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
             sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-            rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
-            lSetInt(rql, RQL_slots,      lGetInt(rql, RQL_slots) - *slots);
+            lListElem *rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
+            lSetInt(rql, RQL_slots, lGetInt(rql, RQL_slots) - *slots);
          }
       }
    }
@@ -690,33 +688,33 @@ void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, c
    DRETURN_VOID;
 }
 
-void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue,
-      int slots, dstring *rule_name, dstring *rue_name, dstring *limit_name)
-{
-   const lListElem *rqs, *rule;
-   const char* user = a->user;
-   const char* group = a->group;
-   const lList *grp_list = a->grp_list;
-   const char* project = a->project;
-   const char* pe = a->pe_name;
-
+void
+parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, const char *queue,
+                                    int slots, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
    DENTER(TOP_LAYER);
+   const lListElem *rqs;
 
    for_each_ep(rqs, a->rqs_list) {
 
-      /* ignore disabled rule sets */
+      // ignore disabled rule sets
       if (!lGetBool(rqs, RQS_enabled)) {
          continue;
       }
+
+      // find the rule
       sge_dstring_clear(rule_name);
-      rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
+      const char* user = a->user;
+      const char* group = a->group;
+      const lList *grp_list = a->grp_list;
+      const char* project = a->project;
+      const char* pe = a->pe_name;
+      const lListElem *rule = rqs_get_matching_rule(rqs, user, group, grp_list, project, pe, host, queue, a->acl_list, a->hgrp_list, rule_name);
       if (rule != nullptr) {
-         lListElem *rql;
          rqs_get_rue_string(rue_name, rule, user, project, host, queue, pe);
          sge_dstring_sprintf(limit_name, "%s=%s", sge_dstring_get_string(rule_name), sge_dstring_get_string(rue_name));
-         rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
+         lListElem *rql = lGetElemStrRW(a->limit_list, RQL_name, sge_dstring_get_string(limit_name));
          DPRINTF("limit: %s %d <--- %d\n", sge_dstring_get_string(limit_name), lGetInt(rql, RQL_slots), lGetInt(rql, RQL_slots)+slots);
-         lSetInt(rql, RQL_slots,      lGetInt(rql, RQL_slots) + slots);
+         lSetInt(rql, RQL_slots, lGetInt(rql, RQL_slots) + slots);
       }
    }
 
@@ -870,13 +868,12 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 {
    const lListElem *cq;
-   const char *cqname;
    lListElem *qfilter = lGetObject(rule, RQR_filter_queues);
 
    DENTER(TOP_LAYER);
 
    for_each_ep(cq, *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE)) {
-      cqname = lGetString(cq, CQ_name);
+      const char *cqname = lGetString(cq, CQ_name);
       if (lGetElemStr(a->skip_cqueue_list, CTI_name, cqname))
          continue;
       if (rqs_filter_match(qfilter, FILTER_QUEUES, cqname, nullptr, nullptr, nullptr, nullptr) && !cqueue_shadowed_by(cqname, rule, a))
@@ -908,11 +905,10 @@ void rqs_expand_cqueues(const lListElem *rule, sge_assignment_t *a)
 void rqs_expand_hosts(const lListElem *rule, sge_assignment_t *a)
 {
    const lListElem *eh;
-   const char *hname;
    lListElem *hfilter = lGetObject(rule, RQR_filter_hosts);
 
    for_each_ep(eh, a->host_list) {
-      hname = lGetHost(eh, EH_name);
+      const char *hname = lGetHost(eh, EH_name);
       if (lGetElemStr(a->skip_host_list, CTI_name, hname))
          continue;
       if (rqs_filter_match(hfilter, FILTER_HOSTS, hname, nullptr, a->hgrp_list, nullptr, nullptr) && !host_shadowed_by(hname, rule, a))

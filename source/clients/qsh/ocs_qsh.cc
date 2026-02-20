@@ -51,7 +51,6 @@
 #include <netinet/in.h>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
@@ -86,6 +85,8 @@
 #include "msg_common.h"
 
 #include <termios.h>
+
+#include "ocs_Bootstrap.h"
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
@@ -1426,9 +1427,9 @@ int main(int argc, const char **argv)
    mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
 
    cl_framework_t communication_framework;
-   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
       communication_framework = CL_CT_SSL;
-   } else if (bootstrap_has_security_mode(BS_SEC_MODE_TLS)) {
+   } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
       communication_framework = CL_CT_SSL_TLS;
    } else {
       communication_framework = CL_CT_TCP;

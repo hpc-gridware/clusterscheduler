@@ -36,7 +36,6 @@
 #include <cstdlib>
 #include <cerrno>
 #include <cstdlib>
-#include <unistd.h>
 #include <cstring>
 #include <climits>
 #include <sys/types.h>
@@ -48,6 +47,7 @@
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_string.h"
+#include "uti/sge_unistd.h"
 
 #include "comm/lists/cl_util.h"
 #include "comm/cl_commlib.h"

@@ -33,6 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <array>
 #include "sge_dstring.h"
 
 struct saved_vars_s {
@@ -54,11 +55,7 @@ size_t sge_strlen(const char *str);
 
 char *sge_strtok(const char *str, const char *delimitor);
 
-bool sge_is_pattern(const char *p);
-
 bool sge_has_whitespace(const char *s);
-
-bool sge_is_expression(const char *p);
 
 char *sge_strtok_r(const char *str, const char *delimitor,
                    struct saved_vars_s **last);

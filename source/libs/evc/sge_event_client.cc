@@ -36,7 +36,6 @@
 #include <cstring>
 
 #include "uti/ocs_cond.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_error_class.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
@@ -62,6 +61,7 @@
 #include "evc/msg_evclib.h"
 
 #include "msg_common.h"
+#include "uti/ocs_Bootstrap.h"
 
 #define EVC_LAYER TOP_LAYER
 
@@ -1361,7 +1361,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          // for internal request we create a pseudo packet just containing
          // information required for potential error message
          ocs::gdi::Packet pseudo_packet;
-         strcpy(pseudo_packet.user, bootstrap_get_admin_user());
+         strcpy(pseudo_packet.user, ocs::Bootstrap::get_admin_user());
          strcpy(pseudo_packet.host, ocs::gdi::ClientBase::gdi_get_act_master_host(false));
 
          /*
@@ -2455,7 +2455,7 @@ ec2_commit_local(sge_evc_class_t *thiz, lList **alpp) {
       DPRINTF(SFN "\n", MSG_EVENT_NOTREGISTERED);
    } else {
       local_t *evc_local = &(thiz->ec_local);
-      const char *ruser = bootstrap_get_admin_user();
+      const char *ruser = ocs::Bootstrap::get_admin_user();
       const char *rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
       lSetRef(sge_evc->ec, EV_update_function, (void *)evc_local->update_func);
       lSetRef(sge_evc->ec, EV_update_function_arg, (void *)evc_local->update_func_arg);

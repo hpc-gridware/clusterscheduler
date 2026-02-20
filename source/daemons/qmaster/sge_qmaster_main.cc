@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,13 +35,14 @@
 #include <csignal>
 #include <iostream>
 
+#include "ocs_Bootstrap.h"
+
 #ifdef WITH_PYTHON_IN_QMASTER
 #  include "pybind11/embed.h"
 #endif
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_arch.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_log.h"
 #include "uti/sge_monitor.h"
 #include "uti/sge_profiling.h"
@@ -275,8 +276,8 @@ int main(int argc, char *argv[]) {
     * now we become admin user change into the correct root directory set the
     * the target for logging messages
     */
-   sge_become_admin_user(bootstrap_get_admin_user());
-   sge_chdir_exit(bootstrap_get_qmaster_spool_dir(), 1);
+   sge_become_admin_user(ocs::Bootstrap::get_admin_user());
+   sge_chdir_exit(ocs::Bootstrap::get_qmaster_spool_dir(), 1);
    log_state_set_log_file(ERR_FILE);
    component_set_exit_func(sge_exit_func);
 

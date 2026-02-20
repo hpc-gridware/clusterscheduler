@@ -49,6 +49,7 @@
 #include "evm/sge_event_master.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
+#include "ocs_Bootstrap.h"
 
 /* ------------------------------------------------------------
 
@@ -224,8 +225,9 @@ sge_del_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
    }
 
    /* prevent removing the admin user from man/op-list */
-   if (strcmp(manop_name, bootstrap_get_admin_user()) == 0) {
-      ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, bootstrap_get_admin_user(), object_name);
+   const char *admin_user = ocs::Bootstrap::get_admin_user();
+   if (strcmp(manop_name, admin_user) == 0) {
+      ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, admin_user, object_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }

@@ -43,7 +43,6 @@
 #include <pwd.h>
 
 #include "uti/ocs_cond.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -81,8 +80,6 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_Client.h"
-
-#include "evm/sge_event_master.h"
 
 /****** JAPI/--Job_API ********************************************************
 *  NAME

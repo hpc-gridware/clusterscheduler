@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -716,6 +717,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
          for (const std::pair<std::string, std::string> &ppair : *usage_patterns) {
             std::string pattern_name = ppair.first;
             std::string pattern = ppair.second;
+            const bool pattern_is_expression = ocs::is_expression(pattern.c_str());
 
             writer->Key(pattern_name.c_str());
             writer->StartObject();
@@ -723,7 +725,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
             const lListElem *ep;
             for_each_ep(ep, usage_list) {
                const char *name = lGetString(ep, UA_name);
-               if (sge_eval_expression(TYPE_STR, pattern.c_str(), name, nullptr) == 0) {
+               if (sge_eval_expression(TYPE_STR, pattern.c_str(), name, nullptr, true, pattern_is_expression) == 0) {
                   write_json(*writer, name,
                              reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                             name, name, 0));

@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,9 +40,9 @@
 
 #include <sys/resource.h>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
@@ -64,14 +64,12 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_resource_quota.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_centry.h"
-#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 
@@ -80,7 +78,6 @@
 #include "sched/debit.h"
 
 #include "ocs_CategoryQmaster.h"
-#include "sge_resource_quota_qmaster.h"
 #include "sge_advance_reservation_qmaster.h"
 #include "sge_qinstance_qmaster.h"
 #include "sge_qmod_qmaster.h"
@@ -256,7 +253,7 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
    }
    reresolve_qualified_hostname();
    DEBUG("%s: qualified hostname \"%s\"\n", __func__, component_get_qualified_hostname());
-   admin_user = bootstrap_get_admin_user();
+   admin_user = ocs::Bootstrap::get_admin_user();
 
    char str[MAX_STRING_SIZE];
    if (sge_set_admin_username(admin_user, str, sizeof(str)) == -1) {
@@ -597,7 +594,7 @@ communication_setup() {
 
    const char *qualified_hostname = component_get_qualified_hostname();
    u_long32 qmaster_port = bootstrap_get_sge_qmaster_port();
-   const char *qmaster_spool_dir = bootstrap_get_qmaster_spool_dir();
+   const char *qmaster_spool_dir = ocs::Bootstrap::get_qmaster_spool_dir();
 
    DENTER(TOP_LAYER);
 

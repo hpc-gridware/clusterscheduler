@@ -29,7 +29,7 @@
  *
  * Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -39,7 +39,6 @@
 #include <cfloat>
 
 #include "uti/sge_arch.h"
-#include "uti/sge_bootstrap.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
@@ -64,17 +63,15 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_usage.h"
 
 #include "sgeobj/ocs_Version.h"
-#include "sgeobj/sge_daemonize.h"
 
 #include "job_report_execd.h"
 #include "sge_load_sensor.h"
 #include "load_avg.h"
-#include "execd_ck_to_do.h"
 #include "sge_report_execd.h"
 #include "msg_execd.h"
+#include "ocs_Bootstrap.h"
 
 #ifdef COMPILE_DC
 #  include "ptf.h"
@@ -196,7 +193,7 @@ static int
 execd_add_load_report(lList *report_list, u_long64 now, u_long64 *next_send)
 {
    const char* qualified_hostname = component_get_qualified_hostname();
-   const char* binary_path = bootstrap_get_binary_path();
+   const char* binary_path = ocs::Bootstrap::get_binary_path();
 
    DENTER(TOP_LAYER);
 
