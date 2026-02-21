@@ -278,7 +278,7 @@ apt-get install -y git autoconf automake build-essential manpages-dev patchelf
 apt-get install -y expect tcl tdom gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
-apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
+apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev ocl-icd-opencl-dev
 apt-get install -y libudev-dev libmunge-dev libtirpc-dev
 apt-get install -y pandoc texlive*
 ```
