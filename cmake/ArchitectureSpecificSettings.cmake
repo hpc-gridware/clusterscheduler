@@ -153,7 +153,7 @@ function(architecture_specific_settings)
 
          # enabled jemalloc on RiscV beginning with OCS 9.1.0
          # with earlier versions of jemalloc there are some issues with the RiscV architecture, see CS-162
-         set(WITH_JEMALLOC OFF PARENT_SCOPE)
+         # set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
 
       if (SGE_ARCH STREQUAL "lx-x86" OR SGE_ARCH STREQUAL "ulx-x86" OR SGE_ARCH STREQUAL "xlx-x86")
