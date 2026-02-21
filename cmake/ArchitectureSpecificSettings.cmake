@@ -150,6 +150,9 @@ function(architecture_specific_settings)
       if (SGE_ARCH MATCHES "lx-riscv64")
          # Linux RiscV
          add_compile_options(-fPIC)
+
+         # enabled jemalloc on RiscV beginning with OCS 9.1.0
+         # with earlier versions of jemalloc there are some issues with the RiscV architecture, see CS-162
          set(WITH_JEMALLOC OFF PARENT_SCOPE)
       endif()
 
