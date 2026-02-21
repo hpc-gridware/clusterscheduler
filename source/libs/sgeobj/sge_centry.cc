@@ -1590,11 +1590,10 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
 }
 
 const char *sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p) {
-   const char *s = nullptr;
-   u_long32 type = lGetUlong(rep, CE_valtype);
-
    DENTER(TOP_LAYER);
 
+   const char *s = nullptr;
+   u_long32 type = lGetUlong(rep, CE_valtype);
    switch (type) {
       case TYPE_HOST:
       case TYPE_STR:

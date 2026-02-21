@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fnmatch.h>
+#include <string>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
@@ -1518,16 +1519,13 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
       queue_complexes2scheduler(&rlp, q, qstat_env->exechost_list, qstat_env->centry_list);
 
       for_each_rw (rep , rlp) {
-
          /* we had a -F request */
          if (qstat_env->qresource_list) {
             const lListElem *qres;
 
-            qres = lGetElemStr(qstat_env->qresource_list, CE_name, 
-                               lGetString(rep, CE_name));
+            qres = lGetElemStr(qstat_env->qresource_list, CE_name, lGetString(rep, CE_name));
             if (qres == nullptr) {
-               qres = lGetElemStr(qstat_env->qresource_list, CE_name,
-                               lGetString(rep, CE_shortcut));
+               qres = lGetElemStr(qstat_env->qresource_list, CE_name, lGetString(rep, CE_shortcut));
             }
 
             /* if this complex variable wasn't requested with -F, skip it */
@@ -1541,22 +1539,9 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
 
          std::string details;
          if (strcmp(lGetString(rep, CE_name), LOAD_ATTR_TOPOLOGY) == 0) {
-            ocs::TopologyString topo_in_use;
             const char *hostname = lGetHost(q, QU_qhostname);
             const lListElem *host = lGetElemHost(qstat_env->exechost_list, EH_name, hostname);
-            if (host) {
-               const lList *resource_utilization = lGetList(host, EH_resource_utilization);
-               if (resource_utilization != nullptr) {
-                  const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
-                  if (slots_utilization != nullptr) {
-                     const char *binding_inuse = lGetString(slots_utilization, RUE_utilized_now_binding_inuse);
-                     if (binding_inuse) {
-                        topo_in_use.reset_topology(binding_inuse);
-                     }
-                  }
-               }
-            }
-            details = topo_in_use.to_product_topology_string();
+            details = host_get_topology_in_use(host);
          }
 
          if ((ret=handler->report_queue_resource(handler, dom, lGetString(rep, CE_name), s, details.c_str(), alpp))) {

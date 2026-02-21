@@ -763,7 +763,6 @@ lList **alpp
    }
    host_complexes2scheduler(&rlp, host, ehl, cl);
    for_each_rw(rep, rlp) {
-      u_long32 type = lGetUlong(rep, CE_valtype);
       dstring output = DSTRING_INIT;
 
       if (resl != nullptr) {
@@ -776,7 +775,7 @@ lList **alpp
                if (first) {
                   first = 0;
                   if (report_handler == nullptr ) {
-                     sge_dstring_sprintf_append(&output, "    Host Resource(s):   ");
+                     sge_dstring_sprintf_append(&output, "    Host Resource(s):   \n");
                   }
                }
                break;
@@ -789,88 +788,31 @@ lList **alpp
 
       sge_dstring_clear(&resource_string);
 
-      switch (type) {
-         case TYPE_HOST:   
-         case TYPE_STR:   
-         case TYPE_CSTR:   
-         case TYPE_RESTR:
-            if (!(lGetUlong(rep, CE_pj_dominant)&DOMINANT_TYPE_VALUE)) {
-               dominant = lGetUlong(rep, CE_pj_dominant);
-               s = lGetString(rep, CE_pj_stringval);
-            } else {
-               dominant = lGetUlong(rep, CE_dominant);
-               s = lGetString(rep, CE_stringval);
-            }
-            break;
-         case TYPE_TIM:
-            if (!(lGetUlong(rep, CE_pj_dominant)&DOMINANT_TYPE_VALUE)) {
-               double val = lGetDouble(rep, CE_pj_doubleval);
+      // get the dominant value of the resource for this host
+      s = sge_get_dominant_stringval(rep, &dominant, &resource_string);
 
-               dominant = lGetUlong(rep, CE_pj_dominant);
-               double_print_time_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            } else {
-               double val = lGetDouble(rep, CE_doubleval);
-
-               dominant = lGetUlong(rep, CE_dominant);
-               double_print_time_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            }
-            break;
-         case TYPE_MEM:
-            if (!(lGetUlong(rep, CE_pj_dominant)&DOMINANT_TYPE_VALUE)) {
-               double val = lGetDouble(rep, CE_pj_doubleval);
-
-               dominant = lGetUlong(rep, CE_pj_dominant);
-               double_print_memory_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            } else {
-               double val = lGetDouble(rep, CE_doubleval);
-
-               dominant = lGetUlong(rep, CE_dominant);
-               double_print_memory_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            }
-            break;
-         default:   
-            if (!(lGetUlong(rep, CE_pj_dominant)&DOMINANT_TYPE_VALUE)) {
-               double val = lGetDouble(rep, CE_pj_doubleval);
-
-               dominant = lGetUlong(rep, CE_pj_dominant);
-               double_print_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            } else {
-               double val = lGetDouble(rep, CE_doubleval);
-
-               dominant = lGetUlong(rep, CE_dominant);
-               double_print_to_dstring(val, &resource_string);
-               s = sge_dstring_get_string(&resource_string);
-            }
-            break;
-      }
-      monitor_dominance(dom, dominant); 
-      switch(lGetUlong(rep, CE_valtype)) {
-         case TYPE_INT:  
-         case TYPE_TIM:  
-         case TYPE_MEM:  
-         case TYPE_BOO:  
-         case TYPE_DOUBLE:  
-         default:
-            if (report_handler == nullptr) {
-               if (hide_data) {
-                  sge_dstring_sprintf_append(&output, "   *:*=*");
-               } else {
-                  sge_dstring_sprintf_append(&output, "   %s:%s=%s", dom, lGetString(rep, CE_name), s);
-               }
-            } else {
-               ret = report_handler->report_resource_value(report_handler, dom, lGetString(rep, CE_name), s, alpp);
-            }
-            break;
+      // find current usage for m_topology
+      std::string details;
+      if (strcmp(lGetString(rep, CE_name), LOAD_ATTR_TOPOLOGY) == 0) {
+         details = host_get_topology_in_use(host);
       }
 
+      monitor_dominance(dom, dominant);
       if (report_handler == nullptr) {
+         if (hide_data) {
+            sge_dstring_sprintf_append(&output, "\t*:*=*");
+         } else {
+            if (details.empty()) {
+               sge_dstring_sprintf_append(&output, "\t%s:%s=%s", dom, lGetString(rep, CE_name), s);
+            } else {
+               sge_dstring_sprintf_append(&output, "\t%s:%s=%s (%s)", dom, lGetString(rep, CE_name), s, details.c_str());
+            }
+         }
          printf("%s\n", sge_dstring_get_string(&output));
+      } else {
+         ret = report_handler->report_resource_value(report_handler, dom, lGetString(rep, CE_name), s, alpp);
       }
+
       sge_dstring_free(&output);
 
       if (ret != QHOST_SUCCESS) {

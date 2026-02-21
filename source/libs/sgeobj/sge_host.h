@@ -35,6 +35,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <string>
+
 #include "sgeobj/cull/sge_host_EH_L.h"
 #include "sgeobj/cull/sge_host_RU_L.h"
 #include "sgeobj/cull/sge_host_AH_L.h"
@@ -116,3 +118,6 @@ bool host_do_per_host_booking(const char **last_hostname, const char *hostname);
 
 bool
 host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lList *acl_list);
+
+std::string
+host_get_topology_in_use(const lListElem *host);

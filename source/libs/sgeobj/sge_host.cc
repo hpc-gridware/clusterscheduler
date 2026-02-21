@@ -645,3 +645,43 @@ host_is_visible(const lListElem *hep, bool is_manager, bool dept_view, const lLi
    }
    return host_visible;
 }
+
+/** @brief Get the topology string that is currently in use on a host
+ *
+ * This is used to get the topology string that is currently in use on a host. It is used for example
+to check if a certain binding can be used on a host or if it would exceed the available resources.
+ *
+ * @param host the host to check
+ * @return the topology string that is currently in use on the host, empty string if no topology is in use
+ */
+std::string
+host_get_topology_in_use(const lListElem *host) {
+   DENTER(TOP_LAYER);
+
+   // invalid host pointer, return empty string
+   if (host == nullptr) {
+      DRETURN({});
+   }
+
+   // get the resource utilization of the host, if there is none, return empty string
+   const lList *resource_utilization = lGetList(host, EH_resource_utilization);
+   if (resource_utilization == nullptr) {
+      DRETURN({});
+   }
+
+   // get the slots resource utilization of the host, if there is none, return empty string
+   const lListElem *slots_utilization = lGetElemStr(resource_utilization, RUE_name, SGE_ATTR_SLOTS);
+   if (slots_utilization == nullptr) {
+      DRETURN({});
+   }
+
+   // get the currently in use binding for slots, if there is none, return empty string
+   const char *binding_inuse = lGetString(slots_utilization, RUE_utilized_now_binding_inuse);
+   if (binding_inuse == nullptr) {
+      DRETURN({});
+   }
+
+   // we have a binding in use, return the corresponding topology string
+   const ocs::TopologyString topo_in_use(binding_inuse);
+   DRETURN(topo_in_use.to_product_topology_string());
+}
