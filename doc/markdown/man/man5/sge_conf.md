@@ -854,16 +854,14 @@ the pending job list as if a new job would have been submitted. To achive the ol
 might be removed with next minor release.
 
 ***OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB***
-Beginning with version 8.0.0 of Univa Grid Engine the scheduling behavior changed for array job tasks that are 
-rescheduled by users. As soon as a array job task gets scheduled all remaining pending tasks of that job will be 
+As soon as a array job task gets scheduled all remaining pending tasks of that job will be 
 put at the end of the pending job list. To achive the old scheduling behavior the paramter 
 *OLD_RESCHEDULE_BEHAVIOR_ARRAY_JOB* has to be set. Please note that this parameter is declared as
 deprecated. So it might be removed with next minor release.
 
 ***ENABLE_SUBMIT_LIB_PATH***
 
-Beginning with version 8.0.1p3 of Univa Grid Engine environment variables like LD_PRELOAD, LD_LIBRARY_PATH and 
-similar variables by default may no longer be set via submit option -v or -V.
+Environment variables like LD_PRELOAD, LD_LIBRARY_PATH and similar variables by default may no longer be set via submit option -v or -V.
 
 Setting these variables could be misused to execute malicious code from user jobs, if the execution environment 
 contained methods (e.g. prolog) to be executed as the root user, or if the old interactive job support
@@ -882,8 +880,7 @@ This value is a global configuration parameter only. It cannot be overwritten by
 
 ***ENABLE_SUBMIT_LD_PRELOAD***
 
-Beginning with version 8.0.1p3 of Univa Grid Engine the environment variable *LD_PRELOAD* by default may no longer be 
-set via submit option `-v` or `-V`.
+The environment variable *LD_PRELOAD* by default may no longer be set via submit option `-v` or `-V`.
 
 It is automatically removed from the environment of the submitted job, even if *qmaster_param* 
 *ENABLE_SUBMIT_LIB_PATH* is set to *TRUE*.
