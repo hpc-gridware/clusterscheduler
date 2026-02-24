@@ -85,7 +85,7 @@ int sge_execd_process_messages() {
    u_long64 load_report_time = 0;
    u_long64 alive_check_interval = 0;
 #if defined(OCS_WITH_OPENSSL)
-   bool tls_security = bootstrap_has_security_mode(BS_SEC_MODE_TLS);
+   bool tls_security = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS);
 #endif
    bool munge_security = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE);
 

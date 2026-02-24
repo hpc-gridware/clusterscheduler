@@ -25,6 +25,7 @@
 #include <dlfcn.h>
 #include <libgen.h>
 
+#include "uti/ocs_Bootstrap.h"
 #include "uti/msg_utilib.h"
 #include "uti/sge_component.h"
 #include "uti/sge_log.h"
@@ -998,7 +999,7 @@ namespace ocs::uti {
             ret = true;
          } else {
             int sec_total = days_left * 86400 + secs_left;
-            int certificate_lifetime = bootstrap_get_cert_lifetime();
+            int certificate_lifetime = ocs::Bootstrap::get_cert_lifetime();
             u_long64 now = sge_get_gmt64();
 
             // Renew when only 25% of the lifetime is left.
@@ -1100,8 +1101,8 @@ namespace ocs::uti {
 
       // So far all was OK, but we have to create the certificates.
       if (ret && create_certificate_and_key) {
-         int certificate_lifetime = bootstrap_get_cert_lifetime();
-         int certificate_start_offset = bootstrap_get_cert_start_offset();
+         int certificate_lifetime = ocs::Bootstrap::get_cert_lifetime();
+         int certificate_start_offset = ocs::Bootstrap::get_cert_start_offset();
          DPRINTF("creating certificate with lifetime %d and a start offset of %d\n",
                  certificate_lifetime, certificate_start_offset);
 

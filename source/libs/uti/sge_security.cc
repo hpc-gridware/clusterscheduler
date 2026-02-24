@@ -509,7 +509,7 @@ void sge_security_exit(int i)
    DENTER(TOP_LAYER);
 
 #ifdef SECURE
-   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
       SEC_LOCK_SSL_SETUP();
       cl_com_free_ssl_setup(&sec_ssl_setup_config);
       SEC_UNLOCK_SSL_SETUP();
@@ -565,7 +565,7 @@ bool sge_security_verify_unique_identifier(bool check_admin_user, const char* us
       DRETURN(false);
    }
 
-   if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+   if (ocs::Bootstrap::bootstrap_has_security_mode(ocs::Bootstrap::BS_SEC_MODE_CSP)) {
       int ret = CL_RETVAL_OK;
       cl_com_handle_t* handle = nullptr;
       char* unique_identifier = nullptr;

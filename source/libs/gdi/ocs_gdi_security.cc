@@ -127,7 +127,7 @@ int sge_security_initialize(const char *progname, const char *username)
          DPRINTF("secure dummy string not available\n");
       }
 
-      if (bootstrap_has_security_mode(BS_SEC_MODE_CSP)) {
+      if (ocs::Bootstrap::security_mode(BS_SEC_MODE_CSP)) {
          if (sge_ssl_setup_security_path(progname, username)) {
             DRETURN(-1);
          }
