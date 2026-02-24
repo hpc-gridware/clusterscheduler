@@ -737,6 +737,7 @@ void update_job_usage(const char* qualified_hostname)
 
    if (mconf_get_simulate_jobs()) {
       lListElem *jr;
+      bool enable_mem_details = mconf_get_enable_mem_details();
 
       for_each_rw(jr, jr_list) {
          add_usage(jr, USAGE_ATTR_CPU, nullptr, 0.1);
@@ -748,6 +749,12 @@ void update_job_usage(const char* qualified_hostname)
          add_usage(jr, USAGE_ATTR_MAXVMEM, nullptr, 256);
          add_usage(jr, USAGE_ATTR_RSS, nullptr, 234);
          add_usage(jr, USAGE_ATTR_MAXRSS, nullptr, 234);
+         if (enable_mem_details) {
+            add_usage(jr, USAGE_ATTR_PSS, nullptr, 200);
+            add_usage(jr, USAGE_ATTR_MAXPSS, nullptr, 200);
+            add_usage(jr, USAGE_ATTR_PMEM, nullptr, 166);
+            add_usage(jr, USAGE_ATTR_SMEM, nullptr, 68);
+         }
       }
       DRETURN_VOID;
    }

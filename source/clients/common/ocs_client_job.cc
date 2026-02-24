@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -652,6 +652,10 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
                double wallclock{}, cpu{}, mem{}, io{}, ioops{}, iow{}, vmem{}, maxvmem{}, rss{}, maxrss{};
 
+               // In case we have execd_params ENABLE_MEM_DETAILS set, output these values as well.
+               double pss{}, maxpss{}, pmem{}, smem{};
+               bool have_mem_details = lGetSubStr(jatep, UA_name, USAGE_ATTR_PSS, JAT_scaled_usage_list) != nullptr;
+
                /* master task */
                SUM_UP_JATASK_USAGE(jatep, wallclock, USAGE_ATTR_WALLCLOCK);
                SUM_UP_JATASK_USAGE(jatep, cpu, USAGE_ATTR_CPU);
@@ -663,6 +667,12 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                SUM_UP_JATASK_USAGE(jatep, maxvmem, USAGE_ATTR_MAXVMEM);
                SUM_UP_JATASK_USAGE(jatep, rss, USAGE_ATTR_RSS);
                SUM_UP_JATASK_USAGE(jatep, maxrss, USAGE_ATTR_MAXRSS);
+               if (have_mem_details) {
+                  SUM_UP_JATASK_USAGE(jatep, pss, USAGE_ATTR_PSS);
+                  SUM_UP_JATASK_USAGE(jatep, maxpss, USAGE_ATTR_MAXPSS);
+                  SUM_UP_JATASK_USAGE(jatep, pmem, USAGE_ATTR_PMEM);
+                  SUM_UP_JATASK_USAGE(jatep, smem, USAGE_ATTR_SMEM);
+               }
 
                /* slave tasks */
                for_each_ep(pe_task_ep, lGetList(jatep, JAT_task_list)) {
@@ -676,6 +686,12 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                   SUM_UP_PETASK_USAGE(pe_task_ep, maxvmem, USAGE_ATTR_MAXVMEM);
                   SUM_UP_PETASK_USAGE(pe_task_ep, rss, USAGE_ATTR_RSS);
                   SUM_UP_PETASK_USAGE(pe_task_ep, maxrss, USAGE_ATTR_MAXRSS);
+                  if (have_mem_details) {
+                     SUM_UP_PETASK_USAGE(pe_task_ep, pss, USAGE_ATTR_PSS);
+                     SUM_UP_PETASK_USAGE(pe_task_ep, maxpss, USAGE_ATTR_MAXPSS);
+                     SUM_UP_PETASK_USAGE(pe_task_ep, pmem, USAGE_ATTR_PMEM);
+                     SUM_UP_PETASK_USAGE(pe_task_ep, smem, USAGE_ATTR_SMEM);
+                  }
                }
 
                DSTRING_STATIC(wallclock_string, 32);
@@ -693,13 +709,27 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                double_print_memory_to_dstring(rss, &rss_string);
                double_print_memory_to_dstring(maxrss, &maxrss_string);
                double_print_time_to_dstring(iow, &iow_string, true);
-               printf("wallclock=%s,cpu=%s,mem=%-5.5f GBs,io=%-5.5f,ioops=%.0f,iow=%s,vmem=%s,maxvmem=%s,rss=%s,maxrss=%s\n",
+               printf("wallclock=%s,cpu=%s,mem=%-5.5f GBs,io=%-5.5f,ioops=%.0f,iow=%s,vmem=%s,maxvmem=%s,rss=%s,maxrss=%s",
                       sge_dstring_get_string(&wallclock_string), sge_dstring_get_string(&cpu_string),
                       mem, io, ioops, sge_dstring_get_string(&iow_string),
                       (vmem == 0.0) ? "N/A" : sge_dstring_get_string(&vmem_string),
                       (maxvmem == 0.0) ? "N/A" : sge_dstring_get_string(&maxvmem_string),
                       (rss == 0.0) ? "N/A" : sge_dstring_get_string(&rss_string),
                       (maxrss == 0.0) ? "N/A" : sge_dstring_get_string(&maxrss_string));
+               if (have_mem_details) {
+                  DSTRING_STATIC(pss_string, 32);
+                  DSTRING_STATIC(maxpss_string, 32);
+                  DSTRING_STATIC(pmem_string, 32);
+                  DSTRING_STATIC(smem_string, 32);
+                  double_print_memory_to_dstring(pss, &pss_string);
+                  double_print_memory_to_dstring(maxpss, &maxpss_string);
+                  double_print_memory_to_dstring(pmem, &pmem_string);
+                  double_print_memory_to_dstring(smem, &smem_string);
+                  printf(",pss=%s,maxpss=%s,pmem=%s,smem=%s",
+                     sge_dstring_get_string(&pss_string), sge_dstring_get_string(&maxpss_string),
+                     sge_dstring_get_string(&pmem_string), sge_dstring_get_string(&smem_string));
+               }
+               printf("\n");
             }
          }
 

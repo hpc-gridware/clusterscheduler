@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -271,6 +271,9 @@ usage_list_sum(lList *usage_list, const lList *add_usage_list)
           strcmp(name, USAGE_ATTR_VMEM) == 0 ||
           strcmp(name, USAGE_ATTR_RSS) == 0 ||
           strcmp(name, USAGE_ATTR_MEM) == 0 ||
+          strcmp(name, USAGE_ATTR_PSS) == 0 ||
+          strcmp(name, USAGE_ATTR_PMEM) == 0 ||
+          strcmp(name, USAGE_ATTR_SMEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
          lListElem *sum = lGetElemStrRW(usage_list, UA_name, name);
@@ -358,6 +361,35 @@ lList *scaled_usage /* UA_Type */
    }
    if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MEM)) != nullptr) {
       if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MEM))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_PSS)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_PSS))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_MAXPSS)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_MAXPSS))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_PMEM)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_PMEM))) {
+         lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
+      } else {
+         lAppendElem(scaled_usage, lCopyElem(prev));
+      }
+   }
+   if ((prev = lGetElemStr(prev_usage, UA_name, USAGE_ATTR_SMEM)) != nullptr) {
+      if ((ep=lGetElemStrRW(scaled_usage, UA_name, USAGE_ATTR_SMEM))) {
          lAddDouble(ep, UA_value, lGetDouble(prev, UA_value));
       } else {
          lAppendElem(scaled_usage, lCopyElem(prev));

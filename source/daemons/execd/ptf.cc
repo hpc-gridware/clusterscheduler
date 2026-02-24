@@ -298,6 +298,15 @@ lList *ptf_build_usage_list(const char *name, usage_collection_t usage_collectio
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_RSS, UA_Type);
       lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXRSS, UA_Type);
 #endif
+
+#if defined(LINUX)
+   if (mconf_get_enable_mem_details()) {
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_PSS, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_MAXPSS, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_PMEM, UA_Type);
+      lAddElemStr(&usage_list, UA_name, USAGE_ATTR_SMEM, UA_Type);
+   }
+#endif
    }
 
    DRETURN(usage_list);
@@ -675,6 +684,7 @@ static void ptf_get_usage_from_data_collector()
    int proccount;
    const char *tid;
    int i, j;
+   bool enable_mem_details = mconf_get_enable_mem_details();
 
    // in case of hybrid mode, we will not use PDC data for systemd provided usage (cpu, rss, maxrss)
 
@@ -738,6 +748,13 @@ static void ptf_get_usage_from_data_collector()
                /* set vmem and maxvmem usage */
                usage_list_set_double_usage(usage_list, USAGE_ATTR_VMEM, jobs->jd_vmem, false);
                usage_list_set_double_usage(usage_list, USAGE_ATTR_MAXVMEM, jobs->jd_himem, false);
+
+               if (enable_mem_details) {
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_PSS, jobs->jd_pss, false);
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_MAXPSS, jobs->jd_maxpss, false);
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_PMEM, jobs->jd_pmem, false);
+                  usage_list_set_double_usage(usage_list, USAGE_ATTR_SMEM, jobs->jd_smem, false);
+               }
 
                /* build new pid list */
                proccount = jobs->jd_proccount;

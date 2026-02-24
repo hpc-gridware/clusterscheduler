@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -57,6 +57,12 @@ enum {
 #define USAGE_ATTR_IOOPS "ioops"
 #define USAGE_ATTR_IOW "iow"
 
+// memory details
+#define USAGE_ATTR_PSS "pss"
+#define USAGE_ATTR_MAXPSS "maxpss"
+#define USAGE_ATTR_PMEM "pmem"
+#define USAGE_ATTR_SMEM "smem"
+
 #define USAGE_ATTR_CPU_ACCT "acct_cpu"
 
 /* these are used for accounting */
@@ -66,6 +72,7 @@ enum {
 #define USAGE_ATTR_IOW_ACCT "acct_iow"
 #define USAGE_ATTR_MAXVMEM_ACCT "acct_maxvmem"
 #define USAGE_ATTR_MAXRSS_ACCT "acct_maxrss"
+#define USAGE_ATTR_MAXPSS_ACCT "acct_maxpss"
 
 /* current amount and maximum of used memory */
 #define USAGE_ATTR_VMEM "vmem"

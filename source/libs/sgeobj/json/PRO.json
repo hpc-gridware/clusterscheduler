@@ -97,8 +97,8 @@
 			"name":	"iow",
 			"summary":	"IOW",
 			"description":	[{
-					"line":	"IO wait time in clock ticks for the running process."
-				}],
+				"line":	"IO wait time in clock ticks for the running process."
+			}],
 			"type":	"lUlong64T",
 			"flags":	[]
 		}]

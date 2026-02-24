@@ -710,6 +710,14 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                      intermediate ? USAGE_ATTR_MAXVMEM : USAGE_ATTR_MAXVMEM_ACCT, USAGE_ATTR_MAXVMEM, 0));
       write_json(*writer, USAGE_ATTR_MAXRSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                      intermediate ? USAGE_ATTR_MAXRSS : USAGE_ATTR_MAXRSS_ACCT, USAGE_ATTR_MAXRSS, 0));
+
+      // If additional memory values were reported (execd_params ENABLE_MEM_DETAILS=TRUE)
+      // then we want to see the maxpss in accounting.
+      if (lGetElemStr(usage_list, UA_name, USAGE_ATTR_MAXPSS) != nullptr) {
+         write_json(*writer, USAGE_ATTR_MAXPSS, reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                        intermediate ? USAGE_ATTR_MAXPSS : USAGE_ATTR_MAXPSS_ACCT, USAGE_ATTR_MAXPSS, 0));
+      }
+
       writer->EndObject();
 
       // based on usage_patterns

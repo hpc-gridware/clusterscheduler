@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -86,6 +86,7 @@ int verydummyprocfs;
 
 #if !defined(CRAY)
 #include "procfs.h"
+#include "ocs_procfs_smaps.h"
 #endif
 
 #if defined(LINUX) || defined(SOLARIS)
@@ -380,7 +381,7 @@ void pt_close() {
    closedir(cwd);
 }
 
-int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time) {
+int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time, bool enable_mem_details) {
    DENTER(TOP_LAYER);
 
    char procnam[1024];
@@ -607,7 +608,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             }
          } else {
             char buf[1024];
-            FILE* f = (FILE*) nullptr;
+            FILE* f = nullptr;
 
             if (!(f = fopen(procnam, "r"))) {
                continue;
@@ -809,15 +810,15 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       if (SGE_STAT(procnam, &fst) == 0) {
          {
          /*if (fst.st_mtime > last_time) {*/
-            FILE *fd;
-            if ((fd = fopen(procnam, "r"))) {
+            FILE *f;
+            if ((f = fopen(procnam, "r"))) {
                char buf[1024];
 
                /*
                 * Trying to parse /proc/<pid>/io
                 */
 
-               while (fgets(buf, sizeof(buf), fd)) {
+               while (fgets(buf, sizeof(buf), f)) {
                  char *label = strtok(buf, " \t\n");
                  char *token = strtok((char*) nullptr, " \t\n");
 
@@ -838,7 +839,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                  }
                } /* while */
 
-               fclose(fd);
+               fclose(f);
                lSetPosUlong(pr, pos_io, new_iochars);
                lSetPosUlong(pr, pos_ioops, new_ioops);
             }
@@ -867,6 +868,15 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          }
       }
    }
+
+   // Additional memory values when execd_params ENABLE_MEM_DETAILS=TRUE
+   if (enable_mem_details) {
+      ocs::smaps_sums_t smaps_sums{};
+      ocs::procfs_parse_smaps_sums(pid, smaps_sums);
+      proc_elem->pss = smaps_sums.pss_kb * 1024;
+      proc_elem->pmem = smaps_sums.pmem_kb * 1024;
+      proc_elem->smem = smaps_sums.smem_kb * 1024;
+   }
 #else
    proc_elem->proc.pd_pid    = pr.pr_pid;
    proc_elem->proc.pd_utime  = pr.pr_utime.tv_sec + pr.pr_utime.tv_nsec*1E-9;
@@ -882,11 +892,16 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    }
 #endif         
 
+   // Calculate the mem integral value.
    proc_elem->mem = 
          ((proc_elem->proc.pd_stime + proc_elem->proc.pd_utime) - old_time) * 
          (( old_vmem + proc_elem->vmem)/2);
 
+   // @todo Here we are closing /proc/pid/stat. Really this late?
+   //       Yes, at least on Solaris we access it still a few lines above.
+   //       But shouldn't we better set it to -1 when we close it and check for -1 here?
    close(fd);
+
    DRETURN(0);
 }
 #endif

@@ -60,6 +60,7 @@
 
 #include "msg_common.h"
 #include "msg_execd.h"
+#include "sge_conf.h"
 
 lList *jr_list = nullptr;
 static bool flush_jr = false;
@@ -280,6 +281,12 @@ job_report_update_from_usage_list(lListElem *jr, const lList *usage_list) {
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MAXVMEM);
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_RSS);
    job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MAXRSS);
+   if (mconf_get_enable_mem_details()) {
+      job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_PSS);
+      job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_MAXPSS);
+      job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_PMEM);
+      job_report_update_value_from_usage_list(jr, usage_list, USAGE_ATTR_SMEM);
+   }
 }
 
 /* ------------------------------------------------------------

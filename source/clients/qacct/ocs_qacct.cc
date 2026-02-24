@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,6 +38,7 @@
 #include <ctime>
 #include <fnmatch.h>
 #include <cerrno>
+#include <cfloat>
 #include <filesystem>
 #include <fstream>
 
@@ -1391,6 +1392,12 @@ static void showjob(sge_rusage_type *dusage) {
       printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
    }
 
+   if (dusage->ar != 0) {
+      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
+   } else {
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_ARID, "undefined");
+   }
+
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QSUBTIME, sge_ctime64(dusage->submission_time, pdstr_buffer));
@@ -1438,22 +1445,11 @@ static void showjob(sge_rusage_type *dusage) {
    printf(SHOWJOB_FLOAT_0,    MSG_HISTORY_SHOWJOB_IOOPS,       dusage->ioops);
    printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_IOW,         dusage->iow);
 
-#if 0
-   /* enable this to get unit of memory value (G,M,K) */
-   /* CR TODO: create units for complete qacct output: IZ: #1047 */
-   sge_dstring_clear(pdstr_buffer);
-   double_print_memory_to_dstring(dusage->maxvmem, pdstr_buffer);
-   printf(SHOWJOB_STRING,        MSG_HISTORY_SHOWJOB_MAXVMEM,      sge_dstring_get_string(pdstr_buffer));
-#else
    printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
-#endif
 
    printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
-
-   if (dusage->ar != 0) {
-      printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_ARID, dusage->ar);              /* job-array task number */
-   } else {
-      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_ARID, "undefined");
+   if (dusage->maxpss != DBL_MAX) {
+      printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXPSS,       dusage->maxpss);
    }
 
    // print further usage values
@@ -2258,6 +2254,13 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                d->iow = read_json(json_usage, "iow", 0.0);
                d->maxvmem = read_json(json_usage, "maxvmem", 0.0);
                d->maxrss = read_json(json_usage, "maxrss", 0.0);
+
+               // maxpss is only available if ENABLE_MEM_DETAILS is set to TRUE
+               if (json_usage.HasMember("maxpss")) {
+                  d->maxpss = read_json(json_usage, "maxpss", 0.0);
+               } else {
+                  d->maxpss = DBL_MAX;
+               }
             } else {
                const rapidjson::Value &json_usage = itr->value;
                for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {

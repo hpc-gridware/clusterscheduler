@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,7 +38,7 @@
 
 int pt_open();
 void pt_close();
-int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time);
+int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_time, bool enable_mem_details);
 
 #if defined(LINUX) || defined(SOLARIS)
 void procfs_kill_addgrpid(gid_t add_grp_id, int sig,

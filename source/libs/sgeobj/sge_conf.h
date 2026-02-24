@@ -30,7 +30,7 @@
  * 
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -150,6 +150,7 @@ bool mconf_get_acct_reserved_usage();
 bool mconf_get_sharetree_reserved_usage();
 keep_active_t mconf_get_keep_active();
 usage_collection_t mconf_get_usage_collection();
+bool mconf_get_enable_mem_details();
 bool mconf_get_enable_binding();
 bool mconf_get_simulate_execds();
 bool mconf_get_simulate_jobs();

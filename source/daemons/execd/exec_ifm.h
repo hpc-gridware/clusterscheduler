@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -93,4 +93,9 @@ struct psJob_s {
 	uint64	jd_rss;		   /* resident set size in bytes */
 	uint64	jd_himem;		/* high-water memory size in bytes */
    uint64   jd_maxrss;     /* maximum rss in bytes */
+
+	uint64   jd_pss;			// proportional set size in bytes
+	uint64   jd_maxpss;		// maximum pss in bytes
+	uint64   jd_pmem;			// private memory in bytes
+	uint64   jd_smem;			// shared memory in bytes
 };

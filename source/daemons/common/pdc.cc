@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -318,11 +318,13 @@ free_job(job_elem_t *job_elem)
 }
 
 static int psRetrieveOSJobData() {
+   DENTER(TOP_LAYER);
+
+   bool enable_mem_details = mconf_get_enable_mem_details();
+
    lnk_link_t *curr, *next;
    time_t time_stamp = get_gmt();
    static time_t next_time, pnext_time;
-
-   DENTER(TOP_LAYER);
 
    if (time_stamp <= next_time) {
       DRETURN(0);
@@ -341,7 +343,7 @@ static int psRetrieveOSJobData() {
       // it will return 0 if there are still processes to read
       // it will return 1 if there are no more processes to read
       // we want to read them all
-      while (pt_dispatch_proc_to_job(&job_list, time_stamp, last_time) == 0) {
+      while (pt_dispatch_proc_to_job(&job_list, time_stamp, last_time, enable_mem_details) == 0) {
          ;
       }
       last_time = time_stamp;
@@ -580,6 +582,9 @@ static int psRetrieveOSJobData() {
          job->jd_utime_a = job->jd_stime_a = 0;
          job->jd_vmem = 0;
          job->jd_rss = 0;
+         job->jd_pss = 0;
+         job->jd_pmem = 0;
+         job->jd_smem = 0;
 
          for (currp=job_elem->procs.next; currp != &job_elem->procs; currp=nextp) {
 
@@ -602,6 +607,11 @@ static int psRetrieveOSJobData() {
                job->jd_chars += proc_elem->delta_chars;
                job->jd_ioops += proc_elem->delta_ioops;
                job->jd_iow += proc_elem->delta_iow;
+               if (enable_mem_details) {
+                  job->jd_pss += proc_elem->pss;
+                  job->jd_pmem += proc_elem->pmem;
+                  job->jd_smem += proc_elem->smem;
+               }
 #endif
             } else { 
                // most likely exited
@@ -629,6 +639,14 @@ static int psRetrieveOSJobData() {
                job->jd_maxrss = job->jd_rss;
             }
          }
+#if defined(LINUX)
+         if (enable_mem_details) {
+            // update maxpss
+            if (job->jd_pss > job->jd_maxpss) {
+               job->jd_maxpss = job->jd_pss;
+            }
+         }
+#endif
       } 
 
 #endif
@@ -901,6 +919,9 @@ print_job_data(psJob_t *job)
    printf("jd_vmem=%8.3fM\n", INTOMEGS(job->jd_vmem));
    printf("jd_rss=%8.3fM\n", INTOMEGS(job->jd_rss));
    printf("jd_himem=%8.3fM\n", INTOMEGS(job->jd_himem));
+   printf("jd_pss=%8.3fM\n", INTOMEGS(job->jd_pss));
+   printf("jd_pmem=%8.3fM\n", INTOMEGS(job->jd_pmem));
+   printf("jd_smem=%8.3fM\n", INTOMEGS(job->jd_smem));
 }
 static void
 print_process_data(psProc_t *proc)

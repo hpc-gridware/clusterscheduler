@@ -1078,6 +1078,25 @@ This parameter controls how xxqs_name_sxx_execd collects the online usage inform
 - *HYBRID* : Hybrid mode, where online usage information is both gathered via Systemd (if available) and the PDC. Use this mode, when your jobs are controlled by systemd, but you also want to collect usage information for jobs that is not available via Systemd, e.g., vmem, maxvmem, io, and iow.
 - *TRUE* : This is the default mode. Online usage information is collected via Systemd if the host supports Systemd and *ENABLE_SYSTEMD* is set to *TRUE* (which is the default). It is collected by the PDC (Portable Data Collector) if the host does not support Systemd or if *ENABLE_SYSTEMD* is set to *FALSE*.
 
+***ENABLE_MEM_DETAILS***
+
+When this parameter is set to *TRUE*, then additional memory usage information is collected for each job:
+* pss (proportional set size) and maxpss (maximum proportional set size)
+* pmem (private memory size)
+* smem (shared memory size)
+
+These memory values are reported in the online usage information (`qstat -j jobid`),
+and maxpss is added to the accounting records (and reported by `qacct -j jobid`).
+
+The *ENABLE_MEM_DETAILS reporting can add a significant load on the sge_execd(8), as the values are retrieved from
+the /proc/pid/smaps files of the job processes. The smaps files can be quite large, and reading them can be slow,
+especially for jobs with many processes and consuming a lot of memory.
+
+The default value is *FALSE*.
+In order for memory details to be reported, *USAGE_COLLECTION* must be set to *HYBRID* or *PDC*.
+
+This setting is available in Gridware Cluster Scheduler only.
+
 ## gdi_request_limits
 
 This parameter is a global configuration setting used to protect the xxqs_name_sxx_qmaster(8) daemon against denial-of-service attacks caused by excessive GDI requests.

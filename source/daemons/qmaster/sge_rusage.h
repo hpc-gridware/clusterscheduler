@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -142,6 +142,7 @@ struct drusage {
    double iow;
    double maxvmem;
    double maxrss;
+   double maxpss;
    u_long32 ar;
    sge_all_rusage_type *arch_dep_usage;/* pointer to a structure with
                                           architecture dependend usage

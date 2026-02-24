@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -94,6 +94,7 @@
 #define MSG_HISTORY_SHOWJOB_IOW              "iow"
 #define MSG_HISTORY_SHOWJOB_MAXVMEM          "maxvmem"
 #define MSG_HISTORY_SHOWJOB_MAXRSS           "maxrss"
+#define MSG_HISTORY_SHOWJOB_MAXPSS           "maxpss"
 #define MSG_HISTORY_SHOWJOB_ARID             "arid"
 
 #define MSG_HISTORY_NOJOBSRUNNINGSINCESTARTUP         _MESSAGE(25066, _("no jobs running since startup"))

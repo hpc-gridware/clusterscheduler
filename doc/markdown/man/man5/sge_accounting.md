@@ -173,7 +173,7 @@ The maximum vmem size in bytes.
 
 ## *maxrss*
 
-Only wish JSONL accounting format: The maximum rss size in bytes.
+Only with JSONL accounting format: The maximum rss size in bytes.
 
 ## *arid*
 

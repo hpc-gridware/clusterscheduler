@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -172,17 +172,20 @@ typedef struct {
    JobID_t jid;
    psProc_t proc;
    uint64 chars;
-   uint64 mem;             /* delta integral vmem */
-   uint64 vmem;            /* virtual process size */
-   uint64 rss;             /* resident set size */
-   uint64 ru_ioblock;      /* # of block input operations */
-   uint64 delta_chars;     /* number of chars to be added to jd_chars this time step */
-   uint64 delta_ioops;     /* number of io operations to be added to jd_ioops this time step */
-   double delta_iow;       /* I/O wait time in seconds (with fractional part) to be added in this time step */
+   uint64 mem;              // delta integral vmem
+   uint64 vmem;             // virtual process size
+   uint64 rss;              // resident set size
+   uint64 ru_ioblock;       // # of block input operations
+   uint64 delta_chars;      // number of chars to be added to jd_chars this time step
+   uint64 delta_ioops;      // number of io operations to be added to jd_ioops this time step
+   double delta_iow;        // I/O wait time in seconds (with fractional part) to be added in this time step
 #if defined(LINUX)
-   uint64 iochars;         /* number of chars from previous load interval */
-   uint64 ioops;           /* number of operations from previous load interval */
-   double iow;             /* I/O wait time in seconds (with fractional part) */
+   uint64 iochars;          // number of chars from the previous load interval
+   uint64 ioops;            // number of operations from the previous load interval
+   double iow;              // I/O wait time in seconds (with fractional part)
+   uint64 pss;              // proportional set size
+   uint64 pmem;             // private memory
+   uint64 smem;             // shared memory
 #endif
 } proc_elem_t;
 

@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ set(LIBRARY_SOURCES
       lock.cc
       mail.cc
       ocs_common_systemd.cc
+      ../../../../${PROJECT_FEATURES}/source/daemons/common/ocs_procfs_smaps.cc
       pdc.cc
       procfs.cc
       qlogin_starter.cc
@@ -33,7 +34,8 @@ set(LIBRARY_SOURCES
       setosjobid.cc
       shutdown.cc
       startprog.cc
-      unparse_job_cull.cc)
+      unparse_job_cull.cc
+)
 set(LIBRARY_INCLUDES "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

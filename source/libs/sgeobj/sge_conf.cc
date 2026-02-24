@@ -29,7 +29,7 @@
  * 
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -188,6 +188,7 @@ static int max_dynamic_event_clients = 1000;
 
 static keep_active_t keep_active = KEEP_ACTIVE_FALSE;
 static usage_collection_t usage_collection = USAGE_COLLECTION_DEFAULT;
+static bool enable_mem_details = false;
 
 static u_long32 script_timeout = 120;
 static bool enable_addgrp_kill = false;
@@ -931,6 +932,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       ptf_min_priority = -999;
       keep_active = KEEP_ACTIVE_FALSE;
       usage_collection = USAGE_COLLECTION_DEFAULT;
+      enable_mem_details = false;
       script_timeout = 120;
       enable_addgrp_kill = false;
       use_qsub_gid = false;
@@ -1008,6 +1010,11 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
                continue;
             }
          }
+#if defined(WITH_EXTENSIONS)
+         if (parse_bool_param(s, "ENABLE_MEM_DETAILS", &enable_mem_details)) {
+            continue;
+         }
+#endif
          if (parse_time_param(s, "SCRIPT_TIMEOUT", &script_timeout)) {
             continue;
          }
@@ -2278,6 +2285,17 @@ usage_collection_t mconf_get_usage_collection() {
    ret = usage_collection;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
+   DRETURN(ret);
+}
+
+bool mconf_get_enable_mem_details() {
+   bool ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = enable_mem_details;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
 
