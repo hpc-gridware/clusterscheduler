@@ -16,21 +16,54 @@ A xxQS_NAMExx system writes a reporting file to $SGE_ROOT/default/common/reporti
 that can be used for accounting, monitoring and analysis purposes. It contains information about the cluster (hosts, 
 queues, load values, consumables, etc.), about the jobs running in the cluster and about sharetree configuration 
 and usage. All information is time related, events are dumped to the reporting file in a configurable interval. It
-allows to monitor a "real time" status of the cluster as well as historical analysis.
+allows monitoring the "real time" status of the cluster as well as historical analysis.
+
+Writing of the reporting file is by default disabled.
+Enabling it, controlling the interval in which it is written and the type of information written to the reporting 
+file can be done by modifying the `reporting_params` section of the global configuration, see xxqs_name_sxx_conf(5).
 
 # FORMAT
 
-The reporting file is an ASCII file. Each line contains one record, and the fields of a record are separated by 
-a delimiter (:). The reporting file contains records of different type. Each record type has a specific
-record structure.
+Two possible formats are supported:
+
+* A new one-line JSON format (JSONL) which allows for easy extensibility and more flexible processing of the accounting data.
+* The old colon separated format known from SGE (deprecated).
+
+## One Line JSON Format (JSONL)
+
+Beginning with xxQS_NAMExx 9.0.0 the reporting file by default is written in a one-line
+JSON format (JSONL).
+
+The file path is `$SGE_ROOT/$SGE_CELL/common/reporting.jsonl`.
+
+Each line in the file contains a single JSON object which represents a single reporting record.
+
+## Colon Separated Format
+
+For compatibility reasons, the reporting file can be written in the colon-separated format. This format is still
+supported but is deprecated and will be removed in a future release.
+
+To enable the colon separated format add `old_reporting=true` to the `reporting_params` in the global
+configuration.
+
+The file path is `$SGE_ROOT/$SGE_CELL/common/reporting`.
+
+The accounting file is a text file.  
+Each line in the file represents a reporting record.  
+Accounting record entries are separated by colon (':') signs.
+
+# RECORD TYPES AND FIELDS
+
+The reporting file contains records of different types.
+Each record type has a specific record structure.
 
 The first two fields are common to all reporting records:
 
 * time  
-  Time (GMT unix timestamp) when the record was created.
+  Time (GMT unix timestamp, JSONL: in microseconds) when the record was created.
 
-* record type  
-  Type of the accounting record. The different types of records and their structure are described in the following text.
+* type  
+  Type of the reporting record. The different types of records and their structure are described in the following text.
 
 ## new_job
 
@@ -38,7 +71,7 @@ The new_job record is written whenever a new job enters the system (usually by a
 following fields:
 
 * submission_time  
-  Time (GMT unix time stamp) when the job was submitted.
+  Time (GMT unix time stamp, JSONL: in microseconds) when the job was submitted.
 
 * job_number  
   The job number.
@@ -72,12 +105,12 @@ following fields:
 
 ## job_log
 
-The job_log record is written whenever a job, an array task or a pe tasks is changing status. A status change 
+The job_log record is written whenever a job, an array task, or a pe task is changing status. A status change 
 can be the transition from pending to running, but can also be triggered by user actions like suspension of a job. 
 It has the following fields:
 
 * event_time  
-  Time (GMT unix time stamp) when the event was generated.
+  Time (GMT unix time stamp, JSONL: in microseconds) when the event was generated.
 
 * event  
   A one word description of the event.
@@ -96,16 +129,16 @@ It has the following fields:
 
 * user  
   The user who initiated the event (or special usernames "qmaster", "scheduler" and "execd" for actions of the 
-  system itself like scheduling jobs, executing jobs etc.).
+  system itself like scheduling jobs, executing jobs, etc.).
 
 * host  
-  The host from which the action was initiated (e.g. the submit host, the qmaster host, etc.).
+  The host from which the action was initiated (e.g., the submit host, the qmaster host, etc.).
 
 * state_time  
   Reserved field for later use.
 
 * submission_time  
-  Time (GMT unix time stamp) when the job was submitted.
+  Time (GMT unix time stamp, JSONL: in microseconds) when the job was submitted.
 
 * job_name  
   The job name (from -N submission option)
@@ -136,124 +169,9 @@ It has the following fields:
 Records of type acct are accounting records. Normally, they are written whenever a job, a task of an array job, 
 or the task of a parallel job terminates. However, for long-running jobs an intermediate acct record is created 
 once a day after a midnight. This results in multiple accounting records for a particular job and allows for a 
-fine-grained resource usage monitoring over time. Accounting records comprise the following fields:
+fine-grained resource usage monitoring over time.
 
-* qname  
-  Name of the cluster queue in which the job has run.
-
-* hostname  
-  Name of the execution host.
-
-* group  
-  The effective group id of the job owner when executing the job.
-
-* owner  
-  Owner of the xxQS_NAMExx job.
-
-* job_name  
-  Job name.
-
-* job_number  
-  Job identifier - job number.
-
-* account  
-  An account string as specified by the qsub(1) or qalter(1) `-A` option.
-
-* priority  
-  Priority value assigned to the job corresponding to the *priority* parameter in the queue  
-  configuration (see xxqs_name_sxx_queue_conf(5)).
-
-* submission_time  
-  Submission time (GMT unix time stamp).
-
-* start_time  
-  Start time (GMT unix time stamp).
-
-* end_time  
-  End time (GMT unix time stamp).
-
-* failed  
-  Indicates the problem which occurred in case a job could not be started on the execution host (e.g. because the 
-  owner of the job did not have a valid account on that machine). If xxQS_NAMExx tries to start a job multiple times, 
-  this may lead to multiple entries in the accounting file corresponding to the same job ID.
-
-* exit_status  
-  Exit status of the job script (or xxQS_NAMExx specific status in case of certain error conditions).
-
-* ru_wallclock
-  Difference between *end_time* and *start_time* (see above).
-
-  The remainder of the accounting entries follows the contents of the standard UNIX rusage structure as described 
-  in getrusage(2). Depending on the operating system where the job was executed some of the fields may be 0. The 
-  following entries are provided:
-
-    ru_utime
-    ru_stime
-    ru_maxrss
-    ru_ixrss
-    ru_ismrss
-    ru_idrss
-    ru_isrss
-    ru_minflt
-    ru_majflt
-    ru_nswap
-    ru_inblock
-    ru_oublock
-    ru_msgsnd
-    ru_msgrcv
-    ru_nsignals
-    ru_nvcsw
-    ru_nivcsw
-
-* project  
-  The project which was assigned to the job.
-
-* department  
-  The department which was assigned to the job.
-
-* granted_pe  
-  The parallel environment which was selected for that job.
-
-* slots  
-  The number of slots which were dispatched to the job by the scheduler.
-
-* task_number  
-  Array job task index number.
-
-* wallclock  
-  Only with JSONL reporting format: The wallclock time usage in seconds.
-
-* cpu  
-  The cpu time usage in seconds.
-
-* mem  
-  The integral memory usage in Gbytes seconds.
-
-* io  
-  The amount of data transferred in input/output operations.
-
-* ioops  
-  The number of input/output operations.
-
-* iow  
-  The io wait time in seconds.
-
-* category  
-  A string specifying the job category.
-
-* pe_taskid  
-  If this identifier is set the task was part of a parallel job and was passed to xxQS_NAMExx via the 
-  `qrsh -inherit` interface.
-
-* maxvmem  
-  The maximum vmem size in bytes.
-
-* maxvmem  
-  Only with JSONL reporting format: The maximum rss size in bytes.
-
-* arid  
-  Advance reservation identifier. If the job used resources of an advance reservation then this field contains a 
-  positive integer identifier otherwise the value is "0" .
+For the contents and structure of the accounting records see xxqs_name_sxx_accounting(5).
 
 ## queue
 
@@ -266,7 +184,7 @@ Records of type queue contain state information for queues (queue instances). A 
   The hostname of a specific queue instance.
 
 * report_time  
-  The time (GMT unix time stamp) when a state change was triggered.
+  The time (GMT unix time stamp, JSONL: in microseconds) when a state change was triggered.
 
 * state  
   The new queue state.
@@ -282,16 +200,16 @@ A queue_consumable record contains information about queue consumable values in 
   The hostname of a specific queue instance.
 
 * report_time  
-  The time (GMT unix time stamp) when a state change was triggered.
+  The time (GMT unix time stamp, JSONL: in microseconds) when a state change was triggered.
 
 * state  
   The new queue state.
 
 * consumables  
-  Description of consumable values. Information about multiple consumables is separated by space. A consumable 
-  description has the format 
-
-      <name>=<actual_value>=<configured value>.
+  Description of consumable values.
+  * In the JSONL format consumables is a JSON object with the following structure having an attribute for each consumable, which in turn has two attributes: utilization and capacity.
+  * In the old colon separated format consumables is a string with multiple consumable values separated by space. A consumable  
+        description has the format `<name>=<actual_value>=<configured value>`.
 
 ## host
 
@@ -301,17 +219,16 @@ A host record contains information about hosts and host load values. It contains
 The name of the host.
 
 * report_time  
-  The time (GMT unix time stamp) when the reported information was generated.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the reported information was generated.
 
 * state  
   The new host state. Currently, xxQS_NAMExx doesn't track a host state, the field is reserved for 
   future use. Always contains the value X.
 
-* load values  
-  Description of load values. Information about multiple load values is separated by space. A load value 
-  description has the format
-
-      <name>=<actual_value>.
+* load_values  
+  * In the JSONL format load_values is a JSON object with the following structure having an attribute for each load value, with the load value name as attribute name and the load value as double value.
+  * In the old colon separated format load_values is a string. Information about multiple load values is separated by space. A load value 
+    description has the format `<name>=<actual_value>`.
 
 ## host_consumable
 
@@ -322,17 +239,17 @@ be licenses. It contains the following information:
   The name of the host.
 
 * report_time  
-  The time (GMT unix time stamp) when the reported information was generated.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the reported information was generated.
 
 * state  
   The new host state. Currently, xxQS_NAMExx doesn't track a host state, the field is reserved for future use. 
   Always contains the value X.
 
 * consumables  
-  Description of consumable values. Information about multiple consumables is separated by space. A 
-  consumable description has the format
-
-      <name>=<actual_value>=<configured value>.
+  Description of consumable values.
+  * In the JSONL format consumables is a JSON object with the following structure having an attribute for each consumable, which in turn has two attributes: utilization and capacity.
+  * In the old colon separated format consumables is a string with multiple consumable values separated by space. A consumable  
+    description has the format `<name>=<actual_value>=<configured value>`.
 
 ## sharelog
 
@@ -404,7 +321,7 @@ A new_ar record contains information about advance reservation objects. Entries 
 advance reservation is created. It contains the following information:
 
 * ar_submission_time  
-  The time (GMT unix time stamp) when the advance reservation was created.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the advance reservation was created.
 
 * ar_number  
   The advance reservation number identifying the reservation.
@@ -415,13 +332,13 @@ advance reservation is created. It contains the following information:
 ## ar_attribute
 
 The ar_attribute record is written whenever a new advance reservation was added or the attribute of an existing 
-advance reservation has changed. It has following fields.
+advance reservation has changed. It has the following fields:
 
 * event_time  
-  The time (GMT unix time stamp) when the event was generated.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the event was generated.
 
 * ar_submission_time  
-  The time (GMT unix time stamp) when the advance reservation was created.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the advance reservation was created.
 
 * ar_number  
   The advance reservation number identifying the reservation.
@@ -450,10 +367,10 @@ The ar_log record is written whenever a advance reservation is changing status. 
 to active, but can also be triggered by system events like host outage. It has following fields.
 
 * ar_state_change_time  
-  The time (GMT unix time stamp) when the event occurred which caused a state change.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the event occurred which caused a state change.
 
 * ar_submission_time  
-  The time (GMT unix time stamp) when the advance reservation was created.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the advance reservation was created.
 
 * ar_number  
   The advance reservation number identifying the reservation.
@@ -473,10 +390,10 @@ The ar_acct records are accounting records which are written for every queue ins
 reservation terminates. Advance reservation accounting records comprise following fields.
 
 * ar_termination_time  
-  The time (GMT unix time stamp) when the advance reservation terminated.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the advance reservation terminated.
 
 * ar_submission_time  
-  The time (GMT unix time stamp) when the advance reservation was created.
+  The time (GMT unix time stamp, JSONL: in microseconds) when the advance reservation was created.
 
 * ar_number  
   The advance reservation number identifying the reservation.
@@ -492,7 +409,7 @@ reservation terminates. Advance reservation accounting records comprise followin
 
 # SEE ALSO
 
-sge_conf(5). xxqs_name_sxx_host_conf(5).
+xxqs_name_sxx_intro(1), xxqs_name_sxx_accounting(5), sge_conf(5). xxqs_name_sxx_host_conf(5), xxqs_name_sxx_queue_conf(5).
 
 # COPYRIGHT
 
