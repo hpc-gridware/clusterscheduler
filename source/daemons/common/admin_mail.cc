@@ -112,7 +112,7 @@ void job_related_adminmail(u_long32 progid, lListElem *jr, int is_array, const c
 {
    static int first = 1;
    char sge_mail_subj[1024];
-   char sge_mail_body[2048];
+   char sge_mail_body[20480];
    char sge_mail_start[128];
    char sge_mail_end[128];
    char str_general[MAX_STRING_SIZE] = "";

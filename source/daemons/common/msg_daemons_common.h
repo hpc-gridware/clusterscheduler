@@ -50,7 +50,7 @@
 #define MSG_MAIL_SUBJECT_JOB_COMP_US            "Job " sge_u32 " (" SFN ") Complete"
 #define MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS     "Job-array task " sge_u32 "." sge_u32 " (" SFN ") " SFN
 #define MSG_MAIL_SUBJECT_JOB_STATE_USS          "Job " sge_u32 " (" SFN ") " SFN
-#define MSG_MAIL_BODY_USSSSSSS                  "Job " sge_u32 " caused action: " SFN "\n User        = " SFN "\n Queue       = " SFN "\n Start Time  = " SFN "\n End Time    = " SFN "\nfailed " SFN ":" SFN
+#define MSG_MAIL_BODY_USSSSSSS                  "Job " sge_u32 " caused action: " SFN "\n User        = " SFN "\n Queue       = " SFN "\n Start Time  = " SFN "\n End Time    = " SFN "\nfailed " SFNMAX ":" SFNMAX
 
 
 #define MSG_MASTER                                             _MESSAGE(27001, _("master"))
@@ -130,7 +130,7 @@
 #define MSG_MAIL_ACTION_ERR_COMMENT          _MESSAGE(27081, _("\nUse \"qmod -c <jobid>\" to clear job error state\nonce the problem is fixed."))
 #define MSG_MAIL_ACTION_ABORT                _MESSAGE(27082, _("Aborted"))
 
-#define MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS    _MESSAGE(27087, _(SFN "\n Exit Status      = " SFN "\n Signal           = " SFN "\n User             = " SFN "\n Queue            = " SFN "\n Host             = " SFN "\n Start Time       = " SFN "\n End Time         = " SFN "\n CPU              = " SFN "\n Max vmem         = " SFN "\nfailed " SFN " because:\n" SFN " " SFN))
+#define MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS    _MESSAGE(27087, _(SFN "\n Exit Status      = " SFN "\n Signal           = " SFN "\n User             = " SFN "\n Queue            = " SFN "\n Host             = " SFN "\n Start Time       = " SFN "\n End Time         = " SFN "\n CPU              = " SFN "\n Max vmem         = " SFN "\nfailed " SFN " because:\n" SFNMAX " " SFNMAX))
 #define MSG_MAIL_TYPE_STATE                  _MESSAGE(27088, _("job abortion/end"))
 #define MSG_MAIL_UNKNOWN_NAME                _MESSAGE(27090, _("<unknown>"))
 #define MSG_MAIL_ACTION_APPERROR             _MESSAGE(27091, _("Rescheduled due to application error"))
