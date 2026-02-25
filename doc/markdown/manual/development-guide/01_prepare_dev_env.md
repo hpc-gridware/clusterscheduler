@@ -271,7 +271,7 @@ zypper install -y libopenssl-devel
 zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven
 ```
 
-### Ubuntu 20/22/24
+### Ubuntu 20/22/24/26
 
 ```
 apt-get install -y git autoconf automake build-essential manpages-dev patchelf 
