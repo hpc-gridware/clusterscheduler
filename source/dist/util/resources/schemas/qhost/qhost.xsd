@@ -1,34 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--___INFO__MARK_BEGIN__
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this code are Copyright 2011 Univa Inc.
+ *
+ *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
  *
  ************************************************************************/
 ___INFO__MARK_END__-->
@@ -36,15 +38,15 @@ ___INFO__MARK_END__-->
    targetNamespace="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
             xmlns="https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd"
             elementFormDefault="qualified">
-    
+
     <xsd:element name="qhost" type="QHostType"/>
-    
+
     <xsd:complexType name="QHostType">
         <xsd:sequence>
             <xsd:element name="host" type="HostType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
     </xsd:complexType>
-    
+
     <xsd:complexType name="HostType">
         <xsd:sequence>
             <xsd:element name="hostvalue" type="NamedValueType" minOccurs="0" maxOccurs="unbounded"/>
@@ -53,7 +55,7 @@ ___INFO__MARK_END__-->
         </xsd:sequence>
         <xsd:attribute name="name" type="xsd:string" use="required"/>
     </xsd:complexType>
-    
+
     <xsd:complexType name="NamedValueType">
         <xsd:simpleContent>
             <xsd:extension base="xsd:string">
@@ -61,7 +63,7 @@ ___INFO__MARK_END__-->
             </xsd:extension>
         </xsd:simpleContent>
     </xsd:complexType>
-    
+
     <xsd:complexType name="ResourceValueType">
         <xsd:complexContent>
             <xsd:extension base="NamedValueType">
@@ -69,23 +71,23 @@ ___INFO__MARK_END__-->
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
-    
-    <!-- 
-       The DominanceType reflect the dominance of a resource value. This string 
-       contains always two charaters. 
-       
-       The first character specifies the dominance layer 
+
+    <!--
+       The DominanceType reflect the dominance of a resource value. This string
+       contains always two charaters.
+
+       The first character specifies the dominance layer
           g = global
           h = host
-          q = queue, 
+          q = queue,
           ? = unknown
-          
+
        The second character specifies domninance type
           v = value from complex template
-          f = fixed value from object configuration 
+          f = fixed value from object configuration
           l = load value
           L = corrected load value
-          c = consumable, 
+          c = consumable,
           ? = unknown dominance type
     -->
     <xsd:simpleType name="DominanceType">
@@ -93,5 +95,5 @@ ___INFO__MARK_END__-->
             <xsd:pattern value="[ghq?][vflLc?]"/>
         </xsd:restriction>
     </xsd:simpleType>
-    
+
 </xsd:schema>

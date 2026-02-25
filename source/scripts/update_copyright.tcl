@@ -2,7 +2,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #
-#  Copyright 2025 HPC-Gridware GmbH
+#  Copyright 2025-2026 HPC-Gridware GmbH
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -284,12 +284,29 @@ proc get_copyright_header {filename lines_var header_var copyright_type_var comm
                set header_started 1
                set start_index $idx
             }
+            "<!--___INFO__MARK_BEGIN__" {
+               set copyright_type "SISSL"
+               set comment_type "xml"
+               set header_started 1
+               set start_index $idx
+            }
+            "<!--___INFO__MARK_BEGIN_NEW__" {
+               set copyright_type "NEW"
+               set comment_type "xml"
+               set header_started 1
+               set start_index $idx
+            }
+            "<!--___INFO__MARK_BEGIN_CLOSED__" {
+               set copyright_type "CLOSED"
+               set comment_type "xml"
+               set header_started 1
+               set start_index $idx
+            }
          }
       } else {
          # within header
-         # check for header end, we expect it not to start on column 0, there must be some comment line
-         # as long as we do not find the header end, copy the header
-         if {[string first "___INFO__MARK_END_" $line] > 0} {
+         # check for header end
+         if {[string first "___INFO__MARK_END_" $line] >= 0} {
             set header_ended 1
             set end_index $idx
          } else {
@@ -336,14 +353,25 @@ proc check_copyright_header {filename header_var copyright_type_var comment_type
          set split_header [split $closed_license "\n"]
       }
 
-      if {$comment_type == "C"} {
-         set header_start "/***************************************************************************"
-         set header_end " ***************************************************************************/"
-         set header_prefix " * "
-      } else {
-         set header_start "###########################################################################"
-         set header_end "###########################################################################"
-         set header_prefix "# "
+      switch $comment_type {
+         "C" {
+            set header_start "/***************************************************************************"
+            set header_end " ***************************************************************************/"
+            set header_prefix " * "
+         }
+         "script" {
+            set header_start "###########################################################################"
+            set header_end "###########################################################################"
+            set header_prefix "# "
+         }
+         "xml" {
+            set header_start "/***************************************************************************"
+            set header_end " ***************************************************************************/"
+            set header_prefix " * "
+         }
+         default {
+            puts stderr "invalid comment_type $comment_type"
+         }
       }
 
       lappend header $header_start
@@ -358,6 +386,8 @@ proc check_copyright_header {filename header_var copyright_type_var comment_type
       if {$comment_type == "script"} {
          set comment_line "##########"
       } elseif {$comment_type == "C"} {
+         set comment_line " **********"
+      } elseif {$comment_type == "xml"} {
          set comment_line " **********"
       }
       if {[string first $comment_line [lindex $header end]] != 0} {
@@ -425,6 +455,9 @@ proc add_update_gridware_copyright {filename copyright_var copyright_type commen
       }
       "script" {
          set comment_start "#"
+      }
+      "xml" {
+         set comment_start " *"
       }
       default {
          puts stderr "invalid comment_type $comment_type"
@@ -497,7 +530,7 @@ proc get_year_range_from_git {filename} {
 }
 
 set apache_license "
-Copyright 2025 HPC-Gridware GmbH
+Copyright 2026 HPC-Gridware GmbH
 
 Licensed under the Apache License, Version 2.0 (the \"License\");
 you may not use this file except in compliance with the License.
@@ -513,7 +546,7 @@ limitations under the License.
 "
 
 set closed_license "
-Copyright 2025 HPC-Gridware GmbH
+Copyright 2026 HPC-Gridware GmbH
 "
 
 ################################################################################
