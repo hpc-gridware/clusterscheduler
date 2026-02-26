@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -701,6 +701,17 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
          nm_set(job_field, JB_project);
       }
 
+      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-par"))) {
+         const char *allocation_rule = lGetString(ep, SPA_switch_arg);
+         u_long32 scope = lGetChar(ep, SPA_argval_lCharT);
+         lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+         if (jrs != nullptr) {
+            lSetString(jrs, JRS_allocation_rule, allocation_rule);
+         }
+         lRemoveElem(cmdline, &ep);
+         nm_set(job_field, JB_request_set_list);
+      }
+
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-pe"))) {
          lSetString(job, JB_pe, lGetString(ep, SPA_argval_lStringT));
          /* put sublist from parsing into job */
@@ -808,7 +819,6 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             nm_set(job_field, JB_job_args);
          }
          lSetList(job, JB_job_args, lp);
-
       }
 
       /* context switches are sensitive to order */
@@ -829,8 +839,9 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
             lRemoveElem(cmdline, &ep);
             ep = temp;
             nm_set(job_field, JB_context);
-         } else
+         } else {
             ep = lNextRW(ep);
+         }
    }
 
    /* complain about unused options */
@@ -862,8 +873,10 @@ static lList *qalter_parse_job_parameter(u_long32 me_who, lList *cmdline, lList 
       DRETURN(answer);
    }
 
-/* printf("=============== lWriteElemTo(job, stdout); ==================\n"); */
-/* lWriteElemTo(job, stdout); */
+#if 0
+   printf("=============== lWriteElemTo(job, stdout); ==================\n");
+   lWriteElemTo(job, stdout);
+#endif
 
 
    /* 

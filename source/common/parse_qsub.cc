@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
+#include "uti/config_file.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -1540,7 +1541,35 @@ lList *cull_parse_cmdline(
          continue;
       }
 
-/*----------------------------------------------------------------------------*/
+      /*-----------------------------------------------------------------------------*/
+      /* "-par" */
+
+      if (strcmp("-par", *sp) == 0) {
+
+         DPRINTF("\"%s\"\n", *sp);
+
+         sp++;
+         if (*sp == nullptr) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_XOPTIONMUSTHAVEARGUMENT_S, "-par");
+            DRETURN(answer);
+         }
+
+         // check if the given allocation rule (e.g., $pe_slots) is correct
+         if (replace_params(*sp, nullptr, 0, pe_alloc_rule_variables) != 0) {
+            answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    MSG_PARSE_INVALIDOPTIONARGUMENT_SS, "-par", *sp);
+            DRETURN(answer);
+         }
+
+         ep_opt = sge_add_arg(pcmdline, par_OPT, lStringT, *(sp - 1), *sp);
+         lSetChar(ep_opt, SPA_argval_lCharT, scope_flag);
+
+         sp++;
+         continue;
+      }
+
+      /*----------------------------------------------------------------------------*/
       if (!strcmp("-pe", *sp)) {
          lList *pe_range = nullptr;
          dstring d_arg = DSTRING_INIT;

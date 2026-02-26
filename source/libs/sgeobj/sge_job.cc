@@ -4183,6 +4183,22 @@ void job_set_master_hard_queue_list(lListElem *job, lList *queue_list) {
    job_set_queue_list(job, queue_list, JRS_SCOPE_MASTER, true);
 }
 
+void job_set_allocation_rule(lListElem *job, const char *allocation_rule, u_long32 scope) {
+   lListElem *jrs = job_get_or_create_request_setRW(job, scope);
+   if (jrs != nullptr) {
+      lSetString(jrs, JRS_allocation_rule, allocation_rule);
+   }
+}
+
+const char *job_get_allocation_rule(const lListElem *job, u_long32 scope) {
+   const char *ret = nullptr;
+   const lListElem *jrs = job_get_request_set(job, scope);
+   if (jrs != nullptr) {
+      ret = lGetString(jrs, JRS_allocation_rule);
+   }
+   return ret;
+}
+
 static void
 job_add_str_to_command_line(dstring *dstr, const char *str) {
    if (str != nullptr) {
@@ -4433,6 +4449,10 @@ job_add_resource_set_list_to_command_line(const lListElem *job, dstring *dstr) {
       const lListElem *scope_ep;
       for_each_ep (scope_ep, request_set_list) {
          job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
+         const char *allocation_rule = lGetString(scope_ep, JRS_allocation_rule);
+         if (allocation_rule != nullptr) {
+            job_add_opt_to_comand_line(dstr, "-par", allocation_rule);
+         }
          job_add_resource_set_list_scope_to_command_line(scope_ep, dstr);
       }
    }

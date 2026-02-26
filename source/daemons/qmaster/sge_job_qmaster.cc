@@ -2398,7 +2398,20 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SOFTQLIST, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
+
+         // JRS_allocation_rule
+         const char *allocation_rule = lGetString(jrs, JRS_allocation_rule);
+         if (allocation_rule != nullptr) {
+            if (!pe_validate_allocation_rule(alpp, allocation_rule, true)) {
+               DRETURN(STATUS_EUNKNOWN);
+            }
+            job_set_allocation_rule(new_job, allocation_rule, scope);
+            *trigger |= MOD_EVENT;
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ALLOCATION_RULE, jobid);
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
+         }
       } // foreach scope
+
       if (!job_verify_adjust_request_set(alpp, new_job, master_centry_list)) {
          DRETURN(STATUS_EUNKNOWN);
       }

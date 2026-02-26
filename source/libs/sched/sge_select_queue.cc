@@ -4004,13 +4004,18 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             lSetUlong(hep, EH_seq_no, host_seq_no++);
       }
       lPSortList(a->host_list, "%I+", EH_seq_no);
-      bool done = false;
 
       // now work on the host list
       int accu_host_slots = 0;
       bool suited_as_master_host;
       bool have_master_host = false;
 
+      /* @todo we might have different allocation rules for master and slaves
+       * - parse them once here and store them in the assignment struct?
+       * - where we handle master scope, check the master allocation_rule
+       * - when deciding to put slave tasks on the host, check the slave allocation rule
+       * - have a boolean, that they differ? No, just compare.
+       */
       int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
       int minslots = ALLOC_RULE_IS_BALANCED(allocation_rule)?allocation_rule:1;
 
@@ -4025,6 +4030,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       /*
        * in case of round-robin we might need to repeat the step as we only allocate 1 slot per host per round
        */
+      bool done = false;
       do {
          last_accu_host_slots = accu_host_slots;
 
@@ -4254,7 +4260,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       sge_dstring_free(&rue_name);
       sge_dstring_free(&limit_name);
 
-      // copy task specific binding decision into the JG-element
+      // copy task-specific binding decision into the JG-element
       ocs::BindingSchedd::copy_strategy(a);
 
       if (accu_host_slots >= a->slots && have_master_host) {

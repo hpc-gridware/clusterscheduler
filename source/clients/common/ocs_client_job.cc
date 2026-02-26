@@ -69,6 +69,9 @@
 
 #include "get_path.h"
 #include "ocs_client_job.h"
+
+#include <ranges>
+
 #include "parse_qsub.h"
 
 #include "msg_clients_common.h"
@@ -336,6 +339,16 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             }
             printf("%-33s", str_attrib);
             uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+         }
+
+         const char *allocation_rule = lGetString(jrs, JRS_allocation_rule);
+         if (allocation_rule != nullptr) {
+            if (str_scope == nullptr) {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "allocation_rule:");
+            } else {
+               str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_allocation_rule:", str_scope);
+            }
+            printf("%-33s%s\n", str_attrib, allocation_rule);
          }
       }
    }

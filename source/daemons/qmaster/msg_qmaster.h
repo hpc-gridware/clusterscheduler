@@ -30,7 +30,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -261,6 +261,7 @@
 #define MSG_JOB_SUBMITJOB_US          _MESSAGE(33234, _("Your job " sge_u32 " (" SFQ ") has been submitted"))
 #define MSG_JOB_SUBMITJOBARRAY_UUUUS  _MESSAGE(33235, _("Your job-array " sge_u32 "." sge_u32 "-" sge_u32 ":" sge_u32 " (" SFQ ") has been submitted"))
 #define MSG_LOG_NEWJOB                _MESSAGE(33236, _("new job"))
+#define MSG_JOB_GLOBALMASTERSLAVEA_S  _MESSAGE(33232, _("job rejected: overwriting global allocation_rule in %s requests is not allowed"))
 #define MSG_JOB_JOB                   _MESSAGE(33239, _("Job"))
 #define MSG_JOB_FORCEDDELETEPERMS_S   _MESSAGE(33240, _(SFQ " - forcing a job deletion requires manager privileges"))
 #define MSG_DELETEPERMS_SSU           _MESSAGE(33241, _(SFN " - you do not have the necessary privileges to delete the " SFN " \"" sge_u32 "\""))
@@ -376,6 +377,9 @@
 #define MSG_JSV_THRESHOLD_UU                          _MESSAGE(33343, _("JSV for job " sge_u32 " took " sge_u32 " ms"))
 
 #define MSG_JSV_BINDING_REJECTED_SS                   _MESSAGE(33345, _("job rejected: binding parameter not consistent with strategy (" SFN " is " SFN ")"))
+
+#define MSG_JOB_ALLOCATION_RULE                       _MESSAGE(33246, _("allocation rule"))
+
 
 #define MSG_OBJ_MANAGER               _MESSAGE(33359, _("manager"))
 #define MSG_OBJ_OPERATOR              _MESSAGE(33360, _("operator"))

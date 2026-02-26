@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -544,6 +544,9 @@ void job_set_hard_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
 void job_set_soft_queue_list(lListElem *job, lList *queue_list);
 void job_set_soft_queue_list(lListElem *job, lList *queue_list, u_long32 scope);
 void job_set_master_hard_queue_list(lListElem *job, lList *queue_list);
+
+const char *job_get_allocation_rule(const lListElem *job, u_long32 scope);
+void job_set_allocation_rule(lListElem *job, const char *allocation_rule, u_long32 scope);
 
 const char *
 job_get_effective_command_line(const lListElem *job, dstring *dstr, const char *client);
