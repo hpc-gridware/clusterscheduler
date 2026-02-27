@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -138,7 +138,7 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list, lLis
     * For Urubu (6.2u2) we won't have and update script. Therefore the master
     * has to be able to cope with a missing "jsv_url" string. 
     *
-    * TODO: Nethertheless we have to add the "jsv_url" to the update script
+    * TODO: Nevertheless we have to add the "jsv_url" to the update script
     *       for the first release after Urubu.
     */
    {
@@ -371,7 +371,7 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
    }
 
    /*
-   ** is the configuration change relevant for the qmaster itsself?
+   ** is the configuration change relevant for the qmaster itself?
    ** if so, initialise conf struct anew
    */
    if (strcmp(unique_name, SGE_GLOBAL_NAME) == 0 || sge_hostcmp(unique_name, qualified_hostname) == 0) {
@@ -408,6 +408,9 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();
+
+      // The maximum number of events clients might have changed.
+      sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients());
    }
 
    /* invalidate configuration cache */

@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -551,7 +551,7 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
       lListElem *next;
 
       next = lFirstRW(task->data_list);
-      while ((ep = next) != nullptr) {/* is thread save. the global lock is used, when needed */
+      while ((ep = next) != nullptr) {/* is thread save. the global lock is used when needed */
          next = lNextRW(ep);
 
          /* fill address infos from request into event client that must be added */
@@ -564,9 +564,6 @@ sge_c_gdi_add(sge_gdi_packet_class_t *packet, sge_gdi_task_class_t *task,
          if (!event_client_verify(ep, &(task->answer_list), true)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
-            mconf_set_max_dynamic_event_clients(
-                    sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients()));
-
             sge_add_event_client(packet, ep, &(task->answer_list),
                                  (sub_command & SGE_GDI_RETURN_NEW_VERSION) ? &(task->data_list) : nullptr,
                                  (event_client_update_func_t) nullptr, nullptr);
