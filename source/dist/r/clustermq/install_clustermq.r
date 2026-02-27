@@ -55,3 +55,4 @@ cat("Library directory:", normalizePath(userlib), "\n")
 
 install.packages("remotes")
 remotes::install_github("ernst-bablick/clustermq")
+#remotes::install_local("~/Clion/clustermq")
