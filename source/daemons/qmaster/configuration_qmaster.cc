@@ -64,6 +64,8 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_RequestLimits.h"
 
+#include "evm/sge_event_master.h"
+
 #include "configuration_qmaster.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
@@ -387,6 +389,9 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();
+
+      // The maximum number of events clients might have changed.
+      sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients());
    }
 
    /* invalidate configuration cache */
