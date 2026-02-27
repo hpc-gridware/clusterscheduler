@@ -167,13 +167,6 @@ main(int argc, const char **argv)
    }
 
    /*
-    * Check if -terse is requested
-    */
-   if (opt_list_has_X(opts_cmdline, "-terse")) {
-      has_terse = true;
-   }
-
-   /*
     * We will only read commandline options from scripfile if the script
     * itself should not be handled as binary
     */
@@ -196,6 +189,13 @@ main(int argc, const char **argv)
     */
    opt_list_merge_command_lines(&opts_all, &opts_defaults,
                                 &opts_scriptfile, &opts_cmdline);
+
+   /*
+    * Check if -terse is requested
+    */
+   if (opt_list_has_X(opts_all, "-terse")) {
+      has_terse = true;
+   }
 
    opt_list_verify_scope(opts_all, &alp);
    tmp_ret = answer_list_print_err_warn(&alp, nullptr, nullptr, nullptr);
