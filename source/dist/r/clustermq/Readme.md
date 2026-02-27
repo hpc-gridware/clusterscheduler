@@ -7,6 +7,11 @@ This package provides example scripts and installation support for running paral
 
 It uses the R package **clustermq** to submit and manage R worker jobs through the scheduler (`qsub`).
 
+**clustermq** is part of Michael Schubert's academic work. Find more information here:
+
+* M Schubert. clustermq enables efficient parallelisation of genomic analyses. Bioinformatics (2019). [doi:10.1093/bioinformatics/btz284](https://doi.org/10.1093/bioinformatics/btz284)
+* [clustermq GitHub project](https://github.com/mschubert/clustermq)
+
 ---
 
 ## Overview
@@ -126,7 +131,7 @@ The script will:
 4. Produce:
 
 ```
-mandelbrot_color.png
+mandelbrot.png
 ```
 
 The output image is written to the master working directory.
@@ -256,7 +261,9 @@ Adapt these parameters according to available cluster resources and workload req
 
 ---
 
-## License
+## License and Citation
 
 `clustermq` is licensed under the Apache License 2.0:  
 https://github.com/mschubert/clustermq/blob/master/LICENSE
+
+M Schubert. clustermq enables efficient parallelisation of genomic analyses. Bioinformatics (2019). [doi:10.1093/bioinformatics/btz284](https://doi.org/10.1093/bioinformatics/btz284)
