@@ -190,7 +190,7 @@ apt-get install -y openjdk-8-jdk maven
 and only for lx-amd64
 
 ```
-dnf install -y automake autoconf cmake patchelf git libtirpc-devel systemd-devel patchelf
+dnf install -y automake autoconf cmake git libtirpc-devel systemd-devel patchelf
 dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
 dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
@@ -204,6 +204,18 @@ Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manu
 #### for repository drmaa-java
 ```
 dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel maven
+```
+
+### Rocky 10 / Alma 10 / CentOS 10 / RHEL 10
+
+```
+dnf install -y automake autoconf cmake git systemd-devel
+dnf install -y gcc-toolset-15 gcc-toolset-15-libasan-devel gcc-toolset-15-libubsan-devel
+dnf install -y expect tcl xterm perl-Env tcsh graphviz
+dnf install epel-release    (or on RHEL 10: dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm)
+dnf install -y pandoc 
+dnf install -y texlive*
+dnf install -y openssl-devel
 ```
 
 ### Solaris 11 (default for sol-amd64)
