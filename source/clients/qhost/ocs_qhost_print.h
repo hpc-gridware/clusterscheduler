@@ -49,26 +49,26 @@ typedef struct qhost_report_handler_str qhost_report_handler_t;
 struct qhost_report_handler_str {
    void* ctx;
    
-   int (*report_started)(qhost_report_handler_t* handler, lList **alpp);
-   int (*report_finished)(qhost_report_handler_t* handler, lList **alpp);
+   int (*report_started)(std::ostream &os);
+   int (*report_finished)(std::ostream &os);
 
-   int (*report_host_begin)(qhost_report_handler_t* handler, const char* host_name, lList **alpp);
-   int (*report_host_string_value)(qhost_report_handler_t* handler, const char *name, const char *value, lList **alpp);
-   int (*report_host_ulong_value)(qhost_report_handler_t* handler, const char* name, u_long32 value, lList **alpp);
-   int (*report_host_finished)(qhost_report_handler_t* handler, const char* host_name, lList **alpp);
+   int (*report_host_begin)(std::ostream &os, const char* host_name);
+   int (*report_host_string_value)(std::ostream &os, const char *name, const char *value);
+   int (*report_host_ulong_value)(std::ostream &os, const char* name, u_long32 value);
+   int (*report_host_finished)(std::ostream &os);
    
-   int (*report_resource_value)(qhost_report_handler_t* handler, const char* dominance, const char* name, const char* value, lList **alpp);
+   int (*report_resource_value)(std::ostream &os, const char* dominance, const char* name, const char* value);
    
-   int (*report_queue_begin)(qhost_report_handler_t* handler, const char* qname, lList **alpp);
-   int (*report_queue_string_value)(qhost_report_handler_t* handler, const char* qname, const char* name, const char *value, lList **alpp);
-   int (*report_queue_ulong_value)(qhost_report_handler_t* handler, const char* qname, const char* name, u_long32 value, lList **alpp);
-   int (*report_queue_finished)(qhost_report_handler_t* handler, const char* qname, lList **alpp);
+   int (*report_queue_begin)(std::ostream &os, const char* qname);
+   int (*report_queue_string_value)(std::ostream &os, const char* qname, const char* name, const char *value);
+   int (*report_queue_ulong_value)(std::ostream &os, const char* qname, const char* name, u_long32 value);
+   int (*report_queue_finished)(std::ostream &os);
    
-   int (*report_job_begin)(qhost_report_handler_t* handler, const char *qname, const char* jname, lList **alpp);
-   int (*report_job_string_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, const char *value, lList **alpp);
-   int (*report_job_ulong64_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, u_long64 value, lList **alpp);
-   int (*report_job_double_value)(qhost_report_handler_t* handler, const char *qname, const char* jname, const char* name, double value, lList **alpp);
-   int (*report_job_finished)(qhost_report_handler_t* handler, const char *qname, const char* jname, lList **alpp);
+   int (*report_job_begin)(std::ostream &os, const char* jname);
+   int (*report_job_string_value)(std::ostream &os, const char* jname, const char* name, const char *value);
+   int (*report_job_ulong64_value)(std::ostream &os, const char* jname, const char* name, u_long64 value);
+   int (*report_job_double_value)(std::ostream &os, const char* jname, const char* name, double value);
+   int (*report_job_finished)(std::ostream &os);
 
    int (*destroy)(qhost_report_handler_t** handler, lList **alpp);
 };

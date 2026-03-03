@@ -37,6 +37,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ostream>
+#include <sstream>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -664,38 +666,21 @@ static lListElem *append_Attr_S(lList *attributeList, const char *name, const ch
 }
 
 bool escape_string(const char *string, dstring *target){
-   int size;
-   int i;
- 
    DENTER(CULL_LAYER);
-   
+
    if (target == nullptr) {
       DPRINTF("no target string in excape_string()\n");
       ocs::TerminationManager::trigger_abort();
    }
- 
+
    if (string == nullptr){
       DRETURN(false);
    }
-     
-   size = strlen(string);
 
-   for(i = 0; i<size; i++){
-      switch(string[i]){
-         case '<' : sge_dstring_append(target, "%lt;");
-            break;
-         case '>' : sge_dstring_append(target, "&gt;");
-            break;
-         case '&' : sge_dstring_append(target, "&amp;");
-            break;
-         case '\'' : sge_dstring_append(target, "&apos;");
-            break;
-         case '\"' : sge_dstring_append(target, "&quot;");
-            break;
-         default :
-            sge_dstring_append_char(target, string[i]); 
-      }
-   }
+   // we use a ostringstream to add the given string
+   std::ostringstream oss;
+   oss << ocs::EscapedString(string);
+   sge_dstring_append(target, oss.str().c_str());
    DRETURN(true);
 }
 
