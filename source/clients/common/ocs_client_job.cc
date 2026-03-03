@@ -35,6 +35,8 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
+#include <sstream>
+#include <ostream>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
@@ -79,9 +81,6 @@
 static void sge_show_checkpoint(int how, int op);
 
 static void sge_show_y_n(int op, int how);
-
-static void show_ce_type_list(const lList *cel, const char *indent, const char *separator,
-                              bool display_resource_contribution, const lList *centry_list, int slots);
 
 void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    DENTER(TOP_LAYER);
@@ -296,7 +295,9 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_resource_list:", str_scope);
             }
             printf("%-33s", str_attrib);
-            sge_show_ce_type_list(lp);
+            std::ostringstream oss;
+            show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
+            printf("%s\n", oss.str().c_str());
             printf("\n");
          }
 
@@ -308,7 +309,9 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_resource_list:", str_scope);
             }
             printf("%-33s", str_attrib);
-            sge_show_ce_type_list(lp);
+            std::ostringstream oss;
+            show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
+            printf("%s\n", oss.str().c_str());
             printf("\n");
          }
 
@@ -880,20 +883,11 @@ static void sge_show_y_n(int op, int how) {
    DRETURN_VOID;
 }
 
-void sge_show_ce_type_list(const lList *rel) {
-   DENTER(TOP_LAYER);
-
-   show_ce_type_list(rel, "", ",", false, nullptr, 0);
-
-   DRETURN_VOID;
-}
-
 /*************************************************************/
 /* cel CE_Type List */
 
-/* TODO: EB: this function should be replaced by centry_list_append_to_dstring() */
-static void show_ce_type_list(const lList *cel, const char *indent, const char *separator,
-                              bool display_resource_contribution, const lList *centry_list, int slots) {
+void show_ce_type_list(std::ostream &os, const lList *cel, const char *indent, const char *separator,
+                       bool display_resource_contribution, const lList *centry_list, int slots) {
    bool first = true;
    const lListElem *ce, *centry;
    const char *s, *name;
@@ -906,8 +900,7 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
       if (first) {
          first = false;
       } else {
-         printf("%s", separator);
-         printf("%s", indent);
+         os << separator << indent;
       }
 
       name = lGetString(ce, CE_name);
@@ -916,30 +909,20 @@ static void show_ce_type_list(const lList *cel, const char *indent, const char *
       }
       s = lGetString(ce, CE_stringval);
       if (s) {
-         if (!display_resource_contribution)
-            printf("%s=%s", name, s);
-         else
-            printf("%s=%s (%f)", name, s, uc);
+         if (!display_resource_contribution) {
+            os << name << "=" << s;
+         } else {
+            os << name << "=" << s << " (" << uc << ")";
+         }
       } else {
-         if (!display_resource_contribution)
-            printf("%s", name);
-         else
-            printf("%s (%f)", name, uc);
+         if (!display_resource_contribution) {
+            os << name;
+         } else {
+            os << name << " (" << uc << ")";
+         }
       }
    }
 
    DRETURN_VOID;
 }
 
-/*************************************************************/
-/* rel CE_Type List */
-void sge_show_ce_type_list_line_by_line(const char *label, const char *indent, const lList *rel,
-                                        bool display_resource_contribution, const lList *centry_list, int slots) {
-   DENTER(TOP_LAYER);
-
-   printf("%s", label);
-   show_ce_type_list(rel, indent, "\n", display_resource_contribution, centry_list, slots);
-   printf("\n");
-
-   DRETURN_VOID;
-}

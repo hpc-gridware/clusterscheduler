@@ -48,8 +48,8 @@
 
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_list.h"
-#include "cull/msg_cull.h"
 
+#include "sgeobj/ocs_EscapedString.h"
 #include "sgeobj/sge_cull_xml.h"
 
 static void lWriteElemXML_(const lListElem *ep, int nesting_level, FILE *fp, int ignore_cull_name);

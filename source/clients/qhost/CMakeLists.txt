@@ -23,6 +23,8 @@ add_executable(
       qhost
         ocs_qhost.cc
         ocs_qhost_print.cc
+        ocs_QHostReportHandlerBase.cc
+        ocs_QHostReportHandlerXML.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/parse_job_cull.cc

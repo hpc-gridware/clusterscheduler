@@ -33,7 +33,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "sgeobj/sge_daemonize.h"
+#include "ocs_QHostReportHandlerXML.h"
 
 #define QHOST_DISPLAY_QUEUES     (1<<0)
 #define QHOST_DISPLAY_JOBS       (1<<1)
@@ -46,32 +46,10 @@ typedef struct qhost_report_handler_str qhost_report_handler_t;
 #define QHOST_SUCCESS 0
 #define QHOST_ERROR   -1
 
-struct qhost_report_handler_str {
-   void* ctx;
-   
-   int (*report_started)(std::ostream &os);
-   int (*report_finished)(std::ostream &os);
-
-   int (*report_host_begin)(std::ostream &os, const char* host_name);
-   int (*report_host_string_value)(std::ostream &os, const char *name, const char *value);
-   int (*report_host_ulong_value)(std::ostream &os, const char* name, u_long32 value);
-   int (*report_host_finished)(std::ostream &os);
-   
-   int (*report_resource_value)(std::ostream &os, const char* dominance, const char* name, const char* value);
-   
-   int (*report_queue_begin)(std::ostream &os, const char* qname);
-   int (*report_queue_string_value)(std::ostream &os, const char* qname, const char* name, const char *value);
-   int (*report_queue_ulong_value)(std::ostream &os, const char* qname, const char* name, u_long32 value);
-   int (*report_queue_finished)(std::ostream &os);
-   
-   int (*report_job_begin)(std::ostream &os, const char* jname);
-   int (*report_job_string_value)(std::ostream &os, const char* jname, const char* name, const char *value);
-   int (*report_job_ulong64_value)(std::ostream &os, const char* jname, const char* name, u_long64 value);
-   int (*report_job_double_value)(std::ostream &os, const char* jname, const char* name, double value);
-   int (*report_job_finished)(std::ostream &os);
-
-   int (*destroy)(qhost_report_handler_t** handler, lList **alpp);
-};
-
 int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
-              lList *resource_list, u_long32 show, lList **alp, qhost_report_handler_t* report_handler);
+              lList *resource_list, u_long32 show, lList **alp, ocs::QHostReportHandlerXML *report_handler);
+
+int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
+                         lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
+                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerXML *report_handler,
+                         lList **alpp, u_long32 show, bool is_manager);

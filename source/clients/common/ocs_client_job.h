@@ -38,7 +38,5 @@
 
 void cull_show_job(const lListElem *job, int flags, bool show_binding);
 
-void sge_show_ce_type_list(const lList *reqlist);
-
-void sge_show_ce_type_list_line_by_line(const char *label, const char *indent, const lList *reqlist,
-                                        bool display_resource_contribution, const lList *centry_list, int slot);
+void show_ce_type_list(std::ostream &os, const lList *cel, const char *indent, const char *separator,
+                       bool display_resource_contribution, const lList *centry_list, int slots);
