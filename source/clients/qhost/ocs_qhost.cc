@@ -35,6 +35,8 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <math.h>
+#include <sstream>
+#include <iomanip>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
@@ -72,42 +74,37 @@ static bool qhost_usage(FILE *fp);
 
 static qhost_report_handler_t* xml_report_handler_create(lList **alpp);
 static int xml_report_handler_destroy(qhost_report_handler_t** handler, lList **alpp);
-static int xml_report_finished(qhost_report_handler_t* handler, lList **alpp);
-static int xml_report_started(qhost_report_handler_t* handler, lList **alpp);
-static int xml_report_host_begin(qhost_report_handler_t* handler, const char* host_name, lList **alpp);
-static int xml_report_host_string_value(qhost_report_handler_t* handler, const char* name, const char *value, lList **alpp);
-static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const char* name, u_long32 value, lList **alpp);
-static int xml_report_host_finished(qhost_report_handler_t* handler, const char* host_name, lList **alpp);
-static int xml_report_resource_value(qhost_report_handler_t* handler, const char* dominance, const char* name, const char* value, lList **alpp);
-static int xml_report_queue_begin(qhost_report_handler_t* handler, const char* qname, lList **alpp);
-static int xml_report_queue_string_value(qhost_report_handler_t* handler, const char* qname, const char* name, const char *value, lList **alpp);
-static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const char* qname, const char* name, u_long32 value, lList **alpp);
-static int xml_report_queue_finished(qhost_report_handler_t* handler, const char* qname, lList **alpp);
-static int xml_report_job_begin(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp);
-static int xml_report_job_string_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, const char *value, lList **alpp);
-static int xml_report_job_ulong64_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long64 value, lList **alpp);
-static int xml_report_job_double_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, double value, lList **alpp);
-static int xml_report_job_finished(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp);
+
+static int xml_report_finished(std::ostream &os);
+static int xml_report_started(std::ostream &os);
+static int xml_report_host_begin(std::ostream &os, const char *host_name);
+static int xml_report_host_string_value(std::ostream &os, const char *name, const char *value);
+static int xml_report_host_ulong_value(std::ostream &os, const char* name, u_long32 value);
+static int xml_report_host_finished(std::ostream &os);
+static int xml_report_resource_value(std::ostream &os, const char* dominance, const char* name, const char* value);
+static int xml_report_queue_begin(std::ostream &os, const char* qname);
+static int xml_report_queue_string_value(std::ostream &os, const char* qname, const char* name, const char *value);
+static int xml_report_queue_ulong_value(std::ostream &os, const char* qname, const char* name, u_long32 value);
+static int xml_report_queue_finished(std::ostream &os);
+static int xml_report_job_begin(std::ostream &os, const char* jobname);
+static int xml_report_job_string_value(std::ostream &os, const char* jobname, const char* name, const char *value);
+static int xml_report_job_ulong64_value(std::ostream &os, const char* jobname, const char* name, u_long64 value);
+static int xml_report_job_double_value(std::ostream &os, const char* jobname, const char* name, double value);
+static int xml_report_job_finished(std::ostream &os);
 
 
-
-
-static int xml_report_started(qhost_report_handler_t* handler, lList **alpp)
-{
+static int
+xml_report_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-
-   printf("<?xml version='1.0'?>\n");
-   printf("<qhost xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">\n");
-   
+   os << "<?xml version='1.0'?>" << std::endl;
+   os << "<qhost xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_finished(qhost_report_handler_t* handler, lList **alpp)
-{
+static int
+xml_report_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   
-   printf("</qhost>\n");
-   
+   os << "</qhost>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
@@ -175,190 +172,88 @@ static int xml_report_handler_destroy(qhost_report_handler_t** handler, lList **
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_host_begin(qhost_report_handler_t* handler, const char* host_name, lList **alpp)
-{
+static int xml_report_host_begin(std::ostream &os, const char* host_name) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(host_name, (dstring*)handler->ctx);
-   printf(" <host name='%s'>\n", sge_dstring_get_string((dstring*)handler->ctx));
-
+   os << " <host name='" << ocs::EscapedString(host_name) << "'>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_host_string_value(qhost_report_handler_t* handler, const char*name, const char *value, lList **alpp)
-{
+static int xml_report_host_string_value(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);
-   printf("   <hostvalue name='%s'>", sge_dstring_get_string((dstring*)handler->ctx) );
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(value, (dstring*)handler->ctx);
-   printf("%s</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx));
-
+   os << "   <hostvalue name='" << ocs::EscapedString(name) << "'>" << ocs::EscapedString(value) << "</hostvalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_host_ulong_value(qhost_report_handler_t* handler, const char* name, u_long32 value, lList **alpp)
-{
+static int xml_report_host_ulong_value(std::ostream &os, const char* name, const u_long32 value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);
-   printf("   <hostvalue name='%s'>" sge_u32 "</hostvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
-
+   os << "   <hostvalue name='" << ocs::EscapedString(name) << "'>" << value << "</hostvalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_host_finished(qhost_report_handler_t* handler, const char* host_name, lList **alpp)
-{
+static int xml_report_host_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-
-   printf(" </host>\n");   
-
+   os << " </host>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_resource_value(qhost_report_handler_t* handler, const char* dominance, const char* name, const char* value, lList **alpp)
-{
+static int xml_report_resource_value(std::ostream &os, const char* dominance, const char* name, const char* value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);
-   printf("   <resourcevalue name='%s' ", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(dominance, (dstring*)handler->ctx);   
-   printf("dominance='%s'>", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(value, (dstring*)handler->ctx);   
-   printf("%s</resourcevalue>\n", sge_dstring_get_string((dstring*)handler->ctx));
-   
+   os << "   <resourcevalue name='" << ocs::EscapedString(name) << "' dominance='" << ocs::EscapedString(dominance) << "'>" << ocs::EscapedString(value) << "</resourcevalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_queue_begin(qhost_report_handler_t* handler, const char* qname, lList **alpp)
-{
+static int xml_report_queue_begin(std::ostream &os, const char* qname) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(qname, (dstring*)handler->ctx);
-   printf(" <queue name='%s'>\n", sge_dstring_get_string((dstring*)handler->ctx));
-
+   os << " <queue name='" << ocs::EscapedString(qname) << "'>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_queue_string_value(qhost_report_handler_t* handler, const char* qname, const char* name, const char *value, lList **alpp)
-{
+static int xml_report_queue_string_value(std::ostream &os, const char* qname, const char* name, const char *value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(qname, (dstring*)handler->ctx);
-   printf("   <queuevalue qname='%s'", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(value, (dstring*)handler->ctx);      
-   printf("%s</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx));
-   
+   os << "   <queuevalue qname='" << ocs::EscapedString(qname) << "' name='" << ocs::EscapedString(name) << "'>" << ocs::EscapedString(value) << "</queuevalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_queue_ulong_value(qhost_report_handler_t* handler, const char* qname, const char* name, u_long32 value, lList **alpp)
-{
+static int xml_report_queue_ulong_value(std::ostream &os, const char* qname, const char* name, const u_long32 value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(qname, (dstring*)handler->ctx);
-   printf("   <queuevalue qname='%s'", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>" sge_u32 "</queuevalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
-   
+   os << "   <queuevalue qname='" << ocs::EscapedString(qname) << "' name='" << ocs::EscapedString(name) << "'>" << value << "</queuevalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_queue_finished(qhost_report_handler_t* handler, const char* qname, lList **alpp)
-{
+static int xml_report_queue_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-
-   printf(" </queue>\n");   
-
+   os << " </queue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_begin(qhost_report_handler_t* handler, const char *qname, const char* jobname, lList **alpp)
+static int xml_report_job_begin(std::ostream &os, const char* jobname)
 {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(jobname, (dstring*)handler->ctx);
-   printf(" <job name='%s'>\n", sge_dstring_get_string((dstring*)handler->ctx));
-
+   os << " <job name='" << ocs::EscapedString(jobname) << "'>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_string_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, const char *value, lList **alpp)
-{
+static int xml_report_job_string_value(std::ostream &os, const char* jobname, const char* name, const char *value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(jobname, (dstring*)handler->ctx);
-   printf("   <jobvalue jobid='%s'", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(value, (dstring*)handler->ctx);      
-   printf("%s</jobvalue>\n", sge_dstring_get_string((dstring*)handler->ctx));
-   
+   os << "   <jobvalue jobid='" << ocs::EscapedString(jobname) << "' name='" << ocs::EscapedString(name) << "'>" << ocs::EscapedString(value) << "</jobvalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_ulong64_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, u_long64 value, lList **alpp)
-{
+static int xml_report_job_ulong64_value(std::ostream &os, const char* jobname, const char* name, u_long64 value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(jobname, (dstring*)handler->ctx);
-   printf("   <jobvalue jobid='%s'", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>" sge_u64 "</jobvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
-   
+   os << "   <jobvalue jobid='" << ocs::EscapedString(jobname) << "' name='" << ocs::EscapedString(name) << "'>" << value << "</jobvalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_double_value(qhost_report_handler_t* handler, const char *qname, const char* jobname, const char* name, double value, lList **alpp)
-{
+static int xml_report_job_double_value(std::ostream &os, const char* jobname, const char* name, double value) {
    DENTER(TOP_LAYER);
-
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(jobname, (dstring*)handler->ctx);
-   printf("   <jobvalue jobid='%s'", sge_dstring_get_string((dstring*)handler->ctx));
-   
-   sge_dstring_clear((dstring*)handler->ctx);
-   escape_string(name, (dstring*)handler->ctx);      
-   printf(" name='%s'>'%f'</jobvalue>\n", sge_dstring_get_string((dstring*)handler->ctx), value);
-   
+   os << "   <jobvalue jobid='" << ocs::EscapedString(jobname) << "' name='" << ocs::EscapedString(name) << "'>" << std::fixed << std::setprecision(6) << value << "</jobvalue>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 
-static int xml_report_job_finished(qhost_report_handler_t* handler, const char *qname, const char* job_name, lList **alpp)
-{
+static int xml_report_job_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-
-   printf(" </job>\n");   
-
+   os << " </job>" << std::endl;
    DRETURN(QHOST_SUCCESS);
 }
 

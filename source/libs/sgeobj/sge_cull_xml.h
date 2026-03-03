@@ -34,6 +34,7 @@
 /*___INFO__MARK_END__*/
 
 #include <cstdio>
+#include <ostream>
 
 #include "uti/sge_htable.h"
 
@@ -59,3 +60,38 @@ lListElem *xml_append_Attr_S(lList *attributeList, const char *name, const char 
 lListElem *xml_append_Attr_I(lList *attributeList, const char *name, int value);
 lListElem *xml_append_Attr_U(lList *attributeList, const char *name, u_long32 value);
 bool escape_string(const char *string, dstring *target);
+
+namespace ocs {
+   class EscapedString {
+      std::string escaped_string_;
+   public:
+      EscapedString(const char *string) : escaped_string_(string) {}
+
+      friend std::ostream &operator<<(std::ostream &os, const EscapedString &es) {
+         const size_t len = strlen(es.escaped_string_.c_str());
+         for (size_t i = 0; i < len; i++){
+            switch(es.escaped_string_[i]){
+               case '<' :
+                  os << "&lt;";
+                  break;
+               case '>' :
+                  os << "&gt;";
+                  break;
+               case '&' :
+                  os << "&amp;";
+                  break;
+               case '\'' :
+                  os << "&apos;";
+                  break;
+               case '\"' :
+                  os << "&quot;";
+                  break;
+               default :
+                  os << es.escaped_string_[i];
+                  break;
+            }
+         }
+         return os;
+      }
+   };
+}

@@ -33,6 +33,12 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <ostream>
+
+#include "basis_types.h"
+
+#include "cull/cull.h"
+
 #define QSTAT_INDENT "       "
 #define QSTAT_INDENT2 "                         "
 #define QSTAT_R_ATTRIB "%-36.36s"
@@ -75,6 +81,7 @@
 #define TAG_FOUND_IT 0x02
 #define TAG_SELECT_IT 0x04
 
+void sge_printf_header(std::ostream &os, u_long32 full_listing, u_long32 sge_ext);
 void sge_printf_header(u_long32 full_listing, u_long32 sge_ext);
 
 /*
@@ -82,7 +89,7 @@ void sge_printf_header(u_long32 full_listing, u_long32 sge_ext);
 */
 #include "../qhost/ocs_qhost_print.h"
 
-int sge_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl, lList *cl,
+int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl, lList *cl,
                          int print_jobs_of_queue, u_long32 full_listing, const char *indent, u_long32 group_opt,
                          int queue_name_length, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show,
                          bool is_manager);

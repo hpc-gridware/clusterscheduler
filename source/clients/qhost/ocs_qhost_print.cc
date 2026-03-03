@@ -39,6 +39,8 @@
 #include <climits>
 #include <math.h>
 #include <cfloat>
+#include <sstream>
+#include <iostream>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_bootstrap_files.h"
@@ -83,10 +85,10 @@
 #include "ocs_Bootstrap.h"
 
 
-static int sge_print_queues(lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl, 
+static int sge_print_queues(std::ostream &os, lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl,
                             lList *pel, lList *acll, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp, bool is_manager);
-static int sge_print_resources(lList *ehl, lList *cl, lList *resl, lList *acl_list, lListElem *host, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp);
-static int sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show, bool is_manager);
+static int sge_print_resources(std::ostream &os, lList *ehl, lList *cl, lList *resl, lList *acl_list, lListElem *host, u_long32 show, qhost_report_handler_t *report_handler, lList **alpp);
+static int sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_list, qhost_report_handler_t *report_handler, lList **alpp, u_long32 show, bool is_manager);
 
 static int reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem);
 static bool get_all_lists(lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList **acll, bool *is_manager, lList *hl, lList *ul, u_long32 show);
@@ -237,8 +239,9 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
    /*
    ** output handling
    */
+   std::ostringstream oss;
    if (report_handler != nullptr) {
-      ret = report_handler->report_started(report_handler, alpp);
+      ret = report_handler->report_started(oss);
       if (ret != QHOST_SUCCESS) {
          free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
          DRETURN(ret);
@@ -275,38 +278,39 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
             printf("\n");
          }
       } else {
-         ret = report_handler->report_host_begin(report_handler, lGetHost(ep, EH_name), alpp);
+         ret = report_handler->report_host_begin(oss, lGetHost(ep, EH_name));
          if (ret != QHOST_SUCCESS) {
             break;
          }
       }
-      sge_print_host(ep, cl, acll, report_handler, alpp, show, is_manager);
-      sge_print_resources(ehl, cl, resource_list, acll, ep, show, report_handler, alpp);
+      sge_print_host(oss, ep, cl, acll, report_handler, alpp, show, is_manager);
+      sge_print_resources(oss, ehl, cl, resource_list, acll, ep, show, report_handler, alpp);
 
-      ret = sge_print_queues(ql, ep, jl, nullptr, ehl, cl, pel, acll, show, report_handler, alpp, is_manager);
+      ret = sge_print_queues(oss, ql, ep, jl, nullptr, ehl, cl, pel, acll, show, report_handler, alpp, is_manager);
       if (ret != QHOST_SUCCESS) {
          break;
       }
       
       if (report_handler != nullptr) {
          DPRINTF("report host_finished: %s\n", lGetHost(ep, EH_name));
-         ret = report_handler->report_host_finished(report_handler, lGetHost(ep, EH_name), alpp);
+         ret = report_handler->report_host_finished(oss);
          if (ret != QHOST_SUCCESS) {
             break;
          }
       }
    }   
    if (report_handler != nullptr) {
-      ret = report_handler->report_finished(report_handler, alpp);
+      ret = report_handler->report_finished(oss);
    }
 
+   std::cout << oss.str();
    free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
    DRETURN(ret);
 }
 
 /*-------------------------------------------------------------------------*/
 static int 
-sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report_handler_t *report_handler,
+sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_list, qhost_report_handler_t *report_handler,
                lList **alpp, u_long32 show, bool is_manager)
 {
    lListElem *lep;
@@ -337,8 +341,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
    */
    lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      sge_strlcpy(arch_string, sge_get_dominant_stringval(lep, &dominant, &rs), 
-               sizeof(arch_string)); 
+      sge_strlcpy(arch_string, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(arch_string));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -350,8 +353,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
    */
    lep= get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs),
-               sizeof(num_proc)); 
+      sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(num_proc));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -462,45 +464,45 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
    
 
    if (report_handler) {
-      ret = report_handler->report_host_string_value(report_handler, "arch_string", arch_string, alpp);
+      ret = report_handler->report_host_string_value(os, "arch_string", arch_string);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
-      ret = report_handler->report_host_string_value(report_handler, "num_proc", num_proc, alpp);
+      ret = report_handler->report_host_string_value(os, "num_proc", num_proc);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
       if (show_binding) {
-         ret = report_handler->report_host_string_value(report_handler, "m_socket", socket, alpp);
+         ret = report_handler->report_host_string_value(os, "m_socket", socket);
          if( ret != QHOST_SUCCESS ) {
             DRETURN(ret);
          }
-         ret = report_handler->report_host_string_value(report_handler, "m_core", core, alpp);
+         ret = report_handler->report_host_string_value(os, "m_core", core);
          if( ret != QHOST_SUCCESS ) {
             DRETURN(ret);
          }
-         ret = report_handler->report_host_string_value(report_handler, "m_thread", thread, alpp);
+         ret = report_handler->report_host_string_value(os, "m_thread", thread);
          if( ret != QHOST_SUCCESS ) {
             DRETURN(ret);
          }
       }
-      ret = report_handler->report_host_string_value(report_handler, "load_avg", load_avg, alpp);
+      ret = report_handler->report_host_string_value(os, "load_avg", load_avg);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
-      ret = report_handler->report_host_string_value(report_handler, "mem_total", mem_total, alpp);
+      ret = report_handler->report_host_string_value(os, "mem_total", mem_total);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
-      ret = report_handler->report_host_string_value(report_handler, "mem_used", mem_used, alpp);
+      ret = report_handler->report_host_string_value(os, "mem_used", mem_used);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
-      ret = report_handler->report_host_string_value(report_handler, "swap_total", swap_total, alpp);
+      ret = report_handler->report_host_string_value(os, "swap_total", swap_total);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
-      ret = report_handler->report_host_string_value(report_handler, "swap_used", swap_used, alpp);
+      ret = report_handler->report_host_string_value(os, "swap_used", swap_used);
       if( ret != QHOST_SUCCESS ) {
          DRETURN(ret);
       }
@@ -522,7 +524,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
                                 mem_total, mem_used, swap_total, swap_used);
          }
       }
-      printf("%s", sge_dstring_get_string(&output));
+      os << sge_dstring_get_string(&output);
    }
    
    sge_dstring_free(&rs);
@@ -532,6 +534,7 @@ sge_print_host(lListElem *hep, lList *centry_list, lList *acl_list, qhost_report
 
 /*-------------------------------------------------------------------------*/
 static int sge_print_queues(
+std::ostream &os,
 lList *qlp,
 lListElem *host,
 lList *jl,
@@ -580,7 +583,7 @@ bool is_manager
                   sge_dstring_sprintf(&buffer, "   %-20s ", qname);
                }
             } else {
-               ret = report_handler->report_queue_begin(report_handler, qname, alpp);
+               ret = report_handler->report_queue_begin(os, qname);
                if (ret != QHOST_SUCCESS) {
                   DRETURN(ret);
                }
@@ -599,11 +602,7 @@ bool is_manager
                      sge_dstring_sprintf_append(&buffer, "%-5.5s ", sge_dstring_get_string(&type_string));
                   }
                } else {
-                  ret = report_handler->report_queue_string_value(report_handler,
-                                        qname, 
-                                        "qtype_string", 
-                                        sge_dstring_get_string(&type_string),
-                                        alpp);
+                  ret = report_handler->report_queue_string_value(os, qname, "qtype_string", sge_dstring_get_string(&type_string));
                }                        
                sge_dstring_free(&type_string);
                
@@ -625,26 +624,17 @@ bool is_manager
                   sge_dstring_sprintf_append(&buffer, "%-14.14s", buf);
                }
             } else {
-               ret = report_handler->report_queue_ulong_value(report_handler,
-                                       qname, "slots_used",
-                                       qinstance_slots_used(qep),
-                                       alpp);
+               ret = report_handler->report_queue_ulong_value(os, qname, "slots_used", qinstance_slots_used(qep));
                if (ret != QHOST_SUCCESS ) {
                   DRETURN(ret);
                }
                                        
-               ret = report_handler->report_queue_ulong_value(report_handler,
-                                         qname, "slots",
-                                         lGetUlong(qep, QU_job_slots),
-                                         alpp);
+               ret = report_handler->report_queue_ulong_value(os, qname, "slots", lGetUlong(qep, QU_job_slots));
                
                if (ret != QHOST_SUCCESS ) {
                   DRETURN(ret);
                }
-               ret = report_handler->report_queue_ulong_value(report_handler,
-                                       qname, "slots_resv",
-                                       qinstance_slots_reserved(qep),
-                                       alpp);
+               ret = report_handler->report_queue_ulong_value(os, qname, "slots_resv", qinstance_slots_reserved(qep));
                if (ret != QHOST_SUCCESS ) {
                   DRETURN(ret);
                }
@@ -674,11 +664,7 @@ bool is_manager
                      sge_dstring_sprintf_append(&buffer,  "%s", sge_dstring_get_string(&state_string));
                   }
                } else {
-                  ret = report_handler->report_queue_string_value(report_handler,
-                                            qname, 
-                                            "state_string", 
-                                            sge_dstring_get_string(&state_string),
-                                            alpp);
+                  ret = report_handler->report_queue_string_value(os, qname, "state_string", sge_dstring_get_string(&state_string));
                }
                sge_dstring_free(&state_string);
                if (ret != QHOST_SUCCESS ) {
@@ -690,10 +676,10 @@ bool is_manager
             ** newline
             */
             if (report_handler == nullptr) {
-               printf("%s\n", sge_dstring_get_string(&buffer));
+               os << sge_dstring_get_string(&buffer) << std::endl;
                sge_dstring_free(&buffer);
             } else {
-               ret = report_handler->report_queue_finished(report_handler, qname, alpp);
+               ret = report_handler->report_queue_finished(os);
                if (ret != QHOST_SUCCESS) {
                   DRETURN(ret);
                }
@@ -708,7 +694,7 @@ bool is_manager
             u_long32 full_listing = (show & QHOST_DISPLAY_QUEUES) ?  
                                     QSTAT_DISPLAY_FULL : 0;
             full_listing = full_listing | QSTAT_DISPLAY_ALL;
-            if (sge_print_jobs_queue(qep, jl, pel, ul, ehl, cl, 1,
+            if (sge_print_jobs_queue(os, qep, jl, pel, ul, ehl, cl, 1,
                                  full_listing, "   ", 
                                  GROUP_NO_PETASK_GROUPS, 10,
                                  report_handler, alpp, show, is_manager) == 1) {
@@ -724,6 +710,7 @@ bool is_manager
 
 /*-------------------------------------------------------------------------*/
 static int sge_print_resources(
+std::ostream &os,
 lList *ehl,
 lList *cl,
 lList *resl,
@@ -808,9 +795,9 @@ lList **alpp
                sge_dstring_sprintf_append(&output, "\t%s:%s=%s (%s)", dom, lGetString(rep, CE_name), s, details.c_str());
             }
          }
-         printf("%s\n", sge_dstring_get_string(&output));
+         os << sge_dstring_get_string(&output) << std::endl;
       } else {
-         ret = report_handler->report_resource_value(report_handler, dom, lGetString(rep, CE_name), s, alpp);
+         ret = report_handler->report_resource_value(os, dom, lGetString(rep, CE_name), s);
       }
 
       sge_dstring_free(&output);
@@ -994,9 +981,6 @@ get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centr
                      JB_ja_a_h_ids,
                      JB_ja_z_ids
                     );
-
-/* printf("======================================\n"); */
-/* lWriteWhereTo(jw, stdout); */
 
       j_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, jw, j_all, true);
       lFreeWhat(&j_all);
