@@ -35,7 +35,7 @@
 #
 #  Portions of this code are Copyright 2011 Univa Inc.
 #
-#  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+#  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
 #
 ##########################################################################
 #___INFO__MARK_END__
@@ -555,8 +555,8 @@ SetProductMode()
    fi
 
    if [ "$MUNGE" = "true" ]; then
-      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "EMUNGE_SUCCESS" | wc -l`
-      if [ "$SEC_COUNT" -ne 1 ]; then
+      SEC_COUNT=`strings "$SGE_BIN/sge_qmaster" | grep "munge_encode" | wc -l`
+      if [ "$SEC_COUNT" -lt 1 ]; then
          $INFOTEXT "\n>sge_qmaster< binary is not compiled with >-DWITH_MUNGE=ON< option!\n"
          $INFOTEXT -wait -auto "$AUTO" -n "Hit <RETURN> to cancel the installation >> "
          exit 1
