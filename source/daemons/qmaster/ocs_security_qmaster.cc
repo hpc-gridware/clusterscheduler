@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@
 #include "uti/sge_rmon_macros.h"
 #include <uti/sge_time.h>
 
+#include "msg_daemons_common.h"
 #include "msg_qmaster.h"
 #include "sge_qmaster_timed_event.h"
 
 #include "ocs_security_qmaster.h"
-
 
 namespace ocs::qmaster {
 
@@ -119,7 +119,11 @@ namespace ocs::qmaster {
       if (handle == nullptr) {
          CRITICAL(SFNMAX, MSG_NO_COMMLIB_HANDLE_FOUND);
       } else {
-         cl_commlib_check_refresh_server_context(handle);
+         bool was_renewed = false;
+         cl_commlib_check_refresh_server_context(handle, was_renewed);
+         if (was_renewed) {
+            INFO(SFNMAX, MSG_TLS_CERTIFICATE_RENEWED);
+         }
       }
       cert_renewal_create_event();
 

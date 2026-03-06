@@ -50,6 +50,8 @@
 
 #include "comm/commlib.h"
 
+#include "msg_daemons_common.h"
+
 #include "basis_types.h"
 #include "dispatcher.h"
 #include "msg_execd.h"
@@ -380,9 +382,14 @@ int sge_execd_process_messages() {
       if (!terminate) {
 #if defined(OCS_WITH_OPENSSL)
          if (tls_security) {
+            DEBUG("We have TLS security, calling commlib_check_refresh_server_context");
             // renew certificates if required
             cl_com_handle_t *handle = cl_com_get_handle(prognames[EXECD], 1);
-            cl_commlib_check_refresh_server_context(handle);
+            bool was_renewed = false;
+            cl_commlib_check_refresh_server_context(handle, was_renewed);
+            if (was_renewed) {
+               INFO(SFNMAX, MSG_TLS_CERTIFICATE_RENEWED);
+            }
          }
 #endif
 

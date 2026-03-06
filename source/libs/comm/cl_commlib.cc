@@ -4428,9 +4428,10 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 }
 
 #if defined(OCS_WITH_OPENSSL)
-int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
+int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle, bool &was_renewed) {
    DENTER(TOP_LAYER);
    int ret_val = CL_RETVAL_OK;
+   was_renewed = false;
 
    // We lock the connection list.
    // This should ensure that the openssl context will not be accessed (when creating new connections).
@@ -4449,6 +4450,7 @@ int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
             ocs::uti::OpenSSL::OpenSSLContext::mark_context_for_deletion(handle->ssl_server_context);
             DPRINTF("  -> using new context in handle\n");
             handle->ssl_server_context = new_ssl_server_context;
+            was_renewed = true;
          } else {
             // @todo ret_val = CL_RETVAL_MALLOC;
             DPRINTF("  --> didn't get a new context: %s\n", sge_dstring_get_string(&error_dstr));
