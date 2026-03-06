@@ -42,6 +42,7 @@
 #include <sstream>
 #include <iostream>
 #include <format>
+#include <sstream>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_bitfield.h"
@@ -93,36 +94,17 @@
 #include "ocs_client_job.h"
 #include "ocs_Bootstrap.h"
 #include "ocs_QHostReportHandlerXML.h"
-
-#define OPTI_PRINT8(output, hide_data, value)                                                                                             \
-if (value > 99999999)                                                                                               \
-   if (hide_data)                                                                                                    \
-      sge_dstring_sprintf_append(&output, "%8s ", "*");                                                                                         \
-   else                                                                                                                \
-      sge_dstring_sprintf_append(&output, "%8.3g ", value);                                                                                         \
-else                                                                                                                \
-   if (hide_data)                                                                                                    \
-      sge_dstring_sprintf_append(&output, "%8s ", "*");                                                                                         \
-   else                                                                                                                \
-      sge_dstring_sprintf_append(&output, "%8.0f ", value)
+#include "ocs_QHostReportHandlerPlain.h"
 
 /* regular output */
 static char jhul1[] = "---------------------------------------------------------------------------------------------";
 /* -g t */
 static char jhul2[] = "-";
-/* -ext */
-static char jhul3[] = "-------------------------------------------------------------------------------";
-/* -t */
-static char jhul4[] = "-----------------------------------------------------";
-/* -urg */
-static char jhul5[] = "----------------------------------------------------------------";
-/* -pri */
-static char jhul6[] = "-----------------------------------";
 
 static int sge_print_queues(std::ostream &os, lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl,
-                            lList *pel, lList *acll, u_long32 show, ocs::QHostReportHandlerXML *report_handler, lList **alpp, bool is_manager);
-static int sge_print_resources(std::ostream &os, lList *ehl, lList *cl, lList *resl, lList *acl_list, lListElem *host, u_long32 show, ocs::QHostReportHandlerXML *report_handler, lList **alpp);
-static int sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_list, ocs::QHostReportHandlerXML *report_handler, lList **alpp, u_long32 show, bool is_manager);
+                            lList *pel, lList *acll, u_long32 show, ocs::QHostReportHandlerBase &report_handler, lList **alpp, bool is_manager);
+static int sge_print_resources(std::ostream &os, lList *ehl, lList *cl, lList *resl, lListElem *host, u_long32 show, ocs::QHostReportHandlerBase &report_handler);
+static int sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostReportHandlerBase &report_handler, u_long32 show);
 
 static int reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem);
 static bool get_all_lists(lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList **acll, bool *is_manager, lList *hl, lList *ul, u_long32 show);
@@ -147,7 +129,7 @@ qinstance_is_visible(const lListElem *qep, bool is_manager, bool dept_view, cons
 }
 
 int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
-              lList *resource_list, u_long32 show, lList **alpp, ocs::QHostReportHandlerXML *report_handler) {
+              lList *resource_list, u_long32 show, lList **alpp, ocs::QHostReportHandlerBase &report_handler) {
 
    lList *cl = nullptr;
    lList *ehl = nullptr;
@@ -158,9 +140,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
    lListElem *ep;
    lCondition *where = nullptr;
    bool have_lists = true;
-   int print_header = 1;
    int ret = QHOST_SUCCESS;
-   bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
    bool is_manager = false;
 #define HEAD_FORMAT_DEPT "%-23s %-13s%4s %5s %5s %5s %6s %7s %7s %7s %7s\n"
 #define HEAD_FORMAT "%-23s %-13.13s%4.4s %5.5s %5.5s %5.5s %6.6s %7.7s %7.7s %7.7s %7.7s\n"
@@ -274,9 +254,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
    ** output handling
    */
    std::ostringstream oss;
-   if (report_handler != nullptr) {
-      report_handler->start(oss);
-   }
+   report_handler.start(oss);
    for_each_rw(ep, ehl) {
       bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
       bool hide_data = !host_is_visible(ep, is_manager, dept_view, acll);
@@ -289,43 +267,17 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
          DRETURN(QHOST_ERROR);
       }
 
-      if (report_handler == nullptr ) {
-         if (print_header) {
-            print_header = 0;
-            if (show_binding) {
-               printf(HEAD_FORMAT,  MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC,
-                  MSG_HEADER_NSOC, MSG_HEADER_NCOR, MSG_HEADER_NTHR, MSG_HEADER_LOAD, MSG_HEADER_MEMTOT,
-                  MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, MSG_HEADER_SWAPUS);
-            } else {
-               printf(HEAD_FORMAT_OLD,  MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC, 
-                  MSG_HEADER_LOAD, MSG_HEADER_MEMTOT, MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, 
-                  MSG_HEADER_SWAPUS);
-            }
-            printf("--------------------------------------------------------------------------------");
-            if (show_binding) {
-               printf("------------------");
-            } 
-            printf("\n");
-         }
-      } else {
-         report_handler->host_start(oss, lGetHost(ep, EH_name));
-      }
-      sge_print_host(oss, ep, cl, acll, report_handler, alpp, show, is_manager);
-      sge_print_resources(oss, ehl, cl, resource_list, acll, ep, show, report_handler, alpp);
-
+      report_handler.host_start(oss, lGetHost(ep, EH_name));
+      sge_print_host(oss, ep, cl, report_handler, show);
+      sge_print_resources(oss, ehl, cl, resource_list, ep, show, report_handler);
       ret = sge_print_queues(oss, ql, ep, jl, nullptr, ehl, cl, pel, acll, show, report_handler, alpp, is_manager);
       if (ret != QHOST_SUCCESS) {
          break;
       }
       
-      if (report_handler != nullptr) {
-         DPRINTF("report host_finished: %s\n", lGetHost(ep, EH_name));
-         report_handler->host_end(oss);
-      }
-   }   
-   if (report_handler != nullptr) {
-      report_handler->end(oss);
+      report_handler.host_end(oss);
    }
+   report_handler.end(oss);
 
    std::cout << oss.str();
    free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
@@ -334,8 +286,7 @@ int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
 
 /*-------------------------------------------------------------------------*/
 static int 
-sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_list, ocs::QHostReportHandlerXML *report_handler,
-               lList **alpp, u_long32 show, bool is_manager)
+sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostReportHandlerBase &report_handler, u_long32 show)
 {
    lListElem *lep;
    char *s, host_print[CL_MAXHOSTNAMELEN+1] = "";
@@ -347,8 +298,6 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
    int ret = QHOST_SUCCESS;
    bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
-   bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-   bool hide_data = !host_is_visible(hep, is_manager, dept_view, acl_list);
 
    DENTER(TOP_LAYER);
 
@@ -360,10 +309,8 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       *s = '\0';
    }   
 
-   /*
-   ** arch
-   */
-   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   // arch
+   lep = get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(arch_string, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(arch_string));
       sge_dstring_clear(&rs);
@@ -372,9 +319,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       strcpy(arch_string, "-");
    }
 
-   /*
-   ** num_proc
-   */
+   // num_proc
    lep= get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(num_proc));
@@ -385,9 +330,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
    }
 
    if (show_binding) {
-      /*
-      ** nsoc (sockets)
-      */
+      // nsoc (sockets)
       lep= get_attribute_by_name(nullptr, hep, nullptr, "m_socket", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs),
@@ -398,9 +341,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
          strcpy(socket, "-");
       }
 
-      /*
-      ** nthr (threads)
-      */
+      // nthr (threads)
       lep= get_attribute_by_name(nullptr, hep, nullptr, "m_thread", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs),
@@ -411,10 +352,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
          strcpy(thread, "-");
       }
 
-
-      /*
-      ** ncor (cores)
-      */
+      // ncor (cores)
       lep= get_attribute_by_name(nullptr, hep, nullptr, "m_core", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
          sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs),
@@ -426,9 +364,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       }
    }
 
-   /*
-   ** load_avg
-   */
+   // load_avg
    lep= get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(load_avg, sizeof(load_avg), "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
@@ -438,9 +374,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       strcpy(load_avg, "-");
    }
 
-   /*
-   ** mem_total
-   */
+   // mem_total
    lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_total, sizeof(mem_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
@@ -450,9 +384,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       strcpy(mem_total, "-");
    }
 
-   /*
-   ** mem_used
-   */
+   // mem_used
    lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(mem_used, sizeof(mem_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
@@ -462,9 +394,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       strcpy(mem_used, "-");
    }
 
-   /*
-   ** swap_total
-   */
+   // swap_total
    lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_total, sizeof(swap_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
@@ -474,9 +404,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
       strcpy(swap_total, "-");
    }
 
-   /*
-   ** swap_used
-   */
+   // swap_used
    lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       reformatDoubleValue(swap_used, sizeof(swap_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
@@ -487,40 +415,25 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, lList *acl_
    }
    
 
-   if (report_handler) {
-      report_handler->host_value(os, "arch_string", arch_string);
-      report_handler->host_value(os, "num_proc", num_proc);
-      if (show_binding) {
-         report_handler->host_value(os, "m_socket", socket);
-         report_handler->host_value(os, "m_core", core);
-         report_handler->host_value(os, "m_thread", thread);
-      }
-      report_handler->host_value(os, "load_avg", load_avg);
-      report_handler->host_value(os, "mem_total", mem_total);
-      report_handler->host_value(os, "mem_used", mem_used);
-      report_handler->host_value(os, "swap_total", swap_total);
-      report_handler->host_value(os, "swap_used", swap_used);
-   } else {
-      DSTRING_STATIC(output, 256);
-
-      if (show_binding) {
-         if (hide_data) {
-            sge_dstring_sprintf(&output, HEAD_FORMAT_DEPT, "*", "*", "*", "*", "*", "*", "*", "*", "*", "*", "*");
-         } else {
-            sge_dstring_sprintf(&output, HEAD_FORMAT, host ? host_print: "-", arch_string, num_proc, socket,
-                                core, thread, load_avg, mem_total, mem_used, swap_total, swap_used);
-         }
-      } else {
-         if (hide_data) {
-            sge_dstring_sprintf(&output, HEAD_FORMAT_OLD_DEPT, "*", "*", "*", "*", "*", "*", "*", "*");
-         } else {
-            sge_dstring_sprintf(&output, HEAD_FORMAT_OLD, host ? host_print: "-", arch_string, num_proc, load_avg,
-                                mem_total, mem_used, swap_total, swap_used);
-         }
-      }
-      os << sge_dstring_get_string(&output);
+   // hostname
+   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+      report_handler.host_value(os, "{:<23} ", nullptr, host ? host_print : "-");
    }
-   
+
+   // values
+   report_handler.host_value(os, "{:<13.13} ", "arch_string", arch_string);
+   report_handler.host_value(os, "{:>4.4} ", "num_proc", num_proc);
+   if (show_binding) {
+      report_handler.host_value(os, "{:>5.5} ", "m_socket", socket);
+      report_handler.host_value(os, "{:>5.5} ", "m_core", core);
+      report_handler.host_value(os, "{:>5.5} ", "m_thread", thread);
+   }
+   report_handler.host_value(os, "{:>6.6} ", "load_avg", load_avg);
+   report_handler.host_value(os, "{:>7.7} ", "mem_total", mem_total);
+   report_handler.host_value(os, "{:>7.7} ", "mem_used", mem_used);
+   report_handler.host_value(os, "{:>7.7} ", "swap_total", swap_total);
+   report_handler.host_value(os, "{:>7.7} ", "swap_used", swap_used);
+
    sge_dstring_free(&rs);
    
    DRETURN(ret);
@@ -538,7 +451,7 @@ lList *cl,
 lList *pel,
 lList *acl_list,
 u_long32 show,
-ocs::QHostReportHandlerXML *report_handler,
+ocs::QHostReportHandlerBase &report_handler,
 lList **alpp,
 bool is_manager
 ) {
@@ -548,7 +461,7 @@ bool is_manager
    u_long32 interval;
    int ret = QHOST_SUCCESS;
    const char *ehname = lGetHost(host, EH_name);
-   bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
+   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
 
    DENTER(TOP_LAYER);
 
@@ -561,65 +474,32 @@ bool is_manager
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
       if ((qep=lGetElemHostRW(qinstance_list, QU_qhostname, ehname))) {
-         dstring buffer = DSTRING_INIT;
          const char *qname = lGetString(qep, QU_qname);
-         bool hide_data = !qinstance_is_visible(qep, is_manager, dept_view, acl_list);
 
-         if (hide_data) {
-            continue;
-         }
+         //if (hide_data) {
+         //   continue;
+         //}
 
          if (show & QHOST_DISPLAY_QUEUES) {
-            if (report_handler == nullptr) {
-               if (hide_data) {
-                  sge_dstring_sprintf(&buffer, "   %-20s ", "*");
-               } else {
-                  sge_dstring_sprintf(&buffer, "   %-20s ", qname);
-               }
-            } else {
-               report_handler->queue_start(os, qname);
-            }
+            report_handler.queue_start(os, "   {:<20} ", qname);
+
             /*
             ** qtype
             */
             {
                dstring type_string = DSTRING_INIT;
 
+               // @todo ostringstream
                qinstance_print_qtype_to_dstring(qep, &type_string, true);
-               if (report_handler == nullptr) {
-                  if (hide_data) {
-                     sge_dstring_sprintf_append(&buffer, "%-5s ", "*");
-                  } else {
-                     sge_dstring_sprintf_append(&buffer, "%-5.5s ", sge_dstring_get_string(&type_string));
-                  }
-               } else {
-                  report_handler->queue_value(os, qname, "qtype_string", sge_dstring_get_string(&type_string));
-               }                        
+               report_handler.queue_value(os, qname, "{:<5.5} ", "qtype_string", sge_dstring_get_string(&type_string));
                sge_dstring_free(&type_string);
-               
-               if (ret != QHOST_SUCCESS) {
-                  DRETURN(ret);
-               }
             }
 
-            /* 
-            ** number of used/free slots 
-            */
-            if (report_handler == nullptr) {
-               char buf[80];
-               snprintf(buf, sizeof(buf), sge_u32"/%d/" sge_u32 " ", qinstance_slots_reserved(qep),
-                        qinstance_slots_used(qep), lGetUlong(qep, QU_job_slots));
-               if (hide_data) {
-                  sge_dstring_sprintf_append(&buffer, "%-14s", "*/*/*");
-               } else {
-                  sge_dstring_sprintf_append(&buffer, "%-14.14s", buf);
-               }
-            } else {
-               report_handler->queue_value(os, qname, "slots_used", qinstance_slots_used(qep));
-               report_handler->queue_value(os, qname, "slots", lGetUlong(qep, QU_job_slots));
-               report_handler->queue_value(os, qname, "slots_resv", qinstance_slots_reserved(qep));
-            }
-            
+            // show reserved/used/tota slots
+            report_handler.queue_value(os, qname, "{}/", "slots_resv", qinstance_slots_reserved(qep));
+            report_handler.queue_value(os, qname, "{}/", "slots_used", qinstance_slots_used(qep));
+            report_handler.queue_value(os, qname, "{} ", "slots", lGetUlong(qep, QU_job_slots));
+
             /*
             ** state of queue
             */
@@ -636,31 +516,14 @@ bool is_manager
             {
                dstring state_string = DSTRING_INIT;
 
+               // @todo ostringstream
                qinstance_state_append_to_dstring(qep, &state_string);
-               if (report_handler == nullptr) {
-                  if (hide_data) {
-                     sge_dstring_sprintf_append(&buffer, "%s", "*");
-                  } else {
-                     sge_dstring_sprintf_append(&buffer,  "%s", sge_dstring_get_string(&state_string));
-                  }
-               } else {
-                  report_handler->queue_value(os, qname, "state_string", sge_dstring_get_string(&state_string));
-               }
+               report_handler.queue_value(os, qname, "{}", "state_string", sge_dstring_get_string(&state_string));
                sge_dstring_free(&state_string);
-               if (ret != QHOST_SUCCESS ) {
-                  DRETURN(ret);
-               }
             }
             
-            /*
-            ** newline
-            */
-            if (report_handler == nullptr) {
-               os << sge_dstring_get_string(&buffer) << std::endl;
-               sge_dstring_free(&buffer);
-            } else {
-               report_handler->queue_end(os);
-            }
+            // Closing tag of CR/LF
+            report_handler.queue_end(os);
          }
 
          /*
@@ -674,7 +537,7 @@ bool is_manager
             if (sge_print_jobs_queue(os, qep, jl, pel, ul, ehl, cl, 1,
                                  full_listing, "   ", 
                                  GROUP_NO_PETASK_GROUPS, 10,
-                                 report_handler, alpp, show, is_manager) == 1) {
+                                 report_handler) == 1) {
                DRETURN(QHOST_ERROR);
             }
          }
@@ -691,11 +554,9 @@ std::ostream &os,
 lList *ehl,
 lList *cl,
 lList *resl,
-lList *acl_list,
 lListElem *host,
 u_long32 show,
-ocs::QHostReportHandlerXML *report_handler,
-lList **alpp
+ocs::QHostReportHandlerBase &report_handler
 ) {
    DENTER(TOP_LAYER);
 
@@ -707,28 +568,26 @@ lList **alpp
    u_long32 dominant;
    int first = 1;
    int ret = QHOST_SUCCESS;
-   bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-   bool hide_data = false;
+   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
+   //bool hide_data = false;
 
    // does the executing qstat user have access to this queue?
-   if (dept_view) {
-      const char *username = component_get_username();
-      const char *groupname = component_get_groupname();
-      int amount;
-      ocs_grp_elem_t *grp_array;
-      component_get_supplementray_groups(&amount, &grp_array);
-      lList *grp_list = grp_list_array2list(amount, grp_array);
-      hide_data = !sge_has_access_(username, groupname, grp_list, lGetList(host, EH_acl), lGetList(host, EH_xacl), acl_list);
-      lFreeList(&grp_list);
-   }
+   //if (dept_view) {
+   //   const char *username = component_get_username();
+   //   const char *groupname = component_get_groupname();
+   //   int amount;
+   //   ocs_grp_elem_t *grp_array;
+   //   component_get_supplementray_groups(&amount, &grp_array);
+   //   lList *grp_list = grp_list_array2list(amount, grp_array);
+   //   hide_data = !sge_has_access_(username, groupname, grp_list, lGetList(host, EH_acl), lGetList(host, EH_xacl), acl_list);
+   //   lFreeList(&grp_list);
+   //}
 
    if (!(show & QHOST_DISPLAY_RESOURCES)) {
       DRETURN(QHOST_SUCCESS);
    }
    host_complexes2scheduler(&rlp, host, ehl, cl);
    for_each_rw(rep, rlp) {
-      dstring output = DSTRING_INIT;
-
       if (resl != nullptr) {
          lListElem *r1;
          int found = 0;
@@ -738,8 +597,9 @@ lList **alpp
                found = 1;
                if (first) {
                   first = 0;
-                  if (report_handler == nullptr ) {
-                     sge_dstring_sprintf_append(&output, "    Host Resource(s):   \n");
+                  // @todo when is this shown
+                  if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+                     os << std::format("    Host Resource(s):   ") << std::endl;
                   }
                }
                break;
@@ -762,22 +622,7 @@ lList **alpp
       }
 
       monitor_dominance(dom, dominant);
-      if (report_handler == nullptr) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "\t*:*=*");
-         } else {
-            if (details.empty()) {
-               sge_dstring_sprintf_append(&output, "\t%s:%s=%s", dom, lGetString(rep, CE_name), s);
-            } else {
-               sge_dstring_sprintf_append(&output, "\t%s:%s=%s (%s)", dom, lGetString(rep, CE_name), s, details.c_str());
-            }
-         }
-         os << sge_dstring_get_string(&output) << std::endl;
-      } else {
-         report_handler->resource_value(os, dom, lGetString(rep, CE_name), s);
-      }
-
-      sge_dstring_free(&output);
+      report_handler.resource_value(os, dom, lGetString(rep, CE_name), s, details.empty() ? nullptr : details.c_str());
 
       if (ret != QHOST_SUCCESS) {
          break;
@@ -1232,13 +1077,12 @@ sge_show_ce_type_list_line_by_line(std::ostream &os, const char *label, const ch
 
 static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                          dstring *dyn_task_str, u_long32 full_listing, int slots, int slot, lList *exechost_list,
-                         lList *centry_list, const lList *pe_list, const lList *acl_list, const char *indent, u_long32 group_opt,
+                         lList *centry_list, const lList *pe_list, const char *indent, u_long32 group_opt,
                          int slots_per_line, /* number of slots to be printed in slots column
                                                when 0 is passed the number of requested slots printed */
-                         int queue_name_length, ocs::QHostReportHandlerXML *report_handler, lList **alpp, u_long32 show, bool is_manager) {
+                         int queue_name_length, ocs::QHostReportHandlerBase &report_handler) {
    DENTER(TOP_LAYER);
    char state_string[8];
-   static int first_time = 1;
    u_long32 jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
    const lList *ql = nullptr;
@@ -1252,13 +1096,12 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
    dstring ds;
    char buffer[128];
    dstring queue_name_buffer = DSTRING_INIT;
-   char jobid[128];
-   dstring output = DSTRING_INIT;
-   bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-   bool hide_data = false;
+   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
+   //bool hide_data = false;
+   u_long32 jid = lGetUlong(job, JB_job_number);
 
-   const char *owner = lGetString(job, JB_owner);
-   hide_data = !job_is_visible(owner, is_manager, dept_view, acl_list);
+   //const char *owner = lGetString(job, JB_owner);
+   //hide_data = !job_is_visible(owner, is_manager, dept_view, acl_list);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1275,171 +1118,177 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
 
-   if (!report_handler) {
-      if (first_time) {
+   // print header
+
+   std::ostringstream oss;
+   static int first_time = 1;
+   if (first_time) {
+      if (!(full_listing & QSTAT_DISPLAY_FULL)) {
          first_time = 0;
-         if (!(full_listing & QSTAT_DISPLAY_FULL)) {
-            int line_length = queue_name_length - 10 + 1;
-            char *seperator = sge_malloc(line_length);
-            const char *part1 = "%s%-10.10s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
-            const char *part3 = ".";
-            const char *part5 = "s %s %s%s%s%s%s%s";
-            size_t part6_size = strlen(part1) + strlen(part3) + strlen(part5) + 256;
-            char *part6 = sge_malloc(part6_size);
-            {
-               int i;
-               for (i = 0; i < line_length; i++) {
-                  seperator[i] = '-';
-               }
-            }
-            seperator[line_length - 1] = '\0';
-            snprintf(part6, part6_size, "%s%d%s%d%s", part1, queue_name_length, part3, queue_name_length, part5);
 
-            sge_dstring_sprintf_append(&output, part6, indent, "job-ID", "prior ", (sge_pri || sge_urg) ? " nurg   " : "", sge_pri ? " npprior" : "",
-                   (sge_pri || sge_ext) ? " ntckts " : "", sge_urg ? " urg      rrcontr  wtcontr  dlcontr " : "",
-                   sge_pri ? "  ppri" : "", "name", "user", sge_ext ? "project          department " : "", "state",
-                   sge_time ? "submit/start at     " : "", sge_urg ? " deadline           " : "",
-                   sge_ext ? USAGE_ATTR_CPU "        " USAGE_ATTR_MEM "     " USAGE_ATTR_IO "      " : "",
-                   sge_ext ? "tckts " : "", sge_ext ? "ovrts " : "", sge_ext ? "otckt " : "", sge_ext ? "ftckt " : "",
-                   sge_ext ? "stckt " : "", sge_ext ? "share " : "", "queue",
-                   (group_opt & GROUP_NO_PETASK_GROUPS) ? "master" : "slots", "ja-task-ID ", tsk_ext ? "task-ID " : "",
-                   tsk_ext ? "state " : "",
-                   tsk_ext ? USAGE_ATTR_CPU "        " USAGE_ATTR_MEM "     " USAGE_ATTR_IO "      " : "",
-                   tsk_ext ? "stat " : "", tsk_ext ? "failed " : "");
-
-            sge_dstring_sprintf_append(&output, "\n%s%s%s%s%s%s%s%s\n", indent, jhul1, seperator, (group_opt & GROUP_NO_PETASK_GROUPS) ? jhul2 : "",
-                   sge_ext ? jhul3 : "", tsk_ext ? jhul4 : "", sge_urg ? jhul5 : "", sge_pri ? jhul6 : "");
-
-            sge_free(&part6);
-            sge_free(&seperator);
+         oss << indent;
+         oss << std::format("{:<10} ", "job-ID");
+         oss << std::format("{:<7} ", "prior");
+         if (sge_pri || sge_urg) {
+            oss << std::format("{:<8} ", "nurg");
          }
-      }
-
-      sge_dstring_sprintf_append(&output, "%s", indent);
-
-      /* job number / ja task id */
-      if (print_jobid) {
-         if (hide_data) {
-            // maximum job id is U_LONG32_MAX = 4294967295 = 10 digits
-            sge_dstring_sprintf_append(&output, "%10s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%10" sge_fuu32 " ", lGetUlong(job, JB_job_number));
+         if (sge_pri) {
+            oss << std::format("{:<8} ", "npprior");
          }
-      } else {
-         sge_dstring_sprintf_append(&output, "           ");
+         if (sge_pri || sge_ext) {
+            oss << std::format("{:<8} ", "ntckts");
+         }
+         if (sge_urg) {
+            oss << std::format("{:<9} ", "urg");
+            oss << std::format("{:<9} ", "rrcontr");
+            oss << std::format("{:<9} ", "wtcontr");
+            oss << std::format("{:<9} ", "dlcontr");
+         }
+         if (sge_pri) {
+            oss << std::format("{:<6} ", "ppri");
+         }
+         oss << std::format("{:<10} ", "name");
+         oss << std::format("{:<12} ", "user");
+         if (sge_ext) {
+            oss << std::format("{:<16} ", "project");
+            oss << std::format("{:<10} ", "department");
+         }
+         oss << std::format("{:<5} ", "state");
+         if (sge_time) {
+            oss << std::format("{:<19} ", "submit/start at");
+         }
+         if (sge_urg) {
+            oss << std::format("{:<19} ", "deadline");
+         }
+         if (sge_ext) {
+            oss << std::format("{:<10} ", USAGE_ATTR_CPU);
+            oss << std::format("{:<10} ", USAGE_ATTR_MEM);
+            oss << std::format("{:<10} ", USAGE_ATTR_IO);
+            oss << std::format("{:<6} ", "tckts");
+            oss << std::format("{:<6} ", "ovrts");
+            oss << std::format("{:<6} ", "otckt");
+            oss << std::format("{:<6} ", "ftckt");
+            oss << std::format("{:<6} ", "stckt");
+            oss << std::format("{:<6} ", "share");
+         }
+
+         // dynamic queue length
+         std::string fmt = std::format("{{:<{}.{}}} ", queue_name_length, queue_name_length);
+         oss << std::vformat(fmt, std::make_format_args("queue"));
+
+         oss << std::format("{:<6} ", (group_opt & GROUP_NO_PETASK_GROUPS) ? "master" : "slots");
+         oss << std::format("{:<10} ", "ja-task-ID");
+
+         if (tsk_ext) {
+            oss << std::format("{:<10} ", "task-ID");
+            oss << std::format("{:<6} ", "state");
+            oss << std::format("{:<10} ", USAGE_ATTR_CPU);
+            oss << std::format("{:<10} ", USAGE_ATTR_MEM);
+            oss << std::format("{:<10} ", USAGE_ATTR_IO);
+            oss << std::format("{:<6} ", "stat");
+            oss << std::format("{:<7} ", "failed");
+         }
+         oss << std::endl;
+
+         // print seperator line
+         size_t length_header = oss.str().length() - strlen(indent) - 1;
+         oss << indent << std::string(length_header, '-') << std::endl;
+
       }
-   } else {
-      snprintf(jobid, sizeof(jobid) - 1, sge_u32, lGetUlong(job, JB_job_number));
-      report_handler->job_start(os, jobid);
    }
+   report_handler.job_start(os, oss.str().c_str(), jid);
+
+   // Only Plain: indent
+   report_handler.job_value(os, jid, indent, nullptr, nullptr);
+
+   // Only Plain: job number
+   // @todo avoid the cast - use template method
+   report_handler.job_value(os, jid, "{:>10} ", nullptr, (u_long64)jid);
 
    /* per job priority information */
    {
-      if (report_handler) {
-         report_handler->job_value(os, jobid, "priority", lGetDouble(jatep, JAT_prio));
+      if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
+         report_handler.job_value(os, jid, "{:<7.5f} ", "priority", lGetDouble(jatep, JAT_prio));
       } else {
-         if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%7s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(jatep, JAT_prio)); /* nprio 0.0 - 1.0 */
-            }
-         } else {
-            sge_dstring_sprintf_append(&output, "        ");
-         }
+         report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
       }
 
       if (sge_pri || sge_urg) {
          if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%7s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(job, JB_nurg)); /* nurg 0.0 - 1.0 */
-            }
+            report_handler.job_value(os, jid, "{:<7.5f} ", "nurg", lGetDouble(job, JB_nurg));
          } else {
-            sge_dstring_sprintf_append(&output, "        ");
+            report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }
       }
 
       if (sge_pri) {
          if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%7s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(job, JB_nppri)); /* nppri 0.0 - 1.0 */
-            }
+            report_handler.job_value(os, jid, "{:<7.5f} ", "nppri", lGetDouble(job, JB_nppri));
          } else {
-            sge_dstring_sprintf_append(&output, "        ");
+            report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }
       }
 
       if (sge_pri || sge_ext) {
          if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%7s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%7.5f ", lGetDouble(jatep, JAT_ntix)); /* ntix 0.0 - 1.0 */
-            }
+            report_handler.job_value(os, jid, "{:<7.5f} ", "ntix", lGetDouble(job, JAT_ntix));
          } else {
-            sge_dstring_sprintf_append(&output, "        ");
+            report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }
       }
 
       if (sge_urg) {
          if (print_jobid) {
-            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_urg));
-            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_rrcontr));
-            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_wtcontr));
-            OPTI_PRINT8(output, hide_data, lGetDouble(job, JB_dlcontr));
+            constexpr double max = 99999999;
+
+            double value = lGetDouble(job, JB_urg);
+            report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "urg", value);
+            value = lGetDouble(job, JB_rrcontr);
+            report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "rrcontr", value);
+            value = lGetDouble(job, JB_wtcontr);
+            report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "wtcontr", value);
+            value = lGetDouble(job, JB_dlcontr);
+            report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "dlcontr", value);
          } else {
-            sge_dstring_sprintf_append(&output, "                                    ");
+            report_handler.job_value(os, jid, std::string(4 * (8 + 1), ' ').c_str(), nullptr, nullptr);
          }
       }
 
       if (sge_pri) {
          if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%5s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%5d ", ((int)lGetUlong(job, JB_priority)) - BASE_PRIORITY);
-            }
+            // @todo avoid the cast - use template method
+            report_handler.job_value(os, jid, "{:<5d} ", "priority", (u_long64)lGetUlong(job, JB_priority) - BASE_PRIORITY);
          } else {
-            sge_dstring_sprintf_append(&output, "                  ");
+            // @todo we had a gap for 2*6 character before - why?
+            report_handler.job_value(os, jid, std::string(5 + 1, ' ').c_str(), nullptr, nullptr);
          }
       }
    }
 
-   if (report_handler) {
-      report_handler->job_value(os, jobid, "qinstance_name", queue_name);
-      report_handler->job_value(os, jobid, "job_name", lGetString(job, JB_job_name));
-      report_handler->job_value(os, jobid, "job_owner", lGetString(job, JB_owner));
+   // XML: show qinstance name in any case
+   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML)) {
+      report_handler.job_value(os, jid, nullptr, "qinstance_name", queue_name);
+   }
+
+   // XML and Plain with jobid: show job name, owner
+   // or in Plain without jobid: just fill the gap
+   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
+      report_handler.job_value(os, jid, "{:<10.10} ", "job_name", lGetString(job, JB_job_name));
+      report_handler.job_value(os, jid, "{:<12.12} ", "job_owner", lGetString(job, JB_owner));
    } else {
-      if (print_jobid) {
-         if (hide_data) { /* job name */
-            sge_dstring_sprintf_append(&output, "%-10s ", "*");
-            sge_dstring_sprintf_append(&output, "%-12s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%-10.10s ", lGetString(job, JB_job_name));
-            sge_dstring_sprintf_append(&output, "%-12.12s ", lGetString(job, JB_owner));
-         }
-      } else {
-         sge_dstring_sprintf_append(&output, "                        ");
-      }
+      report_handler.job_value(os, jid, std::string(10 + 1, ' ').c_str(), nullptr, nullptr);
+      report_handler.job_value(os, jid, std::string(12 + 1, ' ').c_str(), nullptr, nullptr);
    }
 
    if (sge_ext) {
-      const char *s;
-
       if (print_jobid) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-16s ", "*");
-            sge_dstring_sprintf_append(&output, "%-10s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%-16.16s ", (s = lGetString(job, JB_project)) ? s : "NA");
-            sge_dstring_sprintf_append(&output, "%-10.10s ", (s = lGetString(job, JB_department)) ? s : "NA");
-         }
+         const char *value = lGetString(job, JB_project);
+         report_handler.job_value(os, jid, "{:<16.16} ", "project", value != nullptr ? value : "NA");
+         value = lGetString(job, JB_department);
+         report_handler.job_value(os, jid, "{:<10.10} ", "department", value != nullptr? value : "NA");
       } else {
-         sge_dstring_sprintf_append(&output, "                            ");
+         report_handler.job_value(os, jid, std::string(16 + 1, ' ').c_str(), nullptr, nullptr);
+         report_handler.job_value(os, jid, std::string(10 + 1, ' ').c_str(), nullptr, nullptr);
       }
    }
 
@@ -1459,46 +1308,34 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
       jstate |= JMIGRATING;
    }
 
-   if (report_handler) {
+   // XML and Plain with jobid: show job_state
+   // or in Plain without jobid: just fill the gap
+   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
       job_get_state_string(state_string, jstate);
-      report_handler->job_value(os, jobid, "job_state", state_string);
+      report_handler.job_value(os, jid, "{:<5.5} ", "job_state", state_string);
    } else {
-      if (print_jobid) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-5s ", "*");
-         } else {
-            /* write states into string */
-            job_get_state_string(state_string, jstate);
-            sge_dstring_sprintf_append(&output, "%-5.5s ", state_string);
-         }
-      } else {
-         sge_dstring_sprintf_append(&output, "      ");
-      }
+      report_handler.job_value(os, jid, std::string(6, ' ').c_str(), nullptr, nullptr);
    }
 
    if (sge_time) {
-      if (report_handler != nullptr) {
-         u_long64 jat_start_time = lGetUlong64(jatep, JAT_start_time);
-         if (jat_start_time == 0) {
-            report_handler->job_value(os, jobid, "submit_time", lGetUlong64(job, JB_submission_time));
+      if (print_jobid) {
+         const char *name;
+         u_long64 value;
+         if (u_long64 jat_start_time = lGetUlong64(jatep, JAT_start_time); jat_start_time != 0) {
+            name = "start_time";
+            value = jat_start_time;
          } else {
-            report_handler->job_value(os, jobid, "start_time", jat_start_time);
+            name = "submit_time";
+            value = lGetUlong64(job, JB_submission_time);
+         }
+         if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+            const char *time_string = sge_ctime64_short(value, &ds);
+            report_handler.job_value(os, jid, "{} ", name, time_string);
+         } else {
+            report_handler.job_value(os, jid, "{} ", name, value);
          }
       } else {
-         if (print_jobid) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%s ", "*");
-            } else {
-               /* start/submit time */
-               if (lGetUlong64(jatep, JAT_start_time) == 0) {
-                  sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(job, JB_submission_time), &ds));
-               } else {
-                  sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(jatep, JAT_start_time), &ds));
-               }
-            }
-         } else {
-            sge_dstring_sprintf_append(&output, "                    ");
-         }
+         report_handler.job_value(os, jid, std::string(20, ' ').c_str(), nullptr, nullptr);
       }
    }
 
@@ -1507,18 +1344,11 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 
    /* deadline time */
    if (sge_urg) {
-      if (print_jobid) {
-         if (lGetUlong64(job, JB_deadline) == 0) {
-            sge_dstring_sprintf_append(&output, "                    ");
-         } else {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%s ", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%s ", sge_ctime64_short(lGetUlong64(job, JB_deadline), &ds));
-            }
-         }
+      u_long64 deadline = lGetUlong64(job, JB_deadline);
+      if (print_jobid && deadline != 0) {
+         report_handler.job_value(os, jid, "{} ", "deadline", sge_ctime64_short(deadline, &ds));
       } else {
-         sge_dstring_sprintf_append(&output, "                    ");
+         report_handler.job_value(os, jid, std::string(20, ' ').c_str(), nullptr, nullptr);
       }
    }
 
@@ -1556,49 +1386,36 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
       }
 
       /* scaled cpu usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU))) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-10s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%-10.10s ", running ? "NA" : "");
-         }
+      up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_CPU);
+      if (up != nullptr) {
+         int secs = lGetDouble(up, UA_value);
+         int days = secs / (60 * 60 * 24);
+         secs -= days * (60 * 60 * 24);
+         int hours = secs / (60 * 60);
+         secs -= hours * (60 * 60);
+         int minutes = secs / 60;
+         secs -= minutes * 60;
+
+         std::ostringstream oss;
+         oss << std::format("{}:{:02}:{:02}:{:02} ", days, hours, minutes, secs);
+         report_handler.job_value(os, jid, oss.str().c_str(), nullptr, nullptr);
       } else {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-10s ", "*");
-         } else {
-            int secs, minutes, hours, days;
-
-            secs = lGetDouble(up, UA_value);
-            days = secs / (60 * 60 * 24);
-            secs -= days * (60 * 60 * 24);
-            hours = secs / (60 * 60);
-            secs -= hours * (60 * 60);
-            minutes = secs / 60;
-            secs -= minutes * 60;
-
-            sge_dstring_sprintf_append(&output, "%d:%2.2d:%2.2d:%2.2d ", days, hours, minutes, secs);
-         }
+         report_handler.job_value(os, jid, "{:<10.10}", nullptr, running ? "NA" : "");
       }
       /* scaled mem usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM))) {
-         sge_dstring_sprintf_append(&output, "%-7.7s ", running ? "NA" : "");
+      up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_MEM);
+      if (up != nullptr) {
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, lGetDouble(up, UA_value));
       } else {
-         sge_dstring_sprintf_append(&output, "%-5.5f ", lGetDouble(up, UA_value));
+         report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
 
       /* scaled io usage */
-      if (!(up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO))) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-7s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%-7.7s ", running ? "NA" : "");
-         }
+      up = lGetElemStr(job_usage_list, UA_name, USAGE_ATTR_IO);
+      if (up != nullptr) {
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, lGetDouble(up, UA_value));
       } else {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%-5s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%-5.5f ", lGetDouble(up, UA_value));
-         }
+         report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
 
       lFreeList(&job_usage_list);
@@ -1633,93 +1450,50 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
       /* report jobs dynamic scheduling attributes */
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
-      if (hide_data) {
-            sge_dstring_sprintf_append(&output, "    * ");
-            sge_dstring_sprintf_append(&output, "    * ");
-            sge_dstring_sprintf_append(&output, "    * ");
-            sge_dstring_sprintf_append(&output, "    * ");
-            sge_dstring_sprintf_append(&output, "    * ");
-            sge_dstring_sprintf_append(&output, "    * ");
+      if (!is_zombie_job && (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list))) {
+            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, tickets);
+            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, (u_long64)lGetUlong(job, JB_override_tickets));
+            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, otickets);
+            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, ftickets);
+            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, stickets);
+            report_handler.job_value(os, jid, "{:<5.2f} ", nullptr, lGetDouble(jatep, JAT_share));
       } else {
-         if (is_zombie_job) {
-            sge_dstring_sprintf_append(&output, "   NA ");
-            sge_dstring_sprintf_append(&output, "   NA ");
-            sge_dstring_sprintf_append(&output, "   NA ");
-            sge_dstring_sprintf_append(&output, "   NA ");
-            sge_dstring_sprintf_append(&output, "   NA ");
-            sge_dstring_sprintf_append(&output, "   NA ");
-         } else {
-            if (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list)) {
-               sge_dstring_sprintf_append(&output, "%5d ", (int)tickets);
-               sge_dstring_sprintf_append(&output, "%5d ", (int)lGetUlong(job, JB_override_tickets));
-               sge_dstring_sprintf_append(&output, "%5d ", (int)otickets);
-               sge_dstring_sprintf_append(&output, "%5d ", (int)ftickets);
-               sge_dstring_sprintf_append(&output, "%5d ", (int)stickets);
-               sge_dstring_sprintf_append(&output, "%-5.2f ", lGetDouble(jatep, JAT_share));
-            } else {
-               sge_dstring_sprintf_append(&output, "                                          ");
-            }
-         }
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
+         report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
       }
    }
 
    /* if not full listing we need the queue's name in each line */
    if (!(full_listing & QSTAT_DISPLAY_FULL)) {
-      if (report_handler) {
-         report_handler->job_value(os, jobid, "queue_name", queue_name);
-      } else {
-         char temp[20];
-         snprintf(temp, sizeof(temp), "%%-%d.%ds ", queue_name_length, queue_name_length);
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, temp, "*");
-         } else {
-            sge_dstring_sprintf_append(&output, temp, queue_name ? queue_name : "");
-         }
-      }
+      std::string fmt = std::format("{{:<{}.{}}} ", queue_name_length, queue_name_length);
+      report_handler.job_value(os, jid, fmt.c_str(), "queue_name", queue_name);
    }
 
    if ((group_opt & GROUP_NO_PETASK_GROUPS)) {
       /* MASTER/SLAVE information needed only to show parallel job distribution */
-      if (report_handler) {
-         report_handler->job_value(os, jobid, "pe_master", master);
+      if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || master) {
+         report_handler.job_value(os, jid, "{:<7.6}","pe_master", master);
       } else {
-         if (master) {
-            if (hide_data) {
-               sge_dstring_sprintf_append(&output, "%-7s", "*");
-            } else {
-               sge_dstring_sprintf_append(&output, "%-7.6s", master);
-            }
-         } else {
-            sge_dstring_sprintf_append(&output, "       ");
-         }
+         report_handler.job_value(os, jid, std::string(7, ' ').c_str(), nullptr, nullptr);
       }
    } else {
       /* job slots requested/granted */
       if (!slots_per_line) {
          slots_per_line = sge_job_slot_request(job, pe_list);
       }
-      if (hide_data) {
-         sge_dstring_sprintf_append(&output, "%5s ", "*");
-      } else {
-         sge_dstring_sprintf_append(&output, "%5d ", slots_per_line);
-      }
+      // @todo avoid the cast - use template method
+      // @todo why 5+1 and not 7 like in if-section
+      report_handler.job_value(os, jid, "{:<5.5} ","slots_per_line", (u_long64)slots_per_line);
    }
 
-   if (report_handler) {
-      const char *taskid = sge_dstring_get_string(dyn_task_str);
-      if (job_is_array(job)) {
-         report_handler->job_value(os, jobid, "taskid", taskid);
-      }
+   if (const char *taskid = sge_dstring_get_string(dyn_task_str); taskid != nullptr && job_is_array(job)) {
+      report_handler.job_value(os, jid, "{}", "taskid", taskid);
    } else {
-      if (sge_dstring_get_string(dyn_task_str) && job_is_array(job)) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&output, "%s", "*");
-         } else {
-            sge_dstring_sprintf_append(&output, "%s", sge_dstring_get_string(dyn_task_str));
-         }
-      } else {
-         sge_dstring_sprintf_append(&output, "       ");
-      }
+      report_handler.job_value(os, jid, std::string(7, ' ').c_str(), nullptr, nullptr);
    }
 
    if (tsk_ext) {
@@ -1735,7 +1509,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
       if (!slot && task_list && queue_name && ((ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) &&
           ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name)) {
          if (indent++) {
-            sge_dstring_sprintf_append(&output, "%*s", num_spaces, " ");
+            report_handler.job_value(os, jid, std::string(num_spaces, ' ').c_str(), nullptr, nullptr);
          }
          sge_print_subtask(os, job, jatep, nullptr, 0, 0);
          /* subtask_ndx++; */
@@ -1747,25 +1521,18 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
                         ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name) &&
                         ((subtask_ndx++ % slots) == slot))) {
             if (indent++) {
-               sge_dstring_sprintf_append(&output, "%*s", num_spaces, " ");
+               report_handler.job_value(os, jid, std::string(num_spaces, ' ').c_str(), nullptr, nullptr);
             }
             sge_print_subtask(os, job, jatep, task, 0, 0);
          }
       }
 
       if (!indent) {
-         sge_dstring_sprintf_append(&output, "\n");
-      }
-
-   } else {
-      if (!report_handler) {
-         /* print a new line */
-         os << sge_dstring_get_string(&output) << std::endl;
-         sge_dstring_free(&output);
-      } else {
-         report_handler->job_end(os);
+         report_handler.job_value(os, jid, "{}", nullptr, "\n");
       }
    }
+
+   report_handler.job_end(os);
 
    /* print additional job info if requested */
    if (print_jobid && (full_listing & QSTAT_DISPLAY_RESOURCES)) {
@@ -1900,8 +1667,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 /*-------------------------------------------------------------------------*/
 int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
                          lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerXML *report_handler,
-                         lList **alpp, u_long32 show, bool is_manager) {
+                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerBase &report_handler) {
    lListElem *jlep;
    lListElem *jatep;
    const lListElem *gdilep;
@@ -2003,8 +1769,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list,
-                                      pe_list, user_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      pe_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_SUSPENDED) &&
@@ -2014,8 +1780,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
 
@@ -2023,8 +1789,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_USER)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
 
@@ -2032,8 +1798,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_OPERATOR)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
 
@@ -2041,8 +1807,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_SYSTEM)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list, indent,
-                                      group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
 
@@ -2050,8 +1816,8 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_JA_AD)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, user_list,
-                                      indent, group_opt, slots_per_line, queue_name_length, report_handler, alpp, show, is_manager);
+                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list,
+                                      indent, group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
                   }

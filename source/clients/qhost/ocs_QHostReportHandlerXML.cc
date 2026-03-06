@@ -31,79 +31,110 @@ void
 ocs::QHostReportHandlerXML::start(std::ostream &os) {
    os << "<?xml version='1.0'?>" << std::endl;
    os << "<qhost xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd\">" << std::endl;
+   indent_++;
 }
 
 void
 ocs::QHostReportHandlerXML::end(std::ostream &os) {
+   indent_--;
    os << "</qhost>" << std::endl;
 }
 
 void
 ocs::QHostReportHandlerXML::host_start(std::ostream &os, const char* host_name) {
-   os << " <host name='" << EscapedString(host_name) << "'>" << std::endl;
-}
-
-void
-ocs::QHostReportHandlerXML::host_value(std::ostream &os, const char *name, const char *value) {
-   os << "   <hostvalue name='" << EscapedString(name) << "'>" << EscapedString(value) << "</hostvalue>" << std::endl;
-}
-
-void
-ocs::QHostReportHandlerXML::host_value(std::ostream &os, const char* name, const u_long32 value) {
-   os << "   <hostvalue name='" << EscapedString(name) << "'>" << value << "</hostvalue>" << std::endl;
+   os << std::string(indent_ * 3, ' ');
+   os << "<host name='" << EscapedString(host_name) << "'>" << std::endl;
+   indent_++;
 }
 
 void
 ocs::QHostReportHandlerXML::host_end(std::ostream &os) {
-   os << " </host>" << std::endl;
+   indent_--;
+   os << std::string(indent_ * 3, ' ');
+   os << "</host>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value) {
-   os << "   <resourcevalue name='" << EscapedString(name) << "' dominance='" << EscapedString(dominance) << "'>" << EscapedString(value) << "</resourcevalue>" << std::endl;
+ocs::QHostReportHandlerXML::host_value(std::ostream &os, const char *format, const char *name, const char *value) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<hostvalue name='" << EscapedString(name) << "'>" << EscapedString(value) << "</hostvalue>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::queue_start(std::ostream &os, const char* qname) {
-   os << " <queue name='" << ocs::EscapedString(qname) << "'>" << std::endl;
+ocs::QHostReportHandlerXML::host_value(std::ostream &os, const char *format_str, const char* name, const u_long32 value) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<hostvalue name='" << EscapedString(name) << "'>" << value << "</hostvalue>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::queue_value(std::ostream &os, const char* qname, const char* name, const char *value) {
-   os << "   <queuevalue qname='" << EscapedString(qname) << "' name='" << EscapedString(name) << "'>" << EscapedString(value) << "</queuevalue>" << std::endl;
-}
-
-void
-ocs::QHostReportHandlerXML::queue_value(std::ostream &os, const char* qname, const char* name, const u_long32 value) {
-   os << "   <queuevalue qname='" << EscapedString(qname) << "' name='" << EscapedString(name) << "'>" << value << "</queuevalue>" << std::endl;
+ocs::QHostReportHandlerXML::queue_start(std::ostream &os, const char *format_str, const char* qname) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<queue name='" << EscapedString(qname) << "'>" << std::endl;
+   indent_++;
 }
 
 void
 ocs::QHostReportHandlerXML::queue_end(std::ostream &os) {
-   os << " </queue>" << std::endl;
+   indent_--;
+   os << std::string(indent_ * 3, ' ');
+   os << "</queue>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::job_start(std::ostream &os, const char* jobname) {
-   os << " <job name='" << EscapedString(jobname) << "'>" << std::endl;
+ocs::QHostReportHandlerXML::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const char *value) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<queuevalue qname='" << EscapedString(qname) << "' name='" << EscapedString(name) << "'>" << EscapedString(value) << "</queuevalue>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::job_value(std::ostream &os, const char* jobname, const char* name, const char *value) {
-   os << "   <jobvalue jobid='" << EscapedString(jobname) << "' name='" << EscapedString(name) << "'>" << EscapedString(value) << "</jobvalue>" << std::endl;
+ocs::QHostReportHandlerXML::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const u_long32 value) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<queuevalue qname='" << EscapedString(qname) << "' name='" << EscapedString(name) << "'>" << value << "</queuevalue>" << std::endl;
 }
 
 void
-ocs::QHostReportHandlerXML::job_value(std::ostream &os, const char* jobname, const char* name, u_long64 value) {
-   os << "   <jobvalue jobid='" << EscapedString(jobname) << "' name='" << EscapedString(name) << "'>" << value << "</jobvalue>" << std::endl;
-}
-
-void
-ocs::QHostReportHandlerXML::job_value(std::ostream &os, const char* jobname, const char* name, double value) {
-   os << "   <jobvalue jobid='" << EscapedString(jobname) << "' name='" << EscapedString(name) << "'>" << std::fixed << std::setprecision(6) << value << "</jobvalue>" << std::endl;
+ocs::QHostReportHandlerXML::job_start(std::ostream &os, const char *format_str, const u_long32 jid) {
+   os << std::string(indent_ * 3, ' ');
+   os << "<job name='" << jid << "'>" << std::endl;
+   indent_++;
 }
 
 void
 ocs::QHostReportHandlerXML::job_end(std::ostream &os) {
-   os << " </job>" << std::endl;
+   indent_--;
+   os << std::string(indent_ * 3, ' ');
+   os << "</job>" << std::endl;
 }
+
+void
+ocs::QHostReportHandlerXML::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, const char *value) {
+   if (name != nullptr && value != nullptr) {
+      os << std::string(indent_ * 3, ' ');
+      os << "<jobvalue jobid='" << jid << "' name='" << EscapedString(name) << "'>" << EscapedString(value) << "</jobvalue>" << std::endl;
+   }
+}
+
+void
+ocs::QHostReportHandlerXML::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, const u_long64 value) {
+   if (name != nullptr) {
+      os << std::string(indent_ * 3, ' ');
+      os << "<jobvalue jobid='" << jid << "' name='" << EscapedString(name) << "'>" << value << "</jobvalue>" << std::endl;
+   }
+}
+
+void
+ocs::QHostReportHandlerXML::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, const double value) {
+   if (name != nullptr) {
+      os << std::string(indent_ * 3, ' ');
+      os << "<jobvalue jobid='" << jid << "' name='" << EscapedString(name) << "'>" << std::fixed << std::setprecision(6) << value << "</jobvalue>" << std::endl;
+   }
+}
+
+void
+ocs::QHostReportHandlerXML::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details) {
+   if (name != nullptr && value != nullptr) {
+      os << std::string(indent_ * 3, ' ');
+      os << "<resourcevalue name='" << EscapedString(name) << "' dominance='" << EscapedString(dominance) << "'>" << EscapedString(value) << "</resourcevalue>" << std::endl;
+   }
+}
+

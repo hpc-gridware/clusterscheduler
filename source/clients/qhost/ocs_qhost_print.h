@@ -33,7 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "ocs_QHostReportHandlerXML.h"
+#include "cull/cull.h"
+
 
 #define QHOST_DISPLAY_QUEUES     (1<<0)
 #define QHOST_DISPLAY_JOBS       (1<<1)
@@ -46,10 +47,13 @@ typedef struct qhost_report_handler_str qhost_report_handler_t;
 #define QHOST_SUCCESS 0
 #define QHOST_ERROR   -1
 
+namespace ocs {
+   class QHostReportHandlerBase;
+}
+
 int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
-              lList *resource_list, u_long32 show, lList **alp, ocs::QHostReportHandlerXML *report_handler);
+              lList *resource_list, u_long32 show, lList **alp, ocs::QHostReportHandlerBase &report_handler);
 
 int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
                          lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerXML *report_handler,
-                         lList **alpp, u_long32 show, bool is_manager);
+                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerBase &report_handler);

@@ -45,7 +45,7 @@ struct qstat_env_str {
    lList* peref_list;            /* -pe pe_list                   */
    lList* user_list;             /* -u user_list - selects jobs   */
    lList* queue_user_list;       /* -U user_list - selects queues */
-   u_long32 full_listing;        /* -ext      */
+   u_long32 full_listing;        /* -ext -urg -pri */
    u_long32 qselect_mode;        /* called as qselect */
    u_long32 group_opt;           /* -g        */
    u_long32 queue_state;         /* -qs       */

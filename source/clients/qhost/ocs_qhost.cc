@@ -37,6 +37,7 @@
 #include <math.h>
 #include <sstream>
 #include <iomanip>
+#include <memory>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_log.h"
@@ -63,6 +64,7 @@
 #include "ocs_qhost_print.h"
 #include "ocs_client_parse.h"
 #include "ocs_QHostReportHandlerXML.h"
+#include "ocs_QHostReportHandlerPlain.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qhost.h"
@@ -187,11 +189,13 @@ int main(int argc, char **argv)
                            &ul, &show, xml_output, &alp);
    lFreeList(&pcmdline);
 
-   ocs::QHostReportHandlerXML *report_handler = nullptr;
-   if (xml_output) {
-      report_handler = new ocs::QHostReportHandlerXML();
-   }
+   std::unique_ptr<ocs::QHostReportHandlerBase> report_handler;
 
+   if (xml_output) {
+      report_handler = std::make_unique<ocs::QHostReportHandlerXML>(show);
+   } else {
+      report_handler = std::make_unique<ocs::QHostReportHandlerPlain>(show);
+   }
 
    if (is_ok == 0) {     
       answer_list_output(&alp);
@@ -204,12 +208,8 @@ int main(int argc, char **argv)
       sge_exit(0);
    }
 
-   qhost_result = do_qhost(host_list, ul, resource_match_list, resource_list, show, &alp, report_handler);
+   qhost_result = do_qhost(host_list, ul, resource_match_list, resource_list, show, &alp, *report_handler);
 
-   if (report_handler != nullptr) {
-      delete report_handler;
-   }
-   
    if (qhost_result != QHOST_SUCCESS) {
       answer_list_output(&alp);
       sge_prof_cleanup();

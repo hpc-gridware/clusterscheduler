@@ -21,11 +21,21 @@
 
 #include <ostream>
 
-#include <basis_types.h>
+#include "basis_types.h"
+
+#include "ocs_qhost_print.h"
+
 namespace ocs {
    class QHostReportHandlerBase {
+      u_long32 full_listing_;
+   protected:
+      size_t indent_ = 0;
    public:
-      QHostReportHandlerBase() = default;
+      [[nodiscard]] bool show_binding() const {
+         return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
+      }
+   public:
+      QHostReportHandlerBase(u_long32 full_listing) : full_listing_(full_listing) {}
       virtual ~QHostReportHandlerBase() = default;
 
       virtual void start(std::ostream &os) = 0;
@@ -33,20 +43,21 @@ namespace ocs {
 
       virtual void host_start(std::ostream &os, const char *host_name) = 0;
       virtual void host_end(std::ostream &os) = 0;
-      virtual void host_value(std::ostream &os, const char *name, const char *value) = 0;
-      virtual void host_value(std::ostream &os, const char* name, u_long32 value) = 0;
+      virtual void host_value(std::ostream &os, const char *format_str, const char *name, const char *value) = 0;
+      virtual void host_value(std::ostream &os, const char *format_str, const char* name, u_long32 value) = 0;
 
-      virtual void queue_start(std::ostream &os, const char* qname) = 0;
+      virtual void queue_start(std::ostream &os, const char *format_str, const char* qname) = 0;
       virtual void queue_end(std::ostream &os) = 0;
-      virtual void queue_value(std::ostream &os, const char* qname, const char* name, const char *value) = 0;
-      virtual void queue_value(std::ostream &os, const char* qname, const char* name, u_long32 value) = 0;
+      virtual void queue_value(std::ostream &os, const char *qname, const char *format_str, const char* name, const char *value) = 0;
+      virtual void queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, u_long32 value) = 0;
 
-      virtual void job_start(std::ostream &os, const char* jobname) = 0;
+      // @todo jid why as string
+      virtual void job_start(std::ostream &os, const char *format_str, u_long32 jid) = 0;
       virtual void job_end(std::ostream &os) = 0;
-      virtual void job_value(std::ostream &os, const char* jobname, const char* name, const char *value) = 0;
-      virtual void job_value(std::ostream &os, const char* jobname, const char* name, u_long64 value) = 0;
-      virtual void job_value(std::ostream &os, const char* jobname, const char* name, double value) = 0;
+      virtual void job_value(std::ostream &os, u_long32 jid, const char *format_str, const char* name, const char *value) = 0;
+      virtual void job_value(std::ostream &os, u_long32 jid, const char *format_str, const char* name, u_long64 value) = 0;
+      virtual void job_value(std::ostream &os, u_long32 jid, const char *format_str, const char* name, double value) = 0;
 
-      virtual void resource_value(std::ostream &os, const char* dominance, const char* name, const char* value) = 0;
+      virtual void resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details) = 0;
    };
 }

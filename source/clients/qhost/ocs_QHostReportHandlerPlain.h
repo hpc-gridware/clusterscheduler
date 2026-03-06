@@ -26,10 +26,12 @@
 #include "ocs_QHostReportHandlerBase.h"
 
 namespace ocs {
-   class QHostReportHandlerXML : public QHostReportHandlerBase {
+   class QHostReportHandlerPlain : public QHostReportHandlerBase {
+      bool print_host_header;
+      bool print_job_header;
    public:
-      QHostReportHandlerXML(u_long32 full_listing) : QHostReportHandlerBase(full_listing) {};
-      ~QHostReportHandlerXML() override = default;
+      QHostReportHandlerPlain(u_long32 full_listing) : QHostReportHandlerBase(full_listing), print_host_header(true), print_job_header(true) {}
+      ~QHostReportHandlerPlain() override = default;
 
       void start(std::ostream &os) override;
       void end(std::ostream &os) override;
