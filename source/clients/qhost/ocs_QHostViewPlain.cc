@@ -26,7 +26,7 @@
 
 #include "sgeobj/ocs_EscapedString.h"
 
-#include "ocs_QHostReportHandlerPlain.h"
+#include "ocs_QHostViewPlain.h"
 
 #include <iostream>
 
@@ -34,17 +34,17 @@
 #include "msg_clients_common.h"
 
 void
-ocs::QHostReportHandlerPlain::start(std::ostream &os) {
+ocs::QHostViewPlain::start(std::ostream &os) {
 }
 
 void
-ocs::QHostReportHandlerPlain::end(std::ostream &os) {
+ocs::QHostViewPlain::end(std::ostream &os) {
    // end with a new line
    os << std::endl;
 }
 
 void
-ocs::QHostReportHandlerPlain::host_start(std::ostream &os, const char* host_name) {
+ocs::QHostViewPlain::host_start(std::ostream &os, const char* host_name) {
    if (print_host_header) {
       print_host_header = false;
 
@@ -64,42 +64,42 @@ ocs::QHostReportHandlerPlain::host_start(std::ostream &os, const char* host_name
 }
 
 void
-ocs::QHostReportHandlerPlain::host_end(std::ostream &os) {
+ocs::QHostViewPlain::host_end(std::ostream &os) {
 }
 
 void
-ocs::QHostReportHandlerPlain::host_value(std::ostream &os, const char *format_str, const char *name, const char *value) {
+ocs::QHostViewPlain::host_value(std::ostream &os, const char *format_str, const char *name, const char *value) {
    os << std::vformat(format_str, std::make_format_args(value));
 }
 
 void
-ocs::QHostReportHandlerPlain::host_value(std::ostream &os, const char *format_str, const char* name, const u_long32 value) {
+ocs::QHostViewPlain::host_value(std::ostream &os, const char *format_str, const char* name, const u_long32 value) {
    os << std::vformat(format_str, std::make_format_args(value));
 }
 
 void
-ocs::QHostReportHandlerPlain::queue_start(std::ostream &os, const char *format_str, const char *qname) {
+ocs::QHostViewPlain::queue_start(std::ostream &os, const char *format_str, const char *qname) {
    // begin a new line
    os << std::endl;
    os << std::vformat(format_str, std::make_format_args(qname));
 }
 
 void
-ocs::QHostReportHandlerPlain::queue_end(std::ostream &os) {
+ocs::QHostViewPlain::queue_end(std::ostream &os) {
 }
 
 void
-ocs::QHostReportHandlerPlain::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const char *value) {
+ocs::QHostViewPlain::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const char *value) {
    os << std::vformat(format_str, std::make_format_args(value));
 }
 
 void
-ocs::QHostReportHandlerPlain::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const u_long32 value) {
+ocs::QHostViewPlain::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const u_long32 value) {
    os << std::vformat(format_str, std::make_format_args(value));
 }
 
 void
-ocs::QHostReportHandlerPlain::job_start(std::ostream &os, const char *format_str, const u_long32 jid) {
+ocs::QHostViewPlain::job_start(std::ostream &os, const char *format_str, const u_long32 jid) {
    if (format_str != nullptr) {
       os << std::endl;
       os << std::format("{}", format_str);
@@ -107,33 +107,33 @@ ocs::QHostReportHandlerPlain::job_start(std::ostream &os, const char *format_str
 }
 
 void
-ocs::QHostReportHandlerPlain::job_end(std::ostream &os) {
+ocs::QHostViewPlain::job_end(std::ostream &os) {
 }
 
 // @todo use template method
 void
-ocs::QHostReportHandlerPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, const char *value) {
+ocs::QHostViewPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, const char *value) {
    if (format_str != nullptr) {
       os << std::vformat(format_str, std::make_format_args(value));
    }
 }
 
 void
-ocs::QHostReportHandlerPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, u_long64 value) {
+ocs::QHostViewPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, u_long64 value) {
    if (format_str != nullptr) {
       os << std::vformat(format_str, std::make_format_args(value));
    }
 }
 
 void
-ocs::QHostReportHandlerPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, double value) {
+ocs::QHostViewPlain::job_value(std::ostream &os, const u_long32 jid, const char *format_str, const char* name, double value) {
    if (format_str != nullptr) {
       os << std::vformat(format_str, std::make_format_args(value));
    }
 }
 
 void
-ocs::QHostReportHandlerPlain::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details) {
+ocs::QHostViewPlain::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details) {
    // begin a new line
    os << std::endl;
 
@@ -144,5 +144,4 @@ ocs::QHostReportHandlerPlain::resource_value(std::ostream &os, const char* domin
    if (details != nullptr) {
       os << std::format(" ({})", details);
    }
-
 }

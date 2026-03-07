@@ -35,9 +35,9 @@ namespace ocs::gdi {
       ~Request();
 
       void wait();
-      int request(lList **alpp, Mode::ModeValue mode, gdi::Target::TargetValue target, gdi::Command::Cmd cmd,
-                  gdi::SubCommand::SubCmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
+      int request(lList **alpp, Mode::ModeValue mode, Target::TargetValue target, Command::Cmd cmd,
+                  SubCommand::SubCmd, lList **lp, lCondition *cp, lEnumeration *enp, bool do_copy);
 
-      bool get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCommand::SubCmd, gdi::Target::TargetValue target, int id, lList **olpp);
+      bool get_response(lList **alpp, Command::Cmd cmd, SubCommand::SubCmd, Target::TargetValue target, int id, lList **list);
    };
 }

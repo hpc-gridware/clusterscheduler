@@ -67,14 +67,12 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_qinstance_type.h"
-#include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_range.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -89,225 +87,36 @@
 #include "ocs_client_print.h"
 #include "ocs_qhost_print.h"
 
-#include "msg_common.h"
-#include "msg_clients_common.h"
-#include "ocs_client_job.h"
 #include "ocs_Bootstrap.h"
-#include "ocs_QHostReportHandlerXML.h"
-#include "ocs_QHostReportHandlerPlain.h"
-
-/* regular output */
-static char jhul1[] = "---------------------------------------------------------------------------------------------";
-/* -g t */
-static char jhul2[] = "-";
-
-static int sge_print_queues(std::ostream &os, lList *ql, lListElem *hrl, lList *jl, lList *ul, lList *ehl, lList *cl,
-                            lList *pel, lList *acll, u_long32 show, ocs::QHostReportHandlerBase &report_handler, lList **alpp, bool is_manager);
-static int sge_print_resources(std::ostream &os, lList *ehl, lList *cl, lList *resl, lListElem *host, u_long32 show, ocs::QHostReportHandlerBase &report_handler);
-static int sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostReportHandlerBase &report_handler, u_long32 show);
+#include "ocs_QHostModel.h"
+#include "ocs_QHostViewXML.h"
+#include "ocs_QHostViewPlain.h"
 
 static int reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem);
-static bool get_all_lists(lList **answer_list, lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList **acll, bool *is_manager, lList *hl, lList *ul, u_long32 show);
-static void free_all_lists(lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList **acll);
-
-
-bool
-qinstance_is_visible(const lListElem *qep, bool is_manager, bool dept_view, const lList *acl_list) {
-   bool qinstance_visible = true;
-
-   if (!is_manager && dept_view) {
-      const char *username = component_get_username();
-      const char *groupname = component_get_groupname();
-      int amount;
-      ocs_grp_elem_t *grp_array;
-      component_get_supplementray_groups(&amount, &grp_array);
-      lList *grp_list = grp_list_array2list(amount, grp_array);
-      qinstance_visible = sge_has_access(username, groupname, grp_list, qep, acl_list);
-      lFreeList(&grp_list);
-   }
-   return qinstance_visible;
-}
-
-int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
-              lList *resource_list, u_long32 show, lList **alpp, ocs::QHostReportHandlerBase &report_handler) {
-
-   lList *cl = nullptr;
-   lList *ehl = nullptr;
-   lList *ql = nullptr;
-   lList *jl = nullptr;
-   lList *pel = nullptr;
-   lList *acll = nullptr;
-   lListElem *ep;
-   lCondition *where = nullptr;
-   bool have_lists = true;
-   int ret = QHOST_SUCCESS;
-   bool is_manager = false;
-#define HEAD_FORMAT_DEPT "%-23s %-13s%4s %5s %5s %5s %6s %7s %7s %7s %7s\n"
-#define HEAD_FORMAT "%-23s %-13.13s%4.4s %5.5s %5.5s %5.5s %6.6s %7.7s %7.7s %7.7s %7.7s\n"
-#define HEAD_FORMAT_OLD_DEPT "%-23s %-13s%4s %5s %7s %7s %7s %7s\n"
-#define HEAD_FORMAT_OLD "%-23s %-13.13s%4.4s %6.6s %7.7s %7.7s %7.7s %7.7s\n"
-   
-   DENTER(TOP_LAYER);
-   
-   have_lists = get_all_lists(alpp, &ql, &jl, &cl, &ehl, &pel, &acll, &is_manager, host_list, user_list, show);
-   if (!have_lists) {
-      free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
-      DRETURN(QHOST_ERROR);
-   }
-
-   /* 
-   ** delete ok message 
-   */
-   lFreeList(alpp);
-
-
-   centry_list_init_double(cl);
-
-   /*
-   ** handle -l request for host
-   */
-   if (lGetNumberOfElem(resource_match_list)) {
-      int selected;
-      lListElem *global = nullptr;
-
-      if (centry_list_fill_request(resource_match_list, alpp, cl, true, true, false)) {
-         /* TODO: error message gets written by centry_list_fill_request into SGE_EVENT */
-         free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
-         DRETURN(QHOST_ERROR);
-      }
-
-      {/* clean host list */
-         lListElem *host = nullptr;
-         for_each_rw(host, ehl) {
-            lSetUlong(host, EH_tagged, 0);
-         }
-      }
-
-      /* prepare request */
-      global = lGetElemHostRW(ehl, EH_name, "global");
-      selected = sge_select_queue(resource_match_list, nullptr, global, ehl, cl, true, -1, nullptr, nullptr, nullptr);
-      if (selected) {
-         for_each_rw(ep, ehl) {
-            lSetUlong(ep, EH_tagged, 1);
-         }
-      } else {
-        lListElem *tmp_resource_list = nullptr;
-        /* if there is hostname request, remove it as we cannot match hostname in
-         * sge_select_queue
-         * we'll process this tmp_resource_list separately!!
-         */
-         if ((tmp_resource_list = lGetElemStrRW(resource_match_list, CE_name, "hostname"))) {
-            lDechainElem(resource_match_list, tmp_resource_list);
-         }
-         for_each_rw(ep, ehl) {
-            /* prepare complex attributes */
-            if (strcmp(lGetHost(ep, EH_name), SGE_TEMPLATE_NAME) == 0) {
-               continue;
-            }
-
-            DPRINTF("matching host %s with qhost -l\n", lGetHost(ep, EH_name));
-
-            selected = sge_select_queue(resource_match_list, nullptr, ep, ehl, cl,
-                                        true, -1, nullptr, nullptr, nullptr);
-            if(selected) { /* found other matching attribs */
-               lSetUlong(ep, EH_tagged, 1);
-               /* check for hostname match if there was a hostname match request */
-               if (tmp_resource_list != nullptr) {
-                  if (sge_hostcmp(lGetString(tmp_resource_list, CE_stringval), lGetHost(ep, EH_name)) != 0 ) {
-                     DPRINTF("NOT matched hostname %s with qhost -l\n", lGetHost(ep, EH_name));
-                     lSetUlong(ep, EH_tagged, 0);
-                  }
-               }
-            } else { /* this host is not selected */
-               lSetUlong(ep, EH_tagged, 0);
-            }
-         }
-         if (tmp_resource_list != nullptr) {
-            lFreeElem(&tmp_resource_list);
-         }
-      }
-
-      /*
-      ** reduce the hostlist, only the tagged ones survive
-      */
-      where = lWhere("%T(%I == %u)", EH_Type, EH_tagged, 1);
-      lSplit(&ehl, nullptr, nullptr, where);
-      lFreeWhere(&where);
-   }
-
-   /* scale load values and adjust consumable capacities */
-   /*    TODO                                            */
-   /*    is correct_capacities needed here ???           */
-   /*    correct_capacities(ehl, cl);                    */
-
-   /* SGE_GLOBAL_NAME should be printed at first */
-   lPSortList(ehl, "%I+", EH_name);
-   ep = nullptr;
-   where = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME );
-   ep = lDechainElem(ehl, lFindFirstRW(ehl, where));
-   lFreeWhere(&where);
-   if (ep) {
-      lInsertElem(ehl, nullptr, ep);
-   }
-   
-   /*
-   ** output handling
-   */
-   std::ostringstream oss;
-   report_handler.start(oss);
-   for_each_rw(ep, ehl) {
-      bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-      bool hide_data = !host_is_visible(ep, is_manager, dept_view, acll);
-
-      if (hide_data) {
-         continue;
-      }
-
-      if (shut_me_down) {
-         DRETURN(QHOST_ERROR);
-      }
-
-      report_handler.host_start(oss, lGetHost(ep, EH_name));
-      sge_print_host(oss, ep, cl, report_handler, show);
-      sge_print_resources(oss, ehl, cl, resource_list, ep, show, report_handler);
-      ret = sge_print_queues(oss, ql, ep, jl, nullptr, ehl, cl, pel, acll, show, report_handler, alpp, is_manager);
-      if (ret != QHOST_SUCCESS) {
-         break;
-      }
-      
-      report_handler.host_end(oss);
-   }
-   report_handler.end(oss);
-
-   std::cout << oss.str();
-   free_all_lists(&ql, &jl, &cl, &ehl, &pel, &acll);
-   DRETURN(ret);
-}
 
 /*-------------------------------------------------------------------------*/
 static int 
-sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostReportHandlerBase &report_handler, u_long32 show)
-{
+sge_print_host(std::ostream &os, lListElem *hep, ocs::QHostParameter &parameter, ocs::QHostModel &model, ocs::QHostViewBase &report_handler) {
+   DENTER(TOP_LAYER);
    lListElem *lep;
    char *s, host_print[CL_MAXHOSTNAMELEN+1] = "";
-   const char *host;
    char load_avg[20], mem_total[20], mem_used[20], swap_total[20],
         swap_used[20], num_proc[20], socket[20], core[20], arch_string[80], thread[20];
    dstring rs = DSTRING_INIT;
    u_long32 dominant = 0;
    int ret = QHOST_SUCCESS;
    bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
+   u_long32 show = parameter.get_show();
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
-
-   DENTER(TOP_LAYER);
-
-   host = lGetHost(hep, EH_name);
+   const char *host = lGetHost(hep, EH_name);
 
    /* cut away domain in case of ignore_fqdn */
    sge_strlcpy(host_print, host, CL_MAXHOSTNAMELEN);
    if (ignore_fqdn && (s = strchr(host_print, '.'))) {
       *s = '\0';
-   }   
+   }
+
+   lList *centry_list = model.get_centry_list();
 
    // arch
    lep = get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_ARCH, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
@@ -320,7 +129,7 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
    }
 
    // num_proc
-   lep= get_attribute_by_name(nullptr, hep, nullptr, "num_proc", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_NUM_PROC, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
       sge_strlcpy(num_proc, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(num_proc));
       sge_dstring_clear(&rs);
@@ -331,10 +140,9 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
 
    if (show_binding) {
       // nsoc (sockets)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_socket", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_SOCKETS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
-         sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs),
-                  sizeof(socket));
+         sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(socket));
          sge_dstring_clear(&rs);
          lFreeElem(&lep);
       } else {
@@ -342,10 +150,9 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
       }
 
       // nthr (threads)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_thread", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_THREADS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
-         sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs),
-                  sizeof(thread));
+         sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(thread));
          sge_dstring_clear(&rs);
          lFreeElem(&lep);
       } else {
@@ -353,10 +160,9 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
       }
 
       // ncor (cores)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, "m_core", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_CORES, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
       if (lep) {
-         sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs),
-                  sizeof(core)); 
+         sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(core));
          sge_dstring_clear(&rs);
          lFreeElem(&lep);
       } else {
@@ -416,13 +222,14 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
    
 
    // hostname
-   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+   if (typeid(report_handler) == typeid(ocs::QHostViewPlain)) {
       report_handler.host_value(os, "{:<23} ", nullptr, host ? host_print : "-");
    }
 
    // values
    report_handler.host_value(os, "{:<13.13} ", "arch_string", arch_string);
    report_handler.host_value(os, "{:>4.4} ", "num_proc", num_proc);
+
    if (show_binding) {
       report_handler.host_value(os, "{:>5.5} ", "m_socket", socket);
       report_handler.host_value(os, "{:>5.5} ", "m_core", core);
@@ -440,34 +247,30 @@ sge_print_host(std::ostream &os, lListElem *hep, lList *centry_list, ocs::QHostR
 }
 
 /*-------------------------------------------------------------------------*/
-static int sge_print_queues(
+static void sge_print_queues(
 std::ostream &os,
-lList *qlp,
 lListElem *host,
-lList *jl,
 lList *ul,
-lList *ehl,
-lList *cl,
-lList *pel,
-lList *acl_list,
-u_long32 show,
-ocs::QHostReportHandlerBase &report_handler,
-lList **alpp,
-bool is_manager
+ocs::QHostParameter &parameter,
+ocs::QHostModel &model,
+ocs::QHostViewBase &report_handler
 ) {
    const lList *load_thresholds, *suspend_thresholds;
    lListElem *qep;
    lListElem *cqueue;
    u_long32 interval;
-   int ret = QHOST_SUCCESS;
    const char *ehname = lGetHost(host, EH_name);
-   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
+   lList *qlp = model.get_queue_list();
+   lList *jl = model.get_job_list();
+   lList *ehl = model.get_exechost_list();
+   lList *cl = model.get_centry_list();
+   lList *pel = model.get_pe_list();
+   u_long32 show = parameter.get_show();
 
    DENTER(TOP_LAYER);
 
-   if (!(show & QHOST_DISPLAY_QUEUES) &&
-       !(show & QHOST_DISPLAY_JOBS)) {
-      DRETURN(ret);
+   if (!(show & QHOST_DISPLAY_QUEUES) && !(show & QHOST_DISPLAY_JOBS)) {
+      DRETURN_VOID;
    }
 
    for_each_rw(cqueue, qlp) {
@@ -534,29 +337,23 @@ bool is_manager
             u_long32 full_listing = (show & QHOST_DISPLAY_QUEUES) ?  
                                     QSTAT_DISPLAY_FULL : 0;
             full_listing = full_listing | QSTAT_DISPLAY_ALL;
-            if (sge_print_jobs_queue(os, qep, jl, pel, ul, ehl, cl, 1,
-                                 full_listing, "   ", 
-                                 GROUP_NO_PETASK_GROUPS, 10,
-                                 report_handler) == 1) {
-               DRETURN(QHOST_ERROR);
-            }
+            sge_print_jobs_queue(os, qep, jl, pel, ul, ehl, cl, 1,
+                                 full_listing, "   ", GROUP_NO_PETASK_GROUPS, 10, report_handler);
          }
       }
    }
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 
 /*-------------------------------------------------------------------------*/
 static int sge_print_resources(
 std::ostream &os,
-lList *ehl,
-lList *cl,
-lList *resl,
 lListElem *host,
-u_long32 show,
-ocs::QHostReportHandlerBase &report_handler
+ocs::QHostParameter &parameter,
+ocs::QHostModel &model,
+ocs::QHostViewBase &report_handler
 ) {
    DENTER(TOP_LAYER);
 
@@ -568,8 +365,10 @@ ocs::QHostReportHandlerBase &report_handler
    u_long32 dominant;
    int first = 1;
    int ret = QHOST_SUCCESS;
-   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-   //bool hide_data = false;
+   lList *ehl = model.get_exechost_list();
+   lList *cl = model.get_centry_list();
+   const lList *resl = parameter.get_resource_visible_list();
+   u_long32 show = parameter.get_show();
 
    // does the executing qstat user have access to this queue?
    //if (dept_view) {
@@ -598,7 +397,7 @@ ocs::QHostReportHandlerBase &report_handler
                if (first) {
                   first = 0;
                   // @todo when is this shown
-                  if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+                  if (typeid(report_handler) == typeid(ocs::QHostViewPlain)) {
                      os << std::format("    Host Resource(s):   ") << std::endl;
                   }
                }
@@ -670,423 +469,16 @@ reformatDoubleValue(char *result, size_t result_size, const char *format, const 
    DRETURN(ret);
 }
 
-/****
- **** get_all_lists (static)
- ****
- **** Gets copies of queue-, job-, complex-, exechost-list  
- **** from qmaster.
- **** The lists are stored in the .._l pointerpointer-parameters.
- **** WARNING: Lists previously stored in this pointers are not destroyed!!
- ****/
-static bool
-get_all_lists(lList **answer_list, lList **queue_l, lList **job_l, lList **centry_l, lList **exechost_l,
-              lList **pe_l, lList **acl_l, bool *is_manager, lList *hostref_list, lList *user_list, u_long32 show) {
-   lCondition *where= nullptr, *nw = nullptr, *jw = nullptr, *gc_where;
-   lEnumeration *q_all = nullptr, *j_all = nullptr, *ce_all = nullptr,
-                *eh_all = nullptr, *pe_all = nullptr, *acl_all = nullptr, *gc_what;
-   lListElem *ep = nullptr;
-   lListElem *jatep = nullptr;
-   lList *conf_l = nullptr;
-   int q_id = 0, j_id = 0, ce_id, eh_id, pe_id, gc_id, acl_id;
-   ocs::gdi::Request gdi_multi{};
-   const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = component_get_component_id();
 
-   DENTER(TOP_LAYER);
-
-   // @todo Should be combined with the other GDI requests
-   bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(answer_list, is_manager, nullptr, nullptr, nullptr);
-   if (!perm_return) {
-      DRETURN(false);
-   }
-
-   /*
-   ** exechosts
-   ** build where struct to filter out  either all hosts or only the
-   ** hosts listed in host_list
-   */
-   for_each_rw(ep, hostref_list) {
-      nw = lWhere("%T(%I h= %s)", EH_Type, EH_name, lGetString(ep, ST_name));
-      if (!where)
-         where = nw;
-      else
-         where = lOrWhere(where, nw);
-   }
-   /* the global host has to be retrieved as well */
-   if (where != nullptr) {
-      nw = lWhere("%T(%I == %s)", EH_Type, EH_name, SGE_GLOBAL_NAME);
-      where = lOrWhere(where, nw);
-   }
-
-   nw = lWhere("%T(%I != %s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
-   if (where)
-      where = lAndWhere(where, nw);
-   else
-      where = nw;
-   eh_all = lWhat("%T(ALL)", EH_Type);
-
-   eh_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, eh_all, true);
-   lFreeWhat(&eh_all);
-   lFreeWhere(&where);
-
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      q_all = lWhat("%T(ALL)", QU_Type);
-
-      q_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::TargetValue::SGE_CQ_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, q_all, true);
-      lFreeWhat(&q_all);
-
-      if (answer_list_has_error(answer_list)) {
-         DRETURN(false);
-      }
-   }
-
-   /*
-   ** jobs
-   */
-   if (job_l && (show & QHOST_DISPLAY_JOBS)) {
-
-/* lWriteListTo(user_list, stdout); */
-
-      for_each_rw(ep, user_list) {
-         const char *user_name = lGetString(ep, ST_name);
-         if (ocs::is_pattern(user_name)) {
-            nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
-         } else {
-            nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
-         }
-         if (!jw) {
-            jw = nw;
-         } else {
-            jw = lOrWhere(jw, nw);
-         }
-      }
-/* printf("-------------------------------------\n"); */
-/* lWriteWhereTo(jw, stdout); */
-      if (!(show & QSTAT_DISPLAY_PENDING)) {
-         nw = lWhere("%T(%I->%T(!(%I m= %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_state, JQUEUED);
-         if (!jw)
-            jw = nw;
-         else
-            jw = lAndWhere(jw, nw);
-      }
-
-      j_all = lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)", JB_Type,
-                     JB_job_number,
-                     JB_script_file,
-                     JB_owner,
-                     JB_group,
-                     JB_type,
-                     JB_pe,
-                     JB_checkpoint_name,
-                     JB_jid_predecessor_list,
-                     JB_env_list,
-                     JB_priority,
-                     JB_jobshare,
-                     JB_job_name,
-                     JB_project,
-                     JB_department,
-                     JB_submission_time,
-                     JB_deadline,
-                     JB_override_tickets,
-                     JB_pe_range,
-                     JB_request_set_list,
-                     JB_ja_structure,
-                     JB_ja_tasks,
-                     JB_ja_n_h_ids,
-                     JB_ja_u_h_ids,
-                     JB_ja_s_h_ids,
-                     JB_ja_o_h_ids,
-                     JB_ja_a_h_ids,
-                     JB_ja_z_ids
-                    );
-
-      j_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::SGE_JB_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, jw, j_all, true);
-      lFreeWhat(&j_all);
-      lFreeWhere(&jw);
-
-      if (answer_list_has_error(answer_list)) {
-         DRETURN(false);
-      }
-   }
-
-   /*
-   ** complexes
-   */
-   ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::SGE_CE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, ce_all, true);
-   lFreeWhat(&ce_all);
-
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /*
-   ** pe list
-   */
-   pe_all = lWhat("%T(ALL)", PE_Type);
-   pe_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::SGE_PE_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, pe_all, true);
-   lFreeWhat(&pe_all);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /*
-   ** user list
-   */
-   acl_all = lWhat("%T(ALL)", US_Type);
-   acl_id = gdi_multi.request(answer_list, ocs::Mode::RECORD, ocs::gdi::Target::SGE_US_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, acl_all, true);
-   lFreeWhat(&acl_all);
-
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(1);
-   }
-
-   /*
-   ** global cluster configuration
-   */
-   gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
-   gc_what = lWhat("%T(ALL)", CONF_Type);
-
-   gc_id = gdi_multi.request(answer_list, ocs::Mode::SEND, ocs::gdi::Target::SGE_CONF_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, gc_where, gc_what, true);
-   gdi_multi.wait();
-   lFreeWhat(&gc_what);
-   lFreeWhere(&gc_where);
-
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /*
-   ** handle results
-   */
-   /* --- exec host */
-   gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_EH_LIST, eh_id, exechost_l);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /* --- queue */
-   if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
-      gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CQ_LIST, q_id, queue_l);
-      if (answer_list_has_error(answer_list)) {
-         DRETURN(false);
-      }
-   }
-
-   /* --- job */
-   if (job_l && (show & QHOST_DISPLAY_JOBS)) {
-      lListElem *ep = nullptr;
-      gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_JB_LIST, j_id, job_l);
-      if (answer_list_has_error(answer_list)) {
-         DRETURN(false);
-      }
-      /*
-      ** tag the jobs, we need it for the printing functions
-      */
-      for_each_rw(ep, *job_l) {
-         for_each_rw(jatep, lGetList(ep, JB_ja_tasks)) {
-            lSetUlong(jatep, JAT_suitable, TAG_SHOW_IT);
-         }
-      }   
-
-   }
-
-   /* --- complex attribute */
-   gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CE_LIST, ce_id, centry_l);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /* --- pe */
-   gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_PE_LIST, pe_id, pe_l);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /* --- user lists */
-   gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_US_LIST, acl_id, acl_l);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-
-   /* --- apply global configuration for sge_hostcmp() scheme */
-   gdi_multi.get_response(answer_list, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, ocs::gdi::Target::SGE_CONF_LIST, gc_id, &conf_l);
-   if (answer_list_has_error(answer_list)) {
-      DRETURN(false);
-   }
-   if (lFirst(conf_l)) {
-      lListElem *local = nullptr;
-      merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
-   }
-   
-   lFreeList(&conf_l);
-   DRETURN(true);
-}
-
-/****** sge_qhost/free_all_lists() *********************************************
-*  NAME
-*     free_all_lists() -- frees all lists
-*
-*  SYNOPSIS
-*     static void free_all_lists(lList **ql, lList **jl, lList **cl, lList 
-*     **ehl, lList **pel) 
-*
-*  FUNCTION
-*     The function frees all of the given list pointers
-*
-*  INPUTS
-*     lList **ql  - ??? 
-*     lList **jl  - ??? 
-*     lList **cl  - ??? 
-*     lList **ehl - ??? 
-*     lList **pel - ??? 
-*
-*  NOTES
-*     MT-NOTE: free_all_lists() is MT safe 
-*******************************************************************************/
-static void free_all_lists(lList **ql, lList **jl, lList **cl, lList **ehl, lList **pel, lList **acll)
-{
-   lFreeList(ql);
-   lFreeList(jl);
-   lFreeList(cl);
-   lFreeList(ehl);
-   lFreeList(pel);
-   lFreeList(acll);
-}
-
-static int sge_print_subtask(std::ostream &os, const lListElem *job, const lListElem *ja_task,
-                             const lListElem *pe_task, /* nullptr, if master task shall be printed */
-                             int print_hdr, int indent) {
-   char task_state_string[8];
-   u_long32 tstate, tstatus;
-   int task_running;
-   const char *str;
-   const lListElem *ep;
-   const lList *usage_list;
-   const lList *scaled_usage_list;
-
-   DENTER(TOP_LAYER);
-
-   /* is sub-task logically running */
-   if (pe_task == nullptr) {
-      tstatus = lGetUlong(ja_task, JAT_status);
-      usage_list = lGetList(ja_task, JAT_usage_list);
-      scaled_usage_list = lGetList(ja_task, JAT_scaled_usage_list);
-   } else {
-      tstatus = lGetUlong(pe_task, PET_status);
-      usage_list = lGetList(pe_task, PET_usage);
-      scaled_usage_list = lGetList(pe_task, PET_scaled_usage);
-   }
-
-   task_running = (tstatus == JRUNNING || tstatus == JTRANSFERING);
-
-   if (print_hdr) {
-      os << std::format("{}Sub-tasks:           {:<12.12} {:>5.5} {} {:<4.4} {:<6.6}\n",
-                        QSTAT_INDENT, "task-ID", "state", std::string(USAGE_ATTR_CPU) + "        " + std::string(USAGE_ATTR_MEM) + "     " + std::string(USAGE_ATTR_IO)  + "     ", "stat", "failed" );
-   }
-
-   if (pe_task == nullptr) {
-      str = "";
-   } else {
-      str = lGetString(pe_task, PET_id);
-   }
-   os << std::format("   {}{:<12.12} ", indent ? QSTAT_INDENT2 : "", str);
-
-   /* move status info into state info */
-   tstate = lGetUlong(ja_task, JAT_state);
-   if (tstatus == JRUNNING) {
-      tstate |= JRUNNING;
-      tstate &= ~JTRANSFERING;
-   } else if (tstatus == JTRANSFERING) {
-      tstate |= JTRANSFERING;
-      tstate &= ~JRUNNING;
-   } else if (tstatus == JFINISHED) {
-      tstate |= JEXITING;
-      tstate &= ~(JRUNNING | JTRANSFERING);
-   }
-
-   if (lGetList(job, JB_jid_predecessor_list) || lGetUlong(ja_task, JAT_hold)) {
-      tstate |= JHELD;
-   }
-
-   if (lGetUlong(ja_task, JAT_job_restarted)) {
-      tstate &= ~JWAITING;
-      tstate |= JMIGRATING;
-   }
-
-   /* write states into string */
-   job_get_state_string(task_state_string, tstate);
-   os << std::format("{:<5.5} ", task_state_string);
-
-   {
-      const lListElem *up;
-
-      /* scaled cpu usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_CPU))) {
-         os << std::format("{:<10.10} ", task_running ? "NA" : "");
-      } else {
-         dstring resource_string = DSTRING_INIT;
-
-         double_print_time_to_dstring(lGetDouble(up, UA_value), &resource_string, true);
-         os << sge_dstring_get_string(&resource_string) << " ";
-         sge_dstring_free(&resource_string);
-      }
-
-      /* scaled mem usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_MEM))) {
-         os << std::format("{:<7.7} ", task_running ? "NA" : "");
-      } else {
-         os << std::format("{:<5.5f} ", lGetDouble(up, UA_value));
-      }
-
-      /* scaled io usage */
-      if (!(up = lGetElemStr(scaled_usage_list, UA_name, USAGE_ATTR_IO))) {
-         os << std::format("{:<7.7} ", task_running ? "NA" : "");
-      } else {
-         os << std::format("{:<5.5f} ", lGetDouble(up, UA_value));
-      }
-   }
-
-   if (tstatus == JFINISHED) {
-      ep = lGetElemStr(usage_list, UA_name, "exit_status");
-      os << std::format("{:<4d}", ep ? (int)lGetDouble(ep, UA_value) : 0);
-   }
-
-   putchar('\n');
-
-   DRETURN(0);
-}
-
-/*************************************************************/
-/* rel CE_Type List */
-static void
-sge_show_ce_type_list_line_by_line(std::ostream &os, const char *label, const char *indent, const lList *rel,
-                                   bool display_resource_contribution, const lList *centry_list, int slots) {
-   DENTER(TOP_LAYER);
-
-   os << label;
-   show_ce_type_list(os, rel, indent, "\n", display_resource_contribution, centry_list, slots);
-   os << std::endl;
-
-   DRETURN_VOID;
-}
-
+// slots_per_line: number of slots to be printed in slots column when 0 is passed the number of requested slots printed
 static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
-                         dstring *dyn_task_str, u_long32 full_listing, int slots, int slot, lList *exechost_list,
-                         lList *centry_list, const lList *pe_list, const char *indent, u_long32 group_opt,
-                         int slots_per_line, /* number of slots to be printed in slots column
-                                               when 0 is passed the number of requested slots printed */
-                         int queue_name_length, ocs::QHostReportHandlerBase &report_handler) {
+                         dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
+                         const lList *pe_list, const char *indent, u_long32 group_opt, int slots_per_line,
+                         int queue_name_length, ocs::QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
    char state_string[8];
    u_long32 jstate;
    int sge_urg, sge_pri, sge_ext, sge_time;
-   const lList *ql = nullptr;
-   const lListElem *qrep;
    const lListElem *gdil_ep = nullptr;
    int running;
    const char *queue_name = nullptr;
@@ -1096,12 +488,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
    dstring ds;
    char buffer[128];
    dstring queue_name_buffer = DSTRING_INIT;
-   //bool dept_view = ((show & QHOST_DISPLAY_DEPT_VIEW) == QHOST_DISPLAY_DEPT_VIEW) ? true : false;
-   //bool hide_data = false;
    u_long32 jid = lGetUlong(job, JB_job_number);
-
-   //const char *owner = lGetString(job, JB_owner);
-   //hide_data = !job_is_visible(owner, is_manager, dept_view, acl_list);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -1207,7 +594,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 
    /* per job priority information */
    {
-      if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
+      if (typeid(report_handler) == typeid(ocs::QHostViewXML) || print_jobid) {
          report_handler.job_value(os, jid, "{:<7.5f} ", "priority", lGetDouble(jatep, JAT_prio));
       } else {
          report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
@@ -1266,13 +653,13 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
    }
 
    // XML: show qinstance name in any case
-   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML)) {
+   if (typeid(report_handler) == typeid(ocs::QHostViewXML)) {
       report_handler.job_value(os, jid, nullptr, "qinstance_name", queue_name);
    }
 
    // XML and Plain with jobid: show job name, owner
    // or in Plain without jobid: just fill the gap
-   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
+   if (typeid(report_handler) == typeid(ocs::QHostViewXML) || print_jobid) {
       report_handler.job_value(os, jid, "{:<10.10} ", "job_name", lGetString(job, JB_job_name));
       report_handler.job_value(os, jid, "{:<12.12} ", "job_owner", lGetString(job, JB_owner));
    } else {
@@ -1310,7 +697,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 
    // XML and Plain with jobid: show job_state
    // or in Plain without jobid: just fill the gap
-   if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || print_jobid) {
+   if (typeid(report_handler) == typeid(ocs::QHostViewXML) || print_jobid) {
       job_get_state_string(state_string, jstate);
       report_handler.job_value(os, jid, "{:<5.5} ", "job_state", state_string);
    } else {
@@ -1328,7 +715,7 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
             name = "submit_time";
             value = lGetUlong64(job, JB_submission_time);
          }
-         if (typeid(report_handler) == typeid(ocs::QHostReportHandlerPlain)) {
+         if (typeid(report_handler) == typeid(ocs::QHostViewPlain)) {
             const char *time_string = sge_ctime64_short(value, &ds);
             report_handler.job_value(os, jid, "{} ", name, time_string);
          } else {
@@ -1475,10 +862,10 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 
    if ((group_opt & GROUP_NO_PETASK_GROUPS)) {
       /* MASTER/SLAVE information needed only to show parallel job distribution */
-      if (typeid(report_handler) == typeid(ocs::QHostReportHandlerXML) || master) {
-         report_handler.job_value(os, jid, "{:<7.6}","pe_master", master);
+      if (typeid(report_handler) == typeid(ocs::QHostViewXML) || master) {
+         report_handler.job_value(os, jid, "{:<6.6s} ","pe_master", master);
       } else {
-         report_handler.job_value(os, jid, std::string(7, ' ').c_str(), nullptr, nullptr);
+         report_handler.job_value(os, jid, "{:<6.6s} ", "pe_master", std::string(7, ' ').c_str());
       }
    } else {
       /* job slots requested/granted */
@@ -1486,178 +873,19 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
          slots_per_line = sge_job_slot_request(job, pe_list);
       }
       // @todo avoid the cast - use template method
-      // @todo why 5+1 and not 7 like in if-section
-      report_handler.job_value(os, jid, "{:<5.5} ","slots_per_line", (u_long64)slots_per_line);
+      report_handler.job_value(os, jid, "{:<6.6d} ","slots_per_line", (u_long64)slots_per_line);
    }
 
+   // ja-task-ID
+   // If we have an ID for the ja-task, we print it.
+   // If not, we print an empty string in the plain output, but nothing in the XML output
    if (const char *taskid = sge_dstring_get_string(dyn_task_str); taskid != nullptr && job_is_array(job)) {
-      report_handler.job_value(os, jid, "{}", "taskid", taskid);
-   } else {
-      report_handler.job_value(os, jid, std::string(7, ' ').c_str(), nullptr, nullptr);
-   }
-
-   if (tsk_ext) {
-      const lList *task_list = lGetList(jatep, JAT_task_list);
-      const lListElem *task, *ep;
-      const char *qname;
-      int indent = 0;
-      int subtask_ndx = 1;
-      int num_spaces =
-          sizeof(jhul1) - 1 + (sge_ext ? sizeof(jhul2) - 1 : 0) - ((full_listing & QSTAT_DISPLAY_FULL) ? 11 : 0);
-
-      /* print master sub-task belonging to this queue */
-      if (!slot && task_list && queue_name && ((ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list)))) &&
-          ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name)) {
-         if (indent++) {
-            report_handler.job_value(os, jid, std::string(num_spaces, ' ').c_str(), nullptr, nullptr);
-         }
-         sge_print_subtask(os, job, jatep, nullptr, 0, 0);
-         /* subtask_ndx++; */
-      }
-
-      /* print sub-tasks belonging to this queue */
-      for_each_ep(task, task_list) {
-         if (!slots || (queue_name && ((ep = lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
-                        ((qname = lGetString(ep, JG_qname))) && !strcmp(qname, queue_name) &&
-                        ((subtask_ndx++ % slots) == slot))) {
-            if (indent++) {
-               report_handler.job_value(os, jid, std::string(num_spaces, ' ').c_str(), nullptr, nullptr);
-            }
-            sge_print_subtask(os, job, jatep, task, 0, 0);
-         }
-      }
-
-      if (!indent) {
-         report_handler.job_value(os, jid, "{}", nullptr, "\n");
-      }
+      report_handler.job_value(os, jid, "{:<10.10s} ", "taskid", taskid);
+   } else if (typeid(report_handler) == typeid(ocs::QHostViewPlain)) {
+      report_handler.job_value(os, jid, "{:<10.10s} ", "taskid", std::string(10 + 1, ' ').c_str());
    }
 
    report_handler.job_end(os);
-
-   /* print additional job info if requested */
-   if (print_jobid && (full_listing & QSTAT_DISPLAY_RESOURCES)) {
-      os << QSTAT_INDENT << "Full jobname:     " << lGetString(job, JB_job_name) << std::endl;
-
-      if (queue_name) {
-         os << QSTAT_INDENT << "Master queue:     " << queue_name << std::endl;
-      }
-
-      if (lGetString(job, JB_pe)) {
-         dstring range_string = DSTRING_INIT;
-
-         range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
-         os << QSTAT_INDENT << "Requested PE:     " << lGetString(job, JB_pe) << " " << sge_dstring_get_string(&range_string) << std::endl;
-         sge_dstring_free(&range_string);
-      }
-      if (lGetString(jatep, JAT_granted_pe)) {
-         const lListElem *gdil_ep;
-         u_long32 pe_slots = 0;
-         for_each_ep(gdil_ep, lGetList(jatep, JAT_granted_destin_identifier_list)) {
-            pe_slots += lGetUlong(gdil_ep, JG_slots);
-         }
-         os << QSTAT_INDENT << "Granted PE:       " << lGetString(jatep, JAT_granted_pe) << " " << pe_slots << std::endl;
-      }
-      if (lGetString(job, JB_checkpoint_name)) {
-         os << QSTAT_INDENT << "Checkpoint Env.:  " << lGetString(job, JB_checkpoint_name) << std::endl;
-      }
-
-      sge_show_ce_type_list_line_by_line(os, QSTAT_INDENT "Hard Resources:   ", QSTAT_INDENT2,
-                                         job_get_hard_resource_list(job), true, centry_list,
-                                         sge_job_slot_request(job, pe_list));
-
-      /* display default requests if necessary */
-      {
-         lList *attributes = nullptr;
-         const lListElem *ce;
-         const char *name;
-         lListElem *hep;
-
-         queue_complexes2scheduler(&attributes, qep, exechost_list, centry_list);
-         for_each_ep(ce, attributes) {
-            double dval;
-
-            name = lGetString(ce, CE_name);
-            if (!lGetUlong(ce, CE_consumable) || !strcmp(name, SGE_ATTR_SLOTS) || job_get_request(job, name)) {
-               continue;
-            }
-
-            parse_ulong_val(&dval, nullptr, lGetUlong(ce, CE_valtype), lGetString(ce, CE_defaultval), nullptr, 0);
-            if (dval == 0.0) {
-               continue;
-            }
-
-            /* For pending jobs (no queue/no exec host) we may print default request only
-               if the consumable is specified in the global host. For running we print it
-               if the resource is managed at this node/queue */
-            if ((qep && lGetSubStr(qep, CE_name, name, QU_consumable_config_list)) ||
-                (qep && (hep = host_list_locate(exechost_list, lGetHost(qep, QU_qhostname))) &&
-                 lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
-                ((hep = host_list_locate(exechost_list, SGE_GLOBAL_NAME)) &&
-                 lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
-               os << QSTAT_INDENT << name << "=" << lGetString(ce, CE_defaultval) << " (default)" << std::endl;
-            }
-         }
-         lFreeList(&attributes);
-      }
-
-      sge_show_ce_type_list_line_by_line(os, QSTAT_INDENT "Soft Resources:   ", QSTAT_INDENT2,
-                                         job_get_soft_resource_list(job), false, nullptr, 0);
-
-      ql = job_get_hard_queue_list(job);
-      if (ql) {
-         os << QSTAT_INDENT << "Hard requested queues: ";
-         for_each_ep(qrep, ql) {
-            os << lGetString(qrep, QR_name) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-
-      ql = job_get_soft_queue_list(job);
-      if (ql) {
-         os << QSTAT_INDENT << "Soft requested queues: ";
-         for_each_ep(qrep, ql) {
-            os << lGetString(qrep, QR_name) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-      ql = job_get_master_hard_queue_list(job);
-      if (ql) {
-         os << QSTAT_INDENT << "Master task hard requested queues: ";
-         for_each_ep(qrep, ql) {
-            os << lGetString(qrep, QR_name) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-      ql = lGetList(job, JB_jid_request_list);
-      if (ql) {
-         os << QSTAT_INDENT << "Predecessor Jobs (request): ";
-         for_each_ep(qrep, ql) {
-            os << lGetString(qrep, JRE_job_name) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-      ql = lGetList(job, JB_jid_predecessor_list);
-      if (ql) {
-         os << QSTAT_INDENT << "Predecessor Jobs: ";
-         for_each_ep(qrep, ql) {
-            os << lGetUlong(qrep, JRE_job_number) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-      ql = lGetList(job, JB_ja_ad_request_list);
-      if (ql) {
-         os << QSTAT_INDENT << "Predecessor Array Jobs (request): ";
-         for_each_ep(qrep, ql) {
-            os << lGetString(qrep, JRE_job_name) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-      ql = lGetList(job, JB_ja_ad_predecessor_list);
-      if (ql) {
-         os << QSTAT_INDENT << "Predecessor Array Jobs: ";
-         for_each_ep(qrep, ql) {
-            os << lGetUlong(qrep, JRE_job_number) << (lNext(qrep) ? ", " : "\n");
-         }
-      }
-   }
-
-#undef QSTAT_INDENT
-#undef QSTAT_INDENT2
-
    sge_dstring_free(&queue_name_buffer);
 
    DRETURN(1);
@@ -1665,9 +893,9 @@ static int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lLi
 /*-------------------------------------------------------------------------*/
 /* print jobs per queue                                                    */
 /*-------------------------------------------------------------------------*/
-int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
+void sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
                          lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerBase &report_handler) {
+                         u_long32 group_opt, int queue_name_length, ocs::QHostViewBase &report_handler) {
    lListElem *jlep;
    lListElem *jatep;
    const lListElem *gdilep;
@@ -1687,9 +915,9 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
       for_each_rw(jatep, lGetList(jlep, JB_ja_tasks)) {
          u_long32 jstate = lGetUlong(jatep, JAT_state);
 
-         if (shut_me_down) {
-            DRETURN(1);
-         }
+         //if (shut_me_down) {
+         //   DRETURN(1);
+         //}
 
          if (ISSET(jstate, JSUSPENDED_ON_SUBORDINATE) || ISSET(jstate, JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
             lSetUlong(jatep, JAT_state, jstate & ~JRUNNING);
@@ -1768,7 +996,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_state) & JRUNNING)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list,
+                                      full_listing, slots_in_queue + slot_adjust, i,
                                       pe_list, indent,
                                       group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
@@ -1780,7 +1008,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
                                       group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
@@ -1789,7 +1017,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_USER)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
                                       group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
@@ -1798,7 +1026,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_OPERATOR)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
                                       group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
@@ -1807,7 +1035,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_SYSTEM)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
                                       group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
@@ -1816,7 +1044,7 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_JA_AD)) {
                         sge_print_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, ehl, centry_list, pe_list,
+                                      full_listing, slots_in_queue + slot_adjust, i, pe_list,
                                       indent, group_opt, slots_per_line, queue_name_length, report_handler);
                         already_printed = 1;
                      }
@@ -1828,5 +1056,45 @@ int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, cons
    }
    sge_dstring_free(&dyn_task_str);
 
-   DRETURN(0);
+   DRETURN_VOID;
 }
+
+int do_qhost(ocs::QHostParameter &parameter, ocs::QHostModel &model, ocs::QHostViewBase &report_handler) {
+   DENTER(TOP_LAYER);
+   int ret = QHOST_SUCCESS;
+
+   std::ostringstream oss;
+
+   // start report
+   report_handler.start(oss);
+   lListElem *ep;
+   for_each_rw (ep, model.get_exechost_list()) {
+
+      // early termination
+      if (shut_me_down) {
+         DRETURN(QHOST_ERROR);
+      }
+
+      // start of the host
+      report_handler.host_start(oss, lGetHost(ep, EH_name));
+
+      // print host section
+      sge_print_host(oss, ep, parameter, model, report_handler);
+
+      // print resource section
+      sge_print_resources(oss, ep, parameter, model, report_handler);
+
+      // print queues and jobs of the host
+      sge_print_queues(oss, ep, nullptr, parameter, model, report_handler);
+
+      // end of the host
+      report_handler.host_end(oss);
+   }
+
+   // end report
+   report_handler.end(oss);
+
+   std::cout << oss.str();
+   DRETURN(ret);
+}
+

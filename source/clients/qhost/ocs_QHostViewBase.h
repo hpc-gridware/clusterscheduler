@@ -24,9 +24,10 @@
 #include "basis_types.h"
 
 #include "ocs_qhost_print.h"
+#include "ocs_QHostParameter.h"
 
 namespace ocs {
-   class QHostReportHandlerBase {
+   class QHostViewBase {
       u_long32 full_listing_;
    protected:
       size_t indent_ = 0;
@@ -35,8 +36,8 @@ namespace ocs {
          return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
       }
    public:
-      QHostReportHandlerBase(u_long32 full_listing) : full_listing_(full_listing) {}
-      virtual ~QHostReportHandlerBase() = default;
+      QHostViewBase(const QHostParameter &parameter);
+      virtual ~QHostViewBase() = default;
 
       virtual void start(std::ostream &os) = 0;
       virtual void end(std::ostream &os) = 0;

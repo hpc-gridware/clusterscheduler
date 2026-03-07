@@ -96,7 +96,7 @@ ocs::gdi::Request::request(lList **alpp, Mode::ModeValue mode, gdi::Target::Targ
 }
 
 bool
-ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCommand::SubCmd sub_cmd, gdi::Target::TargetValue target, int id, lList **olpp) {
+ocs::gdi::Request::get_response(lList **alpp, const Command::Cmd cmd, const SubCommand::SubCmd sub_cmd, const Target::TargetValue target, const int id, lList **list) {
    DENTER(GDI_MULTI_LAYER);
 
    // still no response available? should not happen unless wait() was not called.
@@ -109,15 +109,15 @@ ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCom
    // get the response for the given id
    lListElem *map = lGetElemUlongRW(multi_answer_list, MA_id, id);
    if (!map) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, ocs::gdi::Target::targetToString(target).c_str());
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, Target::targetToString(target).c_str());
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(false);
    }
 
    // get the response data for commands where we expect a response
-   if (cmd == gdi::Command::SGE_GDI_GET || cmd == gdi::Command::SGE_GDI_PERMCHECK ||
-       (cmd == gdi::Command::SGE_GDI_ADD && sub_cmd == gdi::SubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
-      if (!olpp) {
+   if (cmd == Command::SGE_GDI_GET || cmd == Command::SGE_GDI_PERMCHECK ||
+       (cmd == Command::SGE_GDI_ADD && sub_cmd == SubCommand::SGE_GDI_RETURN_NEW_VERSION)) {
+      if (!list) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_NULLPTRPASSED_S, __func__);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);

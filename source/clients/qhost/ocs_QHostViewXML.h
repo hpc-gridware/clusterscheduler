@@ -23,15 +23,14 @@
 
 #include <basis_types.h>
 
-#include "ocs_QHostReportHandlerBase.h"
+#include "ocs_QHostViewBase.h"
+#include "ocs_QHostParameter.h"
 
 namespace ocs {
-   class QHostReportHandlerPlain : public QHostReportHandlerBase {
-      bool print_host_header;
-      bool print_job_header;
+   class QHostViewXML : public QHostViewBase {
    public:
-      QHostReportHandlerPlain(u_long32 full_listing) : QHostReportHandlerBase(full_listing), print_host_header(true), print_job_header(true) {}
-      ~QHostReportHandlerPlain() override = default;
+      QHostViewXML(const QHostParameter &parameter) : QHostViewBase(parameter) {};
+      ~QHostViewXML() override = default;
 
       void start(std::ostream &os) override;
       void end(std::ostream &os) override;

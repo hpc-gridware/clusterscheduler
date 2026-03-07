@@ -166,7 +166,7 @@ bool
 centry_list_init_double(lList *this_list);
 
 int
-centry_list_fill_request(lList *centry_list, lList **answer_list, const lList *master_centry_list,
+centry_list_fill_request(const lList *centry_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable);
 
@@ -209,7 +209,7 @@ validate_load_formula(const char *formula, lList **answer_list, const lList *cen
 
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry);
 
-const char* sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p);
+const char* sge_get_dominant_stringval(const lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p);
 
 int slot_signum(int slots);
 bool consumable_do_booking(u_long32 consumable, bool is_master_task, bool do_per_host_booking);

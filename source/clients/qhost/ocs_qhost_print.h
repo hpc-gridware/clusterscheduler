@@ -35,7 +35,6 @@
 
 #include "cull/cull.h"
 
-
 #define QHOST_DISPLAY_QUEUES     (1<<0)
 #define QHOST_DISPLAY_JOBS       (1<<1)
 #define QHOST_DISPLAY_RESOURCES  (1<<2)
@@ -48,12 +47,13 @@ typedef struct qhost_report_handler_str qhost_report_handler_t;
 #define QHOST_ERROR   -1
 
 namespace ocs {
-   class QHostReportHandlerBase;
+   class QHostViewBase;
+   class QHostModel;
+   class QHostParameter;
 }
 
-int do_qhost(lList *host_list, lList *user_list, lList *resource_match_list,
-              lList *resource_list, u_long32 show, lList **alp, ocs::QHostReportHandlerBase &report_handler);
+int do_qhost(ocs::QHostParameter &parameter, ocs::QHostModel &model, ocs::QHostViewBase &report_handler);
 
-int sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
+void sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
                          lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, ocs::QHostReportHandlerBase &report_handler);
+                         u_long32 group_opt, int queue_name_length, ocs::QHostViewBase &report_handler);

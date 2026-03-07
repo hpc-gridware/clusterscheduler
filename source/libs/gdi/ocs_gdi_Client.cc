@@ -191,8 +191,8 @@ ocs::gdi::Client::sge_gdi_get_permission(lList **alpp, bool *is_manager, bool *i
 
    // fetch permissions for current user and host from qmaster
    lList *permission_list = nullptr;
-   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_DUMMY_LIST, ocs::gdi::Command::SGE_GDI_PERMCHECK,
-                        ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &permission_list, nullptr, nullptr);
+   lList *alp = sge_gdi(Target::SGE_DUMMY_LIST, Command::SGE_GDI_PERMCHECK,
+                        SubCommand::SGE_GDI_SUB_NONE, &permission_list, nullptr, nullptr);
    if (permission_list == nullptr || lGetNumberOfElem(permission_list) != 1) {
       answer_list_append_list(alpp, &alp);
       lFreeList(&permission_list);

@@ -715,7 +715,7 @@ centry_list_init_double(lList *this_list) {
 *        an error message will be written into SGE_EVENT
 *******************************************************************************/
 int
-centry_list_fill_request(lList *this_list, lList **answer_list, const lList *master_centry_list,
+centry_list_fill_request(const lList *this_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable) {
    lListElem *entry = nullptr;
@@ -1589,7 +1589,7 @@ bool load_formula_is_centry_referenced(const char *load_formula, const lListElem
    DRETURN(ret);
 }
 
-const char *sge_get_dominant_stringval(lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p) {
+const char *sge_get_dominant_stringval(const lListElem *rep, u_long32 *dominant_p, dstring *resource_string_p) {
    DENTER(TOP_LAYER);
 
    const char *s = nullptr;
