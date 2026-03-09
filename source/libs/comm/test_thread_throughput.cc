@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -281,7 +281,6 @@ extern int main(int argc, char **argv) {
    cl_com_cleanup_commlib();
 
    printf("main done\n");
-   sge_prof_cleanup();
    return 0;
 }
 

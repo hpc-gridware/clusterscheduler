@@ -288,7 +288,6 @@ bool ocs::QHostParameter::parse_parameters(lList **alpp, char **argv, char **env
    if (!sge_parse_cmdline_qhost(++argv, environ, &switches_cmd_line, alpp)) {
       answer_list_output(alpp);
       lFreeList(&switches_cmd_line);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -315,12 +314,10 @@ bool ocs::QHostParameter::parse_parameters(lList **alpp, char **argv, char **env
    lFreeList(&switches_cmd_line);
    if (is_ok == 0) {
       answer_list_output(alpp);
-      sge_prof_cleanup();
       sge_exit(1);
    } else if (is_ok == 2) {
       /* -help output generated, exit normally */
       answer_list_output(alpp);
-      sge_prof_cleanup();
       sge_exit(0);
    }
    return true;

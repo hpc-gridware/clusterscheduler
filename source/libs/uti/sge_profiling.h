@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -107,8 +107,6 @@ typedef struct {
 
 void sge_prof_set_enabled(bool enabled);
 
-void sge_prof_cleanup();
-
 bool thread_prof_active_by_id(pthread_t thread_id);
 
 bool thread_prof_active_by_name(const char *thread_name);
@@ -145,9 +143,6 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 *     starts the measurement for the specified level
 *     to use profiling the sge_prof_setup() function
 *     must be called in the main program first.
-*     At the end of the main program, sge_prof_cleanup()
-*     should be called to make sure, that all that
-*     stuff becomes clean.
 *
 *  INPUTS
 *     prof_level level 
@@ -176,9 +171,6 @@ bool prof_stop_measurement(prof_level level, dstring *error);
 *     stops the measurement for the specified level
 *     to use profiling the sge_prof_setup() function
 *     must be called in the main program first.
-*     At the end of the main program, sge_prof_cleanup()
-*     should be called to make sure, that all that
-*     stuff becomes clean.
 *
 *  INPUTS
 *     prof_level level 

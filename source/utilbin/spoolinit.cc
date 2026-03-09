@@ -194,7 +194,5 @@ int main(int argc, char *argv[])
 
    answer_list_output(&answer_list);
 
-   sge_prof_cleanup();
-
    DRETURN(ret);
 }

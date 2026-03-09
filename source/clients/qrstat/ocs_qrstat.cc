@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -178,7 +178,6 @@ int main(int argc, const char **argv) {
       if (answer_list) {
          answer_list_output(&answer_list);
          lFreeList(&pcmdline);
-         sge_prof_cleanup();
          sge_exit(1);
       }
    }
@@ -244,13 +243,11 @@ int main(int argc, const char **argv) {
 
    ocs::gdi::ClientBase::shutdown();
    qrstat_filter_free(&qrstat_env);
-   sge_prof_cleanup();
    DRETURN(ret);
 
 error_exit:
    ocs::gdi::ClientBase::shutdown();
    qrstat_filter_free(&qrstat_env);
-   sge_prof_cleanup();
    sge_exit(1);
    DRETURN(1);
 }

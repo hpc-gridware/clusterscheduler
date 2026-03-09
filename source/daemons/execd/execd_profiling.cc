@@ -64,6 +64,5 @@ namespace ocs {
    }
 
    void execd_profiling_cleanup() {
-      sge_prof_cleanup();
    }
 }

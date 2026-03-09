@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -36,7 +36,6 @@
 #include <cerrno>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
@@ -167,7 +166,6 @@ int main(int argc, const char **argv) {
          show_job()
       */
       cull_show_job(lFirst(request_list), FLG_QALTER, false);
-      sge_prof_cleanup();
       sge_exit(0);
    }
 
@@ -214,7 +212,6 @@ int main(int argc, const char **argv) {
       }
    }
 
-   sge_prof_cleanup();
    sge_exit(ret);
 
    DRETURN(0);

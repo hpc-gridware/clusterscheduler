@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -484,8 +484,6 @@ Error:
          sge_mutex_unlock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
       }
    }
-
-   sge_prof_cleanup();
 
    /* This is an exit() instead of an sge_exit() because when the qmaster is
     * supended, sge_exit() hangs. */

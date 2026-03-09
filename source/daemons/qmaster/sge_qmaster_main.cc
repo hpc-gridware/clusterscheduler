@@ -362,7 +362,6 @@ int main(int argc, char *argv[]) {
    ocs::DataStore::free_all_master_lists();
    sge_monitor_free(&monitor);
 
-   sge_prof_cleanup();
    sge_shutdown(sge_qmaster_get_exit_state());
 
    DRETURN(0);

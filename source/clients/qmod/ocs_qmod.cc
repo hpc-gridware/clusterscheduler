@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -140,8 +140,6 @@ int main(int argc, char **argv) {
    lFreeList(&alp);
    lFreeList(&ref_list);
    lFreeList(&pcmdline);
-
-   sge_prof_cleanup();
 
    if(answ_list_has_err) {
       sge_exit(1);

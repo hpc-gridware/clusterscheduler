@@ -1106,7 +1106,6 @@ int main(int argc, char **argv) {
    /*
    ** problem: other clients evaluate some status here
    */
-   sge_prof_cleanup();
    sge_free(&(options.group));
    sge_free(&(options.host));
    free_qacct_lists(&centry_list, &queue_list, &exechost_list, &hgrp_list);
@@ -1116,7 +1115,6 @@ int main(int argc, char **argv) {
 QACCT_EXIT:
    ret = 1;
 QACCT_EXIT_BUT_NO_ERROR:
-   sge_prof_cleanup();
    lFreeList(&sorted_list);
    lFreeSortOrder(&sort_order);
    sge_free(&(options.group));

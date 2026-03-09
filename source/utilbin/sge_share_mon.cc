@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -328,7 +328,6 @@ main(int argc, char **argv)
 
    if (err) {
       usage();
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -373,7 +372,6 @@ main(int argc, char **argv)
 
    ocs::gdi::ClientBase::shutdown();
 
-   sge_prof_cleanup();
    sge_dstring_free(&output_dstring);
 
    DRETURN(0);

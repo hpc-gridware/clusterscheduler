@@ -578,7 +578,6 @@ int main(int argc, char *argv[])
       sge_mirror_shutdown(evc);
 
       sge_dstring_free(enabled_options.error_message);
-      sge_prof_cleanup();
       sge_exit(0);
       return 0;
    }
@@ -587,7 +586,6 @@ int main(int argc, char *argv[])
    ERROR("no option selected\n" );
    qevent_show_usage();
    sge_dstring_free(enabled_options.error_message);
-   sge_prof_cleanup();
    sge_exit(1);
    return 1;
 }

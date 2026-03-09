@@ -53,14 +53,12 @@ int main(int argc, char **argv) {
    lList *alp = nullptr;
    if (ocs::gdi::ClientBase::setup_and_enroll(QHOST, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
    ocs::QHostParameter qhost_parameter;
    if (!qhost_parameter.parse_parameters(&alp, argv, environ)) {
       answer_list_output(&alp);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -70,7 +68,6 @@ int main(int argc, char **argv) {
    bool lret = model.make_snapshot(&alp, qhost_parameter);
    if (!lret) {
       answer_list_output(&alp);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -86,7 +83,6 @@ int main(int argc, char **argv) {
    ocs::QHostController controller;
    controller.process_request(qhost_parameter, model, *view);
 
-   sge_prof_cleanup();
    sge_exit(0); /* 0 means ok - others are errors */
    DRETURN(0);
 }

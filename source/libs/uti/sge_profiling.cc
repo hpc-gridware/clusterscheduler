@@ -156,7 +156,6 @@
 *
 *  SEE ALSO
 *     uti/profiling/prof_mt_init()
-*     uti/profiling/sge_prof_cleanup()
 *     uti/profiling/prof_is_active()
 *     uti/profiling/prof_start_measurement()
 *     uti/profiling/prof_stop_measurement()
@@ -186,6 +185,8 @@ static void init_array_first();
 static void init_thread_info();
 
 static int get_prof_info_thread_id(pthread_t thread_num);
+
+static void sge_prof_cleanup();
 
 static sge_prof_info_t **theInfo = nullptr;
 static sge_thread_info_t *thrdInfo = nullptr;
@@ -270,8 +271,7 @@ public:
       prof_mt_init();
    }
    ~ProfThreadInit() {
-      // @todo CS-1853 Automatically trigger cleanup of profiling module when applications end
-      //sge_prof_cleanup();
+      sge_prof_cleanup();
    }
 };
 
@@ -1784,28 +1784,11 @@ int set_thread_prof_status_by_name(const char *thread_name, bool prof_status) {
    return 0;
 }
 
-
-/****** uti/profiling/sge_prof_cleanup() ******************************
-*  NAME
-*     sge_prof_cleanup() -- frees the profiling array 
-*
-*  SYNOPSIS
-*     void sge_prof_cleanup() 
-*
-*  FUNCTION
-*     frees the profiling array
-*
-*  INPUTS
-*     
-*  RESULT
-*
-*  EXAMPLE
-*
-*  NOTES
-*     MT-NOTE: sge_prof_cleanup() is MT safe
-*******************************************************************************/
-
-void sge_prof_cleanup() {
+/** @brief cleanup function for profiling, to free allocated memory
+ *
+ * @IMPOTANT: Do not call directly. will be called automatically after main() returns (in ProfThreadInit
+ */
+static void sge_prof_cleanup() {
 
    if (!profiling_enabled) {
       return;

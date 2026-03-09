@@ -1482,6 +1482,5 @@ int main(int argc, char *argv[]) {
    sge_free(&resolved_comp_host);
    resolved_comp_host = nullptr;
    
-   sge_prof_cleanup();
-   return exit_value;  
+   return exit_value;
 }

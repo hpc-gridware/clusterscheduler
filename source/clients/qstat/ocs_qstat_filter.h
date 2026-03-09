@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -38,7 +38,7 @@
 typedef struct qstat_env_str qstat_env_t;
 
 struct qstat_env_str {
-   /*  Input parameters */
+   /* Input parameters */
    lList *resource_list;         /* -l resource_request           */ 
    lList *qresource_list;        /* -F qresource_request          */
    lList* queueref_list;         /* -q queue_list                 */

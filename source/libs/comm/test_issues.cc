@@ -220,7 +220,6 @@ extern int main(int argc, char **argv) {
 #define TEST_ISSUES_READ_WRITE_TIMEOUT 3
    if (handle == nullptr) {
       printf("could not get handle\n");
-      sge_prof_cleanup();
       exit(101);
    } else {
       /* This is a "hack" to set the read/write timeout to only 4 seconds */

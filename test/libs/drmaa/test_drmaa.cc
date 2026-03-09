@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -653,7 +653,6 @@ int main(int argc, char *argv[])
       char drm_name[DRMAA_DRM_SYSTEM_BUFFER];
       if (drmaa_get_DRM_system(drm_name, 255, diag, sizeof(diag)-1)!=DRMAA_ERRNO_SUCCESS) {
          fprintf(stderr, "drmaa_get_DRM_system() failed: %s\n", diag);
-         sge_prof_cleanup();
          return 1;
       }
       printf("Connecting to DRM system \"%s\"\n", drm_name);
@@ -750,7 +749,6 @@ int main(int argc, char *argv[])
    drmaa_exit(nullptr, 0);
    ocs::gdi::ClientBase::shutdown();
 
-   sge_prof_cleanup();
    return failed;
 }
 

@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Corporation.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -208,7 +208,6 @@ int main(int argc, char **argv)
 
    if (ocs::gdi::ClientBase::setup_and_enroll(QQUOTA, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -238,14 +237,12 @@ int main(int argc, char **argv)
       if (alp) {
          answer_list_output(&alp);
          lFreeList(&pcmdline);
-         sge_prof_cleanup();
          sge_exit(1);
       }
    }
    if (!sge_parse_cmdline_qquota(argv, &pcmdline, &alp)) {
       answer_list_output(&alp);
       lFreeList(&pcmdline);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -266,7 +263,6 @@ int main(int argc, char **argv)
       */
       answer_list_output(&alp);
       lFreeList(&pcmdline);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
@@ -278,11 +274,9 @@ int main(int argc, char **argv)
    
    if (!qquota_result) {
       answer_list_output(&alp);
-      sge_prof_cleanup();
       sge_exit(1);
    }
 
-   sge_prof_cleanup();
    sge_exit(0); /* 0 means ok - others are errors */
    DRETURN(0);
 }
