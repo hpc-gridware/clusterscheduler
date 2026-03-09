@@ -37,23 +37,20 @@
 #include "ocs_QHostContoller.h"
 #include "ocs_QHostModel.h"
 
-extern char **environ;
-
 /************************************************************************/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qhost");
-   lList *alp = nullptr;
-   int qhost_result = 0;
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QHOST);
+
 
    // install handlers for termination signals and unexpected exceptions
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
    // prepare gdi client and enroll at qmaster
+   lList *alp = nullptr;
    if (ocs::gdi::ClientBase::setup_and_enroll(QHOST, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
       answer_list_output(&alp);
       sge_prof_cleanup();
@@ -87,13 +84,7 @@ int main(int argc, char **argv)
 
    // process request and show output
    ocs::QHostController controller;
-   qhost_result = controller.process_request(qhost_parameter, model, *view);
-
-   if (qhost_result != QHOST_SUCCESS) {
-      answer_list_output(&alp);
-      sge_prof_cleanup();
-      sge_exit(1);
-   }
+   controller.process_request(qhost_parameter, model, *view);
 
    sge_prof_cleanup();
    sge_exit(0); /* 0 means ok - others are errors */

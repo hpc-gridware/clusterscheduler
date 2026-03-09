@@ -37,11 +37,11 @@
 
 #include "ocs_QHostParameter.h"
 #include "ocs_client_parse.h"
+#include "ocs_client_print.h"
 
 #include "msg_common.h"
 #include "msg_qhost.h"
 #include "msg_clients_common.h"
-#include "ocs_qhost.h"
 
 void ocs::QHostParameter::free_data() {
    lFreeList(&hostname_list_);

@@ -25,7 +25,8 @@
 
 #include "ocs_QHostParameter.h"
 #include "ocs_QHostModel.h"
-#include "ocs_qhost.h"
+
+#include "ocs_client_print.h"
 
 namespace ocs {
    class QHostViewBase {
@@ -36,8 +37,8 @@ namespace ocs {
       [[nodiscard]] bool show_binding() const {
          return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
       }
-      int sge_print_host(std::ostream &os, lListElem *hep, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      int sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      void sge_print_host(std::ostream &os, lListElem *hep, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      void sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
       int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                                dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
                                const lList *pe_list, const char *indent, u_long32 group_opt, int slots_per_line,
@@ -46,7 +47,7 @@ namespace ocs {
                                lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
                                u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
       void sge_print_queues(std::ostream &os, lListElem *host, lList *ul, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      int reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem);
+      void reformatDoubleValue(char *new_string, size_t result_size, const char *format, const char *old_string);
    public:
       QHostViewBase(const QHostParameter &parameter);
       virtual ~QHostViewBase() = default;

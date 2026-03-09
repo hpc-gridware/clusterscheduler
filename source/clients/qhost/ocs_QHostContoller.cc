@@ -28,10 +28,9 @@
 #include "ocs_QHostContoller.h"
 #include "sig_handlers.h"
 
-int
+void
 ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
-   int ret = QHOST_SUCCESS;
 
    std::ostringstream oss;
 
@@ -40,10 +39,11 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &mod
    lListElem *ep;
    for_each_rw (ep, model.get_exechost_list()) {
 
+      // @todo when we have the code running as stored prcedure we should find an early exit so that reader threads can shutdown fast
       // early termination if termination signal was received
-      if (shut_me_down) {
-         DRETURN(QHOST_ERROR);
-      }
+      //if (shut_me_down) {
+      //   DRETURN_VOID;
+      //}
 
       // start host entry
       report_handler.host_start(oss, lGetHost(ep, EH_name));
@@ -65,5 +65,5 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &mod
    report_handler.end(oss);
 
    std::cout << oss.str();
-   DRETURN(ret);
+   DRETURN_VOID;
 }

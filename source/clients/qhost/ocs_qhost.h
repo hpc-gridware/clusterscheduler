@@ -18,11 +18,3 @@
  *
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
-
-#define QHOST_DISPLAY_QUEUES     (1<<0)
-#define QHOST_DISPLAY_JOBS       (1<<1)
-#define QHOST_DISPLAY_RESOURCES  (1<<2)
-#define QHOST_DISPLAY_BINDING    (1<<3)
-
-#define QHOST_SUCCESS 0
-#define QHOST_ERROR -1

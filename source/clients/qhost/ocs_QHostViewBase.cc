@@ -69,8 +69,8 @@ ocs::QHostViewBase::QHostViewBase(const QHostParameter &parameter) {
 }
 
 /*-------------------------------------------------------------------------*/
-int
-ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, ocs::QHostParameter &parameter, ocs::QHostModel &model, ocs::QHostViewBase &report_handler) {
+void
+ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
    lListElem *lep;
    char *s, host_print[CL_MAXHOSTNAMELEN+1] = "";
@@ -78,7 +78,6 @@ ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, ocs::QHostP
         swap_used[20], num_proc[20], socket[20], core[20], arch_string[80], thread[20];
    dstring rs = DSTRING_INIT;
    u_long32 dominant = 0;
-   int ret = QHOST_SUCCESS;
    bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
    u_long32 show = parameter.get_show();
    bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
@@ -217,7 +216,7 @@ ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, ocs::QHostP
 
    sge_dstring_free(&rs);
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /*-------------------------------------------------------------------------*/
@@ -314,7 +313,8 @@ ocs::QHostViewBase::sge_print_queues(std::ostream &os, lListElem *host, lList *u
 }
 
 
-int ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+void
+ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
 
    lList *rlp = nullptr;
@@ -324,7 +324,6 @@ int ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, Q
    const char *s;
    u_long32 dominant;
    int first = 1;
-   int ret = QHOST_SUCCESS;
    lList *ehl = model.get_exechost_list();
    lList *cl = model.get_centry_list();
    const lList *resl = parameter.get_resource_visible_list();
@@ -343,7 +342,7 @@ int ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, Q
    //}
 
    if (!(show & QHOST_DISPLAY_RESOURCES)) {
-      DRETURN(QHOST_SUCCESS);
+      DRETURN_VOID;
    }
    host_complexes2scheduler(&rlp, host, ehl, cl);
    for_each_rw(rep, rlp) {
@@ -383,51 +382,41 @@ int ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, Q
 
       monitor_dominance(dom, dominant);
       report_handler.resource_value(os, dom, lGetString(rep, CE_name), s, details.empty() ? nullptr : details.c_str());
-
-      if (ret != QHOST_SUCCESS) {
-         break;
-      }
    }
    lFreeList(&rlp);
    sge_dstring_free(&resource_string);
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
-/*-------------------------------------------------------------------------*/
-
-int
-ocs::QHostViewBase::reformatDoubleValue(char *result, size_t result_size, const char *format, const char *oldmem)
+void
+ocs::QHostViewBase::reformatDoubleValue(char *new_string, const size_t result_size, const char *format, const char *old_string)
 {
-   double dval;
-   int ret = 1;
-
    DENTER(TOP_LAYER);
 
-   if (parse_ulong_val(&dval, nullptr, TYPE_MEM, oldmem, nullptr, 0)) {
-      if (dval==DBL_MAX) {
-         strcpy(result, "infinity");
+   double dval;
+   if (parse_ulong_val(&dval, nullptr, TYPE_MEM, old_string, nullptr, 0)) {
+      if (dval == DBL_MAX) {
+         std::strcpy(new_string, "infinity");
       } else {
-         int c = '\0';
+         static const char units[] = { '\0', 'K', 'M', 'G', 'T', 'P', 'E' };
 
-         if (fabs(dval) >= 1024*1024*1024) {
-            dval /= 1024*1024*1024;
-            c = 'G';
-         } else if (fabs(dval) >= 1024*1024) {
-            dval /= 1024*1024;
-            c = 'M';
-         } else if (fabs(dval) >= 1024) {
-            dval /= 1024;
-            c = 'K';
+         double absval = std::fabs(dval);
+         int unit_index = 0;
+
+         while (absval >= 1024.0 && unit_index < 6) {
+            dval /= 1024.0;
+            absval /= 1024.0;
+            ++unit_index;
          }
-         snprintf(result, result_size, format, dval, c);
+
+         std::snprintf(new_string, result_size, format, dval, units[unit_index]);
       }
    } else {
-      strcpy(result, "?E");
-      ret = 0;
+      std::strcpy(new_string, "?");
    }
 
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 

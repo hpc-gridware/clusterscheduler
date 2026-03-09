@@ -29,6 +29,6 @@ namespace ocs {
       QHostController() = default;
       virtual ~QHostController() = default;
 
-      virtual int process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
    };
 }

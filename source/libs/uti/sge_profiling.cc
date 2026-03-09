@@ -32,6 +32,7 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <iostream>
 #include <sys/times.h>
 #include <cstring>
 #include <unistd.h>
@@ -267,6 +268,10 @@ class ProfThreadInit {
 public:
    ProfThreadInit() {
       prof_mt_init();
+   }
+   ~ProfThreadInit() {
+      // @todo CS-1853 Automatically trigger cleanup of profiling module when applications end
+      //sge_prof_cleanup();
    }
 };
 

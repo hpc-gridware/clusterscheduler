@@ -799,12 +799,12 @@ ocs::gdi::ClientBase::setup_and_enroll(int component_id, u_long32 thread_id, lLi
       DRETURN(AE_ALREADY_SETUP);
    }
 
-   ocs::gdi::ErrorValue ret = setup(component_id, thread_id, answer_list, false);
+   ErrorValue ret = setup(component_id, thread_id, answer_list, false);
    if (ret != AE_OK) {
       DRETURN(ret);
    }
 
-   if (ocs::gdi::ClientBase::prepare_enroll(answer_list) != CL_RETVAL_OK) {
+   if (prepare_enroll(answer_list) != CL_RETVAL_OK) {
       DRETURN(AE_QMASTER_DOWN);
    }
 
