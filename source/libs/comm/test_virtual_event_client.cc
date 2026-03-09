@@ -40,8 +40,6 @@
 #include <csignal>
 #include <unistd.h>
 
-#include "uti/sge_profiling.h"
-
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"
 

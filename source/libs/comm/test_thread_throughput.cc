@@ -43,8 +43,6 @@
 #include "comm/lists/cl_thread_list.h"
 #include "comm/cl_commlib.h"
 
-#include "uti/sge_profiling.h"
-
 /* some global things */
 int test_server_port = 0;
 char *test_server_host = nullptr;

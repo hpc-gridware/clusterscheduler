@@ -29,7 +29,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -42,7 +42,6 @@
 
 #include <cstring>
 #include <cstdlib>    /* need prototype for malloc */
-#include <cerrno>
 #include <sge_io.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -55,7 +54,6 @@
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_sl.h"

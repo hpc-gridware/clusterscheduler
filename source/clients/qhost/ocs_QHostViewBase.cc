@@ -23,7 +23,6 @@
 #include <cmath>
 #include <cfloat>
 #include <sstream>
-#include <iostream>
 #include <format>
 
 #include "uti/sge_bitfield.h"
@@ -70,7 +69,7 @@ ocs::QHostViewBase::QHostViewBase(const QHostParameter &parameter) {
 
 /*-------------------------------------------------------------------------*/
 void
-ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
    lListElem *lep;
    char *s, host_print[CL_MAXHOSTNAMELEN+1] = "";
@@ -221,17 +220,15 @@ ocs::QHostViewBase::sge_print_host(std::ostream &os, lListElem *hep, QHostParame
 
 /*-------------------------------------------------------------------------*/
 void
-ocs::QHostViewBase::sge_print_queues(std::ostream &os, lListElem *host, lList *ul, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    const lList *load_thresholds, *suspend_thresholds;
    lListElem *qep;
    lListElem *cqueue;
    u_long32 interval;
    const char *ehname = lGetHost(host, EH_name);
    lList *qlp = model.get_queue_list();
-   lList *jl = model.get_job_list();
    lList *ehl = model.get_exechost_list();
    lList *cl = model.get_centry_list();
-   lList *pel = model.get_pe_list();
    u_long32 show = parameter.get_show();
 
    DENTER(TOP_LAYER);
@@ -304,7 +301,7 @@ ocs::QHostViewBase::sge_print_queues(std::ostream &os, lListElem *host, lList *u
             u_long32 full_listing = (show & QHOST_DISPLAY_QUEUES) ?
                                     QSTAT_DISPLAY_FULL : 0;
             full_listing = full_listing | QSTAT_DISPLAY_ALL;
-            report_handler.sge_print_jobs_queue(os, qep, jl, pel, ul, ehl, cl, 1, full_listing, "   ", GROUP_NO_PETASK_GROUPS, 10, parameter, model, report_handler);
+            report_handler.sge_print_jobs_queue(os, qep, 1, full_listing, "   ", GROUP_NO_PETASK_GROUPS, 10, parameter, model, report_handler);
          }
       }
    }
@@ -314,7 +311,7 @@ ocs::QHostViewBase::sge_print_queues(std::ostream &os, lListElem *host, lList *u
 
 
 void
-ocs::QHostViewBase::sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
 
    lList *rlp = nullptr;
@@ -843,9 +840,9 @@ int ocs::QHostViewBase::sge_print_job(std::ostream &os, lListElem *job, lListEle
 /*-------------------------------------------------------------------------*/
 /* print jobs per queue                                                    */
 /*-------------------------------------------------------------------------*/
-void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
-                         lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, ocs::QHostViewBase &report_handler) {
+void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep,
+                        int print_jobs_of_queue, u_long32 full_listing, const char *indent,
+                         u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    lListElem *jlep;
    lListElem *jatep;
    const lListElem *gdilep;
@@ -859,6 +856,11 @@ void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep, 
 
    qnm = lGetString(qep, QU_full_name);
 
+   lList *job_list = model.get_job_list();
+   lList *pe_list = model.get_pe_list();
+
+   // @todo why the dependency to the user list? Is there some code missing for qhost?
+   lList *user_list = nullptr;
    for_each_rw(jlep, job_list) {
       int master, i;
 

@@ -38,7 +38,6 @@
 #include <sys/time.h>
 #include <cstdlib>
 #include <csignal>
-#include <unistd.h>
 
 #include "comm/lists/cl_lists.h"
 #include "comm/cl_commlib.h"

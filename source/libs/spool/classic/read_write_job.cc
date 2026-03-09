@@ -47,14 +47,9 @@
 #include "cull/cull_file.h"
 #include "cull/cull_list.h"
 
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_pe_task.h"
-#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
 
@@ -65,7 +60,6 @@
 #include "msg_spoollib_classic.h"
 #include "read_write_job.h"
 #include "sge_job_qmaster.h"
-#include "uti/sge.h"
 
 static lList *ja_task_list_create_from_file(u_long32 job_id, 
                                             u_long32 ja_task_id,

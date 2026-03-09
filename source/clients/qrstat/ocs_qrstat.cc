@@ -58,8 +58,6 @@
 #include "ocs_qrstat_filter.h"
 #include "msg_common.h"
 
-extern char **environ;
-
 static bool
 sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp);
 

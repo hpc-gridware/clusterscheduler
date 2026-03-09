@@ -19,8 +19,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <ostream>
-
 #include "basis_types.h"
 
 #include "ocs_QHostParameter.h"
@@ -37,17 +35,18 @@ namespace ocs {
       [[nodiscard]] bool show_binding() const {
          return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
       }
-      void sge_print_host(std::ostream &os, lListElem *hep, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      void sge_print_resources(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      static void reformatDoubleValue(char *new_string, size_t result_size, const char *format, const char *old_string);
+
+      virtual void show_host(std::ostream &os, const lListElem *hep, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler);
+      virtual void show_host_resources(std::ostream &os, lListElem *host, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler);
       int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
                                dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
                                const lList *pe_list, const char *indent, u_long32 group_opt, int slots_per_line,
                                int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      void sge_print_jobs_queue(std::ostream &os, lListElem *qep, lList *job_list, const lList *pe_list, lList *user_list, lList *ehl,
-                               lList *centry_list, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
+      void sge_print_jobs_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
                                u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      void sge_print_queues(std::ostream &os, lListElem *host, lList *ul, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      void reformatDoubleValue(char *new_string, size_t result_size, const char *format, const char *old_string);
+      virtual void show_host_queues(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+
    public:
       QHostViewBase(const QHostParameter &parameter);
       virtual ~QHostViewBase() = default;

@@ -18,12 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
 
-#include "sgeobj/ocs_Category.h"
 #include "sgeobj/sge_answer.h"
 
 #include "gdi/ocs_gdi_Client.h"

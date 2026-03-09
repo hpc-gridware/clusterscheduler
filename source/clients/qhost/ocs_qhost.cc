@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 #include <memory>
 
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap_files.h"
@@ -44,7 +43,6 @@ int main(int argc, char **argv) {
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QHOST);
 
-
    // install handlers for termination signals and unexpected exceptions
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
@@ -61,7 +59,6 @@ int main(int argc, char **argv) {
       answer_list_output(&alp);
       sge_exit(1);
    }
-
 
    // prepare data for output
    ocs::QHostModel model;
@@ -83,10 +80,6 @@ int main(int argc, char **argv) {
    ocs::QHostController controller;
    controller.process_request(qhost_parameter, model, *view);
 
-   sge_exit(0); /* 0 means ok - others are errors */
+   sge_exit(0);
    DRETURN(0);
 }
-
-
-
-

@@ -27,44 +27,23 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include "ocs_client_print.h"
-#include "ocs_client_print.h"
 
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <ostream>
 #include <iomanip>
 #include <format>
 
 #include "uti/sge_bitfield.h"
-#include "uti/sge_dstring.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_time.h"
-
-#include "sgeobj/parse.h"
-#include "sgeobj/sge_host.h"
-#include "sgeobj/sge_job.h"
-#include "sgeobj/sge_pe.h"
-#include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_range.h"
-#include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_usage.h"
 
 #include "sched/sge_urgency.h"
-#include "sched/sge_job_schedd.h"
-#include "sched/sge_complex_schedd.h"
 
 #include "msg_clients_common.h"
-#include "ocs_client_job.h"
-#include "ocs_client_print.h"
-#include "sig_handlers.h"
-#include "uti/sge.h"
 
 static char hashes[] =
     "##############################################################################################################";

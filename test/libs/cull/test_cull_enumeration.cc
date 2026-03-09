@@ -39,8 +39,6 @@
 
 #include <cstring>
 
-#include "uti/sge_profiling.h"
-
 #include "cull/cull.h"
 #include "cull/cull_whatP.h"
 

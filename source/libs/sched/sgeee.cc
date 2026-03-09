@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,10 +37,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <csignal>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cfloat>
 #include <math.h>
 
 #include "uti/sge_language.h"
@@ -56,26 +54,16 @@
 #include "sgeobj/ocs_UserProject.h"
 #include "sgeobj/sge_order.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_ja_task.h"
-#include "sgeobj/sge_usage.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userprj.h"
-#include "sgeobj/sge_sharetree.h"
-#include "sgeobj/sge_userset.h"
-#include "sgeobj/sge_pe_task.h"
 
-#include "msg_schedd.h"
 #include "sge_job_schedd.h"
 #include "sge_urgency.h"
 #include "sgeee.h"
 #include "sgeobj/cull/sge_eejob_FCAT_L.h"
-#include "sort_hosts.h"
-#include "uti/sge.h"
 
 /* 
  * Following fields are necessary for tasks which are not

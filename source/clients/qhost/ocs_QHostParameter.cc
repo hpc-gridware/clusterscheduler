@@ -18,7 +18,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cstring>
 #include <string>
 
 #include "uti/sge_bootstrap_files.h"

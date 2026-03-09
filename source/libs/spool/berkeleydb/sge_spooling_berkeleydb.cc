@@ -38,14 +38,12 @@
 
 #define BDB_LAYER BASIS_LAYER
 
-#include <cerrno>
 #include <cstring>
 #include <ctime>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
@@ -68,8 +66,6 @@
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
 #include "spool/berkeleydb/sge_bdb.h"
 #include "spool/berkeleydb/sge_spooling_berkeleydb.h"
-
-#include "msg_common.h"
 
 static const char *spooling_method = "berkeleydb";
 

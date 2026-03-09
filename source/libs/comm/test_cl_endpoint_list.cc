@@ -36,16 +36,10 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <unistd.h>
-#include <csignal>
-
 
 #include "comm/cl_commlib.h"
 #include "comm/cl_endpoint_list.h"
-
-#include "uti/sge_profiling.h"
-
 
 extern int
 main(int argc, char **argv) {

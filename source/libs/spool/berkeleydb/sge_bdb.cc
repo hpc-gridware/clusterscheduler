@@ -51,8 +51,6 @@
 #include "cull/cull.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_str.h"

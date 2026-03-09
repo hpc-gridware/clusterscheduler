@@ -49,8 +49,6 @@
 
 #include "cull/cull_list.h"
 #include "cull/cull_listP.h"
-#include "cull/cull_multitypeP.h"
-#include "cull/cull_whereP.h"
 #include "cull/cull_pack.h"
 #include "cull/cull_file.h"
 #include "cull/msg_cull.h"

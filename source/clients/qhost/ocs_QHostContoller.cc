@@ -26,7 +26,6 @@
 #include "sgeobj/sge_host.h"
 
 #include "ocs_QHostContoller.h"
-#include "sig_handlers.h"
 
 void
 ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
@@ -49,13 +48,13 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &mod
       report_handler.host_start(oss, lGetHost(ep, EH_name));
 
       // print host section
-      report_handler.sge_print_host(oss, ep, parameter, model, report_handler);
+      report_handler.show_host(oss, ep, parameter, model, report_handler);
 
       // print resource section
-      report_handler.sge_print_resources(oss, ep, parameter, model, report_handler);
+      report_handler.show_host_resources(oss, ep, parameter, model, report_handler);
 
       // print queues and jobs of the host
-      report_handler.sge_print_queues(oss, ep, nullptr, parameter, model, report_handler);
+      report_handler.show_host_queues(oss, ep, parameter, model, report_handler);
 
       // end host entry
       report_handler.host_end(oss);

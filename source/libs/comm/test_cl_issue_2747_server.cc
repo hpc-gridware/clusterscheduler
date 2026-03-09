@@ -39,7 +39,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <sys/time.h>
-#include <pwd.h>
 
 #include "comm/cl_commlib.h"
 #include "comm/lists/cl_log_list.h"

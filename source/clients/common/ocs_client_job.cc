@@ -47,13 +47,7 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/ocs_Binding.h"
-#include "sgeobj/ocs_BindingType.h"
-#include "sgeobj/ocs_BindingUnit.h"
-#include "sgeobj/ocs_BindingStart.h"
-#include "sgeobj/ocs_BindingStop.h"
-#include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_GrantedResources.h"
-#include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_grantedres.h"
 #include "sgeobj/sge_job.h"
@@ -74,9 +68,6 @@
 #include "parse_qsub.h"
 
 #include "msg_clients_common.h"
-#include "sgeobj/ocs_GrantedResources.h"
-#include "sgeobj/ocs_TopologyString.h"
-#include "uti/sge.h"
 
 static void sge_show_checkpoint(int how, int op);
 

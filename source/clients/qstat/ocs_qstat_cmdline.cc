@@ -35,7 +35,6 @@
 /*___INFO__MARK_END__*/
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <pwd.h>
 
 #include "uti/sge_io.h"
