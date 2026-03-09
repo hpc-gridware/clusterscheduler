@@ -22,7 +22,7 @@
 add_executable(
       qhost
         ocs_qhost.cc
-        ocs_qhost_print.cc
+        ocs_QHostContoller.cc
         ocs_QHostModel.cc
         ocs_QHostParameter.cc
         ocs_QHostViewBase.cc

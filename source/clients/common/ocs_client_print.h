@@ -83,8 +83,3 @@
 
 void sge_printf_header(std::ostream &os, u_long32 full_listing, u_long32 sge_ext);
 void sge_printf_header(u_long32 full_listing, u_long32 sge_ext);
-
-/*
-** for qhost_report_handler_t
-*/
-#include "../qhost/ocs_qhost_print.h"

@@ -18,19 +18,15 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <iostream>
 #include <ostream>
 #include <iomanip>
 #include <format>
 
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/ocs_EscapedString.h"
-
 #include "ocs_QHostViewPlain.h"
 
-#include <iostream>
-
-#include "ocs_qhost_print.h"
 #include "msg_clients_common.h"
 
 void

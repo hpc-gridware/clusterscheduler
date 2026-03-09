@@ -41,8 +41,8 @@
 
 #include "sched/sge_select_queue.h"
 
-#include "ocs_qhost_print.h"
 #include "ocs_client_print.h"
+#include "ocs_qhost.h"
 #include "ocs_QHostModel.h"
 #include "sge.h"
 
