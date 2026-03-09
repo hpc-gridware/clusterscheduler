@@ -43,6 +43,8 @@
 
 const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
+
+// When you change this the also add an entry to the table below
 const uint32_t OCS_VERSION{0x10009200};
 
 static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VECTOR{
@@ -75,6 +77,7 @@ static const std::vector<std::tuple<uint32_t, std::string>> OCS_ALL_VERSIONS_VEC
    { 0x10003001, "8.0.x Some Gridengine"},
    { 0x10009000, "9.0.x Gridware Cluster Scheduler"},
    { 0x10009100, "9.1.x Gridware Cluster Scheduler"},
+   { 0x10009200, "9.2.x Gridware Cluster Scheduler"},
    { OCS_VERSION, OCS_VERSION_STRING},
 };
 

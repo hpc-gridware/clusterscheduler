@@ -4657,11 +4657,11 @@ job_get_sync_options_string(const lListElem *job) {
  * @return true if the job should be visible, false otherwise
  */
 bool
-job_is_visible(const char *owner, const bool is_manager, const bool show_department_view, const lList *acl_list) {
+job_is_visible(const char *owner, const bool is_manager, const lList *acl_list) {
    DENTER(BASIS_LAYER);
 
-   // manager can see everything as well as all users if -sdv was not specified
-   if (is_manager || !show_department_view) {
+   // manager can see everything
+   if (is_manager) {
       DRETURN(true);
    }
 
