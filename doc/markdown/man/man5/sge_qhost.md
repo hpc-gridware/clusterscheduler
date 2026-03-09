@@ -30,8 +30,6 @@ The following is a simple example of a default sge_qhost file:
     =====================================================================
     # display queues 
     -q
-    # show only hosts/queues that allow access and jobs of the department
-    -sdv
     =====================================================================
 
 Having defined a default sge_qhost file like this and using qhost as follows:
@@ -40,7 +38,7 @@ Having defined a default sge_qhost file like this and using qhost as follows:
 
 has the same effect as if qhost was executed with:
 
-    qhost -q -sdv
+    qhost -q 
 
 # FILES
 

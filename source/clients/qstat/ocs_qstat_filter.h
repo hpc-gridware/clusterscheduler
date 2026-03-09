@@ -52,8 +52,7 @@ struct qstat_env_str {
    u_long32 explain_bits;        /* -explain  */
    u_long32 job_info;            /* -j        */
    u_long32 is_binding_format;   /* -cb       */
-   u_long32 show_department_view;   //< -sdv show department view
-   
+
    /* Needed lists */
    lList* queue_list;
    lList* centry_list;

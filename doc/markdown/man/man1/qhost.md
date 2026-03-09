@@ -12,7 +12,7 @@ date: __DATE__
 
 # SYNTAX
 
-`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] \[`-ncb`\] \[`-sdv`\] \[`-u` *user*, ...\] \[`-xml`\].
+`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] \[`-ncb`\] \[`-u` *user*, ...\] \[`-xml`\].
 
 # DESCRIPTION
 
@@ -33,7 +33,7 @@ Prints a listing of all options.
 Prints a list of all hosts contained in *host_list*.
 
 ## -j  
-Prints all jobs running on the queues hosted by the shown hosts. This switch calls `-q` implicitly. If combined with the `-sdv` option the output will be restricted to those hosts and queues where the user has access rights and to jobs that are owned by the user or by a user that is in the same department as the user that executes `qhost`.
+Prints all jobs running on the queues hosted by the shown hosts. This switch calls `-q` implicitly. 
 
 ## -l *resource*\[=*value*\],...  
 Defines the resources to be granted by the hosts which should be included in the host list output. Matching is performed on hosts based on non-mutable resource availability information only. That means load values are always ignored except the so-called static load values (i.e. *arch*, *num_proc*, *mem_total*, *swap_total* and *virtual_total*) ones. Also, consumable utilization is ignored. If there are multiple `-l` resource requests they will be concatenated by a logical *AND*: a host needs to match all resources to be displayed.
@@ -44,24 +44,7 @@ Defines the resources to be granted by the hosts which should be included in the
 This command line switch can be used in order to get 6.2u5 compatible output with other `qhost` command line switches. In that case the output of the corresponding command will suppress information concerning the execution host topology. Note that this option will be removed in the next major version.
 
 ## -q  
-Show information about the queues instances hosted by the displayed hosts. In combination with the `-sdv` option the output will be restricted to those hosts and queues where the user has access rights.
-
-## -sdv
-This switch is available in Gridware Cluster Scheduler only.
-
-This option is only effective if the executing user has no administrative rights.
-
-If the `-sdv` option is used, the output of the command will be restricted to a department specific view. This means that following parts of the output will be suppressed:
-
-* host information where the user has no access rights
-* queue instance information where the user has no access rights
-* queue instance information if the corresponding host is not accessible by the user
-* jobs that are not owned by the user or by a user that is in the same department as the user that executes `qhost`
-* job information if the host or queue instance is not accessible by the user 
-
-Please be aware that changing access permissions for a user that has active jobs in a queue or on a host where access is removed will not affect the running jobs. The jobs will continue to run until they finish, but this will lead to a situation where the job owner cannot see the jobs anymore in case the department view is enforced.
-
-The department specific view can be enforced by adding the `-sdv` switch to the $HOME/.sge_qhost file. Administrators can enforce this behavior by adding this switch to the default sge_qhost file.
+Show information about the queues instances hosted by the displayed hosts.
 
 ## -u *user*, ...  
 Display information only on those jobs and queues being associated with the users from the given user list.
@@ -69,11 +52,11 @@ Display information only on those jobs and queues being associated with the user
 ## -xml  
 This option can be used with all other options and changes the output to XML. The used schemas are referenced in the XML output. The output is printed to stdout.
 
-If the `-xml` parameter is combined with `-ncb` then the XML output will contain 6.2u5 compatible output. In combination with the `-sdv` option the output will be restricted to those hosts and queues where the user has access rights and to jobs that are owned by the user or by a user that is in the same department as the user that executes `qhost`.
+If the `-xml` parameter is combined with `-ncb` then the XML output will contain 6.2u5 compatible output. 
 
 # OUTPUT FORMATS
 
-Depending on the presence or absence of the `-q` or `-F` and `-j` option three output formats need to be differentiated. The `-sdv` option will restrict the output to a department specific view where non-administrative users will only see information about hosts, queues and jobs where they have access rights or where the jobs are owned by users in the same department.
+Depending on the presence or absence of the `-q` or `-F` and `-j` option three output formats need to be differentiated.
 
 ## Default Format (without `-q`, `-F` and `-j`)
 

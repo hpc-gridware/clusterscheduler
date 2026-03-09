@@ -52,23 +52,6 @@ Description of *wc_queue* can be found in xxqs_name_sxx_types(1).
 ## -qs {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}  
 This option allows to filter for queue instances in certain states.
 
-## -sdv
-This switch is available in Gridware Cluster Scheduler only.
-
-This option is only effective if the executing user has no administrative rights.
-
-If the `-sdv` option is used, the output of the command will be restricted to a department specific view. This means
-that following parts of the output will be suppressed:
-
-* queue instance information where the user has no access rights
-* queue instance information if the corresponding host is not accessible by the user
-
-The department specific view can be enforced by adding the `-sdv` switch to the *$HOME/.xxqs_name_sxx_qselect* file.
-Administrators can enforce this behavior by adding this switch to the default *xxqs_name_sxx_qselect* files
-
-The `-sdv` option is also available in the `qstat` command where it has the same effect and additionally suppresses
-information about hosts and jobs where the user has no access rights.
-
 ## -U *user*,...  
 Includes the queues to which the specified users have access in the `qselect` output.
 

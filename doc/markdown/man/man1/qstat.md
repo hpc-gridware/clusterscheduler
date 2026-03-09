@@ -14,7 +14,7 @@ date: __DATE__
 
 `qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
 \[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-ncb`\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
-\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\] \[-sdv\] 
+\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
 \[`-t`\] \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
 
 # DESCRIPTION
@@ -46,8 +46,7 @@ Displays additional information for each job related to the job ticket policy sc
 
 ## -f  
 Specifies a "full" format display of information. The `-f` option causes summary information on all queues to be 
-displayed along with the queued job list. Might be combined with `-sdv` to filter the output to a department specific
-view that considers the user's access rights and the department definitions.
+displayed along with the queued job list.
 
 ## -F \[*resource_name*,...\]  
 Like in the case of `-f` information is displayed on all jobs as well as queues. In addition, `qstat` will present 
@@ -146,30 +145,6 @@ execution unless the job has entries in the job dependency list. `qstat -s` *h* 
 `qstat -s` *huhohshdhjha* and `qstat -s` is an abbreviation for `qstat -s` *psr* (see `-a`, `-hold_jid` and 
 `-hold_jid_ad` options to qsub(1)).
 
-## -sdv
-This switch is available in Gridware Cluster Scheduler only.
-
-This option is only effective if the executing user has no administrative rights.
-
-If the `-sdv` option is used, the output of the command will be restricted to a department specific view. This means
-that following parts of the output will be suppressed:
-
-* host information where the user has no access rights
-* queue instance information where the user has no access rights
-* queue instance information if the corresponding host is not accessible by the user
-* jobs that are not owned by the user or by a user that is in the same department as the user that executes `qhost`
-* job information if the host or queue instance is not accessible by the user
-
-Please be aware that changing access permissions for a user that has active jobs in a queue or on a host where access is 
-removed will not affect the running jobs. The jobs will continue to run until they finish, but this will lead to a 
-situation where the job owner cannot see the jobs anymore in case the department view is enforced.
-
-The department specific view can be enforced by adding the `-sdv` switch to the $HOME/.sge_qstat file.
-Administrators can enforce this behavior by adding this switch to the default sge_qstat files
-
-The `-sdv` option is also available in the `qselect` command where it has the same effect to suppress information about
-queues where the user has no access rights.
-
 ## -t  
 Prints extended information about the controlled sub-tasks of the displayed parallel jobs. Please refer to the 
 *OUTPUT FORMATS* subsection *Reduced Format* below for detailed information. Sub-tasks of parallel jobs should not 
@@ -188,11 +163,6 @@ those queues.
 The string *$user* is a placeholder for the current username. An asterisk * can be used as username wildcard to 
 request any user's jobs be displayed. The default value for this switch is `-u $user`.
 
-The `-sdv` switch can be used to add a department specific filter that considers the user's access rights
-and the department definitions. Although `-u *` would show all jobs in the system, `-u * -sdv` combination will further
-filter the output so that only those jobs will be shown that belong to the users or to other users in the same
-department as the user that executes `qstat`.
-
 ## -urg  
 Displays additional information for each job related to the job urgency policy scheme (see *OUTPUT FORMATS* below).
 
@@ -204,9 +174,6 @@ found in $SGE_ROOT/util/resources/schemas/qstat.
 If the `-xml` parameter is combined with `-ncb` then the XML output does not contain tags with information about 
 job to core binding. You can also find schema files with the suffix "\_ncb" in the directory
 $SGE_ROOT/util/resources/schemas/qstat that describe that changes.  
-
-In combination with `-sdv` the XML output will be restricted to a department specific view. This means that the XML
-output will be restricted to the information according to access and department rights.
 
 # OUTPUT FORMATS
 

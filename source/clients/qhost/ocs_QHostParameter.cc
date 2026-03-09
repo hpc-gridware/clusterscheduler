@@ -215,13 +215,6 @@ ocs::QHostParameter::sge_parse_qhost(lList **ppcmdline, lList **alpp) {
          show_ ^= QHOST_DISPLAY_BINDING;
          continue;
       }
-#ifdef WITH_EXTENSIONS
-      if (parse_flag(ppcmdline, "-sdv", alpp, &binding)) {
-         // show department view
-         show_ |= QHOST_DISPLAY_DEPT_VIEW;
-         continue;
-      }
-#endif
       if (parse_flag(ppcmdline, "-q", alpp, &full)) {
          if(full) {
             show_ |= QHOST_DISPLAY_QUEUES;

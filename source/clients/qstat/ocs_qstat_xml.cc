@@ -401,11 +401,6 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    lList *attribute_list = nullptr;
    static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
 
-   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager, qstat_env->show_department_view, qstat_env->acl_list);
-   if (hide_data) {
-      return 0;
-   }
-
    ctx->job_elem = lCreateElem(XMLE_Type);
    attribute_list = lCreateList("attributes", XMLE_Type);
    lSetList(ctx->job_elem, XMLE_List, attribute_list);
@@ -1028,20 +1023,7 @@ static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, 
    DENTER(TOP_LAYER);
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = nullptr;
-   qstat_env_t *qstat_env = handler->qstat_env;
    lListElem *xml_elem = nullptr;
-   bool hide_data = false;
-
-   // show everything for managers but for normal users hide data if user has no access to the queue
-   if (qstat_env->is_manager) {
-      hide_data = false;
-   } else if (qstat_env->show_department_view) {
-      hide_data = !summary->has_access;
-   }
-
-   if (hide_data) {
-      return 0;
-   }
 
    if (ctx->queue_elem == nullptr) {
       DPRINTF("Ilegal state: ctx->queue_elem must not be nullptr");

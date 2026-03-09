@@ -453,12 +453,6 @@ sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
          continue;
       }
 
-#ifdef WITH_EXTENSIONS
-      while (parse_flag(ppcmdline, "-sdv", &alp, &(qstat_env->show_department_view))) {
-         continue;
-      }
-#endif
-
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
          qstat_env->job_info = 1;
          if (argstr) {
@@ -814,7 +808,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
    bool print_job_id;
 
-   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager, qstat_env->show_department_view, qstat_env->user_list);
+   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager, qstat_env->user_list);
    if (hide_data) {
       return 0;
    }
@@ -1675,18 +1669,6 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    int sge_ext = qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED;
    char to_print[80];
    dstring queue_output = DSTRING_INIT;
-   bool hide_data = false;
-
-   // show everything for managers but for normal users hide data if user has no access to the queue
-   if (qstat_env->is_manager) {
-      hide_data = false;
-   } else if (qstat_env->show_department_view) {
-      hide_data = !summary->has_access;
-   }
-
-   if (hide_data) {
-      return 0;
-   }
 
    if (!ctx->header_printed) {
       char temp[20];
@@ -1718,26 +1700,14 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    // queue name
    char temp[20];
    snprintf(temp, sizeof(temp), "%%-%d.%ds ", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
-   if (hide_data) {
-      sge_dstring_sprintf_append(&queue_output, temp, "*");
-   } else {
-      sge_dstring_sprintf_append(&queue_output, temp, qname);
-   }
+   sge_dstring_sprintf_append(&queue_output, temp, qname);
 
    // queue type
-   if (hide_data) {
-      sge_dstring_sprintf_append(&queue_output, "%-5s ", "*");
-   } else {
-      sge_dstring_sprintf_append(&queue_output, "%-5.5s ", summary->queue_type);
-   }
+   sge_dstring_sprintf_append(&queue_output, "%-5.5s ", summary->queue_type);
 
    /* number of used/total slots */
    dstring res_used_total = DSTRING_INIT;
-   if (hide_data) {
-      sge_dstring_sprintf_append(&res_used_total, "%s/%s/%s ", "*", "*", "*");
-   } else {
-      sge_dstring_sprintf_append(&res_used_total, "%d/%d/%d ", (int)summary->resv_slots, (int)summary->used_slots, (int)summary->total_slots);
-   }
+   sge_dstring_sprintf_append(&res_used_total, "%d/%d/%d ", (int)summary->resv_slots, (int)summary->used_slots, (int)summary->total_slots);
    sge_dstring_sprintf_append(&queue_output, "%-14.14s ", sge_dstring_get_string(&res_used_total));
    sge_dstring_free(&res_used_total);
 
@@ -1745,11 +1715,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    dstring load_avg = DSTRING_INIT;
    if (!summary->has_load_value) {
       if (summary->has_load_value_from_object) {
-         if (hide_data) {
-            sge_dstring_sprintf_append(&load_avg,"%s ", "*");
-         } else {
-            sge_dstring_sprintf_append(&load_avg,"%2.2f ", summary->load_avg);
-         }
+         sge_dstring_sprintf_append(&load_avg,"%2.2f ", summary->load_avg);
       } else {
          sge_dstring_sprintf_append(&load_avg,"---  ");
       }
@@ -1762,11 +1728,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    /* arch */
    dstring arch = DSTRING_INIT;
    if (summary->arch != nullptr) {
-      if (hide_data) {
-         sge_dstring_sprintf_append(&arch, "%s ", "*");
-      } else {
-         sge_dstring_sprintf_append(&arch, "%s ", summary->arch);
-      }
+      sge_dstring_sprintf_append(&arch, "%s ", summary->arch);
    } else {
       snprintf(to_print, sizeof(to_print), "-NA- ");
    }
@@ -2192,10 +2154,8 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    for_each_ep(j_elem, jlp) {
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
       const lListElem *sme;
-
-      // if -sdv is set then we will not show the job
       const char *owner = lGetString(j_elem, JB_owner);
-      bool show_job = job_is_visible(owner,  qstat_env->is_manager, qstat_env->show_department_view, qstat_env->user_list);
+      bool show_job = job_is_visible(owner,  qstat_env->is_manager, qstat_env->user_list);
       if (!show_job) {
          continue;
       }

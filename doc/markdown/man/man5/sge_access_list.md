@@ -89,10 +89,6 @@ specify a department explicitly using the `-dept` switch during job submission.
 
 If a user does not belong to any department, the *defaultdepartment* is assigned, if existing.
 
-Displaying commands like qstat(1) and qhost(1) allow to provide a department specific view by using the `-sdv` switch.
-Those commands will then show hosts/queues/job information in the context of the department and access lists the user 
-belongs to. 
-
 # SEE ALSO
 
 xxqs_name_sxx_intro(1), xxqs_name_sxx_types(1), qconf(1), qsub(1), xxqs_name_sxx_pe(5), xxqs_name_sxx_queue_conf(5).

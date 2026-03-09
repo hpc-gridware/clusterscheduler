@@ -23,7 +23,6 @@
 #define QHOST_DISPLAY_JOBS       (1<<1)
 #define QHOST_DISPLAY_RESOURCES  (1<<2)
 #define QHOST_DISPLAY_BINDING    (1<<3)
-#define QHOST_DISPLAY_DEPT_VIEW  (1<<4)
 
 #define QHOST_SUCCESS 0
 #define QHOST_ERROR -1
