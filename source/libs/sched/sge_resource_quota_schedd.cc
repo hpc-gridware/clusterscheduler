@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -82,8 +82,8 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
 *     rqs_set_dynamical_limit() -- evaluate dynamical limit
 *
 *  SYNOPSIS
-*     bool rqs_set_dynamical_limit(lListElem *limit, lListElem 
-*     *global_host, lListElem *exec_host, lList *centry) 
+*     bool rqs_set_dynamical_limit(lListElem *limit, lListElem
+*     *global_host, lListElem *exec_host, lList *centry)
 *
 *  FUNCTION
 *     The function evaluates if neccessary the dynamical limit for a host and
@@ -102,7 +102,7 @@ static void rqs_excluded_cqueues(const lListElem *rule, sge_assignment_t *a);
 *     bool - always true
 *
 *  NOTES
-*     MT-NOTE: rqs_set_dynamical_limit() is MT safe 
+*     MT-NOTE: rqs_set_dynamical_limit() is MT safe
 *
 *******************************************************************************/
 bool
@@ -114,7 +114,7 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
       double dynamic_limit = scaled_mixed_load(lGetString(limit, RQRL_value), global_host, exec_host, centry);
       DPRINTF("found a dynamic limit for host %s with value %d\n", lGetHost(exec_host, EH_name), (int)dynamic_limit);
       lSetDouble(limit, RQRL_dvalue, dynamic_limit);
-   } 
+   }
 
    DRETURN(true);
 }
@@ -124,26 +124,26 @@ rqs_set_dynamical_limit(lListElem *limit, lListElem *global_host, lListElem *exe
 *     rqs_match_assignment() -- match resource quota rule any queue instance
 *
 *  SYNOPSIS
-*     static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t 
-*     *a) 
+*     static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t
+*     *a)
 *
 *  FUNCTION
 *     Check whether a resource quota rule can match any queue instance. If
 *     if does not match due to users/projects/pes scope one can rule this
 *     out.
-*    
+*
 *     Note: As long as rqs_match_assignment() is not used for parallel jobs
 *           passing nullptr as PE request is perfectly fine.
 *
 *  INPUTS
 *     const lListElem *rule - Resource quota rule
-*     sge_assignment_t *a   - Scheduler assignment 
+*     sge_assignment_t *a   - Scheduler assignment
 *
 *  RESULT
-*     static bool - True if it matches 
+*     static bool - True if it matches
 *
 *  NOTES
-*     MT-NOTE: rqs_match_assignment() is MT safe 
+*     MT-NOTE: rqs_match_assignment() is MT safe
 *******************************************************************************/
 static bool rqs_match_assignment(const lListElem *rule, sge_assignment_t *a)
 {
@@ -774,9 +774,9 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
 *     rqs_exceeded_sort_out_par() -- Rule out queues/hosts whenever possible
 *
 *  SYNOPSIS
-*     void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem 
-*     *rule, const dstring *rule_name, const char* queue_name, const char* 
-*     host_name) 
+*     void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem
+*     *rule, const dstring *rule_name, const char* queue_name, const char*
+*     host_name)
 *
 *  FUNCTION
 *     Function wrapper around rqs_exceeded_sort_out() for parallel jobs.
@@ -791,7 +791,7 @@ static bool rqs_exceeded_sort_out(sge_assignment_t *a, const lListElem *rule, co
 *     const char* host_name    - Host name
 *
 *  NOTES
-*     MT-NOTE: rqs_exceeded_sort_out_par() is MT safe 
+*     MT-NOTE: rqs_exceeded_sort_out_par() is MT safe
 *******************************************************************************/
 static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule, const dstring *rule_name,
    const char* queue_name, const char* host_name)
@@ -803,11 +803,11 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 
 /****** sge_resource_quota_schedd/sge_user_is_referenced_in_rqs() ********************
 *  NAME
-*     sge_user_is_referenced_in_rqs() -- search for user reference in rqs 
+*     sge_user_is_referenced_in_rqs() -- search for user reference in rqs
 *
 *  SYNOPSIS
-*     bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, 
-*     lList *acl_list) 
+*     bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user,
+*     lList *acl_list)
 *
 *  FUNCTION
 *     Search for a user reference in the resource quota sets
@@ -823,7 +823,7 @@ static void rqs_exceeded_sort_out_par(sge_assignment_t *a, const lListElem *rule
 *            false if user was not found
 *
 *  NOTES
-*     MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe 
+*     MT-NOTE: sge_user_is_referenced_in_rqs() is MT safe
 *
 *******************************************************************************/
 bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const char *group, const lList *grp_list, const lList *acl_list)
@@ -856,14 +856,14 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
 *     check_and_debit_rqs_slots() -- Determine RQS limit slot amount and debit
 *
 *  SYNOPSIS
-*     static void check_and_debit_rqs_slots(sge_assignment_t *a, const char 
-*     *host, const char *queue, int *slots, int *slots_qend, dstring 
-*     *rule_name, dstring *rue_name, dstring *limit_name) 
+*     static void check_and_debit_rqs_slots(sge_assignment_t *a, const char
+*     *host, const char *queue, int *slots, int *slots_qend, dstring
+*     *rule_name, dstring *rue_name, dstring *limit_name)
 *
 *  FUNCTION
 *     The function determines the final slot and slots_qend amount due
-*     to all resource quota limitations that apply for the queue instance. 
-*     Both slot amounts get debited from the a->limit_list to keep track 
+*     to all resource quota limitations that apply for the queue instance.
+*     Both slot amounts get debited from the a->limit_list to keep track
 *     of still available amounts per resource quota limit.
 *
 *  INPUTS
@@ -877,9 +877,9 @@ bool sge_user_is_referenced_in_rqs(const lList *rqs, const char *user, const cha
 *     dstring *limit_name - caller maintained buffer
 *
 *  NOTES
-*     MT-NOTE: check_and_debit_rqs_slots() is MT safe 
+*     MT-NOTE: check_and_debit_rqs_slots() is MT safe
 *******************************************************************************/
-void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue, 
+void parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const char *queue,
       int *slots, int *slots_qend, dstring *rule_name, dstring *rue_name, dstring *limit_name)
 {
    const lListElem *rqs, *rule;
@@ -983,12 +983,12 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 *                                       time frame
 *
 *  SYNOPSIS
-*     static dispatch_t parallel_limit_slots_by_time(const sge_assignment_t *a, 
-*     lList *requests, int *slots, int *slots_qend, lListElem *centry, lListElem 
-*     *limit, dstring rue_name) 
+*     static dispatch_t parallel_limit_slots_by_time(const sge_assignment_t *a,
+*     lList *requests, int *slots, int *slots_qend, lListElem *centry, lListElem
+*     *limit, dstring rue_name)
 *
 *  FUNCTION
-*     ??? 
+*     ???
 *
 *  INPUTS
 *     const sge_assignment_t *a - job info structure (in)
@@ -1005,12 +1005,12 @@ void parallel_revert_rqs_slot_debitation(sge_assignment_t *a, const char *host, 
 *                       - DISPATCH_NEVER_CAT no assignment for all jobs af that category
 *
 *  NOTES
-*     MT-NOTE: parallel_limit_slots_by_time() is not MT safe 
+*     MT-NOTE: parallel_limit_slots_by_time() is not MT safe
 *
 *  SEE ALSO
 *     parallel_rc_slots_by_time
 *******************************************************************************/
-static dispatch_t 
+static dispatch_t
 parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend, lListElem *centry,
                              lListElem *limit, dstring *rue_name, lListElem *qep, bool need_master,
                              bool is_master_queue)
@@ -1062,7 +1062,7 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_q
                                       slots_qend, tmp_centry_list, tmp_rue_list, nullptr,
                                       false, qep, DOMINANT_LAYER_RQS, 0.0, RQS_TAG, need_master, is_master_queue,
                                       found_master_host, false, SGE_RQS_NAME, true);
-   
+
    lFreeList(&tmp_centry_list);
    lFreeList(&tmp_rue_list);
 
@@ -1076,8 +1076,8 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_q
 *                                      time frame
 *
 *  SYNOPSIS
-*     dispatch_t parallel_rqs_slots_by_time(const sge_assignment_t *a, 
-*     int *slots, int *slots_qend, const char *host, const char *queue) 
+*     dispatch_t parallel_rqs_slots_by_time(const sge_assignment_t *a,
+*     int *slots, int *slots_qend, const char *host, const char *queue)
 *
 *  FUNCTION
 *     This function iterates for a queue instance over all resource quota sets
@@ -1094,11 +1094,11 @@ parallel_limit_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_q
 *                       - DISPATCH_NEVER_CAT no assignment for all jobs af that category
 *
 *  NOTES
-*     MT-NOTE: parallel_rqs_slots_by_time() is not MT safe 
+*     MT-NOTE: parallel_rqs_slots_by_time() is not MT safe
 *
 *  SEE ALSO
 *     ri_slots_by_time()
-*     
+*
 *******************************************************************************/
 dispatch_t
 parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lListElem *qep, bool need_master,
@@ -1157,10 +1157,10 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
             } else {
                int ttslots = INT_MAX;
                int ttslots_qend = INT_MAX;
-               
+
                u_long32 tagged_for_schedule_old = lGetUlong(qep, QU_tagged4schedule);  /* default value or set in match_static_queue() */
                lSetUlong(qep, QU_tagged4schedule, TAG4SCHED_ALL);
-               
+
                for_each_rw(limit, lGetList(rule, RQR_limit)) {
                   const char *limit_name = lGetString(limit, RQRL_name);
 
@@ -1192,7 +1192,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                         ttslots = MIN(ttslots, tttslots);
                         ttslots_qend = MIN(ttslots_qend, tttslots_qend);
                         if (result == DISPATCH_NOT_AT_TIME) {
-                           /* can still be interesting for reservation and as slave task for per_job_consumables */ 
+                           /* can still be interesting for reservation and as slave task for per_job_consumables */
                            result = DISPATCH_OK;
                         } else if (result != DISPATCH_OK) {
                            break;
@@ -1221,8 +1221,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
                lSetInt(rql, RQL_result, result);
                lSetInt(rql, RQL_slots, ttslots);
                lSetInt(rql, RQL_slots_qend, ttslots_qend);
-               lSetUlong(rql, RQL_tagged4schedule, lGetUlong(qep, QU_tagged4schedule)); 
-               
+               lSetUlong(rql, RQL_tagged4schedule, lGetUlong(qep, QU_tagged4schedule));
+
                /* reset QU_tagged4schedule if necessary */
                lAndUlongBitMask(qep, QU_tagged4schedule, tagged_for_schedule_old);
 
@@ -1251,7 +1251,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
    *slots = tslots;
    *slots_qend = tslots_qend;
 
-   DPRINTF("parallel_rqs_slots_by_time(%s@%s) finalresult %d slots %d slots_qend %d\n", queue, host, result, *slots, *slots_qend);
+   DPRINTF("parallel_rqs_slots_by_time(%s@%s) final result %d slots %d slots_qend %d\n", queue, host, result, *slots, *slots_qend);
 
    DRETURN(result);
 }
@@ -1261,8 +1261,8 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 *     rqs_limitation_reached() -- is the limitation reached for a queue instance
 *
 *  SYNOPSIS
-*     static bool rqs_limitation_reached(sge_assignment_t *a, lListElem *rule, 
-*     const char* host, const char* queue) 
+*     static bool rqs_limitation_reached(sge_assignment_t *a, lListElem *rule,
+*     const char* host, const char* queue)
 *
 *  FUNCTION
 *     The function verifies no limitation is reached for the specific job request
@@ -1282,7 +1282,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, int *slots_qend, lLi
 *                         DISPATCH_MISSING_ATTR rule does not match requested attributes
 *
 *  NOTES
-*     MT-NOTE: rqs_limitation_reached() is not MT safe 
+*     MT-NOTE: rqs_limitation_reached() is not MT safe
 *
 *******************************************************************************/
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long64 *start)
@@ -1336,11 +1336,11 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             }
             lSetString(raw_centry, CE_stringval, lGetString(raw_centry, CE_defaultval));
             lSetDouble(raw_centry, CE_doubleval, request);
-            job_centry = raw_centry; 
+            job_centry = raw_centry;
             DPRINTF("using default request for %s!\n", lGetString(raw_centry, CE_name));
          } else if (is_forced) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                           SCHEDD_INFO_NOTREQFORCEDRES); 
+                           SCHEDD_INFO_NOTREQFORCEDRES);
             ret = DISPATCH_NEVER_CAT;
             break;
          } else {
@@ -1355,7 +1355,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
          lList *tmp_rue_list = lCreateList("", RUE_Type);
          lListElem *tmp_centry_elem = nullptr;
          lListElem *tmp_rue_elem = nullptr;
-            
+
          if (rqs_set_dynamical_limit(limit, a->gep, exec_host, a->centry_list)) {
             const lList *rue_list = lGetList(limit, RQRL_usage);
             u_long64 tmp_time = a->start;
@@ -1374,7 +1374,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
             }
             lSetString(tmp_rue_elem, RUE_name, limit_name);
             lAppendElem(tmp_rue_list, tmp_rue_elem);
-           
+
             sge_dstring_clear(&reason);
             ret = ri_time_by_slots(a, job_centry, nullptr, tmp_centry_list,  tmp_rue_list,
                                        nullptr, &reason, false, 1, DOMINANT_LAYER_RQS, 0.0, &tmp_time,
@@ -1407,17 +1407,17 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 *     rqs_by_slots() -- Check queue instance suitability due to RQS
 *
 *  SYNOPSIS
-*     dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, 
+*     dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue,
 *     const char *host, u_long64 *tt_rqs_all, bool *is_global,
-*     dstring *rue_string, dstring *limit_name, dstring *rule_name) 
+*     dstring *rue_string, dstring *limit_name, dstring *rule_name)
 *
 *  FUNCTION
-*     Checks (or determines earliest time) queue instance suitability 
-*     according to resource quota set limits. 
-*     
-*     For performance reasons RQS verification results are cached in 
+*     Checks (or determines earliest time) queue instance suitability
+*     according to resource quota set limits.
+*
+*     For performance reasons RQS verification results are cached in
 *     a->limit_list. In addition unsuited queues and hosts are collected
-*     in a->skip_cqueue_list and a->skip_host_list so that ruling out 
+*     in a->skip_cqueue_list and a->skip_host_list so that ruling out
 *     chunks of queue instance becomes quite cheap.
 *
 *  INPUTS
@@ -1435,9 +1435,9 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
 *     static dispatch_t - usual return values
 *
 *  NOTES
-*     MT-NOTE: rqs_by_slots() is MT safe 
+*     MT-NOTE: rqs_by_slots() is MT safe
 *******************************************************************************/
-dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host, 
+dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host,
   u_long64 *tt_rqs_all, bool *is_global, dstring *rue_string, dstring *limit_name, dstring *rule_name, u_long64 tt_best)
 {
    const lListElem *rqs;
@@ -1490,7 +1490,7 @@ dispatch_t rqs_by_slots(sge_assignment_t *a, const char *queue, const char *host
 
             if (result != DISPATCH_OK && result != DISPATCH_MISSING_ATTR) {
                schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
-                              SCHEDD_INFO_CANNOTRUNRQSGLOBAL_SS, 
+                              SCHEDD_INFO_CANNOTRUNRQSGLOBAL_SS,
                      sge_dstring_get_string(rue_string), sge_dstring_get_string(rule_name));
                if (rqs_exceeded_sort_out(a, rule, rule_name, queue, host)) {
                   *is_global = true;

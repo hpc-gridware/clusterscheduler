@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -1187,7 +1187,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
             DRETURN(false);
          }
          if ((!prj_list_locate(projects, project))) {
-            DPRINTF("no access because project not contained in queues project list");
+            DPRINTF("no access because project not contained in queues project list\n");
             assignment_release(&a);
             DRETURN(false);
          }
@@ -1219,7 +1219,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          qinstance_name = lGetString(queue, QU_full_name);
          if ((lGetElemStr(qref_list, QR_name, qname) != nullptr) ||
              (lGetElemStr(qref_list, QR_name, qinstance_name) != nullptr)) {
-            DPRINTF("ok");
+            DPRINTF("ok\n");
          } else {
             DPRINTF("denied because queue \"%s\" is not contained in the hard "
                     "queue list (-q) that was requested by job %d\n",
@@ -1601,7 +1601,7 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
 *  NOTES
 *******************************************************************************/
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master)
 {
    DENTER(TOP_LAYER);
 
@@ -1694,6 +1694,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       bool can_be_slave_queue = true;
 
       // is this queue a candidate for being the master queue?
+      // @todo can we safely skip this block if need_master == false?
       if (master_hard_queue_list != nullptr) {
          if (qref_list_cq_rejected(master_hard_queue_list, lGetString(queue, QU_qname),
                                    lGetHost(queue, QU_qhostname), a->hgrp_list)) {
@@ -1709,8 +1710,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
       if (slave_hard_queue_list != nullptr) {
          if (qref_list_cq_rejected(slave_hard_queue_list, lGetString(queue, QU_qname),
                                    lGetHost(queue, QU_qhostname), a->hgrp_list)) {
-            DPRINTF("Queue " SFQ " is not contained in the slave hard "
-                                 "queue list (-q) that was requested by job " sge_u32 "\n",
+            DPRINTF("Queue " SFQ " is not contained in the slave hard queue list (-q) that was requested by job " sge_u32 "\n",
                     qinstance_name, (int) a->job_id);
             can_be_slave_queue = false;
             // @todo CS-601 slave tags not yet used
@@ -1720,6 +1720,14 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 
       // if it can be neither master nor slave queue, then it is not a candidate at all
       if (!can_be_master_queue && !can_be_slave_queue) {
+         DPRINTF("Queue " SFQ "cannot be master nor slave queue - skip it\n", qinstance_name);
+         schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                        SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
+         DRETURN(DISPATCH_NEVER_CAT);
+      }
+      // if it cannot be a slave queue, and we do not need a master queue, then it is not a candidate
+      if (!need_master && !can_be_slave_queue) {
+         DPRINTF("Queue " SFQ "cannot be slave queue and we do no longer need a master queue - skip it\n", qinstance_name);
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -3455,7 +3463,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 
       /* static queue matching */
       SCHED_PROF_INC(a->pi, seq_qstat);
-      if (sge_queue_match_static(a, qep) != DISPATCH_OK) {
+      if (sge_queue_match_static(a, qep, true) != DISPATCH_OK) {
          if (skip_queue_list)
             lAddElemStr(&skip_queue_list, CTI_name, qname, CTI_Type);
          best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
@@ -4134,7 +4142,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                         DPRINTF("RQS: trying to debit %d slots in queue " SFQ "\n", slots, qname);
                         parallel_check_and_debit_rqs_slots(a, eh_name, lGetString(qep, QU_qname),
                               &slots, &slots_qend, &rule_name, &rue_name, &limit_name);
-                        DPRINTF("RQS: could debiting %d slots in queue " SFQ "\n", slots, qname);
+                        DPRINTF("RQS: could debit %d slots in queue " SFQ "\n", slots, qname);
                      }
 
                      if (slots > 0) {
@@ -5210,7 +5218,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, int *slots
    int lslots = INT_MAX, lslots_qend = INT_MAX;
 
    SCHED_PROF_INC(a->pi, par_qstat);
-   dispatch_t result = sge_queue_match_static(a, qep);
+   dispatch_t result = sge_queue_match_static(a, qep, need_master);
    if (result == DISPATCH_OK) {
       u_long32 ar_id = lGetUlong(a->job, JB_ar);
       if (ar_id == 0 && !a->is_advance_reservation) {
@@ -6363,7 +6371,7 @@ parallel_rc_slots_by_time(const sge_assignment_t *a, int *slots, int *slots_qend
             continue;
          }
 
-         DPRINTF("   --> need_master: %d, is_master_host: %d, found_master_host: %d, master_slot: %d, ign_sreq: %d",
+         DPRINTF("   --> need_master: %d, is_master_host: %d, found_master_host: %d, master_slot: %d, ign_sreq: %d\n",
             need_master, is_master_host, found_master_host, master_slot,
             lGetBool(a->pe, PE_ignore_slave_requests_on_master_host));
       }
@@ -6721,7 +6729,7 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
    DRETURN_VOID;
 
 error:
-   DPRINTF("error in sge_create_load_list!");
+   DPRINTF("error in sge_create_load_list!\n");
    ERROR(SFNMAX, MSG_SGETEXT_CONSUMABLE_AS_LOAD);
    sge_free_load_list(load_list);
    DRETURN_VOID;
