@@ -29,7 +29,7 @@
 namespace ocs {
    class QHostViewXML : public QHostViewBase {
    public:
-      QHostViewXML(const QHostParameter &parameter) : QHostViewBase(parameter) {};
+      explicit QHostViewXML(const QHostParameter &parameter) : QHostViewBase(parameter) {};
       ~QHostViewXML() override = default;
 
       void start(std::ostream &os) override;

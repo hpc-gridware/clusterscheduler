@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -326,9 +326,20 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
+   lList *answer_list = nullptr;
    // if -j, then only print job info and leave */
    if (qstat_env.job_info) {
       int ret = 0;
+
+      bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(&answer_list, &qstat_env.is_manager, nullptr, nullptr, nullptr);
+      if (!perm_return) {
+         for_each_ep(aep, answer_list) {
+            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+         }
+         lFreeList(&answer_list);
+         qstat_env_destroy(&qstat_env);
+         sge_exit(ret);
+      }
 
       if (lGetNumberOfElem(jid_list) > 0) {
          /* RH TODO: implement the qstat_show_job_info with and handler */
@@ -342,7 +353,6 @@ int main(int argc, char *argv[]) {
    }
 
    int ret = 0;
-   lList *answer_list = nullptr;
    str_list_transform_user_list(&(qstat_env.user_list), &answer_list, username);
    if (qstat_env.qselect_mode) {
       qselect_handler_t handler;
@@ -2059,6 +2069,8 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    lFreeWhere(&where);
    lFreeWhat(&what);
 
+   lWriteListTo(jlp, stderr);
+
    if (isXML) {
       /* filter the message list to contain only jobs that have been requested.
          First remove all entries in the job_number_list that are not in the
@@ -2157,6 +2169,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       const char *owner = lGetString(j_elem, JB_owner);
       bool show_job = job_is_visible(owner,  qstat_env->is_manager, qstat_env->user_list);
       if (!show_job) {
+         DTRACE;
          continue;
       }
 

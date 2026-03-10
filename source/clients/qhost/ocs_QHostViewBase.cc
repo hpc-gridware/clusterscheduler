@@ -145,7 +145,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // load_avg
    lep= get_attribute_by_name(nullptr, hep, nullptr, "load_avg", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(load_avg, sizeof(load_avg), "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformat_double_string(load_avg, sizeof(load_avg), "%.2f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -155,7 +155,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // mem_total
    lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(mem_total, sizeof(mem_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformat_double_string(mem_total, sizeof(mem_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -165,7 +165,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // mem_used
    lep= get_attribute_by_name(nullptr, hep, nullptr, "mem_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(mem_used, sizeof(mem_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformat_double_string(mem_used, sizeof(mem_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -175,7 +175,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // swap_total
    lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_total", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(swap_total, sizeof(swap_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformat_double_string(swap_total, sizeof(swap_total), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -185,7 +185,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // swap_used
    lep= get_attribute_by_name(nullptr, hep, nullptr, "swap_used", centry_list, nullptr, DISPATCH_TIME_NOW, 0);
    if (lep) {
-      reformatDoubleValue(swap_used, sizeof(swap_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
+      reformat_double_string(swap_used, sizeof(swap_used), "%.1f%c", sge_get_dominant_stringval(lep, &dominant, &rs));
       sge_dstring_clear(&rs);
       lFreeElem(&lep);
    } else {
@@ -301,7 +301,7 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, lListElem *host, QHostPar
             u_long32 full_listing = (show & QHOST_DISPLAY_QUEUES) ?
                                     QSTAT_DISPLAY_FULL : 0;
             full_listing = full_listing | QSTAT_DISPLAY_ALL;
-            report_handler.sge_print_jobs_queue(os, qep, 1, full_listing, "   ", GROUP_NO_PETASK_GROUPS, 10, parameter, model, report_handler);
+            report_handler.show_jobs_per_queue(os, qep, 1, full_listing, "   ", GROUP_NO_PETASK_GROUPS, 10, parameter, model, report_handler);
          }
       }
    }
@@ -387,7 +387,7 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const
 }
 
 void
-ocs::QHostViewBase::reformatDoubleValue(char *new_string, const size_t result_size, const char *format, const char *old_string)
+ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result_size, const char *format, const char *old_string)
 {
    DENTER(TOP_LAYER);
 
@@ -418,10 +418,11 @@ ocs::QHostViewBase::reformatDoubleValue(char *new_string, const size_t result_si
 
 
 // slots_per_line: number of slots to be printed in slots column when 0 is passed the number of requested slots printed
-int ocs::QHostViewBase::sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
-                         dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
-                         const lList *pe_list, const char *indent, u_long32 group_opt, int slots_per_line,
-                         int queue_name_length, QHostParameter &parameter, QHostModel &model, ocs::QHostViewBase &report_handler) {
+void
+ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
+                                  dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
+                                  const char *indent, u_long32 group_opt, int slots_per_line,
+                                  int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
    char state_string[8];
    u_long32 jstate;
@@ -436,6 +437,7 @@ int ocs::QHostViewBase::sge_print_job(std::ostream &os, lListElem *job, lListEle
    char buffer[128];
    dstring queue_name_buffer = DSTRING_INIT;
    u_long32 jid = lGetUlong(job, JB_job_number);
+   lList *pe_list = model.get_pe_list();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -662,7 +664,7 @@ int ocs::QHostViewBase::sge_print_job(std::ostream &os, lListElem *job, lListEle
             name = "submit_time";
             value = lGetUlong64(job, JB_submission_time);
          }
-         if (typeid(report_handler) == typeid(ocs::QHostViewPlain)) {
+         if (typeid(report_handler) == typeid(QHostViewPlain)) {
             const char *time_string = sge_ctime64_short(value, &ds);
             report_handler.job_value(os, jid, "{} ", name, time_string);
          } else {
@@ -835,14 +837,16 @@ int ocs::QHostViewBase::sge_print_job(std::ostream &os, lListElem *job, lListEle
    report_handler.job_end(os);
    sge_dstring_free(&queue_name_buffer);
 
-   DRETURN(1);
+   DRETURN_VOID;
 }
+
 /*-------------------------------------------------------------------------*/
 /* print jobs per queue                                                    */
 /*-------------------------------------------------------------------------*/
-void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep,
-                        int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                         u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+void
+ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, u_long32 full_listing,
+                                        const char *indent, u_long32 group_opt, int queue_name_length,
+                                        QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
    lListElem *jlep;
    lListElem *jatep;
    const lListElem *gdilep;
@@ -946,10 +950,9 @@ void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep,
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_RUNNING) &&
                          (lGetUlong(jatep, JAT_state) & JRUNNING)) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i,
-                                      pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, indent,
                                       group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
@@ -958,46 +961,46 @@ void ocs::QHostViewBase::sge_print_jobs_queue(std::ostream &os, lListElem *qep,
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_THRESHOLD) ||
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_SUBORDINATE) ||
                           (lGetUlong(jatep, JAT_state) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, indent,
                                       group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_USERHOLD) &&
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_USER)) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, indent,
                                       group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_OPERATORHOLD) &&
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_OPERATOR)) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, indent,
                                       group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_SYSTEMHOLD) &&
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_SYSTEM)) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, pe_list, indent,
+                                      full_listing, slots_in_queue + slot_adjust, i, indent,
                                       group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_JOBARRAYHOLD) &&
                          (lGetUlong(jatep, JAT_hold) & MINUS_H_TGT_JA_AD)) {
-                        report_handler.sge_print_job(os, jlep, jatep, qep, print_jobid,
+                        report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
-                                      full_listing, slots_in_queue + slot_adjust, i, pe_list,
-                                      indent, group_opt, slots_per_line, queue_name_length, parameter, model, report_handler);
+                                      full_listing, slots_in_queue + slot_adjust, i, indent, group_opt,
+                                      slots_per_line, queue_name_length, parameter, model, report_handler);
                         already_printed = 1;
                      }
                   }

@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
       sge_exit(1);
    }
 
+   // parse command line parameters and options
    ocs::QHostParameter qhost_parameter;
    if (!qhost_parameter.parse_parameters(&alp, argv, environ)) {
       answer_list_output(&alp);
@@ -62,8 +63,7 @@ int main(int argc, char **argv) {
 
    // prepare data for output
    ocs::QHostModel model;
-   bool lret = model.make_snapshot(&alp, qhost_parameter);
-   if (!lret) {
+   if (!model.make_snapshot(&alp, qhost_parameter)) {
       answer_list_output(&alp);
       sge_exit(1);
    }

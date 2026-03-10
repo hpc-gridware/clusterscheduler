@@ -289,7 +289,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             std::ostringstream oss;
             show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
             printf("%s\n", oss.str().c_str());
-            printf("\n");
          }
 
          lp = lGetList(jrs, JRS_soft_resource_list);
@@ -303,7 +302,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             std::ostringstream oss;
             show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
             printf("%s\n", oss.str().c_str());
-            printf("\n");
          }
 
          lp = lGetList(jrs, JRS_hard_queue_list);

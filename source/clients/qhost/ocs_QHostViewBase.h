@@ -35,20 +35,19 @@ namespace ocs {
       [[nodiscard]] bool show_binding() const {
          return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
       }
-      static void reformatDoubleValue(char *new_string, size_t result_size, const char *format, const char *old_string);
+      static void reformat_double_string(char *new_string, size_t result_size, const char *format, const char *old_string);
 
       virtual void show_host(std::ostream &os, const lListElem *hep, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler);
       virtual void show_host_resources(std::ostream &os, lListElem *host, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler);
-      int sge_print_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
-                               dstring *dyn_task_str, u_long32 full_listing, int slots, int slot,
-                               const lList *pe_list, const char *indent, u_long32 group_opt, int slots_per_line,
-                               int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
-      void sge_print_jobs_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
-                               u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      virtual void show_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, int print_jobid, const char *master,
+                                 dstring *dyn_task_str, u_long32 full_listing, int slots, int slot, const char *indent, u_long32 group_opt, int slots_per_line,
+                                 int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
+      virtual void show_jobs_per_queue(std::ostream &os, lListElem *qep, int print_jobs_of_queue, u_long32 full_listing, const char *indent,
+                                       u_long32 group_opt, int queue_name_length, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
       virtual void show_host_queues(std::ostream &os, lListElem *host, QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler);
 
    public:
-      QHostViewBase(const QHostParameter &parameter);
+      explicit QHostViewBase(const QHostParameter &parameter);
       virtual ~QHostViewBase() = default;
 
       virtual void start(std::ostream &os) = 0;
@@ -64,7 +63,6 @@ namespace ocs {
       virtual void queue_value(std::ostream &os, const char *qname, const char *format_str, const char* name, const char *value) = 0;
       virtual void queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, u_long32 value) = 0;
 
-      // @todo jid why as string
       virtual void job_start(std::ostream &os, const char *format_str, u_long32 jid) = 0;
       virtual void job_end(std::ostream &os) = 0;
       virtual void job_value(std::ostream &os, u_long32 jid, const char *format_str, const char* name, const char *value) = 0;

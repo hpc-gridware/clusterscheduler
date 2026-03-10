@@ -31,7 +31,7 @@ namespace ocs {
       bool print_host_header = true;
       bool print_job_header = true;
    public:
-      QHostViewPlain(const QHostParameter &parameter) : QHostViewBase(parameter) {}
+      explicit QHostViewPlain(const QHostParameter &parameter) : QHostViewBase(parameter) {}
       ~QHostViewPlain() override = default;
 
       void start(std::ostream &os) override;
