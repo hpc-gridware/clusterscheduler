@@ -105,7 +105,7 @@ static int qselect_xml_report_queue(qselect_handler_t *thiz, const char* qname, 
                            
 /* --------------- Cluster Queue Summary To XML Handler -------------------*/
 static int cqueue_summary_xml_report_finished(cqueue_summary_handler_t *handler, lList **alpp);
-static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp);
+static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
 
 int cqueue_summary_xml_handler_init(cqueue_summary_handler_t *handler) {
    memset(handler, 0, sizeof(cqueue_summary_handler_t));
@@ -128,12 +128,11 @@ static int cqueue_summary_xml_report_finished(cqueue_summary_handler_t *handler,
    return 0;
 }
 
-static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp) {
+static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter) {
    
    lListElem *elem = nullptr;
    lList *attributeList = nullptr;
-   qstat_env_t *qstat_env = handler->qstat_env;
-   bool show_states = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    
    elem = lCreateElem(XMLE_Type);
    attributeList = lCreateList("attributes", XMLE_Type);
@@ -172,15 +171,15 @@ static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, c
 }
  
                            
-static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, lList **alpp);
-static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp);
-static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname, lList **alpp);
+static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_xml_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
 static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
 
-static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp);
+static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
 static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_info_t name, const char* value, lList **alpp);
 static int qstat_xml_job_requested_pe(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp);
@@ -204,13 +203,13 @@ static int qstat_xml_create_job_list(qstat_handler_t *handler, lList **alpp);
 static int qstat_xml_finish_job_list(qstat_handler_t *handler, const char* state, lList* target_list, lList **alpp);
 
 static int qstat_xml_queue_jobs_started(qstat_handler_t *handler, const char* qname, lList **alpp);
-static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* qname, lList **alpp);
+static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
 
-static int qstat_xml_pending_jobs_started(qstat_handler_t *handler, lList **alpp);
+static int qstat_xml_pending_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_xml_pending_jobs_finished(qstat_handler_t *handler, lList **alpp);
-static int qstat_xml_finished_jobs_started(qstat_handler_t *handler, lList **alpp);
+static int qstat_xml_finished_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_xml_finished_jobs_finished(qstat_handler_t *handler, lList **alpp);
-static int qstat_xml_error_jobs_started(qstat_handler_t *handler, lList **alpp);
+static int qstat_xml_error_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_xml_error_jobs_finished(qstat_handler_t *handler, lList **alpp);
 static int qstat_xml_zombie_jobs_started(qstat_handler_t *handler, lList **alpp);
 static int qstat_xml_zombie_jobs_finished(qstat_handler_t *handler, lList **alpp);
@@ -392,10 +391,9 @@ static int qstat_xml_dummy_finished(job_handler_t* handler, lList** alpp) {
    return 0;
 }
 
-static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp) {
+static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;
    lList *attribute_list = nullptr;
@@ -405,10 +403,10 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    attribute_list = lCreateList("attributes", XMLE_Type);
    lSetList(ctx->job_elem, XMLE_List, attribute_list);
    
-   sge_ext = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (qstat_env->full_listing & QSTAT_DISPLAY_TASKS);
-   sge_urg = (qstat_env->full_listing & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (qstat_env->full_listing & QSTAT_DISPLAY_PRIORITY);
+   sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   tsk_ext = (parameter.full_listing_ & QSTAT_DISPLAY_TASKS) ? true : false;
+   sge_urg = (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY) ? true : false;
+   sge_pri = (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
    
@@ -489,11 +487,11 @@ static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *su
    }
 
    /* if not full listing we need the queue's name in each line */
-   if (!(qstat_env->full_listing & QSTAT_DISPLAY_FULL)) {
+   if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
       xml_append_Attr_S(attribute_list, "queue_name", summary->queue);
    }   
 
-   if ((qstat_env->group_opt & GROUP_NO_PETASK_GROUPS)) {
+   if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
       /* MASTER/SLAVE information needed only to show parallel job distribution */
       xml_append_Attr_S(attribute_list, "master", summary->master);
    }
@@ -844,15 +842,14 @@ static int qstat_xml_queue_jobs_started(qstat_handler_t *handler, const char* qn
    DRETURN(ret);
 }
 
-static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* qname, lList **alpp) {
+static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;
    int ret = 0;
    DENTER(TOP_LAYER);
    
    if (lFirst(ctx->job_list)) {
       lList *job_list = nullptr;
-      if (qstat_env->full_listing & QSTAT_DISPLAY_FULL ) {
+      if (parameter.full_listing_ & QSTAT_DISPLAY_FULL ) {
          job_list = lGetListRW(ctx->queue_elem, XMLE_List);
          if(job_list == nullptr) {
             job_list = lCreateList("job_list", XMLE_Type);
@@ -874,7 +871,7 @@ static int qstat_xml_queue_jobs_finished(qstat_handler_t *handler, const char* q
 }
 
 
-static int qstat_xml_pending_jobs_started(qstat_handler_t *handler, lList **alpp) {
+static int qstat_xml_pending_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter) {
    int ret = 0;
    DENTER(TOP_LAYER);
    ret = qstat_xml_create_job_list(handler, alpp);
@@ -894,7 +891,7 @@ static int qstat_xml_pending_jobs_finished(qstat_handler_t *handler, lList **alp
    DRETURN(ret);
 }
 
-static int qstat_xml_finished_jobs_started(qstat_handler_t *handler, lList **alpp) {
+static int qstat_xml_finished_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter) {
    int ret = 0;
 
    DENTER(TOP_LAYER);
@@ -917,7 +914,7 @@ static int qstat_xml_finished_jobs_finished(qstat_handler_t *handler, lList **al
    DRETURN(ret);
 }
 
-static int qstat_xml_error_jobs_started(qstat_handler_t *handler, lList **alpp) {
+static int qstat_xml_error_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter) {
    int ret = 0;
    DENTER(TOP_LAYER);
 
@@ -962,14 +959,13 @@ static int qstat_xml_zombie_jobs_finished(qstat_handler_t *handler, lList **alpp
    DRETURN(ret);
 }
 
-static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname, lList **alpp) {
+static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;   
    lList* queue_list = nullptr;
 
    DENTER(TOP_LAYER);
    
-   if (qstat_env->full_listing & QSTAT_DISPLAY_FULL) {
+   if (parameter.full_listing_ & QSTAT_DISPLAY_FULL) {
       if (ctx->queue_elem == nullptr) {
          DPRINTF("Illegal State: ctx->queue_elem is nullptr !!!\n");
          ocs::TerminationManager::trigger_abort();
@@ -991,15 +987,14 @@ static int qstat_xml_queue_finished(qstat_handler_t* handler, const char* qname,
    DRETURN(0);
 }
 
-static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, lList **alpp) {
+static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter) {
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;
    lList *attribute_list = nullptr;
    lListElem *temp = nullptr;
 
    DENTER(TOP_LAYER);
    
-   if (qstat_env->full_listing & QSTAT_DISPLAY_FULL) {
+   if (parameter.full_listing_ & QSTAT_DISPLAY_FULL) {
       
       if (ctx->queue_elem != nullptr) {
          DPRINTF("Illegal state: ctx->queue_elem has to be nullptr");
@@ -1019,7 +1014,7 @@ static int qstat_xml_queue_started(qstat_handler_t* handler, const char* qname, 
    DRETURN(0);
 }
 
-static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp) {
+static int qstat_xml_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    lList *attribute_list = nullptr;
@@ -1118,7 +1113,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
 
 
 
-void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env) {
+void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter) {
    const lListElem *answer = nullptr;
    lListElem *xml_elem = nullptr;
    bool error = false;
@@ -1138,7 +1133,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    if (error) {
       xml_elem = xml_getHead("communication_error", *answer_list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, 
-         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
+         (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
       lFreeElem(&xml_elem);
    }
    else {
@@ -1164,7 +1159,7 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
       
       xml_elem = xml_getHead("message", *list, nullptr);
       lWriteElemXMLTo(xml_elem, stdout, 
-         (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
+         (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
       lFreeElem(&xml_elem);
       *list = nullptr;
    }
@@ -1174,11 +1169,11 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    DRETURN_VOID;
 }
 
-void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env){
+void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter){
    const lListElem *answer = nullptr;
    lListElem *xml_elem = nullptr;
    bool error = false;
-   bool suppress_binding_data = (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
+   bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
 
    DENTER(TOP_LAYER);
    

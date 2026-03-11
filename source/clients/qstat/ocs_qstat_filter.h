@@ -33,25 +33,15 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "ocs_QStatModel.h"
 #include "sgeobj/sge_daemonize.h"
+
+#include "ocs_QStatParameter.h"
 
 typedef struct qstat_env_str qstat_env_t;
 
 struct qstat_env_str {
    /* Input parameters */
-   lList *resource_list;         /* -l resource_request           */ 
-   lList *qresource_list;        /* -F qresource_request          */
-   lList* queueref_list;         /* -q queue_list                 */
-   lList* peref_list;            /* -pe pe_list                   */
-   lList* user_list;             /* -u user_list - selects jobs   */
-   lList* queue_user_list;       /* -U user_list - selects queues */
-   u_long32 full_listing;        /* -ext -urg -pri */
-   u_long32 qselect_mode;        /* called as qselect */
-   u_long32 group_opt;           /* -g        */
-   u_long32 queue_state;         /* -qs       */
-   u_long32 explain_bits;        /* -explain  */
-   u_long32 job_info;            /* -j        */
-   u_long32 is_binding_format;   /* -cb       */
 
    /* Needed lists */
    lList* queue_list;
@@ -66,27 +56,15 @@ struct qstat_env_str {
    lList* hgrp_list;
    lList* project_list;
    
-   bool need_queues;
    bool is_manager;
    
    int (*shut_me_down)();
-   u_long32 global_showjobs;
-   u_long32 global_showqueues;
-   
+
    /* 
    ** number of slots to be printed in slots column when 0 i
    ** is passed the number of requested slots printed
    */
    int slots_per_line;
-   
-   /* length of the longest queue name */   
-   int longest_queue_length;
-   
-   
-   lEnumeration *what_JB_Type;
-   lEnumeration *what_JAT_Type_template;
-   lEnumeration *what_JAT_Type_list;
-   
 };
 
 
@@ -101,7 +79,7 @@ struct qselect_handler_str {
    int (*destroy)(qselect_handler_t *thiz, lList** alpp);
 };
 
-int qselect(qstat_env_t* qstat_env, qselect_handler_t *handler, lList **alpp);
+int qselect(qstat_env_t* qstat_env, qselect_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 /* ------------- Cluster Queue Summary -------------------------------------- */
 /* qstat -g c                                                                 */
@@ -134,15 +112,15 @@ struct cqueue_summary_handler_str {
    void *ctx;
    qstat_env_t *qstat_env;
    
-   int (*report_started)(cqueue_summary_handler_t *thiz, lList **alpp);
+   int (*report_started)(cqueue_summary_handler_t *thiz, lList **alpp, ocs::QStatParameter &parameter);
    int (*report_finished)(cqueue_summary_handler_t *thiz, lList **alpp);
    
-   int (*report_cqueue)(cqueue_summary_handler_t *thiz, const char* cqname, cqueue_summary_t *summary, lList **alpp);
+   int (*report_cqueue)(cqueue_summary_handler_t *thiz, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
    
    int (*destroy)(cqueue_summary_handler_t *thiz);
 };
 
-int qstat_cqueue_summary(qstat_env_t* qstat_env, cqueue_summary_handler_t *handler, lList **alpp);
+int qstat_cqueue_summary(qstat_env_t* qstat_env, cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 /* ---------------- QStat queue/job handling ---------------------------------*/
 
@@ -244,7 +222,7 @@ struct job_handler_str {
   void *ctx;
   qstat_env_t *qstat_env;
   
-  int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp);
+  int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
   
   int (*report_sub_tasks_started)(job_handler_t* handler, lList **alpp);
   int (*report_sub_task)(job_handler_t* handler, task_summary_t *summary, lList **alpp);
@@ -306,8 +284,8 @@ struct qstat_handler_str {
   int (*report_started)(qstat_handler_t* handler, lList** alpp);
   int (*report_finished)(qstat_handler_t* hanlder, lList** alpp);
   
-  int (*report_queue_started)(qstat_handler_t *handler, const char* qname, lList **alpp);
-  int (*report_queue_summary)(qstat_handler_t *handler, const char* qname,  queue_summary_t *summary, lList **alpp);
+  int (*report_queue_started)(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
+  int (*report_queue_summary)(qstat_handler_t *handler, const char* qname,  queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
   int (*report_queue_load_alarm)(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
   int (*report_queue_suspend_alarm)(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
   int (*report_queue_message)(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
@@ -317,15 +295,15 @@ struct qstat_handler_str {
   job_handler_t job_handler;
   
   int (*report_queue_jobs_started)(qstat_handler_t *handler, const char* qname, lList **alpp);
-  int (*report_queue_jobs_finished)(qstat_handler_t *handler, const char* qname, lList **alpp);
+  int (*report_queue_jobs_finished)(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
 
-  int (*report_queue_finished)(qstat_handler_t* handler, const char* qname, lList **alpp);
+  int (*report_queue_finished)(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
 
-  int (*report_pending_jobs_started)(qstat_handler_t *handler, lList **alpp);
+  int (*report_pending_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
   int (*report_pending_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  int (*report_finished_jobs_started)(qstat_handler_t *handler, lList **alpp);
+  int (*report_finished_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
   int (*report_finished_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  int (*report_error_jobs_started)(qstat_handler_t *handler, lList **alpp);
+  int (*report_error_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
   int (*report_error_jobs_finished)(qstat_handler_t *handler, lList **alpp);
   int (*report_zombie_jobs_started)(qstat_handler_t *handler, lList **alpp);
   int (*report_zombie_jobs_finished)(qstat_handler_t *handler, lList **alpp);
@@ -336,7 +314,7 @@ struct qstat_handler_str {
 
 
 
-int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alpp);
+int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 
 void qstat_env_destroy(qstat_env_t *qstat_env);
@@ -357,8 +335,7 @@ int filter_queues(lList **filtered_queue_list,
                   lList **alpp);
                   
 lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show);
-lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env);
-void qstat_filter_add_core_attributes(qstat_env_t* qstat_env);
+lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env, ocs::QStatModel &qstat_model);
 void qstat_filter_add_ext_attributes(qstat_env_t* qstat_env);
 void qstat_filter_add_pri_attributes(qstat_env_t* qstat_env);
 void qstat_filter_add_urg_attributes(qstat_env_t* qstat_env);
@@ -366,8 +343,5 @@ void qstat_filter_add_l_attributes(qstat_env_t* qstat_env);
 void qstat_filter_add_q_attributes(qstat_env_t* qstat_env);
 void qstat_filter_add_pe_attributes(qstat_env_t* qstat_env);
 void qstat_filter_add_r_attributes(qstat_env_t *qstat_env);
-void qstat_filter_add_xml_attributes(qstat_env_t *qstat_env);
 void qstat_filter_add_t_attributes(qstat_env_t *qstat_env);
 void qstat_filter_add_U_attributes(qstat_env_t *qstat_env);
-
-int build_job_state_filter(qstat_env_t *qstat_env, const char* job_state, lList **alpp);

@@ -66,6 +66,7 @@
 
 #include "gdi/ocs_gdi_Client.h"
 
+#include "ocs_QStatParameter.h"
 #include "sig_handlers.h"
 #include "ocs_client_job.h"
 #include "ocs_client_print.h"
@@ -77,6 +78,7 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qstat.h"
+#include "ocs_QStatModel.h"
 
 #define FORMAT_I_20 "%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I "
 #define FORMAT_I_10 "%I %I %I %I %I %I %I %I %I %I "
@@ -84,10 +86,8 @@
 #define FORMAT_I_2 "%I %I "
 #define FORMAT_I_1 "%I "
 
-static lList *sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
-                              char **hostname, lList **ppljid, u_long32 *isXML);
-static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env);
-static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env);
+static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
+static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
 
 typedef struct qstat_stdout_ctx_str qstat_stdout_ctx_t;
 
@@ -111,20 +111,20 @@ struct qstat_stdout_ctx_str {
 };
 
 static int qstat_stdout_init(qstat_handler_t *handler, lList **alpp);
-static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp);
-static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char* qname, lList** alpp);
+static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char* qname, lList** alpp, ocs::QStatParameter &parameter);
 
 static int qstat_stdout_queue_load_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_suspend_alarm(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
 static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
 static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char * details, lList **alpp);
-static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp);
-static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp);
-static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp);
+static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
 static int qstat_stdout_destroy(qstat_handler_t *handler);
 
 static int job_stdout_init(job_handler_t *handler, lList** alpp);
-static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp);
+static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
 static int job_stdout_sub_tasks_started(job_handler_t* handler, lList **alpp);
 static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
 static int job_stdout_sub_tasks_finished(job_handler_t* handler, lList **alpp);
@@ -175,8 +175,8 @@ static void qselect_stdout_init(qselect_handler_t* handler, lList **alpp);
 static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* qname, lList **alpp);
 
 static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList **alpp);
-static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp);
-static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp);
+static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
+static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
 
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
@@ -184,29 +184,11 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
    lList *alp = nullptr;
-   lList *pcmdline = nullptr;
-   lList *pfile = nullptr;
-   lList *jid_list = nullptr;
-   lList *ref_list = nullptr;
    const lListElem *aep = nullptr;
-   const lListElem *ep_1 = nullptr;
-   lListElem *ep_2 = nullptr;
-   char *hostname = nullptr;
-   const char *username = nullptr;
-   const char *cell_root = nullptr;
    qstat_env_t qstat_env;
-   u_long32 isXML = 0;
-   bool more = true;
 
    /* initialize the qstat_env */
    memset(&qstat_env, 0, sizeof(qstat_env_t));
-   qstat_env.full_listing = QSTAT_DISPLAY_ALL;
-   qstat_env.explain_bits = QI_DEFAULT;
-   qstat_env.job_info = 0;
-   qstat_env.group_opt = 0;
-   qstat_env.queue_state = U_LONG32_MAX;
-   qstat_env.longest_queue_length=30;
-   qstat_env.need_queues = true;
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);
@@ -219,145 +201,44 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   username = component_get_username();
-   cell_root = bootstrap_get_cell_root();
-   lInit(nmv);      
-
-   if (!strcmp(sge_basename(*argv++, '/'), "qselect")) {
-      qstat_env.qselect_mode = 1;
-   } else {
-      qstat_env.qselect_mode = 0;
-   }
-
-   {
-      // get name of files that contain default options
-      dstring file = DSTRING_INIT;
-      const char *common_file = SGE_COMMON_DEF_QSTAT_FILE;
-      const char *home_file = SGE_HOME_DEF_QSTAT_FILE;
-      if (qstat_env.qselect_mode == 1) {
-         common_file = SGE_COMMON_DEF_QSELECT_FILE;
-         home_file = SGE_HOME_DEF_QSELECT_FILE;
-      }
-
-      // get options from the global and user specific files
-      if (get_root_file_path(&file, cell_root, common_file)) {
-         switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, sge_dstring_get_string(&file));
-      }
-      if (get_user_home_file_path(&file, home_file, username, &alp)) {
-         switch_list_qstat_parse_from_file(&pfile, &alp, qstat_env.qselect_mode, sge_dstring_get_string(&file));
-      }
-      sge_dstring_free(&file);
-
-      // get options from the command line
-      switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, qstat_env.qselect_mode, argv);
-
-      // remove duplicate options
-      for_each_ep(ep_1, pcmdline) {
-         do {
-            /*
-             * Need that logic to handle multiple SPA
-             * objects representing the same option.
-             */
-            more = false;
-            for_each_rw(ep_2, pfile) {
-               if (strcmp(lGetString(ep_1, SPA_switch_val),
-                       lGetString(ep_2, SPA_switch_val)) == 0) {
-                  // remove duplicate options
-                  lRemoveElem(pfile, &ep_2);
-                  more = true;
-                  break;
-               }
-            }
-         } while(more);
-      }
-
-      // merge the options from the files and the command line
-      if (lGetNumberOfElem(pcmdline) > 0) {
-         lAppendList(pcmdline, pfile);
-         lFreeList(&pfile);
-      } else if (lGetNumberOfElem(pfile) > 0) {
-         lAppendList(pfile, pcmdline);
-         lFreeList(&pcmdline);
-         pcmdline = pfile;
-      }
-   }
-
-   // parsing error => show error and exit
-   if (alp != nullptr) {
-      for_each_ep(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      }
-      lFreeList(&alp);
-      lFreeList(&pcmdline);
-      qstat_env_destroy(&qstat_env);
+   // parse command line parameters and options
+   ocs::QStatParameter parameter;
+   if (!parameter.parse_parameters(&alp, argv, environ)) {
+      answer_list_output(&alp);
       sge_exit(1);
    }
 
-   // handle all switches
-   alp = sge_parse_qstat(&pcmdline, &qstat_env, &hostname, &jid_list, &isXML);
-   if (alp != nullptr) {
-      /*
-      ** low level parsing error! show answer list
-      */
-      for_each_ep(aep, alp) {
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-      }
-      lFreeList(&alp);
-      lFreeList(&pcmdline);
-      lFreeList(&ref_list);
-      lFreeList(&jid_list);
-      qstat_env_destroy(&qstat_env);
+   ocs::QStatModel model;
+   if (!model.make_snapshot(&alp, parameter)) {
+      answer_list_output(&alp);
       sge_exit(1);
    }
 
-   // get configuration from qmaster - from now on it is possible to use the mconf_get-functions
-   lListElem *global = nullptr;
-   lListElem *local = nullptr;
-   lList *conf_list = nullptr;
+// FILTER FUNCTIONS
 
-   const char *qualified_hostname = component_get_qualified_hostname();
-   u_long32 progid = component_get_component_id();
-   if (ocs::gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||
-      merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
-      ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      lFreeList(&conf_list);
-      lFreeElem(&global);
-      lFreeElem(&local);
-      sge_exit(1);
-   }
+
+// DATA RETRIEVAL START
 
    lList *answer_list = nullptr;
-   // if -j, then only print job info and leave */
-   if (qstat_env.job_info) {
-      int ret = 0;
-
-      bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(&answer_list, &qstat_env.is_manager, nullptr, nullptr, nullptr);
-      if (!perm_return) {
-         for_each_ep(aep, answer_list) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         }
-         lFreeList(&answer_list);
-         qstat_env_destroy(&qstat_env);
-         sge_exit(ret);
-      }
-
-      if (lGetNumberOfElem(jid_list) > 0) {
-         /* RH TODO: implement the qstat_show_job_info with and handler */
-         ret = qstat_show_job(jid_list, isXML, &qstat_env);
-      } else {
-         /* RH TODO: implement the qstat_show_job_info with and handler */
-         ret = qstat_show_job_info(isXML, &qstat_env);
-      }
-      qstat_env_destroy(&qstat_env);
-      sge_exit(ret);
-   }
+   const char *username = component_get_username();
+   str_list_transform_user_list(&(parameter.user_list_), &answer_list, username);
 
    int ret = 0;
-   str_list_transform_user_list(&(qstat_env.user_list), &answer_list, username);
-   if (qstat_env.qselect_mode) {
+
+   // if -j, then only print job info and leave */
+   if (parameter.job_info_) {
+      if (lGetNumberOfElem(parameter.jid_list_) > 0) {
+         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, &qstat_env, parameter);
+      } else {
+         ret = qstat_show_job_info(parameter.isXML_, &qstat_env, parameter);
+      }
+   } else if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::QSELECT) {
+
+      // qselect output
+
       qselect_handler_t handler;
-      if (isXML) {
-         if(qselect_xml_init(&handler, &answer_list)) {
+      if (parameter.isXML_) {
+         if (qselect_xml_init(&handler, &answer_list)) {
             for_each_ep(aep, answer_list) {
                fprintf(stderr, "%s\n", lGetString(aep, AN_text));
             }
@@ -369,40 +250,47 @@ int main(int argc, char *argv[]) {
       } else {
          qselect_stdout_init(&handler, &answer_list);
       }
-      ret = qselect(&qstat_env, &handler, &answer_list);
+      ret = qselect(&qstat_env, &handler, &answer_list, parameter, model);
       if (handler.destroy != nullptr) {
          handler.destroy(&handler, &answer_list);
       }
-   } else if (qstat_env.group_opt & GROUP_CQ_SUMMARY) {
+   } else if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_GROUP) {
+
+      // Group Summary
+
       cqueue_summary_handler_t handler;
-      if (isXML) {
+      if (parameter.isXML_) {
          ret = cqueue_summary_xml_handler_init(&handler);
       } else {
          ret = cqueue_summary_stdout_init(&handler, &answer_list);
       }
       if (ret == 0) {
-         ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list);
+         ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list, parameter, model);
       }
       if (handler.destroy != nullptr) {
          handler.destroy(&handler);
       }
-   } else {
-      qstat_handler_t handler;
+   } else if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_DEFAULT) {
 
-      if (isXML) {
+      // Regular output
+
+      qstat_handler_t handler;
+      if (parameter.isXML_) {
          ret = qstat_xml_handler_init(&handler, &answer_list);
       } else {
          ret = qstat_stdout_init(&handler, &answer_list);
       }
 
       if (ret == 0) {
-         ret = qstat_no_group(&qstat_env, &handler, &answer_list);
+         ret = qstat_no_group(&qstat_env, &handler, &answer_list, parameter, model);
       }
 
       if (handler.destroy != nullptr ) {
          DPRINTF("Destroy handler\n");
          handler.destroy(&handler);
       }
+   } else {
+      // not possible
    }
 
    answer_list_output(&answer_list);
@@ -414,247 +302,6 @@ int main(int argc, char *argv[]) {
    }
    sge_exit(0);
    return 0;
-}
-
-
-/****
- **** sge_parse_qstat (static)
- ****
- **** 'stage 2' parsing of qstat-options. Gets the options from
- **** ppcmdline, sets the full and empry_qs flags and puts the
- **** queue/res/user-arguments into the lists.
- ****/
-static lList *
-sge_parse_qstat(lList **ppcmdline, qstat_env_t *qstat_env,
-                char **hostname, lList **ppljid, u_long32 *isXML)
-{
-   stringT str;
-   lList *alp = nullptr;
-   u_long32 helpflag;
-   int usageshowed = 0;
-   char *argstr;
-   u_long32 full = 0;
-   lList *plstringopt = nullptr;
-
-
-   DENTER(TOP_LAYER);
-
-   qstat_env->need_queues = false;
-   qstat_filter_add_core_attributes(qstat_env);
-
-
-   /* Loop over all options. Only valid options can be in the
-      ppcmdline list. 
-   */
-
-   /* make core binding related output to default output */
-   qstat_env->full_listing |= QSTAT_DISPLAY_BINDING;
-
-   while (lGetNumberOfElem(*ppcmdline)) {
-      if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
-         usageshowed = qstat_usage(qstat_env->qselect_mode, stdout, nullptr);
-         sge_exit(0);
-         break;
-      }
-
-      while (parse_flag(ppcmdline, "-ncb", &alp, &(qstat_env->is_binding_format))) {
-         /* disable qstat binding output bit */
-         qstat_env->full_listing ^= QSTAT_DISPLAY_BINDING;
-         continue;
-      }
-
-      while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
-         qstat_env->job_info = 1;
-         if (argstr) {
-            if (*ppljid) {
-               lFreeList(ppljid);
-            }
-            str_list_parse_from_string(ppljid, argstr, ",");
-            sge_free(&argstr);
-         }
-         continue;
-      }
-
-      while (parse_flag(ppcmdline, "-xml", &alp, isXML)){
-         qstat_filter_add_xml_attributes(qstat_env);
-         continue;
-      }
-      
-      /*
-      ** Two additional flags only if MORE_INFO is set:
-      ** -dj   dump jobs:  displays full global_job_list 
-      ** -dq   dump queue: displays full global_queue_list
-      */
-      if (getenv("MORE_INFO")) {
-         while (parse_flag(ppcmdline, "-dj", &alp, &(qstat_env->global_showjobs)))
-            ;
-         
-         while (parse_flag(ppcmdline, "-dq", &alp, &(qstat_env->global_showqueues)))
-            ;
-      }
-
-      while (parse_flag(ppcmdline, "-ne", &alp, &full)) {
-         if (full) {
-            qstat_env->full_listing |= QSTAT_DISPLAY_NOEMPTYQ;
-            full = 0;
-         }
-         continue;
-      }
-
-
-      while (parse_flag(ppcmdline, "-f", &alp, &full)) {
-         if (full) {
-            qstat_env->full_listing |= QSTAT_DISPLAY_FULL;
-            full = 0;
-         }
-         qstat_env->need_queues = true;
-         continue;
-      }
-
-      while (parse_string(ppcmdline, "-s", &alp, &argstr)) {
-         
-         if (argstr != nullptr) {
-            if (build_job_state_filter(qstat_env, argstr, &alp)) {
-               if (!usageshowed) {
-                  qstat_usage(qstat_env->qselect_mode, stderr, nullptr);
-               }
-               sge_free(&argstr);
-               DRETURN(alp);
-            }
-            sge_free(&argstr);
-         }
-         continue;
-      }
-
-      while (parse_string(ppcmdline, "-explain", &alp, &argstr)) {
-         u_long32 filter = QI_AMBIGUOUS | QI_ALARM | QI_SUSPEND_ALARM | QI_ERROR;
-         qstat_env->explain_bits = qinstance_state_from_string(argstr, &alp, filter);
-         qstat_env->full_listing |= QSTAT_DISPLAY_FULL;
-         qstat_env->need_queues = true;
-         sge_free(&argstr);
-         continue;
-      }
-       
-      while (parse_string(ppcmdline, "-F", &alp, &argstr)) {
-         qstat_env->full_listing |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
-         qstat_env->need_queues = true;
-         if (argstr) {
-            if (qstat_env->qresource_list) {
-               lFreeList(&(qstat_env->qresource_list));
-            }
-            qstat_env->qresource_list = centry_list_parse_from_string(qstat_env->qresource_list, argstr, false);
-            sge_free(&argstr);
-         }
-         continue;
-      }
-
-      while (parse_flag(ppcmdline, "-ext", &alp, &full)) {
-         qstat_filter_add_ext_attributes(qstat_env);
-         if (full) {
-            qstat_env->full_listing |= QSTAT_DISPLAY_EXTENDED;
-            full = 0;
-         }
-         continue;
-      }
-
-      if (!qstat_env->qselect_mode ) {
-         while (parse_flag(ppcmdline, "-urg", &alp, &full)) {
-            qstat_filter_add_urg_attributes(qstat_env); 
-            qstat_env->need_queues = true;
-            if (full) {
-               qstat_env->full_listing |= QSTAT_DISPLAY_URGENCY;
-               full = 0;
-            }
-            continue;
-         }
-      }
-
-      if (!qstat_env->qselect_mode ) {
-         while (parse_flag(ppcmdline, "-pri", &alp, &full)) {
-            qstat_filter_add_pri_attributes(qstat_env);
-            if (full) {
-               qstat_env->full_listing |= QSTAT_DISPLAY_PRIORITY;
-               full = 0;
-            }
-            continue;
-         }
-      }
-
-      while (parse_flag(ppcmdline, "-r", &alp, &full)) {
-         qstat_filter_add_r_attributes(qstat_env);
-         if (full) {
-            qstat_env->full_listing |= QSTAT_DISPLAY_RESOURCES;
-            full = 0;
-         }
-         continue;
-      }
-
-      while (parse_flag(ppcmdline, "-t", &alp, &full)) {
-         qstat_filter_add_t_attributes(qstat_env);
-         if (full) {
-            qstat_env->full_listing |= QSTAT_DISPLAY_TASKS;
-            qstat_env->group_opt |= GROUP_NO_PETASK_GROUPS;
-            full = 0;
-         }
-         continue;
-      }
-
-      while (parse_string(ppcmdline, "-qs", &alp, &argstr)) {
-         u_long32 filter = 0xFFFFFFFF;
-         qstat_env->queue_state = qinstance_state_from_string(argstr, &alp, filter);
-         qstat_env->need_queues = true;
-         sge_free(&argstr);
-         continue;
-      }
-
-      while (parse_string(ppcmdline, "-l", &alp, &argstr)) {
-         qstat_filter_add_l_attributes(qstat_env);
-         qstat_env->resource_list = centry_list_parse_from_string(qstat_env->resource_list, argstr, false);
-         qstat_env->need_queues = true;
-         sge_free(&argstr);
-         continue;
-      }
-
-      while (parse_multi_stringlist(ppcmdline, "-u", &alp, &(qstat_env->user_list), ST_Type, ST_name)) {
-         continue;
-      }
-      
-      while (parse_multi_stringlist(ppcmdline, "-U", &alp, &(qstat_env->queue_user_list), ST_Type, ST_name)) {
-         qstat_filter_add_U_attributes(qstat_env);
-         qstat_env->need_queues = true;
-         continue;
-      }   
-      
-      while (parse_multi_stringlist(ppcmdline, "-pe", &alp, &(qstat_env->peref_list), ST_Type, ST_name)) {
-         qstat_filter_add_pe_attributes(qstat_env);
-         qstat_env->need_queues = true;
-         continue;
-      }   
-
-      while (parse_multi_stringlist(ppcmdline, "-q", &alp, &(qstat_env->queueref_list), QR_Type, QR_name)) {
-         qstat_filter_add_q_attributes(qstat_env);
-         qstat_env->need_queues = true;
-         continue;
-      }
-
-      while (parse_multi_stringlist(ppcmdline, "-g", &alp, &plstringopt, ST_Type, ST_name)) {
-         qstat_env->group_opt |= parse_group_options(plstringopt, &alp);
-         qstat_env->need_queues = true;
-         lFreeList(&plstringopt);    
-         continue;
-      }
-   }
-
-   if (lGetNumberOfElem(*ppcmdline)) {
-     snprintf(str, sizeof(str), "%s\n", MSG_PARSE_TOOMANYOPTIONS);
-     if (!usageshowed) {
-        qstat_usage(qstat_env->qselect_mode, stderr, nullptr);
-     }
-     answer_list_add(&alp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-     DRETURN(alp);
-   }
-
-   DRETURN(alp);
 }
 
 /* --------------- qstat stdout handler --------------------------------------*/
@@ -809,7 +456,7 @@ static char jhul6[] = "-----------------------------------";
          sge_dstring_sprintf_append(job_output, "%8.0f ", value); \
       } \
 
-static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp)
+static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
@@ -818,7 +465,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
    bool print_job_id;
 
-   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager, qstat_env->user_list);
+   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager);
    if (hide_data) {
       return 0;
    }
@@ -826,14 +473,14 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    dstring ds = DSTRING_INIT;
    dstring job_output = DSTRING_INIT;
 
-   sge_ext = ((qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (qstat_env->full_listing & QSTAT_DISPLAY_TASKS);
-   sge_urg = (qstat_env->full_listing & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (qstat_env->full_listing & QSTAT_DISPLAY_PRIORITY);
+   sge_ext = ((parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
+   tsk_ext = (parameter.full_listing_ & QSTAT_DISPLAY_TASKS);
+   sge_urg = (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY);
+   sge_pri = (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY);
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
 
-   if ((qstat_env->full_listing & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
+   if ((parameter.full_listing_ & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
       ctx->job_header_printed = true;
    }
 
@@ -859,7 +506,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    
    if (!ctx->job_header_printed) {
       int i;
-      int line_length = qstat_env->longest_queue_length-10+1;
+      int line_length = parameter.longest_queue_length-10+1;
       char * seperator = sge_malloc(line_length);
       const char *part1 = "%s%-10.10s %s %s%s%s%s%s %-10.10s %-12.12s %s%-5.5s %s%s%s%s%s%s%s%s%s%-";
       const char *part3 = ".";
@@ -873,7 +520,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
          seperator[i] = '-';
       }
       seperator[line_length-1] = '\0';
-      snprintf(part6, part6_size, "%s%d%s%d%s", part1, qstat_env->longest_queue_length, part3, qstat_env->longest_queue_length, part5);
+      snprintf(part6, part6_size, "%s%d%s%d%s", part1, parameter.longest_queue_length, part3, parameter.longest_queue_length, part5);
    
       printf(part6, indent, "job-ID", "prior ",
             (sge_pri||sge_urg)?" nurg   ":"",
@@ -895,7 +542,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
             sge_ext?"stckt ":"",
             sge_ext?"share ":"",
                "queue",
-            (qstat_env->group_opt & GROUP_NO_PETASK_GROUPS)?"master":"slots",
+            (parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)?"master":"slots",
                "ja-task-ID ", 
             tsk_ext?"task-ID ":"",
             tsk_ext?"state ":"",
@@ -906,7 +553,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
       printf("\n%s%s%s%s%s%s%s%s\n", indent, 
             jhul1, 
             seperator,
-            (qstat_env->group_opt & GROUP_NO_PETASK_GROUPS)?jhul2:"",
+            (parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)?jhul2:"",
             sge_ext ? jhul3 : "", 
             tsk_ext ? jhul4 : "",
             sge_urg ? jhul5 : "",
@@ -917,7 +564,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
    }
    
    if (summary->is_zombie) {
-      sge_printf_header(qstat_env->full_listing & 
+      sge_printf_header(parameter.full_listing_ &
                         (QSTAT_DISPLAY_ZOMBIES | QSTAT_DISPLAY_FULL), 
                         sge_ext);
    }
@@ -1169,9 +816,9 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
       }
    }
    /* if not full listing we need the queue's name in each line */
-   if (!(qstat_env->full_listing & QSTAT_DISPLAY_FULL)) {
+   if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
       char temp[20];
-	   snprintf(temp, sizeof(temp), "%%-%d.%ds ", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
+	   snprintf(temp, sizeof(temp), "%%-%d.%ds ", parameter.longest_queue_length, parameter.longest_queue_length);
       if (hide_data) {
          sge_dstring_sprintf_append(&job_output, temp, summary->queue?"*":"");
       } else {
@@ -1179,7 +826,7 @@ static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *s
       }
    }
    
-   if ((qstat_env->group_opt & GROUP_NO_PETASK_GROUPS)) {
+   if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
       /* MASTER/SLAVE information needed only to show parallel job distribution */
       if (summary->master)
          if (hide_data) {
@@ -1671,12 +1318,11 @@ static int job_stdout_binding_finished(job_handler_t* handler, lList **alpp)
    DRETURN(0);
 }
 
-static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp)
+static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qname, queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;
-   int sge_ext = qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED;
+   int sge_ext = parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED;
    char to_print[80];
    dstring queue_output = DSTRING_INIT;
 
@@ -1684,7 +1330,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
       char temp[20];
       ctx->header_printed = true;
       
-      snprintf(temp, sizeof(temp), "%%-%d.%ds", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
+      snprintf(temp, sizeof(temp), "%%-%d.%ds", parameter.longest_queue_length, parameter.longest_queue_length);
 
       printf(temp,MSG_QSTAT_PRT_QUEUENAME); 
       
@@ -1701,7 +1347,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 
    {
       int i;
-      for(i=0; i< qstat_env->longest_queue_length - 30; i++)
+      for(i=0; i< parameter.longest_queue_length - 30; i++)
          printf("-");
       printf("\n");
    }
@@ -1709,7 +1355,7 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 
    // queue name
    char temp[20];
-   snprintf(temp, sizeof(temp), "%%-%d.%ds ", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
+   snprintf(temp, sizeof(temp), "%%-%d.%ds ", parameter.longest_queue_length, parameter.longest_queue_length);
    sge_dstring_sprintf_append(&queue_output, temp, qname);
 
    // queue type
@@ -1775,7 +1421,7 @@ static int qstat_stdout_queue_message(qstat_handler_t* handler, const char* qnam
 }
 
 
-static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char *qname, lList** alpp) 
+static int qstat_stdout_queue_finished(qstat_handler_t* handler, const char *qname, lList** alpp, ocs::QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
 /*    printf("\n"); */
@@ -1794,25 +1440,23 @@ static int qstat_stdout_queue_resource(qstat_handler_t* handler, const char* dom
    DRETURN(0);
 }
 
-static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp) 
+static int qstat_stdout_pending_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter)
 {
-   qstat_env_t *qstat_env = handler->qstat_env;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
    
    DENTER(TOP_LAYER);
    
    ctx->last_job_id = 0;
-   sge_printf_header((qstat_env->full_listing & QSTAT_DISPLAY_FULL) |
-                     (qstat_env->full_listing & QSTAT_DISPLAY_PENDING), 
-                     (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
+   sge_printf_header((parameter.full_listing_ & QSTAT_DISPLAY_FULL) |
+                     (parameter.full_listing_ & QSTAT_DISPLAY_PENDING),
+                     (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
    DRETURN(0);
 }
 
-static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp) 
+static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter)
 {
-   qstat_env_t *qstat_env = handler->qstat_env;
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-   int sge_ext = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED);
+   int sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
    
    DENTER(TOP_LAYER);
    
@@ -1825,10 +1469,9 @@ static int qstat_stdout_finished_jobs_started(qstat_handler_t *handler, lList **
    DRETURN(0);
 }
 
-static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp) 
+static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter)
 {
-   qstat_env_t *qstat_env = handler->qstat_env;
-   int sge_ext = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED);
+   int sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
    
    DENTER(TOP_LAYER);
    
@@ -1854,19 +1497,17 @@ static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList *
 }
 
 
-static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp) 
+static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter)
 {
    int i;
-   qstat_env_t *qstat_env = handler->qstat_env;
-   
-   bool show_states = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    
    char queue_def[50];
    char fields[] = "%7s %6s %6s %6s %6s %6s %6s ";
 
    DENTER(TOP_LAYER);
 
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds %s ", qstat_env->longest_queue_length, qstat_env->longest_queue_length, fields);
+   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds %s ", parameter.longest_queue_length, parameter.longest_queue_length, fields);
    printf(queue_def, "CLUSTER QUEUE", "CQLOAD", "USED", "RES", "AVAIL", "TOTAL", "aoACDS", "cdsuE");
    if (show_states) {
       printf("%5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s", "s", "A", "S", "C", "u", "a", "d", "D", "c", "o", "E");
@@ -1883,7 +1524,7 @@ static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handle
       printf("--------------------");
       printf("------");
    }
-   for(i=0; i< qstat_env->longest_queue_length - 36; i++) {
+   for(i=0; i< parameter.longest_queue_length - 36; i++) {
       printf("-");
    }   
    printf("\n");
@@ -1894,15 +1535,14 @@ static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handle
 
 static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, 
                                                const char* cqname, cqueue_summary_t *summary,
-                                               lList **alpp) 
+                                               lList **alpp, ocs::QStatParameter &parameter)
 {
-   qstat_env_t *qstat_env = handler->qstat_env;
-   bool show_states = (qstat_env->full_listing & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    char queue_def[50];
 
    DENTER(TOP_LAYER);
 
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds ", qstat_env->longest_queue_length, qstat_env->longest_queue_length);
+   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds ", parameter.longest_queue_length, parameter.longest_queue_length);
 
    printf(queue_def, cqname);
 
@@ -1968,8 +1608,8 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 **
 ** returns 0 on success, non-zero on failure
 */
-static int 
-qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
+static int
+qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter) {
    const lListElem *j_elem = 0;
    lList* jlp = nullptr;
    lList* ilp = nullptr;
@@ -2069,8 +1709,6 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    lFreeWhere(&where);
    lFreeWhat(&what);
 
-   lWriteListTo(jlp, stderr);
-
    if (isXML) {
       /* filter the message list to contain only jobs that have been requested.
          First remove all entries in the job_number_list that are not in the
@@ -2106,7 +1744,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
          }         
       }
       
-      xml_qstat_show_job(&jlp, &ilp,  &alp, &jid_list, qstat_env);
+      xml_qstat_show_job(&jlp, &ilp,  &alp, &jid_list, qstat_env, parameter);
    
       lFreeList(&jlp);
       lFreeList(&alp);
@@ -2167,7 +1805,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
       const lListElem *sme;
       const char *owner = lGetString(j_elem, JB_owner);
-      bool show_job = job_is_visible(owner,  qstat_env->is_manager, qstat_env->user_list);
+      bool show_job = job_is_visible(owner,  qstat_env->is_manager);
       if (!show_job) {
          DTRACE;
          continue;
@@ -2175,7 +1813,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
 
       printf("==============================================================\n");
       /* print job information */
-      cull_show_job(j_elem, 0, (qstat_env->full_listing & QSTAT_DISPLAY_BINDING) != 0 ? true : false);
+      cull_show_job(j_elem, 0, (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) != 0 ? true : false);
       
       /* print scheduling information */
       if (schedd_info && (sme = lFirst(ilp))) {
@@ -2218,7 +1856,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env) {
    DRETURN(0);
 }
 
-static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
+static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter)
 {
    lList *ilp = nullptr;
    lList *mlp = nullptr;
@@ -2244,7 +1882,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env)
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
-      xml_qstat_show_job_info(&ilp, &alp, qstat_env);
+      xml_qstat_show_job_info(&ilp, &alp, qstat_env, parameter);
    }
    else {
       for_each_ep(aep, alp) {

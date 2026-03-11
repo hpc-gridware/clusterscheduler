@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -216,7 +216,7 @@ bool
 ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const lListElem *host) {
    DENTER(TOP_LAYER);
 
-   if (a == nullptr || !a->is_binding_enabled
+   if (a == nullptr || host == nullptr || !a->is_binding_enabled
       || host == nullptr
       || a->job == nullptr || lGetObject(a->job, JB_binding) == nullptr) {
       DRETURN(true);
@@ -354,11 +354,12 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
-      DPRINTF("find_binding: binding ignored for host %s\n", lGetHost(host, EH_name));
+      DPRINTF("find_binding: binding ignored for host %s\n", host != nullptr ? lGetHost(host, EH_name) : "unknown");
       DRETURN(slots);
    }
 
    // No units requested?
+   const char *hostname = lGetHost(host, EH_name);
    unsigned binding_amount = Job::binding_get_amount(a->job);
    if (binding_amount == 0) {
       DPRINTF("find_binding: no binding amount requested\n");
@@ -367,7 +368,6 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const lListEl
 
    // Early exit in the case of host binding when binding was already done. We know per definition that we can
    // handle all slots if the host binding was done once.
-   const char *hostname = lGetHost(host, EH_name);
    BindingType::Type binding_type= Job::binding_get_type(a->job);
    lListElem *binding_done = lGetElemHostRW(a->binding_to_use, BN_specific_hostname, hostname);
    if (binding_type == BindingType::HOST && binding_done != nullptr) {

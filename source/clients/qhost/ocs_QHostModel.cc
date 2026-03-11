@@ -53,8 +53,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    gdi::Request gdi_multi{};
 
    // @todo Should be combined with the other GDI requests
-   if (const bool perm_return = gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr,
-                                                                   nullptr, nullptr); !perm_return) {
+   if (gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr, nullptr, nullptr)) {
       DRETURN(false);
    }
 

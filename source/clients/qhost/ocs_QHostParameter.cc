@@ -50,16 +50,13 @@ void ocs::QHostParameter::free_data() {
 
 bool
 ocs::QHostParameter::qhost_usage(FILE *fp) {
-   dstring ds;
-   char buffer[256];
-
    DENTER(TOP_LAYER);
 
    if (fp == nullptr) {
       DRETURN(false);
    }
 
-   sge_dstring_init(&ds, buffer, sizeof(buffer));
+   DSTRING_STATIC(ds, 256);
 
    fprintf(fp, "%s\n", feature_get_product_name(FS_SHORT_VERSION, &ds));
 

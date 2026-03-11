@@ -33,13 +33,6 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-int 
-qstat_usage(int qselect_mode, FILE *fp, char *what);
-
-bool
-switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list,
-                                  int mode, const char *file);
-
 bool
 switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
                                      int qselect_mode, char **argv);

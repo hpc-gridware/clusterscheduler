@@ -4657,7 +4657,7 @@ job_get_sync_options_string(const lListElem *job) {
  * @return true if the job should be visible, false otherwise
  */
 bool
-job_is_visible(const char *owner, const bool is_manager, const lList *acl_list) {
+job_is_visible(const char *owner, const bool is_manager) {
    DENTER(BASIS_LAYER);
 
    // manager can see everything
@@ -4671,22 +4671,6 @@ job_is_visible(const char *owner, const bool is_manager, const lList *acl_list) 
       DRETURN(true);
    }
 
-   // check all departments
-   const lListElem *acl_dep;
-   for_each_ep(acl_dep, acl_list) {
-      // skip non-departmental acl's
-      if (const u_long32 type = lGetUlong(acl_dep, US_type); (type & US_DEPT) == 0) {
-         continue;
-      }
-
-      // if the qstat-user and owner are in the same department, show the data
-      const lList *entries = lGetList(acl_dep, US_entries);
-      const lListElem *owner_elem = lGetElemStr(entries, UE_name, owner);
-      const lListElem *user_elem = lGetElemStr(entries, UE_name, username);
-      if (owner_elem != nullptr && user_elem != nullptr) {
-         DRETURN(true);
-      }
-   }
    DRETURN(false);
 }
 

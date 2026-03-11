@@ -33,9 +33,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env);
+#include "ocs_QStatParameter.h"
 
-void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env);
+void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
+
+void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
 
 void xml_qstat_jobs(lList *job_list, lList *zombie_list, const lList *pe_list, 
                     const lList *user_list, const lList *exechost_list, 

@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -561,7 +561,7 @@ std::string
 job_get_sync_options_string(const lListElem *job);
 
 bool
-job_is_visible(const char *owner, bool is_manager, const lList *acl_list);
+job_is_visible(const char *owner, bool is_manager);
 
 void
 job_normalize_priority(lListElem *jep, u_long32 priority);
