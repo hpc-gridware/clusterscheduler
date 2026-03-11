@@ -296,7 +296,7 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    if (prof_is_active(SGE_PROF_CUSTOM0)) {
       prof_stop_measurement(SGE_PROF_CUSTOM0, nullptr);
 
-      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_u32 " orders, " sge_u32 " H, " sge_u32 " Q, " sge_u32 " QA, " sge_u32 " J(qw), " sge_u32 " J(r), " sge_u32 " J(s), " sge_u32 " J(h), " sge_u32 " J(e), " sge_u32 " J(x), %d J(all), " sge_u32 " C, " sge_u32 " ACL, " sge_u32 " PE, " sge_u32 " U, " sge_u32 " D, " sge_u32 " PRJ, " sge_u32 " ST, " sge_u32 " CKPT, " sge_u32 " RU, %d gMes, %d jMes, " sge_u32 "/" sge_u32 " pre-send, %d/%d/%d pe-alg\n",
+      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_u32 " orders, " sge_u32 " H, " sge_u32 " Q, " sge_u32 " QA, " sge_u32 " J(qw), " sge_u32 " J(r), " sge_u32 " J(s), " sge_u32 " J(h), " sge_u32 " J(e), " sge_u32 " J(x), %d J(all), " sge_u32 " C, " sge_u32 " ACL, " sge_u32 " PE, " sge_u32 " U, " sge_u32 " D, " sge_u32 " PRJ, " sge_u32 " ST, " sge_u32 " CKPT, " sge_u32 " RU, %d gMes, %d jMes, " sge_u32 "/" sge_u32 " pre-send, %d/%d/%d pe-alg",
                       prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),

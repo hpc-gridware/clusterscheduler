@@ -332,7 +332,7 @@ sge_reader_main(void *arg) {
             delete packet;
          }
 
-         thread_output_profiling("reader thread profiling summary:\n", &next_prof_output);
+         thread_output_profiling("reader thread profiling summary:", &next_prof_output);
 
          sge_monitor_output(p_monitor);
       }

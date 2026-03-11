@@ -386,7 +386,7 @@ sge_timer_main(void *arg) {
       te_free_event(&te);
 
       sge_monitor_output(p_monitor);
-      thread_output_profiling("timed event thread profiling summary:\n", &next_prof_output);
+      thread_output_profiling("timed event thread profiling summary:", &next_prof_output);
 
       /* pthread cancellation point */
       do {

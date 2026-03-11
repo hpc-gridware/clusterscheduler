@@ -160,7 +160,7 @@ sge_event_master_main(void *arg) {
       sge_event_master_send_events(report, report_list, p_monitor);
       sge_monitor_output(p_monitor);
 
-      thread_output_profiling("event master thread profiling summary:\n", &next_prof_output);
+      thread_output_profiling("event master thread profiling summary:", &next_prof_output);
 
       // pthread cancellation point
       int execute = 0;
