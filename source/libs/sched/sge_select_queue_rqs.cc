@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -519,7 +519,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, lListElem *qep, bool
 
    *slots = tslots;
 
-   DPRINTF("parallel_rqs_slots_by_time(%s@%s) finalresult %d slots %d\n", queue, host, result, *slots);
+   DPRINTF("parallel_rqs_slots_by_time(%s@%s) final result %d slots %d\n", queue, host, result, *slots);
 
    DRETURN(result);
 }

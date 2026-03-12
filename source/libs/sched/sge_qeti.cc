@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -252,7 +252,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a)
          }
 
          // consider only those queues that match this job (statically)
-         if (sge_queue_match_static(a, qep) != DISPATCH_OK) {
+         if (sge_queue_match_static(a, qep, true) != DISPATCH_OK) {
             continue;
          }
 

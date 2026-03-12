@@ -1229,7 +1229,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
             DRETURN(false);
          }
          if ((!prj_list_locate(projects, project))) {
-            DPRINTF("no access because project not contained in queues project list");
+            DPRINTF("no access because project not contained in queues project list\n");
             assignment_release(&a);
             DRETURN(false);
          }
@@ -1261,7 +1261,7 @@ sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host,
          qinstance_name = lGetString(queue, QU_full_name);
          if ((lGetElemStr(qref_list, QR_name, qname) != nullptr) ||
              (lGetElemStr(qref_list, QR_name, qinstance_name) != nullptr)) {
-            DPRINTF("ok");
+            DPRINTF("ok\n");
          } else {
             DPRINTF("denied because queue \"%s\" is not contained in the hard "
                     "queue list (-q) that was requested by job %d\n",
@@ -1660,7 +1660,7 @@ get_soft_queue_list(const lListElem *job, const lList *&soft_queue_list) {
 *  NOTES
 *******************************************************************************/
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master)
 {
    DENTER(TOP_LAYER);
 
@@ -1744,13 +1744,15 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
                         SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
          DRETURN(DISPATCH_NEVER_CAT);
       }
-   } else {
+   } else if (a->pe != nullptr) {
+      // we do this only for parallel jobs
       // if there is no global queue list, we might have master and/or slave queue requests
       bool can_be_master_queue = true;
       bool can_be_slave_queue = true;
 
       // is this queue a candidate for being the master queue?
-      if (master_hard_queue_list != nullptr) {
+      // no need to check this if we already have our master task
+      if (need_master && master_hard_queue_list != nullptr) {
          if (qref_list_cq_rejected(master_hard_queue_list, lGetString(queue, QU_qname),
                                    lGetHost(queue, QU_qhostname), a->hgrp_list)) {
             DPRINTF("Queue " SFQ " is not contained in the master hard queue list that was requested by job " sge_u32 "\n",
@@ -1774,6 +1776,14 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue)
 
       // if it can be neither master nor slave queue, then it is not a candidate at all
       if (!can_be_master_queue && !can_be_slave_queue) {
+         DPRINTF("Queue " SFQ "cannot be master nor slave queue - skip it\n", qinstance_name);
+         schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
+                        SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
+         DRETURN(DISPATCH_NEVER_CAT);
+      }
+      // if it cannot be a slave queue, and we do not need a master queue, then it is not a candidate
+      if (!need_master && !can_be_slave_queue) {
+         DPRINTF("Queue " SFQ "cannot be slave queue and we do no longer need a master queue - skip it\n", qinstance_name);
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_NOTINHARDQUEUELST_S, qinstance_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -3489,7 +3499,7 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 
       /* static queue matching */
       SCHED_PROF_INC(a->pi, seq_qstat);
-      if (sge_queue_match_static(a, qep) != DISPATCH_OK) {
+      if (sge_queue_match_static(a, qep, true) != DISPATCH_OK) {
          if (skip_queue_list)
             lAddElemStr(&skip_queue_list, CTI_name, qname, CTI_Type);
          best_queue_result = find_best_result(DISPATCH_NEVER_CAT, best_queue_result);
@@ -5095,7 +5105,7 @@ parallel_queue_slots(sge_assignment_t *a, lListElem *qep, int *slots, bool need_
    int lslots = INT_MAX;
 
    SCHED_PROF_INC(a->pi, par_qstat);
-   dispatch_t result = sge_queue_match_static(a, qep);
+   dispatch_t result = sge_queue_match_static(a, qep, need_master);
    if (result == DISPATCH_OK) {
       if (a->ar_id == 0 && !a->is_advance_reservation) {
          // no RQS for AR jobs or AR scheduling
@@ -6200,7 +6210,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
             continue;
          }
 
-         DPRINTF("   --> need_master: %d, is_master_host: %d, found_master_host: %d, master_slot: %d, ign_sreq: %d",
+         DPRINTF("   --> need_master: %d, is_master_host: %d, found_master_host: %d, master_slot: %d, ign_sreq: %d\n",
             need_master, is_master_host, found_master_host, master_slot,
             lGetBool(a->pe, PE_ignore_slave_requests_on_master_host));
       }
@@ -6529,7 +6539,7 @@ void sge_create_load_list(const lList *queue_list, const lList *host_list,
    DRETURN_VOID;
 
 error:
-   DPRINTF("error in sge_create_load_list!");
+   DPRINTF("error in sge_create_load_list!\n");
    ERROR(SFNMAX, MSG_SGETEXT_CONSUMABLE_AS_LOAD);
    sge_free_load_list(load_list);
    DRETURN_VOID;
