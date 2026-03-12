@@ -292,8 +292,6 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
    char *argstr;
    u_long32 full = 0;
    lList *plstringopt = nullptr;
-   bool qselect_mode = output_mode_ == OutputMode::QSELECT;
-
 
    DENTER(TOP_LAYER);
 
@@ -383,7 +381,7 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          }
       }
 
-      if (!qselect_mode ) {
+      if (output_mode_ == OutputMode::QSTAT_DEFAULT || output_mode_ == OutputMode::QSTAT_GROUP) {
          while (parse_flag(ppcmdline, "-urg", &alp, &full)) {
             need_queues_ = true;
             if (full) {
@@ -391,9 +389,7 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
                full = 0;
             }
          }
-      }
 
-      if (!qselect_mode ) {
          while (parse_flag(ppcmdline, "-pri", &alp, &full)) {
             if (full) {
                full_listing_ |= QSTAT_DISPLAY_PRIORITY;
@@ -449,6 +445,9 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_multi_stringlist(ppcmdline, "-g", &alp, &plstringopt, ST_Type, ST_name)) {
          group_opt_ |= parse_group_options(plstringopt, &alp);
+
+         // -g c is here misused to switch to a different output mode.
+         // @todo We should consider to introduce a siwtch like -mode ...
          if (group_opt_ & GROUP_CQ_SUMMARY) {
             output_mode_ = OutputMode::QSTAT_GROUP;
             group_opt_ &= ~GROUP_CQ_SUMMARY;
@@ -456,6 +455,18 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          need_queues_ = true;
          lFreeList(&plstringopt);
       }
+   }
+
+   switch (output_mode_) {
+      case OutputMode::QSELECT:
+         need_job_list_ = true;
+         break;
+      case OutputMode::QSTAT_GROUP:
+         need_job_list_ = true;
+         break;
+      case OutputMode::QSTAT_DEFAULT:
+         need_job_list_ = true;
+         break;
    }
 
    if (lGetNumberOfElem(*ppcmdline)) {
@@ -516,8 +527,6 @@ bool ocs::QStatParameter::parse_parameters(lList **answer_list, char **argv, cha
 
    if (!strcmp(sge_basename(*argv++, '/'), "qselect")) {
       output_mode_ = OutputMode::QSELECT;
-   } else {
-      output_mode_ = OutputMode::QSTAT_DEFAULT;
    }
 
    {
@@ -601,6 +610,8 @@ bool ocs::QStatParameter::parse_parameters(lList **answer_list, char **argv, cha
       //qstat_env_destroy(&qstat_env);
       sge_exit(1);
    }
+
+   str_list_transform_user_list(&user_list_, answer_list, username);
    return true;
 }
 

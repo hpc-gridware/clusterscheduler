@@ -53,7 +53,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    gdi::Request gdi_multi{};
 
    // @todo Should be combined with the other GDI requests
-   if (gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr, nullptr, nullptr)) {
+   if (!gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr, nullptr, nullptr)) {
       DRETURN(false);
    }
 
@@ -232,6 +232,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    /* --- exec host */
    gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_EH_LIST, eh_id, &exechost_list_);
    if (answer_list_has_error(answer_list)) {
+      answer_list_output(answer_list);
       DRETURN(false);
    }
 
@@ -239,6 +240,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    if (show & QHOST_DISPLAY_JOBS || show & QHOST_DISPLAY_QUEUES) {
       gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CQ_LIST, q_id, &queue_list_);
       if (answer_list_has_error(answer_list)) {
+         answer_list_output(answer_list);
          DRETURN(false);
       }
    }
@@ -247,6 +249,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
       gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_JB_LIST, j_id, &job_list_);
       if (answer_list_has_error(answer_list)) {
+         answer_list_output(answer_list);
          DRETURN(false);
       }
    }
@@ -254,29 +257,30 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
    /* --- complex attribute */
    gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CE_LIST, ce_id, &centry_list_);
    if (answer_list_has_error(answer_list)) {
+      answer_list_output(answer_list);
       DRETURN(false);
    }
 
    /* --- pe */
    gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PE_LIST, pe_id, &pe_list_);
    if (answer_list_has_error(answer_list)) {
+      answer_list_output(answer_list);
       DRETURN(false);
    }
 
    /* --- user lists */
    gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_US_LIST, acl_id, &acl_list_);
    if (answer_list_has_error(answer_list)) {
+      answer_list_output(answer_list);
       DRETURN(false);
    }
 
    /* --- apply global configuration for sge_hostcmp() scheme */
    gdi_multi.get_response(answer_list, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CONF_LIST, gc_id, &config_list_);
    if (answer_list_has_error(answer_list)) {
+      answer_list_output(answer_list);
       DRETURN(false);
    }
-
-
-
 
    DRETURN(true);
 }

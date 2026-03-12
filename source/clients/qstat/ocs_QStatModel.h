@@ -31,13 +31,29 @@
 
 namespace ocs {
    class QStatModel {
+   public:
       bool is_manager_ = false;
 
-      // region Filter functionality
-   public:
+      // data filter
       lEnumeration *what_JB_Type = nullptr;
       lEnumeration *what_JAT_Type_template = nullptr;
       lEnumeration *what_JAT_Type_list = nullptr;
+
+      lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show);
+      lEnumeration *qstat_get_JB_Type_filter();
+
+      // data lists
+      lList* queue_list = nullptr;
+      lList* centry_list = nullptr;
+      lList* exechost_list = nullptr;
+      lList* schedd_config = nullptr;
+      lList* pe_list = nullptr;
+      lList* ckpt_list = nullptr;
+      lList* acl_list = nullptr;
+      lList* zombie_list = nullptr;
+      lList* job_list = nullptr;
+      lList* hgrp_list = nullptr;
+      lList* project_list = nullptr;
    private:
       void qstat_filter_add_core_attributes(QStatParameter &parameter);
       int build_job_state_filter(lList **alpp, QStatParameter &parameter);
@@ -51,9 +67,9 @@ namespace ocs {
       void qstat_filter_add_pe_attributes();
       void qstat_filter_add_q_attributes();
       bool prepare_filter(lList **answer_list, QStatParameter &parameter);
-      // endregion
 
-      bool fetch_data(lList **answer_list);
+      int qstat_env_get_all_lists(lList** alpp, QStatParameter &parameter);
+      bool fetch_data(lList **answer_list, QStatParameter &parameter);
       void free_data();
    public:
       QStatModel() = default;

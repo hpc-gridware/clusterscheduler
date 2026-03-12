@@ -86,7 +86,7 @@
 #define FORMAT_I_2 "%I %I "
 #define FORMAT_I_1 "%I "
 
-static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
+static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
 
 typedef struct qstat_stdout_ctx_str qstat_stdout_ctx_t;
@@ -124,7 +124,7 @@ static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alp
 static int qstat_stdout_destroy(qstat_handler_t *handler);
 
 static int job_stdout_init(job_handler_t *handler, lList** alpp);
-static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
+static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 static int job_stdout_sub_tasks_started(job_handler_t* handler, lList **alpp);
 static int job_stdout_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
 static int job_stdout_sub_tasks_finished(job_handler_t* handler, lList **alpp);
@@ -208,6 +208,7 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
+
    ocs::QStatModel model;
    if (!model.make_snapshot(&alp, parameter)) {
       answer_list_output(&alp);
@@ -219,16 +220,14 @@ int main(int argc, char *argv[]) {
 
 // DATA RETRIEVAL START
 
-   lList *answer_list = nullptr;
-   const char *username = component_get_username();
-   str_list_transform_user_list(&(parameter.user_list_), &answer_list, username);
 
    int ret = 0;
+   lList *answer_list = nullptr;
 
    // if -j, then only print job info and leave */
    if (parameter.job_info_) {
       if (lGetNumberOfElem(parameter.jid_list_) > 0) {
-         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, &qstat_env, parameter);
+         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, &qstat_env, parameter, model);
       } else {
          ret = qstat_show_job_info(parameter.isXML_, &qstat_env, parameter);
       }
@@ -456,16 +455,15 @@ static char jhul6[] = "-----------------------------------";
          sge_dstring_sprintf_append(job_output, "%8.0f ", value); \
       } \
 
-static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter)
+static int job_stdout_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model)
 {
    DENTER(TOP_LAYER);
    qstat_stdout_ctx_t *ctx = (qstat_stdout_ctx_t*)handler->ctx;
-   qstat_env_t *qstat_env = handler->qstat_env;
    const char* indent = "";
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
    bool print_job_id;
 
-   bool hide_data = !job_is_visible(summary->user, qstat_env->is_manager);
+   bool hide_data = !job_is_visible(summary->user, model.is_manager_);
    if (hide_data) {
       return 0;
    }
@@ -1609,7 +1607,7 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 ** returns 0 on success, non-zero on failure
 */
 static int
-qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter) {
+qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
    const lListElem *j_elem = 0;
    lList* jlp = nullptr;
    lList* ilp = nullptr;
@@ -1805,7 +1803,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QSt
       u_long32 jid = lGetUlong(j_elem, JB_job_number);
       const lListElem *sme;
       const char *owner = lGetString(j_elem, JB_owner);
-      bool show_job = job_is_visible(owner,  qstat_env->is_manager);
+      bool show_job = job_is_visible(owner,  model.is_manager_);
       if (!show_job) {
          DTRACE;
          continue;

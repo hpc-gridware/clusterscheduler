@@ -179,7 +179,7 @@ static int qstat_xml_queue_suspend_alarm(qstat_handler_t* handler, const char* q
 static int qstat_xml_queue_message(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
 static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
 
-static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
+static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 static int qstat_xml_sub_task(job_handler_t* handler, task_summary_t *summary, lList **alpp);
 static int qstat_xml_job_additional_info(job_handler_t* handler, job_additional_info_t name, const char* value, lList **alpp);
 static int qstat_xml_job_requested_pe(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp);
@@ -391,7 +391,7 @@ static int qstat_xml_dummy_finished(job_handler_t* handler, lList** alpp) {
    return 0;
 }
 
-static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter) {
+static int qstat_xml_job(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
    DENTER(TOP_LAYER);
    qstat_xml_ctx_t *ctx = (qstat_xml_ctx_t*)handler->ctx;
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;

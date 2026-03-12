@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -44,21 +44,16 @@
 
 #include "cull/cull_list.h"
 
-#include "comm/commd_message_flags.h"
-
 #include "sched/msg_schedd.h"
 
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_host.h"
-#include "sgeobj/sge_cqueue.h"
-#include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
@@ -752,9 +747,6 @@ centry_list_fill_request(const lList *this_list, lList **answer_list, const lLis
             DRETURN(-1);
          }
       } else {
-         /* CLEANUP: message should be put into answer_list and
-            returned via argument. */
-/*          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, name); */
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_UNKNOWN_RESOURCE_S, name);
          DRETURN(-1);
       }

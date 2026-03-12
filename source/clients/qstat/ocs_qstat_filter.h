@@ -44,20 +44,7 @@ struct qstat_env_str {
    /* Input parameters */
 
    /* Needed lists */
-   lList* queue_list;
-   lList* centry_list;
-   lList* exechost_list;
-   lList* schedd_config;
-   lList* pe_list;
-   lList* ckpt_list;
-   lList* acl_list;
-   lList* zombie_list;
-   lList* job_list;
-   lList* hgrp_list;
-   lList* project_list;
-   
-   bool is_manager;
-   
+
    int (*shut_me_down)();
 
    /* 
@@ -222,7 +209,7 @@ struct job_handler_str {
   void *ctx;
   qstat_env_t *qstat_env;
   
-  int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
+  int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
   
   int (*report_sub_tasks_started)(job_handler_t* handler, lList **alpp);
   int (*report_sub_task)(job_handler_t* handler, task_summary_t *summary, lList **alpp);
@@ -319,20 +306,14 @@ int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alp
 
 void qstat_env_destroy(qstat_env_t *qstat_env);
 
-int filter_queues(lList **filtered_queue_list,
-                  lList *queue_list, 
-                  lList *centry_list,
-                  lList *hgrp_list,
-                  lList *exechost_list,
-                  lList *acl_list,
-                  lList *prj_list,
-                  lList *pe_list,
-                  lList *resource_list, 
-                  lList *queueref_list, 
+int filter_queues(
+   lList **filtered_queue_list,
+   lList *resource_list,
+                  lList *queueref_list,
                   lList *peref_list, 
                   lList *queue_user_list,
                   u_long32 queue_states,
-                  lList **alpp);
+                  lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
                   
 lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show);
 lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env, ocs::QStatModel &qstat_model);
