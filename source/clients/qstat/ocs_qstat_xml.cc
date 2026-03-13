@@ -54,55 +54,6 @@
 
 /* ----------------------- qselect xml handler ------------------------------ */
 
-static int qselect_xml_report_queue(qselect_handler_t *thiz, const char* qname, lList** alpp);
-static int qselect_xml_finished(qselect_handler_t *thiz, lList** alpp);
-static int qselect_xml_destroy(qselect_handler_t *thiz, lList** alpp);
-static int qselect_xml_started(qselect_handler_t *thiz, lList** alpp);
-
-int qselect_xml_init(qselect_handler_t* handler, lList **alpp) {
-
-   memset(handler, 0, sizeof(qselect_handler_t));
-   
-   handler->ctx = sge_malloc(sizeof(dstring));
-   if (handler->ctx == nullptr ) {
-      answer_list_add(alpp, "malloc of dstring buffer failed",
-                            STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
-      return -1;
-   }
-   memset(handler->ctx, 0, sizeof(dstring));
-
-   handler->report_started = qselect_xml_started;
-   handler->report_finished = qselect_xml_finished;
-   handler->destroy = qselect_xml_destroy;
-   handler->report_queue = qselect_xml_report_queue;
-   return 0;
-}
-
-static int qselect_xml_destroy(qselect_handler_t *thiz, lList** alpp) {
-   if (thiz != nullptr ) {
-      sge_dstring_free((dstring*)thiz->ctx);
-      sge_free(&(thiz->ctx));
-   }
-   return 0;
-}
-
-static int qselect_xml_started(qselect_handler_t *thiz, lList** alpp) {
-   printf("<qselect>\n");
-   return 0;
-}
-
-static int qselect_xml_finished(qselect_handler_t *thiz, lList** alpp) {
-   printf("</qselect>\n");
-   return 0;
-}
-
-static int qselect_xml_report_queue(qselect_handler_t *thiz, const char* qname, lList** alpp) {
-   escape_string(qname, (dstring*)thiz->ctx);
-   printf("   <queue>%s</queue>\n", sge_dstring_get_string((dstring*)thiz->ctx));
-   sge_dstring_clear((dstring*)thiz->ctx);
-   return 0;
-}
-                           
 /* --------------- Cluster Queue Summary To XML Handler -------------------*/
 static int cqueue_summary_xml_report_finished(cqueue_summary_handler_t *handler, lList **alpp);
 static int cqueue_summary_xml_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);

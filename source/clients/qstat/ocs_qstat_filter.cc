@@ -122,44 +122,6 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
                                                      const char *value, double uc, lList **alpp),
                                 int(*finish_func)(job_handler_t* handler, lList **alpp), lList **alpp);
 
-int qselect(qselect_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
-   const lListElem *cqueue = nullptr;
-   const lListElem *qep = nullptr;
-   
-   DENTER(TOP_LAYER);
-   
-   //if (qstat_env_filter_queues(alpp, parameter, model) <= 0) {
-   //   DRETURN(1);
-   //}
-
-   /* Do output */
-   if (handler->report_started != nullptr) {
-      handler->report_started(handler, alpp);
-   }
-   for_each_ep(cqueue, model.queue_list) {
-      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-
-      // does the executing qstat user have access to this queue?
-      int amount;
-      ocs_grp_elem_t *grp_array;
-      component_get_supplementray_groups(&amount, &grp_array);
-      lList *grp_list = grp_list_array2list(amount, grp_array);
-      for_each_ep(qep, qinstance_list) {
-         if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
-            if (handler->report_queue != nullptr) {
-               handler->report_queue(handler, lGetString(qep, QU_full_name), alpp);
-            }   
-         }
-      }
-      lFreeList(&grp_list);
-   }
-   if (handler->report_finished != nullptr) {
-      handler->report_finished(handler, alpp);
-   }
-   
-   DRETURN(0);
-}
-
 int qstat_cqueue_summary(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
  
    int ret = 0;

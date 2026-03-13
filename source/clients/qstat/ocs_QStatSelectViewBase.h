@@ -19,16 +19,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostModel.h"
-#include "ocs_QHostViewBase.h"
+#include <ostream>
 
 namespace ocs {
-   class QHostController {
+   class QStatSelectViewBase {
    public:
-      QHostController() = default;
-      virtual ~QHostController() = default;
+      QStatSelectViewBase();
+      virtual ~QStatSelectViewBase();
 
-      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view);
+      virtual int report_started(std::ostream &os) = 0;
+      virtual int report_finished(std::ostream &os) = 0;
+      virtual int report_queue(std::ostream &os, const char* qname) = 0;
    };
 }

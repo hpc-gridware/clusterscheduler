@@ -124,8 +124,8 @@ ocs::QStatParameter::qstat_usage(FILE *fp, char *what)
       if (!qselect_mode) {
          fprintf(fp, "        [-urg]                            %s\n",MSG_QSTAT_URGENCYINFO );
          fprintf(fp, "        [-pri]                            %s\n",MSG_QSTAT_PRIORITYINFO );
-         fprintf(fp, "        [-xml]                            %s\n", MSG_COMMON_xml_OPT_USAGE);
       }
+      fprintf(fp, "        [-xml]                            %s\n", MSG_COMMON_xml_OPT_USAGE);
 
       if (getenv("MORE_INFO")) {
          fprintf(fp, SFNMAX"\n", MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS);
@@ -192,12 +192,11 @@ ocs::QStatParameter::switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lLi
          /* -urg option */
          if ((rp = parse_noopt(sp, "-pri", nullptr, ppcmdline, answer_list)) != sp)
             continue;
-
-         /* -xml option */
-         if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
-            continue;
-
       }
+
+      /* -xml option */
+      if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
+         continue;
 
       /* -g */
       if (!qselect_mode && (rp = parse_until_next_opt(sp, "-g", nullptr, ppcmdline, answer_list)) != sp)

@@ -38,19 +38,6 @@
 
 #include "ocs_QStatParameter.h"
 
-typedef struct qselect_handler_str qselect_handler_t;
-
-struct qselect_handler_str {
-   void *ctx;
-   
-   int (*report_started)(qselect_handler_t *thiz, lList** alpp);
-   int (*report_finished)(qselect_handler_t *thiz, lList** alpp);
-   int (*report_queue)(qselect_handler_t *thiz, const char* qname, lList** alpp);
-   int (*destroy)(qselect_handler_t *thiz, lList** alpp);
-};
-
-int qselect(qselect_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-
 /* ------------- Cluster Queue Summary -------------------------------------- */
 /* qstat -g c                                                                 */
 

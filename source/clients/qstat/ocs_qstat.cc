@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
+#include <memory>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
@@ -76,6 +77,10 @@
 #include "msg_clients_common.h"
 #include "msg_qstat.h"
 #include "ocs_QStatModel.h"
+#include "ocs_QStatSelectViewBase.h"
+#include "ocs_QStatSelectViewPlain.h"
+#include "ocs_QStatSelectViewXML.h"
+#include "ocs_QStatSelectController.h"
 
 #define FORMAT_I_20 "%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I "
 #define FORMAT_I_10 "%I %I %I %I %I %I %I %I %I %I "
@@ -168,9 +173,6 @@ static int job_stdout_binding_started(job_handler_t* handler, lList **alpp);
 static int job_stdout_binding(job_handler_t* handler, const char *binding, lList **alpp);
 static int job_stdout_binding_finished(job_handler_t* handler, lList **alpp);
 
-static void qselect_stdout_init(qselect_handler_t* handler, lList **alpp);
-static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* qname, lList **alpp);
-
 static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList **alpp);
 static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
 static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
@@ -181,7 +183,6 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
    lList *alp = nullptr;
-   const lListElem *aep = nullptr;
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);
@@ -207,12 +208,6 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-// FILTER FUNCTIONS
-
-
-// DATA RETRIEVAL START
-
-
    int ret = 0;
    lList *answer_list = nullptr;
 
@@ -224,26 +219,15 @@ int main(int argc, char *argv[]) {
          ret = qstat_show_job_info(parameter);
       }
    } else if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::QSELECT) {
-
-      // qselect output
-
-      qselect_handler_t handler;
+      std::unique_ptr<ocs::QStatSelectViewBase> view;
       if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
-         if (qselect_xml_init(&handler, &answer_list)) {
-            for_each_ep(aep, answer_list) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            }
-            lFreeList(&answer_list);
-            sge_exit(1);
-            return 1;
-         }
+         view = std::make_unique<ocs::QStatSelectViewXML>(parameter);
       } else {
-         qselect_stdout_init(&handler, &answer_list);
+         view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
       }
-      ret = qselect(&handler, &answer_list, parameter, model);
-      if (handler.destroy != nullptr) {
-         handler.destroy(&handler, &answer_list);
-      }
+
+      ocs::QStatSelectController controller;
+      controller.process_request(parameter, model, *view);
    } else if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_GROUP) {
 
       // Group Summary
@@ -1567,26 +1551,6 @@ static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler
 
 
 /* ----------------------- qselect stdout handler --------------------------- */
-
-static void qselect_stdout_init(qselect_handler_t* handler, lList **alpp) 
-{
-   DENTER(TOP_LAYER);
-
-   memset(handler, 0, sizeof(qselect_handler_t));
-   handler->report_queue = qselect_stdout_report_queue;
-
-   DRETURN_VOID;
-}
-
-static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* qname, lList **alpp) 
-{
-   DENTER(TOP_LAYER);
-
-   printf("%s\n", qname);
-
-   DRETURN(0);
-}
-
 
 
 /*

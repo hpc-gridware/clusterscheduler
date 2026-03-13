@@ -28,13 +28,13 @@
 #include "ocs_QHostContoller.h"
 
 void
-ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &report_handler) {
+ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view) {
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;
 
    // start report
-   report_handler.start(oss);
+   view.start(oss);
    lListElem *ep;
    for_each_rw (ep, model.get_exechost_list()) {
 
@@ -45,23 +45,23 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &mod
       //}
 
       // start host entry
-      report_handler.host_start(oss, lGetHost(ep, EH_name));
+      view.host_start(oss, lGetHost(ep, EH_name));
 
       // print host section
-      report_handler.show_host(oss, ep, parameter, model, report_handler);
+      view.show_host(oss, ep, parameter, model, view);
 
       // print resource section
-      report_handler.show_host_resources(oss, ep, parameter, model, report_handler);
+      view.show_host_resources(oss, ep, parameter, model, view);
 
       // print queues and jobs of the host
-      report_handler.show_host_queues(oss, ep, parameter, model, report_handler);
+      view.show_host_queues(oss, ep, parameter, model, view);
 
       // end host entry
-      report_handler.host_end(oss);
+      view.host_end(oss);
    }
 
    // end report
-   report_handler.end(oss);
+   view.end(oss);
 
    std::cout << oss.str();
    DRETURN_VOID;

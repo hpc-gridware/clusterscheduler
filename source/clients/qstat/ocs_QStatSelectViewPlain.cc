@@ -1,4 +1,3 @@
-#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,16 +18,29 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostModel.h"
-#include "ocs_QHostViewBase.h"
+#include <cstdio>
+#include <sstream>
 
-namespace ocs {
-   class QHostController {
-   public:
-      QHostController() = default;
-      virtual ~QHostController() = default;
+#include "cull/cull.h"
 
-      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view);
-   };
+#include "sgeobj/sge_cull_xml.h"
+
+#include "ocs_QStatSelectViewPlain.h"
+
+#include "ocs_EscapedString.h"
+
+ocs::QStatSelectViewPlain::QStatSelectViewPlain(QStatParameter &parameter) : QStatSelectViewBase() {
+}
+
+int ocs::QStatSelectViewPlain::report_started(std::ostream &os) {
+   return 0;
+}
+
+int ocs::QStatSelectViewPlain::report_finished(std::ostream &os) {
+   return 0;
+}
+
+int ocs::QStatSelectViewPlain::report_queue(std::ostream &os, const char* qname) {
+   os << qname << std::endl;
+   return 0;
 }

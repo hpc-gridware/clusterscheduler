@@ -53,4 +53,3 @@ lListElem *xml_print_queue(lListElem *q, const lList *exechost_list, const lList
                     
 int qstat_xml_handler_init(qstat_handler_t* handler, lList **alpp);
 int cqueue_summary_xml_handler_init(cqueue_summary_handler_t *handler);
-int qselect_xml_init(qselect_handler_t* handler, lList **alpp);

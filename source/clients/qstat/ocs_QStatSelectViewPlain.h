@@ -1,4 +1,5 @@
 #pragma once
+#include <rapidjson/internal/meta.h>
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,16 +20,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostModel.h"
-#include "ocs_QHostViewBase.h"
+#include "ocs_QStatSelectViewBase.h"
+#include "ocs_QStatParameter.h"
 
 namespace ocs {
-   class QHostController {
+   class QStatSelectViewPlain : public QStatSelectViewBase {
    public:
-      QHostController() = default;
-      virtual ~QHostController() = default;
+      QStatSelectViewPlain(QStatParameter &parameter);
 
-      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view);
+      ~QStatSelectViewPlain() override = default;
+
+      int report_started(std::ostream &os) override;
+      int report_finished(std::ostream &os) override;
+      int report_queue(std::ostream &os, const char* qname) override;
    };
 }

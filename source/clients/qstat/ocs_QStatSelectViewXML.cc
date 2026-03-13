@@ -1,4 +1,3 @@
-#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,16 +18,25 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostModel.h"
-#include "ocs_QHostViewBase.h"
+#include <sgeobj/ocs_EscapedString.h>
 
-namespace ocs {
-   class QHostController {
-   public:
-      QHostController() = default;
-      virtual ~QHostController() = default;
+#include "ocs_QStatSelectViewXML.h"
 
-      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view);
-   };
+ocs::QStatSelectViewXML::QStatSelectViewXML(QStatParameter &parameter) : QStatSelectViewBase() {
 }
+
+int ocs::QStatSelectViewXML::report_started(std::ostream &os) {
+   os << "<qselect>" << std::endl;
+   return 0;
+}
+
+int ocs::QStatSelectViewXML::report_finished(std::ostream &os) {
+   os << "</qselect>" << std::endl;
+   return 0;
+}
+
+int ocs::QStatSelectViewXML::report_queue(std::ostream &os, const char* qname) {
+   os << "   " << "<queue>" << EscapedString(qname) << "</queue>" << std::endl;
+   return 0;
+}
+

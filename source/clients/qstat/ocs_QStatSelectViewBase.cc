@@ -1,4 +1,3 @@
-#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,16 +18,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostModel.h"
-#include "ocs_QHostViewBase.h"
+#include "ocs_QStatSelectViewBase.h"
 
-namespace ocs {
-   class QHostController {
-   public:
-      QHostController() = default;
-      virtual ~QHostController() = default;
+ocs::QStatSelectViewBase::QStatSelectViewBase() {
+}
 
-      virtual void process_request(QHostParameter &parameter, QHostModel &model, QHostViewBase &view);
-   };
+ocs::QStatSelectViewBase::~QStatSelectViewBase() {
 }
