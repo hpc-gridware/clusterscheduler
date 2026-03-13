@@ -1113,7 +1113,7 @@ static int qstat_xml_queue_resource(qstat_handler_t* handler, const char* dom, c
 
 
 
-void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter) {
+void xml_qstat_show_job_info(lList **list, lList **answer_list, ocs::QStatParameter &parameter) {
    const lListElem *answer = nullptr;
    lListElem *xml_elem = nullptr;
    bool error = false;
@@ -1169,14 +1169,13 @@ void xml_qstat_show_job_info(lList **list, lList **answer_list, qstat_env_t *qst
    DRETURN_VOID;
 }
 
-void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, qstat_env_t *qstat_env, ocs::QStatParameter &parameter){
+void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, ocs::QStatParameter &parameter){
+   DENTER(TOP_LAYER);
    const lListElem *answer = nullptr;
    lListElem *xml_elem = nullptr;
    bool error = false;
    bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
 
-   DENTER(TOP_LAYER);
-   
    for_each_ep(answer, *answer_list) {
       if (lGetUlong(answer, AN_status) != STATUS_OK) {
          error = true;

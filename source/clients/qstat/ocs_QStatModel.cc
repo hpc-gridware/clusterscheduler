@@ -713,349 +713,238 @@ ocs::QStatModel::qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
    DRETURN(jw);
 }
 
-int
-ocs::QStatModel::qstat_env_get_all_lists(lList** alpp, QStatParameter &parameter) {
-   lList **queue_l = parameter.need_queues_ ? &queue_list : nullptr;
-   lList **job_l = parameter.need_job_list_ ? &job_list : nullptr;
-
-   lList **centry_l = &centry_list;
-   lList **exechost_l = &exechost_list;
-   lList **sc_l = &schedd_config;
-   lList **pe_l = &pe_list;
-   lList **ckpt_l = &ckpt_list;
-   lList **acl_l = &acl_list;
-   lList **zombie_l = &zombie_list;
-   lList **hgrp_l = &hgrp_list;
-   lList **project_l = &project_list;
-   lList *conf_l = nullptr;
-
-   lList *user_list = parameter.user_list_;
-   u_long32 show = parameter.full_listing_;
-
-   lCondition *where= nullptr, *nw = nullptr;
-   lCondition *zw = nullptr, *gc_where = nullptr;
-   lEnumeration *q_all, *pe_all, *ckpt_all, *acl_all, *ce_all, *up_all;
-   lEnumeration *eh_all, *sc_what, *gc_what, *hgrp_what;
-   const lListElem *ep = nullptr;
-   int q_id = 0, j_id = 0, pe_id = 0, ckpt_id = 0, acl_id = 0, z_id = 0, up_id = 0;
-   int ce_id, eh_id, sc_id, gc_id, hgrp_id = 0;
-   int show_zombies = (show & QSTAT_DISPLAY_ZOMBIES) ? 1 : 0;
-
-   gdi::Request gdi_multi{};
-   const char *cell_root = bootstrap_get_cell_root();
-   u_long32 progid = component_get_component_id();
-
+bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   if (queue_l) {
+   int q_id, j_id, pe_id, ckpt_id, acl_id, z_id, up_id, ce_id, eh_id, sc_id, gc_id, hgrp_id;
+   lCondition *where = nullptr;
+   lEnumeration *what = nullptr;
+   gdi::Request gdi_multi{};
+
+   DPRINTF("fetchting permissions\n");
+   if (!gdi::Client::sge_gdi_get_permission(alpp, &is_manager_, nullptr, nullptr, nullptr)) {
+      DRETURN(false);
+   }
+
+   if (parameter.need_queues_) {
       DPRINTF("need queues\n");
-      q_all = lWhat("%T(ALL)", CQ_Type);
-
-      q_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::TargetValue::SGE_CQ_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, q_all, true);
-      lFreeWhat(&q_all);
-
+      what = lWhat("%T(ALL)", CQ_Type);
+      q_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::TargetValue::SGE_CQ_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+      lFreeWhat(&what);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
-   } else {
-      DPRINTF("queues not needed\n");
    }
 
-   /*
-   ** jobs
-   */
-   if (job_l) {
-      lCondition *where = qstat_get_JB_Type_selection(user_list, show);
-      lEnumeration *what = qstat_get_JB_Type_filter();
-
-      //lEnumeration *what = lWhat("%T(ALL)", JB_Type);
-      //lWriteWhereTo(where, stderr);
-      //lWriteWhatTo(what, stderr);
-
+   if (parameter.need_job_list_) {
+      what = qstat_get_JB_Type_filter();
+      where = qstat_get_JB_Type_selection(parameter.user_list_, parameter.full_listing_);
       j_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_JB_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
       lFreeWhere(&where);
-
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
    }
 
-   /*
-   ** job zombies
-   */
-   if (zombie_l && show_zombies) {
-      for_each_ep(ep, user_list) {
-         const char *user_name = lGetString(ep, ST_name);
-         if (ocs::is_pattern(user_name)) {
-            nw = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
+   if (parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES) {
+      const lListElem *ep = nullptr;
+
+      for_each_ep(ep, parameter.user_list_) {
+         lCondition *tmp_where = nullptr;
+         if (const char *user_name = lGetString(ep, ST_name); is_pattern(user_name)) {
+            tmp_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
          } else {
-            nw = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
+            tmp_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
          }
-         if (!zw) {
-            zw = nw;
+         if (tmp_where != nullptr) {
+            where = tmp_where;
          } else {
-            zw = lOrWhere(zw, nw);
+            where = lOrWhere(where, tmp_where);
          }
       }
-
-      z_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_ZOMBIE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, zw, qstat_get_JB_Type_filter(), true);
-      lFreeWhere(&zw);
-
+      z_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_ZOMBIE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, qstat_get_JB_Type_filter(), true);
+      lFreeWhere(&where);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
    }
 
-   /*
-   ** complexes
-   */
-   ce_all = lWhat("%T(ALL)", CE_Type);
-   ce_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_CE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, ce_all, true);
-   lFreeWhat(&ce_all);
-
+   what = lWhat("%T(ALL)", CE_Type);
+   ce_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_CE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /*
-   ** exechosts
-   */
    where = lWhere("%T(%I!=%s)", EH_Type, EH_name, SGE_TEMPLATE_NAME);
-   eh_all = lWhat("%T(ALL)", EH_Type);
-   eh_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_EH_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, eh_all, true);
-   lFreeWhat(&eh_all);
+   what = lWhat("%T(ALL)", EH_Type);
+   eh_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_EH_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
+   lFreeWhat(&what);
    lFreeWhere(&where);
-
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /*
-   ** pe list
-   */
-   if (pe_l) {
-      pe_all = lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
-      pe_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_PE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, pe_all, true);
-      lFreeWhat(&pe_all);
-
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-  /*
-   ** ckpt list
-   */
-   if (ckpt_l) {
-      ckpt_all = lWhat("%T(%I)", CK_Type, CK_name);
-      ckpt_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_CK_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, ckpt_all, true);
-      lFreeWhat(&ckpt_all);
-
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /*
-   ** acl list
-   */
-   if (acl_l) {
-      acl_all = lWhat("%T(ALL)", US_Type);
-      acl_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_US_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, acl_all, true);
-      lFreeWhat(&acl_all);
-
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /*
-   ** project list
-   */
-   if (project_l) {
-      up_all = lWhat("%T(ALL)", PR_Type);
-      up_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_PR_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, up_all, true);
-      lFreeWhat(&up_all);
-
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /*
-   ** scheduler configuration
-   */
-
-   /* might be enough, but I am not sure */
-   /*sc_what = lWhat("%T(%I %I)", SC_Type, SC_user_sort, SC_job_load_adjustments);*/
-   sc_what = lWhat("%T(ALL)", SC_Type);
-
-   sc_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_SC_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, sc_what, true);
-   lFreeWhat(&sc_what);
-
+   what = lWhat("%T(%I%I%I%I%I)", PE_Type, PE_name, PE_slots, PE_job_is_first_task, PE_control_slaves, PE_urgency_slots);
+   pe_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_PE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /*
-   ** hgroup
-   */
-   hgrp_what = lWhat("%T(ALL)", HGRP_Type);
-   hgrp_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_HGRP_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, hgrp_what, true);
-   lFreeWhat(&hgrp_what);
-
+   what = lWhat("%T(%I)", CK_Type, CK_name);
+   ckpt_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_CK_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /*
-   ** global cluster configuration
-   */
-   gc_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
-   gc_what = lWhat("%T(ALL)", CONF_Type);
-   gc_id = gdi_multi.request(alpp, Mode::SEND, gdi::Target::SGE_CONF_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, gc_where, gc_what, true);
+   what = lWhat("%T(ALL)", US_Type);
+   acl_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_US_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   what = lWhat("%T(ALL)", PR_Type);
+   up_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_PR_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   what = lWhat("%T(ALL)", SC_Type);
+   sc_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_SC_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   what = lWhat("%T(ALL)", HGRP_Type);
+   hgrp_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_HGRP_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, nullptr, what, true);
+   lFreeWhat(&what);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
+   what = lWhat("%T(ALL)", CONF_Type);
+   gc_id = gdi_multi.request(alpp, Mode::SEND, gdi::Target::SGE_CONF_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
    gdi_multi.wait();
-   lFreeWhat(&gc_what);
-   lFreeWhere(&gc_where);
-
+   lFreeWhat(&what);
+   lFreeWhere(&where);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /*
-   ** handle results
-   */
-   if (queue_l) {
-      /* --- queue */
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CQ_LIST, q_id, queue_l);
+   // Start fetching the lists
 
+   if (parameter.need_queues_) {
+      DPRINTF("fetching queues\n");
+      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CQ_LIST, q_id, &queue_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
    }
 
-   /* --- job */
-   if (job_l) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_JB_LIST, j_id, job_l);
+   if (parameter.need_job_list_) {
+      DPRINTF("fetching jobs\n");
+      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_JB_LIST, j_id, &job_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
 
-      /*
-       * debug output to perform testsuite tests
-       */
+      // @todo this will not work as stored procedure
+      // debug output to perform testsuite tests
       if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != nullptr) {
-         fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received=" sge_u32 "\n", lGetNumberOfElem(*job_l));
+         fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received=" sge_u32 "\n", lGetNumberOfElem(job_list));
       }
    }
 
-   /* --- job zombies */
-   if (zombie_l && show_zombies) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_ZOMBIE_LIST, z_id, zombie_l);
+   if (parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES) {
+      DPRINTF("fetching zombies\n");
+      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_ZOMBIE_LIST, z_id, &zombie_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
    }
 
-   /* --- complex */
-   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CE_LIST, ce_id, centry_l);
+   DPRINTF("fetching complex entries\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CE_LIST, ce_id, &centry_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /* --- exec host */
-   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_EH_LIST, eh_id, exechost_l);
+   DPRINTF("fetching execution hosts\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_EH_LIST, eh_id, &exechost_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /* --- pe */
-   if (pe_l) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PE_LIST, pe_id, pe_l);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /* --- ckpt */
-   if (ckpt_l) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CK_LIST, ckpt_id, ckpt_l);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /* --- acl */
-   if (acl_l) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_US_LIST, acl_id, acl_l);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /* --- project */
-   if (project_l) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PR_LIST, up_id, project_l);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(1);
-      }
-   }
-
-   /* --- scheduler configuration */
-   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_SC_LIST, sc_id, sc_l);
+   DPRINTF("fetching parallel environments\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PE_LIST, pe_id, &pe_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   /* --- hgrp */
-   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_HGRP_LIST, hgrp_id, hgrp_l);
+   DPRINTF("fetching checkpointing environments\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CK_LIST, ckpt_id, &ckpt_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
+   DPRINTF("fetching access control lists\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_US_LIST, acl_id, &acl_list);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
 
-   /* -- apply global configuration for sge_hostcmp() scheme */
+   DPRINTF("fetching projects\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PR_LIST, up_id, &project_list);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   DPRINTF("fetching scheduling config\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_SC_LIST, sc_id, &schedd_config);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   DPRINTF("fetching host groups\n");
+   gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_HGRP_LIST, hgrp_id, &hgrp_list);
+   if (answer_list_has_error(alpp)) {
+      DRETURN(1);
+   }
+
+   DPRINTF("fetching global configuration\n");
+   lList *conf_l = nullptr;
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CONF_LIST, gc_id, &conf_l);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
-
-   if (lFirst(conf_l)) {
+   if (lFirst(conf_l) != nullptr) {
       lListElem *local = nullptr;
+      const char *cell_root = bootstrap_get_cell_root();
+      u_long32 progid = component_get_component_id();
       merge_configuration(nullptr, progid, cell_root, lFirstRW(conf_l), local, nullptr);
    }
    lFreeList(&conf_l);
 
-   DRETURN(0);
-}
-
-bool ocs::QStatModel::fetch_data(lList **answer_list, QStatParameter &parameter) {
-   DENTER(TOP_LAYER);
-   if (!gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr, nullptr, nullptr)) {
-      DRETURN(false);
-   }
-
-   // get configuration from qmaster - from now on it is possible to use the mconf_get-functions
-   lListElem *global = nullptr;
-   lListElem *local = nullptr;
-   lList *conf_list = nullptr;
-
-   const char *qualified_hostname = component_get_qualified_hostname();
-   u_long32 progid = component_get_component_id();
-   const char *cell_root = bootstrap_get_cell_root();
-   if (gdi::Client::gdi_get_configuration(qualified_hostname, &global, &local) ||
-      merge_configuration(nullptr, progid, cell_root, global, local, &conf_list)) {
-      ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      lFreeList(&conf_list);
-      lFreeElem(&global);
-      lFreeElem(&local);
-      sge_exit(1);
-   }
-
-   qstat_env_get_all_lists(answer_list, parameter);
    DRETURN(true);
 }
 
+bool ocs::QStatModel::prepare_data(lList **alpp) {
+   DENTER(TOP_LAYER);
+
+   if (!sconf_set_config(&schedd_config, alpp)) {
+      DRETURN(false);
+   }
+
+   centry_list_init_double(centry_list);
+
+   DRETURN(true);
+}
 
 bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
@@ -1068,6 +957,11 @@ bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &paramet
    if (!fetch_data(answer_list, parameter)) {
       DRETURN(false);
    }
+
+   if (!prepare_data(answer_list)) {
+      DRETURN(false);
+   }
+
    DRETURN(true);
 }
 

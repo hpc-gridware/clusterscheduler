@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -162,8 +162,8 @@ centry_elem_validate(lListElem *centry, const lList *centry_list, lList **answer
 bool
 centry_list_sort(lList *this_list);
 
-bool
-centry_list_init_double(lList *this_list);
+void
+centry_list_init_double(const lList *this_list);
 
 int
 centry_list_fill_request(const lList *centry_list, lList **answer_list, const lList *master_centry_list,

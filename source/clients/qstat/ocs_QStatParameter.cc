@@ -295,10 +295,6 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
    DENTER(TOP_LAYER);
 
-   need_queues_ = false;
-
-
-
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
@@ -527,6 +523,7 @@ bool ocs::QStatParameter::parse_parameters(lList **answer_list, char **argv, cha
 
    if (!strcmp(sge_basename(*argv++, '/'), "qselect")) {
       output_mode_ = OutputMode::QSELECT;
+      need_queues_ = true;
    }
 
    {

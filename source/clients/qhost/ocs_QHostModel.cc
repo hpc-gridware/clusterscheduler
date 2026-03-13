@@ -286,7 +286,7 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
 }
 
 bool
-ocs::QHostModel::init_data(lList **answer_list, const lList *resource_match_list, const u_long32 show) const {
+ocs::QHostModel::prepare_data(lList **answer_list, const lList *resource_match_list, const u_long32 show) const {
    DENTER(TOP_LAYER);
    // first step: prepare configuration
    if (lFirst(config_list_)) {
@@ -438,7 +438,7 @@ ocs::QHostModel::make_snapshot(lList **answer_list, QHostParameter &parameter) {
    }
 
    // init raw data received from qmaster
-   if (!init_data(answer_list, resource_match_list, show)) {
+   if (!prepare_data(answer_list, resource_match_list, show)) {
       return false;
    }
 

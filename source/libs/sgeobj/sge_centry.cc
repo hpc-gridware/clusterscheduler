@@ -650,25 +650,17 @@ centry_list_sort(lList *this_list) {
 *  RESULT
 *     bool - true
 *******************************************************************************/
-bool
-centry_list_init_double(lList *this_list) {
-   bool ret = true;
-
+void
+centry_list_init_double(const lList *this_list) {
    DENTER(CENTRY_LAYER);
-   if (this_list != nullptr) {
-      lListElem *centry;
-
-      for_each_rw (centry, this_list) {
-         double new_val = 0.0; /* 
-                                * parse_ulong_val will not set it for all 
-                                * data types! 
-                                */
-         parse_ulong_val(&new_val, nullptr, lGetUlong(centry, CE_valtype),
-                         lGetString(centry, CE_stringval), nullptr, 0);
-         lSetDouble(centry, CE_doubleval, new_val);
-      }
+   lListElem *centry;
+   for_each_rw (centry, this_list) {
+      double new_val = 0.0; // parse_ulong_val will not set it for all data types!
+      parse_ulong_val(&new_val, nullptr, lGetUlong(centry, CE_valtype),
+                      lGetString(centry, CE_stringval), nullptr, 0);
+      lSetDouble(centry, CE_doubleval, new_val);
    }
-   DRETURN(ret);
+   DRETURN_VOID;
 }
 
 /****** sgeobj/centry/centry_list_fill_request() ******************************

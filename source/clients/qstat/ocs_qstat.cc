@@ -71,11 +71,8 @@
 #include "ocs_client_job.h"
 #include "ocs_client_print.h"
 #include "basis_types.h"
-#include "ocs_client_parse.h"
 #include "ocs_qstat_filter.h"
 #include "ocs_qstat_xml.h"
-#include "ocs_qstat_cmdline.h"
-#include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qstat.h"
 #include "ocs_QStatModel.h"
@@ -86,8 +83,8 @@
 #define FORMAT_I_2 "%I %I "
 #define FORMAT_I_1 "%I "
 
-static int qstat_show_job(lList *jid, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter);
+static int qstat_show_job(lList *jid, u_long32 isXML, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+static int qstat_show_job_info(u_long32 isXML, ocs::QStatParameter &parameter);
 
 typedef struct qstat_stdout_ctx_str qstat_stdout_ctx_t;
 
@@ -185,10 +182,6 @@ int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
    lList *alp = nullptr;
    const lListElem *aep = nullptr;
-   qstat_env_t qstat_env;
-
-   /* initialize the qstat_env */
-   memset(&qstat_env, 0, sizeof(qstat_env_t));
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);
@@ -227,9 +220,9 @@ int main(int argc, char *argv[]) {
    // if -j, then only print job info and leave */
    if (parameter.job_info_) {
       if (lGetNumberOfElem(parameter.jid_list_) > 0) {
-         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, &qstat_env, parameter, model);
+         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, parameter, model);
       } else {
-         ret = qstat_show_job_info(parameter.isXML_, &qstat_env, parameter);
+         ret = qstat_show_job_info(parameter.isXML_, parameter);
       }
    } else if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::QSELECT) {
 
@@ -242,14 +235,13 @@ int main(int argc, char *argv[]) {
                fprintf(stderr, "%s\n", lGetString(aep, AN_text));
             }
             lFreeList(&answer_list);
-            qstat_env_destroy(&qstat_env);
             sge_exit(1);
             return 1;
          }
       } else {
          qselect_stdout_init(&handler, &answer_list);
       }
-      ret = qselect(&qstat_env, &handler, &answer_list, parameter, model);
+      ret = qselect(&handler, &answer_list, parameter, model);
       if (handler.destroy != nullptr) {
          handler.destroy(&handler, &answer_list);
       }
@@ -264,7 +256,7 @@ int main(int argc, char *argv[]) {
          ret = cqueue_summary_stdout_init(&handler, &answer_list);
       }
       if (ret == 0) {
-         ret = qstat_cqueue_summary(&qstat_env, &handler, &answer_list, parameter, model);
+         ret = qstat_cqueue_summary(&handler, &answer_list, parameter, model);
       }
       if (handler.destroy != nullptr) {
          handler.destroy(&handler);
@@ -281,7 +273,7 @@ int main(int argc, char *argv[]) {
       }
 
       if (ret == 0) {
-         ret = qstat_no_group(&qstat_env, &handler, &answer_list, parameter, model);
+         ret = qstat_no_group(&handler, &answer_list, parameter, model);
       }
 
       if (handler.destroy != nullptr ) {
@@ -295,7 +287,6 @@ int main(int argc, char *argv[]) {
    answer_list_output(&answer_list);
 
    if (ret != 0) {
-      qstat_env_destroy(&qstat_env);
       sge_exit(1);
       return 1;
    }
@@ -1607,7 +1598,8 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 ** returns 0 on success, non-zero on failure
 */
 static int
-qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
+qstat_show_job(lList *jid_list, u_long32 isXML, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
+   DENTER(TOP_LAYER);
    const lListElem *j_elem = 0;
    lList* jlp = nullptr;
    lList* ilp = nullptr;
@@ -1619,8 +1611,6 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QSt
    bool jobs_exist = true;
    const lListElem* mes;
    const lListElem *tmpElem;
-
-   DENTER(TOP_LAYER);
 
    /* get job scheduling information */
    what = lWhat("%T(ALL)", SME_Type);
@@ -1742,7 +1732,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QSt
          }         
       }
       
-      xml_qstat_show_job(&jlp, &ilp,  &alp, &jid_list, qstat_env, parameter);
+      xml_qstat_show_job(&jlp, &ilp,  &alp, &jid_list, parameter);
    
       lFreeList(&jlp);
       lFreeList(&alp);
@@ -1854,7 +1844,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, qstat_env_t *qstat_env, ocs::QSt
    DRETURN(0);
 }
 
-static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QStatParameter &parameter)
+static int qstat_show_job_info(u_long32 isXML, ocs::QStatParameter &parameter)
 {
    lList *ilp = nullptr;
    lList *mlp = nullptr;
@@ -1880,7 +1870,7 @@ static int qstat_show_job_info(u_long32 isXML, qstat_env_t *qstat_env, ocs::QSta
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
    if (isXML){
-      xml_qstat_show_job_info(&ilp, &alp, qstat_env, parameter);
+      xml_qstat_show_job_info(&ilp, &alp, parameter);
    }
    else {
       for_each_ep(aep, alp) {

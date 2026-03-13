@@ -68,8 +68,8 @@ namespace ocs {
       void qstat_filter_add_q_attributes();
       bool prepare_filter(lList **answer_list, QStatParameter &parameter);
 
-      int qstat_env_get_all_lists(lList** alpp, QStatParameter &parameter);
       bool fetch_data(lList **answer_list, QStatParameter &parameter);
+      bool prepare_data(lList **alpp);
       void free_data();
    public:
       QStatModel() = default;

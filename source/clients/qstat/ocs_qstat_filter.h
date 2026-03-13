@@ -38,23 +38,6 @@
 
 #include "ocs_QStatParameter.h"
 
-typedef struct qstat_env_str qstat_env_t;
-
-struct qstat_env_str {
-   /* Input parameters */
-
-   /* Needed lists */
-
-   int (*shut_me_down)();
-
-   /* 
-   ** number of slots to be printed in slots column when 0 i
-   ** is passed the number of requested slots printed
-   */
-   int slots_per_line;
-};
-
-
 typedef struct qselect_handler_str qselect_handler_t;
 
 struct qselect_handler_str {
@@ -66,7 +49,7 @@ struct qselect_handler_str {
    int (*destroy)(qselect_handler_t *thiz, lList** alpp);
 };
 
-int qselect(qstat_env_t* qstat_env, qselect_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+int qselect(qselect_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 /* ------------- Cluster Queue Summary -------------------------------------- */
 /* qstat -g c                                                                 */
@@ -97,8 +80,7 @@ typedef struct cqueue_summary_handler_str cqueue_summary_handler_t;
 
 struct cqueue_summary_handler_str {
    void *ctx;
-   qstat_env_t *qstat_env;
-   
+
    int (*report_started)(cqueue_summary_handler_t *thiz, lList **alpp, ocs::QStatParameter &parameter);
    int (*report_finished)(cqueue_summary_handler_t *thiz, lList **alpp);
    
@@ -107,7 +89,7 @@ struct cqueue_summary_handler_str {
    int (*destroy)(cqueue_summary_handler_t *thiz);
 };
 
-int qstat_cqueue_summary(qstat_env_t* qstat_env, cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+int qstat_cqueue_summary(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 /* ---------------- QStat queue/job handling ---------------------------------*/
 
@@ -207,8 +189,7 @@ typedef struct job_handler_str job_handler_t;
 struct job_handler_str {
 
   void *ctx;
-  qstat_env_t *qstat_env;
-  
+
   int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
   
   int (*report_sub_tasks_started)(job_handler_t* handler, lList **alpp);
@@ -266,8 +247,7 @@ typedef struct qstat_handler_str qstat_handler_t;
 
 struct qstat_handler_str {
   void *ctx;
-  qstat_env_t *qstat_env;
-  
+
   int (*report_started)(qstat_handler_t* handler, lList** alpp);
   int (*report_finished)(qstat_handler_t* hanlder, lList** alpp);
   
@@ -301,28 +281,4 @@ struct qstat_handler_str {
 
 
 
-int qstat_no_group(qstat_env_t* qstat_env, qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-
-
-void qstat_env_destroy(qstat_env_t *qstat_env);
-
-int filter_queues(
-   lList **filtered_queue_list,
-   lList *resource_list,
-                  lList *queueref_list,
-                  lList *peref_list, 
-                  lList *queue_user_list,
-                  u_long32 queue_states,
-                  lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-                  
-lCondition *qstat_get_JB_Type_selection(lList *user_list, u_long32 show);
-lEnumeration *qstat_get_JB_Type_filter(qstat_env_t* qstat_env, ocs::QStatModel &qstat_model);
-void qstat_filter_add_ext_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_pri_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_urg_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_l_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_q_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_pe_attributes(qstat_env_t* qstat_env);
-void qstat_filter_add_r_attributes(qstat_env_t *qstat_env);
-void qstat_filter_add_t_attributes(qstat_env_t *qstat_env);
-void qstat_filter_add_U_attributes(qstat_env_t *qstat_env);
+int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);

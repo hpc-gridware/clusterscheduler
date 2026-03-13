@@ -39,7 +39,7 @@ namespace ocs {
          QSTAT_GROUP,
          QSTAT_DEFAULT
       };
-      bool need_queues_ = true; //< need to fetch queues from master
+      bool need_queues_ = false; //< need to fetch queues from master
       bool need_job_list_ = true; //< need to fetch job list from master
 
       u_long32 full_listing_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
