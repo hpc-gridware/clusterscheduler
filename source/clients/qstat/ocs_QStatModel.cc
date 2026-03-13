@@ -18,10 +18,13 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <fnmatch.h>
+
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
+#include "uti/sge_string.h"
 
 #include "cull/cull_what.h"
 
@@ -33,6 +36,7 @@
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_str.h"
@@ -44,11 +48,13 @@
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_Request.h"
 
+#include "sched/sge_select_queue.h"
+
 #include "ocs_QStatModel.h"
 #include "ocs_QStatParameter.h"
+#include "ocs_client_cqueue.h"
 
 #include "msg_qstat.h"
-#include "msg_clients_common.h"
 #include "sge.h"
 
 void
@@ -721,7 +727,6 @@ bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    lEnumeration *what = nullptr;
    gdi::Request gdi_multi{};
 
-   DPRINTF("fetchting permissions\n");
    if (!gdi::Client::sge_gdi_get_permission(alpp, &is_manager_, nullptr, nullptr, nullptr)) {
       DRETURN(false);
    }
@@ -840,7 +845,6 @@ bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    // Start fetching the lists
 
    if (parameter.need_queues_) {
-      DPRINTF("fetching queues\n");
       gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CQ_LIST, q_id, &queue_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
@@ -848,7 +852,6 @@ bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    }
 
    if (parameter.need_job_list_) {
-      DPRINTF("fetching jobs\n");
       gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_JB_LIST, j_id, &job_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
@@ -862,62 +865,52 @@ bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    }
 
    if (parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES) {
-      DPRINTF("fetching zombies\n");
       gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_ZOMBIE_LIST, z_id, &zombie_list);
       if (answer_list_has_error(alpp)) {
          DRETURN(1);
       }
    }
 
-   DPRINTF("fetching complex entries\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CE_LIST, ce_id, &centry_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching execution hosts\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_EH_LIST, eh_id, &exechost_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching parallel environments\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PE_LIST, pe_id, &pe_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching checkpointing environments\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CK_LIST, ckpt_id, &ckpt_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching access control lists\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_US_LIST, acl_id, &acl_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching projects\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_PR_LIST, up_id, &project_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching scheduling config\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_SC_LIST, sc_id, &schedd_config);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching host groups\n");
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_HGRP_LIST, hgrp_id, &hgrp_list);
    if (answer_list_has_error(alpp)) {
       DRETURN(1);
    }
 
-   DPRINTF("fetching global configuration\n");
    lList *conf_l = nullptr;
    gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_CONF_LIST, gc_id, &conf_l);
    if (answer_list_has_error(alpp)) {
@@ -946,9 +939,239 @@ bool ocs::QStatModel::prepare_data(lList **alpp) {
    DRETURN(true);
 }
 
+
+/*-------------------------------------------------------------------------*/
+int ocs::QStatModel::qstat_env_filter_queues(lList **alpp, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   centry_list_init_double(centry_list);
+
+   /* all queues are selected */
+   cqueue_list_set_tag(queue_list, TAG_SHOW_IT, true);
+
+   /* unseclect all queues not selected by a -q (if exist) */
+   int nqueues = 0;
+   if (lGetNumberOfElem(parameter.queueref_list_)>0) {
+
+      if ((nqueues=select_by_qref_list(queue_list, hgrp_list, parameter.queueref_list_))<0) {
+         DRETURN(-1);
+      }
+
+      if (nqueues==0) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-q");
+         DRETURN(0);
+      }
+   }
+
+   /* unselect all queues not selected by -qs */
+   select_by_queue_state(parameter.queue_state_, exechost_list, queue_list, centry_list);
+
+   /* unselect all queues not selected by a -U (if exist) */
+   if (lGetNumberOfElem(parameter.queue_user_list_)>0) {
+      if ((nqueues=select_by_queue_user_list(exechost_list, queue_list, parameter.queue_user_list_, acl_list, project_list))<0) {
+         DRETURN(-1);
+      }
+
+      if (nqueues==0) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-U");
+         DRETURN(0);
+      }
+   }
+
+   /* unselect all queues not selected by a -pe (if exist) */
+   if (lGetNumberOfElem(parameter.peref_list_)>0) {
+      if ((nqueues=select_by_pe_list(queue_list, parameter.peref_list_, pe_list))<0) {
+         DRETURN(-1);
+      }
+
+      if (nqueues==0) {
+         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-pe");
+         DRETURN(0);
+      }
+   }
+   /* unselect all queues not selected by a -l (if exist) */
+   if (lGetNumberOfElem(parameter.resource_list_)) {
+      u_long32 empty_qs = 1;
+      if (select_by_resource_list(parameter.resource_list_, exechost_list, queue_list,centry_list, empty_qs)<0) {
+         DRETURN(-1);
+      }
+   }
+
+   if (rmon_mlgetl(&RMON_DEBUG_ON, GDI_LAYER) & INFOPRINT) {
+      const lListElem *cqueue;
+      for_each_ep(cqueue, queue_list) {
+         const lListElem *qep;
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+
+         for_each_ep(qep, qinstance_list) {
+            if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT) != 0) {
+               DPRINTF("++ %s\n", lGetString(qep, QU_full_name));
+            } else {
+               DPRINTF("-- %s\n", lGetString(qep, QU_full_name));
+            }
+         }
+      }
+   }
+
+
+   if (!is_cqueue_selected(queue_list)) {
+      DRETURN(0);
+   }
+
+   DRETURN(1);
+}
+
+int ocs::QStatModel::filter_jobs(QStatParameter &parameter) {
+
+   lListElem *jep = nullptr;
+   lListElem *jatep = nullptr;
+   const lListElem *up = nullptr;
+
+   DENTER(TOP_LAYER);
+
+   // select all jobs which are not finished
+   for_each_rw (jep, job_list) {
+      for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
+         if (!(lGetUlong(jatep, JAT_status) & JFINISHED))
+            lSetUlong(jatep, JAT_suitable, TAG_SHOW_IT);
+      }
+   }
+
+   // untag all jobs which do not fit to the user list (-u)
+   if (lGetNumberOfElem(parameter.user_list_)) {
+
+      for_each_rw(up, parameter.user_list_) {
+         const char *user = lGetString(up, ST_name);
+         if (user == nullptr) {
+            break;
+         }
+
+         const bool is_pattern = ocs::is_pattern(user);
+         for_each_rw (jep, job_list) {
+            const char *owner = lGetString(jep, JB_owner);
+
+            int match;
+            if (is_pattern) {
+               match = fnmatch(user, owner, 0);
+            } else {
+               match = sge_strnullcmp(user, owner);
+            }
+            if (match == 0) {
+               for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
+                  lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) | TAG_SHOW_IT | TAG_SELECT_IT);
+               }
+            }
+         }
+      }
+   }
+
+   // untag all jobs which do not fit to the queue selection (-pe -l -q -U)
+   if (lGetNumberOfElem(parameter.peref_list_) || lGetNumberOfElem(parameter.queueref_list_) ||
+       lGetNumberOfElem(parameter.resource_list_) || lGetNumberOfElem(parameter.queue_user_list_)) {
+
+      // @todo Will this call cause an issue if executed in the reader thread pool
+      // do not debit for running jobs
+      sconf_set_qs_state(QS_STATE_EMPTY);
+
+      // unselect all pending jobs that fit in none of the selected queues
+      for_each_rw(jep, job_list) {
+         bool show_job = false;
+         const lListElem *cqueue = nullptr;
+
+         for_each_ep(cqueue, queue_list) {
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+
+            lListElem *qep = nullptr;
+            for_each_rw(qep, qinstance_list) {
+
+               if (!(lGetUlong(qep, QU_tag) & TAG_SHOW_IT)) {
+                  continue;
+               }
+
+               // find if the queue instance is in the list of selected queues and if the job fits into this queue instance
+               if (lListElem *host = host_list_locate(exechost_list, lGetHost(qep, QU_qhostname)); host != nullptr) {
+                  const int ret = sge_select_queue(job_get_hard_resource_listRW(jep), qep,
+                                                   host, exechost_list, centry_list,true, 1,
+                                                   parameter.queue_user_list_, acl_list, jep);
+
+                  if (ret==1) {
+                     show_job = true;
+                     break;
+                  }
+               }
+            }
+         }
+
+         for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
+            if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
+               DPRINTF("show task " sge_u32"." sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
+               lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
+            }
+         }
+         if (!show_job) {
+            lSetList(jep, JB_ja_n_h_ids, nullptr);
+            lSetList(jep, JB_ja_u_h_ids, nullptr);
+            lSetList(jep, JB_ja_o_h_ids, nullptr);
+            lSetList(jep, JB_ja_s_h_ids, nullptr);
+         }
+      }
+
+      // @todo Will this call cause an issue if executed in the reader thread pool
+      // re-enable debit for running jobs
+      sconf_set_qs_state(QS_STATE_FULL);
+   }
+
+   // prepare queues for output
+   if (parameter.output_mode_== QStatParameter::OutputMode::QSTAT_GROUP) {
+
+      // sort cluster queues for grouped output
+      lPSortList(queue_list, "%I+ ", CQ_name);
+   } else {
+
+      // cluster queues are not required. We need to reconstruct the queue list with the queue instances only.
+      lList *tmp_queue_list = lCreateList("", QU_Type);
+      lListElem *cqueue = nullptr;
+      for_each_rw(cqueue, queue_list) {
+         lList *qinstances = nullptr;
+         lXchgList(cqueue, CQ_qinstances, &qinstances);
+         lAddList(tmp_queue_list, &qinstances);
+      }
+      lFreeList(&queue_list);
+      queue_list = tmp_queue_list;
+
+      // sort queue instances
+      lPSortList(queue_list, "%I+ %I+ %I+", QU_seq_no, QU_qname, QU_qhostname);
+   }
+   DRETURN(0);
+}
+
+
+bool ocs::QStatModel::filter_data(lList **alpp, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+
+   // filter queues according to given parameters
+   if (qstat_env_filter_queues(alpp, parameter) < 0) {
+      DPRINTF("qstat_env_filter_queues failed\n");
+      DRETURN(false);
+   }
+
+   // if output mode is qselect, we do not filter the jobs
+   if (parameter.output_mode_!= QStatParameter::OutputMode::QSELECT) {
+
+      // filter jobs according to given parameters (might also unselect queues)
+      if (filter_jobs(parameter) != 0) {
+         DPRINTF("filter_jobs failed\n");
+         DRETURN(false);
+      }
+   }
+   DRETURN(true);
+}
+
 bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   // @todo Should be combined with the other GDI requests
 
    if (!prepare_filter(answer_list, parameter)) {
       DRETURN(false);
@@ -959,6 +1182,10 @@ bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &paramet
    }
 
    if (!prepare_data(answer_list)) {
+      DRETURN(false);
+   }
+
+   if (!filter_data(answer_list, parameter)) {
       DRETURN(false);
    }
 

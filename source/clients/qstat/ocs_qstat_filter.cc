@@ -88,8 +88,6 @@
 #include "ocs_QStatParameter.h"
 #include "ocs_TopologyString.h"
 
-int qstat_env_filter_queues(lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-static int filter_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model);
 static void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 static void remove_tagged_jobs(lList *job_list);
@@ -130,9 +128,9 @@ int qselect(qselect_handler_t* handler, lList **alpp, ocs::QStatParameter &param
    
    DENTER(TOP_LAYER);
    
-   if (qstat_env_filter_queues(alpp, parameter, model) <= 0) {
-      DRETURN(1);
-   }
+   //if (qstat_env_filter_queues(alpp, parameter, model) <= 0) {
+   //   DRETURN(1);
+   //}
 
    /* Do output */
    if (handler->report_started != nullptr) {
@@ -169,15 +167,6 @@ int qstat_cqueue_summary(cqueue_summary_handler_t *handler, lList **alpp, ocs::Q
    
    DENTER(TOP_LAYER);
    
-   if ((ret = qstat_env_filter_queues(alpp, parameter, model)) < 0) {
-      DPRINTF("qstat_env_filter_queues failed\n");
-      DRETURN(ret);
-   }
-   
-   if ((ret = filter_jobs(parameter, model)) != 0) {
-      DPRINTF("filter_jobs failed\n");
-      DRETURN(ret);
-   }
 
    calc_longest_queue_length(parameter, model);
    
@@ -241,15 +230,6 @@ int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &
 
    int ret = 0;
 
-
-   if ((ret = qstat_env_filter_queues(alpp, parameter, model)) < 0 ) {
-      DRETURN(ret);
-   }
-
-   if ((ret = filter_jobs(parameter, model)) != 0 ) {
-      DRETURN(ret);
-   }
-   
    calc_longest_queue_length(parameter, model);
 
    correct_capacities(model.exechost_list, model.centry_list);
@@ -595,227 +575,6 @@ error:
 }
 
 
-static int filter_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model) {
-   
-   lListElem *jep = nullptr;
-   lListElem *jatep = nullptr;
-   const lListElem *up = nullptr;
-   
-   DENTER(TOP_LAYER);
-
-   /*
-   ** all jobs are selected 
-   */
-   for_each_rw (jep, model.job_list) {
-      for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-         if (!(lGetUlong(jatep, JAT_status) & JFINISHED))
-            lSetUlong(jatep, JAT_suitable, TAG_SHOW_IT);
-      }
-   }
-
-   /*
-   ** tag only jobs which satisfy the user list
-   */
-   if (lGetNumberOfElem(parameter.user_list_)) {
-      DPRINTF("------- selecting jobs -----------\n");
-
-      /* ok, now we untag the jobs if the user_list was specified */
-      for_each_rw(up, parameter.user_list_) {
-         const char *user = lGetString(up, ST_name);
-         if (user != nullptr) {
-            bool is_pattern = ocs::is_pattern(user);
-            for_each_rw (jep, model.job_list) {
-               int match;
-               if (is_pattern) {
-                  match = fnmatch(user, lGetString(jep, JB_owner), 0);
-               } else {
-                  match = sge_strnullcmp(user, lGetString(jep, JB_owner));
-               }
-               if (match == 0) {
-                  for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-                     lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_SHOW_IT|TAG_SELECT_IT);
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   if (lGetNumberOfElem(parameter.peref_list_) || lGetNumberOfElem(parameter.queueref_list_) ||
-       lGetNumberOfElem(parameter.resource_list_) || lGetNumberOfElem(parameter.queue_user_list_)) {
-
-      const lListElem *cqueue = nullptr;
-      lListElem *qep = nullptr;
-      /*
-      ** unselect all pending jobs that fit in none of the selected queues
-      ** that way the pending jobs are really pending jobs for the queues 
-      ** printed
-      */
-
-      sconf_set_qs_state(QS_STATE_EMPTY);
-      for_each_rw(jep, model.job_list) {
-         int ret, show_job;
-
-         show_job = 0;
-
-         for_each_ep(cqueue, model.queue_list) {
-            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-
-            for_each_rw(qep, qinstance_list) {
-               lListElem *host = nullptr;
-
-               if (!(lGetUlong(qep, QU_tag) & TAG_SHOW_IT)) {
-                  continue;
-               }
-               
-               host = host_list_locate(model.exechost_list, lGetHost(qep, QU_qhostname));
-               
-               if (host != nullptr) {
-                  ret = sge_select_queue(job_get_hard_resource_listRW(jep), qep,
-                                         host, model.exechost_list, model.centry_list,
-                                         true, 1, parameter.queue_user_list_, model.acl_list, jep);
-
-                  if (ret==1) {
-                     show_job = 1;
-                     break;
-                  }
-               }
-               /* we should have an error message here, even so it should not happen, that
-                 we have queue instances without a host, but.... */
-            }
-         }   
-
-         for_each_rw(jatep, lGetList(jep, JB_ja_tasks)) {
-            if (!show_job && !(lGetUlong(jatep, JAT_status) == JRUNNING || (lGetUlong(jatep, JAT_status) == JTRANSFERING))) {
-               DPRINTF("show task " sge_u32"." sge_u32"\n", lGetUlong(jep, JB_job_number), lGetUlong(jatep, JAT_task_number));
-               lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) & ~TAG_SHOW_IT);
-            }
-         }
-         if (!show_job) {
-            lSetList(jep, JB_ja_n_h_ids, nullptr);
-            lSetList(jep, JB_ja_u_h_ids, nullptr);
-            lSetList(jep, JB_ja_o_h_ids, nullptr);
-            lSetList(jep, JB_ja_s_h_ids, nullptr);
-         }
-      }
-      sconf_set_qs_state(QS_STATE_FULL);
-   }
-
-   /*
-    * step 2.5: reconstruct queue stata structure
-    */
-   if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_GROUP) {
-      lPSortList(model.queue_list, "%I+ ", CQ_name);
-   } else {
-      lList *tmp_queue_list = nullptr;
-      lListElem *cqueue = nullptr;
-
-      tmp_queue_list = lCreateList("", QU_Type);
-
-      for_each_rw(cqueue, model.queue_list) {
-         lList *qinstances = nullptr;
-
-         lXchgList(cqueue, CQ_qinstances, &qinstances);
-         lAddList(tmp_queue_list, &qinstances);
-      }
-      
-      lFreeList(&(model.queue_list));
-      model.queue_list = tmp_queue_list;
-      tmp_queue_list = nullptr;
-
-      lPSortList(model.queue_list, "%I+ %I+ %I+", QU_seq_no, QU_qname, QU_qhostname);
-   }
-   DRETURN(0);
-}
-
-
-/*-------------------------------------------------------------------------*/
-int qstat_env_filter_queues(lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
-   DENTER(TOP_LAYER);
-
-   int nqueues = 0;
-   u_long32 empty_qs = 1;
-
-   centry_list_init_double(model.centry_list);
-
-   DPRINTF("------- selecting queues -----------\n");
-   /* all queues are selected */
-   cqueue_list_set_tag(model.queue_list, TAG_SHOW_IT, true);
-
-   /* unseclect all queues not selected by a -q (if exist) */
-   if (lGetNumberOfElem(parameter.queueref_list_)>0) {
-
-      if ((nqueues=select_by_qref_list(model.queue_list, model.hgrp_list, parameter.queueref_list_))<0) {
-         DRETURN(-1);
-      }
-
-      if (nqueues==0) {
-         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-q");
-         DRETURN(0);
-      }
-   }
-
-   /* unselect all queues not selected by -qs */
-   select_by_queue_state(parameter.queue_state_, model.exechost_list, model.queue_list, model.centry_list);
-
-   /* unselect all queues not selected by a -U (if exist) */
-   if (lGetNumberOfElem(parameter.queue_user_list_)>0) {
-      if ((nqueues=select_by_queue_user_list(model.exechost_list, model.queue_list,
-                                             parameter.queue_user_list_, model.acl_list, model.project_list))<0) {
-         DRETURN(-1);
-      }
-
-      if (nqueues==0) {
-         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-U");
-         DRETURN(0);
-      }
-   }
-
-   /* unselect all queues not selected by a -pe (if exist) */
-   if (lGetNumberOfElem(parameter.peref_list_)>0) {
-      if ((nqueues=select_by_pe_list(model.queue_list, parameter.peref_list_, model.pe_list))<0) {
-         DRETURN(-1);
-      }
-
-      if (nqueues==0) {
-         answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_QSTAT_NOQUEUESREMAININGAFTERXQUEUESELECTION_S, "-pe");
-         DRETURN(0);
-      }
-   }
-   /* unselect all queues not selected by a -l (if exist) */
-   if (lGetNumberOfElem(parameter.resource_list_)) {
-      if (select_by_resource_list(parameter.resource_list_, model.exechost_list,
-                                  model.queue_list, model.centry_list, empty_qs)<0) {
-         DRETURN(-1);
-      }
-   }
-
-   if (rmon_mlgetl(&RMON_DEBUG_ON, GDI_LAYER) & INFOPRINT) {
-      const lListElem *cqueue;
-      for_each_ep(cqueue, model.queue_list) {
-         const lListElem *qep;
-         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-
-         for_each_ep(qep, qinstance_list) {
-            if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT)!=0) {
-               DPRINTF("++ %s\n", lGetString(qep, QU_full_name));
-            } else {
-               DPRINTF("-- %s\n", lGetString(qep, QU_full_name));
-            }
-         }
-      }
-   }
-
-
-   if (!is_cqueue_selected(model.queue_list)) {
-      DRETURN(0);
-   }
-
-   DRETURN(1);
-}
 
 /* ------------------- Queue Handler ---------------------------------------- */
 

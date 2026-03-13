@@ -201,7 +201,6 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-
    ocs::QStatModel model;
    if (!model.make_snapshot(&alp, parameter)) {
       answer_list_output(&alp);
