@@ -1,6 +1,6 @@
 # Major Enhancements
 
-## v9.1.0beta1
+## v9.1.0
 
 ### Advanced Binding Framework for Topology-Aware Job Placement
 
