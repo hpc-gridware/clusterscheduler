@@ -316,7 +316,7 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
       }
 
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
-         job_info_ = 1;
+         output_mode_ = OutputMode::JOB_INFO;
          if (argstr) {
             if (*ppljid) {
                lFreeList(ppljid);
@@ -326,7 +326,11 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          }
       }
 
-      while (parse_flag(ppcmdline, "-xml", &alp, &isXML_)){
+      u_long32 in_xml_mode = false;
+      while (parse_flag(ppcmdline, "-xml", &alp, &in_xml_mode)){
+         if (in_xml_mode) {
+            output_format_ = OutputFormat::XML;
+         }
       }
 
       while (parse_flag(ppcmdline, "-ne", &alp, &full)) {
@@ -455,12 +459,11 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
    switch (output_mode_) {
       case OutputMode::QSELECT:
-         need_job_list_ = true;
+         need_job_list_ = false;
          break;
       case OutputMode::QSTAT_GROUP:
-         need_job_list_ = true;
-         break;
       case OutputMode::QSTAT_DEFAULT:
+      case OutputMode::JOB_INFO:
          need_job_list_ = true;
          break;
    }

@@ -83,8 +83,8 @@
 #define FORMAT_I_2 "%I %I "
 #define FORMAT_I_1 "%I "
 
-static int qstat_show_job(lList *jid, u_long32 isXML, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-static int qstat_show_job_info(u_long32 isXML, ocs::QStatParameter &parameter);
+static int qstat_show_job(lList *jid, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+static int qstat_show_job_info(ocs::QStatParameter &parameter);
 
 typedef struct qstat_stdout_ctx_str qstat_stdout_ctx_t;
 
@@ -217,18 +217,18 @@ int main(int argc, char *argv[]) {
    lList *answer_list = nullptr;
 
    // if -j, then only print job info and leave */
-   if (parameter.job_info_) {
+   if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::JOB_INFO) {
       if (lGetNumberOfElem(parameter.jid_list_) > 0) {
-         ret = qstat_show_job(parameter.jid_list_, parameter.isXML_, parameter, model);
+         ret = qstat_show_job(parameter.jid_list_, parameter, model);
       } else {
-         ret = qstat_show_job_info(parameter.isXML_, parameter);
+         ret = qstat_show_job_info(parameter);
       }
    } else if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::QSELECT) {
 
       // qselect output
 
       qselect_handler_t handler;
-      if (parameter.isXML_) {
+      if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
          if (qselect_xml_init(&handler, &answer_list)) {
             for_each_ep(aep, answer_list) {
                fprintf(stderr, "%s\n", lGetString(aep, AN_text));
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
       // Group Summary
 
       cqueue_summary_handler_t handler;
-      if (parameter.isXML_) {
+      if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
          ret = cqueue_summary_xml_handler_init(&handler);
       } else {
          ret = cqueue_summary_stdout_init(&handler, &answer_list);
@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
       // Regular output
 
       qstat_handler_t handler;
-      if (parameter.isXML_) {
+      if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
          ret = qstat_xml_handler_init(&handler, &answer_list);
       } else {
          ret = qstat_stdout_init(&handler, &answer_list);
@@ -1597,7 +1597,7 @@ static int qselect_stdout_report_queue(qselect_handler_t* handler, const char* q
 ** returns 0 on success, non-zero on failure
 */
 static int
-qstat_show_job(lList *jid_list, u_long32 isXML, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
+qstat_show_job(lList *jid_list, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
    DENTER(TOP_LAYER);
    const lListElem *j_elem = 0;
    lList* jlp = nullptr;
@@ -1616,7 +1616,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, ocs::QStatParameter &parameter, 
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::TargetValue::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
 
-   if (!isXML) {
+   if (parameter.output_format_ != ocs::QStatParameter::OutputFormat::XML) {
       for_each_ep(aep, alp) {
          if (lGetUlong(aep, AN_status) != STATUS_OK) {
             fprintf(stderr, "%s\n", lGetString(aep, AN_text));
@@ -1696,7 +1696,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, ocs::QStatParameter &parameter, 
    lFreeWhere(&where);
    lFreeWhat(&what);
 
-   if (isXML) {
+   if (parameter.output_format_ == ocs::QStatParameter::OutputFormat::XML) {
       /* filter the message list to contain only jobs that have been requested.
          First remove all entries in the job_number_list that are not in the
          jbList. Then remove all entries (job_number_list, message_number and 
@@ -1843,7 +1843,7 @@ qstat_show_job(lList *jid_list, u_long32 isXML, ocs::QStatParameter &parameter, 
    DRETURN(0);
 }
 
-static int qstat_show_job_info(u_long32 isXML, ocs::QStatParameter &parameter)
+static int qstat_show_job_info(ocs::QStatParameter &parameter)
 {
    lList *ilp = nullptr;
    lList *mlp = nullptr;
@@ -1868,7 +1868,7 @@ static int qstat_show_job_info(u_long32 isXML, ocs::QStatParameter &parameter)
    what = lWhat("%T(ALL)", SME_Type);
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_SME_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
-   if (isXML){
+   if (parameter.output_format_ == ocs::QStatParameter::OutputFormat::XML) {
       xml_qstat_show_job_info(&ilp, &alp, parameter);
    }
    else {

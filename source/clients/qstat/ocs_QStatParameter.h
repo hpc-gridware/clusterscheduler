@@ -37,38 +37,34 @@ namespace ocs {
       enum class OutputMode {
          QSELECT,
          QSTAT_GROUP,
-         QSTAT_DEFAULT
+         QSTAT_DEFAULT,
+         JOB_INFO
       };
+      OutputMode output_mode_ = OutputMode::QSTAT_DEFAULT; //< default | -j | -g c | qselect
+      OutputFormat output_format_ = OutputFormat::PLAIN; //< plain | -xml
+
       bool need_queues_ = false; //< need to fetch queues from master
       bool need_job_list_ = true; //< need to fetch job list from master
 
       u_long32 full_listing_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
-      u_long32 job_info_ = 0; // -j
 
       bool state_filter_ = false; // -s
       std::string state_filter_value_; // -s value
 
-      u_long32 explain_bits_ = QI_DEFAULT;        /* -explain  */
-      lList *qresource_list_ = nullptr;        /* -F qresource_request          */
-
-      u_long32 queue_state_ = U_LONG32_MAX;         /* -qs       */
+      u_long32 queue_state_ = U_LONG32_MAX; //< -qs
+      u_long32 explain_bits_ = QI_DEFAULT; //< -explain
+      u_long32 group_opt_ = 0; //< -g
 
       lList *resource_list_ = nullptr;         /* -l resource_request           */
+      lList *qresource_list_ = nullptr;        /* -F qresource_request          */
       lList* queueref_list_ = nullptr;         /* -q queue_list                 */
       lList* peref_list_ = nullptr;            /* -pe pe_list                   */
       lList* user_list_ = nullptr;             /* -u user_list - selects jobs   */
       lList* queue_user_list_ = nullptr;       /* -U user_list - selects queues */
 
-      u_long32 group_opt_ = 0;           /* -g        */
+      int longest_queue_length = 30; //< used to align the output of the queue name column
 
-      u_long32 isXML_ = 0;             /* -xml      */
-
-      /* length of the longest queue name */
-      int longest_queue_length = 30;
-
-      OutputMode output_mode_ = OutputMode::QSTAT_DEFAULT;
-      lList *jid_list_ = nullptr; // -j argument list
-
+      lList *jid_list_ = nullptr; //< -j argument list
    private:
 #if 0
       lList *hostname_list_ = nullptr;
@@ -76,7 +72,6 @@ namespace ocs {
       lList *resource_match_list_ = nullptr;
       lList *resource_visible_list_ = nullptr;
       u_long32 show_ = 0;
-      OutputFormat output_format_ = OutputFormat::PLAIN;
 
       bool qhost_usage(FILE *fp);
       bool sge_parse_cmdline_qhost(char **argv, char **envp, lList **ppcmdline, lList **alpp);
