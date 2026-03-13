@@ -42,10 +42,8 @@
 #include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
-#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap_files.h"
@@ -56,12 +54,9 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_qinstance_state.h"
-#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_conf.h"
 
 #include "sched/sge_schedd_text.h"
 
@@ -81,6 +76,10 @@
 #include "ocs_QStatSelectViewPlain.h"
 #include "ocs_QStatSelectViewXML.h"
 #include "ocs_QStatSelectController.h"
+#include "ocs_QStatGroupViewBase.h"
+#include "ocs_QStatGroupViewPlain.h"
+#include "ocs_QStatGroupViewXML.h"
+#include "ocs_QStatGroupController.h"
 
 #define FORMAT_I_20 "%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I "
 #define FORMAT_I_10 "%I %I %I %I %I %I %I %I %I %I "
@@ -173,10 +172,6 @@ static int job_stdout_binding_started(job_handler_t* handler, lList **alpp);
 static int job_stdout_binding(job_handler_t* handler, const char *binding, lList **alpp);
 static int job_stdout_binding_finished(job_handler_t* handler, lList **alpp);
 
-static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList **alpp);
-static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
-static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
-
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
 /*-------------------------------------------------------------------------*/
@@ -229,21 +224,15 @@ int main(int argc, char *argv[]) {
       ocs::QStatSelectController controller;
       controller.process_request(parameter, model, *view);
    } else if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_GROUP) {
-
-      // Group Summary
-
-      cqueue_summary_handler_t handler;
+      std::unique_ptr<ocs::QStatGroupViewBase> view;
       if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
-         ret = cqueue_summary_xml_handler_init(&handler);
+         view = std::make_unique<ocs::QStatGroupViewXML>();
       } else {
-         ret = cqueue_summary_stdout_init(&handler, &answer_list);
+         view = std::make_unique<ocs::QStatGroupViewPlain>();
       }
-      if (ret == 0) {
-         ret = qstat_cqueue_summary(&handler, &answer_list, parameter, model);
-      }
-      if (handler.destroy != nullptr) {
-         handler.destroy(&handler);
-      }
+
+      ocs::QStatGroupController controller;
+      controller.process_request(parameter, model, *view);
    } else if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_DEFAULT) {
 
       // Regular output
@@ -1453,105 +1442,6 @@ static int qstat_stdout_error_jobs_started(qstat_handler_t *handler, lList **alp
 
    DRETURN(0);
 }
-
-/* --------------- Cluster Queue Summary To Stdout Handler -------------------*/
-
-static int cqueue_summary_stdout_init(cqueue_summary_handler_t *handler, lList **alpp) 
-{
-   DENTER(TOP_LAYER);
-
-   memset(handler, 0, sizeof(cqueue_summary_handler_t));
-   
-   handler->report_started = cqueue_summary_stdout_report_started;
-   handler->report_cqueue = cqueue_summary_stdout_report_cqueue;
-
-   DRETURN(0);
-}
-
-
-static int cqueue_summary_stdout_report_started(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter)
-{
-   int i;
-   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-   
-   char queue_def[50];
-   char fields[] = "%7s %6s %6s %6s %6s %6s %6s ";
-
-   DENTER(TOP_LAYER);
-
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds %s ", parameter.longest_queue_length, parameter.longest_queue_length, fields);
-   printf(queue_def, "CLUSTER QUEUE", "CQLOAD", "USED", "RES", "AVAIL", "TOTAL", "aoACDS", "cdsuE");
-   if (show_states) {
-      printf("%5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s", "s", "A", "S", "C", "u", "a", "d", "D", "c", "o", "E");
-   }
-   printf("\n");
-
-   printf("--------------------");
-   printf("--------------------");
-   printf("--------------------");
-   printf("--------------------");
-   if (show_states) {
-      printf("--------------------");
-      printf("--------------------");
-      printf("--------------------");
-      printf("------");
-   }
-   for(i=0; i< parameter.longest_queue_length - 36; i++) {
-      printf("-");
-   }   
-   printf("\n");
-
-   DRETURN(0);
-}
-
-
-static int cqueue_summary_stdout_report_cqueue(cqueue_summary_handler_t *handler, 
-                                               const char* cqname, cqueue_summary_t *summary,
-                                               lList **alpp, ocs::QStatParameter &parameter)
-{
-   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-   char queue_def[50];
-
-   DENTER(TOP_LAYER);
-
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds ", parameter.longest_queue_length, parameter.longest_queue_length);
-
-   printf(queue_def, cqname);
-
-   if (summary->is_load_available) {
-      printf("%7.2f ", summary->load);
-   } else {
-      printf("%7s ", "-NA-");
-   }
-   
-   printf("%6d ", (int)summary->used);
-   printf("%6d ", (int)summary->resv);
-   printf("%6d ", (int)summary->available);
-   printf("%6d ", (int)summary->total);
-   printf("%6d ", (int)summary->temp_disabled);
-   printf("%6d ", (int)summary->manual_intervention);
-   if (show_states) {
-      printf("%5d ", (int)summary->suspend_manual);
-      printf("%5d ", (int)summary->suspend_threshold);
-      printf("%5d ", (int)summary->suspend_on_subordinate);
-      printf("%5d ", (int)summary->suspend_calendar);
-      printf("%5d ", (int)summary->unknown);
-      printf("%5d ", (int)summary->load_alarm);
-      printf("%5d ", (int)summary->disabled_manual);
-      printf("%5d ", (int)summary->disabled_calendar);
-      printf("%5d ", (int)summary->ambiguous);
-      printf("%5d ", (int)summary->orphaned);
-      printf("%5d ", (int)summary->error);
-   }
-   printf("\n");
-
-   DRETURN(0);
-}
-
-
-
-/* ----------------------- qselect stdout handler --------------------------- */
-
 
 /*
 ** qstat_show_job

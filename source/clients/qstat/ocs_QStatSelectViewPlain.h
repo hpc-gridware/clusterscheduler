@@ -3,7 +3,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ namespace ocs {
 
       ~QStatSelectViewPlain() override = default;
 
-      int report_started(std::ostream &os) override;
-      int report_finished(std::ostream &os) override;
-      int report_queue(std::ostream &os, const char* qname) override;
+      void report_started(std::ostream &os) override;
+      void report_finished(std::ostream &os) override;
+      void report_queue(std::ostream &os, const char* qname) override;
    };
 }

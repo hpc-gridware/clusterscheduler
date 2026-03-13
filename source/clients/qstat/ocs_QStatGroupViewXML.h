@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,18 +19,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QStatSelectViewBase.h"
-#include "ocs_QStatParameter.h"
+#include <ostream>
+
+#include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
-   class QStatSelectViewXML : public QStatSelectViewBase {
+   class QStatGroupViewXML : public QStatGroupViewBase {
+      lList *xml_elems = nullptr;
    public:
-      QStatSelectViewXML(QStatParameter &parameter);
+      QStatGroupViewXML();
+      ~QStatGroupViewXML() override = default;
 
-      ~QStatSelectViewXML() override = default;
-
-      void report_started(std::ostream &os) override;
-      void report_finished(std::ostream &os) override;
-      void report_queue(std::ostream &os, const char* qname) override;
+      void report_started(std::ostream &os, QStatParameter &parameter) override;
+      void report_finished(std::ostream &os, QStatParameter &parameter) override;
+      void report_cqueue(std::ostream &os, const char* qname, cqueue_summary_t *cqueue_summary, QStatParameter &parameter) override;
    };
 }

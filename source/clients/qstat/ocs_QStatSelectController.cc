@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <sstream>
+#include <iostream>
 
 #include "uti/sge_rmon_macros.h"
 
@@ -27,10 +28,7 @@
 #include "sgeobj/sge_str.h"
 
 #include "ocs_QStatSelectController.h"
-
-#include <iostream>
-
-#include "ocs_QStatSelectViewBase.h"
+#include "ocs_qstat_filter.h"
 
 void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModel &model, QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);

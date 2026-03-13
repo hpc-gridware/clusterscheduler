@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,15 +32,15 @@
 ocs::QStatSelectViewPlain::QStatSelectViewPlain(QStatParameter &parameter) : QStatSelectViewBase() {
 }
 
-int ocs::QStatSelectViewPlain::report_started(std::ostream &os) {
-   return 0;
+void
+ocs::QStatSelectViewPlain::report_started(std::ostream &os) {
 }
 
-int ocs::QStatSelectViewPlain::report_finished(std::ostream &os) {
-   return 0;
+void
+ocs::QStatSelectViewPlain::report_finished(std::ostream &os) {
 }
 
-int ocs::QStatSelectViewPlain::report_queue(std::ostream &os, const char* qname) {
+void
+ocs::QStatSelectViewPlain::report_queue(std::ostream &os, const char* qname) {
    os << qname << std::endl;
-   return 0;
 }

@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,18 +25,18 @@
 ocs::QStatSelectViewXML::QStatSelectViewXML(QStatParameter &parameter) : QStatSelectViewBase() {
 }
 
-int ocs::QStatSelectViewXML::report_started(std::ostream &os) {
+void
+ocs::QStatSelectViewXML::report_started(std::ostream &os) {
    os << "<qselect>" << std::endl;
-   return 0;
 }
 
-int ocs::QStatSelectViewXML::report_finished(std::ostream &os) {
+void
+ocs::QStatSelectViewXML::report_finished(std::ostream &os) {
    os << "</qselect>" << std::endl;
-   return 0;
 }
 
-int ocs::QStatSelectViewXML::report_queue(std::ostream &os, const char* qname) {
+void
+ocs::QStatSelectViewXML::report_queue(std::ostream &os, const char* qname) {
    os << "   " << "<queue>" << EscapedString(qname) << "</queue>" << std::endl;
-   return 0;
 }
 

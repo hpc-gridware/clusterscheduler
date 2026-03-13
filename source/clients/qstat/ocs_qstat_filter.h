@@ -41,9 +41,7 @@
 /* ------------- Cluster Queue Summary -------------------------------------- */
 /* qstat -g c                                                                 */
 
-typedef struct cqueue_summary_str cqueue_summary_t;
-
-struct cqueue_summary_str {
+struct cqueue_summary_t {
    double load;
    bool   is_load_available;
    u_long32 used;
@@ -75,8 +73,6 @@ struct cqueue_summary_handler_str {
    
    int (*destroy)(cqueue_summary_handler_t *thiz);
 };
-
-int qstat_cqueue_summary(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 /* ---------------- QStat queue/job handling ---------------------------------*/
 
@@ -269,3 +265,5 @@ struct qstat_handler_str {
 
 
 int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+
+void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model);

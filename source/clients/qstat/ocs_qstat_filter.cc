@@ -88,7 +88,6 @@
 #include "ocs_QStatParameter.h"
 #include "ocs_TopologyString.h"
 
-static void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model);
 
 static void remove_tagged_jobs(lList *job_list);
 static int qstat_handle_running_jobs(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
@@ -121,71 +120,6 @@ static int job_handle_resources(const lList* cel, lList* centry_list, int slots,
                                 int (*resource_func)(job_handler_t *handler, int scope, const char *name,
                                                      const char *value, double uc, lList **alpp),
                                 int(*finish_func)(job_handler_t* handler, lList **alpp), lList **alpp);
-
-int qstat_cqueue_summary(cqueue_summary_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
- 
-   int ret = 0;
-   const lListElem *cqueue = nullptr;
-   
-   DENTER(TOP_LAYER);
-   
-
-   calc_longest_queue_length(parameter, model);
-   
-   correct_capacities(model.exechost_list, model.centry_list);
-   
-   if (handler->report_started != nullptr) {
-      ret = handler->report_started(handler, alpp, parameter);
-      if (ret) {
-         DRETURN(ret);
-      }
-   }
-   
-
-   for_each_ep(cqueue, model.queue_list) {
-      if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
-         cqueue_summary_t summary;
-         
-         memset(&summary, 0, sizeof(cqueue_summary_t));
-         
-         cqueue_calculate_summary(cqueue,
-                                  model.exechost_list,
-                                  model.centry_list,
-                                  &(summary.load),
-                                  &(summary.is_load_available),
-                                  &(summary.used),
-                                  &(summary.resv),
-                                  &(summary.total),
-                                  &(summary.suspend_manual),
-                                  &(summary.suspend_threshold),
-                                  &(summary.suspend_on_subordinate),
-                                  &(summary.suspend_calendar),
-                                  &(summary.unknown),
-                                  &(summary.load_alarm),
-                                  &(summary.disabled_manual),
-                                  &(summary.disabled_calendar),
-                                  &(summary.ambiguous),
-                                  &(summary.orphaned),
-                                  &(summary.error),
-                                  &(summary.available),
-                                  &(summary.temp_disabled),
-                                  &(summary.manual_intervention));
-                                  
-         if (handler->report_cqueue != nullptr && (ret = handler->report_cqueue(handler, lGetString(cqueue, CQ_name), &summary, alpp, parameter))) {
-            DRETURN(ret);
-         }
-      }
-   }
-   
-   if (handler->report_finished != nullptr) {
-      ret = handler->report_finished(handler, alpp); 
-      if (ret) {
-         DRETURN(ret);
-      }
-   }
-
-   DRETURN(0);
-}
 
 int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
    DENTER(TOP_LAYER);
@@ -268,7 +202,7 @@ int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &
 }
 
 
-static void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model) {
+void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model) {
    u_long32 name;
    char *env;
    const lListElem *qep = nullptr;
