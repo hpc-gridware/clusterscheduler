@@ -18,6 +18,11 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cstdio>
+#include <cstdlib>
+#include <format>
+#include <iomanip>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -27,35 +32,38 @@ ocs::QStatGroupViewPlain::QStatGroupViewPlain() {
 }
 
 void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &parameter) {
-   int i;
-   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-
-   char queue_def[50];
-   char fields[] = "%7s %6s %6s %6s %6s %6s %6s ";
-
    DENTER(TOP_LAYER);
 
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds %s ", parameter.longest_queue_length, parameter.longest_queue_length, fields);
-   printf(queue_def, "CLUSTER QUEUE", "CQLOAD", "USED", "RES", "AVAIL", "TOTAL", "aoACDS", "cdsuE");
+   // Show header
+   os << std::format(
+         "{:<{}.{}s} {:>7} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} ",
+         "CLUSTER QUEUE",
+         parameter.longest_queue_length,
+         parameter.longest_queue_length,
+         "CQLOAD",
+         "USED",
+         "RES",
+         "AVAIL",
+         "TOTAL",
+         "aoACDS",
+         "cdsuE");
+   const bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    if (show_states) {
-      printf("%5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s", "s", "A", "S", "C", "u", "a", "d", "D", "c", "o", "E");
+      os << std::format(
+              "{:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5}",
+              "s", "A", "S", "C", "u", "a", "d", "D", "c", "o", "E");
    }
-   printf("\n");
+   os << '\n';
 
-   printf("--------------------");
-   printf("--------------------");
-   printf("--------------------");
-   printf("--------------------");
+   // show dashes
+   auto print_dashes = [&](int n) {
+      os << std::setfill('-') << std::setw(n) << "";
+   };
+   print_dashes(parameter.longest_queue_length + 7 + 6 + 6 + 6 + 6 + 6 + 6 + 7*1);
    if (show_states) {
-      printf("--------------------");
-      printf("--------------------");
-      printf("--------------------");
-      printf("------");
+      print_dashes(11 * 6);
    }
-   for(i=0; i< parameter.longest_queue_length - 36; i++) {
-      printf("-");
-   }
-   printf("\n");
+   os << '\n';
 
    DRETURN_VOID;
 }
@@ -63,42 +71,43 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
 void ocs::QStatGroupViewPlain::report_finished(std::ostream &os, QStatParameter &parameter) {
 }
 
-void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_name, cqueue_summary_t *summary, QStatParameter &parameter) {
-   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-   char queue_def[50];
-
+void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+   const bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
 
-   snprintf(queue_def, sizeof(queue_def), "%%-%d.%ds ", parameter.longest_queue_length, parameter.longest_queue_length);
-
-   printf(queue_def, cq_name);
+   os << std::format("{:<{}.{}s} ",
+                   cq_name,
+                   parameter.longest_queue_length,
+                   parameter.longest_queue_length);
 
    if (summary->is_load_available) {
-      printf("%7.2f ", summary->load);
+      os << std::format("{:>7.2f} ", summary->load);
    } else {
-      printf("%7s ", "-NA-");
+      os << std::format("{:>7} ", "-NA-");
    }
 
-   printf("%6d ", (int)summary->used);
-   printf("%6d ", (int)summary->resv);
-   printf("%6d ", (int)summary->available);
-   printf("%6d ", (int)summary->total);
-   printf("%6d ", (int)summary->temp_disabled);
-   printf("%6d ", (int)summary->manual_intervention);
+   os << std::format("{:>6} ", summary->used);
+   os << std::format("{:>6} ", summary->resv);
+   os << std::format("{:>6} ", summary->available);
+   os << std::format("{:>6} ", summary->total);
+   os << std::format("{:>6} ", summary->temp_disabled);
+   os << std::format("{:>6} ", summary->manual_intervention);
+
    if (show_states) {
-      printf("%5d ", (int)summary->suspend_manual);
-      printf("%5d ", (int)summary->suspend_threshold);
-      printf("%5d ", (int)summary->suspend_on_subordinate);
-      printf("%5d ", (int)summary->suspend_calendar);
-      printf("%5d ", (int)summary->unknown);
-      printf("%5d ", (int)summary->load_alarm);
-      printf("%5d ", (int)summary->disabled_manual);
-      printf("%5d ", (int)summary->disabled_calendar);
-      printf("%5d ", (int)summary->ambiguous);
-      printf("%5d ", (int)summary->orphaned);
-      printf("%5d ", (int)summary->error);
+      os << std::format("{:>5} ", summary->suspend_manual);
+      os << std::format("{:>5} ", summary->suspend_threshold);
+      os << std::format("{:>5} ", summary->suspend_on_subordinate);
+      os << std::format("{:>5} ", summary->suspend_calendar);
+      os << std::format("{:>5} ", summary->unknown);
+      os << std::format("{:>5} ", summary->load_alarm);
+      os << std::format("{:>5} ", summary->disabled_manual);
+      os << std::format("{:>5} ", summary->disabled_calendar);
+      os << std::format("{:>5} ", summary->ambiguous);
+      os << std::format("{:>5} ", summary->orphaned);
+      os << std::format("{:>5} ", summary->error);
    }
-   printf("\n");
+
+   os << '\n';
 
    DRETURN_VOID;
 }

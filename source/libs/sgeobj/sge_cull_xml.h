@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -46,6 +46,7 @@
 #include "basis_types.h"
 
 void lWriteElemXMLTo(const lListElem *ep, FILE *fp, int ingnore_name);
+void lWriteElemXMLTo(const lListElem *ep, std::ostream &os, int ingnore_name);
 
 lListElem* xml_getHead(const char *name, lList *liste, lList *attributs); 
 

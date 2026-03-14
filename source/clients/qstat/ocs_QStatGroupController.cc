@@ -47,7 +47,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
    const lListElem *cqueue = nullptr;
    for_each_ep(cqueue, model.queue_list) {
       if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
-         cqueue_summary_t summary{};
+         QStatGroupViewBase::Summary summary{};
 
          cqueue_calculate_summary(cqueue,
                                   model.exechost_list,
@@ -77,6 +77,8 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
    }
 
    view.report_finished(oss, parameter);
+
+   std::cout << oss.str();
 
    DRETURN_VOID;
 }

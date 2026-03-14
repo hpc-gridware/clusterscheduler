@@ -32,6 +32,6 @@ namespace ocs {
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;
       void report_finished(std::ostream &os, QStatParameter &parameter) override;
-      void report_cqueue(std::ostream &os, const char* qname, cqueue_summary_t *cqueue_summary, QStatParameter &parameter) override;
+      void report_cqueue(std::ostream &os, const char* qname, Summary *cqueue_summary, QStatParameter &parameter) override;
    };
 }

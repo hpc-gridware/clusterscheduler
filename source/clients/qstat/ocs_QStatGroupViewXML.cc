@@ -32,45 +32,39 @@ void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &p
    if (xml_elems != nullptr) {
       lListElem *xml_elem = xml_getHead("job_info", xml_elems, nullptr);
       xml_elems = nullptr;
-
-      // @todo
-      lWriteElemXMLTo(xml_elem, stdout, -1);
+      lWriteElemXMLTo(xml_elem, os, -1);
       lFreeElem(&xml_elem);
    }
 }
 
-void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name, cqueue_summary_t *summary, QStatParameter &parameter) {
+void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
+   lListElem *elem = lCreateElem(XMLE_Type);
+   lList *attributes = lCreateList("attributes", XMLE_Type);
+   lSetList(elem, XMLE_List, attributes);
 
-   lListElem *elem = nullptr;
-   lList *attributeList = nullptr;
-   bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-
-   elem = lCreateElem(XMLE_Type);
-   attributeList = lCreateList("attributes", XMLE_Type);
-   lSetList(elem, XMLE_List, attributeList);
-
-   xml_append_Attr_S(attributeList, "name", cq_name);
+   xml_append_Attr_S(attributes, "name", cq_name);
    if (summary->is_load_available) {
-      xml_append_Attr_D(attributeList, "load", summary->load);
+      xml_append_Attr_D(attributes, "load", summary->load);
    }
-   xml_append_Attr_U(attributeList, "used", summary->used);
-   xml_append_Attr_U(attributeList, "resv", summary->resv);
-   xml_append_Attr_U(attributeList, "available", summary->available);
-   xml_append_Attr_U(attributeList, "total", summary->total);
-   xml_append_Attr_U(attributeList, "temp_disabled", summary->temp_disabled);
-   xml_append_Attr_U(attributeList, "manual_intervention", summary->manual_intervention);
-   if (show_states) {
-      xml_append_Attr_U(attributeList, "suspend_manual", summary->suspend_manual);
-      xml_append_Attr_U(attributeList, "suspend_threshold", summary->suspend_threshold);
-      xml_append_Attr_U(attributeList, "suspend_on_subordinate", summary->suspend_on_subordinate);
-      xml_append_Attr_U(attributeList, "suspend_calendar", summary->suspend_calendar);
-      xml_append_Attr_U(attributeList, "unknown", summary->unknown);
-      xml_append_Attr_U(attributeList, "load_alarm", summary->load_alarm);
-      xml_append_Attr_U(attributeList, "disabled_manual", summary->disabled_manual);
-      xml_append_Attr_U(attributeList, "disabled_calendar", summary->disabled_calendar);
-      xml_append_Attr_U(attributeList, "ambiguous", summary->ambiguous);
-      xml_append_Attr_U(attributeList, "orphaned", summary->orphaned);
-      xml_append_Attr_U(attributeList, "error", summary->error);
+   xml_append_Attr_U(attributes, "used", summary->used);
+   xml_append_Attr_U(attributes, "resv", summary->resv);
+   xml_append_Attr_U(attributes, "available", summary->available);
+   xml_append_Attr_U(attributes, "total", summary->total);
+   xml_append_Attr_U(attributes, "temp_disabled", summary->temp_disabled);
+   xml_append_Attr_U(attributes, "manual_intervention", summary->manual_intervention);
+
+   if ((parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED) {
+      xml_append_Attr_U(attributes, "suspend_manual", summary->suspend_manual);
+      xml_append_Attr_U(attributes, "suspend_threshold", summary->suspend_threshold);
+      xml_append_Attr_U(attributes, "suspend_on_subordinate", summary->suspend_on_subordinate);
+      xml_append_Attr_U(attributes, "suspend_calendar", summary->suspend_calendar);
+      xml_append_Attr_U(attributes, "unknown", summary->unknown);
+      xml_append_Attr_U(attributes, "load_alarm", summary->load_alarm);
+      xml_append_Attr_U(attributes, "disabled_manual", summary->disabled_manual);
+      xml_append_Attr_U(attributes, "disabled_calendar", summary->disabled_calendar);
+      xml_append_Attr_U(attributes, "ambiguous", summary->ambiguous);
+      xml_append_Attr_U(attributes, "orphaned", summary->orphaned);
+      xml_append_Attr_U(attributes, "error", summary->error);
    }
    if (elem) {
       if (xml_elems == nullptr){

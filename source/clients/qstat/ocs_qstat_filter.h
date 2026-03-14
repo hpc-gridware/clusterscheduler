@@ -38,42 +38,6 @@
 
 #include "ocs_QStatParameter.h"
 
-/* ------------- Cluster Queue Summary -------------------------------------- */
-/* qstat -g c                                                                 */
-
-struct cqueue_summary_t {
-   double load;
-   bool   is_load_available;
-   u_long32 used;
-   u_long32 resv;
-   u_long32 total;
-   u_long32 temp_disabled; 
-   u_long32 available; 
-   u_long32 manual_intervention;
-   u_long32 suspend_manual; 
-   u_long32 suspend_threshold; 
-   u_long32 suspend_on_subordinate;
-   u_long32 suspend_calendar; 
-   u_long32 unknown, load_alarm;
-   u_long32 disabled_manual; 
-   u_long32 disabled_calendar; 
-   u_long32 ambiguous;
-   u_long32 orphaned, error;
-};
-
-typedef struct cqueue_summary_handler_str cqueue_summary_handler_t;
-
-struct cqueue_summary_handler_str {
-   void *ctx;
-
-   int (*report_started)(cqueue_summary_handler_t *thiz, lList **alpp, ocs::QStatParameter &parameter);
-   int (*report_finished)(cqueue_summary_handler_t *thiz, lList **alpp);
-   
-   int (*report_cqueue)(cqueue_summary_handler_t *thiz, const char* cqname, cqueue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
-   
-   int (*destroy)(cqueue_summary_handler_t *thiz);
-};
-
 /* ---------------- QStat queue/job handling ---------------------------------*/
 
 typedef struct queue_summary_str queue_summary_t;

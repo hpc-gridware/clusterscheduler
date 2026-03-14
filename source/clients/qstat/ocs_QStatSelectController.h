@@ -29,6 +29,6 @@ namespace ocs {
       QStatSelectController() = default;
       virtual ~QStatSelectController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatModel &model, QStatSelectViewBase &report_handler);
+      virtual void process_request(QStatParameter &parameter, QStatModel &model, QStatSelectViewBase &view);
    };
 }
