@@ -1330,14 +1330,15 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
 
    /* load avg */
    dstring load_avg = DSTRING_INIT;
-   if (!summary->has_load_value) {
+   // Why is has_load_value required?
+   if (summary->has_load_value || (summary->state != nullptr && strchr(summary->state, 'u') != nullptr)) {
+      sge_dstring_sprintf_append(&load_avg, "-NA- ");
+   } else {
       if (summary->has_load_value_from_object) {
          sge_dstring_sprintf_append(&load_avg,"%2.2f ", summary->load_avg);
       } else {
          sge_dstring_sprintf_append(&load_avg,"---  ");
       }
-   } else {
-      sge_dstring_sprintf_append(&load_avg, "-NA- ");
    }
    sge_dstring_sprintf_append(&queue_output, "%-8.8s ", sge_dstring_get_string(&load_avg));
    sge_dstring_free(&load_avg);
@@ -1352,8 +1353,8 @@ static int qstat_stdout_queue_summary(qstat_handler_t* handler, const char* qnam
    sge_dstring_sprintf_append(&queue_output, "%-13.13s ", sge_dstring_get_string(&arch));
    sge_dstring_free(&arch);
 
+   // state
    sge_dstring_sprintf_append(&queue_output, "%s\n", summary->state ? summary->state : "NA");
-
    printf("%s", sge_dstring_get_string(&queue_output));
    sge_dstring_free(&queue_output);
 
