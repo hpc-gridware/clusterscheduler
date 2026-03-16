@@ -254,7 +254,7 @@ void ocs::QStatDefaultViewPlain::report_zombie_jobs_started() {
 void ocs::QStatDefaultViewPlain::report_zombie_jobs_finished() {
 }
 
-void ocs::QStatDefaultViewPlain::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatModel &model)
+void ocs::QStatDefaultViewPlain::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model)
 {
    DENTER(TOP_LAYER);
    const char* indent = "";

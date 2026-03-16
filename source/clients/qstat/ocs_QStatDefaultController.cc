@@ -73,7 +73,7 @@ void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
 
 }
 
-void ocs::QStatDefaultController::qstat_handle_running_jobs(QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view)
+void ocs::QStatDefaultController::qstat_handle_running_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    lListElem *qep = nullptr;
@@ -154,7 +154,7 @@ ocs::QStatDefaultController::job_handle_resources(const lList* cel, lList* centr
 }
 
 void
-ocs::QStatDefaultController::handle_jobs_queue(lListElem *qep, int print_jobs_of_queue, QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::handle_jobs_queue(lListElem *qep, int print_jobs_of_queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    lListElem *jlep;
    lListElem *jatep;
@@ -302,7 +302,7 @@ ocs::QStatDefaultController::handle_jobs_queue(lListElem *qep, int print_jobs_of
 
 void ocs::QStatDefaultController::sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
                     const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                    QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view)
+                    QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    u_long32 jstate;
@@ -843,7 +843,7 @@ ocs::QStatDefaultController::job_handle_subtask(lListElem *job, lListElem *ja_ta
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::handle_pending_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::handle_pending_jobs(ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
 
    lListElem *nxt, *jep, *jatep, *nxt_jatep;
    lList* ja_task_list = nullptr;
@@ -951,7 +951,7 @@ void ocs::QStatDefaultController::handle_pending_jobs(ocs::QStatParameter &param
 }
 
 
-void ocs::QStatDefaultController::handle_finished_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::handle_finished_jobs(ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    lListElem *jep, *jatep;
    int count = 0;
@@ -991,7 +991,7 @@ void ocs::QStatDefaultController::handle_finished_jobs(ocs::QStatParameter &para
 }
 
 
-void ocs::QStatDefaultController::handle_error_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::handle_error_jobs(ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
    lListElem *jep, *jatep;
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
@@ -1026,7 +1026,7 @@ void ocs::QStatDefaultController::handle_error_jobs(ocs::QStatParameter &paramet
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::handle_zombie_jobs(ocs::QStatParameter &parameter, ocs::QStatModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::handle_zombie_jobs(ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
 
    lListElem *jep;
    int count = 0;
@@ -1070,7 +1070,7 @@ void ocs::QStatDefaultController::handle_zombie_jobs(ocs::QStatParameter &parame
 
 void ocs::QStatDefaultController::handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *master,
                                     int slots, int slot, int *count,
-                                    QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view)
+                                    QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    lList *range_list[16];         /* RN_Type */
@@ -1155,7 +1155,7 @@ void ocs::QStatDefaultController::handle_jobs_not_enrolled(lListElem *job, bool 
 }
 
 void
-ocs::QStatDefaultController::handle_queue(lListElem *q, QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::handle_queue(lListElem *q, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    char arch_string[80];
@@ -1320,7 +1320,7 @@ ocs::QStatDefaultController::handle_queue(lListElem *q, QStatParameter &paramete
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    model.calc_longest_queue_length(parameter);

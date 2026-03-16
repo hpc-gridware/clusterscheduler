@@ -29,7 +29,7 @@
 
 #include "ocs_QStatSelectController.h"
 
-void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModel &model, QStatSelectViewBase &view) {
+void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;

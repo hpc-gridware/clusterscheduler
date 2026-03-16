@@ -36,5 +36,3 @@
 #include "ocs_QStatParameter.h"
 
 void xml_qstat_show_job_info(lList **list, lList **answer_list, ocs::QStatParameter &parameter);
-
-void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, ocs::QStatParameter &parameter);

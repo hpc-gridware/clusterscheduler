@@ -58,7 +58,7 @@ namespace ocs {
       void report_zombie_jobs_finished() override;
 
       // region Job handling
-      void report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatModel &model) override;
+      void report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) override;
       void report_sub_tasks_started() override;
       void report_sub_task(task_summary_t *summary) override;
       void report_sub_tasks_finished() override;

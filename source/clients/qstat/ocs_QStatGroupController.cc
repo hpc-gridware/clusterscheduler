@@ -33,7 +33,7 @@
 #include "ocs_client_cqueue.h"
 
 
-void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModel &model, QStatGroupViewBase &view) {
+void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatGroupViewBase &view) {
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;

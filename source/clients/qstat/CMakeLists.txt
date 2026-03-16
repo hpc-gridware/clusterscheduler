@@ -21,7 +21,7 @@
 # source/clients/qstat
 add_executable(
         qstat
-        ocs_QStatModel.cc
+        ocs_QStatGenericModel.cc
         ocs_QStatParameter.cc
         ocs_QStatDefaultController.cc
         ocs_QStatDefaultViewBase.cc
@@ -35,6 +35,12 @@ add_executable(
         ocs_QStatSelectViewBase.cc
         ocs_QStatSelectViewPlain.cc
         ocs_QStatSelectViewXML.cc
+        ocs_QStatModelBase.cc
+        ocs_QStatJobModel.cc
+        ocs_QStatJobViewBase.cc
+        ocs_QStatJobViewPlain.cc
+        ocs_QStatJobViewXML.cc
+        ocs_QStatJobController.cc
         ocs_qstat.cc
         ocs_qstat_xml.cc
       ../../common/parse_job_cull.cc

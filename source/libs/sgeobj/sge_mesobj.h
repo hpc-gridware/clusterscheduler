@@ -40,6 +40,7 @@
 
 #include "sgeobj/cull/sge_mesobj_QIM_L.h"
 #include "sgeobj/cull/sge_message_SME_L.h"
+#include "sgeobj/cull/sge_message_MES_L.h"
 
 bool
 object_message_add(lListElem *this_elem, int name, 

@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "ocs_QStatParameter.h"
-#include "ocs_QStatModel.h"
+#include "ocs_QStatGenericModel.h"
 #include "ocs_QStatGroupViewBase.h"
 
 namespace ocs {
@@ -29,6 +29,6 @@ namespace ocs {
       QStatGroupController() = default;
       virtual ~QStatGroupController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatModel &model, QStatGroupViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatGroupViewBase &view);
    };
 }

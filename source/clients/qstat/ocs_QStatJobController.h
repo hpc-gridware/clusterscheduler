@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,16 +19,18 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "cull/cull.h"
+
 #include "ocs_QStatParameter.h"
-#include "ocs_QStatGenericModel.h"
-#include "ocs_QStatSelectViewBase.h"
+#include "ocs_QStatJobModel.h"
+#include "ocs_QStatJobViewBase.h"
 
 namespace ocs {
-   class QStatSelectController {
+   class QStatJobController {
    public:
-      QStatSelectController() = default;
-      virtual ~QStatSelectController() = default;
+   QStatJobController() = default;
+      virtual ~QStatJobController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view);
+       virtual void process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view);
    };
 }

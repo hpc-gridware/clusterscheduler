@@ -22,15 +22,15 @@
 #include <string>
 
 #include "cull/cull.h"
-
-#include "sgeobj/sge_qinstance_state.h"
+#include "cull/cull_list.h"
 
 #include "ocs_client_print.h"
 
+#include "ocs_QStatModelBase.h"
 #include "ocs_QStatParameter.h"
 
 namespace ocs {
-   class QStatModel {
+   class QStatGenericModel : public QStatModelBase {
    public:
       bool is_manager_ = false;
 
@@ -78,10 +78,10 @@ namespace ocs {
       bool filter_data(lList **alpp, QStatParameter &parameter);
       void free_data();
    public:
-      QStatModel() = default;
-      virtual ~QStatModel() { free_data(); }
+      QStatGenericModel() : QStatModelBase() {};
+      ~QStatGenericModel() override { free_data(); }
 
-      bool make_snapshot(lList **answer_list, QStatParameter &parameter);
+      bool make_snapshot(lList **answer_list, QStatParameter &parameter) override;
 
       [[nodiscard]] bool is_manager() const { return is_manager_; }
    };

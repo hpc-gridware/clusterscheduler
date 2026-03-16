@@ -23,7 +23,7 @@
 #include "basis_types.h"
 
 #include "ocs_QStatParameter.h"
-#include "ocs_QStatModel.h"
+#include "ocs_QStatGenericModel.h"
 
 namespace ocs {
    class QStatDefaultViewBase {
@@ -138,7 +138,7 @@ namespace ocs {
       // endregion
 
       // region Job handling
-      virtual void report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatModel &model) = 0;
+      virtual void report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) = 0;
       virtual void report_sub_tasks_started() = 0;
       virtual void report_sub_task(task_summary_t *summary) = 0;
       virtual void report_sub_tasks_finished() = 0;

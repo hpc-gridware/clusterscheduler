@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,16 +19,26 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "cull/cull.h"
+
+#include "ocs_QStatModelBase.h"
 #include "ocs_QStatParameter.h"
-#include "ocs_QStatGenericModel.h"
-#include "ocs_QStatSelectViewBase.h"
 
 namespace ocs {
-   class QStatSelectController {
+   class QStatJobModel : public QStatModelBase {
+      bool is_manager_ = false;
+      bool fetch_data(lList **alpp, QStatParameter &parameter);
+      bool prepare_data(lList **alpp, QStatParameter &parameter);
+      void free_data();
    public:
-      QStatSelectController() = default;
-      virtual ~QStatSelectController() = default;
+      lList* ilp = nullptr;
+      lList* jlp = nullptr;
 
-      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view);
+      QStatJobModel() = default;
+      ~QStatJobModel() override { free_data(); }
+
+      bool make_snapshot(lList **answer_list, QStatParameter &parameter) override;
+
+      [[nodiscard]] bool is_manager() const { return is_manager_; }
    };
 }

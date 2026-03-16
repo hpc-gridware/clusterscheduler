@@ -356,7 +356,7 @@ void ocs::QStatDefaultViewXML::report_sub_tasks_finished() {
 }
 
 
-void ocs::QStatDefaultViewXML::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatModel &model) {
+void ocs::QStatDefaultViewXML::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) {
    DENTER(TOP_LAYER);
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;

@@ -1,8 +1,7 @@
-#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,16 +18,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QStatParameter.h"
-#include "ocs_QStatGenericModel.h"
-#include "ocs_QStatSelectViewBase.h"
+#include "uti/sge_rmon_macros.h"
 
-namespace ocs {
-   class QStatSelectController {
-   public:
-      QStatSelectController() = default;
-      virtual ~QStatSelectController() = default;
+#include "ocs_QStatJobController.h"
+#include "ocs_QStatJobViewBase.h"
 
-      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view);
-   };
+#include "sge_rmon_monitoring_level.h"
+
+void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view) {
+   DENTER(TOP_LAYER);
+   if (parameter.jid_list_) {
+      view.report_jobs_and_reasons_with_job_request(parameter, model);
+   } else {
+      view.report_reasons(parameter, model);
+   }
+   DRETURN_VOID;
 }

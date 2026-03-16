@@ -50,7 +50,7 @@
 
 #include "sched/sge_select_queue.h"
 
-#include "ocs_QStatModel.h"
+#include "ocs_QStatGenericModel.h"
 #include "ocs_QStatParameter.h"
 #include "ocs_client_cqueue.h"
 
@@ -58,7 +58,7 @@
 #include "sge.h"
 
 void
-ocs::QStatModel::qstat_filter_add_core_attributes(ocs::QStatParameter &parameter) {
+ocs::QStatGenericModel::qstat_filter_add_core_attributes(ocs::QStatParameter &parameter) {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_job_number,
@@ -135,7 +135,7 @@ ocs::QStatModel::qstat_filter_add_core_attributes(ocs::QStatParameter &parameter
  *
  * DESCRIPTION
  *-------------------------------------------------------------------------*/
-int ocs::QStatModel::build_job_state_filter(lList **alpp, QStatParameter &parameter) {
+int ocs::QStatGenericModel::build_job_state_filter(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    int ret = 0;
@@ -205,7 +205,7 @@ int ocs::QStatModel::build_job_state_filter(lList **alpp, QStatParameter &parame
 }
 
 void
-ocs::QStatModel::qstat_filter_add_l_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_l_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
@@ -218,7 +218,7 @@ ocs::QStatModel::qstat_filter_add_l_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_ext_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_ext_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_department,
@@ -259,7 +259,7 @@ ocs::QStatModel::qstat_filter_add_ext_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_urg_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_urg_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_deadline,
@@ -276,7 +276,7 @@ ocs::QStatModel::qstat_filter_add_urg_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_pri_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_pri_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_nppri,
@@ -302,7 +302,7 @@ ocs::QStatModel::qstat_filter_add_pri_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_r_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_r_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
@@ -325,7 +325,7 @@ ocs::QStatModel::qstat_filter_add_r_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_t_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_t_attributes() {
    lEnumeration *tmp_what = nullptr;
 
    const int nm_JAT_Type_list[] = {
@@ -350,7 +350,7 @@ ocs::QStatModel::qstat_filter_add_t_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_U_attributes()
+ocs::QStatGenericModel::qstat_filter_add_U_attributes()
 {
    lEnumeration *tmp_what = nullptr;
 
@@ -365,7 +365,7 @@ ocs::QStatModel::qstat_filter_add_U_attributes()
 }
 
 void
-ocs::QStatModel::qstat_filter_add_pe_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_pe_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
@@ -378,7 +378,7 @@ ocs::QStatModel::qstat_filter_add_pe_attributes() {
 }
 
 void
-ocs::QStatModel::qstat_filter_add_q_attributes() {
+ocs::QStatGenericModel::qstat_filter_add_q_attributes() {
    lEnumeration *tmp_what = nullptr;
    const int nm_JB_Type[] = {
       JB_checkpoint_name,
@@ -391,7 +391,7 @@ ocs::QStatModel::qstat_filter_add_q_attributes() {
 }
 
 
-bool ocs::QStatModel::prepare_filter(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatGenericModel::prepare_filter(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    qstat_filter_add_core_attributes(parameter);
    if (parameter.state_filter_) {
@@ -428,7 +428,7 @@ bool ocs::QStatModel::prepare_filter(lList **answer_list, QStatParameter &parame
 }
 
 lEnumeration *
-ocs::QStatModel::qstat_get_JB_Type_filter() {
+ocs::QStatGenericModel::qstat_get_JB_Type_filter() {
    DENTER(TOP_LAYER);
 
    if (what_JAT_Type_template != nullptr) {
@@ -443,7 +443,7 @@ ocs::QStatModel::qstat_get_JB_Type_filter() {
 
 /* ----------- functions from qstat_filter ---------------------------------- */
 lCondition *
-ocs::QStatModel::qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
+ocs::QStatGenericModel::qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
 {
    lCondition *jw = nullptr;
    lCondition *nw = nullptr;
@@ -719,7 +719,7 @@ ocs::QStatModel::qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
    DRETURN(jw);
 }
 
-void ocs::QStatModel::calc_longest_queue_length(QStatParameter &parameter) {
+void ocs::QStatGenericModel::calc_longest_queue_length(QStatParameter &parameter) {
    u_long32 name;
    char *env;
    const lListElem *qep = nullptr;
@@ -749,7 +749,7 @@ void ocs::QStatModel::calc_longest_queue_length(QStatParameter &parameter) {
 }
 
 
-bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
+bool ocs::QStatGenericModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    int q_id, j_id, pe_id, ckpt_id, acl_id, z_id, up_id, ce_id, eh_id, sc_id, gc_id, hgrp_id;
@@ -957,7 +957,7 @@ bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    DRETURN(true);
 }
 
-bool ocs::QStatModel::prepare_data(lList **alpp) {
+bool ocs::QStatGenericModel::prepare_data(lList **alpp) {
    DENTER(TOP_LAYER);
 
    if (!sconf_set_config(&schedd_config, alpp)) {
@@ -971,7 +971,7 @@ bool ocs::QStatModel::prepare_data(lList **alpp) {
 
 
 /*-------------------------------------------------------------------------*/
-int ocs::QStatModel::qstat_env_filter_queues(lList **alpp, QStatParameter &parameter) {
+int ocs::QStatGenericModel::qstat_env_filter_queues(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    centry_list_init_double(centry_list);
@@ -1054,7 +1054,7 @@ int ocs::QStatModel::qstat_env_filter_queues(lList **alpp, QStatParameter &param
    DRETURN(1);
 }
 
-int ocs::QStatModel::filter_jobs(QStatParameter &parameter) {
+int ocs::QStatGenericModel::filter_jobs(QStatParameter &parameter) {
 
    lListElem *jep = nullptr;
    lListElem *jatep = nullptr;
@@ -1179,7 +1179,7 @@ int ocs::QStatModel::filter_jobs(QStatParameter &parameter) {
 }
 
 
-bool ocs::QStatModel::filter_data(lList **alpp, QStatParameter &parameter) {
+bool ocs::QStatGenericModel::filter_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // filter queues according to given parameters
@@ -1200,7 +1200,7 @@ bool ocs::QStatModel::filter_data(lList **alpp, QStatParameter &parameter) {
    DRETURN(true);
 }
 
-bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &parameter) {
+bool ocs::QStatGenericModel::make_snapshot(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (!prepare_filter(answer_list, parameter)) {
@@ -1222,7 +1222,7 @@ bool ocs::QStatModel::make_snapshot(lList **answer_list, QStatParameter &paramet
    DRETURN(true);
 }
 
-void ocs::QStatModel::free_data() {
+void ocs::QStatGenericModel::free_data() {
    lFreeWhat(&what_JB_Type);
    lFreeWhat(&what_JAT_Type_template);
    lFreeWhat(&what_JAT_Type_list);
