@@ -18,4 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "ocs_QStatDefaultView.h"
+#include "ocs_QStatDefaultController.h"
+
+void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModel &model, QStatDefaultViewBase &view) {
+}

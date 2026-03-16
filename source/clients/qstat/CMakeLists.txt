@@ -23,7 +23,10 @@ add_executable(
         qstat
         ocs_QStatModel.cc
         ocs_QStatParameter.cc
-        ocs_QStatDefaultView.cc
+        ocs_QStatDefaultController.cc
+        ocs_QStatDefaultViewBase.cc
+        ocs_QStatDefaultViewPlain.cc
+        ocs_QStatDefaultViewXML.cc
         ocs_QStatGroupController.cc
         ocs_QStatGroupViewBase.cc
         ocs_QStatGroupViewPlain.cc

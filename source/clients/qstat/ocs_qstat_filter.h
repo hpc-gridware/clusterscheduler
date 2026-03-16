@@ -115,119 +115,13 @@ typedef enum {
    FULL_JOB_NAME   = 3
 } job_additional_info_t;
 
-typedef struct task_summary_str task_summary_t;
 
-struct task_summary_str {
-   const char* task_id;
-   const char* state;
-   bool has_cpu_usage;
-   double cpu_usage;
-   bool has_mem_usage;
-   double mem_usage;
-   bool has_io_usage;
-   double io_usage;
-   bool is_running;
-   bool has_exit_status;
-   u_long32 exit_status;
-};
-
-typedef struct job_handler_str job_handler_t;
-
-struct job_handler_str {
-
-  void *ctx;
-
-  int(*report_job)(job_handler_t* handler, u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
-  
-  int (*report_sub_tasks_started)(job_handler_t* handler, lList **alpp);
-  int (*report_sub_task)(job_handler_t* handler, task_summary_t *summary, lList **alpp);
-  int (*report_sub_tasks_finished)(job_handler_t* handler, lList **alpp);
-  
-  int (*report_additional_info)(job_handler_t *handler, job_additional_info_t name, const char* value, lList **alpp);
-  
-  int (*report_requested_pe)(job_handler_t *handler, const char* pe_name, const char* pe_range, lList **alpp);
-  int (*report_granted_pe)(job_handler_t *handler, const char* pe_name, int pe_slots, lList **alpp);
-  
-  int (*report_request)(job_handler_t* handler, const char* name, const char* value, lList **alpp);
-  
-  int (*report_hard_resources_started)(job_handler_t* handler, int scope, lList **alpp);
-  int (*report_hard_resource)(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
-  int (*report_hard_resources_finished)(job_handler_t* handler, lList **alpp);
-
-  int (*report_soft_resources_started)(job_handler_t* handler, int scope, lList **alpp);
-  /* RH TODO: the soft resource/request has no contribution => remove the parameter uc */
-  int (*report_soft_resource)(job_handler_t *handler, int scope, const char* name, const char* value, double uc, lList **alpp);
-  int (*report_soft_resources_finished)(job_handler_t* handler, lList **alpp);
-  
-  int (*report_hard_requested_queues_started)(job_handler_t *handler, int scope, lList **alpp);
-  int (*report_hard_requested_queue)(job_handler_t *handler, int scope, const char* name, lList **alpp);
-  int (*report_hard_requested_queues_finished)(job_handler_t *handler, lList **alpp);
-  
-  int (*report_soft_requested_queues_started)(job_handler_t *handler, int scope, lList **alpp);
-  int (*report_soft_requested_queue)(job_handler_t *handler, int scope, const char* name, lList **alpp);
-  int (*report_soft_requested_queues_finished)(job_handler_t *handler, lList **alpp);
-  
-  int (*report_predecessors_requested_started)(job_handler_t* handler, lList **alpp);
-  int (*report_predecessor_requested)(job_handler_t* handler, const char* name, lList **alpp);
-  int (*report_predecessors_requested_finished)(job_handler_t* handler, lList **alpp);
-  
-  int (*report_predecessors_started)(job_handler_t* handler, lList **alpp);
-  int (*report_predecessor)(job_handler_t* handler, u_long32 jid, lList **alpp);
-  int (*report_predecessors_finished)(job_handler_t* handler, lList **alpp);
-  
-  int (*report_ad_predecessors_requested_started)(job_handler_t* handler, lList **alpp);
-  int (*report_ad_predecessor_requested)(job_handler_t* handler, const char* name, lList **alpp);
-  int (*report_ad_predecessors_requested_finished)(job_handler_t* handler, lList **alpp);
-  
-  int (*report_ad_predecessors_started)(job_handler_t* handler, lList **alpp);
-  int (*report_ad_predecessor)(job_handler_t* handler, u_long32 jid, lList **alpp);
-  int (*report_ad_predecessors_finished)(job_handler_t* handler, lList **alpp);
-
-  int (*report_binding_started)(job_handler_t* handler, lList **alpp);
-  int (*report_binding)(job_handler_t *handler, const char *binding, lList **alpp);
-  int (*report_binding_finished)(job_handler_t* handler, lList **alpp);
-
-  int (*report_job_finished)(job_handler_t* handler, u_long32 jid, lList **alpp);
-};
-
-typedef struct qstat_handler_str qstat_handler_t;
-
-struct qstat_handler_str {
-  void *ctx;
-
-  int (*report_started)(qstat_handler_t* handler, lList** alpp);
-  int (*report_finished)(qstat_handler_t* hanlder, lList** alpp);
-  
-  int (*report_queue_started)(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
-  int (*report_queue_summary)(qstat_handler_t *handler, const char* qname,  queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter);
-  int (*report_queue_load_alarm)(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
-  int (*report_queue_suspend_alarm)(qstat_handler_t* handler, const char* qname, const char* reason, lList **alpp);
-  int (*report_queue_message)(qstat_handler_t* handler, const char* qname, const char *message, lList **alpp);
-  
-  int (*report_queue_resource)(qstat_handler_t* handler, const char* dom, const char* name, const char* value, const char *details, lList **alpp);
-  
-  job_handler_t job_handler;
-  
-  int (*report_queue_jobs_started)(qstat_handler_t *handler, const char* qname, lList **alpp);
-  int (*report_queue_jobs_finished)(qstat_handler_t *handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
-
-  int (*report_queue_finished)(qstat_handler_t* handler, const char* qname, lList **alpp, ocs::QStatParameter &parameter);
-
-  int (*report_pending_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
-  int (*report_pending_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  int (*report_finished_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
-  int (*report_finished_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  int (*report_error_jobs_started)(qstat_handler_t *handler, lList **alpp, ocs::QStatParameter &parameter);
-  int (*report_error_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  int (*report_zombie_jobs_started)(qstat_handler_t *handler, lList **alpp);
-  int (*report_zombie_jobs_finished)(qstat_handler_t *handler, lList **alpp);
-  
-  
-  int (*destroy)(qstat_handler_t* handler);
-};
-
-
-
-int qstat_no_group(qstat_handler_t* handler, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model);
+namespace ocs {
+   class QStatDefaultViewBase;
+}
+int qstat_no_group(lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model, ocs::QStatDefaultViewBase &view);
 
 void calc_longest_queue_length(ocs::QStatParameter &parameter, ocs::QStatModel &model);
+
+int job_handle_resources(const lList* cel, lList* centry_list, int slots, int scope,
+                         lList **alpp, bool is_hard_resource, ocs::QStatDefaultViewBase &view);
