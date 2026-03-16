@@ -21,7 +21,7 @@
 
 #include <ostream>
 
-#include "ocs_qstat_filter.h"
+#include "ocs_QStatParameter.h"
 
 namespace ocs {
    class QStatGroupViewBase {

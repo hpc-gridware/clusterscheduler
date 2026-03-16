@@ -35,22 +35,6 @@
 
 #include "ocs_QStatParameter.h"
 
-#include "ocs_qstat_filter.h"
-
 void xml_qstat_show_job_info(lList **list, lList **answer_list, ocs::QStatParameter &parameter);
 
 void xml_qstat_show_job(lList **job_list, lList **msg_list, lList **answer_list, lList **id_list, ocs::QStatParameter &parameter);
-
-void xml_qstat_jobs(lList *job_list, lList *zombie_list, const lList *pe_list, 
-                    const lList *user_list, const lList *exechost_list, 
-                    const lList *centry_list, lSortOrder *so, 
-                    u_long32 full_listing, u_long32 group_opt, lList **target_list);
-
-void xml_print_jobs_queue(lListElem *qep, lList *job_list, const lList *pe_list, const lList *user_list,
-                          const lList *ehl, const lList *centry_list, int print_jobs_of_queue, u_long32 full_listing,
-                          u_long32 group_opt, lList **target_list); 
-
-lListElem *xml_print_queue(lListElem *q, const lList *exechost_list, const lList *centry_list,
-                    u_long32 full_listing, const lList *qresource_list, u_long32 explain_bits);
-                    
-

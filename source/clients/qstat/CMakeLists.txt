@@ -36,7 +36,6 @@ add_executable(
         ocs_QStatSelectViewPlain.cc
         ocs_QStatSelectViewXML.cc
         ocs_qstat.cc
-        ocs_qstat_filter.cc
         ocs_qstat_xml.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc

@@ -80,9 +80,7 @@
 #include "ocs_client_job.h"
 #include "ocs_client_print.h"
 #include "basis_types.h"
-#include "ocs_qstat_filter.h"
 #include "ocs_qstat_xml.h"
-#include "msg_clients_common.h"
 #include "msg_qstat.h"
 
 
@@ -167,7 +165,6 @@ int main(int argc, char *argv[]) {
          view = std::make_unique<ocs::QStatDefaultViewPlain>();
       }
 
-      ret = qstat_no_group(&answer_list, parameter, model, *view);
       ocs::QStatDefaultController controller;
       controller.process_request(parameter, model, *view);
    } else {

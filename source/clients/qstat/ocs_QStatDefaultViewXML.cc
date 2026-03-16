@@ -45,7 +45,7 @@ ocs::QStatDefaultViewXML::QStatDefaultViewXML() {
 
 }
 
-void ocs::QStatDefaultViewXML::report_started(lList** alpp) {
+void ocs::QStatDefaultViewXML::report_started() {
    DENTER(TOP_LAYER);
 
    queue_list_elem = lCreateElem(XMLE_Type);
@@ -64,7 +64,7 @@ void ocs::QStatDefaultViewXML::report_started(lList** alpp) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_finished(lList** alpp) {
+void ocs::QStatDefaultViewXML::report_finished() {
    DENTER(TOP_LAYER);
 
    lList *XML_out = lCreateList("job_info", XMLE_Type);
@@ -82,7 +82,7 @@ void ocs::QStatDefaultViewXML::report_finished(lList** alpp) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_finished(const char* qname, lList **alpp, ocs::QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_queue_finished(const char* qname, QStatParameter &parameter) {
 
    DENTER(TOP_LAYER);
 
@@ -108,7 +108,7 @@ void ocs::QStatDefaultViewXML::report_queue_finished(const char* qname, lList **
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_started(const char* qname, lList **alpp, ocs::QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_queue_started(const char* qname, QStatParameter &parameter) {
    lList *attribute_list = nullptr;
    lListElem *temp = nullptr;
 
@@ -134,7 +134,7 @@ void ocs::QStatDefaultViewXML::report_queue_started(const char* qname, lList **a
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_summary(const char* qname, queue_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_queue_summary(const char* qname, queue_summary_t *summary, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    lList *attribute_list = nullptr;
    lListElem *xml_elem = nullptr;
@@ -169,7 +169,7 @@ void ocs::QStatDefaultViewXML::report_queue_summary(const char* qname, queue_sum
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_load_alarm(const char* qname, const char* reason, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_queue_load_alarm(const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
@@ -179,7 +179,7 @@ void ocs::QStatDefaultViewXML::report_queue_load_alarm(const char* qname, const 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(const char* qname, const char* reason, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
@@ -189,7 +189,7 @@ void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(const char* qname, con
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_message(const char* qname, const char *message, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_queue_message(const char* qname, const char *message) {
    DENTER(TOP_LAYER);
 
    lListElem *xml_elem = lGetObject(queue_elem, XMLE_Element);
@@ -200,7 +200,7 @@ void ocs::QStatDefaultViewXML::report_queue_message(const char* qname, const cha
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_resource(const char* dom, const char* name, const char* value, const char *details, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_queue_resource(const char* dom, const char* name, const char* value, const char *details) {
 
    DENTER(TOP_LAYER);
 
@@ -215,15 +215,13 @@ void ocs::QStatDefaultViewXML::report_queue_resource(const char* dom, const char
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_jobs_started(const char* qname, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_queue_jobs_started(const char* qname) {
    DENTER(TOP_LAYER);
-
-   qstat_xml_create_job_list(alpp);
-
+   qstat_xml_create_job_list();
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_queue_jobs_finished(const char* qname, lList **alpp, QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_queue_jobs_finished(const char* qname, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    if (lFirst(job_list)) {
@@ -241,7 +239,7 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(const char* qname, lLi
             lSetList(queue_list_elem, XMLE_List, l_job_list);
          }
       }
-      qstat_xml_finish_job_list("running", l_job_list, alpp);
+      qstat_xml_finish_job_list("running", l_job_list);
    } else {
       lFreeList(&job_list);
    }
@@ -250,86 +248,76 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(const char* qname, lLi
 }
 
 
-void ocs::QStatDefaultViewXML::report_pending_jobs_started(lList **alpp, ocs::QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_pending_jobs_started(QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   qstat_xml_create_job_list(alpp);
+   qstat_xml_create_job_list();
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_pending_jobs_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_pending_jobs_finished() {
    DENTER(TOP_LAYER);
    lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("pending", target_list, alpp);
+   qstat_xml_finish_job_list("pending", target_list);
 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_finished_jobs_started(lList **alpp, ocs::QStatParameter &parameter) {
+void ocs::QStatDefaultViewXML::report_finished_jobs_started(QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   qstat_xml_create_job_list(alpp);
+   qstat_xml_create_job_list();
 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_finished_jobs_finished(lList **alpp) {
-   DENTER(TOP_LAYER);
-   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("finished", target_list, alpp);
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewXML::report_error_jobs_started(lList **alpp, ocs::QStatParameter &parameter) {
-   DENTER(TOP_LAYER);
-
-   qstat_xml_create_job_list(alpp);
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewXML::report_error_jobs_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_finished_jobs_finished() {
    DENTER(TOP_LAYER);
    lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("error", target_list, alpp);
+   qstat_xml_finish_job_list("finished", target_list);
 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_zombie_jobs_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_error_jobs_started(QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   qstat_xml_create_job_list(alpp);
+   qstat_xml_create_job_list();
 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_zombie_jobs_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_error_jobs_finished() {
    DENTER(TOP_LAYER);
    lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("zombie", target_list, alpp);
+   qstat_xml_finish_job_list("error", target_list);
+
    DRETURN_VOID;
 }
 
-int ocs::QStatDefaultViewXML::qstat_xml_create_job_list(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_zombie_jobs_started() {
    DENTER(TOP_LAYER);
 
-   if (job_list != nullptr) {
-      answer_list_add(alpp, "job_list is not nullptr", STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(-1);
-   }
+   qstat_xml_create_job_list();
 
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewXML::report_zombie_jobs_finished() {
+   DENTER(TOP_LAYER);
+   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
+   qstat_xml_finish_job_list("zombie", target_list);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
+   DENTER(TOP_LAYER);
+
+   SGE_ASSERT(job_list == nullptr);
    job_list = lCreateList("job_list", XMLE_Type);
-   if (job_list == nullptr) {
-      answer_list_add(alpp, "lCreateElem failed for job_list", STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      DRETURN(-1);
-   }
-
-
-   DRETURN(0);
+   DRETURN_VOID;
 }
 
-int ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList* target_list, lList **alpp) {
+void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList* target_list) {
    DENTER(TOP_LAYER);
    lListElem *l_job_elem = nullptr;
    lListElem *state_elem = nullptr;
@@ -352,23 +340,23 @@ int ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char* state, lList
 
    lAddList(target_list, &job_list);
 
-   DRETURN(0);
+   DRETURN_VOID;
 }
 
 /*
 ** start and finished functions needed for clients/common/sge_qstat.c do work
 */
-void ocs::QStatDefaultViewXML::report_sub_tasks_started(lList** alpp) {
+void ocs::QStatDefaultViewXML::report_sub_tasks_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_hard_resources_started(int some_value, lList** alpp) {
+void ocs::QStatDefaultViewXML::report_hard_resources_started(int some_value) {
 }
 
-void ocs::QStatDefaultViewXML::report_sub_tasks_finished(lList** alpp) {
+void ocs::QStatDefaultViewXML::report_sub_tasks_finished() {
 }
 
 
-void ocs::QStatDefaultViewXML::report_job(u_long32 jid, job_summary_t *summary, lList **alpp, ocs::QStatParameter &parameter, ocs::QStatModel &model) {
+void ocs::QStatDefaultViewXML::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatModel &model) {
    DENTER(TOP_LAYER);
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;
@@ -482,7 +470,7 @@ void ocs::QStatDefaultViewXML::report_job(u_long32 jid, job_summary_t *summary, 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_job_finished(u_long32 jid, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_job_finished(u_long32 jid) {
    DENTER(TOP_LAYER);
 
    lAppendElem(job_list, job_elem);
@@ -491,7 +479,7 @@ void ocs::QStatDefaultViewXML::report_job_finished(u_long32 jid, lList **alpp) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_sub_task(task_summary_t *summary, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_sub_task(task_summary_t *summary) {
    lListElem *xml_elem = nullptr;
    lList *attribute_list = nullptr;
 
@@ -530,7 +518,7 @@ void ocs::QStatDefaultViewXML::report_sub_task(task_summary_t *summary, lList **
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_additional_info(job_additional_info_t name, const char* value, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_additional_info(job_additional_info_t name, const char* value) {
 
    DENTER(TOP_LAYER);
 
@@ -553,7 +541,7 @@ void ocs::QStatDefaultViewXML::report_additional_info(job_additional_info_t name
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_requested_pe(const char* pe_name, const char* pe_range, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_requested_pe(const char* pe_name, const char* pe_range) {
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
@@ -565,7 +553,7 @@ void ocs::QStatDefaultViewXML::report_requested_pe(const char* pe_name, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_granted_pe(const char* pe_name, int pe_slots, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_granted_pe(const char* pe_name, int pe_slots) {
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
@@ -577,7 +565,7 @@ void ocs::QStatDefaultViewXML::report_granted_pe(const char* pe_name, int pe_slo
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_request(const char* name, const char* value, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_request(const char* name, const char* value) {
    lListElem *xml_elem = nullptr;
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
@@ -589,7 +577,7 @@ void ocs::QStatDefaultViewXML::report_request(const char* name, const char* valu
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_hard_resource(int scope, const char* name, const char* value, double uc, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_hard_resource(int scope, const char* name, const char* value, double uc) {
    DENTER(TOP_LAYER);
 
    const char *attrib_name;
@@ -616,7 +604,7 @@ void ocs::QStatDefaultViewXML::report_hard_resource(int scope, const char* name,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_soft_resource(int scope, const char* name, const char* value, double uc, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_resource(int scope, const char* name, const char* value, double uc) {
    DENTER(TOP_LAYER);
 
    const char *attrib_name;
@@ -642,7 +630,7 @@ void ocs::QStatDefaultViewXML::report_soft_resource(int scope, const char* name,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_hard_requested_queue(int scope, const char* name, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_hard_requested_queue(int scope, const char* name) {
    DENTER(TOP_LAYER);
 
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
@@ -665,7 +653,7 @@ void ocs::QStatDefaultViewXML::report_hard_requested_queue(int scope, const char
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_soft_requested_queue(int scope, const char* name, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_requested_queue(int scope, const char* name) {
    DENTER(TOP_LAYER);
 
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
@@ -688,7 +676,7 @@ void ocs::QStatDefaultViewXML::report_soft_requested_queue(int scope, const char
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_predecessor_requested(const char* name, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessor_requested(const char* name) {
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    DENTER(TOP_LAYER);
@@ -698,7 +686,7 @@ void ocs::QStatDefaultViewXML::report_predecessor_requested(const char* name, lL
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_predecessor(u_long32 jid, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessor(u_long32 jid) {
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    DENTER(TOP_LAYER);
@@ -708,7 +696,7 @@ void ocs::QStatDefaultViewXML::report_predecessor(u_long32 jid, lList **alpp) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(const char* name, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(const char* name) {
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    DENTER(TOP_LAYER);
@@ -718,7 +706,7 @@ void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(const char* name,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessor(u_long32 jid, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessor(u_long32 jid) {
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
    DENTER(TOP_LAYER);
@@ -728,7 +716,7 @@ void ocs::QStatDefaultViewXML::report_ad_predecessor(u_long32 jid, lList **alpp)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_binding(const char *binding, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_binding(const char *binding) {
    DENTER(TOP_LAYER);
    lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
@@ -736,53 +724,53 @@ void ocs::QStatDefaultViewXML::report_binding(const char *binding, lList **alpp)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_hard_resources_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_hard_resources_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_soft_resources_started(int scope, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_resources_started(int scope) {
 }
 
-void ocs::QStatDefaultViewXML::report_soft_resources_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_resources_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_soft_requested_queues_started(int scope, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_requested_queues_started(int scope) {
 }
 
-void ocs::QStatDefaultViewXML::report_soft_requested_queues_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_soft_requested_queues_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_hard_requested_queues_started(int scope, lList **alpp) {
+void ocs::QStatDefaultViewXML::report_hard_requested_queues_started(int scope) {
 }
 
-void ocs::QStatDefaultViewXML::report_hard_requested_queues_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_hard_requested_queues_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_predecessors_requested_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessors_requested_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_predecessors_requested_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessors_requested_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_predecessors_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessors_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_predecessors_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_predecessors_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessors_requested_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessors_requested_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessors_requested_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessors_requested_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessors_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessors_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_ad_predecessors_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_ad_predecessors_finished() {
 }
 
-void ocs::QStatDefaultViewXML::report_binding_started(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_binding_started() {
 }
 
-void ocs::QStatDefaultViewXML::report_binding_finished(lList **alpp) {
+void ocs::QStatDefaultViewXML::report_binding_finished() {
 }

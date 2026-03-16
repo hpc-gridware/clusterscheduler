@@ -47,7 +47,7 @@
 #include "sched/sge_schedd_text.h"
 
 #include "ocs_client_print.h"
-#include "ocs_qstat_filter.h"
+#include "ocs_QStatParameter.h"
 
 /* ----------------------- qselect xml handler ------------------------------ */
 

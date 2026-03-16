@@ -719,6 +719,36 @@ ocs::QStatModel::qstat_get_JB_Type_selection(lList *user_list, u_long32 show)
    DRETURN(jw);
 }
 
+void ocs::QStatModel::calc_longest_queue_length(QStatParameter &parameter) {
+   u_long32 name;
+   char *env;
+   const lListElem *qep = nullptr;
+
+   if (parameter.output_mode_== ocs::QStatParameter::OutputMode::QSTAT_GROUP) {
+      name = CQ_name;
+   } else {
+      name = QU_full_name;
+   }
+   if ((env = getenv("SGE_LONG_QNAMES")) != nullptr){
+      parameter.longest_queue_length = atoi(env);
+      if (parameter.longest_queue_length == -1) {
+         for_each_ep(qep, queue_list) {
+            int length;
+            const char *queue_name =lGetString(qep, name);
+            if ((length = strlen(queue_name)) > parameter.longest_queue_length){
+               parameter.longest_queue_length = length;
+            }
+         }
+      }
+      else {
+         if (parameter.longest_queue_length < 10) {
+            parameter.longest_queue_length = 10;
+         }
+      }
+   }
+}
+
+
 bool ocs::QStatModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 

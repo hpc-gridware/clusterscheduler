@@ -30,7 +30,6 @@
 #include "sched/load_correction.h"
 
 #include "ocs_QStatGroupController.h"
-#include "ocs_qstat_filter.h"
 #include "ocs_client_cqueue.h"
 
 
@@ -39,7 +38,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
 
    std::ostringstream oss;
 
-   calc_longest_queue_length(parameter, model);
+   model.calc_longest_queue_length(parameter);
    correct_capacities(model.exechost_list, model.centry_list);
 
    view.report_started(oss, parameter);

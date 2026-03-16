@@ -28,7 +28,6 @@
 #include "sgeobj/sge_str.h"
 
 #include "ocs_QStatSelectController.h"
-#include "ocs_qstat_filter.h"
 
 void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModel &model, QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);

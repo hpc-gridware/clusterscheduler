@@ -54,6 +54,8 @@ namespace ocs {
       lList* job_list = nullptr;
       lList* hgrp_list = nullptr;
       lList* project_list = nullptr;
+
+      void calc_longest_queue_length(QStatParameter &parameter);
    private:
       void qstat_filter_add_core_attributes(QStatParameter &parameter);
       int build_job_state_filter(lList **alpp, QStatParameter &parameter);

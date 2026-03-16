@@ -36,7 +36,6 @@
 #include "ocs_QStatParameter.h"
 #include "ocs_client_parse.h"
 #include "ocs_client_print.h"
-#include "ocs_qstat_filter.h"
 #include "msg_clients_common.h"
 #include "msg_common.h"
 #include "msg_qstat.h"
