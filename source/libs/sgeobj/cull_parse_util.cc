@@ -34,7 +34,10 @@
 
 #include <cstdio>
 #include <cstring>
-#include <strings.h>
+#include <sstream>
+#include <ostream>
+#include <format>
+#include <string>
 
 #include "cull/cull.h"
 #include "cull/cull_list.h"
@@ -43,8 +46,6 @@
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_component.h"
-
-#include "sge_daemonize.h"
 
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/sge_job.h"
@@ -662,101 +663,82 @@ int *interpretation_rule
    DRETURN(0);
 }
 
-
-/*
-** NAME
-**   uni_print_list
-** PARAMETER
-**   fp                    -   pointer to file to write string list to or nullptr
-**   buff                  -   buffer to write string list to, can be nullptr
-**                             if fp is not, data is then written to fp
-**   max_len               -   maximum bytes to be written, can be 0 if
-**                             fp is given
-**   lp                    -   list to write to file or buffer
-**   interpretation_rule   -   list elements to be written,
-**                             all elements EXCEPT LISTS can be given here,
-**                             to say it once more: sublists are not supported
-**   pdelis                -   delimiter string to be inserted between elements
-**                             pdelis[0] : string used to separate fields
-**                             pdelis[1] : string used to separate records
-**                             pdelis[2] : string inserted after end of list,
-**                                         e.g. a newline
-**   flags                 -   FLG_NO_DELIS_STRINGS - leave out delimiters
-**                             before zero or nullptr strings
-**                             FLG_NO_DELIS_NUMBERS - leave out delimiters
-**                             and the following "0" if a number is 0
-**                             Be careful in using these 2 options. If more
-**                             than one field is optional, this can lead to
-**                             ambiguous parsing!
-**
-** RETURN
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   prints certain fields of a list to a given stream or buffer, separated by 
-**   delimiters, be careful: sublists are NOT yet implemented
-*/
-int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, int *which_elements_rule, const char *pdelis[], unsigned long flags) {
+/**
+ * @brief Print selected fields of a list into a text stream.
+ *
+ * This function serializes the elements of an @c lList into a textual
+ * representation and writes the result to the provided @c std::ostream.
+ * The fields to be printed and their order are defined by
+ * @p which_elements_rule.
+ *
+ * For each element in the list, the specified fields are converted to
+ * their string representation and concatenated using delimiters from
+ * @p pdelis.
+ *
+ * @param os Output stream where the formatted list is written.
+ * @param lp Pointer to the list to be printed. If @c nullptr, the string "NONE" is written.
+ * @param which_elements_rule Array of field identifiers (terminated by 0)
+ *           that defines which elements of each list entry are printed
+ *           and in which order.
+ * @param pdelis Array of delimiter strings:
+ *        - pdelis[0]: delimiter between fields within one list element
+ *        - pdelis[1]: delimiter between list elements
+ *        - pdelis[2]: delimiter appended after the entire list
+ * @param flags Formatting flags controlling delimiter suppression and
+ *        handling of empty values:
+ *        - FLG_NO_VALUE_AS_EMPTY: print empty string instead of "NONE"
+ *        - FLG_NO_DELIS_STRINGS: suppress delimiters for empty string fields
+ *        - FLG_NO_DELIS_NUMBERS: suppress delimiters for numeric zero values
+ *
+ * @return 0 on success,
+ *         negative value on error:
+ *         - -1: invalid input parameters
+ *         - -2: empty or invalid rule set
+ *         - -3: list descriptor missing
+ *         - -4/-5/-6: stream write error
+ *         - -19: unknown field type encountered
+ *
+ * @note List-type fields (@c lListT) are currently skipped.
+ *
+ * @note Output is written directly to the stream without size limitations.
+ *       Stream state should be checked by the caller if needed.
+ */
+int
+uni_print_list(std::ostream& os, const lList* lp, const int* which_elements_rule, const char* pdelis[], unsigned long flags)
+{
    DENTER(BASIS_LAYER);
-   lListElem *ep;
-   int *rule;
+
+   lListElem* ep;
+   const int* rule;
    int type;
-   const lDescr *descr;
-   int begin = 1;
-   int cb = 0;
-   u_long32 cb_sum = 0;
-   char str[256];
-   const char *cp;
+   const lDescr* descr;
+   bool begin = true;
+   std::string field;
+   const char* cp = nullptr;
+   std::size_t prev_len = 0;
 
-
-   /*
-   ** problem: one might allow nullptr deli as no deli
-   */
    if (!which_elements_rule || !pdelis) {
       DPRINTF("uni_print_list: nullptr pointer received\n");
       DRETURN(-1);
    }
-   if (!fp && !buff) {
-      DPRINTF("uni_print_list: must have either file or buffer\n");
-      DRETURN(-1);
-   }
-   if (buff && !buff_size) {
-      DPRINTF("uni_print_list: zero len output required\n");
-      DRETURN(-1);
-   }
 
    if (!lp) {
-      if (buff_size && (cb_sum + (sizeof("NONE") - 1) > buff_size)) {
-         DPRINTF("max_len too small even for zero list\n");
-         DRETURN(-1);
+      os << "NONE";
+      if (!os) {
+         DPRINTF("uni_print_list: error writing NONE\n");
+         DRETURN(-6);
       }
-      if (fp) {
-/*          cb = FPRINTF((fp, "NONE")); */
-         FPRINTF_ASSIGN(cb, (fp, "NONE"));
-      }
-      else {
-         cb = sizeof("NONE") - 1;
-         strcpy(buff, "NONE");
-      }
-      buff += cb;
-      cb_sum += cb;
+
       if (pdelis[2] && *pdelis[2]) {
-         if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
-            DPRINTF("max_len too small even for zero list plus delimiter\n");
-            DRETURN(-1);
+         os << pdelis[2];
+         if (!os) {
+            DPRINTF("uni_print_list: error writing delimiter 2\n");
+            DRETURN(-4);
          }
-         if (fp) {
-            cb = fprintf(fp, "%s", pdelis[2]);
-         } else {
-            cb = strlen(pdelis[2]);
-            snprintf(buff, buff_size, "%s", pdelis[2]);
-         }
-         buff += cb;
-         cb_sum += cb;
       }
       DRETURN(0);
    }
+
    if (*which_elements_rule == 0) {
       DPRINTF("uni_print_list: zero interpretation rule\n");
       DRETURN(-2);
@@ -769,176 +751,161 @@ int uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, in
    }
 
    for_each_rw(ep, lp) {
-
       if (!begin && pdelis[1] && *pdelis[1]) {
-         if (buff_size && (cb_sum + strlen(pdelis[1]) > buff_size)) {
-            DPRINTF("max_len too small\n");
-            DRETURN(-1);
-         }
-         if (fp) {
-/*             cb = FPRINTF((fp, "%s", pdelis[1])); */
-            FPRINTF_ASSIGN(cb, (fp, "%s", pdelis[1]));
-         }
-         else {
-            cb = strlen(pdelis[1]);
-            snprintf(buff, buff_size, "%s", pdelis[1]);
-         }
-         if (cb <= 0) {
+         os << pdelis[1];
+         if (!os) {
             DPRINTF("uni_print_list: error writing delimiter 1\n");
             DRETURN(-4);
          }
-         buff += cb;
-         cb_sum += cb;
       }
 
-      cb = 0;
-      for (rule = which_elements_rule; *rule; rule++) {
-         /*
-         ** before writing the delimiter, we look ahead
-         */
-         cp = str;
+      prev_len = 0;
+
+      for (rule = which_elements_rule; *rule; ++rule) {
+         field.clear();
+         cp = nullptr;
          type = lGetType(descr, *rule);
 
          switch (type) {
-         case lFloatT:
+            case lFloatT:
+               field = std::format("{:.10g}", lGetFloat(ep, *rule));
+               cp = field.c_str();
+               break;
 
-            snprintf(str, sizeof(str), "%.10g", lGetFloat(ep, *rule));
-            break;
+            case lDoubleT:
+               field = std::format("{:.10g}", lGetDouble(ep, *rule));
+               cp = field.c_str();
+               break;
 
-         case lDoubleT:
-            snprintf(str, sizeof(str), "%.10g", lGetDouble(ep, *rule));
-            break;
-       
-         case lUlongT:
-            snprintf(str, sizeof(str), sge_u32, lGetUlong(ep, *rule));
-            break;
+            case lUlongT:
+               field = std::format("{}", lGetUlong(ep, *rule));
+               cp = field.c_str();
+               break;
 
-         case lLongT:
-            snprintf(str, sizeof(str), "%ld", lGetLong(ep, *rule));
-            break;
+            case lLongT:
+               field = std::format("{}", lGetLong(ep, *rule));
+               cp = field.c_str();
+               break;
 
-         case lCharT:
-            snprintf(str, sizeof(str), "%c", lGetChar(ep, *rule));
-            break;
+            case lCharT:
+               field = std::format("{}", lGetChar(ep, *rule));
+               cp = field.c_str();
+               break;
 
-         case lIntT:
-            snprintf(str, sizeof(str), "%d", lGetInt(ep, *rule));
-            break;
+            case lIntT:
+               field = std::format("{}", lGetInt(ep, *rule));
+               cp = field.c_str();
+               break;
 
-         case lStringT:
-            cp = lGetString(ep, *rule);
-            if (!cp) {
-               if (flags & FLG_NO_VALUE_AS_EMPTY) {
-                  cp = "";
-               } else {
-                  cp = "NONE";
+            case lStringT:
+               cp = lGetString(ep, *rule);
+               if (!cp) {
+                  cp = (flags & FLG_NO_VALUE_AS_EMPTY) ? "" : "NONE";
                }
-            }
-            break;
+               break;
 
-         case lHostT:
-            cp = lGetHost(ep, *rule);
-            if (!cp) {
-               if (flags & FLG_NO_VALUE_AS_EMPTY) {
-                  cp = "";
-               } else {
-                  cp = "NONE";
+            case lHostT:
+               cp = lGetHost(ep, *rule);
+               if (!cp) {
+                  cp = (flags & FLG_NO_VALUE_AS_EMPTY) ? "" : "NONE";
                }
-            }
-            break;
+               break;
 
+            case lListT:
+               DPRINTF("skipped list type");
+               cp = "";
+               break;
 
-         case lListT:
-            /*
-            ** list types are skipped at the moment
-            */
-            *str = 0;
-            DPRINTF("skipped list type");
-            break;
+            default:
+               DPRINTF("encountered unknown list field type %d\n", type);
+               DRETURN(-19);
+         }
 
-         default:
-            DPRINTF("encountered unknown list field type %d\n", type);
-            DRETURN(-19);
-         } /* end switch */
-
-         /*
-         ** now that we know what the field is we can decide to suppress
-         ** the delimiter
-         ** at the moment only trailing delimiters are suppressed
-         ** one might also want to suppress delimiters in eg.  [host]:path
-         ** but if there are more than one optional field and delimiters are
-         ** left out, then unique interpretation is lost, so be careful
-         */
-         if (pdelis[0] && *pdelis[0] && (rule != which_elements_rule)
-             && (!(flags & FLG_NO_DELIS_STRINGS) || (*cp && cb) || (flags & FLG_NO_VALUE_AS_EMPTY))
-             && (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) || strcmp(cp, "0"))) {
-            if (buff_size && (cb_sum + strlen(pdelis[0]) > buff_size)) {
-               DPRINTF("max_len too small\n");
-               DRETURN(-1);
-            }
-            if (fp) {
-/*                cb = FPRINTF((fp, "%s", pdelis[0])); */
-               FPRINTF_ASSIGN(cb, (fp, "%s", pdelis[0]));
-            }
-            else {
-               cb = strlen(pdelis[0]);
-               snprintf(buff, buff_size, "%s", pdelis[0]);
-            }
-            if (cb <= 0) {
+         if (pdelis[0] && *pdelis[0] &&
+             (rule != which_elements_rule) &&
+             (!(flags & FLG_NO_DELIS_STRINGS) || ((*cp && prev_len > 0) || (flags & FLG_NO_VALUE_AS_EMPTY))) &&
+             (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) || std::strcmp(cp, "0"))) {
+            os << pdelis[0];
+            if (!os) {
                DPRINTF("uni_print_list: error writing delimiter\n");
                DRETURN(-5);
             }
-            buff += cb;
-            cb_sum += cb;
          }
 
-         if (buff_size && (cb_sum + strlen(cp) > buff_size)) {
-            DPRINTF("max_len too small\n");
-            DRETURN(-1);
-         }
          if (*cp) {
-            if (fp) {
-               FPRINTF_ASSIGN(cb, (fp, "%s", cp));
-            }
-            else {
-               cb = strlen(cp);
-               snprintf(buff, buff_size, "%s", cp);
-            }
-            if (cb <= 0) {
-               DPRINTF("uni_print_list: error writing to file\n");
+            os << cp;
+            if (!os) {
+               DPRINTF("uni_print_list: error writing to stream\n");
                DRETURN(-6);
             }
-            buff += cb;
-            cb_sum += cb;
          }
-         begin = 0;
 
-      } /* end for this list element */
-   } /* end for_each */
+         prev_len = std::strlen(cp);
+         begin = false;
+      }
+   }
 
    if (!begin && pdelis[2] && *pdelis[2]) {
-      if (buff_size && (cb_sum + strlen(pdelis[2]) > buff_size)) {
-         DPRINTF("max_len too small\n");
-         DRETURN(-1);
-      }
-      if (fp) {
-         FPRINTF_ASSIGN(cb, (fp, "%s", pdelis[2]));
-      }
-      else {
-         cb = strlen(pdelis[2]);
-         snprintf(buff, buff_size, "%s", pdelis[2]);
-      }
-      if (cb <= 0) {
-         DPRINTF("uni_print_list: error writing delimiter 1\n");
+      os << pdelis[2];
+      if (!os) {
+         DPRINTF("uni_print_list: error writing delimiter 2\n");
          DRETURN(-4);
       }
-      buff += cb;
-      cb_sum += cb;
    }
 
    DRETURN(0);
-FPRINTF_ERROR:
-   DRETURN(-7);
+}
+
+/**
+ * @brief Legacy wrapper for uni_print_list(std::ostream&, ...).
+ *
+ * This function provides backward-compatible output to either a C-style
+ * @c FILE pointer or a character buffer. Internally, it delegates formatting
+ * to the @c std::ostream-based implementation and copies the result to the
+ * requested output target.
+ *
+ * @param fp Output file pointer. If non-null, the result is written via @c fprintf.
+ * @param buff Output buffer. Used if @p fp is null.
+ * @param buff_size Size of @p buff in bytes.
+ * @param lp Pointer to the list to be printed.
+ * @param which_elements_rule Field selection rule (see ostream overload).
+ * @param pdelis Delimiters (see ostream overload).
+ * @param flags Formatting flags (see ostream overload).
+ * @return Same as uni_print_list(std::ostream&, ...).
+ *
+ * @see uni_print_list(std::ostream&, const lList*, const int*, const char*[], unsigned long)
+ *
+ * @note If @p buff is used, the output must fit into @p buff_size, otherwise an error is returned.
+ */
+int
+uni_print_list(FILE *fp, char *buff, u_long32 buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags)
+{
+   DENTER(BASIS_LAYER);
+
+   std::ostringstream ss;
+   const int ret = uni_print_list(ss, lp, which_elements_rule, pdelis, flags);
+   if (ret != 0) {
+      DRETURN(ret);
+   }
+
+   const std::string out = ss.str();
+
+   if (fp) {
+      if (fprintf(fp, "%s", out.c_str()) < 0) {
+         DRETURN(-7);
+      }
+   } else {
+      if (!buff || buff_size == 0) {
+         DRETURN(-1);
+      }
+      if (out.size() + 1 > buff_size) {
+         DPRINTF("max_len too small\n");
+         DRETURN(-1);
+      }
+      std::memcpy(buff, out.c_str(), out.size() + 1);
+   }
+
+   DRETURN(0);
 }
 
 /****** cull_parse_util/fprint_cull_list() *************************************

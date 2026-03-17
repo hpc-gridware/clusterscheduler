@@ -34,6 +34,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <sstream>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_rmon_macros.h"
@@ -165,7 +166,9 @@ int main(int argc, const char **argv) {
          The jobid's in our request list get printed before
          show_job()
       */
-      cull_show_job(lFirst(request_list), FLG_QALTER, false);
+      std::stringstream ss;
+      cull_show_job(ss, lFirst(request_list), FLG_QALTER, false);
+      printf("%s", ss.str().c_str());
       sge_exit(0);
    }
 

@@ -34,6 +34,7 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <cerrno>
+#include <sstream>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/ocs_cond.h"
@@ -228,7 +229,9 @@ main(int argc, const char **argv)
    DPRINTF("Everything ok\n");
 
    if (lGetUlong(job, JB_verify)) {
-      cull_show_job(job, 0, false);
+      std::stringstream ss;
+      cull_show_job(ss, job, 0, false);
+      printf("%s", ss.str().c_str());
       sge_exit(0);
    }
 

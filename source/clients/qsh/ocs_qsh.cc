@@ -41,7 +41,8 @@
  *--------------------------------------------------*/
 
 #include <cstring>
-#include <cstdlib>    /* need prototype for malloc */
+#include <cstdlib>
+#include <sstream>
 #include <sge_io.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1690,7 +1691,9 @@ int main(int argc, const char **argv)
       DPRINTF("Everything ok\n");
 
       if (lGetUlong(job, JB_verify)) {
-         cull_show_job(job, 0, false);
+         std::stringstream ss;
+         cull_show_job(ss, job, 0, false);
+         printf("%s", ss.str().c_str());
          sge_exit(0);
       }
 

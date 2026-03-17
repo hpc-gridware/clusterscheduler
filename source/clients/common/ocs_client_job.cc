@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <sstream>
 #include <ostream>
+#include <format>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
@@ -63,17 +64,15 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_mesobj.h"
 
-#include "get_path.h"
 #include "ocs_client_job.h"
+
 #include "parse_qsub.h"
 
 #include "msg_clients_common.h"
 
-static void sge_show_checkpoint(int how, int op);
 
-static void sge_show_y_n(int op, int how);
 
-void cull_show_job(const lListElem *job, int flags, bool show_binding) {
+void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_binding) {
    DENTER(TOP_LAYER);
 
    if (!job) {
@@ -81,88 +80,91 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    }
 
    const char *delis[] = {nullptr, ",", "\n"};
-   u_long64 ultime;
    DSTRING_STATIC(dstr, 128);
 
+   const int left_width_short = 19;
+   const int mid_width = 11;
+   const int left_width = left_width_short + mid_width + 2;
+
    if (!(flags & FLG_QALTER)) {
-      if (lGetUlong(job, JB_job_number))
-         printf("job_number:                      " sge_u32 "\n", lGetUlong(job, JB_job_number));
-      else
-         printf("job_number:                      %s\n", MSG_JOB_UNASSIGNED);
+      u_long32 jid = lGetUlong(job, JB_job_number);
+      if (jid > 0) {
+         os << std::format("{:<{}} {}", "job_number:", left_width, jid) << "\n";
+      } else {
+         os << std::format("{:<{}} {}", "job_number:", left_width, MSG_JOB_UNASSIGNED) << "\n";
+      }
    }
 
-   if (lGetPosViaElem(job, JB_category_id, SGE_NO_ABORT) >= 0)
-      printf("category_id:                     " sge_u32 "\n", lGetUlong(job, JB_category_id));
+   if (lGetPosViaElem(job, JB_category_id, SGE_NO_ABORT) >= 0) {
+      os << std::format("{:<{}} {}", "category_id:", left_width, lGetUlong(job, JB_category_id)) << "\n";
+   }
 
-   if (lGetPosViaElem(job, JB_exec_file, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_exec_file))
-         printf("exec_file:                       %s\n", lGetString(job, JB_exec_file));
-
-   if (lGetPosViaElem(job, JB_submission_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(job, JB_submission_time))) {
-         printf("submission_time:                 %s\n", sge_ctime64(ultime, &dstr));
+   if (lGetPosViaElem(job, JB_exec_file, SGE_NO_ABORT) >= 0) {
+      if (const char *exec_file = lGetString(job, JB_exec_file)) {
+         os << std::format("{:<{}} {}", "exec_file:", left_width, exec_file) << "\n";
       }
+   }
+
+   if (lGetPosViaElem(job, JB_submission_time, SGE_NO_ABORT) >= 0) {
+      if (u_long64 time_value = lGetUlong64(job, JB_submission_time)) {
+         os << std::format("{:<{}} {}", "submission_time:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+      }
+   }
 
    if (lGetPosViaElem(job, JB_submission_command_line, SGE_NO_ABORT) >= 0) {
-      const char *str = lGetString(job, JB_submission_command_line);
-      if (str != nullptr) {
-         printf("submit_cmd_line:                 %s\n", str);
+      if (const char *str = lGetString(job, JB_submission_command_line); str != nullptr) {
+         os << std::format("{:<{}} {}", "submit_cmd_line:", left_width, str) << "\n";
 
          // generate and print the currently effective command line
          char *copied_str = strdup(str);
          const char *command = strtok(copied_str, " ");
          if (command != nullptr) {
             dstring dstr_cmd = DSTRING_INIT;
-            printf("effective_submit_cmd_line:       %s\n", job_get_effective_command_line(job, &dstr_cmd, command));
+            os << std::format("{:<{}} {}", "effective_submit_cmd_line:", left_width, job_get_effective_command_line(job, &dstr_cmd, command)) << "\n";
             sge_dstring_free(&dstr_cmd);
          }
          sge_free(&copied_str);
       }
    }
 
-#if 0
-   // @todo print for all running ja_tasks
-   if (lGetPosViaElem(ja_task, JAT_start_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(ja_task, JAT_start_time))) {
-         printf("start_time:                 %s\n", sge_ctime64(ultime, &dstr));
+   if (lGetPosViaElem(job, JB_deadline, SGE_NO_ABORT) >= 0) {
+      if (u_long64 time_value = lGetUlong64(job, JB_deadline)) {
+         os << std::format("{:<{}} {}", "deadline:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
-#endif
-
-   if (lGetPosViaElem(job, JB_deadline, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(job, JB_deadline))) {
-         printf("deadline:                        %s\n", sge_ctime64(ultime, &dstr));
-      }
+   }
 
    if (lGetPosViaElem(job, JB_owner, SGE_NO_ABORT) > NoName) {
-      if (lGetString(job, JB_owner))
-         printf("owner:                           %s\n", lGetString(job, JB_owner));
-      else
-         printf("owner:                           %s\n", "");
+      if (const char *owner = lGetString(job, JB_owner)) {
+         os << std::format("{:<{}} {}", "owner:", left_width, owner) << "\n";
+      } else {
+         os << std::format("{:<{}} {}", "owner:", left_width, "") << "\n";
+      }
    }
 
    if (lGetPosViaElem(job, JB_uid, SGE_NO_ABORT) > NoName) {
-      printf("uid:                             %d\n", (int) lGetUlong(job, JB_uid));
+      os << std::format("{:<{}} {}", "uid:", left_width, (int) lGetUlong(job, JB_uid)) << "\n";
    }
 
    if (lGetPosViaElem(job, JB_group, SGE_NO_ABORT) > NoName) {
-      if (lGetString(job, JB_group))
-         printf("group:                           %s\n", lGetString(job, JB_group));
-      else
-         printf("group:                           %s\n", "");
+      if (const char *group = lGetString(job, JB_group)) {
+         os << std::format("{:<{}} {}", "group:", left_width, group) << "\n";
+      } else {
+         os << std::format("{:<{}} {}", "group:", left_width, "") << "\n";
+      }
    }
 
    if (lGetPosViaElem(job, JB_gid, SGE_NO_ABORT) > NoName) {
-      printf("gid:                             %d\n", (int) lGetUlong(job, JB_gid));
+      os << std::format("{:<{}} {}", "gid:", left_width, lGetUlong(job, JB_gid)) << "\n";
    }
 
    if (lGetPosViaElem(job, JB_grp_list, SGE_NO_ABORT) > NoName) {
-      printf("groups:                          ");
+      std::stringstream ss_groups;
 #if defined(WITH_EXTENSIONS)
       const lListElem *grp_elem;
       const lList *grp_list = lGetList(job, JB_grp_list);
 
       if (grp_list == nullptr) {
-         printf("NONE");
+         ss_groups << "NONE";
       } else {
          bool first = true;
 
@@ -170,102 +172,109 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             if (first) {
                first = false;
             } else {
-               printf(",");
+               ss_groups << ",";
             }
-            printf(gid_t_fmt "(%s)", (gid_t) lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
+            ss_groups << std::format("{}({})", lGetUlong(grp_elem, ST_id), lGetString(grp_elem, ST_name));
          }
       }
 #else
-      printf("NOT-AVAILABLE-IN-OCS");
+      ss_groups << "NOT-AVAILABLE-IN-OCS";
 #endif
-      printf("\n");
+      os << std::format("{:<{}} {}", "groups:", left_width, ss_groups.str()) << "\n";
    }
 
    {
       const char *name[] = {"O_HOME", "O_LOGNAME", "O_PATH", "O_SHELL", "O_TZ", "O_WORKDIR", "O_HOST", nullptr};
-      const char *fmt_string[] = {"sge_o_home:                      %s\n", "sge_o_log_name:                  %s\n",
-                                  "sge_o_path:                      %s\n", "sge_o_shell:                     %s\n",
-                                  "sge_o_tz:                        %s\n", "sge_o_workdir:                   %s\n",
-                                  "sge_o_host:                      %s\n", nullptr};
+      const char *fmt_string[] = {"sge_o_home:", "sge_o_log_name:", "sge_o_path:", "sge_o_shell:", "sge_o_tz:", "sge_o_workdir:", "sge_o_host:", nullptr};
       int i = -1;
 
       while (name[++i] != nullptr) {
-         const char *value;
          char fullname[MAX_STRING_SIZE];
-
          snprintf(fullname, sizeof(fullname), "%s%s", VAR_PREFIX, name[i]);
-         value = job_get_env_string(job, fullname);
-         if (value != nullptr) {
-            printf(fmt_string[i], value);
+         if (const char *value = job_get_env_string(job, fullname)) {
+            os << std::format("{:<{}} {}", fmt_string[i], left_width, value) << "\n";
          }
       }
    }
 
-   if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(job, JB_execution_time)))
-         printf("execution_time:                  %s\n", sge_ctime64(ultime, &dstr));
-
-   if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_account))
-         printf("account:                         %s\n", lGetString(job, JB_account));
-
-   if (lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_checkpoint_name))
-         printf("checkpoint_object:               %s\n", lGetString(job, JB_checkpoint_name));
-
-   if (lGetPosViaElem(job, JB_checkpoint_attr, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_checkpoint_attr)) {
-         printf("checkpoint_attr:                 ");
-         sge_show_checkpoint(SGE_STDOUT, lGetUlong(job, JB_checkpoint_attr));
-         printf("\n");
+   if (lGetPosViaElem(job, JB_execution_time, SGE_NO_ABORT) >= 0) {
+      if (u_long64 time_value = lGetUlong64(job, JB_execution_time)) {
+         os << std::format("{:<{}} {}", "execution_time:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_checkpoint_interval, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_checkpoint_interval)) {
-         printf("checkpoint_interval:             ");
-         printf("%d seconds\n", (int) lGetUlong(job, JB_checkpoint_interval));
+   if (lGetPosViaElem(job, JB_account, SGE_NO_ABORT) >= 0) {
+      if (const char *account = lGetString(job, JB_account)) {
+         os << std::format("{:<{}} {}", "account:", left_width, account) << "\n";
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_checkpoint_name, SGE_NO_ABORT) >= 0) {
+      if (const char *ckpt_name = lGetString(job, JB_checkpoint_name)) {
+         os << std::format("{:<{}} {}", "checkpoint_object:", left_width, ckpt_name) << "\n";
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_checkpoint_attr, SGE_NO_ABORT) >= 0) {
+      if (u_long32 ckpt_attr = lGetUlong(job, JB_checkpoint_attr)) {
+         std::stringstream ss_ckpt_attr;
+         job_get_ckpt_attr(ss_ckpt_attr, ckpt_attr);
+         os << std::format("{:<{}} {}", "checkpoint_attr:", left_width, ss_ckpt_attr.str()) << "\n";
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_checkpoint_interval, SGE_NO_ABORT) >= 0) {
+      if (u_long32 ckpt_int = lGetUlong(job, JB_checkpoint_interval)) {
+         os << std::format("{:<{}} {} seconds", "checkpoint_interval:", left_width, ckpt_int) << "\n";
+      }
    }
 
    if (lGetPosViaElem(job, JB_cwd, SGE_NO_ABORT) >= 0) {
-      if (lGetString(job, JB_cwd))
-         printf("cwd:                            %s\n", lGetString(job, JB_cwd));
-      if (lGetPosViaElem(job, JB_path_aliases, SGE_NO_ABORT) >= 0)
-         if (lGetList(job, JB_path_aliases)) {
-            int fields[] = {PA_origin, PA_submit_host, PA_exec_host, PA_translation, 0};
+      if (const char *cwd = lGetString(job, JB_cwd)) {
+         os << std::format("{:<{}} {}", "cwd:", left_width, cwd) << "\n";
+      }
+      if (lGetPosViaElem(job, JB_path_aliases, SGE_NO_ABORT) >= 0) {
+         if (const lList *path_aliases = lGetList(job, JB_path_aliases)) {
 
+            std::ostringstream ss_path_aliases;
             delis[0] = " ";
-            printf("path_aliases:                    ");
-            uni_print_list(stdout, nullptr, 0, lGetList(job, JB_path_aliases), fields, delis, FLG_NO_DELIS_STRINGS);
+            int fields[] = {PA_origin, PA_submit_host, PA_exec_host, PA_translation, 0};
+            uni_print_list(ss_path_aliases, path_aliases, fields, delis, FLG_NO_DELIS_STRINGS);
+
+            os << std::format("{:<{}} {}", "path_aliases:", left_width, ss_path_aliases.str()) << "\n";
          }
+      }
    }
 
-   if (lGetPosViaElem(job, JB_directive_prefix, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_directive_prefix))
-         printf("directive_prefix:                %s\n", lGetString(job, JB_directive_prefix));
+   if (lGetPosViaElem(job, JB_directive_prefix, SGE_NO_ABORT) >= 0) {
+      if (const char *prefix = lGetString(job, JB_directive_prefix)) {
+         os << std::format("{:<{}} {}", "directive_prefix:", left_width, prefix) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_stderr_path_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_stderr_path_list)) {
-         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+   if (lGetPosViaElem(job, JB_stderr_path_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *path_list = lGetList(job, JB_stderr_path_list)) {
 
+         std::ostringstream ss_path_list;
          delis[0] = ":";
-         printf("stderr_path_list:                ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stderr_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
-         printf("\n");
-      }
+         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+         uni_print_list(ss_path_list, path_list, fields, delis, FLG_NO_DELIS_STRINGS);
 
-   if (lGetPosViaElem(job, JB_reserve, SGE_NO_ABORT) >= 0)
-      if (lGetBool(job, JB_reserve)) {
-         printf("reserve:                         ");
-         sge_show_y_n(lGetBool(job, JB_reserve), SGE_STDOUT);
-         printf("\n");
+         os << std::format("{:<{}} {}", "stderr_path_list:", left_width, ss_path_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_merge_stderr, SGE_NO_ABORT) >= 0)
-      if (lGetBool(job, JB_merge_stderr)) {
-         printf("merge:                           ");
-         sge_show_y_n(lGetBool(job, JB_merge_stderr), SGE_STDOUT);
-         printf("\n");
+   if (lGetPosViaElem(job, JB_reserve, SGE_NO_ABORT) >= 0) {
+      if (const bool reserve = lGetBool(job, JB_reserve)) {
+         os << std::format("{:<{}} {}", "reserve:", left_width, reserve ? "y" : "n") << "\n";
       }
+   }
+
+   if (lGetPosViaElem(job, JB_merge_stderr, SGE_NO_ABORT) >= 0) {
+      if (const bool merge = lGetBool(job, JB_merge_stderr)) {
+         os << std::format("{:<{}} {}", "merge:", left_width, merge ? "y" : "n") << "\n";
+      }
+   }
 
    if (lGetPosViaElem(job, JB_request_set_list, SGE_NO_ABORT) >= 0) {
       const lList *jrs_list = lGetList(job, JB_request_set_list);
@@ -278,56 +287,61 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (scope > JRS_SCOPE_GLOBAL) {
             str_scope = job_scope_name(scope);
          }
-         const lList *lp = lGetList(jrs, JRS_hard_resource_list);
-         if (lp != nullptr) {
+
+         if (const lList *lp = lGetList(jrs, JRS_hard_resource_list)) {
             if (str_scope == nullptr) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "hard_resource_list:");
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_resource_list:", str_scope);
             }
-            printf("%-33s", str_attrib);
-            std::ostringstream oss;
-            show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
-            printf("%s\n", oss.str().c_str());
+
+            std::ostringstream ss_list;
+            show_ce_type_list(ss_list, lp, "", ",", false, nullptr, 0);
+
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
          }
 
-         lp = lGetList(jrs, JRS_soft_resource_list);
-         if (lp != nullptr) {
+         if (const lList *lp = lGetList(jrs, JRS_soft_resource_list)) {
             if (str_scope == nullptr) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "soft_resource_list:");
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_resource_list:", str_scope);
             }
-            printf("%-33s", str_attrib);
-            std::ostringstream oss;
-            show_ce_type_list(oss, lp, "", ",", false, nullptr, 0);
-            printf("%s\n", oss.str().c_str());
+
+            std::ostringstream ss_list;
+            show_ce_type_list(ss_list, lp, "", ",", false, nullptr, 0);
+
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
          }
 
-         lp = lGetList(jrs, JRS_hard_queue_list);
-         if (lp != nullptr) {
-            int fields[] = {QR_name, 0};
+         if (const lList *lp = lGetList(jrs, JRS_hard_queue_list)) {
             delis[0] = " ";
             if (str_scope == nullptr) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "hard_queue_list:");
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_hard_queue_list:", str_scope);
             }
-            printf("%-33s", str_attrib);
-            uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+
+            std::ostringstream ss_list;
+            int fields[] = {QR_name, 0};
+            uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
          }
 
-         lp = lGetList(jrs, JRS_soft_queue_list);
-         if (lp != nullptr) {
-            int fields[] = {QR_name, 0};
+         if (const lList *lp = lGetList(jrs, JRS_soft_queue_list)) {
             delis[0] = " ";
             if (str_scope == nullptr) {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "soft_queue_list:");
             } else {
                str_attrib = sge_dstring_sprintf(&dstr_attrib, "%s_soft_queue_list:", str_scope);
             }
-            printf("%-33s", str_attrib);
-            uni_print_list(stdout, nullptr, 0, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+
+            std::ostringstream ss_list;
+            int fields[] = {QR_name, 0};
+            uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
+
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
          }
       }
    }
@@ -335,245 +349,272 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    if (lGetPosViaElem(job, JB_mail_options, SGE_NO_ABORT) >= 0)
       if (lGetUlong(job, JB_mail_options)) {
          dstring mailopt = DSTRING_INIT;
-
-         printf("mail_options:                    %s\n",
-                sge_dstring_append_mailopt(&mailopt, lGetUlong(job, JB_mail_options)));
-
+         sge_dstring_append_mailopt(&mailopt, lGetUlong(job, JB_mail_options));
+         os << std::format("{:<{}} {}", "mail_options:", left_width, sge_dstring_get_string(&mailopt)) << "\n";
          sge_dstring_free(&mailopt);
       }
 
-   if (lGetPosViaElem(job, JB_mail_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_mail_list)) {
+   if (lGetPosViaElem(job, JB_mail_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *mail_list = lGetList(job, JB_mail_list)) {
+         std::ostringstream ss_list;
          int fields[] = {MR_user, MR_host, 0};
-
          delis[0] = "@";
-         printf("mail_list:                       ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_mail_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(ss_list, mail_list, fields, delis, FLG_NO_DELIS_STRINGS);
+         os << std::format("{:<{}} {}", "mail_list:", left_width, ss_list.str()) << "\n";
       }
-
-   if (lGetPosViaElem(job, JB_notify, SGE_NO_ABORT) >= 0)
-      printf("notify:                          %s\n", (lGetBool(job, JB_notify) ? "TRUE" : "FALSE"));
-
-   if (lGetPosViaElem(job, JB_job_name, SGE_NO_ABORT) >= 0) {
-      if (lGetString(job, JB_job_name))
-         printf("job_name:                        %s\n", lGetString(job, JB_job_name));
-      else
-         printf("job_name:                        %s\n", "");
    }
 
-   if (lGetPosViaElem(job, JB_stdout_path_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_stdout_path_list)) {
-         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+   if (lGetPosViaElem(job, JB_notify, SGE_NO_ABORT) >= 0) {
+      os << std::format("{:<{}} {}", "notify:", left_width, lGetBool(job, JB_notify) ? "TRUE" : "FALSE") << "\n";
+   }
 
+   if (lGetPosViaElem(job, JB_job_name, SGE_NO_ABORT) >= 0) {
+      os << std::format("{:<{}} {}", "job_name:", left_width, lGetString(job, JB_job_name) ? lGetString(job, JB_job_name) : "") << "\n";
+   }
+
+   if (lGetPosViaElem(job, JB_stdout_path_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_stdout_path_list)) {
+
+         std::ostringstream ss_list;
          delis[0] = ":";
-         printf("stdout_path_list:                ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stdout_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
-         printf("\n");
+         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+         uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
+         os << std::format("{:<{}} {}", "stdout_path_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
    if (lGetPosViaElem(job, JB_stdin_path_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_stdin_path_list)) {
-         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+      if (const lList *list = lGetList(job, JB_stdin_path_list)) {
 
+         std::ostringstream ss_list;
          delis[0] = ":";
-         printf("stdin_path_list:                 ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_stdin_path_list), fields, delis, FLG_NO_DELIS_STRINGS);
-         printf("\n");
+         int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
+         uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
+
+         os << std::format("{:<{}} {}", "stdin_path_list:", left_width, ss_list.str()) << "\n";
       }
 
    if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0) {
-      printf("priority:                        ");
-      printf("%d\n", (int) lGetUlong(job, JB_priority) - BASE_PRIORITY);
+      os << std::format("{:<{}} {}", "priority:", left_width, (int) lGetUlong(job, JB_priority) - BASE_PRIORITY) << "\n";
    }
 
    if (lGetPosViaElem(job, JB_jobshare, SGE_NO_ABORT) >= 0) {
-      printf("jobshare:                        ");
-      printf(sge_u32 "\n", lGetUlong(job, JB_jobshare));
+      os << std::format("{:<{}} {}", "jobshare:", left_width, lGetUlong(job, JB_jobshare)) << "\n";
    }
 
-   if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_restart)) {
-         printf("restart:                         ");
-         sge_show_y_n((lGetUlong(job, JB_restart) == 2) ? 0 : 1, SGE_STDOUT);
-         printf("\n");
+   if (lGetPosViaElem(job, JB_restart, SGE_NO_ABORT) >= 0) {
+      if (const u_long32 restart = lGetUlong(job, JB_restart)) {
+         os << std::format("{:<{}} {}", "restart:", left_width, (restart == 2) ? "n" : "y") << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_shell_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_shell_list)) {
-         int fields[] = {PN_host, PN_path, 0};
-
+   if (lGetPosViaElem(job, JB_shell_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_shell_list)) {
+         std::ostringstream ss_list;
          delis[0] = ":";
-         printf("shell_list:                      ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_shell_list), fields, delis, FLG_NO_DELIS_STRINGS);
+         int fields[] = {PN_host, PN_path, 0};
+         uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
+         os << std::format("{:<{}} {}", "shell_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_verify, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_verify))
-         printf("verify:                          %s\n", "-verify");
+   if (lGetPosViaElem(job, JB_verify, SGE_NO_ABORT) >= 0) {
+      if (lGetUlong(job, JB_verify)) {
+         os << std::format("{:<{}} {}", "verify:", left_width, "-verify") << "\n";
+      }
+   }
 
    if (lGetPosViaElem(job, JB_env_list, SGE_NO_ABORT) >= 0) {
-      if (lGetList(job, JB_env_list)) {
-         lList *print = nullptr;
+      if (lList *list = lGetListRW(job, JB_env_list)) {
          lList *do_not_print = nullptr;
-         int fields[] = {VA_variable, VA_value, 0};
+         var_list_split_prefix_vars(&list, &do_not_print, VAR_PREFIX);
 
-         delis[0] = "=";
-         printf("env_list:                        ");
-
-         print = lGetListRW(job, JB_env_list);
-         var_list_split_prefix_vars(&print, &do_not_print, VAR_PREFIX);
-         uni_print_list(stdout, nullptr, 0, print, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
-         if (lGetNumberOfElem(print) == 0) {
-            printf("NONE\n");
+         if (lGetNumberOfElem(list) == 0) {
+            os << std::format("{:<{}} {}", "", left_width, "NONE") << "\n";
+         } else {
+            std::ostringstream ss_list;
+            delis[0] = "=";
+            int fields[] = {VA_variable, VA_value, 0};
+            uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS | FLG_NO_VALUE_AS_EMPTY);
+            os << std::format("{:<{}} {}", "env_list:", left_width, ss_list.str()) << "\n";
          }
-         lAddList(print, &do_not_print);
+         lAddList(list, &do_not_print);
       }
    }
 
-   if (lGetPosViaElem(job, JB_job_args, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_job_args) || (flags & FLG_QALTER)) {
-         int fields[] = {ST_name, 0};
-
+   if (lGetPosViaElem(job, JB_job_args, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_job_args); list != nullptr || (flags & FLG_QALTER)) {
+         std::ostringstream ss_list;
          delis[0] = "";
-         printf("job_args:                        ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_job_args), fields, delis, 0);
+         int fields[] = {ST_name, 0};
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "job_args:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_qs_args, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_qs_args) || (flags & FLG_QALTER)) {
+   if (lGetPosViaElem(job, JB_qs_args, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_qs_args); list != nullptr || (flags & FLG_QALTER)) {
+         std::ostringstream ss_list;
          int fields[] = {ST_name, 0};
          delis[0] = "";
-         printf("qs_args:                         ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_qs_args), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "qs_args:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_job_identifier_list)) {
+   if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_job_identifier_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
-
          delis[0] = "";
-         printf("job_identifier_list:             ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_job_identifier_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "job_identifier_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_script_size))
-         printf("script_size:                     " sge_u32 "\n", lGetUlong(job, JB_script_size));
+   if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0) {
+      if (const u_long32 size = lGetUlong(job, JB_script_size)) {
+         os << std::format("{:<{}} {}", "script_size:", left_width, size) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_script_file, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_script_file))
-         printf("script_file:                     %s\n", lGetString(job, JB_script_file));
+   if (lGetPosViaElem(job, JB_script_file, SGE_NO_ABORT) >= 0) {
+      if (const char *file = lGetString(job, JB_script_file)) {
+         os << std::format("{:<{}} {}", "script_file:", left_width, file) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_script_ptr, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_script_ptr))
-         printf("script_ptr:                 \n%s\n", lGetString(job, JB_script_ptr));
+   if (lGetPosViaElem(job, JB_script_ptr, SGE_NO_ABORT) >= 0) {
+      if (const char *script = lGetString(job, JB_script_ptr)) {
+         os << std::format("{:<{}} {}", "script_ptr:\n", left_width, script) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_pe, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_pe)) {
+   if (lGetPosViaElem(job, JB_pe, SGE_NO_ABORT) >= 0) {
+      if (const char *pe = lGetString(job, JB_pe)) {
          dstring range_string = DSTRING_INIT;
 
          range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
-         printf("%-33s%s range: %s\n", "parallel_environment:", lGetString(job, JB_pe), sge_dstring_get_string(&range_string));
+         std::stringstream ss_pe_details;
+         ss_pe_details << pe << " range: " << sge_dstring_get_string(&range_string);
          sge_dstring_free(&range_string);
-      }
 
-   if (lGetPosViaElem(job, JB_jid_request_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_jid_request_list)) {
+         os << std::format("{:<{}} {}", "parallel_environment:", left_width, ss_pe_details.str()) << "\n";
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_jid_request_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_jid_request_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_name, 0};
-
          delis[0] = "";
-         printf("jid_predecessor_list (req):      ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_request_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "jid_request_list (req):", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_jid_predecessor_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_jid_predecessor_list)) {
+   if (lGetPosViaElem(job, JB_jid_predecessor_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_jid_predecessor_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
-
          delis[0] = "";
-         printf("jid_predecessor_list:            ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_predecessor_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "jid_predecessor_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_jid_successor_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_jid_successor_list)) {
+   if (lGetPosViaElem(job, JB_jid_successor_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_jid_successor_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
-
          delis[0] = "";
-         printf("jid_successor_list:              ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_jid_successor_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "jid_successor_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_ja_ad_request_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_ja_ad_request_list)) {
+   if (lGetPosViaElem(job, JB_ja_ad_request_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_ja_ad_request_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_name, 0};
-
          delis[0] = "";
-         printf("ja_ad_predecessor_list (req):       ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_request_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "ja_ad_redecessor_list (req):", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_ja_ad_predecessor_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_ja_ad_predecessor_list)) {
+   if (lGetPosViaElem(job, JB_ja_ad_predecessor_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_ja_ad_predecessor_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
-
          delis[0] = "";
-         printf("ja_ad_predecessor_list:            ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_predecessor_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "ja_ad_predecessor_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_ja_ad_successor_list, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_ja_ad_successor_list)) {
+   if (lGetPosViaElem(job, JB_ja_ad_successor_list, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_ja_ad_successor_list)) {
+         std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
-
          delis[0] = "";
-         printf("ja_ad_successor_list:               ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_ja_ad_successor_list), fields, delis, 0);
+         uni_print_list(ss_list, list, fields, delis, 0);
+         os << std::format("{:<{}} {}", "ja_ad_successor_list:", left_width, ss_list.str()) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_verify_suitable_queues))
-         printf("verify_suitable_queues:          %d\n", (int) lGetUlong(job, JB_verify_suitable_queues));
-
-   if (lGetPosViaElem(job, JB_soft_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(job, JB_soft_wallclock_gmt))) {
-         printf("soft_wallclock_gmt:              %s", sge_ctime64(ultime, &dstr));
+   if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0) {
+      if (const u_long32 vsq = lGetUlong(job, JB_verify_suitable_queues)) {
+         os << std::format("{:<{}} {}", "verify_suitable_queues:", left_width, vsq) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_hard_wallclock_gmt, SGE_NO_ABORT) >= 0)
-      if ((ultime = lGetUlong64(job, JB_hard_wallclock_gmt))) {
-         printf("hard_wallclock_gmt:              %s", sge_ctime64(ultime, &dstr));
+   if (lGetPosViaElem(job, JB_soft_wallclock_gmt, SGE_NO_ABORT) >= 0) {
+      if (u_long64 time_value = lGetUlong64(job, JB_soft_wallclock_gmt)) {
+         os << std::format("{:<{}} {}", "soft_wallclock_gmt:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
       }
+   }
 
-   if (lGetPosViaElem(job, JB_version, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_version))
-         printf("version:                         %d\n", (int) lGetUlong(job, JB_version));
-   /*
-    ** problem: found no format anywhere
-    */
+   if (lGetPosViaElem(job, JB_hard_wallclock_gmt, SGE_NO_ABORT) >= 0) {
+      if (u_long64 time_value = lGetUlong64(job, JB_hard_wallclock_gmt)) {
+         os << std::format("{:<{}} {}", "hard_wallclock_gmt:", left_width, sge_ctime64(time_value, &dstr)) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_override_tickets, SGE_NO_ABORT) >= 0)
-      if (lGetUlong(job, JB_override_tickets))
-         printf("oticket:                         %d\n", (int) lGetUlong(job, JB_override_tickets));
+   if (lGetPosViaElem(job, JB_version, SGE_NO_ABORT) >= 0) {
+      if (u_long32 version = lGetUlong(job, JB_version)) {
+         os << std::format("{:<{}} {}", "version:", left_width, version) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_project, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_project))
-         printf("project:                         %s\n", lGetString(job, JB_project));
+   if (lGetPosViaElem(job, JB_override_tickets, SGE_NO_ABORT) >= 0) {
+      if (u_long32 tickets = lGetUlong(job, JB_override_tickets)) {
+         os << std::format("{:<{}} {}", "override_tickets:", left_width, tickets) << "\n";
+      }
+   }
 
-   if (lGetPosViaElem(job, JB_department, SGE_NO_ABORT) >= 0)
-      if (lGetString(job, JB_department))
-         printf("department:                      %s\n", lGetString(job, JB_department));
+   if (lGetPosViaElem(job, JB_project, SGE_NO_ABORT) >= 0) {
+      if (const char *project = lGetString(job, JB_project)) {
+         os << std::format("{:<{}} {}", "project:", left_width, project) << "\n";
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_department, SGE_NO_ABORT) >= 0) {
+      if (const char *dept = lGetString(job, JB_department)) {
+         os << std::format("{:<{}} {}", "department:", left_width, dept) << "\n";
+      }
+   }
 
    if (lGetPosViaElem(job, JB_ar, SGE_NO_ABORT) >= 0) {
-      if (lGetUlong(job, JB_ar)) {
-         printf("ar_id:                           %d\n", (int) lGetUlong(job, JB_ar));
+      if (u_long32 ar_id = lGetUlong(job, JB_ar)) {
+         os << std::format("{:<{}} {}", "ar_id:", left_width, ar_id) << "\n";
       }
    }
 
    if (lGetPosViaElem(job, JB_sync_options, SGE_NO_ABORT) >= 0) {
       if (lGetUlong(job, JB_sync_options)) {
          std::string sync_flags =  job_get_sync_options_string(job);
-         printf("sync_options:                    %s\n", sync_flags.c_str());
+         os << std::format("{:<{}} {}", "sync_options:", left_width, sync_flags) << "\n";
       }
    }
 
@@ -581,22 +622,31 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       if (job_is_array(job)) {
          u_long32 start, end, step;
          job_get_submit_task_ids(job, &start, &end, &step);
-         printf("job-array tasks:                 " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
-         u_long32 task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
-         if (task_concurrency > 0) {
-            printf("task_concurrency:                " sge_u32 "\n", task_concurrency);
-         }
+         std::ostringstream ss_range;
+         ss_range << std::format("{}-{}:{}", start, end, step);
+         os << std::format("{:<{}} {}", "job-array tasks:", left_width, ss_range.str()) << "\n";
+      }
+      if (u_long32 tc = lGetUlong(job, JB_ja_task_concurrency)) {
+         os << std::format("{:<{}} {}", "task_concurrency:", left_width, tc) << "\n";
       }
    }
 
-   if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0)
-      if (lGetList(job, JB_context)) {
+   if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0) {
+      if (const lList *list = lGetList(job, JB_context)) {
+         std::ostringstream ss_list;
          int fields[] = {VA_variable, VA_value, 0};
-
          delis[0] = "=";
-         printf("context:                         ");
-         uni_print_list(stdout, nullptr, 0, lGetList(job, JB_context), fields, delis, FLG_NO_DELIS_STRINGS);
+         uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
+         os << std::format("{:<{}} {}", "context:", left_width, ss_list.str()) << "\n";
       }
+   }
+
+   if (lGetPosViaElem(job, JB_binding, SGE_NO_ABORT) >= 0) {
+      const lListElem *binding_elem = lGetObject(job, JB_binding);
+      std::string binding_param;;
+      ocs::BindingIo::binding_print_to_string(binding_elem, binding_param);
+      os << std::format("{:<{}} {}", "binding:", left_width, binding_param) << "\n";
+   }
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
 #define SUM_UP_JATASK_USAGE(ja_task, dst, attr)                                                                        \
@@ -609,13 +659,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       dst += lGetDouble(uep, UA_value);                                                                                \
    }
 
-   if (lGetPosViaElem(job, JB_binding, SGE_NO_ABORT) >= 0) {
-      const lListElem *binding_elem = lGetObject(job, JB_binding);
-      std::string binding_param;;
-      ocs::BindingIo::binding_print_to_string(binding_elem, binding_param);
-      printf("binding:                         " SFN "\n", binding_param.c_str());
-   }
-
    if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
 
       lList *ja_tasks = lGetListRW(job, JB_ja_tasks);
@@ -625,14 +668,12 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
 
       const lListElem *uep, *jatep, *pe_task_ep;
       for_each_ep(jatep, lGetList(job, JB_ja_tasks)) {
-         // show task state
-         {
-            // create state string and show it
-            char state_string[8];
-            u_long32 state = jatask_combine_state_and_status_for_output(job, jatep);
-            job_get_state_string(state_string, state);
-            printf("%-17s %11d:   %s\n", "job_state", static_cast<int>(lGetUlong(jatep, JAT_task_number)), state_string);
-         }
+         u_long32 task_number = lGetUlong(jatep, JAT_task_number);
+         // create state string and show it
+         char state_string[8];
+         u_long32 state = jatask_combine_state_and_status_for_output(job, jatep);
+         job_get_state_string(state_string, state);
+         os << std::format("{:<{}} {:>{}}: {}", "job_state", left_width_short, task_number, mid_width, state_string) << "\n";
 
          // show job usage information
          {
@@ -640,8 +681,6 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                due to a qmaster/schedd collision appear in the JB_ja_tasks
                list but are not running - thus we may not print usage for those */
             if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
-               printf("%-17s %11d:   ", "usage", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-
                double wallclock{}, cpu{}, mem{}, io{}, ioops{}, iow{}, vmem{}, maxvmem{}, rss{}, maxrss{};
 
                // In case we have execd_params ENABLE_MEM_DETAILS set, output these values as well.
@@ -701,7 +740,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                double_print_memory_to_dstring(rss, &rss_string);
                double_print_memory_to_dstring(maxrss, &maxrss_string);
                double_print_time_to_dstring(iow, &iow_string, true);
-               printf("wallclock=%s,cpu=%s,mem=%-5.5f GBs,io=%-5.5f,ioops=%.0f,iow=%s,vmem=%s,maxvmem=%s,rss=%s,maxrss=%s",
+               std::stringstream ss_usage;
+               ss_usage << std::format("wallclock={},cpu={},mem={:<5.5f} GBs,io={:<5.5f},ioops={:.0f},iow={},vmem={},maxvmem={},rss={},maxrss={}",
                       sge_dstring_get_string(&wallclock_string), sge_dstring_get_string(&cpu_string),
                       mem, io, ioops, sge_dstring_get_string(&iow_string),
                       (vmem == 0.0) ? "N/A" : sge_dstring_get_string(&vmem_string),
@@ -717,11 +757,11 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
                   double_print_memory_to_dstring(maxpss, &maxpss_string);
                   double_print_memory_to_dstring(pmem, &pmem_string);
                   double_print_memory_to_dstring(smem, &smem_string);
-                  printf(",pss=%s,maxpss=%s,pmem=%s,smem=%s",
+                  ss_usage << std::format(",pss={},maxpss={},pmem={},smem={}",
                      sge_dstring_get_string(&pss_string), sge_dstring_get_string(&maxpss_string),
                      sge_dstring_get_string(&pmem_string), sge_dstring_get_string(&smem_string));
                }
-               printf("\n");
+               os << std::format("{:<{}} {:>{}}: {}", "usage", left_width_short, task_number, mid_width, ss_usage.str()) << "\n";
             }
          }
 
@@ -729,8 +769,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (show_binding) {
             if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
                const lList *granted_resources = lGetList(jatep, JAT_granted_resources_list);
-               printf("%-17s %11d:   %s\n", "exec_binding_list",
-                      static_cast<int>(lGetUlong(jatep, JAT_task_number)), ocs::GrantedResources::to_string(granted_resources).c_str());
+               os << std::format("{:<{}} {:>{}}: {}", "exec_binding_list", left_width_short, task_number, mid_width, ocs::GrantedResources::to_string(granted_resources)) << "\n";
             }
          }
 
@@ -739,19 +778,19 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          if (lGetPosViaElem(jatep, JAT_granted_destin_identifier_list, SGE_NO_ABORT) >= 0) {
             delis[0] = "=";
             const lList *gdil_org = lGetList(jatep, JAT_granted_destin_identifier_list);
+            std::stringstream ss_list;
             int queue_fields[] = {JG_qname, JG_slots, 0};
-            printf("%-17s %11d:   ", "exec_queue_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-            uni_print_list(stdout, nullptr, 0, gdil_org, queue_fields, delis, 0);
+            uni_print_list(ss_list, gdil_org, queue_fields, delis, 0);
+            os << std::format("{:<{}} {:>{}}: {}", "exec_queue_list", left_width_short, task_number, mid_width, ss_list.str());
 
             // get the list of granted hosts and make it unique
-            lList *gdil_unique = gdil_make_host_unique(gdil_org);
-
             // skip tasks that have not been scheduled so far
-            if (gdil_unique != nullptr) {
+            if (lList *gdil_unique = gdil_make_host_unique(gdil_org)) {
                // print the task number and the list of granted hosts
+               std::stringstream ss_list2;
                int host_fields[] = {JG_qhostname, JG_slots, 0};
-               printf("%-17s %11d:   ", "exec_host_list", static_cast<int>(lGetUlong(jatep, JAT_task_number)));
-               uni_print_list(stdout, nullptr, 0, gdil_unique, host_fields, delis, 0);
+               uni_print_list(ss_list2, gdil_unique, host_fields, delis, 0);
+               os << std::format("{:<{}} {:>{}}: {}", "exec_host_list", left_width_short, task_number, mid_width, ss_list2.str());
 
                // free the list of granted hosts
                lFreeList(&gdil_unique);
@@ -759,13 +798,8 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
          }
 
          // show start time of each task
-         {
-            DSTRING_STATIC(time_ds, 32);
-
-            printf("%-17s %11d:   %s\n", "start_time",
-                   static_cast<int>(lGetUlong(jatep, JAT_task_number)),
-                   sge_ctime64(lGetUlong64(jatep, JAT_start_time), &time_ds));
-         }
+         DSTRING_STATIC(time_ds, 32);
+         os << std::format("{:<{}} {:>{}}: {}", "start_time", left_width_short, task_number, mid_width, sge_ctime64(lGetUlong64(jatep, JAT_start_time), &time_ds)) << "\n";
 
          // show granted resources
          {
@@ -801,9 +835,7 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             }
             /* print out granted resources */
             resource_ids = sge_dstring_get_string(&task_resources);
-
-            printf("%-17s %11d:   %s\n", first_task ? "resource_map" : " ",
-                   (int) lGetUlong(jatep, JAT_task_number), resource_ids != nullptr ? resource_ids : "NONE");
+            os << std::format("{:<{}} {:>{}}: {}", "resource_map", left_width_short, task_number, mid_width, resource_ids != nullptr ? resource_ids : "NONE") << "\n";
             if (first_task) {
                first_task = false;
             }
@@ -816,58 +848,13 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
             const lListElem *mesobj;
 
             for_each_ep(mesobj, lGetList(jatep, JAT_message_list)) {
-               const char *message = lGetString(mesobj, QIM_message);
-
-               if (message != nullptr) {
-                  printf(SFN " %15d:   %s\n", "error reason",
-                         static_cast<int>(lGetUlong(jatep, JAT_task_number)), message);
+               if (const char *message = lGetString(mesobj, QIM_message)) {
+                  os << std::format("{:<{}} {:>{}}: {}", "error_reason", left_width_short, task_number, mid_width, message) << "\n";
                }
             }
          }
       }
    }
-
-   DRETURN_VOID;
-}
-
-static void sge_show_checkpoint(int how, int op) {
-   int i = 0;
-   int count = 0;
-   dstring string = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
-   job_get_ckpt_attr(op, &string);
-   if (VALID(SGE_STDOUT, how)) {
-      printf("%s", sge_dstring_get_string(&string));
-      for (i = count; i < 4; i++) {
-         printf(" ");
-      }
-   }
-   if (VALID(SGE_STDERR, how)) {
-      fprintf(stderr, "%s", sge_dstring_get_string(&string));
-      for (i = count; i < 4; i++) {
-         fprintf(stderr, " ");
-      }
-   }
-   sge_dstring_free(&string);
-   DRETURN_VOID;
-}
-
-static void sge_show_y_n(int op, int how) {
-   stringT tmp_str;
-
-   DENTER(TOP_LAYER);
-
-   if (op)
-      snprintf(tmp_str, sizeof(tmp_str), "y");
-   else
-      snprintf(tmp_str, sizeof(tmp_str), "n");
-
-   if (VALID(how, SGE_STDOUT))
-      printf("%s", tmp_str);
-
-   if (VALID(how, SGE_STDERR))
-      fprintf(stderr, "%s", tmp_str);
 
    DRETURN_VOID;
 }

@@ -469,8 +469,11 @@ bool
 job_set_owner_and_group(lListElem *job, u_long32 uid, u_long32 gid,
                         const char *user, const char *grouprp, int amount, ocs_grp_elem_t *grp_array);
 
+void
+job_get_ckpt_attr(std::ostream &os, u_long32 op);
+
 bool
-job_get_ckpt_attr(int op, dstring *string);
+job_get_ckpt_attr(u_long32 op, dstring *string);
 
 bool
 job_get_verify_attr(u_long32 op, dstring *string);

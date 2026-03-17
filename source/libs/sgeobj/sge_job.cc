@@ -36,6 +36,7 @@
 
 #include <cstring>
 #include <unistd.h>
+#include <sstream>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
@@ -3790,25 +3791,32 @@ set_context(lList *jbctx, lListElem *job)
    }
 }
 
-bool
-job_get_ckpt_attr(int op, dstring *string)
-{
-   bool success = true;
-
+void
+job_get_ckpt_attr(std::ostream &os, u_long32 op) {
    DENTER(TOP_LAYER);
    if (VALID(CHECKPOINT_AT_MINIMUM_INTERVAL, op)) {
-      sge_dstring_append_char(string, CHECKPOINT_AT_MINIMUM_INTERVAL_SYM);
+      os << CHECKPOINT_AT_MINIMUM_INTERVAL_SYM;
    }
    if (VALID(CHECKPOINT_AT_SHUTDOWN, op)) {
-      sge_dstring_append_char(string, CHECKPOINT_AT_SHUTDOWN_SYM);
+      os << CHECKPOINT_AT_SHUTDOWN_SYM;
    }
    if (VALID(CHECKPOINT_SUSPEND, op)) {
-      sge_dstring_append_char(string, CHECKPOINT_SUSPEND_SYM);
+      os << CHECKPOINT_SUSPEND_SYM;
    }
    if (VALID(NO_CHECKPOINT, op)) {
-      sge_dstring_append_char(string, NO_CHECKPOINT_SYM);
+      os << NO_CHECKPOINT_SYM;
    }
-   DRETURN(success);
+   DRETURN_VOID;
+}
+
+bool
+job_get_ckpt_attr(u_long32 op, dstring *string)
+{
+   DENTER(TOP_LAYER);
+   std::stringstream ss;
+   job_get_ckpt_attr(ss, op);
+   sge_dstring_append(string, ss.str().c_str());
+   DRETURN(true);
 }
 
 bool
