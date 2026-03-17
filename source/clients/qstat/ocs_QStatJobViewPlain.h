@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ namespace ocs {
          QStatJobViewPlain() = default;
          ~QStatJobViewPlain() override = default;
 
-         void report_jobs_and_reasons_with_job_request(QStatParameter &parameter, QStatJobModel &model) override;
-         void report_reasons(QStatParameter &parameter, QStatJobModel &model) override;
+         void report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
+         void report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
    };
 }

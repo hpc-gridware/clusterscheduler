@@ -62,16 +62,13 @@ static char jhul5[] = "---------------------------------------------------------
 /* -pri */
 static char jhul6[] = "-----------------------------------";
 
-ocs::QStatDefaultViewPlain::QStatDefaultViewPlain() {
+void ocs::QStatDefaultViewPlain::report_started(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_started() {
+void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_finished() {
-}
-
-void ocs::QStatDefaultViewPlain::report_queue_summary(const char* qname, queue_summary_t *summary, QStatParameter &parameter)
+void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
    int sge_ext = parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED;
@@ -152,33 +149,33 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(const char* qname, queue_s
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_started(const char* qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewPlain::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_jobs_started(const char *qname) {
+void ocs::QStatDefaultViewPlain::report_queue_jobs_started(std::ostream &os, const char *qname) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_finished(const char *qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewPlain::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_jobs_finished(const char *qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewPlain::report_queue_jobs_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_load_alarm(const char* qname, const char* reason)
+void ocs::QStatDefaultViewPlain::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason)
 {
    DENTER(TOP_LAYER);
    printf("\t%s\n", reason != nullptr ? reason : "no alarm reason given");
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_suspend_alarm(const char* qname, const char* reason)
+void ocs::QStatDefaultViewPlain::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason)
 {
    DENTER(TOP_LAYER);
    printf("\t%s\n", reason != nullptr ? reason : "no alarm reason given");
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_message(const char* qname, const char *message)
+void ocs::QStatDefaultViewPlain::report_queue_message(std::ostream &os, const char* qname, const char *message)
 {
    DENTER(TOP_LAYER);
    printf("\t%s\n", message != nullptr ? message : "no queue message given");
@@ -186,7 +183,7 @@ void ocs::QStatDefaultViewPlain::report_queue_message(const char* qname, const c
 }
 
 
-void ocs::QStatDefaultViewPlain::report_queue_resource(const char* dom,
+void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const char* dom,
                                        const char* name, const char* value, const char *details)
 {
    DENTER(TOP_LAYER);
@@ -198,7 +195,7 @@ void ocs::QStatDefaultViewPlain::report_queue_resource(const char* dom,
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_pending_jobs_started(QStatParameter &parameter)
+void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
 
@@ -209,12 +206,12 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_started(QStatParameter &par
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_pending_jobs_finished() {
+void ocs::QStatDefaultViewPlain::report_pending_jobs_finished(std::ostream &os) {
 }
 
 static char hashes[] = "##############################################################################################################";
 
-void ocs::QStatDefaultViewPlain::report_finished_jobs_started(QStatParameter &parameter)
+void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter)
 {
    int sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
 
@@ -229,10 +226,10 @@ void ocs::QStatDefaultViewPlain::report_finished_jobs_started(QStatParameter &pa
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_finished_jobs_finished() {
+void ocs::QStatDefaultViewPlain::report_finished_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_error_jobs_started(QStatParameter &parameter)
+void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QStatParameter &parameter)
 {
    int sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
 
@@ -245,16 +242,16 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_started(QStatParameter &param
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_error_jobs_finished() {
+void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_zombie_jobs_started() {
+void ocs::QStatDefaultViewPlain::report_zombie_jobs_started(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_zombie_jobs_finished() {
+void ocs::QStatDefaultViewPlain::report_zombie_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_job(u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model)
+void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model)
 {
    DENTER(TOP_LAYER);
    const char* indent = "";
@@ -650,7 +647,7 @@ void ocs::QStatDefaultViewPlain::report_job(u_long32 jid, job_summary_t *summary
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_tasks_started()
+void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os)
 {
    DENTER(TOP_LAYER);
 
@@ -659,7 +656,7 @@ void ocs::QStatDefaultViewPlain::report_sub_tasks_started()
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_task(task_summary_t *summary) {
+void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
 
    bool indent = false;
@@ -696,25 +693,25 @@ void ocs::QStatDefaultViewPlain::report_sub_task(task_summary_t *summary) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_tasks_finished() {
+void ocs::QStatDefaultViewPlain::report_sub_tasks_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_requested_pe(const char *pe_name, const char *pe_range) {
+void ocs::QStatDefaultViewPlain::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
    DENTER(TOP_LAYER);
    printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s %s\n", "Requested PE:", pe_name, pe_range);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_granted_pe(const char* pe_name, int pe_slots) {
+void ocs::QStatDefaultViewPlain::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
    DENTER(TOP_LAYER);
    printf(QSTAT_INDENT QSTAT_R_ATTRIB "%s %d\n", "Granted PE:", pe_name, pe_slots);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_additional_info(job_additional_info_t name, const char *value) {
+void ocs::QStatDefaultViewPlain::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
    DENTER(TOP_LAYER);
 
    const char *name_str = nullptr;
@@ -730,13 +727,13 @@ void ocs::QStatDefaultViewPlain::report_additional_info(job_additional_info_t na
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_request(const char *name, const char *value) {
+void ocs::QStatDefaultViewPlain::report_request(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
    printf(QSTAT_INDENT "%s=%s (default)\n", name, value);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queues_started(int scope) {
+void ocs::QStatDefaultViewPlain::report_hard_requested_queues_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
 
    switch(scope) {
@@ -757,7 +754,7 @@ void ocs::QStatDefaultViewPlain::report_hard_requested_queues_started(int scope)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queue(int scope, const char *name) {
+void ocs::QStatDefaultViewPlain::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
 
    if (hard_requested_queue_count > 0) {
@@ -770,13 +767,13 @@ void ocs::QStatDefaultViewPlain::report_hard_requested_queue(int scope, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queues_finished() {
+void ocs::QStatDefaultViewPlain::report_hard_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queues_started(int scope) {
+void ocs::QStatDefaultViewPlain::report_soft_requested_queues_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
 
    switch(scope) {
@@ -797,7 +794,7 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_started(int scope)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queue(int scope, const char *name) {
+void ocs::QStatDefaultViewPlain::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
 
    if (soft_requested_queue_count > 0) {
@@ -810,13 +807,13 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queue(int scope, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished() {
+void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_resources_started(int scope) {
+void ocs::QStatDefaultViewPlain::report_hard_resources_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
 
    hard_resource_count = 0;
@@ -838,7 +835,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_started(int scope) {
 }
 
 
-void ocs::QStatDefaultViewPlain::report_hard_resource(int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
       printf(QSTAT_INDENT QSTAT_R_ATTRIB, " ");
@@ -849,7 +846,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resource(int scope, const char *nam
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_resources_finished() {
+void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    if (hard_resource_count == 0) {
@@ -859,7 +856,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_resources_started(int scope) {
+void ocs::QStatDefaultViewPlain::report_soft_resources_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
 
    soft_resource_count = 0;
@@ -880,7 +877,7 @@ void ocs::QStatDefaultViewPlain::report_soft_resources_started(int scope) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_resource(int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
 
    if (soft_resource_count > 0 ) {
@@ -892,7 +889,7 @@ void ocs::QStatDefaultViewPlain::report_soft_resource(int scope, const char *nam
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_resources_finished() {
+void ocs::QStatDefaultViewPlain::report_soft_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (soft_resource_count == 0) {
       putchar('\n');
@@ -901,7 +898,7 @@ void ocs::QStatDefaultViewPlain::report_soft_resources_finished() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_requested_started() {
+void ocs::QStatDefaultViewPlain::report_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    predecessor_requested_count = 0;
@@ -910,7 +907,7 @@ void ocs::QStatDefaultViewPlain::report_predecessors_requested_started() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessor_requested(const char *name) {
+void ocs::QStatDefaultViewPlain::report_predecessor_requested(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
 
    if(predecessor_requested_count > 0 ) {
@@ -923,13 +920,13 @@ void ocs::QStatDefaultViewPlain::report_predecessor_requested(const char *name) 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_requested_finished() {
+void ocs::QStatDefaultViewPlain::report_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_started() {
+void ocs::QStatDefaultViewPlain::report_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    predecessor_count = 0;
    printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Predecessor Jobs:");
@@ -937,7 +934,7 @@ void ocs::QStatDefaultViewPlain::report_predecessors_started() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessor(u_long32 jid) {
+void ocs::QStatDefaultViewPlain::report_predecessor(std::ostream &os, u_long32 jid) {
    DENTER(TOP_LAYER);
    if (predecessor_count > 0 ) {
       printf(", " sge_u32, jid);
@@ -949,13 +946,13 @@ void ocs::QStatDefaultViewPlain::report_predecessor(u_long32 jid) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_finished() {
+void ocs::QStatDefaultViewPlain::report_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started() {
+void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    ad_predecessor_requested_count = 0;
@@ -963,7 +960,7 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(const char *name) {
+void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
 
    if (ad_predecessor_requested_count > 0) {
@@ -976,13 +973,13 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(const char *nam
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_finished() {
+void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_started() {
+void ocs::QStatDefaultViewPlain::report_ad_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    ad_predecessor_count = 0;
@@ -991,7 +988,7 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessors_started() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessor(u_long32 jid) {
+void ocs::QStatDefaultViewPlain::report_ad_predecessor(std::ostream &os, u_long32 jid) {
    DENTER(TOP_LAYER);
 
    if (ad_predecessor_count > 0) {
@@ -1004,13 +1001,13 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor(u_long32 jid) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_finished() {
+void ocs::QStatDefaultViewPlain::report_ad_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    putchar('\n');
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding_started() {
+void ocs::QStatDefaultViewPlain::report_binding_started(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    printf(QSTAT_INDENT QSTAT_R_ATTRIB, "Binding:");
@@ -1018,7 +1015,7 @@ void ocs::QStatDefaultViewPlain::report_binding_started() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding(const char *binding) {
+void ocs::QStatDefaultViewPlain::report_binding(std::ostream &os, const char *binding) {
    DENTER(TOP_LAYER);
 
    printf("%s", binding);
@@ -1026,7 +1023,7 @@ void ocs::QStatDefaultViewPlain::report_binding(const char *binding) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding_finished() {
+void ocs::QStatDefaultViewPlain::report_binding_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    putchar('\n');
@@ -1034,5 +1031,5 @@ void ocs::QStatDefaultViewPlain::report_binding_finished() {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_job_finished(u_int jid) {
+void ocs::QStatDefaultViewPlain::report_job_finished(std::ostream &os, u_int jid) {
 }

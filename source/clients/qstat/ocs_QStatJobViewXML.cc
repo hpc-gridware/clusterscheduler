@@ -39,7 +39,7 @@ ocs::QStatJobViewXML::QStatJobViewXML() {
 }
 
 void
-ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(QStatParameter &parameter, QStatJobModel &model) {
+ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
    lListElem *xml_elem = nullptr;
    bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
@@ -86,7 +86,7 @@ ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(QStatParameter &p
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_reasons(QStatParameter &parameter, QStatJobModel &model) {
+void ocs::QStatJobViewXML::report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
    lListElem *xml_elem = nullptr;
    lListElem* mes;

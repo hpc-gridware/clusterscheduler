@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <sstream>
+#include <iostream>
+
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QStatJobController.h"
@@ -27,10 +30,13 @@
 
 void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view) {
    DENTER(TOP_LAYER);
+
+   std::ostringstream oss;
    if (parameter.jid_list_) {
-      view.report_jobs_and_reasons_with_job_request(parameter, model);
+      view.report_jobs_and_reasons_with_job_request(oss, parameter, model);
    } else {
-      view.report_reasons(parameter, model);
+      view.report_reasons(oss, parameter, model);
    }
+   std::cout << oss.str();
    DRETURN_VOID;
 }

@@ -26,21 +26,25 @@
 namespace ocs {
    class QStatDefaultController {
       void remove_tagged_jobs(lList *job_list);
-      void qstat_handle_running_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_jobs_queue(lListElem *qep, int print_jobs_of_queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void sge_handle_job(lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
-                          const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                          QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void job_handle_subtask(lListElem *job, lListElem *ja_task, lListElem *pe_task, QStatDefaultViewBase &view);
-      void job_handle_resources(const lList* cel, lList* centry_list, int slots, int scope, bool is_hard_resource, QStatDefaultViewBase &view);
-      void handle_pending_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_finished_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_error_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_zombie_jobs(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_jobs_not_enrolled(lListElem *job, bool print_jobid, char *master,
-                                          int slots, int slot, int *count,
-                                          QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void handle_queue(lListElem *q, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+
+      void process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+
+      void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_jobs_zombie_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master, int slots, int slot, int *count,
+                                     QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+
+      void process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
+                       const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
+                       QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
+      void process_subtask(std::ostream &os, lListElem *job, lListElem *ja_task, lListElem *pe_task, QStatDefaultViewBase &view);
+      void process_resources(std::ostream &os, const lList* cel, lList* centry_list, int slots, int scope, bool is_hard_resource, QStatDefaultViewBase &view);
+
+
    public:
       QStatDefaultController() = default;
       ~QStatDefaultController() = default;

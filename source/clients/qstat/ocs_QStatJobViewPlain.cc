@@ -36,7 +36,7 @@
 #include "ocs_client_job.h"
 #include "msg_qstat.h"
 
-void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(QStatParameter &parameter, QStatJobModel &model) {
+void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
    /* does jop contain all information we requested? */
    if (lGetNumberOfElem(model.jlp) == 0) {
@@ -133,7 +133,7 @@ void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(QStatParam
 }
 
 void
-ocs::QStatJobViewPlain::report_reasons(QStatParameter &parameter, QStatJobModel &model) {
+ocs::QStatJobViewPlain::report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
    lList *mlp = nullptr;
    const lListElem* mes;

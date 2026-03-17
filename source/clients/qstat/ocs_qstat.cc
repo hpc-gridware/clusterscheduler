@@ -34,27 +34,16 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <memory>
 
-#include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
-#include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap_files.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
-#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_str.h"
-#include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_job.h"
-
-#include "sched/sge_schedd_text.h"
 
 #include "gdi/ocs_gdi_Client.h"
 
@@ -79,11 +68,6 @@
 #include "ocs_QStatSelectController.h"
 #include "ocs_QStatModelBase.h"
 #include "sig_handlers.h"
-#include "ocs_client_job.h"
-#include "ocs_client_print.h"
-#include "basis_types.h"
-#include "ocs_qstat_xml.h"
-#include "msg_qstat.h"
 
 
 #define FORMAT_I_20 "%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I "
