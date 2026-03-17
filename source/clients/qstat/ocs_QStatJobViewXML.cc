@@ -41,47 +41,32 @@ ocs::QStatJobViewXML::QStatJobViewXML() {
 void
 ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
-   lListElem *xml_elem = nullptr;
-   bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
+   lList *XML_out = lCreateList("detailed_job_info", XMLE_Type);
 
-   if (suppress_binding_data) {
-      DPRINTF("Data concerning binding will not ne shown\n");
-   }
+   /* add job infos */
+   lListElem *xmlElem = lCreateElem(XMLE_Type);
+   lListElem *attrElem = lCreateElem(XMLA_Type);
+   lSetString(attrElem, XMLA_Name, "djob_info");
+   lSetObject(xmlElem, XMLE_Element, attrElem);
+   lSetBool(xmlElem, XMLE_Print, true);
+   lSetList(xmlElem, XMLE_List, model.jlp);
+   lAppendElem(XML_out, xmlElem);
 
-   if (lGetNumberOfElem(model.jlp) == 0) {
-      xml_elem = xml_getHead("unknown_jobs", parameter.jid_list_, nullptr);
-      lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
-      lFreeElem(&xml_elem);
-      parameter.jid_list_ = nullptr;
-   } else {
-      lList *XML_out = lCreateList("detailed_job_info", XMLE_Type);
-      lListElem *xmlElem = nullptr;
-      lListElem *attrElem = nullptr;
+   /* add messages */
+   xmlElem = lCreateElem(XMLE_Type);
+   attrElem = lCreateElem(XMLA_Type);
+   lSetString(attrElem, XMLA_Name, "messages");
+   lSetObject(xmlElem, XMLE_Element, attrElem);
+   lSetBool(xmlElem, XMLE_Print, true);
+   lSetList(xmlElem, XMLE_List, model.ilp);
+   lAppendElem(XML_out, xmlElem);
 
-      /* add job infos */
-      xmlElem = lCreateElem(XMLE_Type);
-      attrElem = lCreateElem(XMLA_Type);
-      lSetString(attrElem, XMLA_Name, "djob_info");
-      lSetObject(xmlElem, XMLE_Element, attrElem);
-      lSetBool(xmlElem, XMLE_Print, true);
-      lSetList(xmlElem, XMLE_List, model.jlp);
-      lAppendElem(XML_out, xmlElem);
-
-      /* add messages */
-      xmlElem = lCreateElem(XMLE_Type);
-      attrElem = lCreateElem(XMLA_Type);
-      lSetString(attrElem, XMLA_Name, "messages");
-      lSetObject(xmlElem, XMLE_Element, attrElem);
-      lSetBool(xmlElem, XMLE_Print, true);
-      lSetList(xmlElem, XMLE_List, model.ilp);
-      lAppendElem(XML_out, xmlElem);
-
-      xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
-      lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
-      lFreeElem(&xml_elem);
-      model.jlp = nullptr;
-      model.ilp = nullptr;
-   }
+   const bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
+   lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
+   lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
+   lFreeElem(&xml_elem);
+   model.jlp = nullptr;
+   model.ilp = nullptr;
 
    DRETURN_VOID;
 }

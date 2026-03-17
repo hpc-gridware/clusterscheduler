@@ -18,8 +18,11 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <sstream>
+
 #include "cull/cull_list.h"
 
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_str.h"
@@ -31,6 +34,8 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_QStatJobModel.h"
+#include "msg_qstat.h"
+#include "sge_answer.h"
 
 void ocs::QStatJobModel::free_data() {
    lFreeList(&ilp);
@@ -127,6 +132,43 @@ bool ocs::QStatJobModel::fetch_data(lList **alpp, QStatParameter &parameter) {
 
 bool ocs::QStatJobModel::prepare_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+
+   // report an error if response does not contain all information
+   if (lGetNumberOfElem(jlp) == 0) {
+
+      // remove all pattern
+      bool removed_pattern = false;
+      lListElem *elem1;
+      lListElem *elem2 = lFirstRW(parameter.jid_list_);
+      while ((elem1 = elem2) != nullptr) {
+         elem2 = lNextRW(elem1);
+
+         if (is_pattern(lGetString(elem1, ST_name))) {
+            lDechainElem(parameter.jid_list_, elem1);
+            removed_pattern = true;
+         }
+      }
+
+      // if there is still something missing then report an error
+      std::stringstream ss;
+      if (lGetNumberOfElem(parameter.jid_list_) > 0) {
+         bool first_time = true;
+         ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         for_each_rw(elem1, parameter.jid_list_) {
+            if (!first_time) {
+               ss << ", ";
+            }
+            first_time = false;
+            ss << lGetString(elem1, ST_name);
+         }
+      } else {
+         if (removed_pattern) {
+            ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         }
+      }
+      answer_list_add(alpp, ss.str().c_str(), STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
 
    if (parameter.output_format_ != QStatParameter::OutputFormat::XML) {
       DRETURN(true);

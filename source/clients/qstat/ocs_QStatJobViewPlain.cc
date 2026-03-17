@@ -26,7 +26,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_range.h"
-#include "sgeobj/sge_str.h"
 #include "sgeobj/sge_ulong.h"
 
 #include "sched/sge_schedd_text.h"
@@ -38,42 +37,6 @@
 
 void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
-   /* does jop contain all information we requested? */
-   if (lGetNumberOfElem(model.jlp) == 0) {
-      lListElem *elem1, *elem2;
-
-      // remove all pattern
-      bool removed_pattern = false;
-      elem2 = lFirstRW(parameter.jid_list_);
-      while ((elem1 = elem2) != nullptr) {
-         elem2 = lNextRW(elem1);
-
-         if (ocs::is_pattern(lGetString(elem1, ST_name))) {
-            lDechainElem(parameter.jid_list_, elem1);
-            removed_pattern = true;
-         }
-      }
-
-      // if there is still something missing then report an error
-      int first_time = 1;
-      if (lGetNumberOfElem(parameter.jid_list_) > 0) {
-         fprintf(stderr, "%s\n", MSG_QSTAT_FOLLOWINGDONOTEXIST);
-         for_each_rw(elem1, parameter.jid_list_) {
-            if (!first_time) {
-               fprintf(stderr, ", ");
-            }
-            first_time = 0;
-            fprintf(stderr, "%s", lGetString(elem1, ST_name));
-         }
-         fprintf(stderr, "\n");
-         sge_exit(1);
-      } else {
-         if (removed_pattern) {
-            fprintf(stderr, "%s\n", MSG_QSTAT_FOUNDNOMATCHING);
-         }
-         sge_exit(0);
-      }
-   }
 
    /* print scheduler job information and global scheduler info */
    const lListElem *j_elem = nullptr;
