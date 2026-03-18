@@ -1153,7 +1153,7 @@ For example:
 
     gdi_request_limits=*:add:job:john:*=500,
                        *:add:job:*:*=50,
-                       qstat:get:*:*:*=50000
+                       qstat:get:*:*:*=60000
 
 The first rule allows user *john* to submit 500 jobs per second. The second rule allows all (remaining) users to post 50 jobs per second. Both rules are submit client independent. This means that users can use any submit client (qsub, qrsh, DRMAA client or GUI) to submit jobs. Any attempt to submit more jobs will be rejected and the user will see the limit rule that has been violated.
 

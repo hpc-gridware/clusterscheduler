@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@
 #include "uti/sge_rmon_macros.h"
 #include <uti/sge_time.h>
 
+#include "msg_daemons_common.h"
 #include "msg_qmaster.h"
 #include "sge_qmaster_timed_event.h"
 
 #include "ocs_security_qmaster.h"
-
 
 namespace ocs::qmaster {
 
@@ -86,6 +86,7 @@ namespace ocs::qmaster {
 
       if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS)) {
          DPRINTF(SFNMAX "\n", "initializing certificate renewal");
+         INFO(MSG_TLS_CERT_LIFETIME_D, ocs::Bootstrap::get_cert_lifetime());
          te_register_event_handler(cert_renewal_event_handler, TYPE_SSL_CERT_RENEWAL_EVENT);
          cert_renewal_create_event();
       }
@@ -119,7 +120,15 @@ namespace ocs::qmaster {
       if (handle == nullptr) {
          CRITICAL(SFNMAX, MSG_NO_COMMLIB_HANDLE_FOUND);
       } else {
-         cl_commlib_check_refresh_server_context(handle);
+         bool was_renewed = false;
+         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
+         if (cl_commlib_check_refresh_server_context(handle, was_renewed, &error_dstr) == CL_RETVAL_OK) {
+            if (was_renewed) {
+               INFO(SFNMAX, MSG_TLS_CERTIFICATE_RENEWED);
+            }
+         } else {
+            ERROR(MSG_TLS_CERT_RENEWAL_FAILED_S, sge_dstring_get_string(&error_dstr));
+         }
       }
       cert_renewal_create_event();
 

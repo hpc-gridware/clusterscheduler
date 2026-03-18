@@ -916,7 +916,7 @@ sge_scheduler_main(void *arg) {
             schedd_log("--------------STOP-SCHEDULER-RUN-------------", nullptr, evc->monitor_next_run);
          }
 
-         thread_output_profiling("scheduler thread profiling summary:\n", &next_prof_output);
+         thread_output_profiling("scheduler thread profiling summary:", &next_prof_output);
 
          sge_monitor_output(&monitor);
       }

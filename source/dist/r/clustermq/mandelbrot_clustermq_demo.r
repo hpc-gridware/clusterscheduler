@@ -30,7 +30,7 @@
 suppressPackageStartupMessages(library(clustermq))
 
 # ---- Select scheduler backend ----
-options(clustermq.scheduler = "ocs")  # change to "gcs" if desired
+options(clustermq.scheduler = "gcs")  # change to "ocs" if desired
 
 # ---- Parameters ----
 width    <- 2560   # adapt for your screen resolution
@@ -127,7 +127,10 @@ meta <- Q(
     outdir = outdir
   ),
   n_jobs = workers,
-  memory = "500"
+  memory = "500",
+  template=list(
+    threads = 2  # add other template parameter here
+  )
   #,max_calls_worker = 45
 )
 

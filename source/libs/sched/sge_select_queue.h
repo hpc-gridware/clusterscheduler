@@ -1,34 +1,34 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -46,31 +46,31 @@
 
 bool
 sge_select_queue(lList *requested_attr, lListElem *queue, lListElem *host, lList *exechost_list,
-                 lList *centry_list, bool allow_non_requestable, int slots, lList *queue_user_list, 
-                 lList *acl_list, lListElem *job); 
+                 lList *centry_list, bool allow_non_requestable, int slots, lList *queue_user_list,
+                 lList *acl_list, lListElem *job);
 
 /* --- is there a load alarm on this queue ---------------------------- */
 
 int sge_load_alarm(char *reason, size_t reason_size, const lListElem *queue, const lList *threshold,
-                   const lList *exechost_list, const lList *complex_list, 
+                   const lList *exechost_list, const lList *complex_list,
                    const lList *load_adjustments, bool is_check_consumable);
 
-void sge_create_load_list(const lList *queue_list, const lList *host_list, 
-                          const lList *centry_list, lList **load_list); 
+void sge_create_load_list(const lList *queue_list, const lList *host_list,
+                          const lList *centry_list, lList **load_list);
 
-bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list, 
+bool sge_load_list_alarm(bool monitor_next_run, lList *load_list, const lList *host_list,
                          const lList *centry_list);
 
 void sge_remove_queue_from_load_list(lList **load_list, const lList *queue_list);
 
-void sge_free_load_list(lList **load_list); 
- 
-char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list, 
-                            const lList *complex_list, char  *reason, int reason_size, 
-                            const char *type); 
+void sge_free_load_list(lList **load_list);
 
-int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list, 
-                         const lList *complex_list, const lList *load_adjustments, 
+char *sge_load_alarm_reason(lListElem *queue, lList *threshold, const lList *exechost_list,
+                            const lList *complex_list, char  *reason, int reason_size,
+                            const char *type);
+
+int sge_split_queue_load(bool monitor_next_run, lList **unloaded, lList **overloaded, lList *exechost_list,
+                         const lList *complex_list, const lList *load_adjustments,
                          lList *granted, bool is_consumable_load_alarm, bool is_comprehensive,
                          u_long32 ttype);
 
@@ -84,8 +84,8 @@ int sge_split_suspended(bool monitor_next_run, lList **queue_list, lList **suspe
 
 /* --- job assignment methods ---------------------------- */
 
-enum { 
-   DISPATCH_TIME_NOW = 0, 
+enum {
+   DISPATCH_TIME_NOW = 0,
    DISPATCH_TIME_QUEUE_END = U_LONG64_MAX
 };
 
@@ -131,8 +131,8 @@ typedef struct {
    const lList *centry_list;      /* the complex entries (CE_Type)                  */
    const lList *acl_list;         /* the user sets (US_Type)                        */
    const lList *hgrp_list;        /* the host group list (HGRP_Type)                */
-   lList      *rqs_list;          /* the resource quota set list (RQS_Type)         */ 
-   lList      *ar_list;           /* the advance reservation list (AR_Type)         */ 
+   lList      *rqs_list;          /* the resource quota set list (RQS_Type)         */
+   lList      *ar_list;           /* the advance reservation list (AR_Type)         */
    bool       is_reservation;     /* true, if a reservation for this job should be done */
    bool       is_advance_reservation; /* true for advance reservation scheduling    */
    bool       is_job_verify;      /* true, if job verification (-w ev) (in qmaster) */
@@ -142,7 +142,7 @@ typedef struct {
    bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
    bool do_binding_on_any_host;   //< cached value of the corresponding configuration parameter
    /* ------ this section is for caching of intermediate results ------------------ */
-   lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */ 
+   lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */
    lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
    lList      *skip_host_list;    /* hosts that need not be checked anymore (CTI_Type) */
    /* ------ this section is the resulting assignment ----------------------------- */
@@ -198,7 +198,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list);
 bool is_requested(const lList *req, const char *attr);
 bool is_requested(const lListElem *job, const char *attr);
 
-dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue);
+dispatch_t sge_queue_match_static(const sge_assignment_t *a, lListElem *queue, bool need_master);
 
 dispatch_t
 sge_host_match_static(const sge_assignment_t *a, const lListElem *host);

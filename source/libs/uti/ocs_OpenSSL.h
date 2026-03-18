@@ -189,15 +189,15 @@ namespace ocs::uti {
          bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs);
          bool certificate_recreate_required(dstring *error_dstr);
 
-         bool configure_server_context(dstring *error_dstr);
+         bool configure_server_context(dstring *error_dstr, bool is_recreate);
          bool configure_client_context(dstring *error_dstr);
 
          static void delete_no_longer_used_contexts();
 
       public:
          static OpenSSLContext *create(dstring *error_dstr);
-         static OpenSSLContext *create(const OpenSSLContext *source, dstring *error_dstr);
-         static OpenSSLContext *create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr);
+         static OpenSSLContext *create(const OpenSSLContext *source, dstring *error_dstr, bool is_recreate);
+         static OpenSSLContext *create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr, bool is_recreate);
          static void mark_context_for_deletion(OpenSSLContext *context);
 
          ~OpenSSLContext();
@@ -208,7 +208,7 @@ namespace ocs::uti {
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
          const char *get_cert();
          const char *get_cert_file() { return cert_path.c_str(); }
-         time_t get_renewal_time() { return renewal_time; }
+         u_long64 get_renewal_time() { return renewal_time; }
          bool certificate_recreate_required();
          bool is_cert_file_updated();
       };

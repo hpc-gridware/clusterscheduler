@@ -43,6 +43,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_signal.h"
 #include "uti/sge_log.h"
+#include "uti/sge_time.h"
 
 #include "comm/cl_commlib.h"
 #include "comm/cl_handle_list.h"
@@ -1154,7 +1155,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
          if (service_provider) {
             if (!cert_path.empty() && !key_path.empty()) {
                // sge_qmaster or sge_execd
-               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(true, cert_path, key_path, &dstr_error);
+               new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(true, cert_path, key_path, &dstr_error, false);
             } else {
                // qrsh
                new_handle->ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(&dstr_error);
@@ -1172,7 +1173,7 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
             }
          }
          if (!client_cert_path.empty()) {
-            new_handle->ssl_client_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
+            new_handle->ssl_client_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error, false);
             if (new_handle->ssl_client_context == nullptr && cl_com_ssl_setup_config->needs_client_cert) {
                sge_free(&local_hostname);
                sge_free(&new_handle);
@@ -1785,7 +1786,7 @@ int cl_commlib_handle_update_ssl_client_context(cl_com_handle_t *handle) {
    // create a new client context
    ocs::uti::OpenSSL::OpenSSLContext *new_context = nullptr;
    if (!client_cert_path.empty()) {
-      new_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error);
+      new_context = ocs::uti::OpenSSL::OpenSSLContext::create(false, client_cert_path, client_key_path, &dstr_error, false);
 
       if (new_context == nullptr) {
          cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_NO_FRAMEWORK_INIT, sge_dstring_get_string(&dstr_error));
@@ -4428,9 +4429,10 @@ int cl_com_application_debug(cl_com_handle_t *handle, const char *message) {
 }
 
 #if defined(OCS_WITH_OPENSSL)
-int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
+int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle, bool &was_renewed, dstring *error_dstr) {
    DENTER(TOP_LAYER);
    int ret_val = CL_RETVAL_OK;
+   was_renewed = false;
 
    // We lock the connection list.
    // This should ensure that the openssl context will not be accessed (when creating new connections).
@@ -4440,22 +4442,27 @@ int cl_commlib_check_refresh_server_context(cl_com_handle_t *handle) {
       if (handle->ssl_server_context->certificate_recreate_required()) {
          DPRINTF("===> context needs to be recreated\n");
          // Create a copy of the context with a new certificate
-         DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-         ocs::uti::OpenSSL::OpenSSLContext *new_ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(handle->ssl_server_context, &error_dstr);
-
+         ocs::uti::OpenSSL::OpenSSLContext *new_ssl_server_context = ocs::uti::OpenSSL::OpenSSLContext::create(handle->ssl_server_context, error_dstr, true);
          if (new_ssl_server_context != nullptr) {
             // Make sure that the context will be deleted once the last connection using it has been closed.
             DPRINTF("  -> got a new context, marking old one for deletion - it will still be used by open connections\n");
             ocs::uti::OpenSSL::OpenSSLContext::mark_context_for_deletion(handle->ssl_server_context);
             DPRINTF("  -> using new context in handle\n");
             handle->ssl_server_context = new_ssl_server_context;
+            was_renewed = true;
          } else {
-            // @todo ret_val = CL_RETVAL_MALLOC;
-            DPRINTF("  --> didn't get a new context: %s\n", sge_dstring_get_string(&error_dstr));
-            CL_LOG_STR(CL_LOG_ERROR, "failed to create new OpenSSLContext for certificate refresh", sge_dstring_get_string(&error_dstr));
+            ret_val = CL_RETVAL_SSL_CERTIFICATE_ERROR;
+            CL_LOG_STR(CL_LOG_ERROR, "failed to create new OpenSSLContext for certificate refresh", sge_dstring_get_string(error_dstr));
             // we keep the old context with a certificate which will probably expire soon - try again later
          }
       }
+   } else {
+      if (handle == nullptr) {
+         sge_dstring_sprintf(error_dstr, "cl_commlib_check_refresh_server_context: nullptr passed as commlib handle");
+      } else {
+         sge_dstring_sprintf(error_dstr, "cl_commlib_check_refresh_server_context: ssl_server_context is nullptr");
+      }
+      ret_val = CL_RETVAL_PARAMS;
    }
 
    // Now the handle can be used again to work on connections.

@@ -2,6 +2,258 @@
 
 # Release notes - Cluster Scheduler - 9.1.0
 
+## v9.1.0
+
+### Improvement
+
+[CS-59](https://hpc-gridware.atlassian.net/browse/CS-59) Add a Python JSV implementation.
+
+[CS-211](https://hpc-gridware.atlassian.net/browse/CS-211) Create new test scenarios for categories
+
+[CS-224](https://hpc-gridware.atlassian.net/browse/CS-224) Add GDI limit section to admin guide
+
+[CS-771](https://hpc-gridware.atlassian.net/browse/CS-771) make commlib performance test run in the cloud environment
+
+[CS-772](https://hpc-gridware.atlassian.net/browse/CS-772) make max\_dyn\_ec test run in the cloud environment
+
+[CS-1106](https://hpc-gridware.atlassian.net/browse/CS-1106) Go Interface: Add gdi\_request\_limits from global config in qconf v91 types
+
+[CS-1109](https://hpc-gridware.atlassian.net/browse/CS-1109) Go Interface: Add mail\_tag from global conf
+
+[CS-1113](https://hpc-gridware.atlassian.net/browse/CS-1113) Go Interface: Consider fix CS-761 for v9.1
+
+[CS-1160](https://hpc-gridware.atlassian.net/browse/CS-1160) Create TS module that parses client output of category specific commands
+
+[CS-1206](https://hpc-gridware.atlassian.net/browse/CS-1206) Delete User Set configuration confirmation modal displays text twice
+
+[CS-1471](https://hpc-gridware.atlassian.net/browse/CS-1471) Install Debian Trixie in our test lab environment.
+
+[CS-1590](https://hpc-gridware.atlassian.net/browse/CS-1590) improve sge\_resource\_quota.5 man page, esp. regarding expansion of filters
+
+[CS-1628](https://hpc-gridware.atlassian.net/browse/CS-1628) Establish vulnerability reporting process
+
+[CS-1629](https://hpc-gridware.atlassian.net/browse/CS-1629) Publish security.txt on Web Server
+
+[CS-1630](https://hpc-gridware.atlassian.net/browse/CS-1630) Document internal vulnerability response process
+
+[CS-1631](https://hpc-gridware.atlassian.net/browse/CS-1631) Define 24h incident reporting process \(ENISA\)
+
+[CS-1632](https://hpc-gridware.atlassian.net/browse/CS-1632) Assign security incident responsible personnel
+
+[CS-1634](https://hpc-gridware.atlassian.net/browse/CS-1634) Introduce periodic security reviews
+
+[CS-1636](https://hpc-gridware.atlassian.net/browse/CS-1636) Create STRIDE threat model
+
+[CS-1637](https://hpc-gridware.atlassian.net/browse/CS-1637) Define security governance
+
+[CS-1643](https://hpc-gridware.atlassian.net/browse/CS-1643) Add SECURITY.md
+
+[CS-1659](https://hpc-gridware.atlassian.net/browse/CS-1659) Define patch policy
+
+[CS-1739](https://hpc-gridware.atlassian.net/browse/CS-1739) cleanup in builtin interactive job support: do not call cl\_commlib\_trigger\(\)
+
+[CS-1780](https://hpc-gridware.atlassian.net/browse/CS-1780) Allow filtering of components debug output by thread name
+
+[CS-1782](https://hpc-gridware.atlassian.net/browse/CS-1782) Improve binding performance in scheduler by replacing the characteristics-value-type
+
+[CS-1794](https://hpc-gridware.atlassian.net/browse/CS-1794) Improve debug support for qmaster in performance test environment
+
+[CS-1798](https://hpc-gridware.atlassian.net/browse/CS-1798) Optimization: Certain host name operations unnecessarily normalize names
+
+[CS-1804](https://hpc-gridware.atlassian.net/browse/CS-1804) Optimization: Improve code related to pattern matching by introducing lookup tabels
+
+[CS-1805](https://hpc-gridware.atlassian.net/browse/CS-1805) Optimization: Improve RQS performance by optimizing low level core functions
+
+[CS-1827](https://hpc-gridware.atlassian.net/browse/CS-1827) Support adjustments of clustermq template parameters
+
+[CS-1836](https://hpc-gridware.atlassian.net/browse/CS-1836) testsuite shall allow empty shadowd\_hosts list
+
+[CS-1847](https://hpc-gridware.atlassian.net/browse/CS-1847) improve performance of functions setting/resetting host slots for binding
+
+### New Feature
+
+[CS-1149](https://hpc-gridware.atlassian.net/browse/CS-1149) Add basic support for certificates in the UI backend to encrypt traffic
+
+[CS-1730](https://hpc-gridware.atlassian.net/browse/CS-1730) Final QA tasks for new scheduler based binding.
+
+[CS-1762](https://hpc-gridware.atlassian.net/browse/CS-1762) Add gdi\_request\_limits to global configuration in Qontrol in version 9.1
+
+[CS-1763](https://hpc-gridware.atlassian.net/browse/CS-1763) Add binding\_params to global configuration in Qontrol for version 9.1
+
+[CS-1795](https://hpc-gridware.atlassian.net/browse/CS-1795) Add 9.1.0 features \(core binding, mail tag, gdi request limits\) to global configuration dialog and execd params
+
+[CS-1796](https://hpc-gridware.atlassian.net/browse/CS-1796) Qontrol needs to detect GCS version 9.0.\* and 9.1.\*  and use different backend library versions
+
+[CS-1797](https://hpc-gridware.atlassian.net/browse/CS-1797) Add Qontrol to 9.1beta2 and future 9.1.\* packages
+
+[CS-1821](https://hpc-gridware.atlassian.net/browse/CS-1821) Add PE templates to Qontrol so that admin can easily select and install
+
+[CS-1829](https://hpc-gridware.atlassian.net/browse/CS-1829) Add "Clone" functionality for queues, PEs, user sets, projects, quotas and calendars in Qontrol
+
+### Epic
+
+[CS-204](https://hpc-gridware.atlassian.net/browse/CS-204) Add scheduler categories to qmaster
+
+### Sub-task
+
+[CS-317](https://hpc-gridware.atlassian.net/browse/CS-317) updated xml schema files
+
+[CS-524](https://hpc-gridware.atlassian.net/browse/CS-524) -scope switch: adapt qstat schema file to modified qstat -xml -j jobid output
+
+[CS-670](https://hpc-gridware.atlassian.net/browse/CS-670) fix and re-enable testsuite upgrade test
+
+[CS-718](https://hpc-gridware.atlassian.net/browse/CS-718) TS: Add test and framework to test minor and major upgrades
+
+[CS-1102](https://hpc-gridware.atlassian.net/browse/CS-1102) Upgrade procedure has to handle global configurations parameter gdi\_request\_limit
+
+[CS-1103](https://hpc-gridware.atlassian.net/browse/CS-1103) Upgrade procedure has to handle global configurations parameter mail\_tag
+
+[CS-1235](https://hpc-gridware.atlassian.net/browse/CS-1235) Upgrade prodecure has to handle removal of deprecated reprioritize parameter.
+
+[CS-1373](https://hpc-gridware.atlassian.net/browse/CS-1373) make performance tests with scheduler binding code
+
+[CS-1475](https://hpc-gridware.atlassian.net/browse/CS-1475) change upgrade procedure for binding related changes
+
+[CS-1616](https://hpc-gridware.atlassian.net/browse/CS-1616) Add test that checks binding specific environment variables and corresponding values
+
+[CS-1617](https://hpc-gridware.atlassian.net/browse/CS-1617) Add test that checks reservation in combination with binding
+
+[CS-1693](https://hpc-gridware.atlassian.net/browse/CS-1693) Add AR binding tests
+
+[CS-1754](https://hpc-gridware.atlassian.net/browse/CS-1754) streamline throughput report directory structure
+
+[CS-1764](https://hpc-gridware.atlassian.net/browse/CS-1764) Create backup/restore/upgrade tests
+
+[CS-1765](https://hpc-gridware.atlassian.net/browse/CS-1765) Adapt upgrade description in the installation guide
+
+[CS-1766](https://hpc-gridware.atlassian.net/browse/CS-1766) Separate upgrade from loading the config
+
+[CS-1768](https://hpc-gridware.atlassian.net/browse/CS-1768) Loading a configuration into a running system ignores errors
+
+[CS-1770](https://hpc-gridware.atlassian.net/browse/CS-1770) Loading a backup into a cluster modifies the backup
+
+[CS-1772](https://hpc-gridware.atlassian.net/browse/CS-1772) Create test for the interactive upgrade
+
+[CS-1813](https://hpc-gridware.atlassian.net/browse/CS-1813) Evaluate R and mschubert/custermq integration with OCS/GCS
+
+[CS-1814](https://hpc-gridware.atlassian.net/browse/CS-1814) Adapt custermq code to support OCS/GCS
+
+[CS-1817](https://hpc-gridware.atlassian.net/browse/CS-1817) Add an example to the distribution that shows how to use clustermq
+
+[CS-1824](https://hpc-gridware.atlassian.net/browse/CS-1824) JB\_department is missing in detailed\_job\_info xml schema file
+
+### Task
+
+[CS-106](https://hpc-gridware.atlassian.net/browse/CS-106) create a test binary that detects and outputs its binding
+
+[CS-1515](https://hpc-gridware.atlassian.net/browse/CS-1515) Create a RQS performance test
+
+[CS-1731](https://hpc-gridware.atlassian.net/browse/CS-1731) Update all lab hosts before 9.1.0beta1 build
+
+[CS-1743](https://hpc-gridware.atlassian.net/browse/CS-1743) do memory testing on master branch for the 9.1.0 release
+
+[CS-1746](https://hpc-gridware.atlassian.net/browse/CS-1746) schedule file does not show entry for host for jobs started in an AR
+
+[CS-1752](https://hpc-gridware.atlassian.net/browse/CS-1752) Remove other product names from sge\_conf page where possible
+
+[CS-1755](https://hpc-gridware.atlassian.net/browse/CS-1755) make sure that the current GCP deployment works for performance testing
+
+[CS-1758](https://hpc-gridware.atlassian.net/browse/CS-1758) remove dependency on libtirp
+
+[CS-1786](https://hpc-gridware.atlassian.net/browse/CS-1786) Create sperf\_binding test to measure performance of binding in scheduler with Google Performance Tools
+
+[CS-1822](https://hpc-gridware.atlassian.net/browse/CS-1822) Make a full TS run with Ubuntu 26.04 as master and preferred exec host
+
+[CS-1823](https://hpc-gridware.atlassian.net/browse/CS-1823) Add Ubuntu 26.04 to lab environment and document OCS/GCS build requirements
+
+[CS-1830](https://hpc-gridware.atlassian.net/browse/CS-1830) Add RHEL 10 to lab environment and document OCS/GCS build requirements
+
+[CS-1831](https://hpc-gridware.atlassian.net/browse/CS-1831) Add ALMA 10 to lab environment and document OCS/GCS build requirements
+
+[CS-1832](https://hpc-gridware.atlassian.net/browse/CS-1832) Add Rocky 10 to lab environment and document OCS/GCS build requirements
+
+### Bug
+
+[CS-162](https://hpc-gridware.atlassian.net/browse/CS-162) enable jemalloc for lx-riscv64 which failed with previous versions
+
+[CS-427](https://hpc-gridware.atlassian.net/browse/CS-427) qhost -F prints capacity of INT or RSMAP resources as double, not as integer
+
+[CS-1101](https://hpc-gridware.atlassian.net/browse/CS-1101) Create an upgrade procedure for 9.1
+
+[CS-1203](https://hpc-gridware.atlassian.net/browse/CS-1203) Fully implement "Add Host Group" in Host Management in qcontrol
+
+[CS-1282](https://hpc-gridware.atlassian.net/browse/CS-1282) Build on Ubuntu 24.04 fails due to default dependencies of hwloc to other libs like opencl or nvml
+
+[CS-1714](https://hpc-gridware.atlassian.net/browse/CS-1714) in job info mails for aborted jobs the reason for the abort is truncated
+
+[CS-1735](https://hpc-gridware.atlassian.net/browse/CS-1735) qrsh doing massive output reports a commlib read error and truncates output
+
+[CS-1749](https://hpc-gridware.atlassian.net/browse/CS-1749) qrsh -V does not handle multi line environment variables \(and shell functions\)
+
+[CS-1753](https://hpc-gridware.atlassian.net/browse/CS-1753) side-by-side installation creates incorrect files for systemd
+
+[CS-1756](https://hpc-gridware.atlassian.net/browse/CS-1756) Adding an execd in Qontrol tries to add it twice
+
+[CS-1757](https://hpc-gridware.atlassian.net/browse/CS-1757) When adding a new hostgroup with Qontrol host selections of former host group is preset
+
+[CS-1760](https://hpc-gridware.atlassian.net/browse/CS-1760) with reporting disabled there is increased spooling activity at midnight for 10 minutes
+
+[CS-1761](https://hpc-gridware.atlassian.net/browse/CS-1761) Debug checks are active even in a Release build
+
+[CS-1769](https://hpc-gridware.atlassian.net/browse/CS-1769) When adding a userset in Qontrol the entries are space separated and not comma separated in the backend
+
+[CS-1773](https://hpc-gridware.atlassian.net/browse/CS-1773) sge\_execd crash in specific job error situation on a systemd host with no toplevel systemd slice configured
+
+[CS-1774](https://hpc-gridware.atlassian.net/browse/CS-1774) verify if toplevel systemd slice name is always created \(installation, backup, restore, ...\)
+
+[CS-1775](https://hpc-gridware.atlassian.net/browse/CS-1775) Simulated exec hosts do not inherit topology from parent
+
+[CS-1776](https://hpc-gridware.atlassian.net/browse/CS-1776) Deleting a manager or operator in Qontrol fails with a JSON error message
+
+[CS-1778](https://hpc-gridware.atlassian.net/browse/CS-1778) the pseudo terminal slave device created for jobs with option -pty y has  wrong ownership
+
+[CS-1781](https://hpc-gridware.atlassian.net/browse/CS-1781) Omit timestamp in gperf file names so that testsuite can generate pdf's automatically
+
+[CS-1783](https://hpc-gridware.atlassian.net/browse/CS-1783) Avoid characteristics updates from topology strings if they are not needed to improve performance
+
+[CS-1784](https://hpc-gridware.atlassian.net/browse/CS-1784) Optimize scheduler binding performance for PE jobs on Epic compute nodes
+
+[CS-1785](https://hpc-gridware.atlassian.net/browse/CS-1785) Stabilize sort order of different core types so that faster cores appear first
+
+[CS-1788](https://hpc-gridware.atlassian.net/browse/CS-1788) When adding a hostgroup to a hostgroup in Qontrol the hostgroup list is not loaded properly
+
+[CS-1791](https://hpc-gridware.atlassian.net/browse/CS-1791) Update Admin Guide with new qgpu parameters
+
+[CS-1793](https://hpc-gridware.atlassian.net/browse/CS-1793) qmaster ignores SIGHUB signal when running in debug mode which can cause freeze of component
+
+[CS-1800](https://hpc-gridware.atlassian.net/browse/CS-1800) mk\_dist does not handle tar errors which can result in incomplete packages
+
+[CS-1801](https://hpc-gridware.atlassian.net/browse/CS-1801) In queue configuration dialog the allowed user list and denied user lists select dialog is not working
+
+[CS-1802](https://hpc-gridware.atlassian.net/browse/CS-1802) qevent reports incorrect numbers for jobs\_running and jobs\_registered
+
+[CS-1803](https://hpc-gridware.atlassian.net/browse/CS-1803) throughput test scenario mixed\_qstat runs endlessly
+
+[CS-1811](https://hpc-gridware.atlassian.net/browse/CS-1811) topology in use missing in qhost -F output
+
+[CS-1818](https://hpc-gridware.atlassian.net/browse/CS-1818) Qontrol: Displaying userset in User Management does not display where the list is used
+
+[CS-1826](https://hpc-gridware.atlassian.net/browse/CS-1826) qsub -terse switch is ignored when embedded in a script file
+
+[CS-1828](https://hpc-gridware.atlassian.net/browse/CS-1828) clustermq does not terminate pending worker in case R workload has already been processed
+
+[CS-1833](https://hpc-gridware.atlassian.net/browse/CS-1833) In complex configuration in qontrol an exclusive consumable for a bool can not be selected
+
+[CS-1837](https://hpc-gridware.atlassian.net/browse/CS-1837) Solaris SMF related scripts in $SGE\_ROOT/util/sgeSMF are not executable
+
+[CS-1843](https://hpc-gridware.atlassian.net/browse/CS-1843) installation with munge enabled fails since munge update
+
+[CS-1849](https://hpc-gridware.atlassian.net/browse/CS-1849) testsuite auto-install fails when started with option install\_rc
+
+[CS-1854](https://hpc-gridware.atlassian.net/browse/CS-1854) When modifying a resource quota set in Qontrol it deletes other resource quota sets
+
+[CS-1855](https://hpc-gridware.atlassian.net/browse/CS-1855) re-creating certificates sometimes is not done
+
 ## v9.1.0beta1
 
 ### Improvement

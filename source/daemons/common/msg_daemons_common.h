@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -151,5 +151,8 @@
 #define MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU  _MESSAGE(27103, _("message from " SFN "/" SFN " with wrong uid: " uid_t_fmt " (expected " uid_t_fmt ")"))
 
 #define MSG_STARTUP_IN_CGROUP_S                 _MESSAGE(27104, _("running in cgroup " SFN))
+#define MSG_TLS_CERTIFICATE_RENEWED             _MESSAGE(27105, _("TLS server certificate was renewed"))
+#define MSG_TLS_CERT_RENEWAL_FAILED_S           _MESSAGE(27106, _("TLS server certificate renewal failed: " SFN2))
+#define MSG_TLS_CERT_LIFETIME_D                 _MESSAGE(27107, _("TLS certificate lifetime: %ds"))
 
 // clang-format on

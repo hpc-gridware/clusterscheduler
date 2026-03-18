@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -182,11 +182,11 @@
 #define MSG_SCHEDD_UNKNOWN_HOST_SS                          _MESSAGE(47218, _("queue " SFQ " is referencing unknown host " SFQ))
 #define MSG_SCHEDD_NOCOMPLEXATTRIBUTEFORTHRESHOLD_S         _MESSAGE(47219, _("error: no complex attribute for threshold " SFN))
 #define MSG_SCHEDD_DUETORR                                  _MESSAGE(47220, _(" due to a reservation"))
-#define MSG_SUBORDPOLICYCONFLICT_UUSS                       _MESSAGE(47227, _("Jobs " sge_u32 " & " sge_u32 " dispatched to master/subordinated queues " SFQ "/" SFQ ". Suspend on subordinate to occur in same scheduling interval. Policy conflict!"))
-#define MSG_JOBMATCHINGUNEXPECTEDRESULT                     _MESSAGE(47228, _("job matching returned an unexpected result!"))
-#define MSG_SCHEDD_UNABLE_TO_SETUP_FILTER                   _MESSAGE(47229, _("unable to setup filter objects correctly"))
-#define MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED _MESSAGE(47230, _("queues dropped because they are temporarily not available: "))
-#define MSG_SCHEDD_BINDINGREQNOTFULLFILLED                  _MESSAGE(47231, _("cannot fulfill binding request"))
+#define MSG_SUBORDPOLICYCONFLICT_UUSS                       _MESSAGE(47221, _("Jobs " sge_u32 " & " sge_u32 " dispatched to master/subordinated queues " SFQ "/" SFQ ". Suspend on subordinate to occur in same scheduling interval. Policy conflict!"))
+#define MSG_JOBMATCHINGUNEXPECTEDRESULT                     _MESSAGE(47222, _("job matching returned an unexpected result!"))
+#define MSG_SCHEDD_UNABLE_TO_SETUP_FILTER                   _MESSAGE(47223, _("unable to setup filter objects correctly"))
+#define MSG_SCHEDD_LOGLIST_QUEUESTEMPORARLYNOTAVAILABLEDROPPED _MESSAGE(47224, _("queues dropped because they are temporarily not available: "))
+#define MSG_SCHEDD_BINDINGREQNOTFULLFILLED                  _MESSAGE(47225, _("cannot fulfill binding request"))
 
 /* NOTE: Id's from 47231 to 47249 are used in msg_smon.h */
 

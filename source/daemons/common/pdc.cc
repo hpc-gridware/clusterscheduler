@@ -320,8 +320,6 @@ free_job(job_elem_t *job_elem)
 static int psRetrieveOSJobData() {
    DENTER(TOP_LAYER);
 
-   bool enable_mem_details = mconf_get_enable_mem_details();
-
    lnk_link_t *curr, *next;
    time_t time_stamp = get_gmt();
    static time_t next_time, pnext_time;
@@ -332,6 +330,7 @@ static int psRetrieveOSJobData() {
    next_time = time_stamp + ps_config.job_collection_interval;
 
 #if defined(LINUX) || defined(SOLARIS)
+   bool enable_mem_details = mconf_get_enable_mem_details();
    {
 
       /* There is no way to retrieve a pid list containing all processes 

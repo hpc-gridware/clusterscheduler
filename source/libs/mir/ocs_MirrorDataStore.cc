@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -424,7 +424,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
 
          // actions if events where processed
          if (did_handle_events) {
-            thread_output_profiling("thread profiling summary:\n", &next_prof_output);
+            thread_output_profiling("thread profiling summary:", &next_prof_output);
             sge_monitor_output(&monitor);
          }
       }

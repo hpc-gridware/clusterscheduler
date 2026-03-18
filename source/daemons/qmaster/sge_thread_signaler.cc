@@ -203,7 +203,7 @@ sge_signaler_main(void *arg) {
 
       sge_monitor_output(&monitor);
 
-      thread_output_profiling("signal thread profiling summary:\n", &next_prof_output);
+      thread_output_profiling("signal thread profiling summary:", &next_prof_output);
 
    }
 

@@ -13,6 +13,7 @@ the symbols/letter used in the table.
 | Raspbian Linux   | 11      | ARM64        |           x           |         x         |          x           |
 | Raspbian Linux   | 12      | ARM64        |           x           |         x         |          x           |
 | Ubuntu Linux     | 24.04   | ARM64        |           x           |         x         |          x           |
+| Ubuntu Linux     | 26.04   | ARM64        |           x           |         x         |          x           |
 |                  |         |              |                       |                   |                      |
 | Alma Linux       | 8       | ppc64le      |           a           |         x         |          x           |
 | Centos Linux     | 8       | ppc64le      |           a           |         x         |          x           |
@@ -26,6 +27,7 @@ the symbols/letter used in the table.
 |                  |         |              |                       |                   |                      |
 | Alma Linux       | 8       | x86-64       |           x           |         x         |          x           |
 | Alma Linux       | 9       | x86-64       |           x           |         x         |          x           |
+| Alma Linux       | 10      | x86-64       |           x           |         x         |          x           |
 | CentOS Linux     | 7       | x86-64       |           a           |         x         |          x           |
 | CentOS Linux     | 8       | x86-64       |           x           |         x         |          x           |
 | CentOS Linux     | 9       | x86-64       |           x           |         x         |          x           |
@@ -34,8 +36,10 @@ the symbols/letter used in the table.
 | Redhat Linux     | 7       | x86-64       |           a           |         x         |          x           |
 | Redhat Linux     | 8       | x86-64       |           x           |         x         |          x           |
 | Redhat Linux     | 9       | x86-64       |           x           |         x         |          x           |
+| Redhat Linux     | 10      | x86-64       |           x           |         x         |          x           |
 | Rocky Linux      | 8       | x86-64       |           x           |         x         |          x           |
 | Rocky Linux      | 9       | x86-64       |           x           |         x         |          x           |
+| Rocky Linux      | 10      | x86-64       |           x           |         x         |          x           |
 | SUSE Leap Linux  | 15      | x86-64       |           x           |         x         |          x           |
 | SUSE Tumbleweed  |         | x86-64       |           a           |         x         |          x           |
 | SUSE SLES        | 15      | x86-64       |           x           |         x         |          x           |
@@ -44,6 +48,7 @@ the symbols/letter used in the table.
 | Ubuntu Linux     | 22.04   | x86-64       |           x           |         x         |          x           |
 | Ubuntu Linux     | 24.04   | x86-64       |           x           |         x         |          x           |
 | Ubuntu Linux     | 25.04   | x86-64       |           x           |         x         |          x           |
+| Ubuntu Linux     | 26.04   | x86-64       |           x           |         x         |          x           |
 
 The following table shows unsupported OS versions where we do not provide packages by default anymore, but where
 we could provide support under certain conditions. Please contact our sales and support team for more information.

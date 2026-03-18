@@ -996,6 +996,7 @@ namespace ocs::uti {
       if (ok) {
          if (days_left < 0 || secs_left < 0) {
             // The certificate has already expired - re-create it.
+            DPRINTF("certificate_recreate_required: the certificate has already expired, re-creating it\n");
             ret = true;
          } else {
             int sec_total = days_left * 86400 + secs_left;
@@ -1005,6 +1006,7 @@ namespace ocs::uti {
             // Renew when only 25% of the lifetime is left.
             renewal_time = sge_get_gmt64() + sge_gmt32_to_gmt64(sec_total - certificate_lifetime / 4);
             if (renewal_time <= now) {
+               DPRINTF("certificate_recreate will be done - more than 75% of the certificate lifetime have expired\n");
                ret = true;
             }
          }
@@ -1042,6 +1044,7 @@ namespace ocs::uti {
     * - Switches to root for writing private keys (/var/lib/ocs)
     *
     * @param error_dstr Output parameter for error messages
+    * @param is_recreate Is this the re-create of an existing certificate?
     *
     * @return true if server context was successfully configured, false on error
     *
@@ -1049,7 +1052,7 @@ namespace ocs::uti {
     *       (SSL_CTX internally increments their reference counts).
     * @note For user processes (qrsh), certificates are not stored on disk.
     */
-   bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr) {
+   bool OpenSSL::OpenSSLContext::configure_server_context(dstring *error_dstr, bool is_recreate) {
       DENTER(TOP_LAYER);
 
       bool ret = true;
@@ -1074,7 +1077,8 @@ namespace ocs::uti {
       bool file_read_required = file_based;
 
       // If it is not file-based, we need to create the certificate in any case.
-      bool create_certificate_and_key = !file_based;
+      // Also when we shall explicitly re-create it.
+      bool create_certificate_and_key = !file_based || is_recreate;
 
       if (file_based) {
          // If the certificate or the key directory not yet exist, create them.
@@ -1419,7 +1423,7 @@ namespace ocs::uti {
 
          std::string cert_path{};
          std::string key_path{};
-         ret = create(true, cert_path, key_path, error_dstr);
+         ret = create(true, cert_path, key_path, error_dstr, false);
 
          DRETURN(ret);
       }
@@ -1433,6 +1437,7 @@ namespace ocs::uti {
        *
        * @param source Pointer to the existing OpenSSLContext to copy configuration from
        * @param error_dstr Output parameter for error messages
+       * @param is_recreate Is this the re-create of an existing certificate?
        *
        * @return Pointer to newly created OpenSSLContext, or nullptr on error
        *
@@ -1440,13 +1445,13 @@ namespace ocs::uti {
        * @note Caller is responsible for deleting the returned context.
        * @see create(bool, std::string&, std::string&, dstring*)
        */
-      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(const OpenSSLContext *source, dstring *error_dstr) {
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(const OpenSSLContext *source, dstring *error_dstr, bool is_recreate) {
          DENTER(TOP_LAYER);
          OpenSSLContext *ret{nullptr};
 
          std::string cert_path{source->cert_path};
          std::string key_path{source->key_path};
-         ret = create(source->is_server, cert_path, key_path, error_dstr);
+         ret = create(source->is_server, cert_path, key_path, error_dstr, is_recreate);
 
          DRETURN(ret);
       }
@@ -1472,13 +1477,14 @@ namespace ocs::uti {
        * @param cert_path Path to certificate file (may be empty for in-memory certs)
        * @param key_path Path to private key file (may be empty for in-memory keys)
        * @param error_dstr Output parameter for error messages
+       * @param is_recreate Is this the re-create of an existing certificate?
        *
        * @return Pointer to newly created and configured OpenSSLContext, or nullptr on error
        *
        * @note This is the most flexible create method - others delegate to this one.
        * @note Caller is responsible for deleting the returned context.
        */
-      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr) {
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr, bool is_recreate) {
       DENTER(TOP_LAYER);
       OpenSSLContext *ret{nullptr};
 
@@ -1511,7 +1517,7 @@ namespace ocs::uti {
       // configure the SSL context
       if (ok) {
          if (is_server) {
-            ok = ret->configure_server_context(error_dstr);
+            ok = ret->configure_server_context(error_dstr, is_recreate);
          } else {
             ok = ret->configure_client_context(error_dstr);
          }

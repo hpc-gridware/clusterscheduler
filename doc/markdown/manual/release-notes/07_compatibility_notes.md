@@ -26,6 +26,18 @@ compatibility considerations to be aware of:
   workloads run as expected.
 - **Support and Assistance**: For any challenges encountered during the transition, users are encouraged to reach out 
   to the support team for guidance and assistance.
+- **XML Output Changes**: The XML output format for binding information has been updated to reflect the new resource model. 
+  Scripts that parse XML output for binding details may need to be adjusted to accommodate these changes.
+
+## Resource Request Scope
+
+With the new resource request scope introduced in version 9.0.0 and further refined in 9.1.0, there are several 
+compatibility considerations to keep in mind:
+
+- **Output of Resource Requests**: The output format for resource requests has been updated to reflect the new scope. 
+  Scripts and tools that parse resource request outputs may need to be modified to accommodate the new format. Also the 
+  XML output format for resource request information has been updated to reflect the new resource model. 
+  Scripts that parse XML output for resource request details may need to be adjusted to accommodate these changes.
 
 [//]: # (Each file has to end with two empty lines)
 

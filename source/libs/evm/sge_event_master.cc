@@ -907,9 +907,9 @@ sge_remove_event_client(u_long32 event_client_id) {
 *******************************************************************************/
 u_long32
 sge_set_max_dynamic_event_clients(u_long32 new_value) {
-   u_long32 max = new_value;
-
    DENTER(TOP_LAYER);
+
+   u_long32 max = new_value;
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 

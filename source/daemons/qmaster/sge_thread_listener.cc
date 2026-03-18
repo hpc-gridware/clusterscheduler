@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -168,7 +168,7 @@ sge_listener_main(void *arg) {
 
          sge_qmaster_process_message(&monitor);
 
-         thread_output_profiling("listener thread profiling summary:\n", &next_prof_output);
+         thread_output_profiling("listener thread profiling summary:", &next_prof_output);
 
          sge_monitor_output(&monitor);
       }

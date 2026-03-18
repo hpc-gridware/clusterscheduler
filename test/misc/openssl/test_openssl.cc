@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     if (isServer) {
         printf("Using key:         %s\n", key_path.c_str());
     }
-    ocs::uti::OpenSSL::OpenSSLContext *openssl_context = ocs::uti::OpenSSL::OpenSSLContext::create(isServer, cert_path, key_path, &dstr_error);
+    ocs::uti::OpenSSL::OpenSSLContext *openssl_context = ocs::uti::OpenSSL::OpenSSLContext::create(isServer, cert_path, key_path, &dstr_error, false);
     if (openssl_context == nullptr) {
         fprintf(stderr, "initializing OpenSSL context failed: %s\n", sge_dstring_get_string(&dstr_error));
         exit(EXIT_FAILURE);
