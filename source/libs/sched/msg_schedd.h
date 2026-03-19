@@ -165,7 +165,7 @@
 #define MSG_SCHEDD_INFO_HNOTARRESERVED_SI             _MESSAGE(47152, _("cannot run on host " SFQ " because it was not reserved by advance reservation " sge_u32))
 #define MSG_SCHEDD_INFO_HNOTARRESERVED                _MESSAGE(47153, _("Jobs can not run because host was not reserved by advance reservation"))
 
-#define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS       _MESSAGE(47168, _("pe >" SFN "<: failed parsing allocation rule " SFQ))
+#define MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S        _MESSAGE(47168, _("failed parsing allocation rule " SFQ))
 #define MSG_PROJECT                                   _MESSAGE(47170, _("project"))
 
 #define MSG_SCHEDD_MON_NOPENDJOBSTOPERFORMSCHEDULINGON      _MESSAGE(47208, _("no pending jobs to perform scheduling on"))

@@ -58,7 +58,7 @@
  * the total number of slots. If the allocation rule is "$fill_up" or "$round_robin", it returns the corresponding
  * constant. If the allocation rule is invalid, it logs an error and returns 0.
  *
- * @param pep   The parallel environment element containing the allocation rule
+ * @param alloc_rule   The parallel environment element containing the allocation rule
  * @param slots The total number of slots to be allocated
  * @return The number of slots per host based on the allocation rule, or 0 if the allocation rule is invalid
  *    ALLOC_RULE_FILLUP (-1) if the allocation rule is "$fill_up"
@@ -68,28 +68,27 @@
  *    1 if the parallel environment is null (indicating a sequential job)
  */
 int
-pe_allocation_rule_slots(const lListElem *pep, int slots ) {
+pe_allocation_rule_slots(const char *alloc_rule, int slots) {
    DENTER(TOP_LAYER);
 
    // Sequential job
-   if (pep == nullptr) {
+   if (alloc_rule == nullptr) {
       DRETURN(1);
    }
 
    // Allocation rule is a number
-   const char *alloc_rule = lGetString(pep, PE_allocation_rule);
    if (isdigit((int)alloc_rule[0])) {
       const int alloc_rule_value = atoi(alloc_rule);
 
       // check if the allocation rule is valid
       if (alloc_rule_value == 0) {
-         ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
+         ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S, alloc_rule);
          DRETURN(0);
       }
    
       // check if the number of slots can be distributed using the given allocation rule
       if (slots % alloc_rule_value != 0) {
-         DPRINTF("pe >%s<: cant distribute %d slots using \"%s\" as alloc rule\n", lGetString(pep, PE_name), slots, alloc_rule);
+         DPRINTF("cant distribute %d slots using \"%s\" as alloc rule\n", slots, alloc_rule);
          DRETURN(0);
       }
 
@@ -108,7 +107,7 @@ pe_allocation_rule_slots(const lListElem *pep, int slots ) {
       DRETURN(ALLOC_RULE_ROUNDROBIN);
    }
 
-   ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
+   ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S, alloc_rule);
    DRETURN(0);
 }
 

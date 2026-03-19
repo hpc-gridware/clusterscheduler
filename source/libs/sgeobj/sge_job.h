@@ -431,10 +431,10 @@ adjust_slave_task_debit_slots(const lListElem *pe, int &slave_debit_slots);
 
 /* unparse functions */
 bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem,
-                               int nm, const char *option);
+                               int pos, const char *option);
 
 bool sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem,
-                               int nm, const char *option);
+                               int pos, const char *option);
 
 bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, int pos);
 

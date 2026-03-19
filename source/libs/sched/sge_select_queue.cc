@@ -130,8 +130,8 @@ static void
 fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name);
 
 static bool
-add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lListElem *pe,
-                         int min_slots, int max_slots, lList *pe_range);
+add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category,
+                         u_long32 *max_slotsp, int min_slots, int max_slots, lList *pe_range);
 /* -- these implement parallel assignment ------------------------- */
 
 static dispatch_t
@@ -323,6 +323,20 @@ void assignment_init_ar(sge_assignment_t *a, lList *ar_list) {
             ocs::TerminationManager::trigger_abort();
 #endif
          }
+      }
+   }
+}
+
+void assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
+   a->pe = pe;
+   a->pe_name = lGetString(pe, PE_name);
+   a->allocation_rule = lGetString(pe, PE_allocation_rule);
+
+   // Overwrite allocation_rule with global -par request.
+   if (a->job != nullptr) {
+      const char *jrs_allocation_rule = job_get_allocation_rule(a->job, JRS_SCOPE_GLOBAL);
+      if (jrs_allocation_rule != nullptr) {
+         a->allocation_rule = jrs_allocation_rule;
       }
    }
 }
@@ -539,8 +553,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 
          pe_name = lGetString(pe, PE_name);
          if (best->gdil == nullptr) { /* first pe run */
-            best->pe = pe;
-            best->pe_name = pe_name;
+            assignment_init_pe(best, pe);
 
             /* determine the earliest start time with that PE */
             result = parallel_reservation_max_time_slots(best, &available_slots);
@@ -558,8 +571,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
             assignment_copy(&tmp, best, false);
-            tmp.pe = pe;
-            tmp.pe_name = pe_name;
+            assignment_init_pe(&tmp, pe);
 
             /* try to find earlier assignment again with minimum slot amount */
             tmp.slots = 0;
@@ -605,8 +617,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
          if (best->gdil == nullptr) {
             // first PE matching the requested name
             int available_slots = 0;
-            best->pe = pe;
-            best->pe_name = pe_name;
+            assignment_init_pe(best, pe);
             result = parallel_maximize_slots_pe(best, &available_slots);
 
             if (result != DISPATCH_OK) {
@@ -628,8 +639,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             int available_slots = 0;
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
             assignment_copy(&tmp, best, false);
-            tmp.pe = pe;
-            tmp.pe_name = pe_name;
+            assignment_init_pe(&tmp, pe);
 
             result = parallel_maximize_slots_pe(&tmp, &available_slots);
 
@@ -983,7 +993,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 
    /* --- prepare the possible slots for the binary search */
    max_slotsp = (max_slots - min_slots+1);
-   if (!add_pe_slots_to_category(&use_category, &max_slotsp, pe, min_slots, max_slots, pe_range)) {
+   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range)) {
       ERROR(SFNMAX, MSG_SGETEXT_NOMEM);
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -3665,8 +3675,8 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 *
 *******************************************************************************/
 static bool
-add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lListElem *pe,
-                         int min_slots, int max_slots, lList *pe_range)
+add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category,
+                         u_long32 *max_slotsp, int min_slots, int max_slots, lList *pe_range)
 {
    if (use_category->cache != nullptr) {
       use_category->possible_pe_slots = (u_long32 *)lGetRef(use_category->cache, CCT_pe_job_slots);
@@ -3678,8 +3688,8 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
 
       *max_slotsp = 0;
       for (slots = min_slots; slots <= max_slots; slots++) {
-         // sort out slot numbers that would conflict with allocation rule
-         if (pe_allocation_rule_slots(pe, slots) == 0) {
+         // sort out slot numbers that would conflict with the allocation rule
+         if (pe_allocation_rule_slots(a->allocation_rule, slots) == 0) {
             continue;
          }
 
@@ -3879,6 +3889,8 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
 static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
+   DENTER(TOP_LAYER);
+
    lListElem *job = a->job;
    const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
    get_hard_queue_lists(job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
@@ -3891,8 +3903,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    lListElem *hep;
    dispatch_t best_result = DISPATCH_NEVER_CAT;
    int gslots = a->slots;
-
-   DENTER(TOP_LAYER);
 
    clean_up_parallel_job(a);
 
@@ -4026,7 +4036,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
        * - when deciding to put slave tasks on the host, check the slave allocation rule
        * - have a boolean, that they differ? No, just compare.
        */
-      int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
+      int allocation_rule = pe_allocation_rule_slots(a->allocation_rule, a->slots);
       int minslots = ALLOC_RULE_IS_BALANCED(allocation_rule)?allocation_rule:1;
 
       dstring rule_name = DSTRING_INIT;
@@ -4119,6 +4129,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 
                      if (!have_master_host && !got_master_queue) {
                         if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
+                           // this queue instance is not suited as a master queue
                            /*
                               care for slave tasks assignments of -masterq jobs
                               we need at least one slot on the masterq, thus we reduce by one slot
@@ -4135,17 +4146,20 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                               slots--;
                            }
                         } else {
-                           // this qinstance is suited as master queue
+                           // This qinstance is suited as a master queue.
                            if (have_master_and_slave_queue_request) {
-                              /* if the masterq request is not contained in the hard queue request
-                               * we need to allocate only one slot for the master task
-                               */
+                              // We have both master and slave queue requests.
+                              // The requests might be overlapping, then we can have both master and slave tasks
+                              // in this queue instance.
+                              // Or they might be disjoint; this is the case if this qinstance is not suited as a slave
+                              // queue. Only allocate a single slot for the master task.
 #if 1
                               if (qref_list_cq_rejected(slave_hard_queue_list,
                                   lGetString(qep, QU_qname), eh_name, a->hgrp_list)) {
                                  slots = MIN(slots, 1);
                               }
 #else
+                              // This code would be faster, but slave queue (un)tagging is not yet fully implemented (?)
                               if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
                                  slots = MIN(slots, 1);
                               }
@@ -4540,7 +4554,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    dispatch_t result = DISPATCH_OK;
    const void *queue_iterator = nullptr;
 
-   int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
+   int allocation_rule = pe_allocation_rule_slots(a->allocation_rule, a->slots);
 
    if (ALLOC_RULE_IS_BALANCED(allocation_rule)) {
       min_host_slots = max_host_slots = allocation_rule;

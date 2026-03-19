@@ -242,7 +242,7 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
    }
 
    // the available maximum will now be reduced to the max number as specified by the allocation rule
-   if (const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
+   if (const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->allocation_rule, a->slots);
       max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
       DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slotat a time\n");
       DRETURN(1);

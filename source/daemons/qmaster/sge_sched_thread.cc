@@ -87,7 +87,6 @@ scheduler_control_t Scheduler_Control = {
         PTHREAD_MUTEX_INITIALIZER,
         PTHREAD_COND_INITIALIZER,
         false, false, nullptr,
-        true,  /* rebuild_categories */
         false /* new_global_config */
 };
 

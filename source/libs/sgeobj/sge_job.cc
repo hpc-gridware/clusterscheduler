@@ -3038,9 +3038,9 @@ bool sge_unparse_pe_dstring(dstring *category_str, const lListElem *job_elem, in
 *  SEE ALSO
 *     sge_job/sge_unparse_ulong_option_dstring()
 *******************************************************************************/
-bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, int nm, const char *option) {
+bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *job_elem, int pos, const char *option) {
    DENTER(TOP_LAYER);
-   if (const char *string = lGetPosString(job_elem, nm); string != nullptr) {
+   if (const char *string = lGetPosString(job_elem, pos); string != nullptr) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
       sge_dstring_append(category_str, string);
@@ -3079,10 +3079,10 @@ bool sge_unparse_string_option_dstring(dstring *category_str, const lListElem *j
 *     sge_job/sge_unparse_string_option_dstring()
 *******************************************************************************/
 bool
-sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, int nm, const char *option) {
+sge_unparse_ulong_option_dstring(dstring *category_str, const lListElem *job_elem, int pos, const char *option) {
    DENTER(TOP_LAYER);
    
-   if (const u_long32 ul = lGetPosUlong(job_elem, nm); ul != 0) {
+   if (const u_long32 ul = lGetPosUlong(job_elem, pos); ul != 0) {
       sge_dstring_append(category_str, option);
       sge_dstring_append_char(category_str, ' ');
       sge_dstring_sprintf_append(category_str, sge_u32, ul);

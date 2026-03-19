@@ -596,7 +596,6 @@ typedef struct {
    bool            exit;       /* true -> exit event delivery                       */
    bool            triggered;  /* new events addded, a scheduling run is triggered  */
    lList           *new_events; /* the storage for new events                       */
-   bool            rebuild_categories;
    bool            new_global_conf;
 } ec_control_t;
 
@@ -834,7 +833,6 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    sge_evc->event_control.exit = false;
    sge_evc->event_control.triggered = false;
    sge_evc->event_control.new_events = nullptr;
-   sge_evc->event_control.rebuild_categories = true;
    sge_evc->event_control.new_global_conf = false;
 
    const char *name;

@@ -110,59 +110,62 @@ typedef struct {
 #define SCHED_PROF_INC(pi, attrib) if (pi != nullptr) pi->attrib++
 
 typedef struct {
-   /* ------ this section determines the assignment ------------------------------- */
-   u_long32    job_id;            /* job id (convenience reasons)                   */
-   u_long32    ja_task_id;        /* job array task id (convenience reasons)        */
-   u_long32    ar_id;             /* ar id if the job requested to run in an AR, else 0 */
-   lListElem  *job;               /* the job (JB_Type)                              */
-   lListElem  *ja_task;           /* the task (JAT_Type) (if nullptr only reschedule   */
-                                  /* unknown verification is missing)               */
-   lListElem *ar;                 /* the advance reservation if requested (AR_Type) */
-   const char* user;              /* username (JB_owner)                           */
-   const char* group;             /* group name (JB_group)                          */
-   const lList *grp_list;         /* supplementary grp list (JB_grp_list)           */
-   const char* project;           /* project name (JB_project)                      */
-   const lListElem *ckpt;         /* the checkpoint interface (CK_Type)             */
-   lListElem *gep;                /* the global host (EH_Type)                      */
-   u_long64 duration;             /* jobs time of the assignment                    */
-   lList *load_adjustments;       /* job load adjustments (CE_Type)                 */
-   lList *host_list;              /* the hosts (EH_Type)                            */
-   lList *queue_list;             /* the queues (QU_Type)                           */
-   const lList *centry_list;      /* the complex entries (CE_Type)                  */
-   const lList *acl_list;         /* the user sets (US_Type)                        */
-   const lList *hgrp_list;        /* the host group list (HGRP_Type)                */
-   lList      *rqs_list;          /* the resource quota set list (RQS_Type)         */
-   lList      *ar_list;           /* the advance reservation list (AR_Type)         */
-   bool       is_reservation;     /* true, if a reservation for this job should be done */
-   bool       is_advance_reservation; /* true for advance reservation scheduling    */
-   bool       is_job_verify;      /* true, if job verification (-w ev) (in qmaster) */
-   bool       is_schedule_based;  /* true, if resource reservation is enabled       */
-   bool       is_soft;            /* true, if job has soft requests                 */
-   u_long64   now;                /* now time for immediate jobs                    */
+   // -------------------- this section determines the assignment --------------------
+   u_long32    job_id;            // job id (convenience reasons)
+   u_long32    ja_task_id;        // job array task id (convenience reasons)
+   u_long32    ar_id;             // ar id if the job requested to run in an AR, else 0
+   lListElem  *job;               // the job (JB_Type)
+   lListElem  *ja_task;           // the task (JAT_Type) (if nullptr only reschedule
+                                  // unknown verification is missing)
+   lListElem *ar;                 // the advance reservation if requested (AR_Type)
+   const char* user;              // username (JB_owner)
+   const char* group;             // group name (JB_group)
+   const lList *grp_list;         // supplementary grp list (JB_grp_list)
+   const char* project;           // project name (JB_project)
+   const lListElem *ckpt;         // the checkpoint interface (CK_Type)
+   lListElem *gep;                // the global host (EH_Type)
+   u_long64 duration;             // jobs time of the assignment
+   lList *load_adjustments;       // job load adjustments (CE_Type)
+   lList *host_list;              // the hosts (EH_Type)
+   lList *queue_list;             // the queues (QU_Type)
+   const lList *centry_list;      // the complex entries (CE_Type)
+   const lList *acl_list;         // the user sets (US_Type)
+   const lList *hgrp_list;        // the host group list (HGRP_Type)
+   lList      *rqs_list;          // the resource quota set list (RQS_Type)
+   lList      *ar_list;           // the advance reservation list (AR_Type)
+   bool       is_reservation;     // true, if a reservation for this job should be done
+   bool       is_advance_reservation; // true for advance reservation scheduling
+   bool       is_job_verify;      // true, if job verification (-w ev) (in qmaster)
+   bool       is_schedule_based;  // true, if resource reservation is enabled
+   bool       is_soft;            // true, if job has soft requests
+   u_long64   now;                // now time for immediate jobs
    bool is_binding_enabled;       //< cached value of the corresponding configuration parameter
    bool do_binding_on_any_host;   //< cached value of the corresponding configuration parameter
-   /* ------ this section is for caching of intermediate results ------------------ */
-   lList      *limit_list;        /* the resource quota limit list (RQL_Type)       */
-   lList      *skip_cqueue_list;  /* cluster queues that need not be checked anymore (CTI_Type) */
-   lList      *skip_host_list;    /* hosts that need not be checked anymore (CTI_Type) */
-   /* ------ this section is the resulting assignment ----------------------------- */
-   lListElem  *pe;                /* the parallel environment (PE_Type)             */
-   const char* pe_name;           /* name of the PE                                 */
-   lList      *gdil;              /* the resources (JG_Type)                        */
-   int        slots;              /* total number of slots we do matching against   */
-   u_long64   start;              /* jobs start time                                */
-   int        soft_violations;    /* number of soft request violations              */
-   lList      **monitor_alpp;     /* place scheduler diagnosis here if non-nullptr  */
-   bool       monitor_next_run;   /* controls qconf -tsm scheduler diagnosis        */
-   lList      *binding_to_use;    /* Core/thread binding information                */
-   bool       filter_first_core;  /* globals binding filter: true if first core of first socket should not be used */
-   /* ------ scheduler profiling index as picky pack data ------------------------- */
+   // -------------------- this section is for caching of intermediate results --------------------
+   lList      *limit_list;        // the resource quota limit list (RQL_Type)
+   lList      *skip_cqueue_list;  // cluster queues that need not be checked anymore (CTI_Type)
+   lList      *skip_host_list;    // hosts that need not be checked anymore (CTI_Type)
+   // -------------------- this section is the resulting assignment --------------------
+   lListElem  *pe;                // the parallel environment (PE_Type)
+   const char* pe_name;           // name of the PE
+   const char *allocation_rule;   // the allocation rule of the PE or overwritten globally
+   lList      *gdil;              // the resources (JG_Type)
+   int        slots;              // total number of slots we do matching against
+   u_long64   start;              // jobs start time
+   int        soft_violations;    // number of soft request violations
+   lList      **monitor_alpp;     // place scheduler diagnosis here if non-nullptr
+   bool       monitor_next_run;   // controls qconf -tsm scheduler diagnosis
+   lList      *binding_to_use;    // Core/thread binding information
+   bool       filter_first_core;  // globals binding filter: true if first core of first socket should not be used
+   // -------------------- scheduler profiling index as picky pack data -------------------------
    sched_prof_t *pi;
 } sge_assignment_t;
 
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
-   false, false, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, false, nullptr}
+   false, false, \
+   nullptr, nullptr, nullptr, \
+   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, false, nullptr}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);

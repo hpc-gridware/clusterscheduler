@@ -42,6 +42,6 @@ enum {
 
 #define ALLOC_RULE_IS_BALANCED(x) (x>0)
 
-int pe_allocation_rule_slots(const lListElem *pep, int slots);
+int pe_allocation_rule_slots(const char *alloc_rule, int slots);
 
 dispatch_t pe_match_static(const sge_assignment_t *a);
