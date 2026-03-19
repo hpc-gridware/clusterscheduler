@@ -719,7 +719,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
             dstring binding_param = DSTRING_INIT;
 
             std::string binding_str;
-            ocs::BindingIo::binding_print_to_string(binding_elem, binding_str);
+            BindingIo::binding_print_to_string(binding_elem, binding_str);
             sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
 
             view.report_binding_started(os);

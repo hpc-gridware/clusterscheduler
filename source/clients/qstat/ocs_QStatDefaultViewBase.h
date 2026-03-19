@@ -31,8 +31,10 @@ namespace ocs {
       enum job_additional_info_t {
          JOB_ADDITIONAL_INFO_ERROR = 0,
          CHECKPOINT_ENV  = 1,
-         MASTER_QUEUE    = 2,
-         FULL_JOB_NAME   = 3
+         MASTER_QUEUE = 2,
+         FULL_JOB_NAME = 3,
+         REQUESTED_PE = 4,
+         GRANTED_PE = 5
       };
 
       struct queue_summary_t {

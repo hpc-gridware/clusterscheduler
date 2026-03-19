@@ -105,7 +105,7 @@ void ocs::QStatDefaultViewXML::report_finished(std::ostream &os) {
    job_list_elem = nullptr;
 
    lListElem *xml_elem = xml_getHead("job_info", XML_out, nullptr);
-   lWriteElemXMLTo(xml_elem, stdout, -1);
+   lWriteElemXMLTo(xml_elem, os, -1);
    lFreeElem(&xml_elem);
 
    DRETURN_VOID;

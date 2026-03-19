@@ -39,6 +39,10 @@ namespace ocs {
       int  predecessor_count = 0;
       int  ad_predecessor_requested_count = 0;
       int  ad_predecessor_count = 0;
+
+      void show_header_with_title(std::ostream &os, QStatParameter &parameter, const char *title);
+      void show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value);
+      void show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard);
    public:
       QStatDefaultViewPlain() = default;
       ~QStatDefaultViewPlain() override = default;
