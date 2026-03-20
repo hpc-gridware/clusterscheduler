@@ -326,7 +326,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
             int fields[] = {QR_name, 0};
             uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str());
          }
 
          if (const lList *lp = lGetList(jrs, JRS_soft_queue_list)) {
@@ -341,7 +341,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
             int fields[] = {QR_name, 0};
             uni_print_list(ss_list, lp, fields, delis, FLG_NO_DELIS_STRINGS);
 
-            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str()) << "\n";
+            os << std::format("{:<{}} {}", str_attrib, left_width, ss_list.str());
          }
       }
    }
@@ -360,16 +360,16 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          int fields[] = {MR_user, MR_host, 0};
          delis[0] = "@";
          uni_print_list(ss_list, mail_list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "mail_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} ", "mail_list:", left_width) << ss_list.str();
       }
    }
 
    if (lGetPosViaElem(job, JB_notify, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "notify:", left_width, lGetBool(job, JB_notify) ? "TRUE" : "FALSE") << "\n";
+      os << std::format("{:<{}} ", "notify:", left_width) << (lGetBool(job, JB_notify) ? "TRUE" : "FALSE") << "\n";
    }
 
    if (lGetPosViaElem(job, JB_job_name, SGE_NO_ABORT) >= 0) {
-      os << std::format("{:<{}} {}", "job_name:", left_width, lGetString(job, JB_job_name) ? lGetString(job, JB_job_name) : "") << "\n";
+      os << std::format("{:<{}} ", "job_name:", left_width) << (lGetString(job, JB_job_name) ? lGetString(job, JB_job_name) : "") << "\n";
    }
 
    if (lGetPosViaElem(job, JB_stdout_path_list, SGE_NO_ABORT) >= 0) {
@@ -379,7 +379,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          delis[0] = ":";
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "stdout_path_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "stdout_path_list:", left_width, ss_list.str());
       }
    }
 
@@ -391,7 +391,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
 
-         os << std::format("{:<{}} {}", "stdin_path_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "stdin_path_list:", left_width, ss_list.str());
       }
 
    if (lGetPosViaElem(job, JB_priority, SGE_NO_ABORT) >= 0) {
@@ -414,7 +414,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          delis[0] = ":";
          int fields[] = {PN_host, PN_path, 0};
          uni_print_list(ss_list, list, fields, delis, FLG_NO_DELIS_STRINGS);
-         os << std::format("{:<{}} {}", "shell_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "shell_list:", left_width, ss_list.str());
       }
    }
 
@@ -430,7 +430,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          var_list_split_prefix_vars(&list, &do_not_print, VAR_PREFIX);
 
          if (lGetNumberOfElem(list) == 0) {
-            os << std::format("{:<{}} {}", "", left_width, "NONE") << "\n";
+            os << std::format("{:<{}} {}", "env_list:", left_width, "NONE") << "\n";
          } else {
             std::ostringstream ss_list;
             delis[0] = "=";
@@ -448,7 +448,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          delis[0] = "";
          int fields[] = {ST_name, 0};
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "job_args:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "job_args:", left_width, ss_list.str());
       }
    }
 
@@ -458,7 +458,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          int fields[] = {ST_name, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "qs_args:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "qs_args:", left_width, ss_list.str());
       }
    }
 
@@ -468,7 +468,7 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
          uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "job_identifier_list:", left_width, ss_list.str()) << "\n";
+         os << std::format("{:<{}} {}", "job_identifier_list:", left_width, ss_list.str());
       }
    }
 

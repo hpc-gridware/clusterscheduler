@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@
 add_executable(
       qrstat
         ocs_qrstat.cc
-        ocs_qrstat_filter.cc
-        ocs_qrstat_report_handler.cc
-        ocs_qrstat_report_handler_stdout.cc
-        ocs_qrstat_report_handler_xml.cc
+        ocs_QRStatParameter.cc
+        ocs_QRStatModel.cc
+        ocs_QRStatViewBase.cc
+        ocs_QRStatViewPlain.cc
+        ocs_QRStatViewXML.cc
+        ocs_QRStatController.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc

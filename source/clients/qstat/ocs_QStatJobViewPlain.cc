@@ -107,11 +107,9 @@ ocs::QStatJobViewPlain::report_reasons(std::ostream &os, QStatParameter &paramet
    int ids_per_line = 0;
    int first_run = 1;
    int first_row = 1;
-   lListElem *sme;
    const lListElem *jid_ulng = nullptr;
 
-
-   sme = lFirstRW(model.ilp);
+   lListElem *sme = lFirstRW(model.ilp);
    if (sme) {
       /* print global schduling info */
       first_run = 1;

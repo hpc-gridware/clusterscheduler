@@ -249,7 +249,8 @@ ocs::TerminationManager::install_signal_handler() {
       SIGBUS,     // Bus error
 
       // SIGTRAP, Trap should not trigger a dump of the stacktrace
-      // explicitly no SIGINT and SIGTERM here because they are not synchronous and will be handled by the signal thread
+      // explicitly no SIGINT and SIGTERM here because they are not synchronous
+      // and will be handled by the signal thread in qmaster
    };
 
    // Install signal handler for each signal

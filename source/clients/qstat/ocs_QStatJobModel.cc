@@ -134,7 +134,7 @@ bool ocs::QStatJobModel::prepare_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // report an error if response does not contain all information
-   if (lGetNumberOfElem(jlp) == 0) {
+   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.jid_list_) != 0) {
 
       // remove all pattern
       bool removed_pattern = false;
