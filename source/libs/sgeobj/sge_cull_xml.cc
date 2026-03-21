@@ -49,16 +49,17 @@
 #include "cull/cull_lerrnoP.h"
 #include "cull/cull_list.h"
 
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_EscapedString.h"
 #include "sgeobj/sge_cull_xml.h"
 
-static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os, int ignore_cull_name);
+static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os);
 
-static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os, int ignore_cull_name);
+static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os);
 
 static bool lAttributesToString_(const lList *attr_list, dstring *attr);
 
-static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os, int ignore_cull_name);
+static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os);
 
 static lListElem *append_Attr_S(lList *attributeList, const char *name, const char *value);
 
@@ -156,7 +157,7 @@ void xml_addAttribute(lListElem *xml_elem, const char *name, const char *value){
 *    MT-NOTE: is thread save, works only on the objects which are passed in 
 *
 *******************************************************************************/
-static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os, int ignore_cull_name)
+static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
 {
    const lListElem *ep;
    char indent[128];
@@ -196,11 +197,11 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os,
          if (lGetString(elem, XMLA_Value) != nullptr){
             os << indent << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
             os << lGetString(elem, XMLA_Value);
-            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os, ignore_cull_name);
+            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
             os << "</" << lGetString(elem, XMLA_Name) << ">\n";
          } else {
             os << indent << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os, ignore_cull_name);
+            lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
             os << indent << "</" << lGetString(elem, XMLA_Name) << ">\n";
          }
       }
@@ -210,7 +211,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os,
             listName = "element";
          }
          os << indent << "<" << listName << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-         lWriteElemXML_(ep, nesting_level + 1, os, ignore_cull_name);
+         lWriteElemXML_(ep, nesting_level + 1, os);
          os << indent << "</" << listName << ">\n";
       }
    }
@@ -236,20 +237,20 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os,
 *  NOTE:
 *    MT-NOTE: is thread save, works only on the objects which are passed in 
 ******************************************************************************/
-void lWriteElemXMLTo(const lListElem *ep, std::ostream &os, int ignore_cull_name) {
+void lWriteElemXMLTo(const lListElem *ep, std::ostream &os) {
    DENTER(CULL_LAYER);
-   lWriteElemXML_(ep, 0, os, ignore_cull_name);
+   lWriteElemXML_(ep, 0, os);
    DRETURN_VOID;
 }
-void lWriteElemXMLTo(const lListElem *ep, FILE *fp, int ignore_cull_name) {
+void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
    DENTER(CULL_LAYER);
    std::ostringstream os;
-   lWriteElemXML_(ep, 0, os, ignore_cull_name);
+   lWriteElemXML_(ep, 0, os);
    fprintf(fp, "%s", os.str().c_str());
    DRETURN_VOID;
 }
 
-static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os, int ignore_cull_name) {
+static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os) {
    int i;
    char space[128];
    lList *tlp;
@@ -275,7 +276,7 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    space[i] = '\0';
 
    if (lGetPosViaElem(ep, XMLH_Version, SGE_NO_ABORT) != -1) {   
-      lWriteXMLHead_(ep, nesting_level, os, ignore_cull_name);
+      lWriteXMLHead_(ep, nesting_level, os);
    } else if (lGetPosViaElem(ep, XMLE_Attribute, SGE_NO_ABORT) !=-1 ) {
       if (lGetBool(ep, XMLE_Print)) {
          dstring attr = DSTRING_INIT;
@@ -284,126 +285,124 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
 
          os << space << "<" << lGetString(elem, XMLA_Name) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
          os << lGetString(elem, XMLA_Value);
-         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os, ignore_cull_name);
+         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level + 1, os);
          os << "</" << lGetString(elem, XMLA_Name) << ">\n";
 
          sge_dstring_free(&attr);
       } else{
-         lWriteElemXML_(lGetObject(ep, XMLE_Element), nesting_level, os, ignore_cull_name);
-         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level, os, ignore_cull_name);
+         lWriteElemXML_(lGetObject(ep, XMLE_Element), nesting_level, os);
+         lWriteListXML_(lGetList(ep, XMLE_List), nesting_level, os);
       }
    } else {  
       for (i = 0; mt_get_type(ep->descr[i].mt) != lEndT; i++) {
-         if (ep->descr[i].nm != ignore_cull_name || ignore_cull_name == -1) { 
-            /* ignore empty lists */
-            switch (mt_get_type(ep->descr[i].mt)) {
-            case lListT :
-               tlp = lGetPosList(ep, i);
-               if (lGetNumberOfElem(tlp) == 0)
-                  continue;
-               break;   
-            case lStringT:
-               if (lGetPosString(ep, i) == nullptr)
-                  continue;
-               break;
-            case lRefT:
-               /* connot print a ref */
+         /* ignore empty lists */
+         switch (mt_get_type(ep->descr[i].mt)) {
+         case lListT :
+            tlp = lGetPosList(ep, i);
+            if (lGetNumberOfElem(tlp) == 0)
                continue;
-            }   
-            
-            attr_name = lNm2Str(ep->descr[i].nm);
-            os << space << "<" << attr_name << ">";
-            switch (mt_get_type(ep->descr[i].mt)) {
-            case lIntT:
-               os << lGetPosInt(ep, i);
-               break;
-            case lUlongT:
-               os << lGetPosUlong(ep, i);
-               break;
-            case lUlong64T:
-            {
-               u_long64 value = lGetPosUlong64(ep, i);
-
-               // hack: assume it is a timestamp when the attribute name contains "time"
-               if (strstr(attr_name, "time") != nullptr) {
-                  static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
-                  if (compat) {
-                     os << (value / 1000000);
-                  } else {
-                     if (value == 0) {
-                        os << "0";
-                     } else {
-                        DSTRING_STATIC(dstr, 128);
-                        os << sge_ctime64_xml(value, &dstr);
-                     }
-                  }
-               } else {
-                  os << value;
-               }
-            }
-               break;
-            case lStringT:
-               {
-                  dstring string = DSTRING_INIT;
-                  str = lGetPosString(ep, i);
-                  if (escape_string(str, &string)) {
-                     os << sge_dstring_get_string(&string);
-                     sge_dstring_free(&string);
-                  }
-               }
-               break;
-
-            case lHostT:
-               {
-                  dstring string = DSTRING_INIT;
-                  str = lGetPosHost(ep, i);
-                  if (escape_string(str, &string)) {
-                     os << sge_dstring_get_string(&string);
-                     sge_dstring_free(&string);
-                  }
-               }
-               break;
-
-            case lListT:
-               tlp = lGetPosList(ep, i);
-               if (tlp) {
-                  os << "\n";
-                  lWriteListXML_(tlp, nesting_level + 1, os, ignore_cull_name);
-                  os << space;
-               }
-               break;
-
-            case lObjectT:
-               tep = lGetPosObject(ep, i);
-               if (tep) {
-                  os << "\n";
-                  lWriteElemXML_(tep, nesting_level, os, ignore_cull_name);
-                  os << space;
-               }
-               break;
-            case lFloatT:
-               os << lGetPosFloat(ep,  i);
-               break;
-            case lDoubleT:
-               os << lGetPosDouble(ep, i);
-               break;
-            case lLongT:
-               os << lGetPosLong(ep,  i);
-               break;
-            case lBoolT:
-               os << (lGetPosBool(ep, i) ? "true": "false");
-               break;
-            case lCharT:
-               os << lGetPosChar(ep,  i);
-               break;
-            case lRefT:
-               /* cannot be printed */
-               break;
-            default:
-               unknownType("lWriteElem");
-            }
-            os << "</" << attr_name << ">\n";
+            break;
+         case lStringT:
+            if (lGetPosString(ep, i) == nullptr)
+               continue;
+            break;
+         case lRefT:
+            /* connot print a ref */
+            continue;
          }
+
+         attr_name = lNm2Str(ep->descr[i].nm);
+         os << space << "<" << attr_name << ">";
+         switch (mt_get_type(ep->descr[i].mt)) {
+         case lIntT:
+            os << lGetPosInt(ep, i);
+            break;
+         case lUlongT:
+            os << lGetPosUlong(ep, i);
+            break;
+         case lUlong64T:
+         {
+            u_long64 value = lGetPosUlong64(ep, i);
+
+            // hack: assume it is a timestamp when the attribute name contains "time"
+            if (strstr(attr_name, "time") != nullptr) {
+               static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
+               if (compat) {
+                  os << (value / 1000000);
+               } else {
+                  if (value == 0) {
+                     os << "0";
+                  } else {
+                     DSTRING_STATIC(dstr, 128);
+                     os << sge_ctime64_xml(value, &dstr);
+                  }
+               }
+            } else {
+               os << value;
+            }
+         }
+            break;
+         case lStringT:
+            {
+               dstring string = DSTRING_INIT;
+               str = lGetPosString(ep, i);
+               if (escape_string(str, &string)) {
+                  os << sge_dstring_get_string(&string);
+                  sge_dstring_free(&string);
+               }
+            }
+            break;
+
+         case lHostT:
+            {
+               dstring string = DSTRING_INIT;
+               str = lGetPosHost(ep, i);
+               if (escape_string(str, &string)) {
+                  os << sge_dstring_get_string(&string);
+                  sge_dstring_free(&string);
+               }
+            }
+            break;
+
+         case lListT:
+            tlp = lGetPosList(ep, i);
+            if (tlp) {
+               os << "\n";
+               lWriteListXML_(tlp, nesting_level + 1, os);
+               os << space;
+            }
+            break;
+
+         case lObjectT:
+            tep = lGetPosObject(ep, i);
+            if (tep) {
+               os << "\n";
+               lWriteElemXML_(tep, nesting_level, os);
+               os << space;
+            }
+            break;
+         case lFloatT:
+            os << lGetPosFloat(ep,  i);
+            break;
+         case lDoubleT:
+            os << lGetPosDouble(ep, i);
+            break;
+         case lLongT:
+            os << lGetPosLong(ep,  i);
+            break;
+         case lBoolT:
+            os << (lGetPosBool(ep, i) ? "true": "false");
+            break;
+         case lCharT:
+            os << lGetPosChar(ep,  i);
+            break;
+         case lRefT:
+            /* cannot be printed */
+            break;
+         default:
+            unknownType("lWriteElem");
+         }
+         os << "</" << attr_name << ">\n";
       }
    }
    DRETURN_VOID;
@@ -470,7 +469,7 @@ static bool lAttributesToString_(const lList *attr_list, dstring *attr){
    return true;
 }
 
-static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os, int ignore_cull_name) {
+static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
 
    if (!ep){
@@ -489,7 +488,7 @@ static void lWriteXMLHead_(const lListElem *ep, int nesting_level, std::ostream 
 
    const char *name = lGetString(ep, XMLH_Name);
    os << "<" << name << " " << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-   lWriteListXML_(lGetList(ep, XMLH_Element), nesting_level +1, os, ignore_cull_name);
+   lWriteListXML_(lGetList(ep, XMLH_Element), nesting_level +1, os);
    os << "</" << name << ">\n";
 
    sge_dstring_free(&attr);

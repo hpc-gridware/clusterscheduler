@@ -98,9 +98,6 @@ ocs::QStatParameter::qstat_usage(FILE *fp, char *what)
       fprintf(fp, "        [-l resource_list]                %s\n",MSG_QSTAT_USAGE_REQUESTTHEGIVENRESOURCES);
       if (!qselect_mode)
          fprintf(fp, "        [-ne]                             %s\n",MSG_QSTAT_USAGE_HIDEEMPTYQUEUES);
-      if (!qselect_mode) {
-         fprintf(fp, "        [-ncb]                            %s\n",MSG_QSTAT_USAGE_VIEWALSOBINDINGATTRIBUTES);
-      }
       fprintf(fp, "        [-pe pe_list]                     %s\n",MSG_QSTAT_USAGE_SELECTONLYQUEESWITHONOFTHESEPE);
       fprintf(fp, "        [-q wc_queue_list]                %s\n",MSG_QSTAT_USAGE_PRINTINFOONGIVENQUEUE);
       fprintf(fp, "        [-qs {a|c|d|o|s|u|A|C|D|E|S}]     %s\n",MSG_QSTAT_USAGE_PRINTINFOCQUEUESTATESEL);
@@ -165,10 +162,6 @@ ocs::QStatParameter::switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lLi
    while(*(sp=rp)) {
       /* -help */
       if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, answer_list)) != sp)
-         continue;
-
-      /* -ncb */
-      if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, answer_list)) != sp)
          continue;
 
       /* -f option */
@@ -297,20 +290,11 @@ ocs::QStatParameter::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
       ppcmdline list.
    */
 
-   /* make core binding related output to default output */
-   full_listing_ |= QSTAT_DISPLAY_BINDING;
-
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  &alp, &helpflag)) {
          usageshowed = qstat_usage(stdout, nullptr);
          sge_exit(0);
          break;
-      }
-
-      u_long32 is_binding_format = false;
-      while (parse_flag(ppcmdline, "-ncb", &alp, &is_binding_format)) {
-         /* disable qstat binding output bit */
-         full_listing_ ^= QSTAT_DISPLAY_BINDING;
       }
 
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {

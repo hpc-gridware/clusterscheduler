@@ -52,7 +52,7 @@ void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostre
 
       os << "==============================================================\n";
       /* print job information */
-      cull_show_job(os, j_elem, 0, (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) != 0 ? true : false);
+      cull_show_job(os, j_elem, 0);
 
       /* print scheduling information */
       if ((sme = lFirst(model.ilp)) != nullptr) {

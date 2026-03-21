@@ -78,8 +78,6 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    dstring rs = DSTRING_INIT;
    u_long32 dominant = 0;
    bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
-   u_long32 show = parameter.get_show();
-   bool show_binding = ((show & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING) ? true : false;
    const char *host = lGetHost(hep, EH_name);
 
    /* cut away domain in case of ignore_fqdn */
@@ -110,36 +108,34 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
       strcpy(num_proc, "-");
    }
 
-   if (show_binding) {
-      // nsoc (sockets)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_SOCKETS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
-      if (lep) {
-         sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(socket));
-         sge_dstring_clear(&rs);
-         lFreeElem(&lep);
-      } else {
-         strcpy(socket, "-");
-      }
+   // nsoc (sockets)
+   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_SOCKETS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   if (lep) {
+      sge_strlcpy(socket, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(socket));
+      sge_dstring_clear(&rs);
+      lFreeElem(&lep);
+   } else {
+      strcpy(socket, "-");
+   }
 
-      // nthr (threads)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_THREADS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
-      if (lep) {
-         sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(thread));
-         sge_dstring_clear(&rs);
-         lFreeElem(&lep);
-      } else {
-         strcpy(thread, "-");
-      }
+   // nthr (threads)
+   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_THREADS, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   if (lep) {
+      sge_strlcpy(thread, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(thread));
+      sge_dstring_clear(&rs);
+      lFreeElem(&lep);
+   } else {
+      strcpy(thread, "-");
+   }
 
-      // ncor (cores)
-      lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_CORES, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
-      if (lep) {
-         sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(core));
-         sge_dstring_clear(&rs);
-         lFreeElem(&lep);
-      } else {
-         strcpy(core, "-");
-      }
+   // ncor (cores)
+   lep= get_attribute_by_name(nullptr, hep, nullptr, LOAD_ATTR_CORES, centry_list, nullptr, DISPATCH_TIME_NOW, 0);
+   if (lep) {
+      sge_strlcpy(core, sge_get_dominant_stringval(lep, &dominant, &rs), sizeof(core));
+      sge_dstring_clear(&rs);
+      lFreeElem(&lep);
+   } else {
+      strcpy(core, "-");
    }
 
    // load_avg
@@ -201,12 +197,9 @@ ocs::QHostViewBase::show_host(std::ostream &os, const lListElem *hep, const QHos
    // values
    report_handler.host_value(os, "{:<13.13} ", "arch_string", arch_string);
    report_handler.host_value(os, "{:>4.4} ", "num_proc", num_proc);
-
-   if (show_binding) {
-      report_handler.host_value(os, "{:>5.5} ", "m_socket", socket);
-      report_handler.host_value(os, "{:>5.5} ", "m_core", core);
-      report_handler.host_value(os, "{:>5.5} ", "m_thread", thread);
-   }
+   report_handler.host_value(os, "{:>5.5} ", "m_socket", socket);
+   report_handler.host_value(os, "{:>5.5} ", "m_core", core);
+   report_handler.host_value(os, "{:>5.5} ", "m_thread", thread);
    report_handler.host_value(os, "{:>6.6} ", "load_avg", load_avg);
    report_handler.host_value(os, "{:>7.7} ", "mem_total", mem_total);
    report_handler.host_value(os, "{:>7.7} ", "mem_used", mem_used);

@@ -24,17 +24,12 @@
 #include "ocs_QHostParameter.h"
 #include "ocs_QHostModel.h"
 
-#include "ocs_client_print.h"
-
 namespace ocs {
    class QHostViewBase {
       u_long32 full_listing_;
    protected:
       size_t indent_ = 0;
    public:
-      [[nodiscard]] bool show_binding() const {
-         return (full_listing_ & QHOST_DISPLAY_BINDING) == QHOST_DISPLAY_BINDING;
-      }
       static void reformat_double_string(char *new_string, size_t result_size, const char *format, const char *old_string);
 
       virtual void show_host(std::ostream &os, const lListElem *hep, const QHostParameter &parameter, const QHostModel &model, QHostViewBase &report_handler);

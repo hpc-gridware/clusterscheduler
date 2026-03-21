@@ -72,7 +72,7 @@
 
 
 
-void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_binding) {
+void cull_show_job(std::ostream &os, const lListElem *job, int flags) {
    DENTER(TOP_LAYER);
 
    if (!job) {
@@ -766,11 +766,9 @@ void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_
          }
 
          // show binding information
-         if (show_binding) {
-            if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
-               const lList *granted_resources = lGetList(jatep, JAT_granted_resources_list);
-               os << std::format("{:<{}} {:>{}}: {}", "exec_binding_list", left_width_short, task_number, mid_width, ocs::GrantedResources::to_string(granted_resources)) << "\n";
-            }
+         if (lGetUlong(jatep, JAT_status) == JRUNNING || lGetUlong(jatep, JAT_status) == JTRANSFERING) {
+            const lList *granted_resources = lGetList(jatep, JAT_granted_resources_list);
+            os << std::format("{:<{}} {:>{}}: {}", "exec_binding_list", left_width_short, task_number, mid_width, ocs::GrantedResources::to_string(granted_resources)) << "\n";
          }
 
          // show granted host list

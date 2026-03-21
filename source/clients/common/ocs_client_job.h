@@ -36,7 +36,7 @@
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_boundaries.h"
 
-void cull_show_job(std::ostream &os, const lListElem *job, int flags, bool show_binding);
+void cull_show_job(std::ostream &os, const lListElem *job, int flags);
 
 void show_ce_type_list(std::ostream &os, const lList *cel, const char *indent, const char *separator,
                        bool display_resource_contribution, const lList *centry_list, int slots);

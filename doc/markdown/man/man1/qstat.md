@@ -13,7 +13,7 @@ date: __DATE__
 # SYNTAX
 
 `qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
-\[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-ncb`\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
+\[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
 \[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
 \[`-t`\] \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
 
@@ -108,14 +108,6 @@ resources to be displayed.
 In combination with `-f` the option suppresses the display of empty queues. This means all queues where actually no 
 jobs are running are not displayed.
 
-## -ncb  
-In combination with `-ncb` the output of a command will suppress information of a requested binding and changes 
-that have been applied to the topology string (real binding) for the host where the job is running. This information 
-will disappear in combination with the parameters `-r` and `-j`.
-
-Please note that this command line switch is intended to provide backward compatibility and will be removed in the 
-next major release.
-
 ## -pe *pe_name*,...  
 Displays status information with respect to queues which are attached to at least one of the parallel environments 
 enlisted in the comma separated option argument. Status information for jobs is displayed either for those which 
@@ -170,10 +162,6 @@ Displays additional information for each job related to the job urgency policy s
 This option can be used with all other options and changes the output to XML. The used schemas are referenced in the 
 XML output. The output is printed to stdout. For more detailed information, the schemas for the `qstat` command can be 
 found in $SGE_ROOT/util/resources/schemas/qstat.
-
-If the `-xml` parameter is combined with `-ncb` then the XML output does not contain tags with information about 
-job to core binding. You can also find schema files with the suffix "\_ncb" in the directory
-$SGE_ROOT/util/resources/schemas/qstat that describe that changes.  
 
 # OUTPUT FORMATS
 

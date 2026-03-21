@@ -711,21 +711,18 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
             view.report_ad_predecessors_finished(os);
          }
       }
-      if ((parameter.full_listing_ & QSTAT_DISPLAY_BINDING) != 0) {
-         const lListElem *binding_elem = lGetObject(job, JB_binding);
 
-         if (binding_elem != nullptr) {
-            dstring binding_param = DSTRING_INIT;
+      if (const lListElem *binding_elem = lGetObject(job, JB_binding); binding_elem != nullptr) {
+         dstring binding_param = DSTRING_INIT;
 
-            std::string binding_str;
-            BindingIo::binding_print_to_string(binding_elem, binding_str);
-            sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
+         std::string binding_str;
+         BindingIo::binding_print_to_string(binding_elem, binding_str);
+         sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
 
-            view.report_binding_started(os);
-            view.report_binding(os, sge_dstring_get_string(&binding_param));
-            view.report_binding_finished(os);
-            sge_dstring_free(&binding_param);
-         }
+         view.report_binding_started(os);
+         view.report_binding(os, sge_dstring_get_string(&binding_param));
+         view.report_binding_finished(os);
+         sge_dstring_free(&binding_param);
       }
    }
 

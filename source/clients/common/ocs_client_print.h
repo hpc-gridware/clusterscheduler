@@ -68,12 +68,10 @@
 #define QSTAT_DISPLAY_URGENCY (1 << 18)
 #define QSTAT_DISPLAY_PRIORITY (1 << 19)
 #define QSTAT_DISPLAY_PEND_REMAIN (1 << 20)
-#define QSTAT_DISPLAY_BINDING (1 << 21)
 
 #define QHOST_DISPLAY_QUEUES     (1<<22)
 #define QHOST_DISPLAY_JOBS       (1<<23)
 #define QHOST_DISPLAY_RESOURCES  (1<<24)
-#define QHOST_DISPLAY_BINDING    (1<<25)
 
 #define QSTAT_DISPLAY_HOLD                                                                                             \
    (QSTAT_DISPLAY_USERHOLD | QSTAT_DISPLAY_SYSTEMHOLD | QSTAT_DISPLAY_OPERATORHOLD | QSTAT_DISPLAY_JOBARRAYHOLD |      \

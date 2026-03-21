@@ -36,17 +36,12 @@
 #include <cstdio>
 #include <ostream>
 
-#include "uti/sge_htable.h"
-
-#include "sgeobj/cull/sge_cull_xml_XMLA_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLS_L.h"
-#include "sgeobj/cull/sge_cull_xml_XMLH_L.h"
 #include "sgeobj/cull/sge_cull_xml_XMLE_L.h"
 
 #include "basis_types.h"
 
-void lWriteElemXMLTo(const lListElem *ep, FILE *fp, int ingnore_name);
-void lWriteElemXMLTo(const lListElem *ep, std::ostream &os, int ingnore_name);
+void lWriteElemXMLTo(const lListElem *ep, FILE *fp);
+void lWriteElemXMLTo(const lListElem *ep, std::ostream &os);
 
 lListElem* xml_getHead(const char *name, lList *liste, lList *attributs); 
 

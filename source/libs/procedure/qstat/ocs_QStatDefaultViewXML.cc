@@ -26,8 +26,8 @@
 #include "uti/sge_log.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/sge_job.h"
 
@@ -105,7 +105,7 @@ void ocs::QStatDefaultViewXML::report_finished(std::ostream &os) {
    job_list_elem = nullptr;
 
    lListElem *xml_elem = xml_getHead("job_info", XML_out, nullptr);
-   lWriteElemXMLTo(xml_elem, os, -1);
+   lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
 
    DRETURN_VOID;

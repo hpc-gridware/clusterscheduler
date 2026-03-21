@@ -44,17 +44,10 @@ ocs::QHostViewPlain::host_start(std::ostream &os, const char* host_name) {
    if (print_host_header) {
       print_host_header = false;
 
-      if (this->show_binding()) {
-         os << std::format("{:<23} {:<13.13} {:>4.4} {:>5.5} {:>5.5} {:>5.5} {:>6.6} {:>7.7} {:>7.7} {:>7.7} {:>7.7}\n",
-            MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC, MSG_HEADER_NSOC, MSG_HEADER_NCOR, MSG_HEADER_NTHR,
-            MSG_HEADER_LOAD, MSG_HEADER_MEMTOT, MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, MSG_HEADER_SWAPUS);
-         os << std::string(23 + 13 + 4 + 5 + 5 + 5 + 6 + 7 + 7 + 7 + 7 + 10*1, '-');
-      } else {
-         os << std::format("{:<23} {:<13.13} {:>4.4} {:>6.6} {:>7.7} {:>7.7} {:>7.7} {:>7.7}\n",
-            MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC, MSG_HEADER_LOAD, MSG_HEADER_MEMTOT,
-            MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, MSG_HEADER_SWAPUS);
-         os << std::string(23 + 13 + 4 + 6 + 7 + 7 + 7 + 7 + 7*1, '-');
-      }
+      os << std::format("{:<23} {:<13.13} {:>4.4} {:>5.5} {:>5.5} {:>5.5} {:>6.6} {:>7.7} {:>7.7} {:>7.7} {:>7.7}\n",
+         MSG_HEADER_HOSTNAME, MSG_HEADER_ARCH, MSG_HEADER_NPROC, MSG_HEADER_NSOC, MSG_HEADER_NCOR, MSG_HEADER_NTHR,
+         MSG_HEADER_LOAD, MSG_HEADER_MEMTOT, MSG_HEADER_MEMUSE, MSG_HEADER_SWAPTO, MSG_HEADER_SWAPUS);
+      os << std::string(23 + 13 + 4 + 5 + 5 + 5 + 6 + 7 + 7 + 7 + 7 + 10*1, '-');
    }
    os << std::endl;
 }

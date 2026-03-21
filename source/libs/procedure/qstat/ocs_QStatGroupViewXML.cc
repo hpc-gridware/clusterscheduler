@@ -32,7 +32,7 @@ void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &p
    if (xml_elems != nullptr) {
       lListElem *xml_elem = xml_getHead("job_info", xml_elems, nullptr);
       xml_elems = nullptr;
-      lWriteElemXMLTo(xml_elem, os, -1);
+      lWriteElemXMLTo(xml_elem, os);
       lFreeElem(&xml_elem);
    }
 }

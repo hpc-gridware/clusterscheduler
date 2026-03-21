@@ -67,7 +67,6 @@ ocs::QHostParameter::show_usage(FILE *fp) {
    fprintf(fp, "  [-help]                    %s\n", MSG_COMMON_help_OPT_USAGE);
    fprintf(fp, "  [-j]                       %s\n", MSG_QHOST_j_OPT_USAGE);
    fprintf(fp, "  [-l attr=val,...]          %s\n", MSG_QHOST_l_OPT_USAGE);
-   fprintf(fp, "  [-ncb]                     %s\n", MSG_QHOST_ncb_OPT_USAGE);
    fprintf(fp, "  [-q]                       %s\n", MSG_QHOST_q_OPT_USAGE);
    fprintf(fp, "  [-u user[,user,...]]       %s\n", MSG_QHOST_u_OPT_USAGE);
    fprintf(fp, "  [-xml]                     %s\n", MSG_COMMON_xml_OPT_USAGE);
@@ -119,10 +118,6 @@ ocs::QHostParameter::parse_cmdline_and_env(char **argv, char **envp, lList **ppc
       if ((rp = parse_noopt(sp, "-help", nullptr, ppcmdline, alpp)) != sp)
          continue;
 
-      /* -ncb */
-      if ((rp = parse_noopt(sp, "-ncb", nullptr, ppcmdline, alpp)) != sp)
-         continue;
-
       /* -q */
       if ((rp = parse_noopt(sp, "-q", nullptr, ppcmdline, alpp)) != sp)
          continue;
@@ -165,14 +160,9 @@ ocs::QHostParameter::parse_switch_list(lList **ppcmdline, lList **alpp) {
    u_long32 helpflag;
    bool usageshowed = false;
    u_long32 full = 0;
-   u_long32 binding = 0;
    char * argstr = nullptr;
    lListElem *ep;
    int ret = 1;
-
-
-   /* display topology related information per default */
-   show_ |= QHOST_DISPLAY_BINDING;
 
    while (lGetNumberOfElem(*ppcmdline)) {
       if (parse_flag(ppcmdline, "-help",  alpp, &helpflag)) {
@@ -199,11 +189,6 @@ ocs::QHostParameter::parse_switch_list(lList **ppcmdline, lList **alpp) {
 
       if (parse_multi_stringlist(ppcmdline, "-F", alpp, &resource_visible_list_, ST_Type, ST_name)) {
          show_ |= QHOST_DISPLAY_RESOURCES;
-         continue;
-      }
-      if (parse_flag(ppcmdline, "-ncb", alpp, &binding)) {
-         /* disable topology related information */
-         show_ ^= QHOST_DISPLAY_BINDING;
          continue;
       }
       if (parse_flag(ppcmdline, "-q", alpp, &full)) {

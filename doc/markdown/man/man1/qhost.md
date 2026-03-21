@@ -12,7 +12,7 @@ date: __DATE__
 
 # SYNTAX
 
-`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] \[`-ncb`\] \[`-u` *user*, ...\] \[`-xml`\].
+`qhost` \[`-F` \[*resource_name*, ...\]\] \[`-help`\] \[`-h` *host_list*\] \[`-j`\] \[`-l` *resource*=*val*, ...\] \[`-u` *user*, ...\] \[`-xml`\].
 
 # DESCRIPTION
 
@@ -38,11 +38,6 @@ Prints all jobs running on the queues hosted by the shown hosts. This switch cal
 ## -l *resource*\[=*value*\],...  
 Defines the resources to be granted by the hosts which should be included in the host list output. Matching is performed on hosts based on non-mutable resource availability information only. That means load values are always ignored except the so-called static load values (i.e. *arch*, *num_proc*, *mem_total*, *swap_total* and *virtual_total*) ones. Also, consumable utilization is ignored. If there are multiple `-l` resource requests they will be concatenated by a logical *AND*: a host needs to match all resources to be displayed.
 
-## -ncb  
-(Deprecated)
-
-This command line switch can be used in order to get 6.2u5 compatible output with other `qhost` command line switches. In that case the output of the corresponding command will suppress information concerning the execution host topology. Note that this option will be removed in the next major version.
-
 ## -q  
 Show information about the queues instances hosted by the displayed hosts.
 
@@ -51,8 +46,6 @@ Display information only on those jobs and queues being associated with the user
 
 ## -xml  
 This option can be used with all other options and changes the output to XML. The used schemas are referenced in the XML output. The output is printed to stdout.
-
-If the `-xml` parameter is combined with `-ncb` then the XML output will contain 6.2u5 compatible output. 
 
 # OUTPUT FORMATS
 

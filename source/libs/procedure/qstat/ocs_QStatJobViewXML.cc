@@ -22,6 +22,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mesobj.h"
@@ -60,9 +61,8 @@ ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(std::ostream &os,
    lSetList(xmlElem, XMLE_List, model.ilp);
    lAppendElem(XML_out, xmlElem);
 
-   const bool suppress_binding_data = (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? false : true;
    lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
-   lWriteElemXMLTo(xml_elem, stdout, suppress_binding_data ? JB_binding : -1);
+   lWriteElemXMLTo(xml_elem, stdout);
    lFreeElem(&xml_elem);
    model.jlp = nullptr;
    model.ilp = nullptr;
@@ -98,8 +98,7 @@ void ocs::QStatJobViewXML::report_reasons(std::ostream &os, QStatParameter &para
    /* print out xml info from list */
 
    xml_elem = xml_getHead("message", model.ilp, nullptr);
-   lWriteElemXMLTo(xml_elem, stdout,
-      (parameter.full_listing_ & QSTAT_DISPLAY_BINDING) == QSTAT_DISPLAY_BINDING ? -1 : JB_binding);
+   lWriteElemXMLTo(xml_elem, stdout);
    lFreeElem(&xml_elem);
    model.ilp = nullptr;
 
