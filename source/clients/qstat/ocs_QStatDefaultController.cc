@@ -1302,7 +1302,7 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
 
    view.report_finished(oss);
 
-   std::cout << oss.str();
+   std::cout << oss.rdbuf();
 
    DRETURN_VOID;
 }

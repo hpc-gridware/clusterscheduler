@@ -1,7 +1,8 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,25 +19,25 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <sstream>
-#include <iostream>
+#include "cull/cull.h"
 
-#include "uti/sge_rmon_macros.h"
+#include "ocs_QQuotaParameter.h"
 
-#include "ocs_QStatJobController.h"
-#include "ocs_QStatJobViewBase.h"
+namespace ocs {
+   class QQuotaModel {
+   public:
+      lList *rqs_list = nullptr;
+      lList *centry_list = nullptr;
+      lList *userset_list = nullptr;
+      lList *hgroup_list = nullptr;
+      lList *exechost_list = nullptr;
+   private:
+      void free_data();
+      bool fetch_data(lList **answer_list, QQuotaParameter& parameter);
+   public:
+      QQuotaModel() = default;
+      virtual ~QQuotaModel() { free_data(); }
 
-#include "sge_rmon_monitoring_level.h"
-
-void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view) {
-   DENTER(TOP_LAYER);
-
-   std::ostringstream oss;
-   if (parameter.jid_list_) {
-      view.report_jobs_and_reasons_with_job_request(oss, parameter, model);
-   } else {
-      view.report_reasons(oss, parameter, model);
-   }
-   std::cout << oss.rdbuf();
-   DRETURN_VOID;
+      bool make_snapshot(lList **answer_list, QQuotaParameter &parameter);
+   };
 }

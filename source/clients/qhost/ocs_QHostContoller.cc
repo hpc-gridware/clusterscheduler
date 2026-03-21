@@ -63,6 +63,6 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModel &mod
    // end report
    view.end(oss);
 
-   std::cout << oss.str();
+   std::cout << oss.rdbuf();
    DRETURN_VOID;
 }

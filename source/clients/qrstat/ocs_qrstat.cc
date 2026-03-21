@@ -75,24 +75,14 @@ int main(int argc, const char **argv) {
       sge_exit(1);
    }
 
-   // prepare data for output
+   // fetch and prepare data for output
    ocs::QRStatModel model;
    if (!model.make_snapshot(&answer_list, parameter)) {
       answer_list_output(&answer_list);
       sge_exit(1);
    }
 
-   /*
-    * stage 2: evalutate switches and modify qrstat_env
-    */
-
-   /*
-    * stage 3: fetch data from master
-    */
-
-   /*
-    * stage 4: create output in correct format
-    */
+   // create view that will display the output in correct format
    std::unique_ptr<ocs::QRStatViewBase> view;
    if (parameter.is_xml) {
       view = std::make_unique<ocs::QRStatViewXML>(parameter);
@@ -100,27 +90,7 @@ int main(int argc, const char **argv) {
       view = std::make_unique<ocs::QRStatViewPlain>(parameter);
    }
 
-#if 0
-   {
-      qrstat_report_handler_t *handler = nullptr;
-
-      if (parameter.is_xml) {
-         handler = qrstat_create_report_handler_xml(&qrstat_env, &answer_list);
-      } else {
-         handler = qrstat_create_report_handler_stdout(&qrstat_env, &answer_list);
-      }
-      if (!qrstat_print(&answer_list, handler, &qrstat_env)) {
-         ret = 1;
-      }
-      if (qrstat_env.is_xml) {
-         qrstat_destroy_report_handler_xml(&handler, &answer_list);
-      } else {
-         qrstat_destroy_report_handler_stdout(&handler, &answer_list);
-      }
-   }
-#endif
-
-   // process request and show output
+   // start processing and show output
    ocs::QRStatController controller;
    controller.process_request(parameter, model, *view);
 

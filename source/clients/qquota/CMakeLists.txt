@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2025 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,7 +22,12 @@
 add_executable(
       qquota
         ocs_qquota.cc
-        ocs_qquota_print.cc
+        ocs_QQuotaParameter.cc
+        ocs_QQuotaModel.cc
+        ocs_QQuotaViewBase.cc
+        ocs_QQuotaViewPlain.cc
+        ocs_QQuotaViewXML.cc
+        ocs_QQuotaController.cc
       ../../common/parse_job_cull.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc

@@ -77,7 +77,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
 
    view.report_finished(oss, parameter);
 
-   std::cout << oss.str();
+   std::cout << oss.rdbuf();
 
    DRETURN_VOID;
 }

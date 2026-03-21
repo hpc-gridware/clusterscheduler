@@ -39,6 +39,8 @@
 
 #include "ocs_QRStatController.h"
 
+#include <iostream>
+
 void
 ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModel &model, QRStatViewBase &view) {
    DENTER(TOP_LAYER);
@@ -199,6 +201,6 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModel &
 
    view.report_finish(oss);
 
-   printf("%s", oss.str().c_str());
+   std::cout << oss.rdbuf();
    DRETURN_VOID;
 }
