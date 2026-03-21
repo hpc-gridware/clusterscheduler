@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -87,4 +87,3 @@
 #define TAG_SELECT_IT 0x04
 
 void sge_printf_header(std::ostream &os, u_long32 full_listing, u_long32 sge_ext);
-void sge_printf_header(u_long32 full_listing, u_long32 sge_ext);

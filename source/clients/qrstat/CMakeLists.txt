@@ -20,32 +20,28 @@
 
 # source/clients/qrstat
 add_executable(
-      qrstat
+        qrstat
         ocs_qrstat.cc
-        ocs_QRStatParameter.cc
-        ocs_QRStatModel.cc
-        ocs_QRStatViewBase.cc
-        ocs_QRStatViewPlain.cc
-        ocs_QRStatViewXML.cc
-        ocs_QRStatController.cc
-      ../../common/parse_job_cull.cc
-      ../../common/parse_qsub.cc
-      ../../common/sig_handlers.cc
-      ../../common/sge_options.cc
-      ../../common/usage.cc)
+        ../../common/parse_job_cull.cc
+        ../../common/parse_qsub.cc
+        ../../common/sig_handlers.cc
+        ../../common/sge_options.cc
+        ../../common/usage.cc)
 
 target_include_directories(qrstat PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(
-      qrstat
-      PRIVATE clientscommon
-      gdi
-      sgeobj
-      cull
-      comm
-      commlists
-      uti
-      ${SGE_LIBS})
+        qrstat
+        PRIVATE
+        procedure
+        clientscommon
+        gdi
+        sgeobj
+        cull
+        comm
+        commlists
+        uti
+        ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qrstat DESTINATION bin/${SGE_ARCH})

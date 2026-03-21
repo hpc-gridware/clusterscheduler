@@ -36,7 +36,6 @@
 #include <strings.h>
 
 #include "uti/sge_log.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
@@ -53,8 +52,7 @@
 
 /*-------------------------------------------------------------------------*/
 /* use cstring_list_parse_from_string() if you need a parsing function */
-static void sge_parse_string_list(lList **lp, const char *str, int field, 
-                           lDescr *descr) {
+static void sge_parse_string_list(lList **lp, const char *str, int field, lDescr *descr) {
    const char *cp;
 
    DENTER(TOP_LAYER);

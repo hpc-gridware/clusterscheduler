@@ -105,7 +105,7 @@ target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
 
 target_link_libraries(
          sge_qmaster
-         PUBLIC daemonscommon sched evm mir evc gdi sgeobj cull comm commlists uti
+         PUBLIC daemonscommon procedure sched evm mir evc gdi sgeobj cull comm commlists uti
          PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER}
 )
 
@@ -132,7 +132,7 @@ if (WITH_PYTHON)
 
    target_link_libraries(
            sge_qmaster.python
-           PUBLIC daemonscommon sched evm mir evc gdi sgeobj cull comm commlists uti
+           PUBLIC daemonscommon procedure sched evm mir evc gdi sgeobj cull comm commlists uti
            PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER} ${PYTHON_ALL_LIBRARIES}
    )
 

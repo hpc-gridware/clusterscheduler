@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2025 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,32 +20,28 @@
 
 # source/clients/qquota
 add_executable(
-      qquota
+        qquota
         ocs_qquota.cc
-        ocs_QQuotaParameter.cc
-        ocs_QQuotaModel.cc
-        ocs_QQuotaViewBase.cc
-        ocs_QQuotaViewPlain.cc
-        ocs_QQuotaViewXML.cc
-        ocs_QQuotaController.cc
-      ../../common/parse_job_cull.cc
-      ../../common/parse_qsub.cc
-      ../../common/sig_handlers.cc
-      ../../common/sge_options.cc
-      ../../common/usage.cc)
+        ../../common/parse_job_cull.cc
+        ../../common/parse_qsub.cc
+        ../../common/sig_handlers.cc
+        ../../common/sge_options.cc
+        ../../common/usage.cc)
 target_include_directories(qquota PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(
-      qquota
-      PRIVATE clientscommon
-      sched
-      gdi
-      sgeobj
-      cull
-      comm
-      commlists
-      uti
-      ${SGE_LIBS})
+        qquota
+        PRIVATE
+        procedure
+        clientscommon
+        sched
+        gdi
+        sgeobj
+        cull
+        comm
+        commlists
+        uti
+        ${SGE_LIBS})
 
 if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qquota DESTINATION bin/${SGE_ARCH})

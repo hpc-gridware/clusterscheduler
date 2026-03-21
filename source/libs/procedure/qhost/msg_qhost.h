@@ -27,24 +27,35 @@
  *   Copyright: 2001 by Sun Microsystems, Inc.
  * 
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this code are Copyright 2011 Univa Inc.
+ *
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
-#include "uti/sge_dstring.h"
 
-#define MAX_TRIGGER_SCRIPTS (10)
-#define QEVENT_JB_END 1
-#define QEVENT_JB_TASK_END 2
+#include "basis_types.h"
 
-typedef struct qevent_options {
-  int          help_option;
-  int          testsuite_option;
-  int          subscribe_option;
-  int          trigger_option_count;
-  int          trigger_option_events[MAX_TRIGGER_SCRIPTS];
-  const char*  trigger_option_scripts[MAX_TRIGGER_SCRIPTS];
-  dstring      *error_message;
-} qevent_options;
+// clang-format off
+
+#define MSG_HEADER_HOSTNAME   "HOSTNAME"
+#define MSG_HEADER_ARCH       "ARCH"
+#define MSG_HEADER_NPROC      "NCPU"
+#define MSG_HEADER_LOAD       "LOAD"
+#define MSG_HEADER_MEMTOT     "MEMTOT"
+#define MSG_HEADER_MEMUSE     "MEMUSE"
+#define MSG_HEADER_SWAPTO     "SWAPTO"
+#define MSG_HEADER_SWAPUS     "SWAPUS"
+
+#define MSG_QHOST_h_OPT_USAGE       _MESSAGE(9001, _("display only selected hosts"))
+#define MSG_QHOST_q_OPT_USAGE       _MESSAGE(9002, _("display queues hosted by host"))
+#define MSG_QHOST_j_OPT_USAGE       _MESSAGE(9003, _("display jobs hosted by host"))
+#define MSG_QHOST_l_OPT_USAGE       _MESSAGE(9004, _("request the given resources"))
+#define MSG_QHOST_F_OPT_USAGE       _MESSAGE(9005, _("show (selected) resources"))
+#define MSG_QHOST_u_OPT_USAGE       _MESSAGE(9006, _("show only jobs for user"))
+#define MSG_QHOST_ncb_OPT_USAGE     _MESSAGE(9007, _("suppress host topology based information"))
+#define MSG_QHOST_SHOW_DEPT_VIEW    _MESSAGE(9008, _("enable department view (hide objects without access)"))
+
+// clang-format on

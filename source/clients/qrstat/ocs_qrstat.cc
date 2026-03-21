@@ -43,13 +43,14 @@
 
 #include "gdi/ocs_gdi_Client.h"
 
+#include "procedure/qrstat/ocs_QRStatParameter.h"
+#include "procedure/qrstat/ocs_QRStatModel.h"
+#include "procedure/qrstat/ocs_QRStatViewBase.h"
+#include "procedure/qrstat/ocs_QRStatViewXML.h"
+#include "procedure/qrstat/ocs_QRStatViewPlain.h"
+#include "procedure/qrstat/ocs_QRStatController.h"
+
 #include "sig_handlers.h"
-#include "ocs_QRStatParameter.h"
-#include "ocs_QRStatModel.h"
-#include "ocs_QRStatViewBase.h"
-#include "ocs_QRStatViewXML.h"
-#include "ocs_QRStatViewPlain.h"
-#include "ocs_QRStatController.h"
 
 
 /************************************************************************/

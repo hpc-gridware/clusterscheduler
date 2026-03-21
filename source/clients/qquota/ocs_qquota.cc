@@ -45,19 +45,18 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
+#include "procedure/qquota/ocs_QQuotaParameter.h"
+#include "procedure/qquota/ocs_QQuotaModel.h"
+#include "procedure/qquota/ocs_QQuotaViewBase.h"
+#include "procedure/qquota/ocs_QQuotaViewPlain.h"
+#include "procedure/qquota/ocs_QQuotaViewXML.h"
+#include "procedure/qquota/ocs_QQuotaController.h"
+
 #include "sig_handlers.h"
-#include "ocs_QQuotaParameter.h"
-#include "ocs_QQuotaModel.h"
-#include "ocs_QQuotaViewBase.h"
-#include "ocs_QQuotaViewPlain.h"
-#include "ocs_QQuotaViewXML.h"
-#include "ocs_QQuotaController.h"
 
 extern char **environ;
                                       
-/************************************************************************/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    DENTER_MAIN(TOP_LAYER, "qquota");
    lList *alp = nullptr;
 

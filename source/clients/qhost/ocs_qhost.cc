@@ -29,12 +29,13 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
+#include "procedure/qhost/ocs_QHostParameter.h"
+#include "procedure/qhost/ocs_QHostViewXML.h"
+#include "procedure/qhost/ocs_QHostViewPlain.h"
+#include "procedure/qhost/ocs_QHostContoller.h"
+#include "procedure/qhost/ocs_QHostModel.h"
+
 #include "sig_handlers.h"
-#include "ocs_QHostParameter.h"
-#include "ocs_QHostViewXML.h"
-#include "ocs_QHostViewPlain.h"
-#include "ocs_QHostContoller.h"
-#include "ocs_QHostModel.h"
 
 /************************************************************************/
 int main(int argc, char **argv) {

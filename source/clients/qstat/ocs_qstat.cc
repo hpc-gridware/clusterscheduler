@@ -47,38 +47,29 @@
 
 #include "gdi/ocs_gdi_Client.h"
 
-#include "ocs_QStatDefaultController.h"
-#include "ocs_QStatDefaultViewBase.h"
-#include "ocs_QStatDefaultViewPlain.h"
-#include "ocs_QStatDefaultViewXML.h"
-#include "ocs_QStatGroupViewBase.h"
-#include "ocs_QStatGroupViewPlain.h"
-#include "ocs_QStatGroupViewXML.h"
-#include "ocs_QStatGroupController.h"
-#include "ocs_QStatGenericModel.h"
-#include "ocs_QStatJobController.h"
-#include "ocs_QStatJobModel.h"
-#include "ocs_QStatJobViewBase.h"
-#include "ocs_QStatJobViewPlain.h"
-#include "ocs_QStatJobViewXML.h"
-#include "ocs_QStatParameter.h"
-#include "ocs_QStatSelectViewBase.h"
-#include "ocs_QStatSelectViewPlain.h"
-#include "ocs_QStatSelectViewXML.h"
-#include "ocs_QStatSelectController.h"
-#include "ocs_QStatModelBase.h"
+#include "procedure/qstat/ocs_QStatDefaultController.h"
+#include "procedure/qstat/ocs_QStatDefaultViewBase.h"
+#include "procedure/qstat/ocs_QStatDefaultViewPlain.h"
+#include "procedure/qstat/ocs_QStatDefaultViewXML.h"
+#include "procedure/qstat/ocs_QStatGroupViewBase.h"
+#include "procedure/qstat/ocs_QStatGroupViewPlain.h"
+#include "procedure/qstat/ocs_QStatGroupViewXML.h"
+#include "procedure/qstat/ocs_QStatGroupController.h"
+#include "procedure/qstat/ocs_QStatGenericModel.h"
+#include "procedure/qstat/ocs_QStatJobController.h"
+#include "procedure/qstat/ocs_QStatJobModel.h"
+#include "procedure/qstat/ocs_QStatJobViewBase.h"
+#include "procedure/qstat/ocs_QStatJobViewPlain.h"
+#include "procedure/qstat/ocs_QStatJobViewXML.h"
+#include "procedure/qstat/ocs_QStatParameter.h"
+#include "procedure/qstat/ocs_QStatSelectViewBase.h"
+#include "procedure/qstat/ocs_QStatSelectViewPlain.h"
+#include "procedure/qstat/ocs_QStatSelectViewXML.h"
+#include "procedure/qstat/ocs_QStatSelectController.h"
+#include "procedure/qstat/ocs_QStatModelBase.h"
+
 #include "sig_handlers.h"
 
-
-#define FORMAT_I_20 "%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I "
-#define FORMAT_I_10 "%I %I %I %I %I %I %I %I %I %I "
-#define FORMAT_I_5 "%I %I %I %I %I "
-#define FORMAT_I_2 "%I %I "
-#define FORMAT_I_1 "%I "
-
-/*-------------------------------------------------------------------------*/
-/*-------------------------------------------------------------------------*/
-/*-------------------------------------------------------------------------*/
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
    lList *alp = nullptr;

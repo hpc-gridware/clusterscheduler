@@ -21,47 +21,30 @@
 # source/clients/qstat
 add_executable(
         qstat
-        ocs_QStatGenericModel.cc
-        ocs_QStatParameter.cc
-        ocs_QStatDefaultController.cc
-        ocs_QStatDefaultViewBase.cc
-        ocs_QStatDefaultViewPlain.cc
-        ocs_QStatDefaultViewXML.cc
-        ocs_QStatGroupController.cc
-        ocs_QStatGroupViewBase.cc
-        ocs_QStatGroupViewPlain.cc
-        ocs_QStatGroupViewXML.cc
-        ocs_QStatSelectController.cc
-        ocs_QStatSelectViewBase.cc
-        ocs_QStatSelectViewPlain.cc
-        ocs_QStatSelectViewXML.cc
-        ocs_QStatModelBase.cc
-        ocs_QStatJobModel.cc
-        ocs_QStatJobViewBase.cc
-        ocs_QStatJobViewPlain.cc
-        ocs_QStatJobViewXML.cc
-        ocs_QStatJobController.cc
         ocs_qstat.cc
         ../../common/parse_job_cull.cc
-      ../../common/parse_qsub.cc
-      ../../common/sig_handlers.cc
-      ../../common/sge_options.cc
-      ../../common/usage.cc)
+        ../../common/parse_qsub.cc
+        ../../common/sig_handlers.cc
+        ../../common/sge_options.cc
+        ../../common/usage.cc)
 
 target_include_directories(qstat PRIVATE ${SGE_INCLUDES} "../../libs/uti"
       "../../libs/cull" "../../libs/sgeobj")
 
 target_link_libraries(
-      qstat
-      PRIVATE clientscommon
-      sched
-      gdi
-      sgeobj
-      cull
-      comm
-      commlists
-      uti
-      ${SGE_LIBS})
+        qstat
+        PRIVATE
+        procedure
+        clientscommon
+        sched
+        gdi
+        sgeobj
+        cull
+        comm
+        commlists
+        uti
+        ${SGE_LIBS}
+)
 
 if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qstat DESTINATION bin/${SGE_ARCH})

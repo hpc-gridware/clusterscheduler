@@ -72,13 +72,3 @@ void sge_printf_header(std::ostream &os, u_long32 full_listing, u_long32 sge_ext
       }
    }
 }
-
-// @todo replace with the overloaded ostream version
-void sge_printf_header(u_long32 full_listing, u_long32 sge_ext) {
-   std::ostringstream oss;
-   sge_printf_header(oss, full_listing, sge_ext);
-   printf("%s", oss.str().c_str());
-}
-
-
-
