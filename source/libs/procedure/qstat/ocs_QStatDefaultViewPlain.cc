@@ -60,6 +60,22 @@ static char jhul5[] = "---------------------------------------------------------
 static char jhul6[] = "-----------------------------------";
 #endif
 
+void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
+   DENTER(TOP_LAYER);
+   const bool sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
+   const auto line = std::string(sge_ext ? 165 : 81, '#');
+
+   os << "\n" << line
+      << "\n" << title
+      << "\n" << line
+      << "\n";
+
+   last_job_id = 0;
+
+   DRETURN_VOID;
+}
+
+
 void ocs::QStatDefaultViewPlain::report_started(std::ostream &os) {
 }
 
@@ -179,40 +195,25 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, Q
 {
    DENTER(TOP_LAYER);
 
+   static bool pending_header_printed = false;
+   if (!pending_header_printed && (parameter.full_listing_ & QSTAT_DISPLAY_FULL) && (parameter.full_listing_ & QSTAT_DISPLAY_PENDING)) {
+      show_header_with_title(os, parameter, MSG_QSTAT_PRT_PEDINGJOBS);
+      pending_header_printed = true;
+   }
    last_job_id = 0;
-   sge_printf_header(os, (parameter.full_listing_ & QSTAT_DISPLAY_FULL) |
-                     (parameter.full_listing_ & QSTAT_DISPLAY_PENDING),
-                     (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_pending_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, QStatParameter &parameter, const char *title) {
-   DENTER(TOP_LAYER);
-   int sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
-
-   last_job_id = 0;
-
-   os << "\n#################################################################################";
-   if (sge_ext) {
-      os << "##############################################################################################################";
-   }
-
-   os << "\n" << title << "\n";
-
-   os << "\n#################################################################################";
-   if (sge_ext) {
-      os << "##############################################################################################################";
-   }
-
-   DRETURN_VOID;
-}
-
 void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   show_header_with_title(os, parameter, MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
+   static bool finished_header_printed = false;
+   if (!finished_header_printed) {
+      show_header_with_title(os, parameter, MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
+      finished_header_printed = true;
+   }
    DRETURN_VOID;
 }
 
@@ -221,7 +222,10 @@ void ocs::QStatDefaultViewPlain::report_finished_jobs_finished(std::ostream &os)
 
 void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   show_header_with_title(os, parameter, MSG_QSTAT_PRT_ERRORJOBS);
+   static bool error_header_printed = false;
+   if (!error_header_printed) {
+      show_header_with_title(os, parameter, MSG_QSTAT_PRT_ERRORJOBS);
+   }
    DRETURN_VOID;
 }
 
@@ -330,10 +334,11 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, u_long32 jid, job_
       job_header_printed = true;
    }
 
-   if (summary->is_zombie) {
-      sge_printf_header(os, parameter.full_listing_ &
-                        (QSTAT_DISPLAY_ZOMBIES | QSTAT_DISPLAY_FULL),
-                        sge_ext);
+   if (summary->is_zombie && (parameter.full_listing_& QSTAT_DISPLAY_ZOMBIES) && (parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
+      static bool zombie_header_printed = false;
+      if (!zombie_header_printed) {
+         show_header_with_title(os, parameter, MSG_QSTAT_PRT_FINISHEDJOBS);
+      }
    }
 
 

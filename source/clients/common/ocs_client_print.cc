@@ -45,30 +45,5 @@
 
 #include "msg_clients_common.h"
 
-static char hashes[] =
-    "##############################################################################################################";
 
 
-void sge_printf_header(std::ostream &os, u_long32 full_listing, u_long32 sge_ext) {
-   static int first_pending = 1;
-   static int first_zombie = 1;
-
-   if ((full_listing & QSTAT_DISPLAY_PENDING) && (full_listing & QSTAT_DISPLAY_FULL)) {
-      if (first_pending) {
-         first_pending = 0;
-         os << std::endl;
-         os << "############################################################################" << (sge_ext ? hashes : "") << std::endl;
-         os << MSG_QSTAT_PRT_PEDINGJOBS << std::endl;
-         os << "############################################################################" << (sge_ext ? hashes : "") << std::endl;
-      }
-   }
-   if ((full_listing & QSTAT_DISPLAY_ZOMBIES) && (full_listing & QSTAT_DISPLAY_FULL)) {
-      if (first_zombie) {
-         first_zombie = 0;
-         os << std::endl;
-         os << "############################################################################" << (sge_ext ? hashes : "") << std::endl;
-         os << MSG_QSTAT_PRT_FINISHEDJOBS << std::endl;
-         os << "############################################################################" << (sge_ext ? hashes : "") << std::endl;
-      }
-   }
-}
