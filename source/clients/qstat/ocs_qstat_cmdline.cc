@@ -132,11 +132,12 @@ switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list,
          if ((rp = parse_noopt(sp, "-pri", nullptr, ppcmdline, answer_list)) != sp)
             continue;
 
-         /* -xml option */
-         if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
-            continue;
-
       }
+
+      /* -xml option */
+      if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
+         continue;
+
 
       /* -g */
       if (!qselect_mode && (rp = parse_until_next_opt(sp, "-g", nullptr, ppcmdline, answer_list)) != sp)
