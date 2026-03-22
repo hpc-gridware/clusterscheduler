@@ -122,10 +122,15 @@ ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCom
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
-      lXchgList(map, MA_objects, olpp);
+      lList *tmp_list = nullptr;
+      lXchgList(map, MA_objects, &tmp_list);
+      *olpp = tmp_list;
    }
 
    // get the answer list for the given id
-   lXchgList(map, MA_answers, alpp);
+   lList *tmp_answer_list = nullptr;
+   lXchgList(map, MA_answers, &tmp_answer_list);
+   *alpp = tmp_answer_list;
+
    DRETURN(true);
 }
