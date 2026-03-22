@@ -344,10 +344,14 @@ gdi_extract_answer(lList **alpp, u_long32 cmd, u_long32 target, int id, lList *m
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(false);
       }
-      lXchgList(map, MA_objects, olpp);
+      lList *tmp_list = nullptr;
+      lXchgList(map, MA_objects, &tmp_list);
+      *olpp = tmp_list;
    }
 
-   lXchgList(map, MA_answers, alpp);
+   lList *tmp_list = nullptr;
+   lXchgList(map, MA_answers, &tmp_list);
+   *alpp = tmp_list;
    DRETURN(true);
 }
 
