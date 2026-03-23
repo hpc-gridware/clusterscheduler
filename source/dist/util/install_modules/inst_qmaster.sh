@@ -756,7 +756,6 @@ PrintConf()
    $ECHO "qmaster_params         NONE"
    $ECHO "execd_params           NONE"
    $ECHO "reporting_params       accounting=true reporting=false flush_time=00:00:1 joblog=false sharelog=00:00:00"
-   $ECHO "finished_jobs          100"
    $ECHO "gid_range              $CFG_GID_RANGE"
    $ECHO "qlogin_command         $QLOGIN_COMMAND"
    $ECHO "qlogin_daemon          $QLOGIN_DAEMON"

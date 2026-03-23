@@ -321,8 +321,7 @@ static lListElem *pe_task_create_from_file(u_long32 job_id,
 *     u_long32 ja_taskid      - 0 or a allowed array job task id 
 *     const char *pe_task_id  - pe task id
 *     sge_spool_flags_t flags - where/how should we spool the object 
-*        SPOOL_HANDLE_AS_ZOMBIE   -> has to be used for zombie jobs 
-*        SPOOL_WITHIN_EXECD       -> has to be used within the execd 
+*        SPOOL_WITHIN_EXECD       -> has to be used within the execd
 *        SPOOL_DEFAULT            -> if no other flags are needed
 *
 *  RESULT
@@ -371,7 +370,7 @@ static int job_has_to_spool_one_file(const lListElem *job,
 {
    DENTER(TOP_LAYER);
 
-   if ((flags & SPOOL_HANDLE_AS_ZOMBIE) || (flags & SPOOL_WITHIN_EXECD)) {
+   if ((flags & SPOOL_WITHIN_EXECD)) {
       DRETURN(1);
    } 
    
@@ -595,11 +594,8 @@ int job_remove_spool_file(u_long32 jobid, u_long32 ja_taskid,
    char spool_dir_third[SGE_PATH_MAX] = "";
    char spoolpath_common[SGE_PATH_MAX] = "";
    int within_execd = flags & SPOOL_WITHIN_EXECD;
-   int handle_as_zombie = flags & SPOOL_HANDLE_AS_ZOMBIE;
    int one_file;
-   const lList *master_list = handle_as_zombie ? 
-                        *ocs::DataStore::get_master_list(SGE_TYPE_ZOMBIE) :
-                        *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   const lList *master_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    lListElem *job = lGetElemUlongRW(master_list, JB_job_number, jobid);
    int try_to_remove_sub_dirs = 0;
    dstring error_msg;
@@ -865,9 +861,8 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
             lSetList(job, JB_jid_successor_list, nullptr);
             job_list_add_job(job_list, list_name, job, 0);
 
-            bool handle_as_zombie = (flags & SPOOL_HANDLE_AS_ZOMBIE) > 0;
             bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;
-            if (!handle_as_zombie && !in_execd) {
+            if (!in_execd) {
                job_list_register_new_job(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), mconf_get_max_jobs(), 1);
                lList *master_suser_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
                suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);

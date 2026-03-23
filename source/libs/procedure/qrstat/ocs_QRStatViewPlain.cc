@@ -144,10 +144,16 @@ ocs::QRStatViewPlain::report_ar_node_duration(std::ostream &os, const char *name
    const int minutes = (value32 / 60) % 60;
    const int seconds = value32 % 60;
 
-   if (show_summary) {
+   if (!show_summary) {
+      os << std::format("{:<30} ", name ? name : "");
+   }
+   if (days > 0) {
       os << std::format("{}:{:02}:{:02}:{:02}", days, hours, minutes, seconds);
    } else {
-      os << std::format("{:<30} ", name ? name : "") << std::format("{}:{:02}:{:02}:{:02}", days, hours, minutes, seconds) << "\n";
+      os << std::format("{:02}:{:02}:{:02}", hours, minutes, seconds);
+   }
+   if (!show_summary) {
+      os << "\n";
    }
 
 
@@ -235,7 +241,7 @@ ocs::QRStatViewPlain::report_resource_list_node(std::ostream &os, const char *na
    DENTER(TOP_LAYER);
 
    if (!show_summary) {
-      os << (first_resource ? "" : ", ") <<  name << "=" << value;
+      os << (first_resource ? "" : ",") <<  name << "=" << value;
       if (first_resource) {
          first_resource = false;
       }
@@ -282,7 +288,7 @@ ocs::QRStatViewPlain::report_exec_queue_list_node(std::ostream &os, const char *
    DENTER(TOP_LAYER);
 
    if (!show_summary) {
-      os << (first_exec_queue ? "" : ", ") << name << "=" << value;
+      os << (first_exec_queue ? "" : ",") << name << "=" << value;
       if (first_exec_queue) {
          first_exec_queue = false;
       }
@@ -348,7 +354,7 @@ void
 ocs::QRStatViewPlain::report_granted_parallel_environment_node(std::ostream &os, const char *name, const char *slots_range) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << name << "slots" << slots_range;
+      os << name << " slots " << slots_range;
    }
    DRETURN_VOID;
 }
@@ -407,7 +413,7 @@ void
 ocs::QRStatViewPlain::report_acl_list_node(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << (first_acl ? "" : ", ") << " " << name;
+      os << (first_acl ? "" : ",") << name;
       if (first_acl) {
          first_acl = false;
       }
@@ -438,7 +444,7 @@ void
 ocs::QRStatViewPlain::report_xacl_list_node(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << (first_xacl ? "" : ", ") << " " << name;
+      os << (first_xacl ? "" : ",") << name;
       if (first_xacl) {
          first_xacl = false;
       }

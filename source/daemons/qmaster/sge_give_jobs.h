@@ -67,8 +67,6 @@ void sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_
 
 bool gdil_del_all_orphaned(const lList *gdil_list, lList **alpp, u_long64 gdi_session);
 
-void sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor);
-
 void sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
 void trigger_job_resend(u_long64 now, lListElem *hep, u_long32 jid, u_long32 tid, int delta);

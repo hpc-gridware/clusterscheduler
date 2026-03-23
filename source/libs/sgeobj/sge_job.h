@@ -319,9 +319,6 @@ lListElem *job_get_ja_task_template_pending(const lListElem *job,
 lListElem *job_search_task(const lListElem *job, lList **answer_list, u_long32 ja_task_id);
 lListElem *job_create_task(lListElem *job, lList **answer_list, u_long32 ja_task_id);
 
-void job_add_as_zombie(lListElem *zombie, lList **answer_list,
-                       u_long32 ja_task_id);
-
 int job_list_add_job(lList **job_list, const char *name, lListElem *job,
                      int check);
 
@@ -331,8 +328,6 @@ void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]);
 
 void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
                               u_long32 hold_state[16]);
-
-bool job_is_zombie_job(const lListElem *job);
 
 const char *job_get_shell_start_mode(const lListElem *job,
                                      const lListElem *queue,

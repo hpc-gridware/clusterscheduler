@@ -81,7 +81,6 @@ namespace ocs {
          bool   has_io_usage;
          double io_usage;
 
-         bool   is_zombie;
          u_long override_tickets;
          bool   is_queue_assigned;
          u_long tickets;
@@ -134,8 +133,6 @@ namespace ocs {
       virtual void report_finished_jobs_finished(std::ostream &os) = 0;
       virtual void report_error_jobs_started(std::ostream &os, QStatParameter &parameter) = 0;
       virtual void report_error_jobs_finished(std::ostream &os) = 0;
-      virtual void report_zombie_jobs_started(std::ostream &os) = 0;
-      virtual void report_zombie_jobs_finished(std::ostream &os) = 0;
       // endregion
 
       // region Job handling

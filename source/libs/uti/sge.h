@@ -169,7 +169,6 @@
 #define CENTRY_DIR                "centry"
 #define CKPTOBJ_DIR               "ckpt"
 #define CAL_DIR                   "calendars"
-#define ZOMBIE_DIR                "zombies"
 #define RESOURCEQUOTAS_DIR        "resource_quotas"
 #define AR_DIR                    "advance_reservations"
 

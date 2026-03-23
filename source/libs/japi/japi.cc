@@ -3933,7 +3933,6 @@ static void japi_subscribe_job_list(const char *japi_session_key, sge_evc_class_
       JB_ja_u_h_ids,
       JB_ja_s_h_ids,
       JB_ja_o_h_ids,
-      JB_ja_z_ids,
       JB_ja_template,
       NoName
    };
@@ -4515,19 +4514,13 @@ static int japi_sync_job_tasks(lListElem *japi_job, lListElem *sge_job)
             else {
                continue;
             }
-         }
-         else if (range_list_is_id_within(lGetList(sge_job, JB_ja_n_h_ids), taskid) ||
+         } else if (range_list_is_id_within(lGetList(sge_job, JB_ja_n_h_ids), taskid) ||
                   range_list_is_id_within(lGetList(sge_job, JB_ja_u_h_ids), taskid) ||
                   range_list_is_id_within(lGetList(sge_job, JB_ja_s_h_ids), taskid) ||
                   range_list_is_id_within(lGetList(sge_job, JB_ja_o_h_ids), taskid)) {
             DPRINTF("task " sge_u32 "." sge_u32" is still pending\n", lGetUlong(japi_job, JJ_jobid), taskid);
             continue;
-         }
-         else {
-            if (range_list_is_id_within(lGetList(sge_job, JB_ja_z_ids), taskid)) {
-               DPRINTF("task " sge_u32 "." sge_u32 " contained in zombie list taskid list\n", lGetUlong(japi_job, JJ_jobid), taskid);
-            }
-
+         } else {
             DPRINTF("task " sge_u32 "." sge_u32" presumably has finished meanwhile\n", lGetUlong(japi_job, JJ_jobid), taskid);
          }
 

@@ -425,7 +425,6 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
    const char *queue_name = nullptr;
    int tsk_ext;
    u_long tickets, otickets, stickets, ftickets;
-   int is_zombie_job;
    dstring ds;
    char buffer[128];
    dstring queue_name_buffer = DSTRING_INIT;
@@ -433,8 +432,6 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
    lList *pe_list = model.get_pe_list();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
-
-   is_zombie_job = job_is_zombie_job(job);
 
    if (qep != nullptr) {
       queue_name = qinstance_get_name(qep, &queue_name_buffer);
@@ -779,13 +776,13 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
       /* report jobs dynamic scheduling attributes */
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
-      if (!is_zombie_job && (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list))) {
-            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, tickets);
-            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, (u_long64)lGetUlong(job, JB_override_tickets));
-            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, otickets);
-            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, ftickets);
-            report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, stickets);
-            report_handler.job_value(os, jid, "{:<5.2f} ", nullptr, lGetDouble(jatep, JAT_share));
+      if (sge_ext || lGetList(jatep, JAT_granted_destin_identifier_list)) {
+         report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, tickets);
+         report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, (u_long64)lGetUlong(job, JB_override_tickets));
+         report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, otickets);
+         report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, ftickets);
+         report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, stickets);
+         report_handler.job_value(os, jid, "{:<5.2f} ", nullptr, lGetDouble(jatep, JAT_share));
       } else {
          report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
          report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");

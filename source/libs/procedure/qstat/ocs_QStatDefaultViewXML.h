@@ -56,8 +56,6 @@ namespace ocs {
       void report_finished_jobs_finished(std::ostream &os) override;
       void report_error_jobs_started(std::ostream &os, QStatParameter &parameter) override;
       void report_error_jobs_finished(std::ostream &os) override;
-      void report_zombie_jobs_started(std::ostream &os) override;
-      void report_zombie_jobs_finished(std::ostream &os) override;
 
       // region Job handling
       void report_job(std::ostream &os, u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) override;

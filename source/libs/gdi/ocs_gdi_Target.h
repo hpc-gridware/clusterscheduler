@@ -48,7 +48,6 @@ namespace ocs::gdi {
          SGE_CK_LIST,
          SGE_CAL_LIST,
          SGE_SME_LIST,
-         SGE_ZOMBIE_LIST,
          SGE_USER_MAPPING_LIST,
          SGE_HGRP_LIST,
          SGE_RQS_LIST,

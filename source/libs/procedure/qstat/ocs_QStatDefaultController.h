@@ -34,7 +34,6 @@ namespace ocs {
       void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
       void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
       void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
-      void process_jobs_zombie_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
       void process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master, int slots, int slot, int *count,
                                      QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view);
 

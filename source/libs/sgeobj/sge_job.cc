@@ -180,27 +180,6 @@ lListElem *job_get_ja_task_template_hold(const lListElem *job,
    }
    DRETURN(template_task);                                                        }
 
-/****** sgeobj/job/job_is_zombie_job() ****************************************
-*  NAME
-*     job_is_zombie_job() -- Is 'job' a zombie job 
-*
-*  SYNOPSIS
-*     bool job_is_zombie_job(const lListElem *job) 
-*
-*  FUNCTION
-*     True will be returned if 'job' is a zombie job. 
-*
-*  INPUTS
-*     const lListElem *job - JB_Type 
-*
-*  RESULT
-*     bool - true or false 
-*******************************************************************************/
-bool job_is_zombie_job(const lListElem *job)
-{
-   return (lGetList(job, JB_ja_z_ids) != nullptr ? true : false);
-}
-
 /****** sgeobj/job/job_get_ja_task_template() *********************************
 *  NAME
 *     job_get_ja_task_template() -- create a ja task template 
@@ -831,9 +810,6 @@ int job_count_pending_tasks(const lListElem *job, bool count_all)
 *     lListElem *job          - JB_Type 
 *     lList **answer_list     - AN_Type 
 *     u_long32 ja_task_number - Task to be removed 
-*
-*  SEE ALSO
-*     sgeobj/job/job_add_as_zombie()
 ******************************************************************************/
 void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list, 
                                      u_long32 ja_task_number) 
@@ -847,38 +823,6 @@ void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
    for (i = 0; i < attributes; i++) { 
       object_delete_range_id(job, answer_list, attribute[i], ja_task_number);
    }
-   DRETURN_VOID;
-}
-
-/****** sgeobj/job/job_add_as_zombie() ****************************************
-*  NAME
-*     job_add_as_zombie() -- add task into zombie id list 
-*
-*  SYNOPSIS
-*     void job_add_as_zombie(lListElem *zombie, lList **answer_list, 
-*                            u_long32 ja_task_id) 
-*
-*  FUNCTION
-*     Adds a task into the zombie id list (JB_ja_z_ids)
-*
-*  INPUTS
-*     lListElem *zombie    - JB_Type 
-*     lList **answer_list  - AN_Type 
-*     u_long32 ja_task_id  - Task id to be inserted
-*
-*  SEE ALSO
-*     sgeobj/job/job_delete_not_enrolled_ja_task()
-******************************************************************************/
-void job_add_as_zombie(lListElem *zombie, lList **answer_list, 
-                       u_long32 ja_task_id) 
-{
-   lList *z_ids = nullptr;    /* RN_Type */
-
-   DENTER(TOP_LAYER);
-   lXchgList(zombie, JB_ja_z_ids, &z_ids);
-   range_list_insert_id(&z_ids, nullptr, ja_task_id);
-   range_list_compress(z_ids);
-   lXchgList(zombie, JB_ja_z_ids, &z_ids);    
    DRETURN_VOID;
 }
 
@@ -1914,7 +1858,6 @@ void job_check_correct_id_sublists(lListElem *job, lList **answer_list)
          JB_ja_s_h_ids,
          JB_ja_o_h_ids,
          JB_ja_a_h_ids,
-         JB_ja_z_ids,
          -1
       };
       int i = -1;

@@ -50,7 +50,6 @@ namespace ocs {
       lList* pe_list = nullptr;
       lList* ckpt_list = nullptr;
       lList* acl_list = nullptr;
-      lList* zombie_list = nullptr;
       lList* job_list = nullptr;
       lList* hgrp_list = nullptr;
       lList* project_list = nullptr;

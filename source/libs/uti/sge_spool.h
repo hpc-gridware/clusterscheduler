@@ -137,10 +137,6 @@ typedef enum {
 *
 *     SPOOL_DEFAULT - as it says the standard case
 *
-*     SPOOL_HANDLE_AS_ZOMBIE - used mostly for jobs/array tasks
-*                              which are already finished and
-*                              stored in the list of zombie jobs.
-*
 *     SPOOL_WITHIN_EXECD - Used for objects which are spooled
 *                          within the execd. 
 *
@@ -154,7 +150,6 @@ typedef enum {
 ******************************************************************************/
 typedef enum {
    SPOOL_DEFAULT = 0x0000,
-   SPOOL_HANDLE_AS_ZOMBIE = 0x0001,
    SPOOL_WITHIN_EXECD = 0x0002,
    SPOOL_IGNORE_TASK_INSTANCES = 0x0004,
    SPOOL_HANDLE_PARALLEL_TASKS = 0x0008,

@@ -94,8 +94,6 @@ object_get_subtype(int nm)
       case JB_ja_a_h_ids:
          ret = RN_Type;
          break;
-      case JB_ja_z_ids:
-         ret = RN_Type;
          break;
       case JB_ja_template:
          ret = JAT_Type;

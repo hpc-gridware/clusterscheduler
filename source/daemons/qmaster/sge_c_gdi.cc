@@ -185,7 +185,6 @@ static gdi_object_t gdi_object[] = {
         {ocs::gdi::Target::SGE_STN_LIST,     0,         nullptr,   "sharetree",               SGE_TYPE_SHARETREE,       nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::SGE_CK_LIST,      CK_name,   CK_Type,   "checkpoint interface",    SGE_TYPE_CKPT,            ckpt_mod,     ckpt_spool,     ckpt_success},
         {ocs::gdi::Target::SGE_SME_LIST,     0,         nullptr,   "schedd info",             SGE_TYPE_JOB_SCHEDD_INFO, nullptr,      nullptr,        nullptr},
-        {ocs::gdi::Target::SGE_ZOMBIE_LIST,  0,         nullptr,   "job zombie list",         SGE_TYPE_ZOMBIE,          nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::SGE_RQS_LIST,     RQS_name,  RQS_Type,  "resource quota set",      SGE_TYPE_RQS,             rqs_mod,      rqs_spool,      rqs_success},
         {ocs::gdi::Target::SGE_HGRP_LIST,    HGRP_name, HGRP_Type, "host group",              SGE_TYPE_HGROUP,          hgroup_mod,   hgroup_spool,   hgroup_success},
         {ocs::gdi::Target::SGE_AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success},

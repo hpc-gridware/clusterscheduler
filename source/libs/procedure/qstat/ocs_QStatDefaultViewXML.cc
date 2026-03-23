@@ -27,6 +27,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_cull_xml.h"
 #include "sgeobj/sge_job.h"
@@ -323,21 +324,6 @@ void ocs::QStatDefaultViewXML::report_error_jobs_finished(std::ostream &os) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_zombie_jobs_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-
-   qstat_xml_create_job_list();
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewXML::report_zombie_jobs_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("zombie", target_list);
-   DRETURN_VOID;
-}
-
 /*
 ** start and finished functions needed for clients/common/sge_qstat.c do work
 */
@@ -432,16 +418,14 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, u_long32 jid, job_su
       if (summary->has_io_usage)
          xml_append_Attr_D(attribute_list, "io_usage", summary->io_usage);
 
-      if (!summary->is_zombie) {
-         if (sge_ext ||summary->is_queue_assigned) {
-            xml_append_Attr_U(attribute_list, "tickets", summary->tickets);
-            xml_append_Attr_U(attribute_list, "JB_override_tickets", summary->override_tickets);
-            xml_append_Attr_U(attribute_list, "JB_jobshare", summary->share);
-            xml_append_Attr_U(attribute_list, "otickets", summary->otickets);
-            xml_append_Attr_U(attribute_list, "ftickets", summary->ftickets);
-            xml_append_Attr_U(attribute_list, "stickets", summary->stickets);
-            xml_append_Attr_D(attribute_list, "JAT_share", summary->share);
-         }
+      if (sge_ext ||summary->is_queue_assigned) {
+         xml_append_Attr_U(attribute_list, "tickets", summary->tickets);
+         xml_append_Attr_U(attribute_list, "JB_override_tickets", summary->override_tickets);
+         xml_append_Attr_U(attribute_list, "JB_jobshare", summary->share);
+         xml_append_Attr_U(attribute_list, "otickets", summary->otickets);
+         xml_append_Attr_U(attribute_list, "ftickets", summary->ftickets);
+         xml_append_Attr_U(attribute_list, "stickets", summary->stickets);
+         xml_append_Attr_D(attribute_list, "JAT_share", summary->share);
       }
    }
 

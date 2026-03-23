@@ -186,13 +186,12 @@ char *sge_get_file_path(char *buffer, size_t buffer_size, sge_file_path_id_t id,
                         sge_spool_flags_t spool_flags,
                         u_long32 ulong_val1, u_long32 ulong_val2,
                         const char *string_val1) {
-   int handle_as_zombie = spool_flags & SPOOL_HANDLE_AS_ZOMBIE;
    int first_part = format_flags & FORMAT_FIRST_PART;
    int second_part = format_flags & FORMAT_SECOND_PART;
    int third_part = format_flags & FORMAT_THIRD_PART;
    int insert_dot = format_flags & FORMAT_DOT_FILENAME;
    int in_execd = spool_flags & SPOOL_WITHIN_EXECD;
-   const char *spool_dir = (handle_as_zombie ? ZOMBIE_DIR : JOB_DIR);
+   const char *spool_dir = JOB_DIR;
 
    if (id == JOBS_SPOOL_DIR) {
       snprintf(buffer, buffer_size, SFN, spool_dir);

@@ -1294,17 +1294,6 @@ Examples:
     usage_patterns=gpu:nvidia.*|amd.*  
     usage_patterns=gpu:nvidia.*;power:power-*
 
-## finished_jobs
-
-Note: Deprecated, may be removed in future release. xxQS_NAMExx stores a certain number of *just finished* jobs to
-provide post-mortem status information. The *finished_jobs* parameter defines the number of finished jobs stored. 
-If this maximum number is reached, the eldest finished job will be discarded for every new job added to the finished 
-job list.
-
-Changing *finished_jobs* will take immediate effect. The default for *finished_jobs* is 100.
-
-This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
-
 ## qlogin_daemon
 
 This parameter specifies the mechanism that is to be started on the server side of a qlogin(1) request. Usually 

@@ -147,13 +147,13 @@ ocs::QHostModel::fetch_data(lList **answer_list, const lList *hostname_list, con
       }
 
       //                                 1           5              10             15             20             25
-      lEnumeration *what = lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)", JB_Type,
+      lEnumeration *what = lWhat("%T(%I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I %I)", JB_Type,
                                  JB_job_number, JB_script_file, JB_owner, JB_group, JB_type,
                                  JB_pe, JB_checkpoint_name, JB_jid_predecessor_list, JB_env_list, JB_priority,
                                  JB_jobshare, JB_job_name, JB_project, JB_department, JB_submission_time,
                                  JB_deadline, JB_override_tickets, JB_pe_range, JB_request_set_list, JB_ja_structure,
                                  JB_ja_tasks, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids,
-                                 JB_ja_a_h_ids, JB_ja_z_ids);
+                                 JB_ja_a_h_ids);
 
       j_id = gdi_multi.request(answer_list, Mode::RECORD, gdi::Target::SGE_JB_LIST, gdi::Command::SGE_GDI_GET,
                                gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);

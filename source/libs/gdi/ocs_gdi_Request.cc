@@ -96,7 +96,8 @@ ocs::gdi::Request::request(lList **alpp, Mode::ModeValue mode, gdi::Target::Targ
 }
 
 bool
-ocs::gdi::Request::get_response(lList **alpp, const Command::Cmd cmd, const SubCommand::SubCmd sub_cmd, const Target::TargetValue target, const int id, lList **list) {
+ocs::gdi::Request::get_response(lList **alpp, const Command::Cmd cmd, const SubCommand::SubCmd sub_cmd,
+                                const Target::TargetValue target, const int id, lList **list) {
    DENTER(GDI_MULTI_LAYER);
 
    // check parameters. list can be nullptr if no response data is expected

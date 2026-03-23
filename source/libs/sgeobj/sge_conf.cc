@@ -102,7 +102,6 @@ struct confel {                       /* cluster configuration parameters */
    char        *execd_params;
    char        *reporting_params;
    char        *gid_range;           /* Range of additional group ids */
-   u_long32    zombie_jobs;          /* jobs to save after execution */
    char        *qlogin_daemon;       /* eg /usr/sbin/in.telnetd */
    char        *qlogin_command;      /* eg telnet $HOST $PORT */
    char        *rsh_daemon;          /* eg /usr/sbin/in.rshd */
@@ -135,7 +134,7 @@ typedef struct confel sge_conf_type;
 static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
-   nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
    0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
 };
@@ -336,7 +335,6 @@ static int jsv_threshold = 5000;
 #define STAT_LOG_TIME             "0:15:0"
 #define LOGLEVEL                  "log_info"
 #define ADMIN_USER                "none"
-#define FINISHED_JOBS             "0"
 #define RESCHEDULE_UNKNOWN        "0:0:0"
 #define IGNORE_FQDN               "true"
 #define MAX_AJ_INSTANCES          "2000"
@@ -378,7 +376,6 @@ static tConfEntry conf_entries[] = {
  { "binding_params",             0, BINDING_PARAMS_DEFAULT,    1, nullptr},
  { "jsv_params",                 0, NONE_STR,                  1, nullptr},
  { "gid_range",                  1, NONE_STR,                  1, nullptr},
- { "finished_jobs",              0, FINISHED_JOBS,             1, nullptr},
  { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
  { "qlogin_command",             1, NONE_STR,                  1, nullptr},
  { "rsh_daemon",                 1, NONE_STR,                  1, nullptr},
@@ -564,7 +561,6 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "reporting_params",  &Master_Config.reporting_params, nullptr, 0);
    chg_conf_val(lpCfg, "binding_params",  &Master_Config.binding_params, nullptr, 0);
    chg_conf_val(lpCfg, "jsv_params",  &Master_Config.jsv_params, nullptr, 0);
-   chg_conf_val(lpCfg, "finished_jobs", nullptr, &Master_Config.zombie_jobs, TYPE_INT);
    chg_conf_val(lpCfg, "qlogin_daemon", &Master_Config.qlogin_daemon, nullptr, 0);
    chg_conf_val(lpCfg, "qlogin_command", &Master_Config.qlogin_command, nullptr, 0);
    chg_conf_val(lpCfg, "rsh_daemon", &Master_Config.rsh_daemon, nullptr, 0);
@@ -1331,7 +1327,6 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : NONE_STR, "reporting_params");
    INFO(MSG_CONF_USING_SS, Master_Config.binding_params != nullptr ? Master_Config.binding_params : NONE_STR, "binding_params");
    INFO(MSG_CONF_USING_SS, Master_Config.jsv_params != nullptr ? Master_Config.jsv_params : NONE_STR, "jsv_params");
-   INFO(MSG_CONF_USING_US, Master_Config.zombie_jobs, "finished_jobs");
    INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : NONE_STR, "qlogin_daemon");
    INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : NONE_STR, "qlogin_command");
    INFO(MSG_CONF_USING_SS, Master_Config.rsh_daemon != nullptr ? Master_Config.rsh_daemon : NONE_STR, "rsh_daemon");
@@ -1878,18 +1873,6 @@ char* mconf_get_gid_range() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(gid_range);
-}
-
-u_long32 mconf_get_zombie_jobs() {
-   u_long32 zombie_jobs;
-
-   DENTER(BASIS_LAYER);
-   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-
-   zombie_jobs = Master_Config.zombie_jobs;
-
-   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(zombie_jobs);
 }
 
 /* returned pointer needs to be freed */

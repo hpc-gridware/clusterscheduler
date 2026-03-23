@@ -42,7 +42,6 @@ std::string ocs::gdi::Target::targetToString(const TargetValue target) {
       case SGE_PR_LIST: return "SGE_PR_LIST";
       case SGE_STN_LIST: return "SGE_STN_LIST";
       case SGE_CK_LIST: return "SGE_CK_LIST";
-      case SGE_ZOMBIE_LIST: return "SGE_ZOMBIE_LIST";
       case SGE_USER_MAPPING_LIST: return "SGE_USER_MAPPING_LIST";
       case SGE_HGRP_LIST: return "SGE_HGRP_LIST";
       case SGE_RQS_LIST: return "SGE_RQS_LIST";

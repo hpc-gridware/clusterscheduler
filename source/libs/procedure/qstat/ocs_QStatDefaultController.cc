@@ -305,7 +305,6 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    QStatDefaultViewBase::job_summary_t summary{};
 
    summary.print_jobid = print_jobid;
-   summary.is_zombie = job_is_zombie_job(job);
 
    if (gdil_ep) {
       summary.queue = lGetString(gdil_ep, JG_qname);
@@ -1011,47 +1010,6 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_jobs_zombie_state(std::ostream &os, ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
-
-   lListElem *jep;
-   int count = 0;
-   dstring dyn_task_str = DSTRING_INIT;
-
-   DENTER(TOP_LAYER);
-
-   if (!(parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES)) {
-      sge_dstring_free(&dyn_task_str);
-      DRETURN_VOID;
-   }
-
-   for_each_rw (jep, model.zombie_list) {
-      const lList *z_ids = lGetList(jep, JB_ja_z_ids);
-      if (z_ids != nullptr) {
-         lListElem *ja_task = nullptr;
-         u_long32 first_task_id = range_list_get_first_id(z_ids, nullptr);
-
-         sge_dstring_clear(&dyn_task_str);
-
-         ja_task = job_get_ja_task_template_pending(jep, first_task_id);
-         range_list_print_to_string(z_ids, &dyn_task_str, false, false, false);
-
-         if (count == 0) {
-            view.report_zombie_jobs_started(os);
-         }
-         process_job(os, jep, ja_task, nullptr, nullptr, true, nullptr, &dyn_task_str, 0,0, 0,  parameter, model, view);
-         count++;
-      }
-   }
-
-   if (count > 0) {
-      view.report_zombie_jobs_finished(os);
-   }
-
-   sge_dstring_free(&dyn_task_str);
-   DRETURN_VOID;
-}
-
-
 void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master,
                                     int slots, int slot, int *count,
                                     QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
@@ -1294,7 +1252,6 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
    process_jobs_pending_state(oss, parameter, model, view);
    process_jobs_finished_state(oss, parameter, model, view);
    process_jobs_error_state(oss, parameter, model, view);
-   process_jobs_zombie_state(oss, parameter, model, view);
 
    view.report_finished(oss);
 

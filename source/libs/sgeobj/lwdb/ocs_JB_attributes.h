@@ -87,7 +87,6 @@ enum {
    JB_ja_s_h_ids,
    JB_ja_o_h_ids,
    JB_ja_a_h_ids,
-   JB_ja_z_ids,
    JB_ja_template,
    JB_ja_tasks,
    JB_host,
@@ -177,7 +176,6 @@ constexpr const int JB_Type[] = {
    JB_ja_s_h_ids,
    JB_ja_o_h_ids,
    JB_ja_a_h_ids,
-   JB_ja_z_ids,
    JB_ja_template,
    JB_ja_tasks,
    JB_host,
@@ -268,7 +266,6 @@ constexpr const int JB_Type[] = {
    {JB_ja_s_h_ids, "JB_ja_s_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_ja_o_h_ids, "JB_ja_o_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_ja_a_h_ids, "JB_ja_a_h_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_ja_z_ids, "JB_ja_z_ids", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_ja_template, "JB_ja_template", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_ja_tasks, "JB_ja_tasks", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_host, "JB_host", AttributeStatic::HOST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

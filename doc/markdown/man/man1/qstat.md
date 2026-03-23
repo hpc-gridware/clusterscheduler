@@ -14,7 +14,7 @@ date: __DATE__
 
 `qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
 \[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
-\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|z\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
+\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
 \[`-t`\] \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
 
 # DESCRIPTION
@@ -128,9 +128,9 @@ Prints extended information about the resource requirements of the displayed job
 
 Please refer to the *OUTPUT FORMATS* sub-section *Expanded Format* below for detailed information.
 
-## -s {*p*\|*r*\|*s*\|*z*\|*hu*\|*ho*\|*hs*\|*hd*\|*hj*\|*ha*\|*h*\|*a*}\[+\]  
+## -s {*p*\|*r*\|*s*\|*hu*\|*ho*\|*hs*\|*hd*\|*hj*\|*ha*\|*h*\|*a*}\[+\]  
 Prints only jobs in the specified state, any combination of states is possible. `-s` *prs* corresponds to the regular 
-`qstat` output without `-s` at all. To show recently finished jobs, use `-s` *z*. To display jobs in 
+`qstat` output without `-s` at all. To display jobs in 
 user/operator/system/array-dependency hold, use the `-s` *hu*/*ho*/*hs*/*hd* option. The `-s` *ha* option shows jobs 
 which where submitted with the `qsub -a` command. `qstat -s` *hj* displays all jobs which are not eligible for 
 execution unless the job has entries in the job dependency list. `qstat -s` *h* is an abbreviation for 

@@ -362,7 +362,6 @@ spool_classic_default_startup_func(lList **answer_list,
       } else {
          /* create spool sub directories */
          sge_mkdir2(url, JOB_DIR,  0755, true);
-         sge_mkdir2(url, ZOMBIE_DIR, 0755, true);
          sge_mkdir2(url, CQUEUE_DIR,  0755, true);
          sge_mkdir2(url, QINSTANCES_DIR,  0755, true);
          sge_mkdir2(url, EXECHOST_DIR, 0755, true);
@@ -665,7 +664,6 @@ spool_classic_default_list_func(lList **answer_list,
              break;
          case SGE_TYPE_JOB:
             job_list_read_from_disk(list, "master job list", 0, SPOOL_DEFAULT, nullptr);
-            job_list_read_from_disk(list, "master zombie job list", 0, SPOOL_HANDLE_AS_ZOMBIE, nullptr);
             break;
          default:
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 

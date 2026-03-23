@@ -163,7 +163,6 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr }, /*hgroup*/
    { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, generic_update_master_list,             nullptr, nullptr }, /*zombie*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
@@ -704,7 +703,6 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
             evc->ec_mod_subscription_where(evc, sgeE_RQS_MOD, what_el, where_el);
          }
          break;
-      case SGE_TYPE_ZOMBIE:
       case SGE_TYPE_SUSER:
          ret = SGE_EM_NOT_INITIALIZED;
          break;
@@ -957,8 +955,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_RQS_DEL);
          evc->ec_unsubscribe(evc, sgeE_RQS_MOD);
          break;
-      case SGE_TYPE_ZOMBIE:
-            DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_SUSER:
             DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_AR:

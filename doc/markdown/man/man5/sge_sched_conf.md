@@ -273,7 +273,7 @@ with a very large amount of jobs by setting this parameter to "false".
 
 ## halflife_decay_list
 
-The halflife_decay_list allows to configure different decay rates for the "finished_jobs usage types, which is used 
+The halflife_decay_list allows to configure different decay rates for the finished jobs usage types, which is used 
 in the pending job ticket calculation to account for jobs which have just ended. This allows the user the pending 
 jobs algorithm to count finished jobs against a user or project for a configurable decayed time period. This 
 feature is turned off by default, and the halftime is used instead. The halflife_decay_list also allows one to 

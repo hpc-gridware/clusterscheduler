@@ -232,12 +232,6 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QSt
 void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_zombie_jobs_started(std::ostream &os) {
-}
-
-void ocs::QStatDefaultViewPlain::report_zombie_jobs_finished(std::ostream &os) {
-}
-
 void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, u_long32 jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) {
    DENTER(TOP_LAYER);
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
@@ -333,14 +327,6 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, u_long32 jid, job_
 
       job_header_printed = true;
    }
-
-   if (summary->is_zombie && (parameter.full_listing_& QSTAT_DISPLAY_ZOMBIES) && (parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
-      static bool zombie_header_printed = false;
-      if (!zombie_header_printed) {
-         show_header_with_title(os, parameter, MSG_QSTAT_PRT_FINISHEDJOBS);
-      }
-   }
-
 
    /* job id */
    /* job number / ja task id */
@@ -477,24 +463,15 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, u_long32 jid, job_
       /* report jobs dynamic scheduling attributes */
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
-      if (summary->is_zombie) {
-         os << std::format("{:<5} ", "NA");
-         os << std::format("{:<5} ", "NA");
-         os << std::format("{:<5} ", "NA");
-         os << std::format("{:<5} ", "NA");
-         os << std::format("{:<5} ", "NA");
-         os << std::format("{:<5} ", "NA");
+      if (sge_ext || summary->is_queue_assigned) {
+         os << std::format("{:<5d} ", (int)summary->tickets);
+         os << std::format("{:<5d} ", (int)summary->override_tickets);
+         os << std::format("{:<5d} ", (int)summary->otickets);
+         os << std::format("{:<5d} ", (int)summary->ftickets);
+         os << std::format("{:<5d} ", (int)summary->stickets);
+         os << std::format("{:<5.2f} ", summary->share);
       } else {
-         if (sge_ext || summary->is_queue_assigned) {
-            os << std::format("{:<5d} ", (int)summary->tickets);
-            os << std::format("{:<5d} ", (int)summary->override_tickets);
-            os << std::format("{:<5d} ", (int)summary->otickets);
-            os << std::format("{:<5d} ", (int)summary->ftickets);
-            os << std::format("{:<5d} ", (int)summary->stickets);
-            os << std::format("{:<5.2f} ", summary->share);
-         } else {
-            os << std::string((5 + 1) * 6, ' ');
-         }
+         os << std::string((5 + 1) * 6, ' ');
       }
    }
 

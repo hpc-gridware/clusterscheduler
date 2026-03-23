@@ -400,28 +400,6 @@ do_load_adjustment(scheduler_all_data_t *lists, lList *running_jobs, lList *job_
    DRETURN_VOID;
 }
 
-/****** schedd/scheduler/dispatch_jobs() **************************************
-*  NAME
-*     dispatch_jobs() -- dispatches jobs to queues
-*
-*  SYNOPSIS
-*     static int dispatch_jobs(sge_Sdescr_t *lists, lList **orderlist, lList 
-*     **running_jobs, lList **finished_jobs) 
-*
-*  FUNCTION
-*     dispatch_jobs() is responsible for splitting
-*     still running jobs into 'running_jobs' 
-*
-*  INPUTS
-*     sge_Sdescr_t *lists   - all lists
-*     lList **orderlist     - returns orders to be sent to qmaster
-*     lList **running_jobs  - returns all running jobs
-*     lList **finished_jobs - returns all finished jobs
-*
-*  RESULT
-*     0   ok
-*     -1  got inconsistent data
-******************************************************************************/
 static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders,
                          lList **splitted_job_lists[]) {
    DENTER(TOP_LAYER);

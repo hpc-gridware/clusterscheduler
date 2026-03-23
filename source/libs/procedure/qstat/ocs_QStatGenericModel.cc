@@ -77,7 +77,6 @@ ocs::QStatGenericModel::qstat_filter_add_core_attributes(ocs::QStatParameter &pa
       JB_ja_o_h_ids,
       JB_ja_s_h_ids,
       JB_ja_a_h_ids,
-      JB_ja_z_ids,
       JB_ja_template,
       JB_execution_time,
       JB_request_set_list,
@@ -149,7 +148,7 @@ int ocs::QStatGenericModel::build_job_state_filter(lList **alpp, QStatParameter 
        * come after multi byte options starting with the same character (e.g. "hs")!
        */
       static const char* flags[] = {
-         "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "z", "a", nullptr
+         "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "a", nullptr
       };
       static u_long32 bits[] = {
          (QSTAT_DISPLAY_USERHOLD|QSTAT_DISPLAY_PENDING),
@@ -162,7 +161,6 @@ int ocs::QStatGenericModel::build_job_state_filter(lList **alpp, QStatParameter 
          QSTAT_DISPLAY_PENDING,
          QSTAT_DISPLAY_RUNNING,
          QSTAT_DISPLAY_SUSPENDED,
-         QSTAT_DISPLAY_ZOMBIES,
          (QSTAT_DISPLAY_PENDING|QSTAT_DISPLAY_RUNNING|QSTAT_DISPLAY_SUSPENDED),
          0
       };
@@ -752,7 +750,7 @@ void ocs::QStatGenericModel::calc_longest_queue_length(QStatParameter &parameter
 bool ocs::QStatGenericModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
-   int q_id, j_id, pe_id, ckpt_id, acl_id, z_id, up_id, ce_id, eh_id, sc_id, gc_id, hgrp_id;
+   int q_id, j_id, pe_id, ckpt_id, acl_id, up_id, ce_id, eh_id, sc_id, gc_id, hgrp_id;
    lCondition *where = nullptr;
    lEnumeration *what = nullptr;
    gdi::Request gdi_multi{};
@@ -775,29 +773,6 @@ bool ocs::QStatGenericModel::fetch_data(lList **alpp, QStatParameter &parameter)
       what = qstat_get_JB_Type_filter();
       where = qstat_get_JB_Type_selection(parameter.user_list_, parameter.full_listing_);
       j_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_JB_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, what, true);
-      lFreeWhere(&where);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(false);
-      }
-   }
-
-   if (parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES) {
-      const lListElem *ep = nullptr;
-
-      for_each_ep(ep, parameter.user_list_) {
-         lCondition *tmp_where = nullptr;
-         if (const char *user_name = lGetString(ep, ST_name); is_pattern(user_name)) {
-            tmp_where = lWhere("%T(%I p= %s)", JB_Type, JB_owner, user_name);
-         } else {
-            tmp_where = lWhere("%T(%I == %s)", JB_Type, JB_owner, user_name);
-         }
-         if (tmp_where != nullptr) {
-            where = tmp_where;
-         } else {
-            where = lOrWhere(where, tmp_where);
-         }
-      }
-      z_id = gdi_multi.request(alpp, Mode::RECORD, gdi::Target::SGE_ZOMBIE_LIST, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, nullptr, where, qstat_get_JB_Type_filter(), true);
       lFreeWhere(&where);
       if (answer_list_has_error(alpp)) {
          DRETURN(false);
@@ -891,13 +866,6 @@ bool ocs::QStatGenericModel::fetch_data(lList **alpp, QStatParameter &parameter)
       // debug output to perform testsuite tests
       if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != nullptr) {
          fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received=" sge_u32 "\n", lGetNumberOfElem(job_list));
-      }
-   }
-
-   if (parameter.full_listing_ & QSTAT_DISPLAY_ZOMBIES) {
-      gdi_multi.get_response(alpp, gdi::Command::SGE_GDI_GET, gdi::SubCommand::SGE_GDI_SUB_NONE, gdi::Target::SGE_ZOMBIE_LIST, z_id, &zombie_list);
-      if (answer_list_has_error(alpp)) {
-         DRETURN(false);
       }
    }
 
@@ -1234,7 +1202,6 @@ void ocs::QStatGenericModel::free_data() {
    lFreeList(&pe_list);
    lFreeList(&ckpt_list);
    lFreeList(&acl_list);
-   lFreeList(&zombie_list);
    lFreeList(&job_list);
    lFreeList(&hgrp_list);
    lFreeList(&project_list);

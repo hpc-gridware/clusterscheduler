@@ -738,21 +738,6 @@
 					"name":	"SPOOL"
 				}]
 		}, {
-			"name":	"ja_z_ids",
-			"summary":	"Zombie Task IDs",
-			"description":	[
-            { "line":	"Zombie task ids (RN_Type)." },
-            { "line":	"@todo still used?" }
-         ],
-			"type":	"lListT",
-			"subClassName":	"RN",
-			"subCullPrefix":	"RN",
-			"flags":	[{
-					"name":	"JGDI_HIDDEN"
-				}, {
-					"name":	"SPOOL"
-				}]
-		}, {
 			"name":	"ja_template",
 			"summary":	"Template for new Tasks",
 			"description":	[

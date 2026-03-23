@@ -75,7 +75,6 @@
 #define MSG_CQUEUE_NOQMATCHING_S             _MESSAGE(1033, _("No cluster queue or queue instance matches the phrase " SFQ))
 #define MSG_PE_NOSUCHPARALLELENVIRONMENT     _MESSAGE(1034, _("error: no such parallel environment"))
 
-#define MSG_QSTAT_PRT_FINISHEDJOBS           _MESSAGE(1040, _(" --  FINISHED JOBS  -  FINISHED JOBS  -  FINISHED JOBS  -  FINISHED JOBS  --  "))
 #define MSG_QSTAT_PRT_PEDINGJOBS             _MESSAGE(1041, _(" - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS"))
 #define MSG_PARSE_NOOPTIONARGUMENT           _MESSAGE(1042, _("ERROR! no option argument"))
 #define MSG_NORQSFOUND                       _MESSAGE(1043, _("No resource quota set found"))

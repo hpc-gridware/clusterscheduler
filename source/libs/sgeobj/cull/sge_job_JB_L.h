@@ -266,10 +266,6 @@
 *    Just submitted and array hold applied (RN_Type).
 *    qalter -hold_jid_ad wc_job_list
 *
-*    SGE_LIST(JB_ja_z_ids) - Zombie Task IDs
-*    Zombie task ids (RN_Type).
-*    @todo still used?
-*
 *    SGE_LIST(JB_ja_template) - Template for new Tasks
 *    Template for new tasks. In SGEEE systems the schedd will
 *    store initial tickets in this element. (JAT_Type)
@@ -449,7 +445,6 @@ enum {
    JB_ja_s_h_ids,
    JB_ja_o_h_ids,
    JB_ja_a_h_ids,
-   JB_ja_z_ids,
    JB_ja_template,
    JB_ja_tasks,
    JB_host,
@@ -539,7 +534,6 @@ LISTDEF(JB_Type)
    SGE_LIST(JB_ja_s_h_ids, RN_Type, CULL_SPOOL)
    SGE_LIST(JB_ja_o_h_ids, RN_Type, CULL_SPOOL)
    SGE_LIST(JB_ja_a_h_ids, RN_Type, CULL_SPOOL)
-   SGE_LIST(JB_ja_z_ids, RN_Type, CULL_SPOOL)
    SGE_LIST(JB_ja_template, JAT_Type, CULL_SPOOL)
    SGE_LIST(JB_ja_tasks, JAT_Type, CULL_SPOOL)
    SGE_HOST(JB_host, CULL_DEFAULT)
@@ -629,7 +623,6 @@ NAMEDEF(JBN)
    NAME("JB_ja_s_h_ids")
    NAME("JB_ja_o_h_ids")
    NAME("JB_ja_a_h_ids")
-   NAME("JB_ja_z_ids")
    NAME("JB_ja_template")
    NAME("JB_ja_tasks")
    NAME("JB_host")

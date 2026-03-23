@@ -99,7 +99,6 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"USERSET",           US_Type,   US_name},
         {"HOSTGROUP",         HGRP_Type, HGRP_name},
         {"COMPLEX_ENTRY",     CE_Type,   CE_name},
-        {"ZOMBIE_JOBS",       JB_Type,   JB_job_number},
         {"SUBMIT_USER",       SU_Type,   SU_name},
         {"RQS",               RQS_Type,  RQS_name},
         {"AR",                AR_Type,   AR_id},

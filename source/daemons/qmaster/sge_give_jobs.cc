@@ -132,9 +132,6 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
 static int
 sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events, u_long64 gdi_session);
 
-static int
-sge_to_zombies(lListElem *jep, lListElem *ja_task);
-
 static void
 sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis, u_long64 gdi_session);
 
@@ -884,31 +881,6 @@ create_timed_events_for_simulated_jobs() {
    DRETURN_VOID;
 }
 
-/***********************************************************************
- sge_zombie_job_cleanup_handler
-
- Remove zombie jobs, which have expired (currently, we keep a list of
- conf.zombie_jobs entries)
- ***********************************************************************/
-void
-sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
-   lListElem *dep;
-   lList *master_zombie_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
-   const u_long32 zombie_count = mconf_get_zombie_jobs();
-
-   DENTER(TOP_LAYER);
-
-   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
-
-   while (lGetNumberOfElem(master_zombie_list) > zombie_count) {
-      dep = lFirstRW(master_zombie_list);
-      lRemoveElem(master_zombie_list, &dep);
-   }
-
-   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-   DRETURN_VOID;
-}
-
 /****** sge_give_jobs/sge_commit_job() *****************************************
 *  NAME
 *     sge_commit_job() -- Do job state transitions
@@ -958,7 +930,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
    int spool_job = !(commit_flags & COMMIT_NO_SPOOLING);
    int no_events = (commit_flags & COMMIT_NO_EVENTS);
    int unenrolled_task = (commit_flags & COMMIT_UNENROLLED_TASK);
-   int handle_zombies = (mconf_get_zombie_jobs() > 0);
    u_long64 now = sge_get_gmt64();
    const char *session;
    lList *answer_list = nullptr;
@@ -1267,9 +1238,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname, jr, jep,
                                   jatep, nullptr, MSG_LOG_EXITED);
          remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
-         if (handle_zombies) {
-            sge_to_zombies(jep, jatep);
-         }
          if (!unenrolled_task) {
             sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          }
@@ -1288,9 +1256,6 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          /* possibly release successor tasks if there are any array dependencies on this task */
          if (jataskid) {
             release_successor_tasks_ad(jep, jataskid, gdi_session);
-         }
-         if (handle_zombies) {
-            sge_to_zombies(jep, jatep);
          }
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
@@ -1959,69 +1924,6 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
 
    DRETURN(True);
 }
-
-static int
-sge_to_zombies(lListElem *job, lListElem *ja_task) {
-   u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   u_long32 job_id = lGetUlong(job, JB_job_number);
-   int is_defined;
-   lList **master_zombie_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
-
-   DENTER(TOP_LAYER);
-
-   is_defined = job_is_ja_task_defined(job, ja_task_id);
-   if (is_defined) {
-      lListElem *zombie = lGetElemUlongRW(*master_zombie_list, JB_job_number, job_id);
-
-      /*
-       * Create zombie job list if it does not exist
-       */
-      if (*master_zombie_list == nullptr) {
-         *master_zombie_list = lCreateList("master zombie job list", JB_Type);
-      }
-
-      /*
-       * Create zombie job if it does not exist
-       * (don't copy unnecessary sublists)
-       */
-      if (zombie == nullptr) {
-         lList *n_h_ids = nullptr;     /* RN_Type */
-         lList *u_h_ids = nullptr;     /* RN_Type */
-         lList *o_h_ids = nullptr;     /* RN_Type */
-         lList *s_h_ids = nullptr;     /* RN_Type */
-         lList *a_h_ids = nullptr;     /* RN_Type */
-         lList *ja_tasks = nullptr;    /* JAT_Type */
-
-         lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-         lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-         lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-         lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-         lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
-         lXchgList(job, JB_ja_tasks, &ja_tasks);
-         zombie = lCopyElem(job);
-         lXchgList(job, JB_ja_n_h_ids, &n_h_ids);
-         lXchgList(job, JB_ja_u_h_ids, &u_h_ids);
-         lXchgList(job, JB_ja_o_h_ids, &o_h_ids);
-         lXchgList(job, JB_ja_s_h_ids, &s_h_ids);
-         lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
-         lXchgList(job, JB_ja_tasks, &ja_tasks);
-         lAppendElem(*master_zombie_list, zombie);
-      }
-
-      /*
-       * Add the zombie task id
-       */
-      if (zombie) {
-         job_add_as_zombie(zombie, nullptr, ja_task_id);
-      }
-
-   } else {
-      WARNING("It is impossible to move task " sge_u32" of job " sge_u32 " to the list of finished jobs\n", ja_task_id, job_id);
-   }
-
-   DRETURN(True);
-}
-
 
 /****** sge_give_jobs/copyJob() ************************************************
 *  NAME

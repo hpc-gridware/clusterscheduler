@@ -104,7 +104,7 @@ ocs::QStatParameter::qstat_usage(FILE *fp, char *what)
       if (!qselect_mode)
          fprintf(fp, "        [-r]                              %s\n",MSG_QSTAT_USAGE_SHOWREQUESTEDRESOURCESOFJOB);
       if (!qselect_mode) {
-         fprintf(fp, "        [-s {p|r|s|z|hu|ho|hs|hd|hj|ha|h|a}] %s\n",MSG_QSTAT_USAGE_SHOWPENDINGRUNNINGSUSPENDESZOMBIEJOBS);
+         fprintf(fp, "        [-s {p|r|s|hu|ho|hs|hd|hj|ha|h|a}] %s\n",MSG_QSTAT_USAGE_SHOWPENDINGRUNNINGSUSPENDESZOMBIEJOBS);
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_JOBSWITHAUSEROPERATORSYSTEMHOLD);
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_JOBSWITHSTARTTIMEINFUTORE);
          fprintf(fp, "                                          %s\n",MSG_QSTAT_USAGE_HISABBREVIATIONFORHUHOHSHJHA);
