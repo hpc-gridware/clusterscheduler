@@ -198,7 +198,7 @@ bool ocs::QRStatModel::fetch_data(lList **answer_list, QRStatParameter& paramete
    if (!parameter.is_summary) {
       qrstat_filter_add_ar_attributes(parameter);
       qrstat_filter_add_ar_where(parameter);
-
+   } else {
       str_list_transform_user_list(&parameter.user_list, answer_list, parameter.user);
       qrstat_filter_add_u_where(parameter);
    }

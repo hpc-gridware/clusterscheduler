@@ -543,7 +543,18 @@ UpOrDowngradeTo902000() {
    working_dir="${2:?Missing working dir parameter}"; # directory containing the backup files
 
    if [ "$do_upgrade" -eq 1 ]; then
-      LogIt "E" "Upgrade to 9.2.x (902000) not implemented (CS-1771)"
+      # Upgrade Step 1: Configuration Objects
+      LogIt "I" "Modifying configuration objects to add/mod/del entries"
+      for file in "$working_dir/configurations/"*; do
+         obj_name=$(basename "$file")
+
+         # In global configuration
+         if [ "$obj_name" = "global" ]; then
+
+            # Remove finished jobs (zombie jobs) attribute (deprecated and not used anymore)
+            RemoveLineWithMatch "${file}" 'finished_jobs.*' ""
+         fi
+      done
    else
       LogIt "E" "Downgrade to 9.2.x not supported"
       return 1

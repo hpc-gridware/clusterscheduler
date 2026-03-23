@@ -382,7 +382,7 @@ void
 ocs::QRStatViewPlain::report_mail_list_node(std::ostream &os, const char *name, const char *host) {
    DENTER(TOP_LAYER);
    if (!show_summary) {
-      os << (first_mail ? "" : ", ") << " " <<  (name ? name : "") << "@" << (host ? host : "");
+      os << (first_mail ? "" : ",") << (name ? name : "") << "@" << (host ? host : "");
       if (first_mail) {
          first_mail = false;
       }
