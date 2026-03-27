@@ -139,10 +139,10 @@ sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const lListElem
    bool ret = true;
 
    const char *global_rule = job_get_allocation_rule(jep, JRS_SCOPE_GLOBAL);
+   const char *master_rule = job_get_allocation_rule(jep, JRS_SCOPE_MASTER);
+   const char *slave_rule = job_get_allocation_rule(jep, JRS_SCOPE_SLAVE);
 
    if (global_rule != nullptr) {
-      const char *master_rule = job_get_allocation_rule(jep, JRS_SCOPE_MASTER);
-      const char *slave_rule = job_get_allocation_rule(jep, JRS_SCOPE_SLAVE);
       if (master_rule != nullptr) {
          ERROR(MSG_JOB_GLOBALMASTERSLAVEA_S, "master");
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -153,6 +153,18 @@ sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const lListElem
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }
+   }
+
+   // It doesn't make sense to specify $pe_slots for master or slave scope - reject it.
+   if (master_rule != nullptr && strcmp(master_rule, "$pe_slots") == 0) {
+      ERROR(MSG_JOB_MASTERSLAVE_A_SS, master_rule, "master");
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
+   }
+   if (slave_rule != nullptr && strcmp(slave_rule, "$pe_slots") == 0) {
+      ERROR(MSG_JOB_MASTERSLAVE_A_SS, slave_rule, "slave");
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
    }
 
    return ret;

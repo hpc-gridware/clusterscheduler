@@ -262,6 +262,7 @@
 #define MSG_JOB_SUBMITJOBARRAY_UUUUS  _MESSAGE(33235, _("Your job-array " sge_u32 "." sge_u32 "-" sge_u32 ":" sge_u32 " (" SFQ ") has been submitted"))
 #define MSG_LOG_NEWJOB                _MESSAGE(33236, _("new job"))
 #define MSG_JOB_GLOBALMASTERSLAVEA_S  _MESSAGE(33232, _("job rejected: overwriting global allocation_rule in %s requests is not allowed"))
+#define MSG_JOB_MASTERSLAVE_A_SS      _MESSAGE(33233, _("job rejected: overwriting allocation_rule to " SFQ " is not allowed in scope " SFN))
 #define MSG_JOB_JOB                   _MESSAGE(33239, _("Job"))
 #define MSG_JOB_FORCEDDELETEPERMS_S   _MESSAGE(33240, _(SFQ " - forcing a job deletion requires manager privileges"))
 #define MSG_DELETEPERMS_SSU           _MESSAGE(33241, _(SFN " - you do not have the necessary privileges to delete the " SFN " \"" sge_u32 "\""))
