@@ -145,10 +145,14 @@ typedef struct {
    lList      *limit_list;        // the resource quota limit list (RQL_Type)
    lList      *skip_cqueue_list;  // cluster queues that need not be checked anymore (CTI_Type)
    lList      *skip_host_list;    // hosts that need not be checked anymore (CTI_Type)
-   // -------------------- this section is the resulting assignment --------------------
+   // -------------------- this section are parallel job related settings --------------------
    lListElem  *pe;                // the parallel environment (PE_Type)
    const char* pe_name;           // name of the PE
-   const char *allocation_rule;   // the allocation rule of the PE or overwritten globally
+   const char *allocation_rule;   // the allocation rule of the PE or overwritten globally/for slaves
+   int allocation_parsed;         // the allocation rule of the PE parsed with a->slots as the maximum
+   const char *mallocation_rule;  // the allocation rule for the master task (or nullptr)
+   int mallocation_parsed;        // the allocation rule for the master task parsed with a->slots as the maximum (or nullptr)
+   // -------------------- this section is the resulting assignment --------------------
    lList      *gdil;              // the resources (JG_Type)
    int        slots;              // total number of slots we do matching against
    u_long64   start;              // jobs start time
@@ -162,10 +166,13 @@ typedef struct {
 } sge_assignment_t;
 
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
-   0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0, \
-   false, false, \
-   nullptr, nullptr, nullptr, \
-   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, false, nullptr, false, nullptr}
+   0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0,    \
+   false, false,                                                                                                       \
+   nullptr, nullptr, nullptr,                            /* caching */                                                 \
+   nullptr, nullptr, nullptr, 0, nullptr, 0,             /* parallel job related settings */                           \
+   nullptr, 0, 0, 0, nullptr, false, nullptr, false,     /* resulting assignment */                                    \
+   nullptr                                               /* profiling */                                               \
+}
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
