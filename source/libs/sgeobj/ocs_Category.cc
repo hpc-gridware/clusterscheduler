@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
             sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope master -par");
             break;
          case JRS_SCOPE_SLAVE:
-            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope master -par");
+            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope slave -par");
             break;
       }
    }
