@@ -611,30 +611,22 @@ int cl_thread_func_testcancel(cl_thread_settings_t *thread_config) {
 
    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
    if (thread_config->thread_cleanup_func != nullptr) {
-#if not defined(XLINUXAMD64)
       constexpr int execute_pop = 0;
       // push user cleanup function
       pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(thread_config->thread_cleanup_func), thread_config) ;
       // push default cleanup function
       pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(cl_thread_default_cleanup_function), thread_config) ;
-#endif
       // check if the thread was cancelled - if yes, pthread_testcancel() will not return
       pthread_testcancel();
-#if not defined(XLINUXAMD64)
       pthread_cleanup_pop(execute_pop);
       pthread_cleanup_pop(execute_pop);
-#endif
    } else {
-#if not defined(XLINUXAMD64)
       constexpr int execute_pop = 0;
       // push default cleanup function
       pthread_cleanup_push(reinterpret_cast<void (*)(void *)>(cl_thread_default_cleanup_function), thread_config) ;
-#endif
       // check if the thread was cancelled - if yes, pthread_testcancel() will not return
       pthread_testcancel();
-#if not defined(XLINUXAMD64)
       pthread_cleanup_pop(execute_pop);
-#endif
    }
    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
 
