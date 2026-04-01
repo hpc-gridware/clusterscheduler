@@ -402,6 +402,8 @@ assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
    a->pe = pe;
    a->pe_name = lGetString(pe, PE_name);
    a->allocation_rule = lGetString(pe, PE_allocation_rule);
+   a->mallocation_rule = nullptr;
+   a->allocation_parsed = a->mallocation_parsed = 0;
 
    DPRINTF("assignment_init_pe: pe_name: %s, slots: %d\n", a->pe_name, a->slots);
 
@@ -4626,7 +4628,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            parallel_add_queue_to_gdil(a, queue_slot.qname, eh_name, qep, queue_slot.slots, queue_slot.is_master_queue);
                         } else {
                            // Update slots of an existing GDIL element (in case of $round_robin)
-                           lAddUlong(gdil_ep, JG_slots, slots);
+                           lAddUlong(gdil_ep, JG_slots, queue_slot.slots);
                         }
 
                         a->soft_violations += queue_slot.soft_violations;
