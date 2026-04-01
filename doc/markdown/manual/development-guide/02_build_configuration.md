@@ -36,7 +36,7 @@ with *PROJECT_EXTENSIONS*. The *PROJECT_FEATURES* variable can then be set to "g
 the default value of "clusterscheduler" to enforce that the product is built with enterprise features.
 
 ```
-cmake ... -DPROJECT_EXTENSIONS=$OCS_BASE/oge-extensions -DPROJECT_FEATURES="oge-extension"
+cmake ... -DPROJECT_EXTENSIONS=$OCS_BASE/gcs-extensions -DPROJECT_FEATURES="gcs-extension"
 ```
 
 If you want to install to a different location than the default */opt/ge* specify *CMAKE_INSTALL_PREFIX*:
@@ -154,8 +154,8 @@ documentation.
 cd /usr/local/testsuite/8004/build/lx-amd64
 cmake -S /home/ebablick/OCS/ge2/clusterscheduler \
       -DPROJECT_3RDPARTY_HOME=/usr/local/testsuite/8004/build_3rdparty \
-      -DPROJECT_EXTENSIONS=/home/ebablick/OCS/ge2/oge-extensions \
-      -DPROJECT_FEATURES="oge-extension" \
+      -DPROJECT_EXTENSIONS=/home/ebablick/OCS/ge2/gcs-extensions \
+      -DPROJECT_FEATURES="gcs-extension" \
       -DCMAKE_INSTALL_PREFIX=/home/ebablick/OCS/ge2/inst \
       -DCMAKE_BUILD_TYPE=Debug \
       -DINSTALL_SGE_BIN=ON \

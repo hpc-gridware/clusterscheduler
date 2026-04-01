@@ -29,7 +29,7 @@ TITLE_PAGE="${SOURCE_DIR}/${COMMON_DIR}/titlepage.md"
 COPYRIGHT_PAGE="${SOURCE_DIR}/${COMMON_DIR}/copyright.md"
 DEFINITIONS_PAGE="${SOURCE_DIR}/${COMMON_DIR}/typographic_conventions.md"
 
-# Input files for the manual itself come from clusterscheduler or oge-extensions repository
+# Input files for the manual itself come from clusterscheduler or gcs-extensions repository
 MANUAL_FILES="${INPUT_DIR}/*.md"
 OUTPUT_FILE="${OUTPUT_DIR}/${MANUAL}.pdf"
 

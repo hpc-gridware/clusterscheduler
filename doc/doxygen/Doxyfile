@@ -950,9 +950,9 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 # Paths have to be relative to the doc/doxygen directory
-#INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../../../clusterscheduler/source/  @CMAKE_CURRENT_SOURCE_DIR@/../../../oge-extensions/source/
-#INPUT                  = ./clusterscheduler/source/ ./oge-extensions/source/
-INPUT                  = ./oge-extensions/source/
+#INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../../../clusterscheduler/source/  @CMAKE_CURRENT_SOURCE_DIR@/../../../gcs-extensions/source/
+#INPUT                  = ./clusterscheduler/source/ ./gcs-extensions/source/
+INPUT                  = ./gcs-extensions/source/
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1518,7 +1518,7 @@ DOCSET_FEEDURL         =
 # The default value is: org.doxygen.Project.
 # This tag requires that the tag GENERATE_DOCSET is set to YES.
 
-DOCSET_BUNDLE_ID       = com.hpc-gridware.oge
+DOCSET_BUNDLE_ID       = com.hpc-gridware.ocs
 
 # The DOCSET_PUBLISHER_ID tag specifies a string that should uniquely identify
 # the documentation publisher. This should be a reverse domain-name style
@@ -1526,7 +1526,7 @@ DOCSET_BUNDLE_ID       = com.hpc-gridware.oge
 # The default value is: org.doxygen.Publisher.
 # This tag requires that the tag GENERATE_DOCSET is set to YES.
 
-DOCSET_PUBLISHER_ID    = com.hpc-gridware.oge.documentation
+DOCSET_PUBLISHER_ID    = com.hpc-gridware.ocs.documentation
 
 # The DOCSET_PUBLISHER_NAME tag identifies the documentation publisher.
 # The default value is: Publisher.

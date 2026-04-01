@@ -85,7 +85,7 @@ Here are the steps required to complete the installation.
    
    The current directory
    
-      /home/ebablick/OGE/oge1/inst
+      /home/ebablick/OCS/ocs1/inst
    
    is owned by user
    

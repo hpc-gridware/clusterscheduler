@@ -28,7 +28,7 @@ function(architecture_specific_settings)
 
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
 
-   # Find the OGE architecture string
+   # Find the OCS architecture string
    execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch OUTPUT_VARIABLE SGE_ARCH_RAW)
    string(STRIP ${SGE_ARCH_RAW} SGE_ARCH)
    set(SGE_ARCH ${SGE_ARCH} PARENT_SCOPE)

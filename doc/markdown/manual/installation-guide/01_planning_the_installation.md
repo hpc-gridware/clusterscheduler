@@ -167,7 +167,7 @@ The xxQS_NAMExx software must be installed as root.
 An admin-user must be specified during the installation process. Service components are then started as the root 
 user and subsequently drop privileges to match those of the admin-user. 
 
-Files and directories created during the installation process or by any of the OGE service components are owned 
+Files and directories created during the installation process or by any of the xxQS_NAMExx service components are owned 
 by the admin-user.
 
 Using the root user as the admin user is not recommended due to security concerns. Installing xxQS_NAMExx or 
@@ -223,10 +223,10 @@ architectures, refer to the chapter 2 of the release notes.
 Before installation, check if the service you intend to install on a host is supported by the product packages for 
 that platform.
 
-### Where should OGE packages be installed?
+### Where should xxQS_NAMExx packages be installed?
 
 The binaries, libraries, applications, scripts and documentation for xxQS_NAMExx are typically installed in 
-a directory hierarchy located below an installation directory (e.g. */opt/oge*).
+a directory hierarchy located below an installation directory (e.g. */opt/ocs*).
 
 This installation directory can be on a shared network filesystem or on each participating host in the cluster 
 individually. While local installation provides a performance benefit, central installation simplifies upgrades 

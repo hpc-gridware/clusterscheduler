@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -71,7 +71,7 @@
 #define OBJECT_LAYER BASIS_LAYER
 
 /* One entry per event type */
-// TODO: OGE-254 move object_base into cull namespace
+// TODO: CS-254 move object_base into cull namespace
 static object_description object_base[SGE_TYPE_ALL] = {
         /* list               name                 descr      key */
         {"ADMINHOST",         AH_Type,   AH_name},

@@ -580,7 +580,7 @@ namespace ocs {
 
    /**
     * If there is data to write then flush it to file.
-    * If the file does not yet exist then a comment containing the OGE version
+    * If the file does not yet exist then a comment containing the OCS version
     * is written to the head of the file.
     * Possible file IO errors are logged to the messages file.
     *

@@ -176,7 +176,7 @@
           "line": "or (true) if it is executed in the tight integration, where execution daemons know about slave tasks"
         },
         {
-          "line": "and slave tasks are started under OGE control (vial qrsh -inherit)."
+          "line": "and slave tasks are started under OCS control (vial qrsh -inherit)."
         },
         {
           "line": "Tight integration provides full job control and we get accounting information for the whole job"

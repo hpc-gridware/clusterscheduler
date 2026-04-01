@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ std::string fake_topo_file = NONE_STR;           //< active topology file or NON
  *          - retrieve topology
  *          - destroy hwloc
  *         Reason: The topology might change, e.g. by disabling a core.
- *         See issue OGE-111.
+ *         See issue CS-111.
  */
 
 void ocs::Topo::set_fake_topo_file(std::string &topo_file) {
