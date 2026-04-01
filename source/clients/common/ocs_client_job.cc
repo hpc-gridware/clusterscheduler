@@ -69,9 +69,6 @@
 
 #include "get_path.h"
 #include "ocs_client_job.h"
-
-#include <ranges>
-
 #include "parse_qsub.h"
 
 #include "msg_clients_common.h"

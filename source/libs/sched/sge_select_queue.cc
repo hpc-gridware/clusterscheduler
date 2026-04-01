@@ -327,6 +327,19 @@ void assignment_init_ar(sge_assignment_t *a, lList *ar_list) {
    }
 }
 
+/**
+ * @brief Parse and optionally store the allocation rule(s)
+ *
+ * Parses the allocation rule(s) given in the assignment structure:
+ *    - the global/slave allocation rule
+ *    - optionally a master allocation rule
+ * In case of a fixed allocation rule, checks, if the given number of slots matches the allocation rule.
+ * Optionally (when check_slots is 0) stores back the results in the assignment structure.
+ *
+ * @param a the assignment
+ * @param check_slots optional number of slots to check the allocation rule against, if 0, then a->slots is used.
+ * @return true, if parsing the allocation rule was successful and the slot count matches, else false
+ */
 static bool
 assignment_init_pe_parse_check_allocation_rules(sge_assignment_t *a, int check_slots = 0) {
    DENTER(TOP_LAYER);
@@ -371,6 +384,17 @@ assignment_init_pe_parse_check_allocation_rules(sge_assignment_t *a, int check_s
    DRETURN(true);
 }
 
+/**
+ * @brief Initialize the PE related attributes of an assignment structure
+ *
+ * Initializes the PE related attributes of an assignment structure:
+ *    - the pe (object)
+ *    - the pe name
+ *    - allocation rules (from PE and optinally overwritten in the job via -par switch)
+ *
+ * @param a the assignment structure
+ * @param pe the pe
+ */
 static void
 assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
    DENTER(TOP_LAYER);
@@ -645,7 +669,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             assignment_copy(&tmp, best, false);
             assignment_init_pe(&tmp, pe);
 
-            /* try to find earlier assignment again with minimum slot amount */
+            /* try to find an earlier assignment again with the minimum slot amount */
             tmp.slots = 0;
             result = parallel_reservation_max_time_slots(&tmp, &available_slots);
 
@@ -3942,13 +3966,31 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
    DRETURN_VOID;
 }
 
+/**
+ * @brief queue_slots struct used to temporarily store per queue scheduling information
+ */
 typedef struct {
-   bool is_master_queue;
-   const char *qname;
-   int slots;
-   int soft_violations;
+   bool is_master_queue;      // is it the master queue (instance)
+   const char *qname;         // the queue name
+   int slots;                 // number of slots we allocate in this queue instance
+   int soft_violations;       // number of soft violations that would result from allocating this queue
 } queue_slots_t;
 
+/**
+ * @brief revert booking into RQS
+ *
+ * During scheduling we book already found slots on a host into RQS.
+ * Should we in the end (per host) find out that the host cannot be used,
+ * we revert the booking done so far.
+ *
+ * @param a assignment
+ * @param eh_name host name
+ * @param queue_slots temporary queue data store
+ * @param clear_QU_tag shall we clear the QU_tag attribute?
+ * @param rule_name dstring buffer the RQS code works on (to avoid memory operations)
+ * @param rue_name dstring buffer
+ * @param limit_name dstring buffer
+ */
 static void
 parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_slots_t> &queue_slots,
                     bool clear_QU_tag, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
@@ -3977,6 +4019,7 @@ parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_
 }
 
 /**
+ * @brief calculate minimum and maximum slots according to allocation rules
  *
  * @param a                    - the assignment structure
  * @param have_master_host     - do we still need a master host?
@@ -4073,9 +4116,30 @@ parallel_get_minmax_slots_for_allocation_rules(sge_assignment_t *a, bool have_ma
 }
 
 /* Now RQS limit debitation can be performed for each queue instance based on QU_tag.
+ */
+/**
+ * @brief allocate slots from the queue instances on a host
+ *
  * While considering allocation_rule and master queue demand we try to get as
- * much from each queue as needed, but not more than 'maxslots'. When we are through
- * all queue instances and got not even 'minslots' the slots must be undebited.
+ * much from each queue as needed, but not more than 'maxslots'.
+ * RQS limit check/debitation is done.
+ * When we are through all queue instances and got not even 'minslots' the slots must be undebited.
+ *
+ * @param a assignment
+ * @param eh_name host name
+ * @param have_master_host do we already have found the master host?
+ * @param got_master_queue do we already have the master queue?
+ * @param only_with_master do we try to find the master host (only) with a master allocation rule?
+ * @param minslots minimum number of slots we need to allocate
+ * @param maxslots maximum number of slots that are required
+ * @param accu_host_slots the number of slots we found so far for the job on other hosts
+ * @param have_master_and_slave_queue_request do we have (potentially disjoint) master and slave requests?
+ * @param slave_hard_queue_list the slave hard queue list
+ * @param queue_slots vector to temporarily store found queue slots (for possibly required reverting)
+ * @param rule_name dstring buffer used in RQS code (to avoid malloc/free)
+ * @param rue_name dstring buffer
+ * @param limit_name dstring buffer
+ * @return the number of slots we could allocate
  */
 static int
 parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool have_master_host, bool &got_master_queue,
@@ -4412,14 +4476,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       bool suited_as_master_host;
       bool have_master_host = false;
 
-      /* @todo we might have different allocation rules for master and slaves
-       * - parse them once here and store them in the assignment struct?
-       * - where we handle master scope, check the master allocation_rule
-       * - when deciding to put slave tasks on the host, check the slave allocation rule
-       * - have a boolean, that they differ? No, just compare.
-       */
-
-
       // For working on RQS, the following dstrings are required.
       // We have them once here and pass them into the RQS functions
       // instead of having them locally in the RQS functions.
@@ -4456,6 +4512,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                continue;
             }
 
+            // If we already have the master host and come to the master host again (due to round robin)
+            // and the master allocation rule is a fixed one, skip the host - we have already filled it
+            if (have_master_host && master_host == hep && ALLOC_RULE_IS_FIXED(a->mallocation_parsed)) {
+               DPRINTF("skip master host %s as we already filled it\n", eh_name);
+               continue;
+            }
+
             /*
              * do not perform expensive checks for this host if there
              * is not at least one free queue residing at this host:
@@ -4469,7 +4532,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             //       hslots = sum(QU_tag)?
 
             // We have 3 different situations:
-            //    1. We still to dispatch need master and slave tasks.
+            //    1. We still have to dispatch master and slave tasks.
             //    2. We only have to dispatch slave tasks.
             //    3. We only have to dispatch master tasks.
 
@@ -6390,6 +6453,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                           const char *object_name, bool isRQ)
 {
    DENTER(TOP_LAYER);
+
    DSTRING_STATIC(reason, 1024);
    int available = 0;
    int max_available_slots = INT_MAX;

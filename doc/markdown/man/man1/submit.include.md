@@ -1259,6 +1259,24 @@ If this option is specified and the priority is not 0 then this value will be pa
 instances as parameter with the name *p*. (see `-jsv` option above or find more information concerning JSV in 
 xxqs_name_sxx_jsv(1))
 
+## -par *allocation_rule*
+
+Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.
+
+Allows overwriting the allocation rule defined in the parallel environment, see xxqs_name_sxx_pe(1), attribute `allocation_rule`.
+
+The allocation rule can be overwritten globally, as well as for master and/or slave scope, when combined with the `-scope` option.
+
+Examples:
+
+`qsub -pe <pe_name> 4 -par $round_robin` will overwrite the allocation rule defined in the PE globally.
+
+`qsub -pe <pe_name> 4 -scope master -par 1` will overwrite the allocation rule defined in the PE for the master scope.
+
+`qsub -pe <pe_name> 5 -scope master -par 1 -q master.q -scope slave -par 4 -q slave.q` will overwrite the allocation rule defined in the PE
+with `1` for the master scope, and `4` for the slave scope. This is a typical use case for jobs which requires
+the master task to run on a separate host / in a different queue instance than the slave tasks.
+
 ## -pe *parallel_environment* n\[-\[m\]\]\|\[-\]m,...  
 
 Available for `qsub`, `qsh`, `qrsh`, `qlogin` and `qalter` only.

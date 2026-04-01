@@ -381,7 +381,6 @@
 
 #define MSG_JOB_ALLOCATION_RULE                       _MESSAGE(33246, _("allocation rule"))
 
-
 #define MSG_OBJ_MANAGER               _MESSAGE(33359, _("manager"))
 #define MSG_OBJ_OPERATOR              _MESSAGE(33360, _("operator"))
 #define MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS  _MESSAGE(33361, _("may not remove user " SFQ " from " SFN " list"))

@@ -60,7 +60,7 @@
  *
  * @param allocation_rule   The parallel environment element containing the allocation rule
  * @param slots The total number of slots to be allocated
- * @todo document strict_fixed_modulo
+ * @param strict_fixed_modulo if true we check if slots is a multiple of a fixed allocation rule
  * @return The number of slots per host based on the allocation rule, or 0 if the allocation rule is invalid
  *    ALLOC_RULE_FILLUP (-1) if the allocation rule is "$fill_up"
  *    ALLOC_RULE_ROUNDROBIN (-2) if the allocation rule is "$round_robin"
