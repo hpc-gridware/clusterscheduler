@@ -658,12 +658,14 @@ parallel_check_and_debit_rqs_slots(sge_assignment_t *a, const char *host, const 
          }
       }
 
+      // The current rqs did not match - cannot use the given host / cqueue.
       if (*slots == 0) {
          break;
       }
    }
 
-   /* second step - reduce number of remaining slots  */
+   // All matching RQSes had enough resources free.
+   // Second step - do the booking - reduce the number of remaining slots.
    if (*slots != 0) {
       for_each_ep(rqs, a->rqs_list) {
 

@@ -30,7 +30,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -50,9 +50,10 @@
 #define MSG_TABLE_EV_POOL                          "POOL"
 #define MSG_TABLE_SIZE                             "SIZE"
 
-#define MSG_GDI_ARGUMENTSYNTAX_QA_CATEGORY_ID          "cat_id                  category ID"
+#define MSG_GDI_ARGUMENTSYNTAX_OA_ALLOCATION_RULE      "allocation_rule         <int> | $pe_slots | $fill_up | $round_robin"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING       "account_string          account_name"
-#define MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_FILTER_STR   "topology_string         topology string where lower case letters show masked units"
+#define MSG_GDI_ARGUMENTSYNTAX_OA_BINDING_FILTER_STR   "topology_string         topology string where lower case letters show masked units"
+#define MSG_GDI_ARGUMENTSYNTAX_OA_CATEGORY_ID          "cat_id                  category ID"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_COMPLEX_LIST         "complex_list            complex[,complex,...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_CONTEXT_LIST         "context_list            variable[=value][,variable[=value],...]"
 #define MSG_GDI_ARGUMENTSYNTAX_OA_CKPT_SEL             "ckpt_selector           `n' `s' `m' `x' <interval> "
@@ -965,7 +966,7 @@
 #define MSG_SEC_DELCREDNOBIN_US           _MESSAGE(60413, _("could not delete credentials for job " sge_u32 " - " SFN " binary does not exist"))
 #define MSG_SEC_PUTCREDSTDERR_S           _MESSAGE(60414, _("put_cred stderr: " SFN))
 #define MSG_SEC_NOSTARTCMD4GETCRED_SU     _MESSAGE(60415, _("can't start command " SFQ " for job " sge_u32 " to get credentials"))
-#define MSG_PE_ALLOCRULE_S                _MESSAGE(60416, _("incorrect allocation_rule " SFQ ))
+#define MSG_PE_ALLOCRULE_S                _MESSAGE(60416, _("invalid allocation_rule " SFQ ))
 #define MSG_GDI_OUTOFMEMORY               _MESSAGE(60418, _("out of memory"))
 #define MSG_COM_UNPACKINT_I               _MESSAGE(60419, _("unpacking integer %d failed"))
 #define MSG_COM_UNPACKOBJ_S               _MESSAGE(60420, _("unpacking a " SFN " object failed"))
@@ -1110,7 +1111,10 @@
 
 #define MSG_PARSE_BSORT_CONTRA_S          _MESSAGE(60744, _("contradicting ascending and descending sort order in binding sort " SFQ))
 
-#define MSG_GDI_USAGE_when_OPT              "[-when now|on_reschedule]"
-#define MSG_GDI_UTEXT_when_OPT              _MESSAGE(60745, _("apply modification immediately or on job rescheduling"))
+#define MSG_GDI_USAGE_when_OPT            "[-when now|on_reschedule]"
+#define MSG_GDI_UTEXT_when_OPT            _MESSAGE(60745, _("apply modification immediately or on job rescheduling"))
+
+#define MSG_GDI_USAGE_PAR_OPT             "[-par allocation_rule]"
+#define MSG_GDI_UTEXT_PAR_OPT             _MESSAGE(60746, _("set the parallel job allocation rule"))
 
 // clang-format on

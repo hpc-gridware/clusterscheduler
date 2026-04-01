@@ -29,7 +29,7 @@
  *
  *  Portions of this code are Copyright 2011 Univa Inc.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -129,6 +129,42 @@ sge_job_verify_global_master_slave_requests(lList **alpp, const lListElem *jep, 
             break;
          }
       }
+   }
+
+   return ret;
+}
+
+bool
+sge_job_verify_global_master_slave_allocation_rule(lList **alpp, const lListElem *jep) {
+   bool ret = true;
+
+   const char *global_rule = job_get_allocation_rule(jep, JRS_SCOPE_GLOBAL);
+   const char *master_rule = job_get_allocation_rule(jep, JRS_SCOPE_MASTER);
+   const char *slave_rule = job_get_allocation_rule(jep, JRS_SCOPE_SLAVE);
+
+   if (global_rule != nullptr) {
+      if (master_rule != nullptr) {
+         ERROR(MSG_JOB_GLOBALMASTERSLAVEA_S, "master");
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+      if (slave_rule != nullptr) {
+         ERROR(MSG_JOB_GLOBALMASTERSLAVEA_S, "slave");
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
+   }
+
+   // It doesn't make sense to specify $pe_slots for master or slave scope - reject it.
+   if (master_rule != nullptr && strcmp(master_rule, "$pe_slots") == 0) {
+      ERROR(MSG_JOB_MASTERSLAVE_A_SS, master_rule, "master");
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
+   }
+   if (slave_rule != nullptr && strcmp(slave_rule, "$pe_slots") == 0) {
+      ERROR(MSG_JOB_MASTERSLAVE_A_SS, slave_rule, "slave");
+      answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+      ret = false;
    }
 
    return ret;
@@ -262,7 +298,7 @@ bool
 job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *master_centry_list) {
    bool ret = true;
 
-   /* check for non-parallel job that define master or slave requests */
+   /* check for a non-parallel job that defines master or slave requests */
    if (ret) {
       ret = job_verify_non_pe_soft_master_slave_requests(alpp, jep);
    }
@@ -272,7 +308,7 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
       ret = job_verify_soft_master_slave_requests(alpp, jep);
    }
 
-   // verify that the there are no requests on the same variable in global scope and one of master or slave
+   // verify that there are no requests on the same variable in global scope and one of master or slave
    if (ret) {
       if (!sge_job_verify_global_master_slave_requests(alpp, jep, false) ||
           !sge_job_verify_global_master_slave_requests(alpp, jep, true)) {
@@ -293,6 +329,11 @@ job_verify_adjust_request_set(lList **alpp, const lListElem *jep, const lList *m
    // verify that per host requests are not in both master and slave requests
    if (ret) {
       ret = sge_job_verify_per_host_requests(alpp, jep, master_centry_list);
+   }
+
+   // verify that there are no allocation rule specifications in global scope and one of master or slave
+   if (ret) {
+      ret = sge_job_verify_global_master_slave_allocation_rule(alpp, jep);
    }
 
    return ret;
@@ -411,6 +452,15 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
       if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
          break;
+      }
+
+      // JRS_allocation_rule
+      const char *allocation_rule = lGetString(jrs, JRS_allocation_rule);
+      if (allocation_rule != nullptr) {
+         if (!pe_validate_allocation_rule(alpp, allocation_rule)) {
+            ret = STATUS_EUNKNOWN;
+            break;
+         }
       }
    }
 

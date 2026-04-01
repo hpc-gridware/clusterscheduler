@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -40,8 +40,8 @@ enum {
    ALLOC_RULE_ROUNDROBIN = -2
 };
 
-#define ALLOC_RULE_IS_BALANCED(x) (x>0)
+#define ALLOC_RULE_IS_FIXED(x) (x>0)
 
-int pe_allocation_rule_slots(const lListElem *pep, int slots);
+int pe_allocation_rule_slots(const char *allocation_rule, int slots, bool strict_fixed_modulo = true);
 
 dispatch_t pe_match_static(const sge_assignment_t *a);

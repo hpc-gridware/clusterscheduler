@@ -130,8 +130,8 @@ static void
 fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name);
 
 static bool
-add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lListElem *pe,
-                         int min_slots, int max_slots, lList *pe_range);
+add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category,
+                         u_long32 *max_slotsp, int min_slots, int max_slots, lList *pe_range);
 /* -- these implement parallel assignment ------------------------- */
 
 static dispatch_t
@@ -159,7 +159,7 @@ parallel_global_slots(sge_assignment_t *a, int *slots);
 static dispatch_t
 parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
                           bool is_master_host, bool *master_host, category_use_t *use_category,
-                          lList **unclear_cqueue_list);
+                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots);
 
 #ifdef SOLARIS
 #pragma no_inline(parallel_tag_hosts_queues)
@@ -325,6 +325,116 @@ void assignment_init_ar(sge_assignment_t *a, lList *ar_list) {
          }
       }
    }
+}
+
+/**
+ * @brief Parse and optionally store the allocation rule(s)
+ *
+ * Parses the allocation rule(s) given in the assignment structure:
+ *    - the global/slave allocation rule
+ *    - optionally a master allocation rule
+ * In case of a fixed allocation rule, checks, if the given number of slots matches the allocation rule.
+ * Optionally (when check_slots is 0) stores back the results in the assignment structure.
+ *
+ * @param a the assignment
+ * @param check_slots optional number of slots to check the allocation rule against, if 0, then a->slots is used.
+ * @return true, if parsing the allocation rule was successful and the slot count matches, else false
+ */
+static bool
+assignment_init_pe_parse_check_allocation_rules(sge_assignment_t *a, int check_slots = 0) {
+   DENTER(TOP_LAYER);
+
+   // When we pass check_slots != 0, we want to check these slots.
+   // Otherwise, we work on the assignment structure.
+   int slots = check_slots > 0 ? check_slots : a->slots;
+
+   // Parse the allocation rule(s) once, use the maximum number of slots we might want to assign (a->slots)
+   DPRINTF("parsing allocation rules, slots: %d\n", slots);
+   int mallocation_parsed = 0, allocation_parsed = 0;
+   int master_slots = 0;
+   if (a->mallocation_rule != nullptr) {
+      mallocation_parsed = pe_allocation_rule_slots(a->mallocation_rule, slots, false);
+      if (mallocation_parsed == 0) {
+         // error
+         DRETURN(false);
+      } else {
+         DPRINTF("   -> master allocation_rule: %s, parsed: %d\n", a->mallocation_rule, mallocation_parsed);
+         if (ALLOC_RULE_IS_FIXED(mallocation_parsed)) {
+            master_slots = mallocation_parsed;
+         } else {
+            master_slots = 1;
+         }
+      }
+   }
+   int slave_slots = slots - master_slots;
+   allocation_parsed = pe_allocation_rule_slots(a->allocation_rule, slave_slots);
+   if (allocation_parsed == 0) {
+      // error
+      DRETURN(false);
+   } else {
+      DPRINTF("   -> allocation_rule: %s, parsed: %d\n", a->allocation_rule, allocation_parsed);
+   }
+
+   // This is not only a check - we want to store the parsed results in the assignment struct.
+   if (check_slots == 0) {
+      a->mallocation_parsed = mallocation_parsed;
+      a->allocation_parsed = allocation_parsed;
+   }
+
+   DRETURN(true);
+}
+
+/**
+ * @brief Initialize the PE related attributes of an assignment structure
+ *
+ * Initializes the PE related attributes of an assignment structure:
+ *    - the pe (object)
+ *    - the pe name
+ *    - allocation rules (from PE and optinally overwritten in the job via -par switch)
+ *
+ * @param a the assignment structure
+ * @param pe the pe
+ */
+static void
+assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
+   DENTER(TOP_LAYER);
+
+   a->pe = pe;
+   a->pe_name = lGetString(pe, PE_name);
+   a->allocation_rule = lGetString(pe, PE_allocation_rule);
+
+   DPRINTF("assignment_init_pe: pe_name: %s, slots: %d\n", a->pe_name, a->slots);
+
+   // Overwrite allocation_rule with global -par request.
+   if (a->job != nullptr) {
+      // We can specify the -par switch either globally.
+      const char *jrs_allocation_rule = job_get_allocation_rule(a->job, JRS_SCOPE_GLOBAL);
+      if (jrs_allocation_rule != nullptr) {
+         a->allocation_rule = jrs_allocation_rule;
+      } else {
+         // Or we can specify the -par switch for master and/or slave scope.
+         jrs_allocation_rule = job_get_allocation_rule(a->job, JRS_SCOPE_MASTER);
+         if (jrs_allocation_rule != nullptr) {
+            a->mallocation_rule = jrs_allocation_rule;
+         }
+         jrs_allocation_rule = job_get_allocation_rule(a->job, JRS_SCOPE_SLAVE);
+         if (jrs_allocation_rule != nullptr) {
+            // If the -par switch is *only* used for the slave scope,
+            // then for the master scope the PE setting is applied.
+            if (a->mallocation_rule == nullptr) {
+               a->mallocation_rule = a->allocation_rule;
+            }
+            a->allocation_rule = jrs_allocation_rule;
+         }
+      }
+
+      // Parse the allocation rule(s) once, use the maximum number of slots we might want to assign (a->slots)
+      if (a->slots > 0) {
+         assignment_init_pe_parse_check_allocation_rules(a);
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil)
@@ -539,8 +649,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
 
          pe_name = lGetString(pe, PE_name);
          if (best->gdil == nullptr) { /* first pe run */
-            best->pe = pe;
-            best->pe_name = pe_name;
+            assignment_init_pe(best, pe);
 
             /* determine the earliest start time with that PE */
             result = parallel_reservation_max_time_slots(best, &available_slots);
@@ -558,10 +667,9 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
 
             assignment_copy(&tmp, best, false);
-            tmp.pe = pe;
-            tmp.pe_name = pe_name;
+            assignment_init_pe(&tmp, pe);
 
-            /* try to find earlier assignment again with minimum slot amount */
+            /* try to find an earlier assignment again with the minimum slot amount */
             tmp.slots = 0;
             result = parallel_reservation_max_time_slots(&tmp, &available_slots);
 
@@ -605,8 +713,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
          if (best->gdil == nullptr) {
             // first PE matching the requested name
             int available_slots = 0;
-            best->pe = pe;
-            best->pe_name = pe_name;
+            assignment_init_pe(best, pe);
             result = parallel_maximize_slots_pe(best, &available_slots);
 
             if (result != DISPATCH_OK) {
@@ -628,8 +735,7 @@ sge_select_parallel_environment(sge_assignment_t *best, const lList *pe_list)
             int available_slots = 0;
             sge_assignment_t tmp = SGE_ASSIGNMENT_INIT;
             assignment_copy(&tmp, best, false);
-            tmp.pe = pe;
-            tmp.pe_name = pe_name;
+            assignment_init_pe(&tmp, pe);
 
             result = parallel_maximize_slots_pe(&tmp, &available_slots);
 
@@ -789,6 +895,7 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
    assignment_copy(&tmp_assignment, best, false);
    if (best->slots == 0) {
       tmp_assignment.slots = range_list_get_first_id(lGetList(best->job, JB_pe_range), nullptr);
+      assignment_init_pe_parse_check_allocation_rules(&tmp_assignment);
    }
 
    if (best->start == DISPATCH_TIME_QUEUE_END) {
@@ -919,6 +1026,8 @@ parallel_reservation_max_time_slots(sge_assignment_t *best, int *available_slots
 static dispatch_t
 parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 {
+   DENTER(TOP_LAYER);
+
    int min_slots, max_slots;
    int max_pe_slots;
    int first, last;
@@ -936,8 +1045,6 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
    int runs = 0;
    schedd_pe_algorithm alg =  sconf_best_pe_alg();
 
-   DENTER(TOP_LAYER);
-
    if (best == nullptr ||
        (pe_range=lGetListRW(best->job, JB_pe_range)) == nullptr ||
        (pe=best->pe) == nullptr) {
@@ -950,10 +1057,14 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
    // requested pe slot range
    first = range_list_get_first_id(pe_range, nullptr);
    last  = range_list_get_last_id(pe_range, nullptr);
+
+   // @todo add a shortcut: if first == last, do not do all the stuff with binary search, etc.,
+   //       just set the slots and call parallel_assignment()!
+
    max_pe_slots = lGetUlong(pe, PE_slots);
 
    // we already have a possible assignment with a certain slot count - use it as minimum slot count
-   if (best->slots) {
+   if (best->slots != 0) {
       min_slots = best->slots;
    } else {
       min_slots = first;
@@ -983,7 +1094,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
 
    /* --- prepare the possible slots for the binary search */
    max_slotsp = (max_slots - min_slots+1);
-   if (!add_pe_slots_to_category(&use_category, &max_slotsp, pe, min_slots, max_slots, pe_range)) {
+   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range)) {
       ERROR(SFNMAX, MSG_SGETEXT_NOMEM);
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -1015,7 +1126,9 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
          }
 
          /* we try that slot amount */
+         DPRINTF("====> setting slots and calling assignment_init_pe_parse_... (1)\n");
          tmp.slots = use_category.possible_pe_slots[current];
+         assignment_init_pe_parse_check_allocation_rules(&tmp);
          result = parallel_assignment(&tmp, &use_category, available_slots);
          assignment_clear_cache(&tmp);
 
@@ -1050,7 +1163,9 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
             }
 
             /* we try that slot amount */
+            DPRINTF("====> setting slots and calling assignment_init_pe_parse_... (2)\n");
             tmp.slots = use_category.possible_pe_slots[current];
+            assignment_init_pe_parse_check_allocation_rules(&tmp);
             result = parallel_assignment(&tmp, &use_category, available_slots);
             assignment_clear_cache(&tmp);
 
@@ -1074,7 +1189,9 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots)
             }
 
             /* we try that slot amount */
+            DPRINTF("====> setting slots and calling assignment_init_pe_parse_... (3)\n");
             tmp.slots = use_category.possible_pe_slots[current];
+            assignment_init_pe_parse_check_allocation_rules(&tmp);
             result = parallel_assignment(&tmp, &use_category, available_slots);
             assignment_clear_cache(&tmp);
 
@@ -3665,9 +3782,12 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a)
 *
 *******************************************************************************/
 static bool
-add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lListElem *pe,
-                         int min_slots, int max_slots, lList *pe_range)
+add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category,
+                         u_long32 *max_slotsp, int min_slots, int max_slots, lList *pe_range)
 {
+   DENTER(TOP_LAYER);
+
+   DPRINTF("add_pe_slots_to_category\n");
    if (use_category->cache != nullptr) {
       use_category->possible_pe_slots = (u_long32 *)lGetRef(use_category->cache, CCT_pe_job_slots);
    }
@@ -3678,8 +3798,8 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
 
       *max_slotsp = 0;
       for (slots = min_slots; slots <= max_slots; slots++) {
-         // sort out slot numbers that would conflict with allocation rule
-         if (pe_allocation_rule_slots(pe, slots) == 0) {
+         // Sort out slot numbers that would conflict with the allocation rule(s).
+         if (!assignment_init_pe_parse_check_allocation_rules(a, slots)) {
             continue;
          }
 
@@ -3691,7 +3811,7 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
          if (use_category->possible_pe_slots == nullptr) {
             use_category->possible_pe_slots = (u_long32 *)sge_malloc((max_slots - min_slots + 1) * sizeof(u_long32));
             if (use_category->possible_pe_slots == nullptr) {
-               return false;
+               DRETURN(false);
             }
          }
          use_category->possible_pe_slots[(*max_slotsp)] = slots;
@@ -3711,7 +3831,7 @@ add_pe_slots_to_category(category_use_t *use_category, u_long32 *max_slotsp, lLi
       *max_slotsp = lGetUlong(use_category->cache, CCT_pe_job_slot_count);
    }
 
-   return true;
+   DRETURN(true);
 }
 
 /****** sge_select_queue/fill_category_use_t() **************
@@ -3803,7 +3923,12 @@ static int get_soft_violations(sge_assignment_t *a, lListElem *hep, lListElem *q
 }
 
 static void
-parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *eh_name, const lListElem *qep, u_long32 slots, bool is_master_queue) {
+parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *eh_name, const lListElem *qep,
+                           u_long32 slots, bool is_master_queue) {
+   DENTER(TOP_LAYER);
+
+   DPRINTF("add %s queue %s to GDIL, " sge_u32 " slots\n", is_master_queue ? "master" : "slave", qname, slots);
+
    if (a->gdil == nullptr) {
       a->gdil = lCreateList("", JG_Type);
    }
@@ -3837,6 +3962,337 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
          }
       }
    }
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief queue_slots struct used to temporarily store per queue scheduling information
+ */
+typedef struct {
+   bool is_master_queue;      // is it the master queue (instance)
+   const char *qname;         // the queue name
+   int slots;                 // number of slots we allocate in this queue instance
+   int soft_violations;       // number of soft violations that would result from allocating this queue
+} queue_slots_t;
+
+/**
+ * @brief revert booking into RQS
+ *
+ * During scheduling we book already found slots on a host into RQS.
+ * Should we in the end (per host) find out that the host cannot be used,
+ * we revert the booking done so far.
+ *
+ * @param a assignment
+ * @param eh_name host name
+ * @param queue_slots temporary queue data store
+ * @param clear_QU_tag shall we clear the QU_tag attribute?
+ * @param rule_name dstring buffer the RQS code works on (to avoid memory operations)
+ * @param rue_name dstring buffer
+ * @param limit_name dstring buffer
+ */
+static void
+parallel_revert_rqs(sge_assignment_t *a, const char *eh_name, std::vector<queue_slots_t> &queue_slots,
+                    bool clear_QU_tag, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
+   DENTER(TOP_LAYER);
+
+   for (queue_slots_t &queue_slot : queue_slots) {
+      lListElem *qep = lGetElemStrRW(a->queue_list, QU_full_name, queue_slot.qname);
+      int slots = queue_slot.slots;
+      if (slots != 0) {
+         if (a->ar_id == 0 && !a->is_advance_reservation) {
+            parallel_revert_rqs_slot_debitation(a, eh_name, lGetString(qep, QU_qname),
+                  slots, rule_name, rue_name, limit_name);
+         }
+         // Clear the QU_tag (which contains the number of slots we can allocate in the qinstance)
+         // We do *not* clear it, when we just tried to find a master task with a master allocation rule:
+         // Here we still need the possible number of slots for the next attempt top allocate slave tasks.
+         if (clear_QU_tag) {
+            lSetUlong(qep, QU_tag, 0);
+         }
+      }
+   }
+
+   queue_slots.clear();
+
+   DRETURN_VOID;
+}
+
+/**
+ * @brief calculate minimum and maximum slots according to allocation rules
+ *
+ * @param a                    - the assignment structure
+ * @param have_master_host     - do we still need a master host?
+ * @param accu_slots           - the number of slots we have assigned so far
+ * @param minslots_master      - the minimum number of slots we need to find in queue tagging and will assign on a host
+ * @param maxslots_master      - the maximum number of slots we will assign as maximum in one round
+ * @param minslots_slaves      - the minimum number of slots we need to find in queue tagging and will assign on a host
+ * @param maxslots_slaves      - the maximum number of slots we will assign as maximum in one round
+ * @param minslots_for_tagging - the minimum number of slots we want to find on a host in queue tagging
+ * @param maxslots_for_tagging - the maximum number of slots we want to find on a host in queue tagging
+ * @return
+ */
+static bool
+parallel_get_minmax_slots_for_allocation_rules(sge_assignment_t *a, bool have_master_host, int accu_slots,
+                                               int &minslots_master, int &maxslots_master,
+                                               int &minslots_slaves, int &maxslots_slaves,
+                                               int &minslots_for_tagging, int &maxslots_for_tagging) {
+   DENTER(TOP_LAYER);
+
+   // We return if a round robin run is still required:
+   //   - When we do not yet have a master task and the master allocation rule is $round_robin.
+   //   - If the global or the slave allocation rule is $round_robin.
+   bool do_round_robin = false;
+
+   int remaining_needed = a->slots - accu_slots;
+   minslots_master = 0;
+   maxslots_master = remaining_needed;
+   minslots_slaves = 0;
+   maxslots_slaves = remaining_needed;
+   minslots_for_tagging = 1;
+   maxslots_for_tagging = remaining_needed;
+
+   // If we do not yet have a master task, shall we try to use the host as slave only host?
+   bool do_slave_only = true;
+   bool have_master_allocation_rule = false;
+
+   // If we shall find a master host.
+   if (!have_master_host && a->mallocation_rule != nullptr) {
+      have_master_allocation_rule = true;
+      // When we have a fixed allocation rule (or $pe_slots), we need exactly that number of slots.
+      if (ALLOC_RULE_IS_FIXED(a->mallocation_parsed)) {
+         minslots_master = a->mallocation_parsed;
+         maxslots_master = a->mallocation_parsed;
+         minslots_for_tagging = a->mallocation_parsed;
+         maxslots_for_tagging = a->mallocation_parsed;
+         // If what the master task will give us is the number of slots we still need to find,
+         // do not allocate any more slots on slave only hosts.
+         if (remaining_needed == a->mallocation_parsed) { // @todo <= would be an error!
+            do_slave_only = false;
+         }
+      } else {
+         minslots_master = 1;
+         if (a->mallocation_parsed == ALLOC_RULE_ROUNDROBIN) {
+            do_round_robin = true;
+            // $round_robin: We will allocate one slot per round, but tagging will try to put onto the host
+            //               as much as possible.
+            maxslots_master = 1;
+            // If we just need a single slot and this is the master task
+            // do not allocate any more slots on slave only hosts.
+            if (remaining_needed == 1) {
+               do_slave_only = false;
+            }
+         }
+      }
+   }
+
+   if (do_slave_only) {
+      // When we have a fixed allocation rule (or $pe_slots), we need exactly that number of slots.
+      if (ALLOC_RULE_IS_FIXED(a->allocation_parsed)) {
+         if (have_master_allocation_rule) {
+            minslots_for_tagging = MIN(minslots_for_tagging, a->allocation_parsed);
+            maxslots_for_tagging= MAX(maxslots_for_tagging, a->allocation_parsed);
+         } else {
+            minslots_for_tagging = a->allocation_parsed;
+            maxslots_for_tagging = a->allocation_parsed;
+         }
+         minslots_slaves = a->allocation_parsed;
+         maxslots_slaves = a->allocation_parsed;
+      } else {
+         minslots_slaves = 1;
+         if (a->allocation_parsed == ALLOC_RULE_ROUNDROBIN) {
+            do_round_robin = true;
+            maxslots_slaves = 1;
+         }
+      }
+   }
+
+   DPRINTF("   minslots_master:  %d, maxslots_master:  %d\n", minslots_master, maxslots_master);
+   DPRINTF("   minslots_slaves:  %d, maxslots_slaves:  %d\n", minslots_slaves, maxslots_slaves);
+   DPRINTF("   minslots_tagging: %d, maxslots_tagging: %d\n", minslots_for_tagging, maxslots_for_tagging);
+   DPRINTF("   do_round_robin:   %s\n", do_round_robin ? "true" : "false");
+
+   DRETURN(do_round_robin);
+}
+
+/* Now RQS limit debitation can be performed for each queue instance based on QU_tag.
+ */
+/**
+ * @brief allocate slots from the queue instances on a host
+ *
+ * While considering allocation_rule and master queue demand we try to get as
+ * much from each queue as needed, but not more than 'maxslots'.
+ * RQS limit check/debitation is done.
+ * When we are through all queue instances and got not even 'minslots' the slots must be undebited.
+ *
+ * @param a assignment
+ * @param eh_name host name
+ * @param have_master_host do we already have found the master host?
+ * @param got_master_queue do we already have the master queue?
+ * @param only_with_master do we try to find the master host (only) with a master allocation rule?
+ * @param minslots minimum number of slots we need to allocate
+ * @param maxslots maximum number of slots that are required
+ * @param accu_host_slots the number of slots we found so far for the job on other hosts
+ * @param have_master_and_slave_queue_request do we have (potentially disjoint) master and slave requests?
+ * @param slave_hard_queue_list the slave hard queue list
+ * @param queue_slots vector to temporarily store found queue slots (for possibly required reverting)
+ * @param rule_name dstring buffer used in RQS code (to avoid malloc/free)
+ * @param rue_name dstring buffer
+ * @param limit_name dstring buffer
+ * @return the number of slots we could allocate
+ */
+static int
+parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, bool have_master_host, bool &got_master_queue,
+                              bool only_with_master, int minslots, int maxslots,
+                              int accu_host_slots, bool have_master_and_slave_queue_request,
+                              const lList *slave_hard_queue_list, std::vector<queue_slots_t> &queue_slots, dstring *rule_name, dstring *rue_name, dstring *limit_name) {
+   DENTER(TOP_LAYER);
+
+   int rqs_hslots = 0;
+   const void *iter = nullptr;
+   lListElem *qep;
+   for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
+        qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
+      const char *qname = lGetString(qep, QU_full_name);
+
+      DPRINTF("%s: tagged: " sge_u32 " accu_host_slots: %d, maxslots: %d, rqs_hslots: %d\n", qname,
+              lGetUlong(qep, QU_tag), accu_host_slots, maxslots, rqs_hslots);
+
+      // This qinstance is not suited at all.
+      if (lGetUlong(qep, QU_tag) == 0) {
+         continue;
+      }
+
+      DPRINTF("SLOT HARVESTING: %s soft violations: " sge_u32 " tagged4schedule: " sge_u32 "\n",
+              lGetString(qep, QU_full_name), lGetUlong(qep, QU_soft_violation), lGetUlong(qep, QU_tagged4schedule));
+
+      /* how much is still needed */
+      int slots = MIN(lGetUlong(qep, QU_tag), maxslots - rqs_hslots);
+
+      if (!have_master_host && !got_master_queue) {
+         if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
+            // this queue instance is not suited as a master queue
+            /*
+               care for slave tasks assignments of -masterq jobs
+               we need at least one slot on the masterq, thus we reduce by one slot
+               if we run out of slots
+              */
+            /* @todo: understand the comment above:
+             * - this qinstance is not suited as master queue
+             * - but there might be another queue on the host which is suited as master queue?
+             * - therefore we reduce the amount of slots we can use in this queue for slave tasks by 1?
+             *    - even if there is no other qinstance which could be used as master queue?
+             *    - this might prevent using the queue only for slave tasks as we now have less slots?
+             */
+            DPRINTF("   -> not suited as master queue, accu_host_slots = %d, rqs_hslots = %d, slots = %d, a->slots = %d\n",
+                    accu_host_slots, rqs_hslots, slots, a->slots);
+            if (accu_host_slots + rqs_hslots + slots == a->slots) {
+               // If allocating the slots (as slave tasks, as the qinstance is not suitable as master queue)
+               // would provide enough slots to satisfy the pe request,
+               // we need to reduce the slot count by one to leave space for the master task (which must come from
+               // a different qinstance).
+               DPRINTF("   -> reducing slots to %d\n", slots - 1);
+               slots--;
+            }
+         } else {
+            // This qinstance is suited as a master queue.
+            if (have_master_and_slave_queue_request) {
+               // We have both master and slave queue requests.
+               // The requests might be overlapping, then we can have both master and slave tasks
+               // in this queue instance.
+               // Or they might be disjoint; this is the case if this qinstance is not suited as a slave
+               // queue. Only allocate a single slot for the master task.
+#if 1
+               if (qref_list_cq_rejected(slave_hard_queue_list,
+                   lGetString(qep, QU_qname), eh_name, a->hgrp_list)) {
+                  slots = MIN(slots, 1);
+               }
+#else
+               // This code would be faster, but slave queue (un)tagging is not yet fully implemented (?)
+               if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
+                  slots = MIN(slots, 1);
+               }
+#endif
+            }
+            // @todo also resource requests might have disjoint master/slave requests
+            //       shouldn't we see this from queue tagging?
+            //          -> QU_tagged4schedule not containing *SLAVE*
+            //          -> QU_tag being 0 or 1?
+#if 0
+            if (have_master_requests && have_slave_requests) {
+               if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
+                  slots = MIN(slots, 1);
+               }
+            }
+#endif
+         }
+      }
+
+      if (a->ar_id == 0 && !a->is_advance_reservation) {
+         DPRINTF("RQS: trying to debit %d slots in queue " SFQ "\n", slots, qname);
+         parallel_check_and_debit_rqs_slots(a, eh_name, lGetString(qep, QU_qname),
+                                            &slots, rule_name, rue_name, limit_name);
+         DPRINTF("RQS: could debit %d slots in queue " SFQ "\n", slots, qname);
+      }
+
+      if (slots > 0) {
+         // Remember the queue instance and its allocation for creating the GDIL later on.
+         queue_slots_t qs{};
+         qs.qname = qname;
+         qs.slots = slots;
+         if (a->is_soft) {
+            qs.soft_violations = lGetUlong(qep, QU_soft_violation);
+         }
+         if (!got_master_queue && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
+            // We got our master queue, insert it as first element.
+            got_master_queue = true;
+            qs.is_master_queue = true;
+            queue_slots.insert(queue_slots.begin(), qs);
+         } else {
+            // We got a slave queue, append it at the end.
+            queue_slots.push_back(qs);
+         }
+
+         // Remember how many slots we allocated in this queue instance.
+         // This was probably once meant as an optimization, when we re-visit the qinstance, e.g., with allocation rule
+         // $round_robin. But as far as I understand the code, we will never use QU_tag again. When doing $round_robin,
+         // we re-calculate the possible slots over and over again in the outer do-while loop by calling
+         // parallel_host_slots().
+         // We do *not* overwrite QU_tag when we are just searching for the master task with a master allocation rule
+         // as we still need the original value (the maximum number of tasks we can allocate here) for slave allocation.
+         if (!only_with_master) {
+            lSetUlong(qep, QU_tag, slots);
+         }
+
+         rqs_hslots += slots;
+      }
+
+      if (rqs_hslots == maxslots) {
+         // We have found enough slots.
+         break;
+      }
+   } // End: Loop over all qinstances on this host.
+
+   // We cannot use this host and need to revert booking
+   // - if we need to find a master task in this call (with master allocation rule) and didn't find one on this host
+   // - if we didn't find our minimum slot count
+   if (rqs_hslots > 0) {
+      bool revert = false;
+      if (only_with_master && !got_master_queue) {
+         DPRINTF("reverting debitation since we were working on the master allocation rule but didn't find a master allocation\n");
+         revert = true;
+      } else if (rqs_hslots < minslots) {
+         DPRINTF("reverting debitation since " SFQ " gets us only %d slots while min. %d are needed\n",
+               eh_name, rqs_hslots, minslots);
+         revert = true;
+      }
+      if (revert) {
+         parallel_revert_rqs(a, eh_name, queue_slots, !only_with_master, rule_name, rue_name, limit_name);
+         rqs_hslots = 0;
+      }
+   }
+
+   DRETURN(rqs_hslots);
 }
 
 /****** sge_select_queue/parallel_tag_queues_suitable4job() *********
@@ -3879,6 +4335,8 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
 static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_category, int *available_slots)
 {
+   DENTER(TOP_LAYER);
+
    lListElem *job = a->job;
    const lList *global_hard_queue_list, *master_hard_queue_list, *slave_hard_queue_list;
    get_hard_queue_lists(job, global_hard_queue_list, master_hard_queue_list, slave_hard_queue_list);
@@ -3891,8 +4349,6 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
    lListElem *hep;
    dispatch_t best_result = DISPATCH_NEVER_CAT;
    int gslots = a->slots;
-
-   DENTER(TOP_LAYER);
 
    clean_up_parallel_job(a);
 
@@ -4014,16 +4470,16 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             lSetUlong(hep, EH_seq_no, host_seq_no++);
       }
       lPSortList(a->host_list, "%I+", EH_seq_no);
-      bool done = false;
 
       // now work on the host list
       int accu_host_slots = 0;
       bool suited_as_master_host;
       bool have_master_host = false;
 
-      int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
-      int minslots = ALLOC_RULE_IS_BALANCED(allocation_rule)?allocation_rule:1;
-
+      // For working on RQS, the following dstrings are required.
+      // We have them once here and pass them into the RQS functions
+      // instead of having them locally in the RQS functions.
+      // This avoids tons of malloc/free calls.
       dstring rule_name = DSTRING_INIT;
       dstring rue_name = DSTRING_INIT;
       dstring limit_name = DSTRING_INIT;
@@ -4035,6 +4491,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       /*
        * in case of round-robin we might need to repeat the step as we only allocate 1 slot per host per round
        */
+      bool done = false;
+      bool do_round_robin = false;
       do {
          last_accu_host_slots = accu_host_slots;
 
@@ -4054,6 +4512,13 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                continue;
             }
 
+            // If we already have the master host and come to the master host again (due to round robin)
+            // and the master allocation rule is a fixed one, skip the host - we have already filled it
+            if (have_master_host && master_host == hep && ALLOC_RULE_IS_FIXED(a->mallocation_parsed)) {
+               DPRINTF("skip master host %s as we already filled it\n", eh_name);
+               continue;
+            }
+
             /*
              * do not perform expensive checks for this host if there
              * is not at least one free queue residing at this host:
@@ -4065,165 +4530,83 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
             // @todo when we are in an additional round of the do ... while loop, couldn't we skip parallel_tag_hosts_queues()?
             //       the number of available slots should already be in QU_tag?
             //       hslots = sum(QU_tag)?
+
+            // We have 3 different situations:
+            //    1. We still have to dispatch master and slave tasks.
+            //    2. We only have to dispatch slave tasks.
+            //    3. We only have to dispatch master tasks.
+
+            int minslots_master, maxslots_master;
+            int minslots_slaves, maxslots_slaves;
+            int minslots_for_tagging, maxslots_for_tagging;
+            do_round_robin = parallel_get_minmax_slots_for_allocation_rules(a, have_master_host, accu_host_slots,
+                             minslots_master, maxslots_master, minslots_slaves, maxslots_slaves,
+                             minslots_for_tagging, maxslots_for_tagging);
+
             int hslots = 0;
+            // @todo only if there is actually a qinstance on the host - but hasn't this not been checked before?
+            //       wouldn't eh_name be in some skip list then?
             if (lGetElemHost(a->queue_list, QU_qhostname, eh_name)) {
                bool need_master = !have_master_host;
                bool is_master_host = (hep == master_host);
-               DPRINTF("===> HOST: %s %p <=== need_master: %d is_master_host: %d (%p)\n", eh_name, (void *)hep, need_master,
-                       is_master_host, (void *)master_host);
+               DPRINTF("===> HOST: %s %p <=== need_master: %d is_master_host: %d (%p)\n", eh_name, (void *)hep,
+                       need_master, is_master_host, (void *)master_host);
+               // @todo Why do we call parallel_tag_hosts_queues,
+               //       when we have round_robin and are in the second or higher round?
+               //       ==> store the possible amount somewhere (QU_tag?)
                parallel_tag_hosts_queues(a, hep, &hslots, need_master, is_master_host,
-                                         &suited_as_master_host, use_category, &unclear_cqueue_list);
-
-               if (hslots >= minslots) {
-                  /* Now RQS limit debitation can be performed for each queue instance based on QU_tag.
-                   * While considering allocation_rule and master queue demand we try to get as
-                   * much from each queue as needed, but not more than 'maxslots'. When we are through
-                   * all queue instances and got not even 'minslots' the slots must be undebited.
-                   */
+                                         &suited_as_master_host, use_category, &unclear_cqueue_list,
+                                         minslots_for_tagging, maxslots_for_tagging);
+               if (hslots >= minslots_for_tagging) {
                   bool got_master_queue = have_master_host;
-                  int rqs_hslots = 0, maxslots, slots;
+                  int slots = 0;
+                  std::vector<queue_slots_t> queue_slots;
 
-                  /* still broken for cases where round-robin requires multiple rounds */
-                  if (ALLOC_RULE_IS_BALANCED(allocation_rule)) {
-                     maxslots = allocation_rule;
-                  } else if (allocation_rule == ALLOC_RULE_FILLUP) {
-                     maxslots = MIN(a->slots - accu_host_slots, hslots);
-                  } else { // ALLOC_RULE_ROUNDROBIN
-                     maxslots = 1;
+                  if (need_master && minslots_master > 0) {
+                     // We still need to find a master host
+                     // and have a master allocation rule.
+                     DPRINTF("  -> allocate slots with master allocation rule\n");
+                     slots = parallel_allocate_queue_slots(a, eh_name, have_master_host, got_master_queue,
+                                                           true, minslots_master,
+                                                           MIN(hslots, maxslots_master), accu_host_slots,
+                                                           have_master_and_slave_queue_request, slave_hard_queue_list,
+                                                           queue_slots, &rule_name, &rue_name, &limit_name);
+                     if (slots == 0) {
+                        if (minslots_slaves > 0) {
+                           DPRINTF("  -> allocate slots with (slave) allocation rule, as master alloc rule didn't give us slots\n");
+                           // This host is not suited as master host.
+                           // Try to allocate slots with slave allocation rule.
+                           // Pretend that we already have the master task (we will hopefully find it on another host)
+                           // Do not allocate up to a->slots, but keep minslots_master free to be allocated on another host.
+                           bool tmp_got_master_queue = true;
+                           slots = parallel_allocate_queue_slots(a, eh_name, true, tmp_got_master_queue,
+                                                                 false, minslots_slaves,
+                                                                 MIN(hslots, maxslots_slaves),
+                                                                 accu_host_slots + minslots_master, have_master_and_slave_queue_request,
+                                                                 slave_hard_queue_list,
+                                                                 queue_slots, &rule_name, &rue_name, &limit_name);
+                        }
+                     }
+                  } else {
+                     // We have no master allocation rule - just allocate slots with the one allocation rule.
+                     DPRINTF("  -> allocate slots with (slave) allocation rule, have no master alloc rule\n");
+                     slots = parallel_allocate_queue_slots(a, eh_name, have_master_host, got_master_queue,
+                                                           false, minslots_slaves,
+                                                           MIN(hslots, maxslots_slaves),
+                                                           accu_host_slots, have_master_and_slave_queue_request,
+                                                           slave_hard_queue_list,
+                                                           queue_slots, &rule_name, &rue_name, &limit_name);
                   }
-
-                  // @todo if we know here that we still need the master host/queue and master and slave requests
-                  //       are disjoint, set maxslots to 1?
-
-                  /* debit on RQS limits */
-                  const void *iter = nullptr;
-                  for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
-                       qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
-                     const char *qname = lGetString(qep, QU_full_name);
-
-                     if (lGetUlong(qep, QU_tag) == 0)
-                        continue;
-
-                     DPRINTF("tagged: " sge_u32 " maxslots: %d rqs_hslots: %d\n", lGetUlong(qep, QU_tag), maxslots, rqs_hslots);
-                     DPRINTF("SLOT HARVESTING: %s soft violations: " sge_u32 " master: " sge_u32 "\n",
-                             lGetString(qep, QU_full_name), lGetUlong(qep, QU_soft_violation), lGetUlong(qep, QU_tagged4schedule));
-
-                     /* how much is still needed */
-                     slots = MIN(lGetUlong(qep, QU_tag), maxslots - rqs_hslots);
-
-                     if (!have_master_host && !got_master_queue) {
-                        if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
-                           /*
-                              care for slave tasks assignments of -masterq jobs
-                              we need at least one slot on the masterq, thus we reduce by one slot
-                              if we run out of slots
-                             */
-                           /* @todo: understand the comment above:
-                            * - this qinstance is not suited as master queue
-                            * - but there might be another queue on the host which is suited as master queue?
-                            * - therefore we reduce the amount of slots we can use in this queue for slave tasks by 1?
-                            *    - even if there is no other qinstance which could be used as master queue?
-                            *    - this might prevent using the queue only for slave tasks as we now have less slots?
-                            */
-                           if (accu_host_slots + rqs_hslots + slots == a->slots) {
-                              slots--;
-                           }
-                        } else {
-                           // this qinstance is suited as master queue
-                           if (have_master_and_slave_queue_request) {
-                              /* if the masterq request is not contained in the hard queue request
-                               * we need to allocate only one slot for the master task
-                               */
-#if 1
-                              if (qref_list_cq_rejected(slave_hard_queue_list,
-                                  lGetString(qep, QU_qname), eh_name, a->hgrp_list)) {
-                                 slots = MIN(slots, 1);
-                              }
-#else
-                              if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
-                                 slots = MIN(slots, 1);
-                              }
-#endif
-                           }
-                           // @todo also resource requests might have disjoint master/slave requests
-                           //       shouldn't we see this from queue tagging?
-                           //          -> QU_tagged4schedule not containing *SLAVE*
-                           //          -> QU_tag being 0 or 1?
-#if 0
-                           if (have_master_requests && have_slave_requests) {
-                              if (!lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_SLAVE)) {
-                                 slots = MIN(slots, 1);
-                              }
-                           }
-#endif
-                        }
-                     }
-
-                     if (a->ar_id == 0 && !a->is_advance_reservation) {
-                        DPRINTF("RQS: trying to debit %d slots in queue " SFQ "\n", slots, qname);
-                        parallel_check_and_debit_rqs_slots(a, eh_name, lGetString(qep, QU_qname),
-                                                           &slots, &rule_name, &rue_name, &limit_name);
-                        DPRINTF("RQS: could debiting %d slots in queue " SFQ "\n", slots, qname);
-                     }
-
-                     if (slots > 0) {
-                        // need a gdil element for the queue
-                        lListElem *gdil_ep;
-                        gdil_ep = lGetElemStrRW(a->gdil, JG_qname, qname);
-                        if (gdil_ep == nullptr) {
-                           // new gdil element
-                           bool adding_master_queue = false;
-                           if (!have_master_host && lMatchUlongBitMask(qep, QU_tagged4schedule, TAG4SCHED_MASTER)) {
-                              got_master_queue = true;
-                              adding_master_queue = true;
-                           }
-                           parallel_add_queue_to_gdil(a, qname, eh_name, qep, slots, adding_master_queue);
-                           gdil_ep = lGetElemStrRW(a->gdil, JG_qname, qname);
-                        } else {
-                           // existing gdil element, just add the slots
-                           lAddUlong(gdil_ep, JG_slots, slots);
-                        }
-
-                        if (a->is_soft) {
-                           a->soft_violations += slots * lGetUlong(qep, QU_soft_violation);
-                        }
-                     }
-                     lSetUlong(qep, QU_tag, slots);
-
-                     rqs_hslots += slots;
-
-                     if (rqs_hslots == maxslots) {
-                        break;
-                     }
-                  }
-
-                  if (rqs_hslots < minslots) {
-                     DPRINTF("reverting debitation since " SFQ " gets us only %d slots while min. %d are needed\n",
-                           eh_name, rqs_hslots, minslots);
-
-                     /* must revert all RQS debitations, rollback GDIL and soft violations */
-                     for (qep = lGetElemHostFirstRW(a->queue_list, QU_qhostname, eh_name, &iter); qep;
-                          qep = lGetElemHostNextRW(a->queue_list, QU_qhostname, eh_name, &iter)) {
-                        slots = lGetUlong(qep, QU_tag);
-                        if (slots != 0) {
-                           if (a->ar_id == 0 && !a->is_advance_reservation) {
-                              parallel_revert_rqs_slot_debitation(a, eh_name, lGetString(qep, QU_qname),
-                                    slots, &rule_name, &rue_name, &limit_name);
-                           }
-                           lListElem *gdil_ep;
-                           if ((gdil_ep=lGetElemStrRW(a->gdil, JG_qname, lGetString(qep, QU_full_name)))) {
-                              if (lGetUlong(gdil_ep, JG_slots) - slots != 0) {
-                                 lSetUlong(gdil_ep, JG_slots, lGetUlong(gdil_ep, JG_slots) - slots);
-                              } else {
-                                 lDelElemStr(&(a->gdil), JG_qname, lGetString(qep, QU_full_name));
-                              }
-                           }
-                           a->soft_violations -= slots * lGetUlong(qep, QU_soft_violation);
-                           lSetUlong(qep, QU_tag, 0);
-                        }
-                     }
+                  if (slots == 0) {
+                     // We do not get any slots from this host.
                      hslots = 0;
                   } else {
+                     hslots = slots;
+                  }
+
+                  // We could allocate slots on this host.
+                  if (hslots > 0) {
+                     DPRINTF("     -> got %d slots on host %s\n", hslots, eh_name);
                      // we get here for every host and re-set have_master_host over and over again
                      if (got_master_queue) {
                         have_master_host = true;
@@ -4232,7 +4615,25 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                            master_host = hep;
                         }
                      }
-                     accu_host_slots += rqs_hslots;
+
+                     // Create the GDIL and book soft violations from our temporary queue list.
+                     for (queue_slots_t &queue_slot : queue_slots) {
+                        lListElem *gdil_ep = lGetElemStrRW(a->gdil, JG_qname, queue_slot.qname);
+                        if (gdil_ep == nullptr) {
+                           // Need a new GDIL element.
+                           // @todo we could store qep in queue_slots_t
+                           qep = lGetElemStrRW(a->queue_list, QU_full_name, queue_slot.qname);
+                           parallel_add_queue_to_gdil(a, queue_slot.qname, eh_name, qep, queue_slot.slots, queue_slot.is_master_queue);
+                        } else {
+                           // Update slots of an existing GDIL element (in case of $round_robin)
+                           lAddUlong(gdil_ep, JG_slots, slots);
+                        }
+
+                        a->soft_violations += queue_slot.soft_violations;
+                     }
+
+                     // Sum up the total number of slots found so far.
+                     accu_host_slots += hslots;
                   }
                } // end: we have enough slots *now* on this host
             } // end: we have at least one qinstance on this host
@@ -4242,7 +4643,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
              * and only, if modify category is set
              */
             if (skip_host_list && use_category->mod_category) {
-               if (hslots < minslots) {
+               if (hslots == 0) {
                   // @todo (CS-457) what if the host is already in the skip list? Can probably not happen here.
                   //       but still we should have functions add_to_skip_list(), is_in_skip_list()
                   lAddElemStr(&skip_host_list, CTI_name, eh_name, CTI_Type);
@@ -4256,7 +4657,8 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
                break;
             }
          } /* for each host */
-      } while (allocation_rule == ALLOC_RULE_ROUNDROBIN && !done && last_accu_host_slots != accu_host_slots);
+         // @todo additional termination condition: if we didn't find the master host in the first round, we will never find it!
+      } while (do_round_robin && !done && last_accu_host_slots != accu_host_slots);
 
       lFreeList(&unclear_cqueue_list);
 
@@ -4264,7 +4666,7 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
       sge_dstring_free(&rue_name);
       sge_dstring_free(&limit_name);
 
-      // copy task specific binding decision into the JG-element
+      // copy task-specific binding decision into the JG-element
       ocs::BindingSchedd::copy_strategy(a);
 
       if (accu_host_slots >= a->slots && have_master_host) {
@@ -4518,14 +4920,12 @@ parallel_host_slots(sge_assignment_t *a, int *slots, lListElem *hep, bool need_m
 static dispatch_t
 parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool need_master,
                           bool is_master_host, bool *master_host, category_use_t *use_category,
-                          lList **unclear_cqueue_list)
+                          lList **unclear_cqueue_list, int min_host_slots, int max_host_slots)
 {
    DENTER(TOP_LAYER);
 
    bool suited_as_master_host = false;
    bool found_master_host = false;
-   int min_host_slots = 1;
-   int max_host_slots = a->slots;
    int accu_queue_slots;
    int qslots;
    int hslots = 0;
@@ -4534,18 +4934,11 @@ parallel_tag_hosts_queues(sge_assignment_t *a, lListElem *hep, int *slots, bool 
    dispatch_t result = DISPATCH_OK;
    const void *queue_iterator = nullptr;
 
-   int allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
-
-   if (ALLOC_RULE_IS_BALANCED(allocation_rule)) {
-      min_host_slots = max_host_slots = allocation_rule;
-   }
-
    parallel_host_slots(a, &hslots, hep, need_master, is_master_host, found_master_host, false);
 
    DPRINTF("HOST %s itself (and queue threshold) will get us %d slots ... we need min %d\n", eh_name, hslots, min_host_slots);
 
-   hslots = MIN(hslots,      max_host_slots);
-
+   hslots = MIN(hslots, max_host_slots);
 
    if (hslots >= min_host_slots) {
       lList *skip_queue_list = nullptr;
@@ -6060,6 +6453,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
                           const char *object_name, bool isRQ)
 {
    DENTER(TOP_LAYER);
+
    DSTRING_STATIC(reason, 1024);
    int available = 0;
    int max_available_slots = INT_MAX;

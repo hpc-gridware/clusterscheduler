@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -78,7 +78,6 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    // -scope slave -hard -q <queue_list>
    sge_unparse_queue_list_dstring(category_str, job_get_queue_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -q");
 
-
    // -scope global -hard -l <resource_list>
    sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_GLOBAL, true), "-scope global -hard -l");
 
@@ -87,6 +86,28 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
 
    // -scope slave -hard -l <resource_list>
    sge_unparse_resource_list_dstring(category_str, job_get_resource_listRW(job, JRS_SCOPE_SLAVE, true), "-scope slave -hard -l");
+
+   // -scope global|master|slave -hard -par <allocation_rule>
+   const lListElem *request_set;
+   int par_pos = -1;
+   for_each_ep(request_set, lGetList(job, JB_request_set_list)) {
+      // Get the position of JRS_allocation_rule only once.
+      if (par_pos == -1) {
+         par_pos = lGetPosViaElem(request_set, JRS_allocation_rule, SGE_NO_ABORT);
+      }
+      // Add the -par switch(es) to the category string.
+      switch (lGetUlong(request_set, JRS_scope)) {
+         case JRS_SCOPE_GLOBAL:
+            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope global -par");
+            break;
+         case JRS_SCOPE_MASTER:
+            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope master -par");
+            break;
+         case JRS_SCOPE_SLAVE:
+            sge_unparse_string_option_dstring(category_str, request_set, par_pos, "-scope slave -par");
+            break;
+      }
+   }
 
    // TODO: evaluate if soft requests should be part of the category string
 #if 1

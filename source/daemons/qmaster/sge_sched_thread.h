@@ -65,7 +65,6 @@ typedef struct {
    bool exit;       /* true -> exit event delivery                       */
    bool triggered;  /* new events added, a scheduling run is triggered  */
    lList *new_events; /* the storage for new events                       */
-   bool rebuild_categories;
    bool new_global_conf;
 } scheduler_control_t;
 

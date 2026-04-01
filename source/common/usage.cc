@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -55,9 +55,7 @@ static void usage_silent(FILE *fp);
 
 static int marker[OA__END];
 
-void mark_argument_syntax(
-int argument_number 
-) {
+void mark_argument_syntax(int argument_number) {
    marker[argument_number] = 1;
 }
 
@@ -68,6 +66,8 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
    {
      case OA_ACCOUNT_STRING:
        return MSG_GDI_ARGUMENTSYNTAX_OA_ACCOUNT_STRING;
+     case OA_ALLOCATION_RULE:
+       return MSG_GDI_ARGUMENTSYNTAX_OA_ALLOCATION_RULE;
      case OA_COMPLEX_LIST:
        return MSG_GDI_ARGUMENTSYNTAX_OA_COMPLEX_LIST;
      case OA_CONTEXT_LIST:
@@ -150,7 +150,7 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
      case OA_JOB_TASK_LIST:
          return MSG_GDI_ARGUMENTSYNTAX_OA_JOB_TASK_LIST; 
      case OA_BINDING_FILTER:
-         return MSG_GDI_ARGUMENTSYNTAX_QA_BINDING_FILTER_STR;
+         return MSG_GDI_ARGUMENTSYNTAX_OA_BINDING_FILTER_STR;
      case OA_JOB_TASKS:
          if (prog_number == QRESUB) {
             return MSG_GDI_ARGUMENTSYNTAX_OA_JOB_TASKS_RESUB;
@@ -203,7 +203,7 @@ static const char* get_argument_syntax(u_long32 prog_number, int nr)
      case OA_TASK_CONCURRENCY:
          return MSG_GDI_ARGUMENTSYNTAX_OA_TASK_CONCURRENCY;
      case OA_CATEGORY_ID:
-         return MSG_GDI_ARGUMENTSYNTAX_QA_CATEGORY_ID;
+         return MSG_GDI_ARGUMENTSYNTAX_OA_CATEGORY_ID;
      default:
          break; 
    }
@@ -991,8 +991,13 @@ void sge_usage(u_long32 prog_number, FILE *fp) {
       MARK(OA_PRIORITY);
    }
 
+   if (VALID_OPT(par_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_PAR_OPT, MSG_GDI_UTEXT_PAR_OPT);
+      MARK(OA_ALLOCATION_RULE);
+   }
+
    if (VALID_OPT(pe_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_pe_OPT_PE_NAME_SLOT_RANGE, 
+      PRINTITD(MSG_GDI_USAGE_pe_OPT_PE_NAME_SLOT_RANGE,
          MSG_GDI_UTEXT_pe_OPT_PE_NAME_SLOT_RANGE );
       MARK(OA_SLOT_RANGE);
    }

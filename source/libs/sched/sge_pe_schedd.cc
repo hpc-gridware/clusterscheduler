@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -58,57 +58,68 @@
  * the total number of slots. If the allocation rule is "$fill_up" or "$round_robin", it returns the corresponding
  * constant. If the allocation rule is invalid, it logs an error and returns 0.
  *
- * @param pep   The parallel environment element containing the allocation rule
+ * @param allocation_rule   The parallel environment element containing the allocation rule
  * @param slots The total number of slots to be allocated
+ * @param strict_fixed_modulo if true we check if slots is a multiple of a fixed allocation rule
  * @return The number of slots per host based on the allocation rule, or 0 if the allocation rule is invalid
  *    ALLOC_RULE_FILLUP (-1) if the allocation rule is "$fill_up"
  *    ALLOC_RULE_ROUNDROBIN (-2) if the allocation rule is "$round_robin"
  *    a positive integer if the allocation rule is a valid number
  *    0 if the allocation rule is invalid
- *    1 if the parallel environment is null (indicating a sequential job)
+ *    1 if the allocation rule is null (indicating a sequential job)
  */
 int
-pe_allocation_rule_slots(const lListElem *pep, int slots ) {
+pe_allocation_rule_slots(const char *allocation_rule, int slots, bool strict_fixed_modulo) {
    DENTER(TOP_LAYER);
 
    // Sequential job
-   if (pep == nullptr) {
+   if (allocation_rule == nullptr) {
       DRETURN(1);
    }
 
    // Allocation rule is a number
-   const char *alloc_rule = lGetString(pep, PE_allocation_rule);
-   if (isdigit((int)alloc_rule[0])) {
-      const int alloc_rule_value = atoi(alloc_rule);
+   if (isdigit(allocation_rule[0])) {
+      const int alloc_rule_value = atoi(allocation_rule);
 
       // check if the allocation rule is valid
       if (alloc_rule_value == 0) {
-         ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
+         ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S, allocation_rule);
          DRETURN(0);
       }
    
       // check if the number of slots can be distributed using the given allocation rule
-      if (slots % alloc_rule_value != 0) {
-         DPRINTF("pe >%s<: cant distribute %d slots using \"%s\" as alloc rule\n", lGetString(pep, PE_name), slots, alloc_rule);
+      if (strict_fixed_modulo && (slots % alloc_rule_value != 0)) {
+         DPRINTF("cannot distribute %d slots using \"%s\" as alloc rule\n", slots, allocation_rule);
+         DRETURN(0);
+      }
+
+      // We use the non strict_fixed_module for parsing the master allocation rule:
+      // E.g., qsub -pe mytestpe 5 -scope master -par 2 -scope slaves -par 3
+      //       can work, but the 5 % 2 check above would fail.
+      // OTOH, qsub -pe mytestpe 3 -scope master -par 4 -scope slaves ...
+      //       needs to be rejected.
+      if (!strict_fixed_modulo && (slots < alloc_rule_value)) {
+         DPRINTF("cannot distribute %d slots using \"%s\" as alloc rule\n", slots, allocation_rule);
          DRETURN(0);
       }
 
       DRETURN(alloc_rule_value);
    }
 
-   if (!strcasecmp(alloc_rule, "$pe_slots")) {
+   if (strcasecmp(allocation_rule, "$pe_slots") == 0) {
       DRETURN(slots);
    }
 
-   if (!strcasecmp(alloc_rule, "$fill_up")) {
+   if (strcasecmp(allocation_rule, "$fill_up") == 0) {
       DRETURN(ALLOC_RULE_FILLUP);
    }
       
-   if (!strcasecmp(alloc_rule, "$round_robin")) {
+   if (strcasecmp(allocation_rule, "$round_robin") == 0) {
       DRETURN(ALLOC_RULE_ROUNDROBIN);
    }
 
-   ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_SS , lGetString(pep, PE_name), alloc_rule);
+   ERROR(MSG_PE_XFAILEDPARSINGALLOCATIONRULEY_S, allocation_rule);
+
    DRETURN(0);
 }
 

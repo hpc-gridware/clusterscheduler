@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -48,6 +48,7 @@
 */
 enum {
    OA_ACCOUNT_STRING,
+   OA_ALLOCATION_RULE,
    OA_CATEGORY_ID,
    OA_COMPLEX_LIST,
    OA_CONTEXT_LIST,

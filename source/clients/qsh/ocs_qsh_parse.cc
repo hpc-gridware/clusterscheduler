@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -490,6 +490,16 @@ lList *cull_parse_qsh_parameter(u_long32 prog_number, u_long32 uid, const char *
    while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-p"))) {
       lSetUlong(*pjob, JB_priority, 
          BASE_PRIORITY + lGetInt(ep, SPA_argval_lIntT));
+      lRemoveElem(cmdline, &ep);
+   }
+
+   while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-par"))) {
+      const char *allocation_rule = lGetString(ep, SPA_switch_arg);
+      u_long32 scope = lGetChar(ep, SPA_argval_lCharT);
+      lListElem *jrs = job_get_or_create_request_setRW(*pjob, scope);
+      if (jrs != nullptr) {
+         lSetString(jrs, JRS_allocation_rule, allocation_rule);
+      }
       lRemoveElem(cmdline, &ep);
    }
 

@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -424,16 +424,33 @@ pe_validate_allocation_rule(lList **answer_list, const char *allocation_rule, bo
       ret = false;
    } else {
       // can be a number or one of the placeholders $pe_slots, $fill_up, $round_robin
-      if (isdigit(allocation_rule[0]) == 0) {
+      if (isdigit(allocation_rule[0])) {
+         // check the fixed allocation rules
+         int rule = atoi(allocation_rule);
+         if (rule <= 0) {
+            // negative and 0 are not allowed
+            ret = false;
+         } else {
+            // disallow e.g., "4x"
+            DSTRING_STATIC(dstr, 32);
+            const char *rewritten_allocation_rule = sge_dstring_sprintf(&dstr, "%d", rule);
+            if (strcmp(rewritten_allocation_rule, allocation_rule) != 0) {
+               ret = false;
+            }
+         }
+      } else {
+         // check the named allocation rules
          if (strcmp(allocation_rule, "$pe_slots") != 0 && strcmp(allocation_rule, "$fill_up") != 0 &&
              strcmp(allocation_rule, "$round_robin") != 0) {
-            if (output_errors) {
-               ERROR(MSG_PE_ALLOCRULE_S, allocation_rule);
-            }
-            answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_ALLOCRULE_S,
-                                    allocation_rule);
             ret = false;
          }
+      }
+      if (!ret) {
+         if (output_errors) {
+            ERROR(MSG_PE_ALLOCRULE_S, allocation_rule);
+         }
+         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_PE_ALLOCRULE_S,
+                                 allocation_rule);
       }
    }
 

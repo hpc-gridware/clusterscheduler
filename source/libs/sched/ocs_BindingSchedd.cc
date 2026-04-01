@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -242,13 +242,41 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
    }
 
    // the available maximum will now be reduced to the max number as specified by the allocation rule
-   if (const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->pe, a->slots);
-      max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
-      DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slotat a time\n");
-      DRETURN(1);
+   // @todo We operate on a->slots. But we call this function for every host - shouldn't we consider
+   //       the already scheduled tasks (accu_host_slots) and whether we already have the master task?
+   //       As it is now, why call it for every host? The data will never change and it is pretty expensive.
+   int max{0};
+   int slots{a->slots};
+   if (a->mallocation_rule != nullptr) {
+      const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->mallocation_rule, slots, false);
+      DPRINTF("slots_reduced_to_available_maximum: master allocation rule: %d\n", max_slots_according_to_allocation_rule);
+      if (max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
+         DPRINTF("slots_reduced_to_available_maximum: master allocation rule is round robin, so we can only handle 1 slot at a time\n");
+         max = 1;
+         // Reduce the slot count (for slave hosts) by our one master task.
+         slots -= 1;
+      } else if (max_slots_according_to_allocation_rule > 0) {
+         DPRINTF("slots_reduced_to_available_maximum: master allocation rule allows only %d slots\n", max_slots_according_to_allocation_rule);
+         max = (MIN(slots_max_available, max_slots_according_to_allocation_rule));
+         // Reduce the slot count (for slave hosts) by the allocation on the master host.
+         slots -= max_slots_according_to_allocation_rule;
+      }
+   }
+   // We always call pe_allocation_rule_slots, even with nullptr as allocation rule.
+   // This indicates that it is a sequential job and the function will return 1.
+   const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->allocation_rule, slots, false);
+   DPRINTF("slots_reduced_to_available_maximum: allocation rule: %d\n", max_slots_according_to_allocation_rule);
+   if (max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
+      DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slot at a time\n");
+      max = MAX(max, 1);
    } else if (max_slots_according_to_allocation_rule > 0) {
       DPRINTF("slots_reduced_to_available_maximum: allocation rule allows only %d slots\n", max_slots_according_to_allocation_rule);
-      DRETURN(MIN(slots_max_available, max_slots_according_to_allocation_rule));
+      max = MAX(max, MIN(slots_max_available, max_slots_according_to_allocation_rule));
+   }
+
+   if (max > 0) {
+      DPRINTF("slots_reduced_to_available_maximum: final result: %d slots\n", max);
+      DRETURN(max);
    }
 
    // for ALLOC_RULE_FILLUP or if value is unknown
