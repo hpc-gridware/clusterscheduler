@@ -29,7 +29,7 @@
  * 
  *  Portions of this code are Copyright 2011 Univa Inc.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -54,6 +54,8 @@
 #include "msg_utilbin.h"
 
 #include <TestClass.h>
+
+#include "ocs_Version.h"
 
 #if defined(OCS_HWLOC)
 #include <sys/utsname.h>
@@ -287,10 +289,10 @@ void check_core_binding()
 {
    /* try if it is possible to use hwloc in case of Linux */
 #if defined(OCS_HWLOC)
-      printf("Your OGE version has built-in core binding functionality!\n");
+      printf("Your " SFN " version has built-in core binding functionality!\n", ocs::Version::get_short_product_name().c_str());
       test_hwloc();
 #else
-      printf("Your OGE does currently not support core binding on this platform!\n");
+      printf("Your " SFN "version does currently not support core binding on this platform!\n", ocs::Version::get_short_product_name().c_str());
 #endif
 }
 
