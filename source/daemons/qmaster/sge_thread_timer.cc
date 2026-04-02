@@ -169,7 +169,7 @@ void sge_timer_start_periodic_tasks() {
    te_add_event(ev);
    te_free_event(&ev);
 
-   ev = te_new_event(sge_gmt32_to_gmt64(30), TYPE_ZOMBIE_JOB_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "zombie-job-cleanup");
+   ev = te_new_event(sge_gmt32_to_gmt64(5), TYPE_ZOMBIE_JOB_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "zombie-job-cleanup");
    te_add_event(ev);
    te_free_event(&ev);
 

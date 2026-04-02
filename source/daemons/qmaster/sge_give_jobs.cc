@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -133,7 +133,7 @@ static int
 sge_bury_job(const char *sge_root, lListElem *jep, u_long32 jid, lListElem *ja_task, int spool_job, int no_events, u_long64 gdi_session);
 
 static int
-sge_to_zombies(lListElem *jep, lListElem *ja_task);
+sge_to_zombies(u_long64 now, lListElem *jep, lListElem *ja_task);
 
 static void
 sge_job_finish_event(lListElem *jep, lListElem *jatep, lListElem *jr, int commit_flags, const char *diagnosis, u_long64 gdi_session);
@@ -892,16 +892,19 @@ create_timed_events_for_simulated_jobs() {
  ***********************************************************************/
 void
 sge_zombie_job_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
    lListElem *dep;
    lList *master_zombie_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
    const u_long32 zombie_count = mconf_get_zombie_jobs();
 
-   DENTER(TOP_LAYER);
-
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
+   uint64_t now = sge_get_gmt64();
    while (lGetNumberOfElem(master_zombie_list) > zombie_count) {
       dep = lFirstRW(master_zombie_list);
+      sge_add_event(now, sgeE_ZOMBIE_DEL, lGetUlong(dep, JB_job_number), 0,
+              nullptr, nullptr, nullptr, nullptr, 0);
       lRemoveElem(master_zombie_list, &dep);
    }
 
@@ -1268,7 +1271,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                                   jatep, nullptr, MSG_LOG_EXITED);
          remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
          if (handle_zombies) {
-            sge_to_zombies(jep, jatep);
+            sge_to_zombies(now, jep, jatep);
          }
          if (!unenrolled_task) {
             sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
@@ -1290,7 +1293,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
             release_successor_tasks_ad(jep, jataskid, gdi_session);
          }
          if (handle_zombies) {
-            sge_to_zombies(jep, jatep);
+            sge_to_zombies(now, jep, jatep);
          }
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          for_each_rw(petask, lGetList(jatep, JAT_task_list)) {
@@ -1961,16 +1964,17 @@ sge_bury_job(const char *sge_root, lListElem *job, u_long32 job_id, lListElem *j
 }
 
 static int
-sge_to_zombies(lListElem *job, lListElem *ja_task) {
+sge_to_zombies(u_long64 now, lListElem *job, lListElem *ja_task) {
+   DENTER(TOP_LAYER);
+
    u_long32 ja_task_id = lGetUlong(ja_task, JAT_task_number);
    u_long32 job_id = lGetUlong(job, JB_job_number);
    int is_defined;
    lList **master_zombie_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_ZOMBIE);
 
-   DENTER(TOP_LAYER);
-
    is_defined = job_is_ja_task_defined(job, ja_task_id);
    if (is_defined) {
+      bool add_event = false;
       lListElem *zombie = lGetElemUlongRW(*master_zombie_list, JB_job_number, job_id);
 
       /*
@@ -2006,6 +2010,7 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
          lXchgList(job, JB_ja_a_h_ids, &a_h_ids);
          lXchgList(job, JB_ja_tasks, &ja_tasks);
          lAppendElem(*master_zombie_list, zombie);
+         add_event = true;
       }
 
       /*
@@ -2013,6 +2018,12 @@ sge_to_zombies(lListElem *job, lListElem *ja_task) {
        */
       if (zombie) {
          job_add_as_zombie(zombie, nullptr, ja_task_id);
+      }
+
+      if (add_event) {
+         sge_add_event(now, sgeE_ZOMBIE_ADD, job_id, 0, nullptr, nullptr, nullptr, zombie, 0);
+      } else {
+         sge_add_event(now, sgeE_ZOMBIE_MOD, job_id, 0, nullptr, nullptr, nullptr, zombie, 0);
       }
 
    } else {

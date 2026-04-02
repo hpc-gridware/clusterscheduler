@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -281,6 +281,11 @@ typedef enum {
    sgeE_CATEGORY_ADD,
    sgeE_CATEGORY_DEL,
    sgeE_CATEGORY_MOD,
+
+   sgeE_ZOMBIE_LIST,              // events for zombie jobs
+   sgeE_ZOMBIE_ADD,
+   sgeE_ZOMBIE_DEL,
+   sgeE_ZOMBIE_MOD,
 
    sgeE_EVENTSIZE
 } ev_event;

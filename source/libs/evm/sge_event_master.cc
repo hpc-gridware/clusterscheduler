@@ -240,7 +240,7 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
-#define total_update_eventsMAX 22
+#define total_update_eventsMAX 23
 
 const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST,
                                        sgeE_CALENDAR_LIST,
@@ -264,6 +264,7 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        sgeE_HGROUP_LIST,
                                        sgeE_RQS_LIST,
                                        sgeE_AR_LIST,
+                                       sgeE_ZOMBIE_LIST,
                                        -1};
 
 const int block_events[total_update_eventsMAX][9] = {
@@ -288,7 +289,8 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_USER_ADD,            sgeE_USER_DEL,            sgeE_USER_MOD,            -1, -1, -1, -1, -1, -1},
    {sgeE_HGROUP_ADD,          sgeE_HGROUP_DEL,          sgeE_HGROUP_MOD,          -1, -1, -1, -1, -1, -1},
    {sgeE_RQS_ADD,             sgeE_RQS_DEL,             sgeE_RQS_MOD,             -1, -1, -1, -1, -1, -1},
-   {sgeE_AR_ADD,              sgeE_AR_DEL,              sgeE_AR_MOD,              -1, -1, -1, -1, -1, -1}
+   {sgeE_AR_ADD,              sgeE_AR_DEL,              sgeE_AR_MOD,              -1, -1, -1, -1, -1, -1},
+   {sgeE_ZOMBIE_ADD,          sgeE_ZOMBIE_DEL,          sgeE_ZOMBIE_MOD,          -1, -1, -1, -1, -1, -1}
 };
 
 
@@ -784,6 +786,7 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_HGROUP_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_RQS_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_AR_LIST);
+      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_ZOMBIE_LIST);
 
 #if 0
 /* JG: TODO: better use lXchgList? */
@@ -1983,6 +1986,7 @@ init_send_events() {
    SEND_EVENTS[sgeE_HGROUP_LIST] = true;
    SEND_EVENTS[sgeE_RQS_LIST] = true;
    SEND_EVENTS[sgeE_AR_LIST] = true;
+   SEND_EVENTS[sgeE_ZOMBIE_LIST] = true;
 
    DRETURN_VOID;
 } /* init_send_events() */
@@ -2391,6 +2395,7 @@ total_update(lListElem *event_client, u_long64 gdi_session)
    total_update_event(event_client, sgeE_HGROUP_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_RQS_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_AR_LIST, false, gdi_session);
+   total_update_event(event_client, sgeE_ZOMBIE_LIST, false, gdi_session);
 
    sge_commit(gdi_session);
 
@@ -2918,6 +2923,9 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
             break;
          case sgeE_CATEGORY_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_CATEGORY);
+            break;
+         case sgeE_ZOMBIE_LIST:
+            lp = *ocs::DataStore::get_master_list(SGE_TYPE_ZOMBIE);
             break;
          default:
             WARNING(MSG_EVE_TOTALUPDATENOTHANDLINGEVENT_I, type);

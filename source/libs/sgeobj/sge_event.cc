@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -423,18 +423,32 @@ const char *event_text(const lListElem *event, dstring *buffer)
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "ADVANCE RESERVATION", intkey);
       break;
 
-   /* -------------------- */
-   case sgeE_CATEGORY_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CATEGORY", n);
+         /* -------------------- */
+      case sgeE_CATEGORY_LIST:
+         sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "CATEGORY", n);
+         break;
+      case sgeE_CATEGORY_ADD:
+         sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "CATEGORY", intkey);
+         break;
+      case sgeE_CATEGORY_DEL:
+         sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "CATEGORY", intkey);
+         break;
+      case sgeE_CATEGORY_MOD:
+         sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "CATEGORY", intkey);
+         break;
+
+         /* -------------------- */
+   case sgeE_ZOMBIE_LIST:
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ZOMBIE", n);
       break;
-   case sgeE_CATEGORY_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "CATEGORY", intkey);
+   case sgeE_ZOMBIE_ADD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "ZOMBIE", intkey);
       break;
-   case sgeE_CATEGORY_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "CATEGORY", intkey);
+   case sgeE_ZOMBIE_DEL:
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "ZOMBIE", intkey);
       break;
-   case sgeE_CATEGORY_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "CATEGORY", intkey);
+   case sgeE_ZOMBIE_MOD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "ZOMBIE", intkey);
       break;
 
    /* -------------------- */
