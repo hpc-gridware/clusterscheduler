@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -35,7 +35,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "comm/cl_communication.h" 
+#include "comm/cl_communication.h"
 
 #include "cull/cull.h"
 
@@ -50,7 +50,7 @@
 #include "msg_common.h"
 
 /* documentation see libs/evc/sge_event_client.c */
-const char *event_text(const lListElem *event, dstring *buffer) 
+const char *event_text(const lListElem *event, dstring *buffer)
 {
    u_long32 type, intkey, number, intkey2;
    int n=0;
@@ -163,7 +163,7 @@ const char *event_text(const lListElem *event, dstring *buffer)
    case sgeE_PETASK_DEL:
       sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, sge_u32c(number), "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
-#if 0      
+#if 0
    /* JG: we'll have it soon ;-) */
    case sgeE_PETASK_MOD:
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "PETASK", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
@@ -184,22 +184,22 @@ const char *event_text(const lListElem *event, dstring *buffer)
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "JOB", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_MOD_SCHED_PRIORITY:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODSCHEDDPRIOOFJOBXTOY_USI, 
-            sge_u32c(number), 
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODSCHEDDPRIOOFJOBXTOY_USI,
+            sge_u32c(number),
             job_get_id_string(intkey, intkey2, strkey, &id_dstring),
             ((int)lGetUlong(lFirst(lp), JB_priority))-BASE_PRIORITY);
       break;
    case sgeE_JOB_USAGE:
-      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXUSAGE_US, 
+      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXUSAGE_US,
          sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
    case sgeE_JOB_FINAL_USAGE:
-      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINALUSAGE_US, 
+      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINALUSAGE_US,
          sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
    case sgeE_JOB_FINISH:
-      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINISH_US, 
+      sge_dstring_sprintf(buffer, MSG_EVENT_JOBXFINISH_US,
          sge_u32c(number), job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
@@ -247,7 +247,7 @@ const char *event_text(const lListElem *event, dstring *buffer)
 
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
-      sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, sge_u32c(number), 
+      sge_dstring_sprintf(buffer, MSG_EVENT_SHARETREEXNODESYLEAFS_UII, sge_u32c(number),
          lGetNumberOfNodes(nullptr, lp, STN_children),
          lGetNumberOfLeafs(nullptr, lp, STN_children));
       break;
@@ -432,6 +432,19 @@ const char *event_text(const lListElem *event, dstring *buffer)
       break;
    case sgeE_AR_MOD:
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, sge_u32c(number), "ADVANCE RESERVATION", strkey);
+
+   /* -------------------- */
+   case sgeE_ZOMBIE_LIST:
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ZOMBIE", n);
+      break;
+   case sgeE_ZOMBIE_ADD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USU, number, "ZOMBIE", intkey);
+      break;
+   case sgeE_ZOMBIE_DEL:
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USU, number, "ZOMBIE", intkey);
+      break;
+   case sgeE_ZOMBIE_MOD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USU, number, "ZOMBIE", intkey);
       break;
 
    /* -------------------- */
@@ -458,7 +471,7 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
    for_each_ep(ep, lGetList(event_client, EV_subscribed)) {
       u_long32 id = lGetUlong(ep, EVS_id);
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_INVALIDEVENT);
          ret = false;
          break;
@@ -475,8 +488,8 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
 *     event_client_verify() -- verify an event client object
 *
 *  SYNOPSIS
-*     bool 
-*     event_client_verify(const lListElem *event_client, lList **answer_list) 
+*     bool
+*     event_client_verify(const lListElem *event_client, lList **answer_list)
 *
 *  FUNCTION
 *     Verifies, if an incoming event client object (new event client registration
@@ -485,7 +498,7 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
 *
 *     We do the following verifications:
 *        - EV_id correct:
-*           - add request usually may only request dynamic event client id, 
+*           - add request usually may only request dynamic event client id,
 *             if a special id is requested, we must be on local host and be
 *             admin user or root.
 *        - EV_name (valid string, limited length)
@@ -509,23 +522,23 @@ static bool event_client_verify_subscription(const lListElem *event_client, lLis
 *        - EV_state (?)
 *
 *  INPUTS
-*     const lListElem *event_client - ??? 
-*     lList **answer_list           - ??? 
+*     const lListElem *event_client - ???
+*     lList **answer_list           - ???
 *     bool add                      - is this an add request (or mod)?
 *
 *  RESULT
-*     bool - 
+*     bool -
 *
 *  NOTES
-*     MT-NOTE: event_client_verify() is MT safe 
+*     MT-NOTE: event_client_verify() is MT safe
 *******************************************************************************/
-bool 
+bool
 event_client_verify(const lListElem *event_client, lList **answer_list, bool add)
 {
    bool ret = true;
    const char *str;
    u_long d_time = 0;
-  
+
    DENTER(TOP_LAYER);
 
    if (event_client == nullptr) {
@@ -538,19 +551,19 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
 #if 1
    if (ret) {
       if (!object_verify_cull(event_client, EV_Type)) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_OBJECT_STRUCTURE_ERROR);
          DTRACE;
          ret = false;
       }
    }
-#endif   
+#endif
 
    if (ret) {
       /* get the event delivery time - we'll need it in later checks */
       d_time = lGetUlong(event_client, EV_d_time);
 
-      /* 
+      /*
        * EV_name has to be a valid string.
        * TODO: Is verify_str_key too restrictive? Does drmaa allow to set the name?
        */
@@ -559,7 +572,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
          verify_str_key(
             answer_list, str, MAX_VERIFY_STRING,
             lNm2Str(EV_name), KEY_TABLE) != STATUS_OK) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_INVALIDNAME);
          DTRACE;
          ret = false;
@@ -567,17 +580,17 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
       }
    }
 
-   /* 
+   /*
     * Verify the EV_id:
     * Add requests may only contain EV_ID_ANY or a special id.
     * If a special id is requested, it must come from admin/root
     */
    if (ret) {
-#if 1      
+#if 1
       /* TODO: jgdi does not work with the check fix needed */
       u_long32 id = lGetUlong(event_client, EV_id);
       if (add && id >= EV_ID_FIRST_DYNAMIC) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_INVALIDID);
          DTRACE;
          ret = false;
@@ -589,7 +602,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
    /* Event delivery time may not be gt commlib timeout */
    if (ret) {
       if (d_time < 1 || d_time > CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_INVALIDDTIME_II, d_time,
                                  CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5);
          ret = false;
@@ -597,14 +610,14 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
       }
    }
 
-   /* 
-    * flush delay cannot be gt event delivery time 
+   /*
+    * flush delay cannot be gt event delivery time
     * We can very easily run into this problem by configuring scheduler interval
     * and flush_submit|finish_secs. Disabling the check.
     */
    if (ret) {
       if (lGetUlong(event_client, EV_flush_delay) > d_time) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_FLUSHDELAYCANNOTBEGTDTIME);
          ret = false;
       }
@@ -620,7 +633,7 @@ event_client_verify(const lListElem *event_client, lList **answer_list, bool add
       u_long32 busy = lGetUlong(event_client, EV_busy_handling);
       if (busy != EV_BUSY_NO_HANDLING && busy != EV_BUSY_UNTIL_ACK &&
           busy != EV_BUSY_UNTIL_RELEASED) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_EVENT_INVALIDBUSYHANDLING);
          ret = false;
       }

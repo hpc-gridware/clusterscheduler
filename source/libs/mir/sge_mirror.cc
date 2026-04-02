@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -70,7 +70,7 @@ typedef struct {
    void *client_data;                      /* client data passed to callback */
 } mirror_description;
 
-static sge_mirror_error 
+static sge_mirror_error
 sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list);
 
 #ifdef SOLARIS
@@ -125,9 +125,16 @@ sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr
                                                       int key_nm, const char *key,
                                                       sge_event_action action, lListElem *event);
 
+static sge_callback_result
+zombie_update_master_list(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *client_data);
+
+static sge_mirror_error
+sge_mirror_update_master_list_zombie_key(lList **list, const lDescr *list_descr,
+                                         int key_nm, u_long32 key, sge_event_action action, lListElem *event);
+
 /*
  * One entry per event type, this is the basic definition.
- * Each thread will have its own table based on this one. 
+ * Each thread will have its own table based on this one.
  */
 static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    /*cbb   cbd                                     cba   cd   */
@@ -157,7 +164,7 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, generic_update_master_list,             nullptr, nullptr },
    { nullptr, host_update_master_list,                nullptr, nullptr }, /*hgroup*/
    { nullptr, generic_update_master_list,             nullptr, nullptr },
-   { nullptr, generic_update_master_list,             nullptr, nullptr }, /*zombie*/
+   { nullptr, zombie_update_master_list,              nullptr, nullptr }, /*zombie*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*suser*/
    { nullptr, generic_update_master_list,             nullptr, nullptr }, /*rqs*/
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
@@ -390,7 +397,7 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
 
    if (type == SGE_TYPE_ALL) {
       int i;
-      
+
       for (i = (int)SGE_TYPE_ADMINHOST; i < (int)SGE_TYPE_ALL; i++) {
          sge_mirror_subscribe_internal(evc, (sge_object_type) i, callback_before, callback_after, client_data,
                                        nullptr, nullptr);
@@ -712,6 +719,17 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
          }
          break;
       case SGE_TYPE_ZOMBIE:
+         evc->ec_subscribe(evc, sgeE_ZOMBIE_LIST);
+         evc->ec_subscribe(evc, sgeE_ZOMBIE_ADD);
+         evc->ec_subscribe(evc, sgeE_ZOMBIE_DEL);
+         evc->ec_subscribe(evc, sgeE_ZOMBIE_MOD);
+         if (what_el && where_el) {
+            evc->ec_mod_subscription_where(evc, sgeE_ZOMBIE_LIST, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_ZOMBIE_ADD, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_ZOMBIE_DEL, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_ZOMBIE_MOD, what_el, where_el);
+         }
+         break;
       case SGE_TYPE_SUSER:
          ret = SGE_EM_NOT_INITIALIZED;
          break;
@@ -773,8 +791,7 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
 *     Eventclient/-Events
 *     Eventmirror/sge_mirror_subscribe()
 *******************************************************************************/
-sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type)
-{
+sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type type) {
    sge_mirror_error ret = SGE_EM_OK;
    DENTER(TOP_LAYER);
 
@@ -801,9 +818,9 @@ sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc, sge_object_type ty
 static sge_mirror_error
 sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
    mirror_description *mirror_base = mir_get_mirror_base();
- 
+
    DENTER(TOP_LAYER);
- 
+
    /* type has been checked in calling function - clear callback information */
    mirror_base[type].callback_before  = nullptr;
    mirror_base[type].callback_after   = nullptr;
@@ -957,7 +974,11 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_RQS_MOD);
          break;
       case SGE_TYPE_ZOMBIE:
-            DRETURN(SGE_EM_NOT_INITIALIZED);
+         evc->ec_unsubscribe(evc, sgeE_ZOMBIE_LIST);
+         evc->ec_unsubscribe(evc, sgeE_ZOMBIE_ADD);
+         evc->ec_unsubscribe(evc, sgeE_ZOMBIE_DEL);
+         evc->ec_unsubscribe(evc, sgeE_ZOMBIE_MOD);
+         break;
       case SGE_TYPE_SUSER:
             DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_AR:
@@ -1043,10 +1064,10 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc)
 
 /****** Eventmirror/sge_mirror_strerror() ***************************************
 *  NAME
-*     sge_mirror_strerror() -- map errorcode to error message 
+*     sge_mirror_strerror() -- map errorcode to error message
 *
 *  SYNOPSIS
-*     const char* sge_mirror_strerror(sge_mirror_error num) 
+*     const char* sge_mirror_strerror(sge_mirror_error num)
 *
 *  FUNCTION
 *     Returns a string describing a given error number.
@@ -1306,7 +1327,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
          case sgeE_ACK_TIMEOUT:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_MARK_4_REGISTRATION, SGE_EMA_TRIGGER, event);
             break;
-         
+
          case sgeE_CQUEUE_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CQUEUE, SGE_EMA_LIST, event);
             break;
@@ -1319,7 +1340,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
          case sgeE_CQUEUE_MOD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CQUEUE, SGE_EMA_MOD, event);
             break;
-         
+
          case sgeE_QINSTANCE_ADD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_QINSTANCE, SGE_EMA_ADD, event);
             break;
@@ -1396,7 +1417,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
          case sgeE_RQS_MOD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_RQS, SGE_EMA_MOD, event);
             break;
-   
+
          case sgeE_HGROUP_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_HGROUP, SGE_EMA_LIST, event);
             break;
@@ -1423,11 +1444,24 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_AR, SGE_EMA_MOD, event);
             break;
 
+         case sgeE_ZOMBIE_LIST:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ZOMBIE, SGE_EMA_LIST, event);
+            break;
+         case sgeE_ZOMBIE_ADD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ZOMBIE, SGE_EMA_ADD, event);
+            break;
+         case sgeE_ZOMBIE_DEL:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ZOMBIE, SGE_EMA_DEL, event);
+            break;
+         case sgeE_ZOMBIE_MOD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_ZOMBIE, SGE_EMA_MOD, event);
+            break;
+
          default:
             break;
       }
 
-      /* 
+      /*
        * if processing of an event failed, return an error to the caller of
        * this function, but continue processing.
        */
@@ -1447,7 +1481,7 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
 }
 
 /*
- * need this wrapping as to workaround dtrace problems with 
+ * need this wrapping as to workaround dtrace problems with
  * pid providers when function pointers are used
  */
 sge_mirror_error
@@ -1456,8 +1490,8 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list)
    return sge_mirror_process_event_list_(evc, event_list);
 }
 
-static sge_mirror_error 
-sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base, 
+static sge_mirror_error
+sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
                         sge_object_type type, sge_event_action action, lListElem *event)
 {
    sge_callback_result ret;
@@ -1712,7 +1746,7 @@ sge_mirror_update_master_list(lList **list, const lDescr *list_descr, lListElem 
             ERROR("duplicate list element " SFQ "\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_DUPLICATE_KEY);
          }
-   
+
          /* if neccessary, create list */
          if (*list == nullptr) {
             *list = lCreateList("", list_descr);
@@ -1820,7 +1854,7 @@ ar_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type typ
 *     static sge_mirror_error - SGE_EM_OK or an error code
 *
 *  NOTES
-*     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK 
+*     MT-NOTE: sge_mirror_update_master_list_ar_key() is MT safe, needs GLOBAL_LOCK
 *******************************************************************************/
 static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const lDescr *list_descr,
                                                         int key_nm, const char *key,
@@ -1836,6 +1870,43 @@ static sge_mirror_error sge_mirror_update_master_list_ar_key(lList **list, const
          ep = lGetElemUlongRW(*list, key_nm, atoi(key));
       }
       ret = sge_mirror_update_master_list(list, list_descr, ep, key, action, event);
+   } else {
+      ret = SGE_EM_NOT_INITIALIZED;
+   }
+
+   DRETURN(ret);
+}
+
+static sge_callback_result
+zombie_update_master_list([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type,
+                      sge_event_action action, lListElem *event, [[maybe_unused]] void *client_data)
+{
+   DENTER(TOP_LAYER);
+   lList **list = ocs::DataStore::get_master_list_rw(type);
+   const lDescr *list_descr = lGetListDescr(lGetList(event, ET_new_version));
+   int key_nm = object_type_get_key_nm(type);
+   u_long32 key = lGetUlong(event, ET_intkey);
+
+   if (sge_mirror_update_master_list_zombie_key(list, list_descr, key_nm, key, action, event) != SGE_EM_OK) {
+      DRETURN(SGE_EMA_FAILURE);
+   }
+   DRETURN(SGE_EMA_OK);
+}
+
+static sge_mirror_error
+sge_mirror_update_master_list_zombie_key(lList **list, const lDescr *list_descr,
+                                         int key_nm, u_long32 key, sge_event_action action, lListElem *event) {
+   DENTER(TOP_LAYER);
+
+   sge_mirror_error ret;
+   if (list != nullptr) {
+      lListElem *ep = nullptr;
+      if (key > 0) {
+         ep = lGetElemUlongRW(*list, key_nm, key);
+      }
+
+      DSTRING_STATIC(dstr, 32);
+      ret = sge_mirror_update_master_list(list, list_descr, ep, sge_dstring_sprintf(&dstr, sge_u32, key), action, event);
    } else {
       ret = SGE_EM_NOT_INITIALIZED;
    }

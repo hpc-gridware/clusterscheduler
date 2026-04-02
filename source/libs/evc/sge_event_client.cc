@@ -3285,5 +3285,5 @@ ec2_evco_exit(sge_evc_class_t *thiz) {
 *     The result points to a static buffer. Subsequent calls to
 *     event_text will overwrite previous results.
 *******************************************************************************/
-/* function see libs/sgeobj/sge_event.c */
+/* function see libs/sgeobj/sge_event.cc */
 

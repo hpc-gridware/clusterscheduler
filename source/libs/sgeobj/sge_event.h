@@ -1,34 +1,34 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -65,9 +65,9 @@ typedef enum {
 /* data structurs for the local event client */
 /*-------------------------------------------*/
 
-/** 
+/**
  *   this is the definition for the update function that is used by process
- *   internal event clients / mirrors. 
+ *   internal event clients / mirrors.
  **/
 typedef void (*event_client_update_func_t)(
    u_long32 id,                /* event client id */
@@ -117,7 +117,7 @@ typedef void (*evm_remove_func_t) (
 /* documentation see libs/evc/sge_event_client.c */
 /* #define EV_NO_FLUSH -1 */
 
-#define EV_NOT_SUBSCRIBED false 
+#define EV_NOT_SUBSCRIBED false
 #define EV_SUBSCRIBED true
 #define EV_FLUSHED true
 #define EV_NOT_FLUSHED false
@@ -191,7 +191,7 @@ typedef enum {
 
    sgeE_PETASK_ADD,                 /*29   event add a new pe task */
    sgeE_PETASK_DEL,                 /*30   event delete a pe task */
-   
+
    sgeE_JOB_LIST,                   /*31 + send job list at registration */
    sgeE_JOB_ADD,                    /*32 + event job add (new job) */
    sgeE_JOB_DEL,                    /*33 + event job delete */
@@ -279,6 +279,11 @@ typedef enum {
    sgeE_AR_MOD,
 
    sgeE_ACK_TIMEOUT,
+
+   sgeE_ZOMBIE_LIST,              // events for zombie jobs
+   sgeE_ZOMBIE_ADD,
+   sgeE_ZOMBIE_DEL,
+   sgeE_ZOMBIE_MOD,
 
    sgeE_EVENTSIZE
 } ev_event;
