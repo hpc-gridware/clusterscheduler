@@ -45,9 +45,6 @@
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
 
-static int
-host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id);
-
 /****** qmaster/host/host_notify_about_X() *************************************
 *  NAME
 *     host_notify_about_X() -- Send X to comproc 
@@ -89,7 +86,7 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
 *     qmaster/host/host_notify_about_featureset()
 *******************************************************************************/
 static int
-host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, int progname_id) {
+host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::ClientServerBaseTag tag, ProgName progname_id) {
    DENTER(TOP_LAYER);
    int ret = -1;
 
@@ -97,8 +94,8 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
    if (progname_id == EXECD) {
       unsigned long last_heard_from;
       u_short id = 1;
-      const char *commproc = prognames[progname_id];
-      cl_commlib_get_last_message_time(cl_com_get_handle(prognames[QMASTER], 0),
+      const char *commproc = to_cstr(progname_id);
+      cl_commlib_get_last_message_time(cl_com_get_handle(to_cstr(QMASTER), 0),
                                        (char *) hostname, (char *) commproc, id,
                                        &last_heard_from);
       if (!last_heard_from) {
@@ -112,7 +109,7 @@ host_notify_about_X(lListElem *host, uint32_t x, ocs::gdi::ClientServerBase::Cli
       uint32_t dummy = 0;
 
       packint(&pb, x);
-      if (ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[progname_id], 1, hostname,
+      if (ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(progname_id), 1, hostname,
                                                       tag, &pb, &dummy) == CL_RETVAL_OK) {
          ret = 0;
       }

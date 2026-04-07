@@ -1100,7 +1100,7 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    
    // JSV CLIENT <program_name> (read-only)
    sge_dstring_clear(&buffer);
-   sge_dstring_sprintf(&buffer, "%s CLIENT %s", prefix, prognames[component_get_component_id()]);
+   sge_dstring_sprintf(&buffer, "%s CLIENT %s", prefix, to_cstr(component_get_component_id()));
    jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
    // JSV USER <user_name> (read-only)
@@ -1701,8 +1701,8 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
       if (const lListElem *display = lGetElemStr(env_list, VA_variable, "DISPLAY"); display != nullptr) {
          const char *value = lGetString(display, VA_value);
 
-         if (uint32_t prog_id = component_get_component_id();
-             value != nullptr && (strcmp(prognames[prog_id], "qsh") == 0 || strcmp(prognames[prog_id], "qrsh") == 0)) {
+         if (ProgName prog_id = component_get_component_id();
+             value != nullptr && (strcmp(to_cstr(prog_id), "qsh") == 0 || strcmp(to_cstr(prog_id), "qrsh") == 0)) {
             sge_dstring_clear(&buffer);
             sge_dstring_sprintf(&buffer, "PARAM display %s", value);
             jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));

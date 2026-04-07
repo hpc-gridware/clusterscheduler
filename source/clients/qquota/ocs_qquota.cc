@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
    ocs::TerminationManager::install_terminate_handler();
 
    // parse command line parameters and options
-   const std::string procedure_name = prognames[QQUOTA];
+   const std::string procedure_name = to_cstr(QQUOTA);
    ocs::QQuotaParameterClient parameter(procedure_name);
    if (!parameter.parse_parameters(&alp, argv, environ)) {
       answer_list_output(&alp);

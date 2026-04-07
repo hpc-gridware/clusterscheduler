@@ -27,6 +27,8 @@
  * 
  *   All Rights Reserved.
  * 
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 #include <pwd.h>
@@ -196,9 +198,9 @@ int krb_init(const char *progname)
    strcpy(gsd.progname, progname);
 
    /* check to see if I am a daemon */
-   if(!strcmp(prognames[QMASTER], progname) ||
-      !strcmp(prognames[EXECD], progname) ||
-      !strcmp(prognames[SCHEDD], progname))
+   if(!strcmp(to_cstr(QMASTER), progname) ||
+      !strcmp(to_cstr(EXECD), progname) ||
+      !strcmp(to_cstr(SCHEDD), progname))
       gsd.daemon = 1;
    else
       gsd.daemon = 0;
@@ -295,7 +297,7 @@ int krb_init(const char *progname)
 	 exit(1);
       }
 
-      if ((!strcmp(prognames[QMASTER], progname))) {
+      if ((!strcmp(to_cstr(QMASTER), progname))) {
 
 	 if ((rc = krb5_sname_to_principal(gsd.context, nullptr, SGE_SERVICE,
 					   KRB5_NT_SRV_HST, &gsd.serverp))) {
@@ -338,7 +340,7 @@ int krb_init(const char *progname)
    }
 
    /* do qmaster initialization */
-   if (gsd.daemon && (!strcmp(prognames[QMASTER], progname) &&
+   if (gsd.daemon && (!strcmp(to_cstr(QMASTER), progname) &&
        prog_number == QMASTER)) {
 
       /* NOTE: make sure we are REALLY the qmaster */
@@ -371,7 +373,7 @@ int krb_init(const char *progname)
       if (gsd.daemon) {
 
          /* initialize the connection list in execd */
-         if (!strcmp(prognames[EXECD], progname)) {
+         if (!strcmp(to_cstr(EXECD), progname)) {
             gsd.conn_list = lCreateList("krb_connections", KRB_Type);
             if (gsd.conn_list == nullptr) {
                ERROR(MSB_KRB_CONNECTIONLISTCOULDNOTBECREATED);
@@ -610,7 +612,7 @@ krb_send_message(int synchron, const char *tocomproc, int toid,
       client using the commd tuple */
 
    if (gsd.qmaster || (gsd.daemon &&
-		       strcmp(prognames[QMASTER], tocomproc))) {
+		       strcmp(to_cstr(QMASTER), tocomproc))) {
 
       if (toid)
 	 where = lWhere("%T(%I==%s && %I==%s && %I==%u)", KRB_Type, KRB_host, 

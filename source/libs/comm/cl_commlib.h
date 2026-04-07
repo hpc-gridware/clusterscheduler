@@ -231,7 +231,7 @@ int cl_commlib_check_for_ack(cl_com_handle_t *handle,
                              bool do_block);
 
 int cl_commlib_get_endpoint_status(cl_com_handle_t *handle,
-                                   char *un_resolved_hostname, char *component_name, unsigned long component_id,
+                                   char *un_resolved_hostname, const char *component_name, unsigned long component_id,
                                    cl_com_SIRM_t **status);
 
 int cl_commlib_search_endpoint(cl_com_handle_t *handle,

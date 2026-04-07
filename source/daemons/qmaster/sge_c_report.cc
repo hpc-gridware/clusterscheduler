@@ -141,7 +141,7 @@ sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *rhost, char *
 #endif
 
    /* accept reports only from execd's */
-   if (strcmp(prognames[EXECD], commproc)) {
+   if (strcmp(to_cstr(EXECD), commproc)) {
       ERROR(MSG_GOTSTATUSREPORTOFUNKNOWNCOMMPROC_S, commproc);
       DRETURN_VOID;
    }

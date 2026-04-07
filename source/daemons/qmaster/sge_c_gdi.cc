@@ -641,7 +641,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                   break;
                }
 
-               if (task->target == ocs::gdi::Target::EH_LIST && !strcmp(prognames[EXECD], packet->commproc)) {
+               if (task->target == ocs::gdi::Target::EH_LIST && !strcmp(to_cstr(EXECD), packet->commproc)) {
                   bool is_restart = false;
 
                   if (sub_command == ocs::gdi::SubCommand::EXECD_RESTART) {
@@ -1354,7 +1354,7 @@ sge_chck_mod_perm_host(const ocs::gdi::Packet *packet, lList **alpp, const ocs::
 
             // host must be either admin host
             // or exec host and request has to come from execd
-            if (!(is_admin_host || (is_exec_host && !strcmp(packet->commproc, prognames[EXECD])))) {
+            if (!(is_admin_host || (is_exec_host && !strcmp(packet->commproc, to_cstr(EXECD))))) {
                ERROR(MSG_SGETEXT_NOADMINHOST_S, packet->host);
                answer_list_add(alpp, SGE_EVENT, STATUS_EDENIED2HOST, ANSWER_QUALITY_ERROR);
                DRETURN(false);

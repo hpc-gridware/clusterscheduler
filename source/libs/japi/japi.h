@@ -34,7 +34,9 @@
 /*___INFO__MARK_END__*/
 
 #include "drmaa.h"
+
 #include "uti/sge_dstring.h"
+#include "uti/sge_component.h"
 #include <cinttypes>
 #include "sgeobj/cull/sge_japi_JJ_L.h"
 #include "sgeobj/cull/sge_japi_JJAT_L.h"
@@ -98,7 +100,7 @@ typedef void (*error_handler_t)(const char *);
  * If 'contact' is nullptr, the default DRM system will be used.
  */ 
 int japi_init(const char *contact, const char *session_key_in, 
-              dstring *session_key_out, int prog_number, bool enable_wait,
+              dstring *session_key_out, ProgName prog_number, bool enable_wait,
               error_handler_t handler, dstring *diag);
 
 /*
@@ -307,7 +309,7 @@ void japi_version(unsigned int *major, unsigned int *minor);
  * Output (string) is implementation dependent and could contain the DRM system and the
  * implementation vendor as its parts.
  */
-int japi_get_drm_system(dstring *drm, dstring *diag, int me);
+int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me);
 
 /* get next string attribute from iterator 
  * DRMAA_ERRNO_SUCCESS or DRMAA_ERRNO_NO_MORE_ELEMENTS if no such exists */

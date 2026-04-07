@@ -409,11 +409,11 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
 
       if (!simulate_execd) {
          /* do ask_commproc() only if we are missing load reports */
-         cl_commlib_get_last_message_time(cl_com_get_handle(prognames[QMASTER], 0),
-                                          hostname, prognames[EXECD], 1, &last_heard_from);
+         cl_commlib_get_last_message_time(cl_com_get_handle(to_cstr(QMASTER), 0),
+                                          hostname, to_cstr(EXECD), 1, &last_heard_from);
          if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= sge_get_gmt64()) {
 
-            ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], hostname,  lGetUlong(jep, JB_job_number));
+            ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, to_cstr(EXECD), hostname,  lGetUlong(jep, JB_job_number));
             sge_mark_unheard(hep, gdi_session);
             ret = -1;
             break;
@@ -444,7 +444,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
          if (simulate_execd) {
             failed = CL_RETVAL_OK;
          } else {
-            failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, hostname, ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &send_pb, &dummymid);
+            failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, hostname, ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          }
          clear_packbuffer(&send_pb);
       }
@@ -473,6 +473,7 @@ send_slave_jobs_wc(lListElem *jep, monitoring_t *monitor, uint64_t gdi_session) 
 
 static int
 send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
    int failed;
    sge_pack_buffer pb;
    lListElem *tmpjep, *qep, *tmpjatep = nullptr;
@@ -485,14 +486,12 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
 
-   DENTER(TOP_LAYER);
-
    if (!simulate_execd) {
-      cl_commlib_get_last_message_time(cl_com_get_handle(myprogname, 0), (char *) rhost, prognames[EXECD], 1,
+      cl_commlib_get_last_message_time(cl_com_get_handle(myprogname, 0), rhost, to_cstr(EXECD), 1,
                                        &last_heard_from);
       uint64_t now = sge_get_gmt64();
       if (sge_gmt32_to_gmt64(last_heard_from + mconf_get_max_unheard()) <= now) {
-         ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, prognames[EXECD], rhost,  lGetUlong(jep, JB_job_number));
+         ERROR(MSG_COM_CANT_DELIVER_UNHEARD_SSU, to_cstr(EXECD), rhost,  lGetUlong(jep, JB_job_number));
          sge_mark_unheard(hep, gdi_session);
          DRETURN(-1);
       }
@@ -603,7 +602,7 @@ send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, in
       failed = CL_RETVAL_OK;
    } else {
       uint32_t dummymid = 0;
-      failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, rhost,
+      failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, rhost,
                                                            master ? ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION : ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &pb, &dummymid);
    }
 

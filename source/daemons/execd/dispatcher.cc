@@ -129,7 +129,7 @@ int sge_execd_process_messages() {
       if (ret == CL_RETVAL_OK) {
          int pack_ret = init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
          if (pack_ret == PACK_SUCCESS) {
-            bool from_qmaster = strcmp(msg.snd_name, prognames[QMASTER]) == 0;
+            bool from_qmaster = strcmp(msg.snd_name, to_cstr(QMASTER)) == 0;
             bool authentication_ok = true;
             // in case of Munge authentication check and optionally re-resolve the user
             if (munge_security) {
@@ -251,7 +251,7 @@ int sge_execd_process_messages() {
          /*
           * we are not connected, reconnect and register at qmaster ...
           */
-         if (cl_com_get_handle(prognames[EXECD], 1) == nullptr) {
+         if (cl_com_get_handle(to_cstr(EXECD), 1) == nullptr) {
             terminate = true; /* if we don't have a handle, we must leave
                                * because execd_register will create a new one.
                                * This error would be really strange, because
@@ -350,19 +350,19 @@ int sge_execd_process_messages() {
                if (now - last_heard > alive_check_interval) {
                   int ret_val = CL_RETVAL_OK;
                   const char* master_host = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
-                  cl_com_handle_t* handle = cl_com_get_handle(prognames[EXECD],1);
+                  cl_com_handle_t* handle = cl_com_get_handle(to_cstr(EXECD),1);
                   cl_com_SIRM_t* ep_status = nullptr;
 
                   /*
                    * qmaster file has not changed, check the endpoint status
                    */
                   ret_val = cl_commlib_get_endpoint_status(handle,
-                                                           (char*)master_host, (char*)prognames[QMASTER], 1,
+                                                           (char*)master_host, to_cstr(QMASTER), 1,
                                                            &ep_status);
                   cl_com_free_sirm_message(&ep_status);
                   if (ret_val != CL_RETVAL_OK) {
                      /* There was an error, close connection and trigger reconnect */
-                     cl_commlib_close_connection(handle, (char*)master_host, (char*)prognames[QMASTER], 1, false);
+                     cl_commlib_close_connection(handle, (char*)master_host, to_cstr(QMASTER), 1, false);
                      do_reconnect = true;
                   }
                }
@@ -388,7 +388,7 @@ int sge_execd_process_messages() {
             if (next_certificate_check < now) {
                next_certificate_check = now + certificate_check_interval;
                // renew certificates if required
-               cl_com_handle_t *handle = cl_com_get_handle(prognames[EXECD], 1);
+               cl_com_handle_t *handle = cl_com_get_handle(to_cstr(EXECD), 1);
                bool was_renewed = false;
                DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
                if (cl_commlib_check_refresh_server_context(handle, was_renewed, &error_dstr) == CL_RETVAL_OK) {

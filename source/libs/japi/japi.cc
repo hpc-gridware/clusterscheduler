@@ -255,7 +255,7 @@ static pthread_cond_t japi_threads_in_session_cv = PTHREAD_COND_INITIALIZER;
 /* ---- globals ------------------------------------- */
 char *japi_session_key = nullptr;
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
-static volatile int prog_number = JAPI;
+static volatile ProgName prog_number = JAPI;
 static pthread_t init_thread = 0;
 static error_handler_t error_handler = nullptr;
 static int japi_delegated_file_staging_is_enabled = -1;
@@ -457,7 +457,7 @@ int japi_init_mt(dstring *diag)
 *      MT-NOTE: japi_init() is MT safe
 *******************************************************************************/
 int japi_init(const char *contact, const char *session_key_in,
-              dstring *session_key_out, int my_prog_num, bool enable_wait,
+              dstring *session_key_out, ProgName my_prog_num, bool enable_wait,
               error_handler_t handler, dstring *diag)
 {
    DENTER(TOP_LAYER);
@@ -3863,7 +3863,7 @@ void japi_version(unsigned int *major, unsigned int *minor)
 *  NOTES
 *     MT-NOTE: japi_get_drm_system() is MT safe
 *******************************************************************************/
-int japi_get_drm_system(dstring *drm, dstring *diag, int me)
+int japi_get_drm_system(dstring *drm, dstring *diag, ProgName me)
 {
    dstring buffer = DSTRING_INIT;
    pthread_once(&japi_once_control, japi_once_init);

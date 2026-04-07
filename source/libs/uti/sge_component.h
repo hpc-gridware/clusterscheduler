@@ -19,6 +19,13 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <array>
+#include <string_view>
+#include <optional>
+#include <cstddef>
+#include <iostream>
+
+#include "sge.h"
 #include "uti/sge_uidgid.h"
 
 // TODO: move the defines to a different location where other program names are defines
@@ -28,45 +35,78 @@
 #define SGE_SHADOWD     "sge_shadowd"
 #define PE_HOSTFILE     "pe_hostfile"
 
-enum {
-   UNKNOWN_APP = 0, // 0
-   QALTER = 1,    // 1
-   QCONF,         // 2
-   QDEL,          // 3
-   QHOLD,         // 4
-   QMASTER,       // 5
-   QMOD,          // 6
-   QRESUB,        // 7
-   QRLS,          // 8
-   QSELECT,       // 9
-   QSH,           // 10
-   QRSH,          // 11
-   QLOGIN,        // 12
-   QSTAT,         // 13
-   QSUB,          // 14
-   EXECD,         // 15
-   QEVENT,        // 16
-   QRSUB,         // 17
-   QRDEL,         // 18
-   QRSTAT,        // 19
-   QUSERDEFINED,  // 20
-   ALL_OPT,       // 21
+// For those applications that should be handled with sge_options the entry has to be before ALL_OPT
+#define PROGNAME_LIST(X) \
+   X(UNKNOWN_APP,   "unknown")       \
+   X(QALTER,        "qalter")        \
+   X(QCONF,         "qconf")         \
+   X(QDEL,          "qdel")          \
+   X(QHOLD,         "qhold")         \
+   X(QMASTER,       "qmaster")       \
+   X(QMOD,          "qmod")          \
+   X(QRESUB,        "qresub")        \
+   X(QRLS,          "qrls")          \
+   X(QSELECT,       "qselect")       \
+   X(QSH,           "qsh")           \
+   X(QRSH,          "qrsh")          \
+   X(QLOGIN,        "qlogin")        \
+   X(QSTAT,         "qstat")         \
+   X(QSUB,          "qsub")          \
+   X(EXECD,         "execd")         \
+   X(QEVENT,        "qevent")        \
+   X(QRSUB,         "qrsub")         \
+   X(QRDEL,         "qrdel")         \
+   X(QRSTAT,        "qrstat")        \
+   X(__UNUSED__,    "unknown")       \
+   X(ALL_OPT,       "unknown")       \
+   X(SCHEDD,        "schedd")        \
+   X(QACCT,         "qacct")         \
+   X(SHADOWD,       "shadowd")       \
+   X(QHOST,         "qhost")         \
+   X(SPOOLDEFAULTS, "spoolinit")     \
+   X(JAPI,          "japi")          \
+   X(DRMAA,         "drmaa")         \
+   X(QPING,         "qping")         \
+   X(QQUOTA,        "qquota")        \
+   X(SGE_SHARE_MON, "sge_share_mon") \
+   X(PYTHON_CLIENT, "python_client")
 
-   /* programs with numbers > ALL_OPT do not use the old parsing */
-
-   UNUSED,        // 22
-   SCHEDD,        // 23
-   QACCT,         // 24
-   SHADOWD,       // 25
-   QHOST,         // 26
-   SPOOLDEFAULTS, // 27
-   JAPI,          // 28
-   DRMAA,         // 29
-   QPING,         // 30
-   QQUOTA,        // 31
-   SGE_SHARE_MON, // 32
-   PYTHON_CLIENT  // 33
+enum ProgName {
+#define X(name, str) name,
+   PROGNAME_LIST(X)
+#undef X
+   PROGNAME_COUNT
 };
+
+constexpr std::array<std::string_view, PROGNAME_COUNT> prognames = {
+#define X(name, str) str,
+   PROGNAME_LIST(X)
+#undef X
+};
+
+constexpr const char* to_cstr(ProgName p) {
+   return prognames[static_cast<std::size_t>(p)].data();
+}
+
+constexpr std::string_view to_string_view(ProgName p) {
+   const auto idx = static_cast<std::size_t>(p);
+   return idx < prognames.size() ? prognames[idx] : std::string_view{};
+}
+
+constexpr std::string to_string(ProgName p) {
+   return std::string(to_string_view(p));
+}
+
+constexpr std::optional<ProgName> from_string(const std::string_view s) {
+   for (std::size_t i = 0; i < prognames.size(); ++i) {
+      if (prognames[i] == s) {
+         return static_cast<ProgName>(i);
+      }
+   }
+   return std::nullopt;
+}
+
+
 
 enum thread_type_t {
    MAIN_THREAD, // 1
@@ -88,8 +128,29 @@ enum component_user_type_t {
    COMPONENT_NUM_USERS
 };
 
-extern const char *prognames[];
-extern const char *threadnames[];
+
+constexpr std::array<const char*, 10> threadnames = {{
+   "main",          /* 1 */
+   "listener",      /* 2 */
+   "event-master",  /* 3 */
+   "timer",         /* 4 */
+   "worker",        /* 5 */
+   "signal",        /* 6 */
+   "scheduler",     /* 7 */
+   "mirror",        /* 8 */
+   "reader",        /* 9 */
+   nullptr
+}};
+
+constexpr std::array<const char*, 7> sec_mode_names = {
+   "tls",
+   "munge",
+   "afs",
+   "csp",
+   "dce",
+   "kerberos",
+   NONE_STR
+};
 
 typedef void (*sge_exit_func_t)(int);
 
@@ -105,11 +166,11 @@ component_is_qmaster_internal();
 void
 component_set_qmaster_internal(bool qmaster_internal);
 
-int
+ProgName
 component_get_component_id();
 
 void
-component_set_component_id(int component_id);
+component_set_component_id(ProgName component_id);
 
 bool
 component_is_daemonized();

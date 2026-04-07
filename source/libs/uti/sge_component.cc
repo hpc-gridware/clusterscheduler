@@ -78,7 +78,7 @@ typedef struct {
    int thread_id; ///< Thread ID.
    char thread_name[MAX_COMP_NAME]; ///< Name of the thread.
 
-   int component_id; ///< Component ID.
+   ProgName component_id; ///< Component ID.
    char component_name[MAX_COMP_NAME]; ///< Name of the component.
 
    bool qmaster_internal; ///< Flag indicating if the component is qmaster internal.
@@ -95,7 +95,7 @@ static pthread_key_t sge_component_tl0_key;
  * \param[in] tl Pointer to the thread-local component structure.
  * \param[in] component_id Component ID to set.
  */
-static void set_component_id(sge_component_tl0_t *tl, int component_id) {
+static void set_component_id(sge_component_tl0_t *tl, ProgName component_id) {
    tl->component_id = component_id;
 }
 
@@ -390,7 +390,7 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
    memset(tl, 0, sizeof(sge_component_tl0_t));
 
    // some default values
-   set_component_id(tl, -1);
+   set_component_id(tl, UNKNOWN_APP);
    set_component_name(tl, "unknown");
    set_thread_name(tl, "unknown");
    set_daemonized(tl, false);
@@ -454,7 +454,7 @@ bool component_is_daemonized() {
  *
  * \return The component ID.
  */
-int component_get_component_id() {
+ProgName component_get_component_id() {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
    return tl->component_id;
 }
@@ -665,10 +665,10 @@ bool component_is_qmaster_internal() {
  *
  * \param[in] component_id Component ID to set.
  */
-void component_set_component_id(int component_id) {
+void component_set_component_id(ProgName component_id) {
    GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
    set_component_id(tl, component_id);
-   set_component_name(tl, prognames[component_id]);
+   set_component_name(tl, to_cstr(component_id));
 }
 
 /**

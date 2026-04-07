@@ -89,7 +89,7 @@ int main(int argc, const char **argv) {
    ocs::gdi::Command gdi_cmd = ocs::gdi::Command::MOD;
    ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE;
    int tmp_ret;
-   int me_who;
+   ProgName me_who;
 
    /*
    ** get command name: qalter or qresub

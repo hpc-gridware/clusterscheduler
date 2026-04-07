@@ -130,14 +130,14 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
 
    // @todo CS-1577 need do check bootstrap security_mode
    handle = cl_com_create_handle(&commlib_error, CL_CT_TCP, CL_CM_CT_MESSAGE, false, sge_qmaster_port, CL_TCP_DEFAULT,
-                                 (char *) prognames[SHADOWD], 0, 1, 0);
+                                 to_cstr(SHADOWD), 0, 1, 0);
    if (handle == nullptr) {
       CRITICAL(SFNMAX, cl_get_error_text(commlib_error));
       DRETURN(is_up_and_running);
    }
 
    DPRINTF("Try to send status information message to previous master host " SFQ " to port %ld\n", oldqmaster, sge_qmaster_port);
-   ret = cl_commlib_get_endpoint_status(handle, oldqmaster, (char *) prognames[QMASTER], 1, &status);
+   ret = cl_commlib_get_endpoint_status(handle, oldqmaster, to_cstr(QMASTER), 1, &status);
    if (ret != CL_RETVAL_OK) {
       DPRINTF("cl_commlib_get_endpoint_status() returned " SFQ "\n", cl_get_error_text(ret));
       is_up_and_running = 0;
@@ -310,7 +310,7 @@ main(int argc, char **argv) {
       int *tmp_fd_array = nullptr;
       unsigned long tmp_fd_count = 0;
 
-      if (cl_com_set_handle_fds(cl_com_get_handle(prognames[SHADOWD], 0), &tmp_fd_array, &tmp_fd_count) ==
+      if (cl_com_set_handle_fds(cl_com_get_handle(to_cstr(SHADOWD), 0), &tmp_fd_array, &tmp_fd_count) ==
           CL_RETVAL_OK) {
          sge_daemonize(tmp_fd_array, tmp_fd_count);
          if (tmp_fd_array != nullptr) {
@@ -385,7 +385,7 @@ main(int argc, char **argv) {
                         char qmaster_name[256];
 
                         strcpy(qmaster_name, SGE_PREFIX);
-                        strcat(qmaster_name, prognames[QMASTER]);
+                        strcat(qmaster_name, to_cstr(QMASTER));
                         DPRINTF("qmaster_name: " SFN "\n", qmaster_name);
 
                         /*

@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
 
    /* this must be done as root user to be able to bind ports < 1024 */
    max_enroll_tries = 30;
-   while (cl_com_get_handle(prognames[QMASTER], 1) == nullptr) {
+   while (cl_com_get_handle(to_cstr(QMASTER), 1) == nullptr) {
       if (ocs::gdi::ClientBase::prepare_enroll(&alp) != CL_RETVAL_OK) {
          answer_list_output(&alp);
       }
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
          CRITICAL(SFNMAX, MSG_QMASTER_COMMUNICATION_ERRORS);
          sge_exit(1);
       }
-      cl_com_handle *handle = cl_com_get_handle(prognames[QMASTER], 1);
+      cl_com_handle *handle = cl_com_get_handle(to_cstr(QMASTER), 1);
       if (handle != nullptr) {
          // this is the smallest possible synchron receive timeout
          // it is used by listener threads waiting for messages

@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
    }
 
    // parse command line parameters and options
-   const std::string procedure_name = prognames[QHOST];
+   const std::string procedure_name = to_cstr(QHOST);
    ocs::QHostParameterClient parameter(procedure_name);
    if (!parameter.parse_parameters(&answer_list, argv, environ)) {
       answer_list_output(&answer_list);

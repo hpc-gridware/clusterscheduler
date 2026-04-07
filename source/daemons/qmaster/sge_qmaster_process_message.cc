@@ -296,12 +296,12 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
    if (packet->is_intern_request) {
       // Internal GDI requests will always be executed with access to the GLOBAL data store
       DRETURN(ocs::DataStore::GLOBAL);
-   } else if (strcmp(packet->commproc, prognames[DRMAA]) == 0) {
+   } else if (strcmp(packet->commproc, to_cstr(DRMAA)) == 0) {
       // DRMAA-requests will only be handled by reader if automatic sessions are enabled
       if (mconf_get_disable_automatic_session()) {
          DRETURN(ocs::DataStore::GLOBAL);
       }
-   } else if (strcmp(packet->commproc, prognames[EXECD]) == 0 && mconf_get_disable_secondary_ds_execd()) {
+   } else if (strcmp(packet->commproc, to_cstr(EXECD)) == 0 && mconf_get_disable_secondary_ds_execd()) {
       // request coming from execd should be handled with global DS if secondary DS are disabled for execd
       DRETURN(ocs::DataStore::GLOBAL);
    }
@@ -335,7 +335,7 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
          // They can get processed by reader threads in parallel
          type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
       } else if (operation == ocs::gdi::Command::GET) {
-         bool is_qconf = (strcmp(packet->commproc, prognames[QCONF]) == 0);
+         bool is_qconf = (strcmp(packet->commproc, to_cstr(QCONF)) == 0);
          const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
          bool is_manager = manop_is_manager(packet, master_manager_list);
 
@@ -690,7 +690,7 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
    DENTER(TOP_LAYER);
    lList *answer_list = nullptr;
 
-   if (strcmp(prognames[EXECD], commproc) != 0) {
+   if (strcmp(to_cstr(EXECD), commproc) != 0) {
       ERROR(MSG_COM_ACK_S, commproc);
       DRETURN_VOID;
    }

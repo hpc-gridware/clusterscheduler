@@ -368,8 +368,8 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
     * commlib related error messages if master is not up and running
     */
    if (ret) {
-      const char *tmp_commproc = prognames[QMASTER];
-      const char *tmp_host = gdi::ClientBase::gdi_get_act_master_host(false);
+      const char *tmp_commproc = to_cstr(QMASTER);
+      const char *tmp_host = ClientBase::gdi_get_act_master_host(false);
       int tmp_id = 1;
       int tmp_response_id = 0;
       commlib_error = ClientServerBase::sge_gdi_send_any_request(0, &message_id, tmp_host, tmp_commproc, tmp_id, &pb,
@@ -385,11 +385,11 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, to_cstr(QMASTER),
                         sge_qmaster_port, mastername?mastername:"<nullptr>");
             } else {
                /* For unusual errors, give more detail */
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, to_cstr(QMASTER),
                         sge_qmaster_port, mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
@@ -410,7 +410,7 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
     * related error messages are hidden if master is not up and running anymore
     */
    if (ret) {
-      const char *commproc = prognames[QMASTER];
+      const char *commproc = to_cstr(QMASTER);
       const char *host = ClientBase::gdi_get_act_master_host(false);
       char rcv_host[CL_MAXHOSTNAMELEN+1];
       char rcv_commproc[CL_MAXHOSTNAMELEN+1];
@@ -490,11 +490,11 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
             if (commlib_error == CL_RETVAL_CONNECT_ERROR ||
                 commlib_error == CL_RETVAL_CONNECTION_NOT_FOUND ) {
                /* For the default case, just print a simple message */
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, prognames[QMASTER],
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_UNABLE_TO_CONNECT_SUS, to_cstr(QMASTER),
                         sge_qmaster_port, mastername?mastername:"<nullptr>");
             } else {
                /* For unusual errors, give more detail */
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, prognames[QMASTER],
+               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_CANT_SEND_MSG_TO_PORT_ON_HOST_SUSS, to_cstr(QMASTER),
                         sge_qmaster_port, mastername?mastername:"<nullptr>", cl_get_error_text(commlib_error));
             }
          } else {
@@ -570,7 +570,7 @@ ocs::gdi::Packet::execute_internal(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    // fill in packet data for internal request - we don't get it via a pack buffer
-   strncpy(commproc, prognames[QMASTER], sizeof(commproc)-1);
+   strncpy(commproc, to_cstr(QMASTER), sizeof(commproc)-1);
    strncpy(host, ClientBase::gdi_get_act_master_host(false), sizeof(host)-1);
    // @todo make a function for filling in all the user data in a single call
    uid = component_get_uid();

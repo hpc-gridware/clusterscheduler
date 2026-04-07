@@ -33,6 +33,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "uti/sge_component.h"
+
 #include "cull/cull.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -68,8 +70,8 @@ namespace ocs::gdi {
 
       // connect to qmaster
       static int prepare_enroll(lList **answer_list);
-      static ErrorValue setup(int component_id, uint32_t thread_id, lList **answer_list, bool is_qmaster_intern_client);
-      static ErrorValue setup_and_enroll(int component_id, uint32_t thread_id, lList **answer_list);
+      static ErrorValue setup(ProgName component_id, uint32_t thread_id, lList **answer_list, bool is_qmaster_intern_client);
+      static ErrorValue setup_and_enroll(ProgName component_id, uint32_t thread_id, lList **answer_list);
       static int shutdown();
    };
 }

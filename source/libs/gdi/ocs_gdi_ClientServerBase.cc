@@ -79,7 +79,7 @@ ocs::gdi::ClientServerBase::gdi_send_message(int synchron, const char *tocomproc
          use_execd_handle = 0;
          break;
       default:
-         if (strcmp(tocomproc, prognames[QMASTER]) == 0) {
+         if (strcmp(tocomproc, to_cstr(QMASTER)) == 0) {
             use_execd_handle = 0;
          } else {
             if (tocomproc != nullptr && tocomproc[0] != '\0') {
@@ -219,7 +219,7 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
          use_execd_handle = 0;
          break;
       default:
-         if (strcmp(fromcommproc, prognames[QMASTER]) == 0) {
+         if (strcmp(fromcommproc, to_cstr(QMASTER)) == 0) {
             use_execd_handle = 0;
          } else {
             if (fromcommproc != nullptr && fromcommproc[0] != '\0') {
@@ -343,7 +343,7 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
       DRETURN(CL_RETVAL_HANDLE_NOT_FOUND);
    }
 
-   if (strcmp(commproc, (char *) prognames[QMASTER]) == 0 && id == 1) {
+   if (strcmp(commproc, to_cstr(QMASTER)) == 0 && id == 1) {
       cl_com_append_known_endpoint_from_name((char *) rhost, (char *) commproc, id, (int)to_port, CL_CM_AC_DISABLED, true);
    }
 
@@ -614,7 +614,7 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
 
    // update up a client ssl_config to pass cert path to commlib
    std::string client_cert_path;
-   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, prognames[QMASTER]);
+   ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, to_cstr(QMASTER));
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
                                     client_cert_path.c_str(),

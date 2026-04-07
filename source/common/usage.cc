@@ -223,18 +223,16 @@ FILE *fp
 
 
 
-void sge_usage(uint32_t prog_number, FILE *fp) {
-
+void sge_usage(ProgName prog_number, FILE *fp) {
+   DENTER(TOP_LAYER);
   char namebuf[128];
   dstring ds;
   char buffer[256];
-  const char *prog_name = prognames[prog_number];
+  const char *prog_name = to_cstr(prog_number);
   
 #define PRINTITD(o,d) print_option_syntax(fp,o,d)
 #define PRINTIT(o) print_option_syntax(fp,o,nullptr)
 #define MARK(n) mark_argument_syntax(n)
-
-   DENTER(TOP_LAYER);
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 

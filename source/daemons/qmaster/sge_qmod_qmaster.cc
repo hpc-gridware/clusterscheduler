@@ -1063,10 +1063,8 @@ sge_signal_queue(int how, lListElem *qep, lListElem *jep, lListElem *jatep, moni
 
    /* don't try to signal unheard queues */
    if (!qinstance_state_is_unknown(qep)) {
-      const char *hnm, *pnm;
-
-      pnm = prognames[EXECD];
-      hnm = lGetHost(qep, QU_qhostname);
+      const char *hnm = lGetHost(qep, QU_qhostname);
+      const char *pnm = to_cstr(EXECD);
 
       if ((i = init_packbuffer(&pb, 256)) == PACK_SUCCESS) {
          /* identifier for acknowledgement */

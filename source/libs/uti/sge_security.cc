@@ -71,9 +71,9 @@ static bool is_master(const char* progname);
 
 static bool is_daemon(const char* progname) {
    if (progname != nullptr) {
-      if ( !strcmp(prognames[QMASTER], progname) ||
-           !strcmp(prognames[EXECD]  , progname) ||
-           !strcmp(prognames[SCHEDD] , progname)) {
+      if ( !strcmp(to_cstr(QMASTER), progname) ||
+           !strcmp(to_cstr(EXECD)  , progname) ||
+           !strcmp(to_cstr(SCHEDD) , progname)) {
          return true;
       }
    }
@@ -84,7 +84,7 @@ static bool is_daemon(const char* progname) {
 
 static bool is_master(const char* progname) {
    if (progname != nullptr) {
-      if ( !strcmp(prognames[QMASTER],progname)) {
+      if ( !strcmp(to_cstr(QMASTER),progname)) {
          return true;
       }
    }

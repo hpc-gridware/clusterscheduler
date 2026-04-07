@@ -711,7 +711,7 @@ void tgt2cc(lListElem *jep, const char *rhost)
          }
       }
       if (rc == 0)
-         if (krb_put_tgt(rhost, prognames[EXECD], 0, jid, tgt_creds) == 0) {
+         if (krb_put_tgt(rhost, to_cstr(EXECD), 0, jid, tgt_creds) == 0) {
             krb_set_tgt_id(jid);
  
             tgt_creds = nullptr;
@@ -740,7 +740,7 @@ void tgtcclr(lListElem *jep, const char *rhost)
 #ifdef KERBEROS
 
    /* clear client TGT */
-   krb_put_tgt(rhost, prognames[EXECD], 0, lGetUlong(jep, JB_job_number), nullptr);
+   krb_put_tgt(rhost, to_cstr(EXECD), 0, lGetUlong(jep, JB_job_number), nullptr);
    krb_set_tgt_id(0);
 
 #endif

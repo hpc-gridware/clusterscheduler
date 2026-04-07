@@ -603,7 +603,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
          }
          bool needs_client = me_who != QMASTER;
          cl_ret = gdi_setup_tls_config(needs_client, is_server, answer_list, qualified_hostname,
-                                       local_port, master, sge_qmaster_port, prognames[QMASTER]);
+                                       local_port, master, sge_qmaster_port, to_cstr(QMASTER));
          if (cl_ret != CL_RETVAL_OK) {
             DRETURN(cl_ret);
          }
@@ -621,7 +621,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
             /* add qmaster as known endpoint */
             DPRINTF("re-read actual qmaster file (prepare_enroll)\n");
             cl_com_append_known_endpoint_from_name((char *) master,
-                                                   (char *) prognames[QMASTER],
+                                                   to_cstr(QMASTER),
                                                    1,
                                                    (int)sge_qmaster_port,
                                                    CL_CM_AC_DISABLED,
@@ -646,7 +646,7 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 
          case QMASTER:
             cl_com_append_known_endpoint_from_name((char *) master,
-                                                   (char *) prognames[QMASTER],
+                                                   to_cstr(QMASTER),
                                                    1,
                                                    (int)sge_qmaster_port,
                                                    CL_CM_AC_DISABLED,
@@ -748,13 +748,13 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 // * setup gdi for an application or thread
 // * does not enroll. commlib setup has to be done separately or ocs::gdi::ClientBase::setup_and_enroll()
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup(int component_id, uint32_t thread_id, lList **answer_list, bool is_qmaster_intern_client) {
+ocs::gdi::ClientBase::setup(ProgName component_id, uint32_t thread_id, lList **answer_list, bool is_qmaster_intern_client) {
    DENTER(TOP_LAYER);
 
    lInit(nmv);
    component_set_component_id(component_id);
    component_set_qmaster_internal(is_qmaster_intern_client);
-   component_set_thread_name(threadnames[thread_id] ? threadnames[thread_id] : prognames[component_id]);
+   component_set_thread_name(threadnames[thread_id] ? threadnames[thread_id] : to_cstr(component_id));
 
    // TODO: EB: this can be taken from boostrap module instead of accessing the environment again.
    const char *sge_root = getenv("SGE_ROOT");
@@ -791,7 +791,7 @@ ocs::gdi::ClientBase::setup(int component_id, uint32_t thread_id, lList **answer
 }
 
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup_and_enroll(int component_id, uint32_t thread_id, lList **answer_list) {
+ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, uint32_t thread_id, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    if (gdi_data_is_setup()) {
@@ -1035,7 +1035,7 @@ ocs::gdi::ClientBase::gdi_is_alive(lList **answer_list) {
     * qmaster could have changed due to migration
     */
    constexpr int comp_id = 1;
-   const char *comp_name = prognames[QMASTER];
+   const char *comp_name = to_cstr(QMASTER);
    const uint32_t comp_port = bootstrap_get_sge_qmaster_port();
    const char *comp_host = gdi_get_act_master_host(false);
    cl_com_append_known_endpoint_from_name((char *) comp_host, (char *) comp_name, comp_id,

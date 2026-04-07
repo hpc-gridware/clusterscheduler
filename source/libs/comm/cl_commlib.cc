@@ -6278,7 +6278,7 @@ int cl_commlib_close_connection(cl_com_handle_t *handle, char *un_resolved_hostn
 }
 
 int cl_commlib_get_endpoint_status(cl_com_handle_t *handle, char *un_resolved_hostname,
-                                   char *component_name, unsigned long component_id,
+                                   const char *component_name, unsigned long component_id,
                                    cl_com_SIRM_t **status) {
    cl_com_connection_t *connection = nullptr;
    cl_connection_list_elem_t *elem = nullptr;

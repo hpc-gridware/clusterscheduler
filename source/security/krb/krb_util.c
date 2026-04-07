@@ -27,6 +27,8 @@
  * 
  *   All Rights Reserved.
  * 
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
@@ -182,7 +184,7 @@ lList *joblist
 		     /* if we are called by the execd, also store the
 			new TGT in the credentials cache of the user */
 
-                     if (!strcmp(prognames[EXECD], gsd->progname)) {
+                     if (!strcmp(to_cstr(EXECD), gsd->progname)) {
                          
                         int retries = MAX_NIS_RETRIES;
 			struct passwd *pw = nullptr;

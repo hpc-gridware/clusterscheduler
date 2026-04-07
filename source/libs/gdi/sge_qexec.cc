@@ -190,7 +190,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
 
    pack_job_delivery(&pb, petrep);
 
-   ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, prognames[EXECD], 1, hostname,
+   ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
                                                      ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
 
    clear_packbuffer(&pb);
@@ -287,8 +287,10 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
    host[0] = '\0';
    from_id = 1;
    do {
-      /* FIX_CONST */
-      ret = ocs::gdi::ClientServerBase::gdi_receive_message((char *) prognames[EXECD], &from_id, host,
+      char component_name[1024];
+      strcpy(component_name, to_cstr(EXECD));
+
+      ret = ocs::gdi::ClientServerBase::gdi_receive_message(component_name, &from_id, host,
                                                         &tag, &msg, &msg_len, (options & OPT_SYNCHRON) ? 1 : 0);
 
       if (ret != CL_RETVAL_OK && ret != CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
@@ -303,7 +305,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
    ret = init_packbuffer_from_buffer(&pb, msg, msg_len);
    if (ret != PACK_SUCCESS) {
-      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, prognames[EXECD], from_id, cull_pack_strerror(ret));
+      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, to_cstr(EXECD), from_id, cull_pack_strerror(ret));
       DRETURN(-1);
    }
 

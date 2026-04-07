@@ -64,7 +64,7 @@ int sge_send_ack_to_qmaster(uint32_t type, uint32_t ulong_val,
 {
    int ret;
    sge_pack_buffer pb;
-   const char* commproc = prognames[QMASTER];
+   const char* commproc = to_cstr(QMASTER);
    const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
    int         id   = 1;
    

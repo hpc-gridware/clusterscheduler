@@ -24,6 +24,7 @@
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
+#include "uti/sge_component.h"
 
 #include "sgeobj/sge_answer.h"
 
@@ -59,7 +60,7 @@ namespace {
       using ViewBase = ocs::QHostViewBase;
       using Controller = ocs::QHostController;
 
-      static constexpr int prog_number = QHOST;
+      static constexpr ProgName prog_number = QHOST;
 
       static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
          return std::make_unique<ocs::QHostViewXML>(parameter);
@@ -80,7 +81,7 @@ namespace {
       using ViewBase = ocs::QQuotaViewBase;
       using Controller = ocs::QQuotaController;
 
-      static constexpr int prog_number = QQUOTA;
+      static constexpr ProgName prog_number = QQUOTA;
 
       static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
          return std::make_unique<ocs::QQuotaViewXML>(parameter);
@@ -101,7 +102,7 @@ namespace {
       using ViewBase = ocs::QRStatViewBase;
       using Controller = ocs::QRStatController;
 
-      static constexpr int prog_number = QRSTAT;
+      static constexpr ProgName prog_number = QRSTAT;
 
       static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
          return std::make_unique<ocs::QRStatViewXML>(parameter);
@@ -165,7 +166,7 @@ namespace {
       DENTER(TOP_LAYER);
 
       // Prepare a response
-      ocs::ProcedureParameter response(prognames[Traits::prog_number]);
+      ocs::ProcedureParameter response(to_string(Traits::prog_number));
       lList *bundle = response.get_bundle();
 
       // Add the procedures output to the bundle
@@ -193,15 +194,15 @@ namespace {
    using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *);
 
    struct ProcedureDispatchEntry {
-      const char *name;
+      std::string_view name;
       ProcedureHandler handler;
    };
 
    const std::array<ProcedureDispatchEntry, 3> procedure_dispatch_table{
       {
-         {prognames[QHOST], &run_procedure<QHostTraits>},
-         {prognames[QQUOTA], &run_procedure<QQuotaTraits>},
-         {prognames[QRSTAT], &run_procedure<QRStatTraits>}
+         {to_string_view(QHOST), &run_procedure<QHostTraits>},
+         {to_string_view(QQUOTA), &run_procedure<QQuotaTraits>},
+         {to_string_view(QRSTAT), &run_procedure<QRStatTraits>}
       }
    };
 } // namespace

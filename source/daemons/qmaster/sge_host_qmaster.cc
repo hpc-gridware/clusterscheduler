@@ -709,8 +709,8 @@ sge_mark_unheard(lListElem *hep, uint64_t gdi_session) {
 
    host = lGetHost(hep, EH_name);
 
-   if (cl_com_remove_known_endpoint_from_name(host, prognames[EXECD], 1) == CL_RETVAL_OK) {
-      DEBUG("set %s/%s/%d to unheard\n", host, prognames[EXECD], 1);
+   if (cl_com_remove_known_endpoint_from_name(host, to_cstr(EXECD), 1) == CL_RETVAL_OK) {
+      DEBUG("set %s/%s/%d to unheard\n", host, to_cstr(EXECD), 1);
    }
 
    if (lGetUlong64(hep, EH_lt_heard_from) != 0) {
@@ -938,8 +938,8 @@ sge_load_value_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
          continue;
       }
 
-      cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
-                                       (char *) host, (char *) prognames[EXECD], 1, &last_heard);
+      cl_commlib_get_last_message_time((cl_com_get_handle(to_cstr(QMASTER), 0)),
+                                       host, to_cstr(EXECD), 1, &last_heard);
 
 
       timeout = std::max(static_cast<uint64_t>(load_report_interval(hep) * 3), max_unheard);
@@ -1154,8 +1154,8 @@ notify(lListElem *lel, ocs::gdi::Packet *packet, ocs::gdi::Task *task, int kill_
    const char *hostname = lGetHost(lel, EH_name);
 
    unsigned long last_heard_from;
-   cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
-                                    (char *) hostname, (char *) prognames[EXECD], 1, &last_heard_from);
+   cl_commlib_get_last_message_time((cl_com_get_handle(to_cstr(QMASTER), 0)),
+                                    hostname, to_cstr(EXECD), 1, &last_heard_from);
    bool execd_alive = last_heard_from > 0;
 
    if (!force && !execd_alive) {

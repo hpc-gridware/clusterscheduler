@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 
    /* exit if we can't get a communication handle (bind port) */
    max_enroll_tries = 30;
-   while (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
+   while (cl_com_get_handle(to_cstr(EXECD),1) == nullptr) {
       ocs::gdi::ClientBase::prepare_enroll(&alp);
       max_enroll_tries--;
 
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
          CRITICAL(SFNMAX, MSG_COM_ERROR);
          sge_exit(1);
       }
-      if (cl_com_get_handle(prognames[EXECD],1) == nullptr) {
+      if (cl_com_get_handle(to_cstr(EXECD),1) == nullptr) {
         /* sleep when prepare_enroll() failed */
         sleep(1);
         if (max_enroll_tries < 27) {
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
       cl_com_SIRM_t* status = nullptr;
       ret_val = cl_commlib_get_endpoint_status(cl_com_get_handle(component_get_component_name(), 0),
                                                (char *)ocs::gdi::ClientBase::gdi_get_act_master_host(true),
-                                               (char*)prognames[QMASTER], 1, &status);
+                                               to_cstr(QMASTER), 1, &status);
       if (ret_val != CL_RETVAL_OK) {
          ERROR(SFNMAX, cl_get_error_text(ret_val));
          ERROR(SFNMAX, MSG_CONF_NOCONFBG);

@@ -717,7 +717,7 @@ ack_all_slaves(uint32_t job_id, uint32_t ja_task_id, const lListElem *ja_task,
           * down, we don't want to see tons of error messages in the messages
           * file. The caller of this functions has to handle this situation.
           */
-         ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, host, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, &pb, &dummymid);
+         ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, host, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, &pb, &dummymid);
          clear_packbuffer(&pb);
       }
    }

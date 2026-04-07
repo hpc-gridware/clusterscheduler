@@ -75,7 +75,7 @@ int main(int argc, const char **argv) {
    }
 
    // parse command line parameters and options
-   const std::string procedure_name = prognames[QRSTAT];
+   const std::string procedure_name = to_cstr(QRSTAT);
    ocs::QRStatParameterClient parameter(procedure_name);
    if (!parameter.parse_parameters(&answer_list, argv, environ)) {
       answer_list_output(&answer_list);

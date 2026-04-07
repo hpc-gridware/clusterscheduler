@@ -24,6 +24,7 @@
 #include <cstring>
 #include <mutex>
 #include <vector>
+#include <array>
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_bootstrap_files.h"
@@ -38,68 +39,6 @@
 #include "uti/msg_utilib.h"
 
 #include "sge.h"
-
-/* Must match Qxxx defines in sge_bootstrap.h */
-const char *prognames[] = {
-   "unknown",
-   "qalter",        /* 1  */
-   "qconf",         /* 2  */
-   "qdel",          /* 3  */
-   "qhold",         /* 4  */
-   "qmaster",       /* 5  */
-   "qmod",          /* 6  */
-   "qresub",        /* 7  */
-   "qrls",          /* 8  */
-   "qselect",       /* 9  */
-   "qsh",           /* 10 */
-   "qrsh",          /* 11 */
-   "qlogin",        /* 12 */
-   "qstat",         /* 13 */
-   "qsub",          /* 14 */
-   "execd",         /* 15 */
-   "qevent",        /* 16 */
-   "qrsub",         /* 17 */
-   "qrdel",         /* 18 */
-   "qrstat",        /* 19 */
-   "unknown",       /* 20 */
-   "unknown",       /* 21 */
-   "qmon",          /* 22 */
-   "schedd",        /* 23 */
-   "qacct",         /* 24 */
-   "shadowd",       /* 25 */
-   "qhost",         /* 26 */
-   "spoolinit",     /* 27 */
-   "japi",          /* 28 */
-   "drmaa",         /* 29 */
-   "qping",         /* 30 */
-   "qquota",        /* 31 */
-   "sge_share_mon", /* 32 */
-   "python_client", /* 33 */
-   nullptr,
-};
-
-const char *threadnames[] = {
-   "main",          /* 1 */
-   "listener",      /* 2 */
-   "event-master",  /* 3 */
-   "timer",         /* 4 */
-   "worker",        /* 5 */
-   "signal",        /* 6 */
-   "scheduler",     /* 7 */
-   "mirror",        /* 8 */
-   "reader",        /* 9 */
-   nullptr
-};
-
-static const char *sec_mode_names[] = {
-   "tls",
-   "munge",
-   "afs",
-   "csp",
-   "dce",
-   "kerberos",
-   NONE_STR
-};
 
 static std::once_flag bootstrap_once;
 static std::atomic<bool> bootstrap_initialized{false};

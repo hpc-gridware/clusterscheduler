@@ -231,7 +231,7 @@ sge_setup_qmaster(char *anArgv[]) {
 *
 *******************************************************************************/
 int
-sge_qmaster_thread_init(uint32_t prog_id, uint32_t thread_id, bool switch_to_admin_user) {
+sge_qmaster_thread_init(ProgName prog_id, uint32_t thread_id, bool switch_to_admin_user) {
    const char *admin_user;
    lList *alp = nullptr;
 
@@ -599,7 +599,7 @@ communication_setup() {
 
    DEBUG("my resolved hostname name is: \"%s\"\n", qualified_hostname);
 
-   cl_com_handle_t *com_handle = cl_com_get_handle(prognames[QMASTER], 1);
+   cl_com_handle_t *com_handle = cl_com_get_handle(to_cstr(QMASTER), 1);
 
    if (com_handle == nullptr) {
       ERROR("port " sge_u32 " already bound\n", qmaster_port);
@@ -651,7 +651,7 @@ communication_setup() {
       log_state_set_log_level(old_ll);
    }
 
-   cl_commlib_set_connection_param(cl_com_get_handle(prognames[QMASTER], 1),
+   cl_commlib_set_connection_param(cl_com_get_handle(to_cstr(QMASTER), 1),
                                    HEARD_FROM_TIMEOUT, mconf_get_max_unheard());
 
    /* fetching qmaster_params and begin to parse */

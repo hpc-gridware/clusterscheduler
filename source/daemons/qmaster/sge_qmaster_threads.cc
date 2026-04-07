@@ -108,10 +108,10 @@ sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    }
 
    if (sge_qmaster_shutdown_via_signal_thread(0) == 0) {
-      INFO(MSG_SGETEXT_KILL_SSS, packet->user, packet->host, prognames[QMASTER]);
+      INFO(MSG_SGETEXT_KILL_SSS, packet->user, packet->host, to_cstr(QMASTER));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    } else {
-      ERROR(MSG_SGETEXT_KILL_FAILED_SSS, packet->user, packet->host, prognames[QMASTER]);
+      ERROR(MSG_SGETEXT_KILL_FAILED_SSS, packet->user, packet->host, to_cstr(QMASTER));
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
    }
 

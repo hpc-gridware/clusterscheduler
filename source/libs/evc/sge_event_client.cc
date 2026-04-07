@@ -959,7 +959,7 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
    if (!component_is_qmaster_internal()) {
       cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
       if (handle != nullptr) {
-         cl_commlib_close_connection(handle, (char*)master_name, (char*)prognames[QMASTER], 1, false);
+         cl_commlib_close_connection(handle, (char*)master_name, to_cstr(QMASTER), 1, false);
          DPRINTF("closed old connection to qmaster\n");
       }
    }
@@ -1465,13 +1465,13 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, lList** alpp) {
       com_handle = ocs::gdi::Client::sge_gdi_ctx->get_com_handle(sge_gdi_ctx);
       if (com_handle != nullptr) {
          int ngc_error;
-         ngc_error = cl_commlib_close_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1, false);
+         ngc_error = cl_commlib_close_connection(com_handle, mastername, to_cstr(QMASTER), 1, false);
          if (ngc_error == CL_RETVAL_OK) {
             DPRINTF("closed old connection to qmaster\n");
          } else {
             INFO("error closing old connection to qmaster: " SFQ, cl_get_error_text(ngc_error));
          }
-         ngc_error = cl_commlib_open_connection(com_handle, (char*)mastername, (char*)prognames[QMASTER], 1);
+         ngc_error = cl_commlib_open_connection(com_handle, mastername, to_cstr(QMASTER), 1);
          if (ngc_error == CL_RETVAL_OK) {
             DPRINTF("opened new connection to qmaster\n");
          } else {
@@ -1589,9 +1589,9 @@ static bool ec2_deregister(sge_evc_class_t *thiz)
          int send_ret;
          lList *alp = nullptr;
          /* TODO: to master only !!!!! */
-         const char* commproc = prognames[QMASTER];
+         const char* commproc = to_cstr(QMASTER);
          const char* rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
-         int         commid   = 1;
+         const int commid   = 1;
 
 
          packint(&pb, lGetUlong(sge_evc->ec, EV_id));
@@ -3046,7 +3046,7 @@ get_event_list(sge_evc_class_t *thiz, int sync, lList **report_list, int *commli
    u_short id = 1;
 
    uint64_t now = sge_get_gmt64();
-   DPRINTF("try to get request from %s, id %d\n",(char*)prognames[QMASTER], id );
+   DPRINTF("try to get request from %s, id %d\n", to_cstr(QMASTER), id );
    if ( (help=ocs::gdi::ClientServerBase::sge_gdi_get_any_request(rhost, commproc, &id, &pb, &tag, sync,0,nullptr)) != CL_RETVAL_OK) {
       if (help == CL_RETVAL_NO_MESSAGE || help == CL_RETVAL_SYNC_RECEIVE_TIMEOUT) {
          DEBUG("commlib returns after %fs: %s\n", sge_gmt64_to_gmt32_double(sge_get_gmt64() - now), cl_get_error_text(help));

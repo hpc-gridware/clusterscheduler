@@ -48,7 +48,7 @@ namespace ocs::qmaster {
    cert_renewal_create_event() {
       DENTER(TOP_LAYER);
 
-      cl_com_handle_t *handle = cl_com_get_handle(prognames[QMASTER], 1);
+      cl_com_handle_t *handle = cl_com_get_handle(to_cstr(QMASTER), 1);
       if (handle == nullptr) {
          CRITICAL(SFNMAX, MSG_NO_COMMLIB_HANDLE_FOUND);
       } else {
@@ -116,7 +116,7 @@ namespace ocs::qmaster {
       DENTER(TOP_LAYER);
 
       DPRINTF(SFNMAX "\n", "certificate renewal event handler called");
-      cl_com_handle_t *handle = cl_com_get_handle(prognames[QMASTER], 1);
+      cl_com_handle_t *handle = cl_com_get_handle(to_cstr(QMASTER), 1);
       if (handle == nullptr) {
          CRITICAL(SFNMAX, MSG_NO_COMMLIB_HANDLE_FOUND);
       } else {

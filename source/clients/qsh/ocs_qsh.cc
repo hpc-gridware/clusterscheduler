@@ -1339,7 +1339,7 @@ int main(int argc, const char **argv)
 {
    DENTER_MAIN(TOP_LAYER, "qsh");
 
-   uint32_t my_who = QSH;
+   ProgName my_who = QSH;
    lList *opts_cmdline = nullptr;
    lList *opts_defaults = nullptr;
    lList *opts_scriptfile = nullptr;
@@ -1982,7 +1982,7 @@ int main(int argc, const char **argv)
          mastername = gdi_data_get_master_host();
          cl_commlib_close_connection(cl_com_get_handle(progname,0),
                                      (char*)mastername,
-                                     (char*)prognames[QMASTER],
+                                     to_cstr(QMASTER),
                                      1, false);
          DPRINTF("closed commlib connection to sge_qmaster on host %s\n", mastername);
 
@@ -2001,7 +2001,7 @@ int main(int argc, const char **argv)
                      mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
                      int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                         (char*)mastername,
-                                        (char*)prognames[QMASTER],
+                                        to_cstr(QMASTER),
                                         1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      delete_job(job_id, lp_jobs);
@@ -2036,7 +2036,7 @@ int main(int argc, const char **argv)
                      // sge_qmaster migration, the first call to cl_commlib_open_connection seems to return OK
                      mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
                      int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
-                        (char*)mastername, (char*)prognames[QMASTER], 1);
+                        (char*)mastername, to_cstr(QMASTER), 1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      DPRINTF("deleting job\n");
                      delete_job(job_id, lp_jobs);
@@ -2085,7 +2085,7 @@ int main(int argc, const char **argv)
                      mastername = ocs::gdi::ClientBase::gdi_get_act_master_host(true);
                      int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                         (char*)mastername,
-                                        (char*)prognames[QMASTER],
+                                        to_cstr(QMASTER),
                                         1);
                      DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);
                      delete_job(job_id, lp_jobs);
@@ -2144,7 +2144,7 @@ int main(int argc, const char **argv)
          cl_com_ignore_timeouts(false);
          int cl_ret = cl_commlib_open_connection(cl_com_get_handle(progname,0),
                                     (char*)mastername,
-                                    (char*)prognames[QMASTER],
+                                    to_cstr(QMASTER),
                                     1);
 
          DPRINTF("cl_commlib_open_connection (%s) returned %d\n", mastername, cl_ret);

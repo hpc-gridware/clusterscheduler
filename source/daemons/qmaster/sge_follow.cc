@@ -1598,13 +1598,12 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
  * MT-NOTE: distribute_ticket_orders() is NOT MT safe
  */
 int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
    uint64_t now = sge_get_gmt64();
    unsigned long last_heard_from = 0;
    int cl_err = CL_RETVAL_OK;
    const lListElem *ep;
-   lList *master_ehost_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
-
-   DENTER(TOP_LAYER);
+   const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
 
    for_each_ep(ep, ticket_orders) {
       const lList *to_send = lGetList(ep, RTIC_tickets);
@@ -1614,8 +1613,8 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
       int n = lGetNumberOfElem(to_send);
 
       if (hep) {
-         cl_commlib_get_last_message_time((cl_com_get_handle(prognames[QMASTER], 0)),
-                                          (char *) host_name, (char *) prognames[EXECD], 1, &last_heard_from);
+         cl_commlib_get_last_message_time((cl_com_get_handle(to_cstr(QMASTER), 0)),
+                                          host_name, to_cstr(EXECD), 1, &last_heard_from);
       }
       if (hep &&sge_gmt32_to_gmt64(last_heard_from + 10 * mconf_get_load_report_time()) > now) {
          sge_pack_buffer pb;
@@ -1628,7 +1627,7 @@ int distribute_ticket_orders(lList *ticket_orders, monitoring_t *monitor) {
                packint(&pb, lGetUlong(ep2, OR_ja_task_number));
                packdouble(&pb, lGetDouble(ep2, OR_ticket));
             }
-            cl_err = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, prognames[EXECD], 1, host_name,
+            cl_err = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, host_name,
                                                                  ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
             clear_packbuffer(&pb);

@@ -145,8 +145,7 @@ static bool ssl_cert_verify_func(cl_ssl_verify_mode_t mode, bool service_mode, c
 static bool is_daemon() {
    const char *progname = component_get_component_name();
    if (progname != nullptr) {
-      if (!strcmp(prognames[QMASTER], progname) || !strcmp(prognames[EXECD], progname) ||
-          !strcmp(prognames[SCHEDD], progname)) {
+      if (!strcmp(to_cstr(QMASTER), progname) || !strcmp(to_cstr(EXECD), progname) || !strcmp(to_cstr(SCHEDD), progname)) {
          return true;
       }
    }
