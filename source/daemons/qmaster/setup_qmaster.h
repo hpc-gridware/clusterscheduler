@@ -42,7 +42,7 @@ int
 sge_setup_qmaster(char *anArgv[]);
 
 int
-sge_qmaster_thread_init(ProgName prog_id, uint32_t thread_id, bool switch_to_admin_user);
+sge_qmaster_thread_init(ProgName prog_id, ThreadName thread_id, bool switch_to_admin_user);
 
 void
 sge_setup_job_resend();

@@ -78,11 +78,11 @@ sge_reader_initialize() {
 
    DENTER(TOP_LAYER);
 
-   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_reader_threads, threadnames[READER_THREAD]);
+   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_reader_threads, to_cstr(READER_THREAD));
    cl_thread_list_setup(&(Main_Control.reader_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_reader_threads; i++) {
       cl_thread_list_create_thread(Main_Control.reader_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   threadnames[READER_THREAD], i, sge_reader_main, nullptr, nullptr, CL_TT_READER);
+                                   to_cstr(READER_THREAD), i, sge_reader_main, nullptr, nullptr, CL_TT_READER);
    }
    DRETURN_VOID;
 }
@@ -117,8 +117,8 @@ sge_reader_terminate() {
 
       thread = cl_thread_list_get_first_thread(Main_Control.reader_thread_pool);
    }
-   DPRINTF("all " SFN " threads terminated\n", threadnames[READER_THREAD]);
-   INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[READER_THREAD]);
+   DPRINTF("all " SFN " threads terminated\n", to_cstr(READER_THREAD));
+   INFO(MSG_THREADPOOL_XTERMINATED_S, to_cstr(READER_THREAD));
 
    DRETURN_VOID;
 }

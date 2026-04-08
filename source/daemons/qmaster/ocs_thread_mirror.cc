@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ namespace ocs {
       // empty the container
       Main_Control.mirror_thread_pool.clear();
 
-      INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[EVENT_MIRROR_THREAD]);
+      INFO(MSG_THREADPOOL_XTERMINATED_S, to_cstr(EVENT_MIRROR_THREAD));
 
       DRETURN_VOID;
    }

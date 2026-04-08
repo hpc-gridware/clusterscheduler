@@ -981,7 +981,7 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
       sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) lGetUlong(elem, ID_action);
 
       if (name != nullptr) {
-         if (strcasecmp(name, threadnames[SCHEDD_THREAD]) == 0) {
+         if (strcasecmp(name, to_cstr(SCHEDD_THREAD)) == 0) {
             if (action == SGE_THREAD_TRIGGER_START) {
                sge_scheduler_initialize(answer_list);
             } else if (action == SGE_THREAD_TRIGGER_STOP) {

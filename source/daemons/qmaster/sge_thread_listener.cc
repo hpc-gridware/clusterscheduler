@@ -68,11 +68,11 @@ sge_listener_initialize() {
    const int max_initial_listener_threads = ocs::Bootstrap::get_listener_thread_count();
    cl_thread_settings_t *dummy_thread_p = nullptr;
 
-   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_listener_threads, threadnames[LISTENER_THREAD]);
+   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_listener_threads, to_cstr(LISTENER_THREAD));
    cl_thread_list_setup(&(Main_Control.listener_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_listener_threads; i++) {
       cl_thread_list_create_thread(Main_Control.listener_thread_pool, &dummy_thread_p,
-                                   cl_com_get_log_list(), threadnames[LISTENER_THREAD], i,
+                                   cl_com_get_log_list(), to_cstr(LISTENER_THREAD), i,
                                    sge_listener_main, nullptr, nullptr, CL_TT_LISTENER);
    }
    DRETURN_VOID;
@@ -124,8 +124,8 @@ sge_listener_terminate() {
       cl_thread_list_delete_thread(Main_Control.listener_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.listener_thread_pool);
    }
-   DPRINTF("all " SFN " threads exited\n", threadnames[LISTENER_THREAD]);
-   INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[LISTENER_THREAD]);
+   DPRINTF("all " SFN " threads exited\n", to_cstr(LISTENER_THREAD));
+   INFO(MSG_THREADPOOL_XTERMINATED_S, to_cstr(LISTENER_THREAD));
    DRETURN_VOID;
 }
 

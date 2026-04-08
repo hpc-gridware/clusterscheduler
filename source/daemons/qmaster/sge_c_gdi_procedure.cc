@@ -198,7 +198,7 @@ namespace {
       ProcedureHandler handler;
    };
 
-   const std::array<ProcedureDispatchEntry, 3> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 3> procedure_dispatch_table{
       {
          {to_string_view(QHOST), &run_procedure<QHostTraits>},
          {to_string_view(QQUOTA), &run_procedure<QQuotaTraits>},

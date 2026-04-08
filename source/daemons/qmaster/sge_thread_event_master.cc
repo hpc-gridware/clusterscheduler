@@ -80,7 +80,7 @@ sge_event_master_initialize() {
    cl_thread_list_setup(&(Main_Control.event_master_thread_pool), "event master thread pool");
    cl_thread_settings_t *dummy_thread_p = nullptr;
    cl_thread_list_create_thread(Main_Control.event_master_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                threadnames[EVENT_MASTER_THREAD], 0, sge_event_master_main, nullptr, nullptr,
+                                to_cstr(EVENT_MASTER_THREAD), 0, sge_event_master_main, nullptr, nullptr,
                                 CL_TT_EVENT_MASTER);
    DRETURN_VOID;
 }
@@ -109,8 +109,8 @@ sge_event_master_terminate() {
       cl_thread_list_delete_thread(Main_Control.event_master_thread_pool, thread);
       thread = cl_thread_list_get_first_thread(Main_Control.event_master_thread_pool);
    }
-   DPRINTF("all " SFN " threads terminated\n", threadnames[EVENT_MASTER_THREAD]);
-   INFO(MSG_THREAD_XTERMINATED_S, threadnames[EVENT_MASTER_THREAD]);
+   DPRINTF("all " SFN " threads terminated\n", to_cstr(EVENT_MASTER_THREAD));
+   INFO(MSG_THREAD_XTERMINATED_S, to_cstr(EVENT_MASTER_THREAD));
 
    DRETURN_VOID;
 }

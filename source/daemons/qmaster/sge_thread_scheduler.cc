@@ -293,7 +293,7 @@ sge_scheduler_initialize(lList **answer_list) {
           * start the scheduler
           */
          cl_thread_list_create_thread(Main_Control.scheduler_thread_pool, &dummy_thread_p,
-                                      cl_com_get_log_list(), threadnames[SCHEDD_THREAD],
+                                      cl_com_get_log_list(), to_cstr(SCHEDD_THREAD),
                                       Master_Scheduler.thread_id, sge_scheduler_main, nullptr, nullptr, CL_TT_SCHEDULER);
 
          /*
@@ -303,14 +303,14 @@ sge_scheduler_initialize(lList **answer_list) {
          Master_Scheduler.thread_id++;
          Master_Scheduler.is_running = true;
 
-         INFO(MSG_THREAD_XHASSTARTED_S, threadnames[SCHEDD_THREAD]);
+         INFO(MSG_THREAD_XHASSTARTED_S, to_cstr(SCHEDD_THREAD));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
       } else {
-         INFO(MSG_THREAD_XSTARTDISABLED_S, threadnames[SCHEDD_THREAD]);
+         INFO(MSG_THREAD_XSTARTDISABLED_S, to_cstr(SCHEDD_THREAD));
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
       }
    } else {
-      ERROR(MSG_THREAD_XISRUNNING_S, threadnames[SCHEDD_THREAD]);
+      ERROR(MSG_THREAD_XISRUNNING_S, to_cstr(SCHEDD_THREAD));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
    sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
@@ -439,12 +439,12 @@ sge_scheduler_terminate(lList **answer_list) {
 
       pthread_join(thread_id, nullptr);
 
-      INFO(MSG_THREAD_XTERMINATED_S, threadnames[SCHEDD_THREAD]);
+      INFO(MSG_THREAD_XTERMINATED_S, to_cstr(SCHEDD_THREAD));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_INFO);
    } else {
       sge_mutex_unlock("master scheduler struct", __func__, __LINE__, &(Master_Scheduler.mutex));
 
-      ERROR(MSG_THREAD_XNOTRUNNING_S, threadnames[SCHEDD_THREAD]);
+      ERROR(MSG_THREAD_XNOTRUNNING_S, to_cstr(SCHEDD_THREAD));
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    }
 

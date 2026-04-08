@@ -67,7 +67,7 @@ sge_signaler_initialize() {
 
    cl_thread_list_setup(&(Main_Control.signal_thread_pool), "signal thread pool");
    cl_thread_list_create_thread(Main_Control.signal_thread_pool, &dummy_thread_p,
-                                cl_com_get_log_list(), threadnames[SIGNAL_THREAD], 0,
+                                cl_com_get_log_list(), to_cstr(SIGNAL_THREAD), 0,
                                 sge_signaler_main, nullptr, nullptr, CL_TT_SIGNALER);
    DRETURN_VOID;
 }
@@ -93,7 +93,7 @@ sge_signaler_terminate() {
       DPRINTF("getting canceled\n");
       cl_thread_list_delete_thread(Main_Control.signal_thread_pool, thread);
    }
-   INFO(MSG_THREAD_XTERMINATED_S, threadnames[SIGNAL_THREAD]);
+   INFO(MSG_THREAD_XTERMINATED_S, to_cstr(SIGNAL_THREAD));
    DRETURN_VOID;
 }
 

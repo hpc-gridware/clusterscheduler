@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2024,2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -59,9 +59,9 @@ get_active_thread_list() {
    // Internal threads where the user has no influence on, will not be shown
 #if 0
    // static threads that cannot be disabled
-   lAddElemStr(&active_thread_list, ST_name, threadnames[SIGNAL_THREAD], ST_Type);
-   lAddElemStr(&active_thread_list, ST_name, threadnames[TIMER_THREAD], ST_Type);
-   lAddElemStr(&active_thread_list, ST_name, threadnames[EVENT_MASTER_THREAD], ST_Type);
+   lAddElemStr(&active_thread_list, ST_name, to_cstr(SIGNAL_THREAD), ST_Type);
+   lAddElemStr(&active_thread_list, ST_name, to_cstr(TIMER_THREAD), ST_Type);
+   lAddElemStr(&active_thread_list, ST_name, to_cstr(EVENT_MASTER_THREAD), ST_Type);
 
    // Mirror threads
    add_active_threads(Main_Control.mirror_thread_pool, active_thread_list);
@@ -72,7 +72,7 @@ get_active_thread_list() {
 
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {
-      lListElem *st_elem = lAddElemStr(&active_thread_list, ST_name, threadnames[SCHEDD_THREAD], ST_Type);
+      lListElem *st_elem = lAddElemStr(&active_thread_list, ST_name, to_cstr(SCHEDD_THREAD), ST_Type);
       lSetUlong(st_elem, ST_id, 1);
    }
 

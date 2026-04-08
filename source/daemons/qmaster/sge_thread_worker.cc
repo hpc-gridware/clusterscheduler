@@ -100,11 +100,11 @@ sge_worker_initialize() {
    reporting_initialize();
    DPRINTF("accounting and reporting module has been initialized\n");
 
-   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_worker_threads, threadnames[WORKER_THREAD]);
+   INFO(MSG_QMASTER_THREADCOUNT_IS, max_initial_worker_threads, to_cstr(WORKER_THREAD));
    cl_thread_list_setup(&(Main_Control.worker_thread_pool), "thread pool");
    for (int i = 0; i < max_initial_worker_threads; i++) {
       cl_thread_list_create_thread(Main_Control.worker_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                   threadnames[WORKER_THREAD], i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
+                                   to_cstr(WORKER_THREAD), i, sge_worker_main, nullptr, nullptr, CL_TT_WORKER);
    }
    DRETURN_VOID;
 }
@@ -139,7 +139,7 @@ sge_worker_terminate() {
 
       thread = cl_thread_list_get_first_thread(Main_Control.worker_thread_pool);
    }
-   DPRINTF("all " SFN " threads terminated\n", threadnames[WORKER_THREAD]);
+   DPRINTF("all " SFN " threads terminated\n", to_cstr(WORKER_THREAD));
 
    do_final_spooling = sge_qmaster_do_final_spooling();
 
@@ -168,7 +168,7 @@ sge_worker_terminate() {
    sge_shutdown_persistence(nullptr);
    DPRINTF("persistence module has been shutdown\n");
 
-   INFO(MSG_THREADPOOL_XTERMINATED_S, threadnames[WORKER_THREAD]);
+   INFO(MSG_THREADPOOL_XTERMINATED_S, to_cstr(WORKER_THREAD));
 
    DRETURN_VOID;
 }

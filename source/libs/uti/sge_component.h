@@ -20,13 +20,12 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <array>
-#include <string_view>
-#include <optional>
-#include <cstddef>
-#include <iostream>
+
+#include "uti/sge_uidgid.h"
+#include "uti/ocs_ProgName.h"
+#include "uti/ocs_ThreadName.h"
 
 #include "sge.h"
-#include "uti/sge_uidgid.h"
 
 // TODO: move the defines to a different location where other program names are defines
 #define SGE_PREFIX      "sge_"
@@ -34,113 +33,6 @@
 #define SGE_COSHEPHERD  "sge_coshepherd"
 #define SGE_SHADOWD     "sge_shadowd"
 #define PE_HOSTFILE     "pe_hostfile"
-
-// For those applications that should be handled with sge_options the entry has to be before ALL_OPT
-#define PROGNAME_LIST(X) \
-   X(UNKNOWN_APP,   "unknown")       \
-   X(QALTER,        "qalter")        \
-   X(QCONF,         "qconf")         \
-   X(QDEL,          "qdel")          \
-   X(QHOLD,         "qhold")         \
-   X(QMASTER,       "qmaster")       \
-   X(QMOD,          "qmod")          \
-   X(QRESUB,        "qresub")        \
-   X(QRLS,          "qrls")          \
-   X(QSELECT,       "qselect")       \
-   X(QSH,           "qsh")           \
-   X(QRSH,          "qrsh")          \
-   X(QLOGIN,        "qlogin")        \
-   X(QSTAT,         "qstat")         \
-   X(QSUB,          "qsub")          \
-   X(EXECD,         "execd")         \
-   X(QEVENT,        "qevent")        \
-   X(QRSUB,         "qrsub")         \
-   X(QRDEL,         "qrdel")         \
-   X(QRSTAT,        "qrstat")        \
-   X(__UNUSED__,    "unknown")       \
-   X(ALL_OPT,       "unknown")       \
-   X(SCHEDD,        "schedd")        \
-   X(QACCT,         "qacct")         \
-   X(SHADOWD,       "shadowd")       \
-   X(QHOST,         "qhost")         \
-   X(SPOOLDEFAULTS, "spoolinit")     \
-   X(JAPI,          "japi")          \
-   X(DRMAA,         "drmaa")         \
-   X(QPING,         "qping")         \
-   X(QQUOTA,        "qquota")        \
-   X(SGE_SHARE_MON, "sge_share_mon") \
-   X(PYTHON_CLIENT, "python_client")
-
-enum ProgName {
-#define X(name, str) name,
-   PROGNAME_LIST(X)
-#undef X
-   PROGNAME_COUNT
-};
-
-constexpr std::array<std::string_view, PROGNAME_COUNT> prognames = {
-#define X(name, str) str,
-   PROGNAME_LIST(X)
-#undef X
-};
-
-constexpr const char* to_cstr(ProgName p) {
-   return prognames[static_cast<std::size_t>(p)].data();
-}
-
-constexpr std::string_view to_string_view(ProgName p) {
-   const auto idx = static_cast<std::size_t>(p);
-   return idx < prognames.size() ? prognames[idx] : std::string_view{};
-}
-
-constexpr std::string to_string(ProgName p) {
-   return std::string(to_string_view(p));
-}
-
-constexpr std::optional<ProgName> from_string(const std::string_view s) {
-   for (std::size_t i = 0; i < prognames.size(); ++i) {
-      if (prognames[i] == s) {
-         return static_cast<ProgName>(i);
-      }
-   }
-   return std::nullopt;
-}
-
-
-
-enum thread_type_t {
-   MAIN_THREAD, // 1
-   LISTENER_THREAD, // 2
-   EVENT_MASTER_THREAD, // 3
-   TIMER_THREAD, // 4
-   WORKER_THREAD, // 5
-   SIGNAL_THREAD, // 6
-   SCHEDD_THREAD, // 7
-   EVENT_MIRROR_THREAD, // 8
-   READER_THREAD, // 9
-};
-
-enum component_user_type_t {
-   COMPONENT_FIRST_USER = 0,
-   COMPONENT_START_USER = COMPONENT_FIRST_USER,
-   COMPONENT_ADMIN_USER,
-
-   COMPONENT_NUM_USERS
-};
-
-
-constexpr std::array<const char*, 10> threadnames = {{
-   "main",          /* 1 */
-   "listener",      /* 2 */
-   "event-master",  /* 3 */
-   "timer",         /* 4 */
-   "worker",        /* 5 */
-   "signal",        /* 6 */
-   "scheduler",     /* 7 */
-   "mirror",        /* 8 */
-   "reader",        /* 9 */
-   nullptr
-}};
 
 constexpr std::array<const char*, 7> sec_mode_names = {
    "tls",
@@ -151,6 +43,15 @@ constexpr std::array<const char*, 7> sec_mode_names = {
    "kerberos",
    NONE_STR
 };
+
+enum component_user_type_t {
+   COMPONENT_FIRST_USER = 0,
+   COMPONENT_START_USER = COMPONENT_FIRST_USER,
+   COMPONENT_ADMIN_USER,
+
+   COMPONENT_NUM_USERS
+};
+
 
 typedef void (*sge_exit_func_t)(int);
 

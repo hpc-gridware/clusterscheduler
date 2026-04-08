@@ -211,11 +211,11 @@ sge_timer_initialize(monitoring_t *monitor) {
    DPRINTF("added timer event to check certificate renewal\n");
 #endif
 
-   DPRINTF(SFN " related initialisation has been done\n", threadnames[TIMER_THREAD]);
+   DPRINTF(SFN " related initialisation has been done\n", to_cstr(TIMER_THREAD));
 
    cl_thread_list_setup(&(Main_Control.timer_thread_pool), "timer thread pool");
    cl_thread_list_create_thread(Main_Control.timer_thread_pool, &dummy_thread_p, cl_com_get_log_list(),
-                                threadnames[TIMER_THREAD], 0, sge_timer_main, nullptr, nullptr, CL_TT_TIMER);
+                                to_cstr(TIMER_THREAD), 0, sge_timer_main, nullptr, nullptr, CL_TT_TIMER);
    DRETURN_VOID;
 }
 
@@ -243,11 +243,11 @@ sge_timer_terminate() {
 
       thread = cl_thread_list_get_first_thread(Main_Control.timer_thread_pool);
    }
-   DPRINTF("all " SFN " threads terminated\n", threadnames[TIMER_THREAD]);
+   DPRINTF("all " SFN " threads terminated\n", to_cstr(TIMER_THREAD));
    te_shutdown();
 
-   DPRINTF(SFN " related cleanup has been done\n", threadnames[TIMER_THREAD]);
-   INFO(MSG_THREAD_XTERMINATED_S, threadnames[TIMER_THREAD]);
+   DPRINTF(SFN " related cleanup has been done\n", to_cstr(TIMER_THREAD));
+   INFO(MSG_THREAD_XTERMINATED_S, to_cstr(TIMER_THREAD));
 
    DRETURN_VOID;
 }

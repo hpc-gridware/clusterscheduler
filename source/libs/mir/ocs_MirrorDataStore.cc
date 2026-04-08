@@ -263,7 +263,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
    DENTER(TOP_LAYER);
    lList *alp = nullptr;
 
-   auto thread_name = threadnames[EVENT_MIRROR_THREAD];
+   auto thread_name = to_cstr(EVENT_MIRROR_THREAD);
    auto thread_id = data_store_id;
 
    component_set_thread_name(thread_name);

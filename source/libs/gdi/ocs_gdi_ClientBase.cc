@@ -748,13 +748,13 @@ int ocs::gdi::ClientBase::prepare_enroll(lList **answer_list) {
 // * setup gdi for an application or thread
 // * does not enroll. commlib setup has to be done separately or ocs::gdi::ClientBase::setup_and_enroll()
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup(ProgName component_id, uint32_t thread_id, lList **answer_list, bool is_qmaster_intern_client) {
+ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList **answer_list, bool is_qmaster_intern_client) {
    DENTER(TOP_LAYER);
 
    lInit(nmv);
    component_set_component_id(component_id);
    component_set_qmaster_internal(is_qmaster_intern_client);
-   component_set_thread_name(threadnames[thread_id] ? threadnames[thread_id] : to_cstr(component_id));
+   component_set_thread_name(to_cstr(thread_id) ? to_cstr(thread_id) : to_cstr(component_id));
 
    // TODO: EB: this can be taken from boostrap module instead of accessing the environment again.
    const char *sge_root = getenv("SGE_ROOT");
@@ -791,7 +791,7 @@ ocs::gdi::ClientBase::setup(ProgName component_id, uint32_t thread_id, lList **a
 }
 
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, uint32_t thread_id, lList **answer_list) {
+ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list) {
    DENTER(TOP_LAYER);
 
    if (gdi_data_is_setup()) {
