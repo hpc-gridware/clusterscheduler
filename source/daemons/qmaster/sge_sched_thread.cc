@@ -600,7 +600,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
    DPRINTF("AFTER FILTERING WE HAVE " sge_u32 " PENDING JOBS\n",
            lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])));
 
-   if (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) == 0) {
+   if (lGetNumberOfElem(*splitted_job_lists[SPLIT_PENDING]) == 0) {
       /* no jobs to schedule */
       schedd_log(MSG_SCHEDD_MON_NOPENDJOBSTOPERFORMSCHEDULINGON, nullptr, evc->monitor_next_run);
       lFreeList(&user_list);
@@ -615,7 +615,7 @@ static int dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, orde
     */
    PROF_START_MEASUREMENT(SGE_PROF_CUSTOM3);
 
-   ocs::Job::sgeee_sort_jobs(splitted_job_lists[SPLIT_PENDING]);
+   ocs::Job::sgeee_sort_jobs(*splitted_job_lists[SPLIT_PENDING]);
 
    if (prof_is_active(SGE_PROF_CUSTOM3)) {
       prof_stop_measurement(SGE_PROF_CUSTOM3, nullptr);

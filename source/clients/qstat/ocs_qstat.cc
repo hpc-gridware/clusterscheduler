@@ -35,6 +35,8 @@
 /*___INFO__MARK_END__*/
 
 #include <memory>
+#include <sstream>
+#include <iostream>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_rmon_macros.h"
@@ -66,7 +68,7 @@
 #include "procedure/qstat/select/ocs_QStatSelectController.h"
 #include "procedure/qstat/ocs_QStatParameter.h"
 #include "procedure/qstat/ocs_QStatModelBase.h"
-#include "procedure/qstat/ocs_QStatGenericModel.h"
+#include "procedure/qstat/ocs_QStatModelClient.h"
 
 #include "sig_handlers.h"
 
@@ -94,12 +96,14 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
+   std::ostringstream out_ss;
+
    // create model according to output mode and fetch data
    std::unique_ptr<ocs::QStatModelBase> model;
    if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::JOB_INFO) {
       model = std::make_unique<ocs::QStatJobModel>();
    } else {
-      model = std::make_unique<ocs::QStatGenericModel>();
+      model = std::make_unique<ocs::QStatModelClient>();
    }
    if (!model->make_snapshot(&alp, parameter)) {
       answer_list_output(&alp);
@@ -116,7 +120,7 @@ int main(int argc, char *argv[]) {
             view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
          }
 
-         ocs::QStatJobController controller;
+         ocs::QStatJobController controller(out_ss);
          controller.process_request(parameter, dynamic_cast<ocs::QStatJobModel &>(*model), *view);
          break;
       }
@@ -128,8 +132,8 @@ int main(int argc, char *argv[]) {
             view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
          }
 
-         ocs::QStatSelectController controller;
-         controller.process_request(parameter, dynamic_cast<ocs::QStatGenericModel &>(*model), *view);
+         ocs::QStatSelectController controller(out_ss);
+         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_GROUP: {
@@ -140,8 +144,8 @@ int main(int argc, char *argv[]) {
             view = std::make_unique<ocs::QStatGroupViewPlain>(parameter);
          }
 
-         ocs::QStatGroupController controller;
-         controller.process_request(parameter, dynamic_cast<ocs::QStatGenericModel &>(*model), *view);
+         ocs::QStatGroupController controller(out_ss);
+         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_DEFAULT: {
@@ -152,12 +156,15 @@ int main(int argc, char *argv[]) {
             view = std::make_unique<ocs::QStatDefaultViewPlain>(parameter);
          }
 
-         ocs::QStatDefaultController controller;
-         controller.process_request(parameter, dynamic_cast<ocs::QStatGenericModel &>(*model), *view);
+         ocs::QStatDefaultController controller(out_ss);
+         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
          break;
       }
       // no default, to get compiler warning if a new output mode is added but not handled here
    }
+
+   // Output to the console
+   std::cout << out_ss.str();
 
    // call exit handler
    sge_exit(0);

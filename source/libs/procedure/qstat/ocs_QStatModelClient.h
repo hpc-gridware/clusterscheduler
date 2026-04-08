@@ -1,7 +1,8 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,5 +19,19 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "qstat/select/ocs_QStatSelectViewBase.h"
 
+#include "cull/cull_list.h"
+
+#include "ocs_QStatModelBase.h"
+#include "ocs_QStatParameter.h"
+
+namespace ocs {
+   class QStatModelClient : public QStatModelBase {
+   protected:
+      bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
+      bool prepare_data(lList **answer_list) override;
+   public:
+      QStatModelClient() : QStatModelBase() {};
+      ~QStatModelClient() override = default;
+   };
+}

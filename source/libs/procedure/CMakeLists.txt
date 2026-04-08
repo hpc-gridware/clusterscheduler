@@ -81,7 +81,8 @@ set(LIBRARY_SOURCES
         qstat/job/ocs_QStatJobViewXML.cc
         qstat/job/ocs_QStatJobController.cc
 
-        qstat/ocs_QStatGenericModel.cc
+        qstat/ocs_QStatModelBase.cc
+        qstat/ocs_QStatModelClient.cc
         qstat/ocs_QStatParameter.cc
 )
 

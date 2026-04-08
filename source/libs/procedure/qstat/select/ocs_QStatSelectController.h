@@ -19,16 +19,22 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <ostream>
+
 #include "qstat/ocs_QStatParameter.h"
-#include "qstat/ocs_QStatGenericModel.h"
+#include "qstat/ocs_QStatModelClient.h"
 #include "qstat/select/ocs_QStatSelectViewBase.h"
 
 namespace ocs {
    class QStatSelectController {
+      std::ostream &out_;
+
    public:
-      QStatSelectController() = default;
+      explicit QStatSelectController(std::ostream &out) : out_(out) {
+      }
+
       virtual ~QStatSelectController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatModelClient &model, QStatSelectViewBase &view);
    };
 }

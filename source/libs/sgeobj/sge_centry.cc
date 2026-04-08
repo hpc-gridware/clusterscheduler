@@ -37,6 +37,7 @@
 #include <cstring>
 #include <cfloat>
 #include <limits>
+#include <cinttypes>
 
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -58,7 +59,6 @@
 #include "sgeobj/cull_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
 
-#include <cinttypes>
 #include "msg_common.h"
 #include "uti/sge.h"
 

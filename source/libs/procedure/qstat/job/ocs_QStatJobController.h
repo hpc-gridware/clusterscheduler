@@ -28,10 +28,14 @@
 
 namespace ocs {
    class QStatJobController {
+      std::ostream &out_;
+
    public:
-   QStatJobController() = default;
+      explicit QStatJobController(std::ostream &out) : out_(out) {
+      }
+
       virtual ~QStatJobController() = default;
 
-       virtual void process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view);
    };
 }

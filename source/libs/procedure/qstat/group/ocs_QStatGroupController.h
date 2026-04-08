@@ -20,16 +20,20 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "qstat/ocs_QStatParameter.h"
-#include "qstat/ocs_QStatGenericModel.h"
+#include "qstat/ocs_QStatModelClient.h"
 
 #include "qstat/group/ocs_QStatGroupViewBase.h"
 
 namespace ocs {
    class QStatGroupController {
+      std::ostream &out_;
+
    public:
-      QStatGroupController() = default;
+      explicit QStatGroupController(std::ostream &out) : out_(out) {
+      }
+
       virtual ~QStatGroupController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatGenericModel &model, QStatGroupViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatModelClient &model, QStatGroupViewBase &view);
    };
 }

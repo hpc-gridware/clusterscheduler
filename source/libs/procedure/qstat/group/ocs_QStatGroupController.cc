@@ -33,23 +33,23 @@
 #include "ocs_client_cqueue.h"
 
 
-void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatGroupViewBase &view) {
+void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatGroupViewBase &view) {
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;
 
    model.calc_longest_queue_length(parameter);
-   correct_capacities(model.exechost_list, model.centry_list);
+   correct_capacities(model.get_exechost_list(), model.get_centry_list());
 
    view.report_started(oss, parameter);
 
-   for_each_ep_lv(cqueue, model.queue_list) {
+   for_each_ep_lv(cqueue, model.get_queue_list()) {
       if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
          QStatGroupViewBase::Summary summary{};
 
          cqueue_calculate_summary(cqueue,
-                                  model.exechost_list,
-                                  model.centry_list,
+                                  model.get_exechost_list(),
+                                  model.get_centry_list(),
                                   &(summary.load),
                                   &(summary.is_load_available),
                                   &(summary.used),

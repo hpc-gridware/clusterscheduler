@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,14 +29,14 @@
 
 #include "qstat/select/ocs_QStatSelectController.h"
 
-void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatSelectViewBase &view) {
+void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;
 
    view.report_started(oss);
 
-   for_each_ep_lv(cqueue, model.queue_list) {
+   for_each_ep_lv(cqueue, model.get_queue_list()) {
       for_each_ep_lv(qep, lGetList(cqueue, CQ_qinstances)) {
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT) == TAG_SHOW_IT) {
             view.report_queue(oss, lGetString(qep, QU_full_name));

@@ -232,7 +232,7 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QSt
 void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatGenericModel &model) {
+void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelClient &model) {
    DENTER(TOP_LAYER);
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
    bool print_job_id;

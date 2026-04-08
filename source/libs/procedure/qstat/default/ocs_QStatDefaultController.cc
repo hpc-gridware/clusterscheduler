@@ -75,7 +75,7 @@ void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
 }
 
 void
-ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    /* no need to iterate through queues if queues are not printed */
@@ -85,7 +85,7 @@ ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QSta
    }
 
    // handle running jobs of a queue
-   for_each_rw_lv(qep, model.queue_list) {
+   for_each_rw_lv(qep, model.get_queue_list()) {
 
       const char* queue_name = lGetString(qep, QU_full_name);
 
@@ -153,7 +153,7 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* ce
 }
 
 void
-ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    uint32_t jid = 0, old_jid;
    uint32_t jataskid = 0, old_jataskid;
@@ -162,7 +162,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
 
    view.report_queue_jobs_started(os, qnm);
 
-   for_each_rw_lv(jlep, model.job_list) {
+   for_each_rw_lv(jlep, model.get_job_list()) {
       int master, i;
 
       for_each_rw_lv(jatep, lGetList(jlep, JB_ja_tasks)) {
@@ -196,7 +196,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   const char *pe_name;
                   lListElem *pe;
                   if (((pe_name=lGetString(jatep, JAT_granted_pe))) &&
-                      ((pe=pe_list_locate(model.pe_list, pe_name))) &&
+                      ((pe=pe_list_locate(model.get_pe_list(), pe_name))) &&
                       !lGetBool(pe, PE_job_is_first_task))
 
                       slot_adjust = 1;
@@ -290,7 +290,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
 
 void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
                     const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                    QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
+                    QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    uint32_t jstate;
@@ -447,7 +447,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
       /* braces needed to suppress compiler warnings */
       if ((pe_name=lGetString(jatep, JAT_granted_pe)) &&
-           (pe=pe_list_locate(model.pe_list, pe_name)) &&
+           (pe=pe_list_locate(model.get_pe_list(), pe_name)) &&
            lGetBool(pe, PE_control_slaves) && slots) {
          if (slot == 0) {
             summary.tickets = (u_long)lGetDouble(gdil_ep, JG_ticket);
@@ -478,7 +478,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 
    summary.master = master;
    if (slots_per_line == 0) {
-      summary.slots = sge_job_slot_request(job, model.pe_list);
+      summary.slots = sge_job_slot_request(job, model.get_pe_list());
    } else {
       summary.slots = slots_per_line;
    }
@@ -555,14 +555,14 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       }
 
       /* Handle the Hard Resources (global, master, slave) */
-      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), model.centry_list,
-                           sge_job_slot_request(job, model.pe_list), JRS_SCOPE_GLOBAL, true, view);
+      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_GLOBAL), model.get_centry_list(),
+                           sge_job_slot_request(job, model.get_pe_list()), JRS_SCOPE_GLOBAL, true, view);
 
-      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_MASTER), model.centry_list,
-                           sge_job_slot_request(job, model.pe_list), JRS_SCOPE_MASTER, true, view);
+      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_MASTER), model.get_centry_list(),
+                           sge_job_slot_request(job, model.get_pe_list()), JRS_SCOPE_MASTER, true, view);
 
-      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), model.centry_list,
-                           sge_job_slot_request(job, model.pe_list),
+      process_resources(os, job_get_hard_resource_list(job, JRS_SCOPE_SLAVE), model.get_centry_list(),
+                           sge_job_slot_request(job, model.get_pe_list()),
                            JRS_SCOPE_SLAVE, true, view);
 
       /* display default requests if necessary */
@@ -571,7 +571,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          const char *name;
          lListElem *hep;
 
-         queue_complexes2scheduler(&attributes, qep, model.exechost_list, model.centry_list);
+         queue_complexes2scheduler(&attributes, qep, model.get_exechost_list(), model.get_centry_list());
          for_each_ep_lv(ce, attributes) {
             double dval;
 
@@ -590,9 +590,9 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
                if the consumable is specified in the global host. For running we print it
                if the resource is managed at this node/queue */
             if ((qep && lGetSubStr(qep, CE_name, name, QU_consumable_config_list)) ||
-                (qep && (hep=host_list_locate(model.exechost_list, lGetHost(qep, QU_qhostname))) &&
+                (qep && (hep=host_list_locate(model.get_exechost_list(), lGetHost(qep, QU_qhostname))) &&
                  lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
-                  ((hep=host_list_locate(model.exechost_list, SGE_GLOBAL_NAME)) &&
+                  ((hep=host_list_locate(model.get_exechost_list(), SGE_GLOBAL_NAME)) &&
                   lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
 
                      view.report_request(os, name, lGetString(ce, CE_defaultval));
@@ -602,8 +602,8 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       }
 
       /* Handle the Soft Resources */
-      process_resources(os, job_get_soft_resource_list(job), model.centry_list,
-                           sge_job_slot_request(job, model.pe_list), JRS_SCOPE_GLOBAL, false, view);
+      process_resources(os, job_get_soft_resource_list(job), model.get_centry_list(),
+                           sge_job_slot_request(job, model.get_pe_list()), JRS_SCOPE_GLOBAL, false, view);
 
       {
          ql = job_get_hard_queue_list(job, JRS_SCOPE_GLOBAL);
@@ -822,7 +822,7 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
 
    lListElem *nxt, *jep, *jatep, *nxt_jatep;
    lList* ja_task_list = nullptr;
@@ -832,13 +832,13 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, o
 
    DENTER(TOP_LAYER);
 
-   nxt = lFirstRW(model.job_list);
+   nxt = lFirstRW(model.get_job_list());
    while ((jep=nxt)) {
       nxt = lNextRW(jep);
       nxt_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       FoundTasks = 0;
 
-      bool hide_data = !job_is_visible(lGetString(jep, JB_owner), model.is_manager_);
+      bool hide_data = !job_is_visible(lGetString(jep, JB_owner), model.is_manager());
       if (hide_data) {
          continue;
       }
@@ -928,12 +928,12 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, o
 }
 
 
-void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, ocs::QStatParameter &parameter, ocs::QStatGenericModel &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, ocs::QStatParameter &parameter, ocs::QStatModelClient &model, ocs::QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
-   for_each_rw_lv(jep, model.job_list) {
+   for_each_rw_lv(jep, model.get_job_list()) {
       for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
          if (lGetUlong(jatep, JAT_status) == JFINISHED) {
             lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
@@ -966,12 +966,12 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
 }
 
 
-void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
-   for_each_rw_lv(jep, model.job_list) {
+   for_each_rw_lv(jep, model.get_job_list()) {
       for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
          if (!(lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT) && lGetUlong(jatep, JAT_status) == JERROR) {
             lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
@@ -999,7 +999,7 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
 
 void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master,
                                     int slots, int slot, int *count,
-                                    QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view)
+                                    QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    lList *range_list[16];         /* RN_Type */
@@ -1080,7 +1080,7 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lL
 }
 
 void
-ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
@@ -1093,22 +1093,22 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
 
    // compute the load and check for alarm states
    summary.has_load_value = sge_get_double_qattr(&summary.load_avg, summary.load_avg_str, queue,
-                                                 model.exechost_list, model.centry_list,
+                                                 model.get_exechost_list(), model.get_centry_list(),
                                                  &summary.has_load_value_from_object) ? true : false;
 
    char load_alarm_reason[MAX_STRING_SIZE] {};
    char suspend_alarm_reason[MAX_STRING_SIZE] {};
-   if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.exechost_list, model.centry_list, nullptr, true)) {
+   if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), nullptr, true)) {
       qinstance_state_set_alarm(queue, true);
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.exechost_list, model.centry_list, load_alarm_reason, MAX_STRING_SIZE - 1, "load");
+      sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), load_alarm_reason, MAX_STRING_SIZE - 1, "load");
    }
 
    uint32_t interval;
    parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, lGetString(queue, QU_suspend_interval), nullptr, 0);
    if (lGetUlong(queue, QU_nsuspend) != 0 && interval != 0 &&
-       sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_suspend_thresholds), model.exechost_list, model.centry_list, nullptr, false)) {
+       sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(), nullptr, false)) {
       qinstance_state_set_suspend_alarm(queue, true);
-      sge_load_alarm_reason(queue, lGetListRW(queue, QU_suspend_thresholds), model.exechost_list, model.centry_list, suspend_alarm_reason, MAX_STRING_SIZE - 1, "suspend");
+      sge_load_alarm_reason(queue, lGetListRW(queue, QU_suspend_thresholds), model.get_exechost_list(), model.get_centry_list(), suspend_alarm_reason, MAX_STRING_SIZE - 1, "suspend");
    }
 
    DSTRING_STATIC(type_string, 32);
@@ -1120,7 +1120,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
 
    /* arch */
    char arch_string[80];
-   if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, queue, model.exechost_list, model.centry_list)) {
+   if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, queue, model.get_exechost_list(), model.get_centry_list())) {
       summary.arch = arch_string;
    } else {
       summary.arch = nullptr;
@@ -1170,7 +1170,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       dstring resource_string = DSTRING_INIT;
 
       lList *rlp = nullptr;
-      queue_complexes2scheduler(&rlp, queue, model.exechost_list, model.centry_list);
+      queue_complexes2scheduler(&rlp, queue, model.get_exechost_list(), model.get_centry_list());
 
       for_each_rw_lv(rep , rlp) {
          /* we had a -F request */
@@ -1195,7 +1195,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
          std::string details;
          if (strcmp(lGetString(rep, CE_name), LOAD_ATTR_TOPOLOGY) == 0) {
             const char *hostname = lGetHost(queue, QU_qhostname);
-            const lListElem *host = lGetElemHost(model.exechost_list, EH_name, hostname);
+            const lListElem *host = lGetElemHost(model.get_exechost_list(), EH_name, hostname);
             details = host_get_topology_in_use(host);
          }
 
@@ -1210,12 +1210,12 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatGenericModel &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    model.calc_longest_queue_length(parameter);
 
-   correct_capacities(model.exechost_list, model.centry_list);
+   correct_capacities(model.get_exechost_list(), model.get_centry_list());
 
    std::ostringstream oss;
 
@@ -1223,11 +1223,11 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
 
    process_queues_with_its_jobs(oss, parameter, model, view);
 
-   remove_tagged_jobs(model.job_list);
+   remove_tagged_jobs(model.get_job_list());
 
    // sort pending jobs
-   if (lGetNumberOfElem(model.job_list)>0 ) {
-      Job::sgeee_sort_jobs(&model.job_list);
+   if (lGetNumberOfElem(model.get_job_list()) > 0 ) {
+      Job::sgeee_sort_jobs(model.get_job_list());
    }
 
    process_jobs_pending_state(oss, parameter, model, view);

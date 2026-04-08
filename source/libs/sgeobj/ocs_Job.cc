@@ -67,17 +67,17 @@
  *
  * @param job_list Pointer to the list of jobs to be sorted.
  */
-void ocs::Job::sgeee_sort_jobs(lList **job_list) {
+void ocs::Job::sgeee_sort_jobs(lList *job_list) {
    DENTER(TOP_LAYER);
 
-   if (!job_list || !*job_list) {
+   if (job_list == nullptr) {
       DRETURN_VOID;
    }
 
    // Create a temporary list and store the job reference and all data required to sort to list
    lList *tmp_list = lCreateList("tmp list", SGEJ_Type);
    lListElem *job = nullptr;
-   lListElem *nxt_job = lFirstRW(*job_list);
+   lListElem *nxt_job = lFirstRW(job_list);
    while((job = nxt_job) != nullptr) {
       nxt_job = lNextRW(nxt_job);
 
@@ -97,7 +97,7 @@ void ocs::Job::sgeee_sort_jobs(lList **job_list) {
       lAppendElem(tmp_list, tmp_sge_job);
 
       // Remove the job from the original list
-      lDechainElem(*job_list, job);
+      lDechainElem(job_list, job);
    }
 
    // Sort the temporary list according to the following criteria:
@@ -105,7 +105,7 @@ void ocs::Job::sgeee_sort_jobs(lList **job_list) {
 
    // The job list is empty at this point, so we can just append the sorted jobs
    for_each_rw(job, tmp_list) {
-      lAppendElem(*job_list, static_cast<lListElem *>(lGetRef(job, SGEJ_job_reference)));
+      lAppendElem(job_list, static_cast<lListElem *>(lGetRef(job, SGEJ_job_reference)));
    }
 
    // we need to free the tmp list, but not the job references
