@@ -47,7 +47,7 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       DRETURN(false);
    }
 
-   int q_id;
+   int q_id = -1;
    if (parameter.need_queues_) {
       lEnumeration *queue_what = get_queue_what();
       q_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::CQ_LIST, gdi::Command::GET,
@@ -58,7 +58,7 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       }
    }
 
-   int j_id;
+   int j_id = -1;
    if (parameter.need_job_list_) {
       lEnumeration *job_what = get_job_what(parameter);
       lCondition *job_where = get_job_where(parameter);
@@ -137,17 +137,17 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       DRETURN(false);
    }
 
-   lCondition *conf_where = lWhere("%T(%I c= %s)", CONF_Type, CONF_name, SGE_GLOBAL_NAME);
-   lEnumeration *conf_what = lWhat("%T(ALL)", CONF_Type);
+   lCondition *conf_where = get_conf_where();
+   lEnumeration *conf_what = get_conf_what();
    const int gc_id = gdi_multi.request(answer_list, gdi::Mode::SEND, gdi::Target::CONF_LIST, gdi::Command::GET,
                                        gdi::SubCommand::NONE, nullptr, conf_where, conf_what, true);
-   gdi_multi.wait();
    lFreeWhat(&conf_what);
    lFreeWhere(&conf_where);
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
    }
 
+   gdi_multi.wait();
    // Start fetching the lists
 
    if (parameter.need_queues_) {

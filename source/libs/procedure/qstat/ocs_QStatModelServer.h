@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,22 +19,24 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "cull/cull.h"
+
 #include "gdi/ocs_gdi_Client.h"
 
-#include "ocs_QHostModelBase.h"
+#include "ocs_QStatModelBase.h"
 
 namespace ocs {
-   class QHostModelServer : public QHostModelBase {
-      [[maybe_unused]] gdi::Packet *packet = nullptr;
+   class QStatModelServer : public QStatModelBase {
+      gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;
-      
-   protected:
 
-      bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) override;
+   protected:
+      bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
 
    public:
+      QStatModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {
+      };
 
-      QHostModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {};
-      ~QHostModelServer() override = default;
+      ~QStatModelServer() override = default;
    };
 }

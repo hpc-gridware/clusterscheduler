@@ -48,8 +48,6 @@ ocs::ProcedureModel::make_snapshot(lList **answer_list, ProcedureParameter &para
       DRETURN(false);
    }
 
-   lWriteListTo(procedure_response, stderr);
-
    procedure_response = request_and_response;
    request_and_response = nullptr;
 

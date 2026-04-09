@@ -83,6 +83,7 @@ set(LIBRARY_SOURCES
 
         qstat/ocs_QStatModelBase.cc
         qstat/ocs_QStatModelClient.cc
+        qstat/ocs_QStatModelServer.cc
         qstat/ocs_QStatParameter.cc
 )
 

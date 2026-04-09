@@ -49,7 +49,9 @@ bool ocs::QHostModelServer::fetch_data(lList **answer_list, const lList *hostnam
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
       const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);
       lEnumeration *job_what = get_job_what();
-      job_list_ = lSelect("", master_job_list, get_job_where(user_name_list, show), job_what);
+      lCondition *job_where = get_job_where(user_name_list, show);
+      job_list_ = lSelect("", master_job_list, job_where, job_what);
+      lFreeWhere(&job_where);
       lFreeWhat(&job_what);
    }
 
