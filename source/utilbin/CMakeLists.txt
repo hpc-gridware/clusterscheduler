@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -195,6 +195,10 @@ target_link_libraries(
       uti
       ${SGE_LIBS})
 
+# get_cloud_provider
+add_executable(get_cloud_provider get_cloud_provider.cc)
+target_link_libraries(get_cloud_provider PRIVATE ${CURL_LIBS})
+
 if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qping DESTINATION bin/${SGE_ARCH})
    install(
@@ -215,6 +219,7 @@ if (INSTALL_SGE_BIN_CLIENT)
          sge_share_mon
          testsuidroot
          uidgid
+         get_cloud_provider
          DESTINATION utilbin/${SGE_ARCH})
 endif ()
 

@@ -94,6 +94,7 @@ option(WITH_PYTHON "Enable Python external bindings" OFF)
 option(WITH_BOOST "Enable Boost framework" OFF)
 option(WITH_MUNGE "Enable Munge authentication" ON)
 option(WITH_SYSTEMD "Enable systemd support" OFF)
+option(WITH_CURL "Enable code depending on libcurl" OFF)
 
 # private extensions
 set(PROJECT_EXTENSIONS "None" CACHE STRING "directory of private extensions")
@@ -205,6 +206,19 @@ if (NOT WITH_SPOOL_BERKELEYDB AND NOT WITH_SPOOL_DYNAMIC)
 else ()
    set(SPOOLING_LIBS spoolloader spoold spool)
 endif ()
+
+if (WITH_CURL)
+    find_package(CURL)
+    if (CURL_FOUND)
+        message("Found libcurl")
+        add_compile_definitions("OCS_WITH_CURL")
+        set (CURL_LIBS curl)
+        #target_compile_definitions(my_app PRIVATE USE_LIBCURL)
+        #target_link_libraries(my_app PRIVATE CURL::libcurl)
+    else()
+        message(WARNING "Curl detection failed (libcurl missing)")
+    endif()
+endif()
 
 if (WITH_GPERF)
    # gperftools can be installed on centos with: yum install google-perftools-devel
