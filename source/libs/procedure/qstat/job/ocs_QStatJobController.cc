@@ -30,7 +30,7 @@ void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJo
    DENTER(TOP_LAYER);
 
    std::ostringstream oss;
-   if (parameter.jid_list_) {
+   if (parameter.get_jid_list() != nullptr) {
       view.report_jobs_and_reasons_with_job_request(oss, parameter, model);
    } else {
       view.report_reasons(oss, parameter, model);

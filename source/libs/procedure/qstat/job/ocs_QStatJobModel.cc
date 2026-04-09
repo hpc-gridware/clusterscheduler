@@ -53,9 +53,9 @@ bool ocs::QStatJobModel::fetch_data(lList **alpp, QStatParameter &parameter) {
    *alpp = gdi::Client::sge_gdi(gdi::Target::SME_LIST, gdi::Command::GET, gdi::SubCommand::NONE, &ilp, nullptr, what);
    lFreeWhat(&what);
 
-   if (parameter.jid_list_ != nullptr) {
+   if (parameter.get_jid_list() != nullptr) {
       lCondition *where = nullptr;
-      for_each_ep_lv(j_elem, parameter.jid_list_) {
+      for_each_ep_lv(j_elem, parameter.get_jid_list()) {
          const char *job_name = lGetString(j_elem, ST_name);
          lCondition *new_where;
 
@@ -132,27 +132,27 @@ bool ocs::QStatJobModel::prepare_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // report an error if response does not contain all information
-   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.jid_list_) != 0) {
+   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.get_jid_list()) != 0) {
 
       // remove all pattern
       bool removed_pattern = false;
       lListElem *elem1;
-      lListElem *elem2 = lFirstRW(parameter.jid_list_);
+      lListElem *elem2 = lFirstRW(parameter.get_jid_list());
       while ((elem1 = elem2) != nullptr) {
          elem2 = lNextRW(elem1);
 
          if (is_pattern(lGetString(elem1, ST_name))) {
-            lDechainElem(parameter.jid_list_, elem1);
+            lDechainElem(parameter.get_jid_list(), elem1);
             removed_pattern = true;
          }
       }
 
       // if there is still something missing then report an error
       std::stringstream ss;
-      if (lGetNumberOfElem(parameter.jid_list_) > 0) {
+      if (lGetNumberOfElem(parameter.get_jid_list()) > 0) {
          bool first_time = true;
          ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
-         for_each_rw(elem1, parameter.jid_list_) {
+         for_each_rw(elem1, parameter.get_jid_list()) {
             if (!first_time) {
                ss << ", ";
             }
@@ -168,7 +168,7 @@ bool ocs::QStatJobModel::prepare_data(lList **alpp, QStatParameter &parameter) {
       DRETURN(false);
    }
 
-   if (parameter.output_format_ != QStatParameter::OutputFormat::XML) {
+   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML) {
       DRETURN(true);
    }
 

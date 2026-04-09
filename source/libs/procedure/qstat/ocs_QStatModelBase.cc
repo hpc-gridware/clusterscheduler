@@ -374,7 +374,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    lCondition *nw = nullptr;
 
    // Retrieve jobs only for those users specified via -u switch
-   for_each_ep_lv(ep, parameter.user_list_) {
+   for_each_ep_lv(ep, parameter.get_user_list()) {
       lCondition *tmp_nw = nullptr;
 
       if (const char *user = lGetString(ep, ST_name); is_pattern(user)) {
@@ -679,9 +679,8 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
    }
 
    // untag all jobs which do not fit to the user list (-u)
-   if (lGetNumberOfElem(parameter.user_list_)) {
-
-      for_each_rw_lv(up, parameter.user_list_) {
+   if (lGetNumberOfElem(parameter.get_user_list())) {
+      for_each_rw_lv(up, parameter.get_user_list()) {
          const char *user = lGetString(up, ST_name);
          if (user == nullptr) {
             break;
@@ -707,8 +706,8 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
    }
 
    // untag all jobs which do not fit to the queue selection (-pe -l -q -U)
-   if (lGetNumberOfElem(parameter.peref_list_) || lGetNumberOfElem(parameter.queueref_list_) ||
-       lGetNumberOfElem(parameter.resource_list_) || lGetNumberOfElem(parameter.queue_user_list_)) {
+   if (lGetNumberOfElem(parameter.get_pe_ref_list()) || lGetNumberOfElem(parameter.get_queue_ref_list()) ||
+       lGetNumberOfElem(parameter.get_resource_list()) || lGetNumberOfElem(parameter.get_queue_user_list())) {
 
       // @todo Will this call cause an issue if executed in the reader thread pool
       // do not debit for running jobs
@@ -728,7 +727,7 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
                if (lListElem *host = host_list_locate(exechost_list_, lGetHost(qep, QU_qhostname)); host != nullptr) {
                   const int ret = sge_select_queue(job_get_hard_resource_listRW(jep), qep,
                                                    host, exechost_list_, centry_list_,true, 1,
-                                                   parameter.queue_user_list_, acl_list_, jep);
+                                                   parameter.get_queue_user_list(), acl_list_, jep);
 
                   if (ret==1) {
                      show_job = true;
@@ -789,8 +788,8 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    cqueue_list_set_tag(queue_list_, TAG_SHOW_IT, true);
 
    // unselect all queues not selected by a -q
-   if (lGetNumberOfElem(parameter.queueref_list_) > 0) {
-      const int count = select_by_qref_list(queue_list_, hgrp_list_, parameter.queueref_list_);
+   if (lGetNumberOfElem(parameter.get_queue_ref_list()) > 0) {
+      const int count = select_by_qref_list(queue_list_, hgrp_list_, parameter.get_queue_ref_list());
 
       if (count < 0) {
          DRETURN(-1);
@@ -806,8 +805,8 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    select_by_queue_state(parameter.queue_state_, exechost_list_, queue_list_, centry_list_);
 
    // unselect all queues not selected by a -U (if exist)
-   if (lGetNumberOfElem(parameter.queue_user_list_)>0) {
-      const int count = select_by_queue_user_list(exechost_list_, queue_list_, parameter.queue_user_list_, acl_list_, project_list_);
+   if (lGetNumberOfElem(parameter.get_queue_user_list())>0) {
+      const int count = select_by_queue_user_list(exechost_list_, queue_list_, parameter.get_queue_user_list(), acl_list_, project_list_);
 
       if (count < 0) {
          DRETURN(-1);
@@ -820,8 +819,8 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    }
 
    // unselect all queues not selected by a -pe (if exist)
-   if (lGetNumberOfElem(parameter.peref_list_)>0) {
-      const int count = select_by_pe_list(queue_list_, parameter.peref_list_, pe_list_);
+   if (lGetNumberOfElem(parameter.get_pe_ref_list())>0) {
+      const int count = select_by_pe_list(queue_list_, parameter.get_pe_ref_list(), pe_list_);
 
       if (count < 0) {
          DRETURN(-1);
@@ -834,8 +833,8 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
    }
 
    // unselect all queues not selected by a -l
-   if (lGetNumberOfElem(parameter.resource_list_)) {
-      const int count = select_by_resource_list(parameter.resource_list_, exechost_list_, queue_list_,centry_list_, 1);
+   if (lGetNumberOfElem(parameter.get_resource_list())) {
+      const int count = select_by_resource_list(parameter.get_resource_list(), exechost_list_, queue_list_,centry_list_, 1);
       if (count < 0) {
          DRETURN(-1);
       }

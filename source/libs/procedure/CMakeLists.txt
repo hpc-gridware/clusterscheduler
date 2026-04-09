@@ -85,6 +85,7 @@ set(LIBRARY_SOURCES
         qstat/ocs_QStatModelClient.cc
         qstat/ocs_QStatModelServer.cc
         qstat/ocs_QStatParameter.cc
+        qstat/ocs_QStatParameterClient.cc
 )
 
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})

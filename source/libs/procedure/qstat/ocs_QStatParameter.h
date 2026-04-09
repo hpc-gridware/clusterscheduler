@@ -33,10 +33,7 @@
 namespace ocs {
    class QStatParameter : public ProcedureParameter {
    public:
-      enum class OutputFormat{
-         PLAIN,
-         XML
-      };
+      // @todo cleanup: declare protected and provide access methods
       enum class OutputMode {
          QSELECT,
          QSTAT_GROUP,
@@ -44,62 +41,39 @@ namespace ocs {
          JOB_INFO
       };
       OutputMode output_mode_ = OutputMode::QSTAT_DEFAULT; //< default | -j | -g c | qselect
-      OutputFormat output_format_ = OutputFormat::PLAIN; //< plain | -xml
 
-      bool need_queues_ = false; //< need to fetch queues from master
-      bool need_job_list_ = true; //< need to fetch job list from master
+      bool need_queues_ = false; ///< need to fetch queues from master
+      bool need_job_list_ = true; ///< need to fetch job list from master
 
       uint32_t full_listing_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
+      bool state_filter_ = false; /// -s switch was used
+      std::string state_filter_value_; ///< -s values
+      uint32_t queue_state_ = std::numeric_limits<uint32_t>::max(); ///< -qs
+      uint32_t explain_bits_ = QI_DEFAULT; ///< -explain
+      uint32_t group_opt_ = 0; ///< -g
+      int longest_queue_length = 30; ///< used to align the output of the queue name column
 
-      bool state_filter_ = false; // -s
-      std::string state_filter_value_; // -s value
+   protected:
+      lList *resource_list_ = nullptr; ///< -l resource_request
+      lList *q_resource_list_ = nullptr; ///< -F resource_request
+      lList *queue_ref_list_ = nullptr; ///< -q queue_list
+      lList *pe_ref_list_ = nullptr; ///< -pe pe_list
+      lList *user_list_ = nullptr; ///< -u user_list - selects jobs
+      lList *queue_user_list_ = nullptr; ///< -U user_list - selects queues
+      lList *jid_list_ = nullptr; ///< -j argument list
 
-      uint32_t queue_state_ = std::numeric_limits<uint32_t>::max(); //< -qs
-      uint32_t explain_bits_ = QI_DEFAULT; //< -explain
-      uint32_t group_opt_ = 0; //< -g
+   public:
+      [[nodiscard]] const lList *get_q_resource_list() const { return q_resource_list_; }
+      [[nodiscard]] const lList *get_queue_ref_list() const { return queue_ref_list_; }
+      [[nodiscard]] const lList *get_user_list() const { return user_list_; }
+      [[nodiscard]] lList *get_resource_list() const { return resource_list_; }
+      [[nodiscard]] lList *get_pe_ref_list() const { return pe_ref_list_; }
+      [[nodiscard]] lList *get_queue_user_list() const { return queue_user_list_; }
+      [[nodiscard]] lList *get_jid_list() const { return jid_list_; }
 
-      lList *resource_list_ = nullptr;         /* -l resource_request           */
-      lList *qresource_list_ = nullptr;        /* -F qresource_request          */
-      lList* queueref_list_ = nullptr;         /* -q queue_list                 */
-      lList* peref_list_ = nullptr;            /* -pe pe_list                   */
-      lList* user_list_ = nullptr;             /* -u user_list - selects jobs   */
-      lList* queue_user_list_ = nullptr;       /* -U user_list - selects queues */
-
-      int longest_queue_length = 30; //< used to align the output of the queue name column
-
-      lList *jid_list_ = nullptr; //< -j argument list
-   private:
-#if 0
-      lList *hostname_list_ = nullptr;
-      lList *user_name_list_ = nullptr;
-      lList *resource_match_list_ = nullptr;
-      lList *resource_visible_list_ = nullptr;
-      uint32_t show_ = 0;
-
-      bool qhost_usage(FILE *fp);
-      bool sge_parse_cmdline_qhost(char **argv, char **envp, lList **ppcmdline, lList **alpp);
-      bool switch_list_qhost_parse_from_file(lList **switch_list, lList **answer_list, const char *file);
-      int sge_parse_qhost(lList **ppcmdline, lList **alpp);
-#endif
-      lList * sge_parse_qstat(lList **ppcmdline, lList **ppljid);
-      bool switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file);
-      int qstat_usage(FILE *fp, char *what);
-      bool switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list, char **argv);
-
-      void free_data();
    public:
       QStatParameter() : ProcedureParameter("") {}
-      ~QStatParameter() override { free_data(); }
+      ~QStatParameter() override;
 
-#if 0
-      [[nodiscard]] const lList *get_hostname_list() const { return hostname_list_; }
-      [[nodiscard]] const lList *get_user_name_list() const { return user_name_list_; }
-      [[nodiscard]] const lList *get_resource_match_list() const { return resource_match_list_; }
-      [[nodiscard]] const lList *get_resource_visible_list() const { return resource_visible_list_; }
-      [[nodiscard]] uint32_t get_show() const { return show_; }
-      [[nodiscard]] OutputFormat get_output_format() const { return output_format_ ; }
-#endif
-
-      bool parse_parameters(lList **answer_list, char **argv, char **envp);
    };
 }

@@ -249,8 +249,8 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                      }
                   }
 
-                  if (!lGetNumberOfElem(parameter.user_list_) ||
-                     (lGetNumberOfElem(parameter.user_list_) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
+                  if (!lGetNumberOfElem(parameter.get_user_list()) ||
+                     (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
                      if (print_jobs_of_queue && (job_tag & TAG_SHOW_IT)) {
                         if ((parameter.full_listing_ & QSTAT_DISPLAY_RUNNING) && (lGetUlong(jatep, JAT_state) & JRUNNING) ) {
                            print_it = true;
@@ -869,7 +869,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
             lSetUlong(jatep, JAT_suitable,
             lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
 
-            if ((!lGetNumberOfElem(parameter.user_list_) || (lGetNumberOfElem(parameter.user_list_) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) &&
+            if ((!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) &&
                 (lGetUlong(jatep, JAT_suitable)&TAG_SHOW_IT)) {
 
                if ((parameter.full_listing_ & QSTAT_DISPLAY_PENDING) &&
@@ -941,7 +941,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
             if (!getenv("MORE_INFO"))
                continue;
 
-            if (!lGetNumberOfElem(parameter.user_list_) || (lGetNumberOfElem(parameter.user_list_) &&
+            if (!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) &&
                   (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
 
                if (count == 0) {
@@ -976,7 +976,7 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
          if (!(lGetUlong(jatep, JAT_suitable) & TAG_FOUND_IT) && lGetUlong(jatep, JAT_status) == JERROR) {
             lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
 
-            if (!lGetNumberOfElem(parameter.user_list_) || (lGetNumberOfElem(parameter.user_list_) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
+            if (!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
                sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
 
                if (count == 0) {
@@ -1174,10 +1174,10 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
 
       for_each_rw_lv(rep , rlp) {
          /* we had a -F request */
-         if (parameter.qresource_list_) {
-            const lListElem *qres = lGetElemStr(parameter.qresource_list_, CE_name, lGetString(rep, CE_name));
+         if (parameter.get_q_resource_list()) {
+            const lListElem *qres = lGetElemStr(parameter.get_q_resource_list(), CE_name, lGetString(rep, CE_name));
             if (qres == nullptr) {
-               qres = lGetElemStr(parameter.qresource_list_, CE_name, lGetString(rep, CE_shortcut));
+               qres = lGetElemStr(parameter.get_q_resource_list(), CE_name, lGetString(rep, CE_shortcut));
             }
 
             /* if this complex variable wasn't requested with -F, skip it */

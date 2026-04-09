@@ -71,6 +71,7 @@
 #include "procedure/qstat/ocs_QStatModelClient.h"
 
 #include "sig_handlers.h"
+#include "qstat/ocs_QStatParameterClient.h"
 
 extern char **environ;
 
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]) {
    }
 
    // parse command line parameters and options
-   ocs::QStatParameter parameter;
+   ocs::QStatParameterClient parameter;
    if (!parameter.parse_parameters(&alp, argv, environ)) {
       answer_list_output(&alp);
       sge_exit(1);
@@ -114,7 +115,7 @@ int main(int argc, char *argv[]) {
    switch (parameter.output_mode_) {
       case ocs::QStatParameter::OutputMode::JOB_INFO: {
          std::unique_ptr<ocs::QStatJobViewBase> view;
-         if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
+         if (parameter.get_output_format()== ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatJobViewXML>(parameter);
          } else {
             view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
       }
       case ocs::QStatParameter::OutputMode::QSELECT: {
          std::unique_ptr<ocs::QStatSelectViewBase> view;
-         if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
+         if (parameter.get_output_format()== ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatSelectViewXML>(parameter);
          } else {
             view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
@@ -138,7 +139,7 @@ int main(int argc, char *argv[]) {
       }
       case ocs::QStatParameter::OutputMode::QSTAT_GROUP: {
          std::unique_ptr<ocs::QStatGroupViewBase> view;
-         if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
+         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatGroupViewXML>(parameter);
          } else {
             view = std::make_unique<ocs::QStatGroupViewPlain>(parameter);
@@ -150,7 +151,7 @@ int main(int argc, char *argv[]) {
       }
       case ocs::QStatParameter::OutputMode::QSTAT_DEFAULT: {
          std::unique_ptr<ocs::QStatDefaultViewBase> view;
-         if (parameter.output_format_== ocs::QStatParameter::OutputFormat::XML) {
+         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatDefaultViewXML>(parameter);
          } else {
             view = std::make_unique<ocs::QStatDefaultViewPlain>(parameter);

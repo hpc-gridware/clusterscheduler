@@ -1,3 +1,4 @@
+#pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
@@ -19,15 +20,30 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include "ocs_QStatParameter.h"
+#include "cull/cull.h"
 
-ocs::QStatParameter::~QStatParameter() {
-   lFreeList(&resource_list_);
-   lFreeList(&q_resource_list_);
-   lFreeList(&queue_ref_list_);
-   lFreeList(&pe_ref_list_);
-   lFreeList(&user_list_);
-   lFreeList(&queue_user_list_);
-   lFreeList(&jid_list_);
+namespace ocs {
+   class QStatParameterClient : public QStatParameter {
+
+#pragma region Parsing
+
+   private:
+      lList * sge_parse_qstat(lList **ppcmdline, lList **ppljid);
+      bool switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file);
+      int qstat_usage(FILE *fp, char *what);
+      bool switch_list_qstat_parse_from_cmdline(lList **ppcmdline, lList **answer_list, char **argv);
+
+   public:
+      bool parse_parameters(lList **answer_list, char **argv, char **envp);
+
+#pragma endregion
+
+#pragma region Parsing
+
+   public:
+      QStatParameterClient() = default;
+      ~QStatParameterClient() override = default;
+
+#pragma endregion
+   };
 }
-
-
