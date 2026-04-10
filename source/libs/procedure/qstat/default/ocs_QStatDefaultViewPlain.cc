@@ -62,7 +62,7 @@ static char jhul6[] = "-----------------------------------";
 
 void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
    DENTER(TOP_LAYER);
-   const bool sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED);
+   const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED);
    const auto line = std::string(sge_ext ? 165 : 81, '#');
 
    os << "\n" << line
@@ -85,12 +85,13 @@ void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os) {
 void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
-   int sge_ext = parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED;
+   const int sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
+   const int queue_length = parameter.get_longest_queue_length();
 
    if (!header_printed) {
       header_printed = true;
 
-      os << std::format("{:<{}.{}} ", MSG_QSTAT_PRT_QUEUENAME, parameter.longest_queue_length, parameter.longest_queue_length)
+      os << std::format("{:<{}.{}} ", MSG_QSTAT_PRT_QUEUENAME, queue_length, queue_length)
          << std::format("{:<5.5} ", MSG_QSTAT_PRT_QTYPE)
          << std::format("{:<14.14} ", MSG_QSTAT_PRT_RESVUSEDTOT)
          << std::format("{:<8.8} ", summary->load_avg_str)
@@ -103,13 +104,13 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
    if (sge_ext) {
       os << "------------------------------------------------------------------------------------------------------------";
    }
-   for(int i = 0; i < parameter.longest_queue_length - 30; i++)
+   for(int i = 0; i < queue_length - 30; i++)
       os << "-";
    os << "\n";
 
 
    // queue name
-   os << std::format("{:<{}.{}} ", qname, parameter.longest_queue_length, parameter.longest_queue_length);
+   os << std::format("{:<{}.{}} ", qname, queue_length, queue_length);
 
    // queue type
    os << std::format("{:<5.5} ", summary->queue_type);
@@ -196,7 +197,7 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, Q
    DENTER(TOP_LAYER);
 
    static bool pending_header_printed = false;
-   if (!pending_header_printed && (parameter.full_listing_ & QSTAT_DISPLAY_FULL) && (parameter.full_listing_ & QSTAT_DISPLAY_PENDING)) {
+   if (!pending_header_printed && (parameter.show_ & QSTAT_DISPLAY_FULL) && (parameter.show_ & QSTAT_DISPLAY_PENDING)) {
       show_header_with_title(os, parameter, MSG_QSTAT_PRT_PEDINGJOBS);
       pending_header_printed = true;
    }
@@ -239,14 +240,14 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
 
    dstring ds = DSTRING_INIT;
 
-   sge_ext = ((parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (parameter.full_listing_ & QSTAT_DISPLAY_TASKS);
-   sge_urg = (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY);
+   sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
+   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
+   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
+   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
 
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
+   if ((parameter.show_ & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
       job_header_printed = true;
    }
 
@@ -308,7 +309,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
          oss << std::format("{:<5} ", "stckt");
          oss << std::format("{:<5} ", "share");
       }
-      oss << std::format("{:<{}} ", "queue", parameter.longest_queue_length);
+      oss << std::format("{:<{}} ", "queue", parameter.get_longest_queue_length());
       oss << std::format("{:<6} ", (parameter.group_opt_ & GROUP_NO_PETASK_GROUPS) ? "master" : "slots");
       oss << std::format("{:<10} ", "ja-task-ID");
       if (tsk_ext) {
@@ -476,9 +477,9 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    }
 
    // queue
-   if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
-      os << std::format("{:<{}.{}} ", summary->queue ? summary->queue : "",
-                        parameter.longest_queue_length, parameter.longest_queue_length);
+   int queue_length = parameter.get_longest_queue_length();
+   if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
+      os << std::format("{:<{}.{}} ", summary->queue ? summary->queue : "", queue_length, queue_length);
    }
 
    // master/slave or grantes slots

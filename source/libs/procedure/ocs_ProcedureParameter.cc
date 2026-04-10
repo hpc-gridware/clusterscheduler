@@ -36,12 +36,20 @@ void ocs::ProcedureParameter::add_parameter_bundle(lList *bundle, const std::str
 
 lList *
 ocs::ProcedureParameter::get_bundle() {
+   DENTER(TOP_LAYER);
    lList *bundle = nullptr;
 
-   // procedure name, (client env variables or other things ...)
+   // procedure name, sub-procedure name
    lList *name_value_list = nullptr;
+
    lListElem *ep = lAddElemStr(&name_value_list, VA_variable, PROCEDURE, VA_Type);
    lSetString(ep, VA_value, procedure_name_.c_str());
+   DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
+
+   ep = lAddElemStr(&name_value_list, VA_variable, SUB_PROCEDURE, VA_Type);
+   lSetString(ep, VA_value, sub_procedure_name_.c_str());
+   DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
+
    ep = lAddElemStr(&bundle, SPP_name, NAME_VALUE_LIST, SPP_Type);
    lSetList(ep, SPP_value_list, name_value_list);
 
@@ -52,30 +60,30 @@ ocs::ProcedureParameter::get_bundle() {
    lSetList(ep, SPP_value_list, output_format_list);
 
    // exec_context can be ignored here. Its evaluated on client side only
-
-   return bundle;
+   DRETURN(bundle);
 }
 
 void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    DENTER(TOP_LAYER);
-   // procedure name ...
+
+   // procedure name
    const lListElem *name_value_param = lGetElemStr(bundle, SPP_name, NAME_VALUE_LIST);
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
    const lListElem *procedure_elem = lGetElemStr(name_value_list, VA_variable, PROCEDURE);
    procedure_name_ = lGetString(procedure_elem, VA_value);
-
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
+
+   // sub-procedure name
+   const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE);
+   const char *value = lGetString(sub_procedure_elem, VA_value);
+   sub_procedure_name_ = value != nullptr ? value : "";
+   DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
    // -fmt
    const lListElem *output_format_param = lGetElemStr(bundle, SPP_name, OUTPUT_FORMAT);
    const lList *output_format_list = lGetList(output_format_param, SPP_value_list);
    output_format_ = static_cast<OutputFormat>(lGetUlong(lFirst(output_format_list), ULNG_value));
-
    DPRINTF("output_format: %d\n", output_format_);
-
-   lWriteListTo(bundle, stderr);
-
-   // exec_context can be ignored here. Its evaluated on client side only
 
    DRETURN_VOID;
 }
@@ -85,4 +93,11 @@ std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *para
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
    const lListElem *procedure_elem = lGetElemStr(name_value_list, VA_variable, PROCEDURE);
    return lGetString(procedure_elem, VA_value);
+}
+
+std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *parameter_bundle) {
+   const lListElem *name_value_param = lGetElemStr(parameter_bundle, SPP_name, NAME_VALUE_LIST);
+   const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
+   const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE);
+   return lGetString(sub_procedure_elem, VA_value);
 }

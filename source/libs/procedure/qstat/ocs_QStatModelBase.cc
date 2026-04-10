@@ -24,6 +24,7 @@
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
+#include "uti/sge_parse_num_par.h"
 
 #include "sgeobj/cull/sge_qinstance_QU_L.h"
 #include "sgeobj/sge_answer.h"
@@ -45,8 +46,12 @@
 #include "sched/sge_select_queue.h"
 
 #include "ocs_QStatModelBase.h"
+
+#include "msg_clients_common.h"
 #include "ocs_client_cqueue.h"
 #include "msg_qstat.h"
+#include "sgeobj/sge_qinstance_type.h"
+#include "sgeobj/sge_qref.h"
 
 ocs::QStatModelBase::~QStatModelBase() {
    lFreeList(&queue_list_);
@@ -96,7 +101,7 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
          for (int i =0 ; flags[i] != 0; i++) {
             rm_bits |= bits[i];
          }
-         parameter.full_listing_ &= ~rm_bits;
+         parameter.show_ &= ~rm_bits;
 
          /*
           * search each 'flag' in argstr
@@ -107,7 +112,7 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
          while (*s != '\0') {
             for (int i = 0; flags[i] != nullptr; i++) {
                if (strncmp(s, flags[i], strlen(flags[i])) == 0) {
-                  parameter.full_listing_ |= bits[i];
+                  parameter.show_ |= bits[i];
                   s += strlen(flags[i]);
                }
             }
@@ -129,26 +134,27 @@ void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) c
 
    // @todo Not available on server side
    if (const char *env = getenv("SGE_LONG_QNAMES"); env != nullptr){
+      int queue_length;
       try {
-         parameter.longest_queue_length = std::stoi(env);
+         queue_length = std::stoi(env);
       } catch (std::invalid_argument &e) {
-         parameter.longest_queue_length = 30;
+         queue_length = 30;
       } catch (std::out_of_range &e) {
-         parameter.longest_queue_length = 30;
+         queue_length = 30;
       }
-      if (parameter.longest_queue_length == -1) {
+      if (queue_length == -1) {
          for_each_ep_lv(qep, queue_list_) {
             const char *queue_name = lGetString(qep, name);
-            if (const int length = static_cast<int>(strlen(queue_name)); length > parameter.longest_queue_length){
-               parameter.longest_queue_length = length;
+            if (const int length = static_cast<int>(strlen(queue_name)); length > parameter.get_longest_queue_length()){
+               queue_length = length;
             }
          }
-      }
-      else {
-         if (parameter.longest_queue_length < 10) {
-            parameter.longest_queue_length = 10;
+      } else {
+         if (queue_length < 10) {
+            queue_length = 10;
          }
       }
+      parameter.set_longest_queue_length(30);
    }
 }
 
@@ -184,7 +190,7 @@ ocs::QStatModelBase::get_sub_job_filter(const QStatParameter &parameter) {
    };
    tmp_what = lIntVector2What(JB_Type, nm_JB_Type);
    lMergeWhat(&what_JB_Type, &tmp_what);
-   if (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) {
+   if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
       constexpr int nm_JB_Type_ext[] = {
          JB_department,
          JB_override_tickets,
@@ -194,7 +200,7 @@ ocs::QStatModelBase::get_sub_job_filter(const QStatParameter &parameter) {
       lMergeWhat(&what_JB_Type, &tmp_what);
 
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY) {
+   if (parameter.show_ & QSTAT_DISPLAY_URGENCY) {
       constexpr int nm_JB_Type_urg[] = {
          JB_deadline,
          JB_nurg,
@@ -207,7 +213,7 @@ ocs::QStatModelBase::get_sub_job_filter(const QStatParameter &parameter) {
       tmp_what = lIntVector2What(JB_Type, nm_JB_Type_urg);
       lMergeWhat(&what_JB_Type, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY) {
+   if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
       constexpr int nm_JB_Type_prio[] = {
          JB_nppri,
          JB_nurg,
@@ -217,7 +223,7 @@ ocs::QStatModelBase::get_sub_job_filter(const QStatParameter &parameter) {
       tmp_what = lIntVector2What(JB_Type, nm_JB_Type_prio);
       lMergeWhat(&what_JB_Type, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_RESOURCES) {
+   if (parameter.show_ & QSTAT_DISPLAY_RESOURCES) {
       constexpr int nm_JB_Type_res[] = {
          JB_checkpoint_name,
          JB_request_set_list,
@@ -247,7 +253,7 @@ ocs::QStatModelBase::get_sub_ja_task_template_filter(const QStatParameter &param
    };
    lEnumeration *tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template);
    lMergeWhat(&what_JAT_Type_template, &tmp_what);
-   if (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) {
+   if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
       constexpr int nm_JAT_Type_template_ext[] = {
          JAT_ntix,
          JAT_scaled_usage_list,
@@ -262,7 +268,7 @@ ocs::QStatModelBase::get_sub_ja_task_template_filter(const QStatParameter &param
       tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_ext);
       lMergeWhat(&what_JAT_Type_template, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY) {
+   if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
       constexpr int nm_JAT_Type_template_prio[] = {
          JAT_ntix,
          NoName
@@ -270,7 +276,7 @@ ocs::QStatModelBase::get_sub_ja_task_template_filter(const QStatParameter &param
       tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_prio);
       lMergeWhat(&what_JAT_Type_template, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_RESOURCES) {
+   if (parameter.show_ & QSTAT_DISPLAY_RESOURCES) {
       constexpr int nm_JAT_Type_template_res[] = {
          JAT_granted_pe,
          NoName
@@ -278,7 +284,7 @@ ocs::QStatModelBase::get_sub_ja_task_template_filter(const QStatParameter &param
       tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_template_res);
       lMergeWhat(&what_JAT_Type_template, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_TASKS) {
+   if (parameter.show_ & QSTAT_DISPLAY_TASKS) {
       constexpr int nm_JAT_Type_template_task[] = {
          JAT_task_list,
          JAT_usage_list,
@@ -309,7 +315,7 @@ ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
    };
    lEnumeration *tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list);
    lMergeWhat(&what_JAT_Type_list, &tmp_what);
-   if (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) {
+   if (parameter.show_ & QSTAT_DISPLAY_EXTENDED) {
       constexpr int nm_JAT_Type_list_ext[] = {
          JAT_ntix,
          JAT_scaled_usage_list,
@@ -324,7 +330,7 @@ ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
       tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list_ext);
       lMergeWhat(&what_JAT_Type_list, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY) {
+   if (parameter.show_ & QSTAT_DISPLAY_PRIORITY) {
       constexpr int nm_JAT_Type_list_prio[] = {
          JAT_ntix,
          NoName
@@ -332,7 +338,7 @@ ocs::QStatModelBase::get_sub_ja_task_filter(const QStatParameter &parameter) {
       tmp_what = lIntVector2What(JAT_Type, nm_JAT_Type_list_prio);
       lMergeWhat(&what_JAT_Type_list, &tmp_what);
    }
-   if (parameter.full_listing_ & QSTAT_DISPLAY_TASKS) {
+   if (parameter.show_ & QSTAT_DISPLAY_TASKS) {
       constexpr int nm_JAT_Type_list_task[] = {
          JAT_task_list,
          JAT_usage_list,
@@ -390,12 +396,12 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    }
 
    // Pending jobs (all that are not running)
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_PENDING) == QSTAT_DISPLAY_PENDING) {
+   if ((parameter.show_ & QSTAT_DISPLAY_PENDING) == QSTAT_DISPLAY_PENDING) {
       constexpr uint32_t all_pending_flags = (QSTAT_DISPLAY_USERHOLD|QSTAT_DISPLAY_OPERATORHOLD|
                                               QSTAT_DISPLAY_SYSTEMHOLD|QSTAT_DISPLAY_JOBARRAYHOLD|QSTAT_DISPLAY_JOBHOLD|
                                               QSTAT_DISPLAY_STARTTIMEHOLD|QSTAT_DISPLAY_PEND_REMAIN);
       // Fine grained stated selection for pending jobs or simply all pending jobs
-      if ((parameter.full_listing_ & all_pending_flags) == all_pending_flags || (parameter.full_listing_ & all_pending_flags) == 0) {
+      if ((parameter.show_ & all_pending_flags) == all_pending_flags || (parameter.show_ & all_pending_flags) == 0) {
          /*
           * All jobs not running (= all pending)
           */
@@ -438,7 +444,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
          }
       } else {
          // User Hold
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_USERHOLD) == QSTAT_DISPLAY_USERHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) == QSTAT_DISPLAY_USERHOLD) {
             /* unenrolled jobs in user hold state ... */
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_u_h_ids, RN_Type, RN_min, 0);
             if (nw == nullptr) {
@@ -456,7 +462,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
             }
          }
          // Operator Hold
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_OPERATORHOLD) == QSTAT_DISPLAY_OPERATORHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) == QSTAT_DISPLAY_OPERATORHOLD) {
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_o_h_ids, RN_Type, RN_min, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -472,7 +478,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
             }
          }
          // System Hold
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_SYSTEMHOLD) == QSTAT_DISPLAY_SYSTEMHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) == QSTAT_DISPLAY_SYSTEMHOLD) {
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_s_h_ids, RN_Type, RN_min, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -488,7 +494,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
             }
          }
          // Job Array Dependency Hold
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_JOBARRAYHOLD) == QSTAT_DISPLAY_JOBARRAYHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) == QSTAT_DISPLAY_JOBARRAYHOLD) {
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_ja_a_h_ids, RN_Type, RN_min, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -506,7 +512,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
          /*
           * Start Time Hold
           */
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_STARTTIMEHOLD) == QSTAT_DISPLAY_STARTTIMEHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) == QSTAT_DISPLAY_STARTTIMEHOLD) {
             lCondition *tmp_nw = lWhere("%T(%I > %lu)", JB_Type, JB_execution_time, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -517,7 +523,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
          /*
           * Job Dependency Hold
           */
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_JOBHOLD) == QSTAT_DISPLAY_JOBHOLD) {
+         if ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) == QSTAT_DISPLAY_JOBHOLD) {
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I > %u)))", JB_Type, JB_jid_predecessor_list, JRE_Type, JRE_job_number, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -529,7 +535,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
           * Rescheduled and jobs in error state (not in hold/no start time/no dependency)
           * and regular pending jobs
           */
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_PEND_REMAIN) == QSTAT_DISPLAY_PEND_REMAIN) {
+         if ((parameter.show_ & QSTAT_DISPLAY_PEND_REMAIN) == QSTAT_DISPLAY_PEND_REMAIN) {
             lCondition *tmp_nw = lWhere("%T(%I -> %T((%I != %u)))", JB_Type, JB_ja_tasks, JAT_Type, JAT_job_restarted, 0);
             if (nw == nullptr) {
                nw = tmp_nw;
@@ -567,7 +573,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
     *
     *    As a result to many jobs will be requested by qsub.
     */
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_RUNNING) == QSTAT_DISPLAY_RUNNING) {
+   if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) == QSTAT_DISPLAY_RUNNING) {
       lCondition *tmp_nw = lWhere("%T(((%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u))) && !(%I -> %T((%I m= %u))))", JB_Type,
                       JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
                       JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
@@ -580,7 +586,7 @@ ocs::QStatModelBase::get_job_where(const QStatParameter &parameter) {
    }
 
    // Suspended jobs
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_SUSPENDED) == QSTAT_DISPLAY_SUSPENDED) {
+   if ((parameter.show_ & QSTAT_DISPLAY_SUSPENDED) == QSTAT_DISPLAY_SUSPENDED) {
       lCondition *tmp_nw = lWhere("%T((%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u)) || (%I -> %T(%I m= %u)))", JB_Type,
                       JB_ja_tasks, JAT_Type, JAT_status, JRUNNING,
                       JB_ja_tasks, JAT_Type, JAT_status, JTRANSFERING,
@@ -657,14 +663,125 @@ void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {
 }
 
 bool ocs::QStatModelBase::fetch_data(lList **alpp, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
    // has to be overridden by derived class
-   return true;
+   DRETURN(true);
 }
 
-
 bool ocs::QStatModelBase::prepare_data(lList **alpp) {
+   DENTER(TOP_LAYER);
    // has to be overridden by derived class
-   return true;
+   DRETURN(true);
+}
+
+/*
+   untag all queues not in a specific state
+
+   returns
+      0 ok
+      -1 error
+
+*/
+int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list) {
+   DENTER(TOP_LAYER);
+
+   /* only show queues in the requested state */
+   /* make it possible to display any load value in qstat output */
+   const char *load_avg_str = getenv("SGE_LOAD_AVG");
+   if (load_avg_str == nullptr || !strlen(load_avg_str)) {
+      load_avg_str = LOAD_ATTR_LOAD_AVG;
+   }
+
+   for_each_ep_lv(cqueue, queue_list) {
+      for_each_rw_lv(qep, lGetList(cqueue, CQ_qinstances)) {
+         bool has_value_from_object;
+         double load_avg;
+         uint32_t interval;
+
+         /* compute the load and suspend alarm */
+         sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, &has_value_from_object);
+         if (sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_load_thresholds), exechost_list, centry_list, nullptr, true)) {
+            qinstance_state_set_alarm(qep, true);
+         }
+         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, lGetString(qep, QU_suspend_interval), nullptr, 0);
+         if (lGetUlong(qep, QU_nsuspend) != 0 && interval != 0 &&
+             sge_load_alarm(nullptr, 0, qep, lGetList(qep, QU_suspend_thresholds), exechost_list, centry_list, nullptr, false)) {
+            qinstance_state_set_suspend_alarm(qep, true);
+             }
+
+         if (!qinstance_has_state(qep, queue_states)) {
+            lSetUlong(qep, QU_tag, 0);
+         }
+      }
+   }
+   DRETURN(0);
+}
+
+int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list) {
+   int ret = 0;
+   lList *queueref_list = nullptr;
+
+   DENTER(TOP_LAYER);
+
+   /*
+    * Resolve queue pattern
+    */
+   {
+      lList *tmp_list = nullptr;
+      bool found_something = true;
+      queueref_list = lCopyList("", qref_list);
+
+      qref_list_resolve(queueref_list, nullptr, &tmp_list, &found_something, cqueue_list, hgrp_list, true, true);
+      if (!found_something) {
+         lFreeList(&queueref_list);
+         DRETURN(-1);
+      }
+      lFreeList(&queueref_list);
+      queueref_list = tmp_list;
+      tmp_list = nullptr;
+   }
+
+   if (cqueue_list != nullptr && queueref_list != nullptr) {
+      for_each_ep_lv(qref, queueref_list) {
+         dstring cqueue_buffer = DSTRING_INIT;
+         dstring hostname_buffer = DSTRING_INIT;
+         const char *full_name = nullptr;
+
+         full_name = lGetString(qref, QR_name);
+
+         if (cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
+            const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
+            const char *hostname = sge_dstring_get_string(&hostname_buffer);
+            const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
+            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+            lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
+
+            uint32_t tag = lGetUlong(qinstance, QU_tag);
+            lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
+         }
+
+         sge_dstring_free(&cqueue_buffer);
+         sge_dstring_free(&hostname_buffer);
+      }
+
+      for_each_ep_lv(cqueue, cqueue_list) {
+         const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+         for_each_rw_lv(qinstance, qinstance_list) {
+            uint32_t tag = lGetUlong(qinstance, QU_tag);
+            bool selected = ((tag & TAG_SELECT_IT) != 0) ? true : false;
+
+            if (!selected) {
+               tag &= ~(TAG_SELECT_IT | TAG_SHOW_IT);
+               lSetUlong(qinstance, QU_tag, tag);
+            } else {
+               ret++;
+            }
+         }
+      }
+   }
+
+   lFreeList(&queueref_list);
+   DRETURN(ret);
 }
 
 void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
@@ -834,7 +951,7 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
 
    // unselect all queues not selected by a -l
    if (lGetNumberOfElem(parameter.get_resource_list())) {
-      const int count = select_by_resource_list(parameter.get_resource_list(), exechost_list_, queue_list_,centry_list_, 1);
+      const int count = select_by_resource_list(parameter.get_resource_list(), exechost_list_, queue_list_, centry_list_, 1);
       if (count < 0) {
          DRETURN(-1);
       }
@@ -846,6 +963,381 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
 
    DRETURN(1);
 }
+
+bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
+   DENTER(TOP_LAYER);
+
+   bool a_qinstance_is_selected = false;
+   bool a_cqueue_is_selected = false;
+
+   for_each_rw_lv(cqueue, queue_list) {
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      bool tmp_a_qinstance_is_selected = false;
+
+      for_each_ep_lv(qep, qinstance_list) {
+         if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
+            tmp_a_qinstance_is_selected = true;
+            break;
+         }
+      }
+      a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
+      if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue, CQ_qinstances)) > 0)) {
+         lSetUlong(cqueue, CQ_tag, TAG_DEFAULT);
+      } else {
+         a_cqueue_is_selected |= true;
+      }
+   }
+
+   DRETURN(a_cqueue_is_selected);
+}
+
+/*
+   untag all queues not covered by -l
+
+   returns
+      0  successfully untagged qinstances if necessary
+     -1  error
+
+*/
+int ocs::QStatModelBase::select_by_resource_list(lList *resource_list, lList *exechost_list, lList *queue_list, lList *centry_list, uint32_t empty_qs) {
+   DENTER(TOP_LAYER);
+
+   if (centry_list_fill_request(resource_list, nullptr, centry_list, true, true, false)) {
+      /*
+      ** error message gets written by centry_list_fill_request into
+      ** SGE_EVENT
+      */
+      DRETURN(-1);
+   }
+
+   /* prepare request */
+   for_each_ep_lv(cqueue, queue_list) {
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+
+      for_each_rw_lv(qep, qinstance_list) {
+         if (empty_qs) {
+            sconf_set_qs_state(QS_STATE_EMPTY);
+         }
+
+         const bool selected = sge_select_queue(resource_list, qep, nullptr, exechost_list,
+                                                centry_list, true, -1, nullptr,
+                                                nullptr, nullptr);
+         if (empty_qs) {
+            sconf_set_qs_state(QS_STATE_FULL);
+         }
+
+         if (!selected) {
+            DPRINTF("unselecting queue " SFQ "\n", lGetString(qep, QU_full_name));
+            lSetUlong(qep, QU_tag, 0);
+         }
+      }
+   }
+
+   DRETURN(0);
+}
+
+/*
+   untag all queues not selected by a -pe
+
+   returns
+      0 ok
+      -1 error
+
+*/
+int ocs::QStatModelBase::select_by_pe_list(lList *queue_list, lList *peref_list, lList *pe_list) {
+   DENTER(TOP_LAYER);
+   int nqueues = 0;
+   lList *pe_selected = nullptr;
+
+   /*
+    * iterate through peref_list and build up a new pe_list
+    * containing only those pe's referenced in peref_list
+    */
+   for_each_ep_lv(pe, peref_list) {
+      lListElem *ref_pe;  /* PE_Type */
+      lListElem *copy_pe; /* PE_Type */
+
+      ref_pe = pe_list_locate(pe_list, lGetString(pe, ST_name));
+      copy_pe = lCopyElem(ref_pe);
+      if (pe_selected == nullptr) {
+         const lDescr *descriptor = lGetElemDescr(ref_pe);
+
+         pe_selected = lCreateList("", descriptor);
+      }
+      lAppendElem(pe_selected, copy_pe);
+   }
+   if (lGetNumberOfElem(pe_selected) == 0) {
+      fprintf(stderr, "%s\n", MSG_PE_NOSUCHPARALLELENVIRONMENT);
+      return -1;
+   }
+
+   /*
+    * untag all non-parallel queues and queues not referenced
+    * by a pe in the selected pe list entry of a queue
+    */
+   for_each_ep_lv(cqueue, queue_list) {
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+
+      for_each_rw_lv(qep, qinstance_list) {
+         const lListElem *found = nullptr;
+
+         if (!qinstance_is_parallel_queue(qep)) {
+            lSetUlong(qep, QU_tag, 0);
+            continue;
+         }
+         for_each_ep_lv(pe, pe_selected) {
+            const char *pe_name = lGetString(pe, PE_name);
+
+            found = lGetSubStr(qep, ST_name, pe_name, QU_pe_list);
+            if (found != nullptr) {
+               break;
+            }
+         }
+         if (found == nullptr) {
+            lSetUlong(qep, QU_tag, 0);
+         } else {
+            nqueues++;
+         }
+      }
+   }
+
+   if (pe_selected != nullptr) {
+      lFreeList(&pe_selected);
+   }
+   DRETURN(nqueues);
+}
+
+
+/*
+   untag all queues not selected by a -pe
+
+   returns
+      0 ok
+      -1 error
+
+*/
+int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list) {
+   DENTER(TOP_LAYER);
+   int nqueues = 0;
+   lListElem *ehep = nullptr;
+   const lList *h_acl = nullptr;
+   const lList *h_xacl = nullptr;
+   const lList *global_acl = nullptr;
+   const lList *global_xacl = nullptr;
+   lList *config_acl = nullptr;
+   lList *config_xacl = nullptr;
+   const lList *prj = nullptr;
+   const lList *xprj = nullptr;
+   const lList *h_prj = nullptr;
+   const lList *h_xprj = nullptr;
+   const lList *global_prj = nullptr;
+   const lList *global_xprj = nullptr;
+
+   /* untag all queues where no of the users has access */
+
+   ehep = host_list_locate(exechost_list, "global");
+   global_acl = lGetList(ehep, EH_acl);
+   global_xacl = lGetList(ehep, EH_xacl);
+   global_prj = lGetList(ehep, EH_prj);
+   global_xprj = lGetList(ehep, EH_xprj);
+
+   config_acl = mconf_get_user_lists();
+   config_xacl = mconf_get_xuser_lists();
+
+   for_each_ep_lv(cqueue, cqueue_list) {
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+
+      for_each_rw_lv(qep, qinstance_list) {
+         int access = 0;
+         const char *host_name = nullptr;
+
+         prj = lGetList(qep, QU_projects);
+         xprj = lGetList(qep, QU_xprojects);
+
+         /* get exec host list element for current queue
+            and its access lists */
+         host_name = lGetHost(qep, QU_qhostname);
+         ehep = host_list_locate(exechost_list, host_name);
+         if (ehep != nullptr) {
+            h_acl = lGetList(ehep, EH_acl);
+            h_xacl = lGetList(ehep, EH_xacl);
+            h_prj = lGetList(ehep, EH_prj);
+            h_xprj = lGetList(ehep, EH_xprj);
+         }
+
+         for_each_ep_lv(qu, queue_user_list) {
+            int q_access = 0;
+            int h_access = 0;
+            int gh_access = 0;
+            int conf_access = 0;
+
+            const char *name = lGetString(qu, ST_name);
+            if (name == nullptr)
+               continue;
+
+            DPRINTF("-----> checking queue user: %s\n", name);
+
+            DPRINTF("testing queue access lists\n");
+            q_access = (name[0] == '@') ? sge_has_access(nullptr, &name[1], nullptr, qep, acl_list)
+                                        : sge_has_access(name, nullptr, nullptr, qep, acl_list);
+            if (!q_access) {
+               DPRINTF("no access\n");
+            } else {
+               DPRINTF("ok\n");
+            }
+            if (project_list != nullptr) {
+               DPRINTF("testing queue projects lists\n");
+               for_each_ep_lv(pep, prj) {
+                  const char *prj_name;
+                  lListElem *prj_elem;
+                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                     if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               for_each_ep_lv(pep, xprj) {
+                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                     if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF("no access\n");
+               } else {
+                  DPRINTF("ok\n");
+               }
+            }
+
+            DPRINTF("testing host access lists\n");
+            h_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, h_acl, h_xacl, acl_list)
+                                        : sge_has_access_(name, nullptr, nullptr, h_acl, h_xacl, acl_list);
+            if (!h_access) {
+               DPRINTF("no access\n");
+            } else {
+               DPRINTF("ok\n");
+            }
+            if (project_list != nullptr) {
+               DPRINTF("testing host projects lists\n");
+               for_each_ep_lv(pep, h_prj) {
+                  const char *prj_name;
+                  lListElem *prj_elem;
+                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                     if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               for_each_ep_lv(pep, h_xprj) {
+                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                     if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF("no access\n");
+               } else {
+                  DPRINTF("ok\n");
+               }
+            }
+
+            DPRINTF("testing global host access lists\n");
+            gh_access = (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, global_acl, global_xacl, acl_list)
+                                         : sge_has_access_(name, nullptr, nullptr, global_acl, global_xacl, acl_list);
+            if (!gh_access) {
+               DPRINTF("no access\n");
+            } else {
+               DPRINTF("ok\n");
+            }
+            if (project_list != nullptr) {
+               DPRINTF("testing host projects lists\n");
+               for_each_ep_lv(pep, global_prj) {
+                  if (const char *prj_name = lGetString(pep, PR_name); prj_name != nullptr) {
+                     if (lListElem *prj_elem = prj_list_locate(project_list, prj_name); prj_elem != nullptr) {
+                        q_access &= (name[0] == '@') ? sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                       lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               for_each_ep_lv(pep, global_xprj) {
+                  const char *prj_name;
+                  lListElem *prj_elem;
+                  if ((prj_name = lGetString(pep, PR_name)) != nullptr) {
+                     if ((prj_elem = prj_list_locate(project_list, prj_name)) != nullptr) {
+                        q_access &= (name[0] == '@') ? !sge_has_access_(nullptr, &name[1], nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list)
+                                                     : !sge_has_access_(name, nullptr, nullptr, lGetList(prj_elem, PR_acl),
+                                                                        lGetList(prj_elem, PR_xacl), acl_list);
+                     } else {
+                        DPRINTF("no reference object for project %s\n", prj_name);
+                     }
+                  }
+               }
+               if (!q_access) {
+                  DPRINTF("no access\n");
+               } else {
+                  DPRINTF("ok\n");
+               }
+            }
+
+            DPRINTF("testing cluster config access lists\n");
+            if (name[0] == '@') {
+               conf_access = sge_has_access_(nullptr, &name[1], nullptr, config_acl, config_xacl, acl_list);
+            } else {
+               conf_access = sge_has_access_(name, nullptr, nullptr, config_acl, config_xacl, acl_list);
+            }
+            if (!conf_access) {
+               DPRINTF("no access\n");
+            } else {
+               DPRINTF("ok\n");
+            }
+
+            access = q_access && h_access && gh_access && conf_access;
+            if (!access) {
+               break;
+            }
+         }
+         if (!access) {
+            DPRINTF("no access for queue %s\n", lGetString(qep, QU_qname));
+            lSetUlong(qep, QU_tag, 0);
+         } else {
+            DPRINTF("access for queue %s\n", lGetString(qep, QU_qname));
+            nqueues++;
+         }
+      }
+   }
+
+   lFreeList(&config_acl);
+   lFreeList(&config_xacl);
+   DRETURN(nqueues);
+}
+
 bool ocs::QStatModelBase::filter_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 

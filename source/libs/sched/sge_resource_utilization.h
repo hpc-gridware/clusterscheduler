@@ -65,3 +65,5 @@ void prepare_resource_schedules(const lList *running_jobs,
       const lList *suspended_jobs, lList *pe_list, lList *host_list,
       lList *queue_list, lList *rqs_list, const lList *centry_list, const lList *acl_list,
       const lList *hgroup_list, lList *ar_list, bool for_job_scheduling, uint64_t now);
+
+int qinstance_slots_reserved_now(const lListElem *this_elem);

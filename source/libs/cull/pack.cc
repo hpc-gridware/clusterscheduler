@@ -630,6 +630,7 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
 
    DENTER(PACK_LAYER);
 
+#if 1
    /* determine string length */
    if (!pb->cur_ptr[0]) {
 
@@ -646,6 +647,7 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
 
       DRETURN(PACK_SUCCESS);
    } else {
+#endif
       n = strlen(pb->cur_ptr) + 1;
 
       /* are there enough bytes ? */
@@ -659,7 +661,9 @@ int unpackstr(sge_pack_buffer *pb, char **str) {
       /* update cur_ptr & bytes_unpacked */
       pb->bytes_used += n;
       pb->cur_ptr = &(pb->cur_ptr[n]);
+#if 1
    }
+#endif
 
    DRETURN(PACK_SUCCESS);
 }

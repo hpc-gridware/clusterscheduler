@@ -32,22 +32,3 @@
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
-
-bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
-                              double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
-                              uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
-                              uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
-                              uint32_t *disabled_manual, uint32_t *disabled_claendr, uint32_t *ambiguous,
-                              uint32_t *orphaned, uint32_t *error, uint32_t *available, uint32_t *temp_disabled,
-                              uint32_t *manual_intervention);
-
-int select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list);
-int select_by_pe_list(lList *queue_list, lList *peref_list, lList *pe_list);
-int select_by_queue_user_list(lList *exechost_list, lList *queue_list, lList *queue_user_list, lList *acl_list,
-                              lList *project_list);
-int select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list);
-int select_by_resource_list(lList *resource_list, lList *exechost_list, lList *queue_list, lList *centry_list,
-                            uint32_t empty_qs);
-bool is_cqueue_selected(lList *queue_list);
-
-int qinstance_slots_reserved_now(const lListElem *this_elem);

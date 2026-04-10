@@ -28,6 +28,14 @@ namespace ocs {
    class QStatGroupController {
       std::ostream &out_;
 
+      bool cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
+                                    double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
+                                    uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
+                                    uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
+                                    uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,
+                                    uint32_t *orphaned, uint32_t *error, uint32_t *available, uint32_t *temp_disabled,
+                                    uint32_t *manual_intervention);
+
    public:
       explicit QStatGroupController(std::ostream &out) : out_(out) {
       }

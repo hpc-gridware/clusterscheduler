@@ -32,8 +32,31 @@
 
 namespace ocs {
    class QStatParameter : public ProcedureParameter {
+
+#pragma region Procedure Parameter
+
+   private:
+      static constexpr auto RESOURCE_LIST = "resource_list";
+      static constexpr auto Q_RESOURCE_LIST = "q_resource_list";
+      static constexpr auto QUEUE_REF_LIST = "queue_ref_list";
+      static constexpr auto PE_REF_LIST = "pe_ref_list";
+      static constexpr auto USER_LIST = "user_list";
+      static constexpr auto QUEUE_USER_LIST = "queue_user_list";
+      static constexpr auto JID_LIST = "jid_list";
+      static constexpr auto SHOW = "show";
+      static constexpr auto OUTPUT_MODE = "output_mode";
+      static constexpr auto NEED_QUEUES = "need_queues";
+      static constexpr auto NEED_JOBS = "need_jobs";
+      static constexpr auto STATE_FILTER = "state_filter";
+      static constexpr auto STATE_STRING = "state_string";
+      static constexpr auto QUEUE_STATE = "queue_state";
+      static constexpr auto EXPLAIN_BITS = "explain_bits";
+      static constexpr auto GROUP_OPT = "group_opt";
+
    public:
       // @todo cleanup: declare protected and provide access methods
+      uint32_t show_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
+
       enum class OutputMode {
          QSELECT,
          QSTAT_GROUP,
@@ -45,12 +68,19 @@ namespace ocs {
       bool need_queues_ = false; ///< need to fetch queues from master
       bool need_job_list_ = true; ///< need to fetch job list from master
 
-      uint32_t full_listing_ = QSTAT_DISPLAY_ALL; // similar to *show* in qhost
       bool state_filter_ = false; /// -s switch was used
       std::string state_filter_value_; ///< -s values
+
       uint32_t queue_state_ = std::numeric_limits<uint32_t>::max(); ///< -qs
       uint32_t explain_bits_ = QI_DEFAULT; ///< -explain
       uint32_t group_opt_ = 0; ///< -g
+
+#pragma endregion
+
+
+#pragma region Data
+
+   private:
       int longest_queue_length = 30; ///< used to align the output of the queue name column
 
    protected:
@@ -70,10 +100,31 @@ namespace ocs {
       [[nodiscard]] lList *get_pe_ref_list() const { return pe_ref_list_; }
       [[nodiscard]] lList *get_queue_user_list() const { return queue_user_list_; }
       [[nodiscard]] lList *get_jid_list() const { return jid_list_; }
+      [[nodiscard]] int get_longest_queue_length() const { return longest_queue_length; }
+      void set_longest_queue_length(const int value) { longest_queue_length = value; }
+
+#pragma endregion
+
+
+#pragma region Marshaling
+
+   protected:
+      void set_bundle(const lList *bundle) override;
 
    public:
-      QStatParameter() : ProcedureParameter("") {}
+      [[nodiscard]] lList *get_bundle() override;
+
+#pragma endregion
+
+
+#pragma region Constructors/Destructors
+
+   public:
+      explicit QStatParameter(lList **bundle);
+      explicit QStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {};
       ~QStatParameter() override;
+
+#pragma endregion
 
    };
 }

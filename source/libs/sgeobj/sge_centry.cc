@@ -219,7 +219,6 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
       case ocs::CEntry::Type::BOOL:
       case ocs::CEntry::Type::DOUBLE:
          if (!extended_parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1, allow_infinity, false)) {
-/*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ATTRIB_XISNOTAY_SS, name, tmp);
             DRETURN(-1);
          }
@@ -240,7 +239,6 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          /* also the CE_defaultval must be parsable for numeric types */
          if ((s=lGetString(this_elem, CE_defaultval))
             && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
-/*             ERROR(MSG_CPLX_WRONGTYPE_SSS, name, s, tmp); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_WRONGTYPE_SSS, name, s, tmp);
             DRETURN(-1);
          }
@@ -248,7 +246,6 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          /* negative values are not allowed for consumable attributes */
          if (!allow_neg_consumable && (lGetUlong(this_elem, CE_consumable) != CONSUMABLE_NO)
              && lGetDouble(this_elem, CE_doubleval) < (double)0.0) {
-/*             ERROR(MSG_CPLX_ATTRIBISNEG_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CPLX_ATTRIBISNEG_S, name);
 
             DRETURN(-1);
@@ -259,10 +256,8 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
          ret = sge_resolve_host(this_elem, CE_stringval);
          if (ret != CL_RETVAL_OK) {
             if (ret == CL_RETVAL_GETHOSTNAME_ERROR) {
-/*                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, s); */
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, s);
             } else {
-/*                ERROR(MSG_SGETEXT_INVALIDHOST_S, s); */
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_INVALIDHOST_S, s);
             }
             DRETURN(-1);
@@ -703,16 +698,15 @@ int
 centry_list_fill_request(const lList *this_list, lList **answer_list, const lList *master_centry_list,
                          bool allow_non_requestable, bool allow_empty_boolean,
                          bool allow_neg_consumable) {
-   DENTER(CENTRY_LAYER);
+   DENTER(TOP_LAYER);
    lListElem *cep = nullptr;
 
    for_each_rw_lv(entry, this_list) {
       const char *name = lGetString(entry, CE_name);
-      uint32_t requestable;
 
       cep = centry_list_locate(master_centry_list, name);
       if (cep != nullptr) {
-         requestable = lGetUlong(cep, CE_requestable);
+         uint32_t requestable = lGetUlong(cep, CE_requestable);
          if (!allow_non_requestable && requestable == REQU_NO) {
 /*             ERROR(MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name); */
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_SGETEXT_RESOURCE_NOT_REQUESTABLE_S, name);

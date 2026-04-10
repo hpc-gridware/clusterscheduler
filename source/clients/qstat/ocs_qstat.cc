@@ -38,6 +38,8 @@
 #include <sstream>
 #include <iostream>
 
+#include "ocs_ProcedureController.h"
+#include "ocs_ProcedureModel.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
@@ -77,7 +79,7 @@ extern char **environ;
 
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "qstat");
-   lList *alp = nullptr;
+   lList *answer_list = nullptr;
 
    sge_sig_handler_in_main_loop = 0;
    sge_setup_sig_handlers(QSTAT);
@@ -85,37 +87,34 @@ int main(int argc, char *argv[]) {
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
-   if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &alp) != ocs::gdi::ErrorValue::AE_OK) {
-      answer_list_output(&alp);
+   if (ocs::gdi::ClientBase::setup_and_enroll(QSTAT, MAIN_THREAD, &answer_list) != ocs::gdi::ErrorValue::AE_OK) {
+      answer_list_output(&answer_list);
       sge_exit(1);
    }
 
+
    // parse command line parameters and options
-   ocs::QStatParameterClient parameter;
-   if (!parameter.parse_parameters(&alp, argv, environ)) {
-      answer_list_output(&alp);
+   const std::string procedure_name = to_cstr(QSTAT);
+   ocs::QStatParameterClient parameter(procedure_name);
+   if (!parameter.parse_parameters(&answer_list, argv, environ)) {
+      answer_list_output(&answer_list);
       sge_exit(1);
    }
 
    std::ostringstream out_ss;
 
-   // create model according to output mode and fetch data
-   std::unique_ptr<ocs::QStatModelBase> model;
-   if (parameter.output_mode_ == ocs::QStatParameter::OutputMode::JOB_INFO) {
-      model = std::make_unique<ocs::QStatJobModel>();
-   } else {
-      model = std::make_unique<ocs::QStatModelClient>();
-   }
-   if (!model->make_snapshot(&alp, parameter)) {
-      answer_list_output(&alp);
-      sge_exit(1);
-   }
-
    // start processing
    switch (parameter.output_mode_) {
       case ocs::QStatParameter::OutputMode::JOB_INFO: {
+         std::unique_ptr<ocs::QStatModelBase> model;
+         model = std::make_unique<ocs::QStatJobModel>();
+         if (!model->make_snapshot(&answer_list, parameter)) {
+            answer_list_output(&answer_list);
+            sge_exit(1);
+         }
+
          std::unique_ptr<ocs::QStatJobViewBase> view;
-         if (parameter.get_output_format()== ocs::QStatParameter::OutputFormat::XML) {
+         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatJobViewXML>(parameter);
          } else {
             view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
@@ -126,18 +125,47 @@ int main(int argc, char *argv[]) {
          break;
       }
       case ocs::QStatParameter::OutputMode::QSELECT: {
-         std::unique_ptr<ocs::QStatSelectViewBase> view;
-         if (parameter.get_output_format()== ocs::QStatParameter::OutputFormat::XML) {
-            view = std::make_unique<ocs::QStatSelectViewXML>(parameter);
-         } else {
-            view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
-         }
+         parameter.set_sub_procedure_name(to_cstr(QSELECT));
 
-         ocs::QStatSelectController controller(out_ss);
-         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+         if (parameter.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+            // prepare data for output
+            ocs::ProcedureModel model;
+            if (!model.make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
+
+            ocs::ProcedureView view(parameter);
+            ocs::ProcedureController controller(out_ss);
+            controller.process_request(parameter, model, view);
+         } else {
+            std::unique_ptr<ocs::QStatModelBase> model;
+            model = std::make_unique<ocs::QStatModelClient>();
+            if (!model->make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
+
+            std::unique_ptr<ocs::QStatSelectViewBase> view;
+            if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
+               view = std::make_unique<ocs::QStatSelectViewXML>(parameter);
+            } else {
+               view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
+            }
+
+            ocs::QStatSelectController controller(out_ss);
+            controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+         }
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_GROUP: {
+         std::unique_ptr<ocs::QStatModelBase> model;
+         model = std::make_unique<ocs::QStatModelClient>();
+         if (!model->make_snapshot(&answer_list, parameter)) {
+            answer_list_output(&answer_list);
+            sge_exit(1);
+         }
+
          std::unique_ptr<ocs::QStatGroupViewBase> view;
          if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatGroupViewXML>(parameter);
@@ -150,6 +178,13 @@ int main(int argc, char *argv[]) {
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_DEFAULT: {
+         std::unique_ptr<ocs::QStatModelBase> model;
+         model = std::make_unique<ocs::QStatModelClient>();
+         if (!model->make_snapshot(&answer_list, parameter)) {
+            answer_list_output(&answer_list);
+            sge_exit(1);
+         }
+
          std::unique_ptr<ocs::QStatDefaultViewBase> view;
          if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatDefaultViewXML>(parameter);
@@ -161,7 +196,7 @@ int main(int argc, char *argv[]) {
          controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
          break;
       }
-      // no default, to get compiler warning if a new output mode is added but not handled here
+         // no default, to get compiler warning if a new output mode is added but not handled here
    }
 
    // Output to the console
@@ -171,5 +206,3 @@ int main(int argc, char *argv[]) {
    sge_exit(0);
    return 0;
 }
-
-

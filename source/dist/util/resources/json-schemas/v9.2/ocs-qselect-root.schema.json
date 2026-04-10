@@ -1,0 +1,23 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qselect-root.schema.json",
+   "title": "OCS/GCS qselect schema",
+   "description": "Schema describing the JSON output of qselect (or qstat in qselect-mode).",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "queues"
+   ],
+   "properties": {
+      "queues": {
+         "type": "array",
+         "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$",
+            "description": "Queue instance name in the format '<cluster-queue-name>@<hostname>'."
+         },
+         "minItems": 0,
+         "uniqueItems": true
+      }
+   }
+}

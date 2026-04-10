@@ -74,6 +74,7 @@ set(LIBRARY_SOURCES
         qstat/select/ocs_QStatSelectViewBase.cc
         qstat/select/ocs_QStatSelectViewPlain.cc
         qstat/select/ocs_QStatSelectViewXML.cc
+        qstat/select/ocs_QStatSelectViewJSON.cc
 
         qstat/job/ocs_QStatJobModel.cc
         qstat/job/ocs_QStatJobViewBase.cc

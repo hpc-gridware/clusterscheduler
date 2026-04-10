@@ -1754,3 +1754,14 @@ static lListElem *newResourceElem(uint64_t time, double amount)
 
    return elem;
 }
+
+int qinstance_slots_reserved_now(const lListElem *this_elem) {
+   DENTER(TOP_LAYER);
+   int ret = 0;
+   if (const lListElem *slots = lGetSubStr(this_elem, RUE_name, SGE_ATTR_SLOTS, QU_resource_utilization); slots != nullptr) {
+      const uint64_t now = sge_get_gmt64();
+      ocs::TopologyString binding_in_use;
+      ret = static_cast<int>(utilization_max(nullptr, nullptr, slots, now, 0, 0.0, 0.0, 0.0, false, binding_in_use));
+   }
+   DRETURN(ret);
+}

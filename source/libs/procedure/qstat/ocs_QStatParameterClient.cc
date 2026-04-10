@@ -67,16 +67,20 @@ ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what)
    if(!what) {
       /* display full usage */
       fprintf(fp, "%s %s [options]\n", MSG_SRC_USAGE ,qselect_mode?"qselect":"qstat");
+      fprintf(fp, "        [-ectx client|server]             %s\n", MSG_COMMON_exec_ctx_OPT_USAGE);
       if (!qselect_mode) {
          fprintf(fp, "        [-ext]                            %s\n",MSG_QSTAT_USAGE_VIEWALSOSCHEDULINGATTRIBUTES);
       }
       if (!qselect_mode) {
          fprintf(fp, "        [-explain a|c|A|E]                %s\n",MSG_QSTAT_USAGE_EXPLAINOPT);
       }
-      if (!qselect_mode)
+      if (!qselect_mode) {
          fprintf(fp, "        [-f]                              %s\n",MSG_QSTAT_USAGE_FULLOUTPUT);
-      if (!qselect_mode)
+      }
+      fprintf(fp, "        [-fmt plain|json|xml]             %s\n", MSG_COMMON_format_OPT_USAGE);
+      if (!qselect_mode) {
          fprintf(fp, "        [-F [resource_attributes]]        %s\n",MSG_QSTAT_USAGE_FULLOUTPUTANDSHOWRESOURCESOFQUEUES);
+      }
       if (!qselect_mode) {
          fprintf(fp, "        [-g {c}]                          %s\n",MSG_QSTAT_USAGE_DISPLAYCQUEUESUMMARY);
          fprintf(fp, "        [-g {d}]                          %s\n",MSG_QSTAT_USAGE_DISPLAYALLJOBARRAYTASKS);
@@ -111,7 +115,6 @@ ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what)
          fprintf(fp, "        [-urg]                            %s\n",MSG_QSTAT_URGENCYINFO );
          fprintf(fp, "        [-pri]                            %s\n",MSG_QSTAT_PRIORITYINFO );
       }
-      fprintf(fp, "        [-xml]                            %s\n", MSG_COMMON_xml_OPT_USAGE);
 
       if (getenv("MORE_INFO")) {
          fprintf(fp, SFNMAX"\n", MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS);
@@ -175,6 +178,14 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdlin
          if ((rp = parse_noopt(sp, "-pri", nullptr, ppcmdline, answer_list)) != sp)
             continue;
       }
+
+      /* -ectx */
+      if ((rp = parse_until_next_opt(sp, "-ectx", nullptr, ppcmdline, answer_list)) != sp)
+         continue;
+
+      /* -fmt */
+      if ((rp = parse_until_next_opt(sp, "-fmt", nullptr, ppcmdline, answer_list)) != sp)
+         continue;
 
       /* -xml option */
       if ((rp = parse_noopt(sp, "-xml", nullptr, ppcmdline, answer_list)) != sp)
@@ -298,6 +309,38 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          }
       }
 
+      if (parse_string(ppcmdline, "-ectx", &alp, &argstr)) {
+         if (strcmp(argstr, "client") == 0) {
+            exec_context_ = ExecContext::CLIENT;
+         } else if (strcmp(argstr, "server") == 0) {
+            exec_context_ = ExecContext::SERVER;
+         } else {
+            char buf[BUFSIZ];
+            snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
+            answer_list_add(&alp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+            sge_free(&argstr);
+         }
+         sge_free(&argstr);
+         continue;
+      }
+
+      if (parse_string(ppcmdline, "-fmt", &alp, &argstr)) {
+         if (strcmp(argstr, "plain") == 0) {
+            output_format_ = OutputFormat::PLAIN;
+         } else if (strcmp(argstr, "json") == 0) {
+            output_format_ = OutputFormat::JSON;
+         } else if (strcmp(argstr, "xml") == 0) {
+            output_format_ = OutputFormat::XML;
+         } else {
+            char buf[BUFSIZ];
+            snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
+            answer_list_add(&alp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+            sge_free(&argstr);
+         }
+         sge_free(&argstr);
+         continue;
+      }
+
       uint32_t in_xml_mode = false;
       while (parse_flag(ppcmdline, "-xml", &alp, &in_xml_mode)){
          if (in_xml_mode) {
@@ -307,7 +350,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_flag(ppcmdline, "-ne", &alp, &full)) {
          if (full) {
-            full_listing_ |= QSTAT_DISPLAY_NOEMPTYQ;
+            show_ |= QSTAT_DISPLAY_NOEMPTYQ;
             full = 0;
          }
       }
@@ -315,7 +358,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_flag(ppcmdline, "-f", &alp, &full)) {
          if (full) {
-            full_listing_ |= QSTAT_DISPLAY_FULL;
+            show_ |= QSTAT_DISPLAY_FULL;
             full = 0;
          }
          need_queues_ = true;
@@ -332,13 +375,13 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
       while (parse_string(ppcmdline, "-explain", &alp, &argstr)) {
          uint32_t filter = QI_AMBIGUOUS | QI_ALARM | QI_SUSPEND_ALARM | QI_ERROR;
          explain_bits_ = qinstance_state_from_string(argstr, &alp, filter);
-         full_listing_ |= QSTAT_DISPLAY_FULL;
+         show_ |= QSTAT_DISPLAY_FULL;
          need_queues_ = true;
          sge_free(&argstr);
       }
 
       while (parse_string(ppcmdline, "-F", &alp, &argstr)) {
-         full_listing_ |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
+         show_ |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
          need_queues_ = true;
          if (argstr) {
             q_resource_list_ = centry_list_parse_from_string(q_resource_list_, argstr, false);
@@ -348,7 +391,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_flag(ppcmdline, "-ext", &alp, &full)) {
          if (full) {
-            full_listing_ |= QSTAT_DISPLAY_EXTENDED;
+            show_ |= QSTAT_DISPLAY_EXTENDED;
             full = 0;
          }
       }
@@ -357,14 +400,14 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          while (parse_flag(ppcmdline, "-urg", &alp, &full)) {
             need_queues_ = true;
             if (full) {
-               full_listing_ |= QSTAT_DISPLAY_URGENCY;
+               show_ |= QSTAT_DISPLAY_URGENCY;
                full = 0;
             }
          }
 
          while (parse_flag(ppcmdline, "-pri", &alp, &full)) {
             if (full) {
-               full_listing_ |= QSTAT_DISPLAY_PRIORITY;
+               show_ |= QSTAT_DISPLAY_PRIORITY;
                full = 0;
             }
          }
@@ -372,7 +415,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_flag(ppcmdline, "-r", &alp, &full)) {
          if (full) {
-            full_listing_ |= QSTAT_DISPLAY_RESOURCES;
+            show_ |= QSTAT_DISPLAY_RESOURCES;
             full = 0;
          }
          continue;
@@ -380,7 +423,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 
       while (parse_flag(ppcmdline, "-t", &alp, &full)) {
          if (full) {
-            full_listing_ |= QSTAT_DISPLAY_TASKS;
+            show_ |= QSTAT_DISPLAY_TASKS;
             group_opt_ |= GROUP_NO_PETASK_GROUPS;
             full = 0;
          }

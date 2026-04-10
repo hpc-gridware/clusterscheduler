@@ -116,7 +116,7 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
 
    DENTER(TOP_LAYER);
 
-   if (parameter.full_listing_ & QSTAT_DISPLAY_FULL) {
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
       if (queue_elem == nullptr) {
          DPRINTF("Illegal State: ctx->queue_elem is nullptr !!!\n");
          TerminationManager::trigger_abort();
@@ -144,7 +144,7 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
 
    DENTER(TOP_LAYER);
 
-   if (parameter.full_listing_ & QSTAT_DISPLAY_FULL) {
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
 
       if (queue_elem != nullptr) {
          DPRINTF("Illegal state: ctx->queue_elem has to be nullptr");
@@ -256,7 +256,7 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, cons
 
    if (lFirst(job_list)) {
       lList *l_job_list = nullptr;
-      if (parameter.full_listing_ & QSTAT_DISPLAY_FULL ) {
+      if (parameter.show_ & QSTAT_DISPLAY_FULL ) {
          l_job_list = lGetListRW(queue_elem, XMLE_List);
          if(l_job_list == nullptr) {
             l_job_list = lCreateList("job_list", XMLE_Type);
@@ -348,10 +348,10 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
    attribute_list = lCreateList("attributes", XMLE_Type);
    lSetList(job_elem, XMLE_List, attribute_list);
 
-   sge_ext = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-   tsk_ext = (parameter.full_listing_ & QSTAT_DISPLAY_TASKS) ? true : false;
-   sge_urg = (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY) ? true : false;
-   sge_pri = (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
+   sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
+   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY) ? true : false;
+   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
 
@@ -430,7 +430,7 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
    }
 
    /* if not full listing we need the queue's name in each line */
-   if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
+   if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
       xml_append_Attr_S(attribute_list, "queue_name", summary->queue);
    }
 

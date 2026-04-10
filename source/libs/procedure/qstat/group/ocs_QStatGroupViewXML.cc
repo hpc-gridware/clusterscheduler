@@ -50,7 +50,7 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name
    xml_append_Attr_U(attributes, "temp_disabled", summary->temp_disabled);
    xml_append_Attr_U(attributes, "manual_intervention", summary->manual_intervention);
 
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED) {
+   if ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED) {
       xml_append_Attr_U(attributes, "suspend_manual", summary->suspend_manual);
       xml_append_Attr_U(attributes, "suspend_threshold", summary->suspend_threshold);
       xml_append_Attr_U(attributes, "suspend_on_subordinate", summary->suspend_on_subordinate);

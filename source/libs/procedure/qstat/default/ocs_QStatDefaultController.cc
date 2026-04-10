@@ -49,6 +49,7 @@
 
 #include "qstat/default/ocs_QStatDefaultController.h"
 #include "ocs_client_cqueue.h"
+#include "sched/sge_resource_utilization.h"
 
 void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
 
@@ -93,7 +94,7 @@ ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QSta
       if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
 
 
-         if ((parameter.full_listing_ & QSTAT_DISPLAY_NOEMPTYQ) && !qinstance_slots_used(qep)) {
+         if ((parameter.show_ & QSTAT_DISPLAY_NOEMPTYQ) && !qinstance_slots_used(qep)) {
             continue;
          }
 
@@ -205,7 +206,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                /* job distribution view ? */
                if (!(parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
                   /* no - condensed ouput format */
-                  if (!master && !(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
+                  if (!master && !(parameter.show_ & QSTAT_DISPLAY_FULL)) {
                      /* skip all slave outputs except in full display mode */
                      continue;
                   }
@@ -214,7 +215,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   lines_to_print = 1;
 
                   /* always only show the number of job slots represented by the line */
-                  if ((parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
+                  if ((parameter.show_ & QSTAT_DISPLAY_FULL)) {
                      slots_per_line = slots_in_queue;
                   } else {
                      slots_per_line = sge_granted_slots(lGetList(jatep, JAT_granted_destin_identifier_list));
@@ -242,7 +243,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   if (different) {
                      print_jobid = true;
                   } else {
-                     if (!(parameter.full_listing_ & QSTAT_DISPLAY_RUNNING)) {
+                     if (!(parameter.show_ & QSTAT_DISPLAY_RUNNING)) {
                         print_jobid = ((master && (i==0)) ? true : false);
                      } else {
                         print_jobid = false;
@@ -252,19 +253,19 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                   if (!lGetNumberOfElem(parameter.get_user_list()) ||
                      (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
                      if (print_jobs_of_queue && (job_tag & TAG_SHOW_IT)) {
-                        if ((parameter.full_listing_ & QSTAT_DISPLAY_RUNNING) && (lGetUlong(jatep, JAT_state) & JRUNNING) ) {
+                        if ((parameter.show_ & QSTAT_DISPLAY_RUNNING) && (lGetUlong(jatep, JAT_state) & JRUNNING) ) {
                            print_it = true;
-                        } else if ((parameter.full_listing_ & QSTAT_DISPLAY_SUSPENDED) &&
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_SUSPENDED) &&
                            ((lGetUlong(jatep, JAT_state)&JSUSPENDED) || (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_THRESHOLD) ||
                            (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_SUBORDINATE) || (lGetUlong(jatep, JAT_state)&JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                            print_it = true;
-                        } else if ((parameter.full_listing_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER)) {
                            print_it = true;
-                        } else if ((parameter.full_listing_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))  {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))  {
                            print_it = true;
-                        } else if ((parameter.full_listing_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM)) {
                            print_it = true;
-                        } else if ((parameter.full_listing_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD)) {
+                        } else if ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD)) {
                            print_it = true;
                         } else {
                            print_it = false;
@@ -304,10 +305,10 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       summary.queue = lGetString(gdil_ep, JG_qname);
    }
 
-   sge_ext = ((parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (parameter.full_listing_ & QSTAT_DISPLAY_TASKS);
-   sge_urg = (parameter.full_listing_ & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (parameter.full_listing_ & QSTAT_DISPLAY_PRIORITY);
+   sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
+   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
+   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
+   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
    sge_time = !sge_ext;
    sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
 
@@ -524,7 +525,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    }
 
    /* print additional job info if requested */
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_RESOURCES)) {
+   if ((parameter.show_ & QSTAT_DISPLAY_RESOURCES)) {
 
       view.report_additional_info(os, QStatDefaultViewBase::FULL_JOB_NAME, lGetString(job, JB_job_name));
       if (summary.queue) {
@@ -846,19 +847,19 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
       while ((jatep = nxt_jatep)) {
          nxt_jatep = lNextRW(jatep);
 
-         if (!(((parameter.full_listing_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))
+         if (!(((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_OPERATOR))
                ||
-             ((parameter.full_listing_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER))
+             ((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_USER))
                ||
-             ((parameter.full_listing_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM))
+             ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_SYSTEM))
                ||
-             ((parameter.full_listing_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD))
+             ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (lGetUlong(jatep, JAT_hold)&MINUS_H_TGT_JA_AD))
                ||
-             ((parameter.full_listing_ & QSTAT_DISPLAY_JOBHOLD) && lGetList(jep, JB_jid_predecessor_list))
+             ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && lGetList(jep, JB_jid_predecessor_list))
                ||
-             ((parameter.full_listing_ & QSTAT_DISPLAY_STARTTIMEHOLD) && lGetUlong64(jep, JB_execution_time))
+             ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && lGetUlong64(jep, JB_execution_time))
                ||
-             !(parameter.full_listing_ & QSTAT_DISPLAY_HOLD))
+             !(parameter.show_ & QSTAT_DISPLAY_HOLD))
             ) {
             break;
          }
@@ -872,7 +873,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
             if ((!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) &&
                 (lGetUlong(jatep, JAT_suitable)&TAG_SHOW_IT)) {
 
-               if ((parameter.full_listing_ & QSTAT_DISPLAY_PENDING) &&
+               if ((parameter.show_ & QSTAT_DISPLAY_PENDING) &&
                    (parameter.group_opt_ & GROUP_NO_TASK_GROUPS) > 0) {
 
                   sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
@@ -893,7 +894,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
             }
          }
       }
-      if ((parameter.full_listing_ & QSTAT_DISPLAY_PENDING)  &&
+      if ((parameter.show_ & QSTAT_DISPLAY_PENDING)  &&
           (parameter.group_opt_ & GROUP_NO_TASK_GROUPS) == 0 &&
           FoundTasks &&
           ja_task_list) {
@@ -913,7 +914,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
             count++;
          }
       }
-      if (jep != nxt && (parameter.full_listing_ & QSTAT_DISPLAY_PENDING)) {
+      if (jep != nxt && (parameter.show_ & QSTAT_DISPLAY_PENDING)) {
          process_jobs_not_enrolled(os, jep, true, nullptr, 0, 0, &count, parameter, model, view);
       }
    }
@@ -1014,13 +1015,13 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lL
       uint32_t first_id;
       int show = 0;
 
-      if (((parameter.full_listing_ & QSTAT_DISPLAY_USERHOLD) && (hold_state[i] & MINUS_H_TGT_USER)) ||
-          ((parameter.full_listing_ & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state[i] & MINUS_H_TGT_OPERATOR)) ||
-          ((parameter.full_listing_ & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state[i] & MINUS_H_TGT_SYSTEM)) ||
-          ((parameter.full_listing_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state[i] & MINUS_H_TGT_JA_AD)) ||
-          ((parameter.full_listing_ & QSTAT_DISPLAY_STARTTIMEHOLD) && (lGetUlong64(job, JB_execution_time) > 0)) ||
-          ((parameter.full_listing_ & QSTAT_DISPLAY_JOBHOLD) && (lGetList(job, JB_jid_predecessor_list) != 0)) ||
-          (!(parameter.full_listing_ & QSTAT_DISPLAY_HOLD))
+      if (((parameter.show_ & QSTAT_DISPLAY_USERHOLD) && (hold_state[i] & MINUS_H_TGT_USER)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_OPERATORHOLD) && (hold_state[i] & MINUS_H_TGT_OPERATOR)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_SYSTEMHOLD) && (hold_state[i] & MINUS_H_TGT_SYSTEM)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_JOBARRAYHOLD) && (hold_state[i] & MINUS_H_TGT_JA_AD)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_STARTTIMEHOLD) && (lGetUlong64(job, JB_execution_time) > 0)) ||
+          ((parameter.show_ & QSTAT_DISPLAY_JOBHOLD) && (lGetList(job, JB_jid_predecessor_list) != 0)) ||
+          (!(parameter.show_ & QSTAT_DISPLAY_HOLD))
          ) {
          show = 1;
       }
@@ -1083,7 +1084,7 @@ void
 ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
-   if (!(parameter.full_listing_ & QSTAT_DISPLAY_FULL)) {
+   if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
       DRETURN_VOID;
    }
 
@@ -1134,7 +1135,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    const char *queue_name = lGetString(queue, QU_full_name);
    view.report_queue_summary(os, queue_name, &summary, parameter);
 
-   if ((parameter.full_listing_ & QSTAT_DISPLAY_ALARMREASON)) {
+   if ((parameter.show_ & QSTAT_DISPLAY_ALARMREASON)) {
       if (*load_alarm_reason) {
          view.report_queue_load_alarm(os, queue_name, load_alarm_reason);
       }
@@ -1166,7 +1167,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    }
 
    /* view (selected) resources of queue in case of -F [attr,attr,..] */
-   if (((parameter.full_listing_ & QSTAT_DISPLAY_QRESOURCES))) {
+   if (((parameter.show_ & QSTAT_DISPLAY_QRESOURCES))) {
       dstring resource_string = DSTRING_INIT;
 
       lList *rlp = nullptr;

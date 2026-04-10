@@ -1,7 +1,9 @@
+#pragma once
+#include <rapidjson/internal/meta.h>
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,22 +20,20 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <sstream>
+#include "ocs_QStatSelectViewBase.h"
+#include "../ocs_QStatParameter.h"
 
-#include "qstat/select/ocs_QStatSelectViewPlain.h"
+namespace ocs {
+   class QStatSelectViewJSON : public QStatSelectViewBase {
+      int indent = 0;
+      bool first_queue = true;
+   public:
+      explicit QStatSelectViewJSON(const QStatParameter &parameter);
 
-ocs::QStatSelectViewPlain::QStatSelectViewPlain(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
-}
+      ~QStatSelectViewJSON() override = default;
 
-void
-ocs::QStatSelectViewPlain::report_started(std::ostream &os) {
-}
-
-void
-ocs::QStatSelectViewPlain::report_finished(std::ostream &os) {
-}
-
-void
-ocs::QStatSelectViewPlain::report_queue(std::ostream &os, const char* qname) {
-   os << qname << std::endl;
+      void report_started(std::ostream &os) override;
+      void report_finished(std::ostream &os) override;
+      void report_queue(std::ostream &os, const char* qname) override;
+   };
 }

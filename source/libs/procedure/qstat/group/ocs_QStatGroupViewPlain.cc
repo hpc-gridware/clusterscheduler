@@ -30,13 +30,14 @@
 
 void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+   int queue_length = parameter.get_longest_queue_length();
 
    // Show header
    os << std::format(
          "{:<{}.{}s} {:>7} {:>6} {:>6} {:>6} {:>6} {:>6} {:>6} ",
          "CLUSTER QUEUE",
-         parameter.longest_queue_length,
-         parameter.longest_queue_length,
+         queue_length,
+         queue_length,
          "CQLOAD",
          "USED",
          "RES",
@@ -44,7 +45,7 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
          "TOTAL",
          "aoACDS",
          "cdsuE");
-   const bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   const bool show_states = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    if (show_states) {
       os << std::format(
               "{:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5} {:>5}",
@@ -56,7 +57,7 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
    auto print_dashes = [&](int n) {
       os << std::setfill('-') << std::setw(n) << "";
    };
-   print_dashes(parameter.longest_queue_length + 7 + 6 + 6 + 6 + 6 + 6 + 6 + 7*1);
+   print_dashes(queue_length + 7 + 6 + 6 + 6 + 6 + 6 + 6 + 7*1);
    if (show_states) {
       print_dashes(11 * 6);
    }
@@ -70,12 +71,10 @@ void ocs::QStatGroupViewPlain::report_finished(std::ostream &os, QStatParameter 
 
 void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   const bool show_states = (parameter.full_listing_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   const bool show_states = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
 
-   os << std::format("{:<{}.{}s} ",
-                   cq_name,
-                   parameter.longest_queue_length,
-                   parameter.longest_queue_length);
+   int queue_length = parameter.get_longest_queue_length();
+   os << std::format("{:<{}.{}s} ", cq_name, queue_length, queue_length);
 
    if (summary->is_load_available) {
       os << std::format("{:>7.2f} ", summary->load);

@@ -156,3 +156,4 @@ qinstance_verify_full_name(lList **answer_list, const char *full_name);
 
 void
 qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bool set_error);
+

@@ -26,7 +26,7 @@
 namespace ocs {
    class QStatSelectViewPlain : public QStatSelectViewBase {
    public:
-      QStatSelectViewPlain(QStatParameter &parameter);
+      explicit QStatSelectViewPlain(const QStatParameter &parameter);
 
       ~QStatSelectViewPlain() override = default;
 

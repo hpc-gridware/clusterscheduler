@@ -18,7 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "uti/sge_log.h"
+#include "uti/sge_rmon_macros.h"
 
 #include "ocs_QStatModelServer.h"
 
@@ -27,6 +27,7 @@
 
 bool
 ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
    const lList *master_manager_list = *DataStore::get_master_list(SGE_TYPE_MANAGER);
    is_manager_ = manop_is_manager(packet, master_manager_list);
 
@@ -48,7 +49,7 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
 
    const lList *master_centry_list = *DataStore::get_master_list(SGE_TYPE_CENTRY);
    lEnumeration *centry_what = get_centry_what();
-   job_list_ = lSelect("", master_centry_list, nullptr, centry_what);
+   centry_list_ = lSelect("", master_centry_list, nullptr, centry_what);
    lFreeWhat(&centry_what);
 
    const lList *master_ehost_list = *DataStore::get_master_list(SGE_TYPE_EXECHOST);
@@ -70,7 +71,7 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
 
    const lList *master_uset_list = *DataStore::get_master_list(SGE_TYPE_USERSET);
    lEnumeration *uset_what = get_uset_what();
-   ckpt_list_ = lSelect("", master_uset_list, nullptr, uset_what);
+   acl_list_ = lSelect("", master_uset_list, nullptr, uset_what);
    lFreeWhat(&uset_what);
 
    const lList *master_prj_list = *DataStore::get_master_list(SGE_TYPE_PROJECT);
@@ -88,6 +89,6 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    hgrp_list_ = lSelect("", master_hgrp_list, nullptr, hgrp_what);
    lFreeWhat(&hgrp_what);
 
-   return true;
+   DRETURN(true);
 }
 

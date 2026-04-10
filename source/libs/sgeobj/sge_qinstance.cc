@@ -66,8 +66,11 @@
 #include "sgeobj/msg_sgeobjlib.h"
 
 #include "msg_common.h"
+#include "ocs_TopologyString.h"
+#include "sched/sge_resource_utilization.h"
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
+#include "uti/sge_time.h"
 
 #define QINSTANCE_LAYER BASIS_LAYER
 
@@ -1395,3 +1398,4 @@ qinstance_set_error(lListElem *qinstance, uint32_t type, const char *message, bo
       qinstance_message_trash_all_of_type_X(qinstance, type);
    }
 }
+

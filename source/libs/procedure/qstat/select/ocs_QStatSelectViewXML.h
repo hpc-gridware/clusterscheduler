@@ -25,7 +25,7 @@
 namespace ocs {
    class QStatSelectViewXML : public QStatSelectViewBase {
    public:
-      QStatSelectViewXML(QStatParameter &parameter);
+      explicit QStatSelectViewXML(const QStatParameter &parameter);
 
       ~QStatSelectViewXML() override = default;
 

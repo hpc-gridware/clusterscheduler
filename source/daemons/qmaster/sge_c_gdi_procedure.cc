@@ -53,6 +53,14 @@
 
 #include "sge_c_gdi_procedure.h"
 
+#include "qstat/ocs_QStatModelServer.h"
+#include "qstat/ocs_QStatParameter.h"
+#include "qstat/select/ocs_QStatSelectController.h"
+#include "qstat/select/ocs_QStatSelectViewBase.h"
+#include "qstat/select/ocs_QStatSelectViewJSON.h"
+#include "qstat/select/ocs_QStatSelectViewPlain.h"
+#include "qstat/select/ocs_QStatSelectViewXML.h"
+
 namespace {
    struct QHostTraits {
       using Parameter = ocs::QHostParameter;
@@ -117,6 +125,27 @@ namespace {
       }
    };
 
+   struct QStatSelectTraits {
+      using Parameter = ocs::QStatParameter;
+      using Model = ocs::QStatModelServer;
+      using ViewBase = ocs::QStatSelectViewBase;
+      using Controller = ocs::QStatSelectController;
+
+      static constexpr ProgName prog_number = QSTAT;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatSelectViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatSelectViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatSelectViewJSON>(parameter);
+      }
+   };
+
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os) {
       DENTER(TOP_LAYER);
@@ -173,6 +202,7 @@ namespace {
       lList *output_list = nullptr;
       lAddElemStr(&output_list, ST_name, os.str().c_str(), ST_Type);
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE, output_list);
+      DPRINTF("response:\n %s", os.str().c_str());
 
       // Pass responsibility for the bundle to gdi
       task->data_list = bundle;
@@ -194,15 +224,17 @@ namespace {
    using ProcedureHandler = void (*)(ocs::gdi::Packet *, ocs::gdi::Task *);
 
    struct ProcedureDispatchEntry {
-      std::string_view name;
+      std::string_view procedure_name;
+      std::string_view sub_procedure_name;
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 3> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 4> procedure_dispatch_table{
       {
-         {to_string_view(QHOST), &run_procedure<QHostTraits>},
-         {to_string_view(QQUOTA), &run_procedure<QQuotaTraits>},
-         {to_string_view(QRSTAT), &run_procedure<QRStatTraits>}
+         {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
+         {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
+         {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},
+         {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>}
       }
    };
 } // namespace
@@ -212,18 +244,20 @@ void sge_c_gdi_procedure(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::T
    DENTER(TOP_LAYER);
 
    // get the name of the procedure that should be called
-   const std::string procedure_name = ocs::ProcedureParameter::get_procedure_from_bundle(task->data_list);
+   const std::string name = ocs::ProcedureParameter::get_procedure_from_bundle(task->data_list);
+   const std::string sub_name = ocs::ProcedureParameter::get_sub_procedure_from_bundle(task->data_list);
+   DPRINTF("requested procedure: \"" SFN "/" SFN "\"\n", name.c_str(), sub_name.c_str());
 
    // Find and trigger the procedures handler
-   for (const auto &[name, handler]: procedure_dispatch_table) {
-      if (procedure_name == name) {
+   for (const auto &[procedure_name, sub_procedure_name, handler]: procedure_dispatch_table) {
+      if (procedure_name == name && sub_procedure_name == sub_name) {
          handler(packet, task);
          DRETURN_VOID;
       }
    }
 
    // show an error if no method was found
-   snprintf(SGE_EVENT, SGE_EVENT_SIZE, "requested stored procedure " SFQ " is not available", procedure_name.c_str());
+   snprintf(SGE_EVENT, SGE_EVENT_SIZE, "requested stored procedure \"" SFN "/" SFN "\" is not available", name.c_str(), sub_name.c_str());
    answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
 
    DRETURN_VOID;

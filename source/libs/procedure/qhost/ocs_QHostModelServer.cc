@@ -60,6 +60,8 @@ bool ocs::QHostModelServer::fetch_data(lList **answer_list, const lList *hostnam
    centry_list_ = lSelect("", master_centry_list, nullptr, centry_what);
    lFreeWhat(&centry_what);
 
+   lWriteListTo(centry_list_, stderr);
+
    const lList *master_pe_list = *DataStore::get_master_list(SGE_TYPE_PE);
    lEnumeration *pe_what = get_pe_what();
    pe_list_ = lSelect("", master_pe_list, nullptr, pe_what);

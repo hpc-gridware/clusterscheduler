@@ -46,6 +46,7 @@ namespace ocs {
 #pragma region Data
    protected:
       std::string procedure_name_;
+      std::string sub_procedure_name_;
       OutputFormat output_format_ = OutputFormat::PLAIN;
       ExecContext exec_context_ = ExecContext::SERVER;
 
@@ -53,12 +54,15 @@ namespace ocs {
       [[nodiscard]] OutputFormat get_output_format() const { return output_format_ ; }
       [[nodiscard]] ExecContext get_exec_context() const { return exec_context_ ; }
       [[nodiscard]] const std::string& get_procedure_name() const { return procedure_name_; }
+      [[nodiscard]] const std::string& get_sub_procedure_name() const { return sub_procedure_name_; }
+      void set_sub_procedure_name(const std::string& procedure_name) { sub_procedure_name_ = procedure_name; }
 #pragma endregion
 
 #pragma region Constants
    public:
       static constexpr auto NAME_VALUE_LIST = "name_value_list";
       static constexpr auto PROCEDURE = "procedure";
+      static constexpr auto SUB_PROCEDURE = "sub_procedure";
       static constexpr auto RESPONSE = "response";
       static constexpr auto OUTPUT_FORMAT = "output_format";
 #pragma endregion
@@ -70,6 +74,7 @@ namespace ocs {
       [[nodiscard]] virtual lList *get_bundle();
       static void add_parameter_bundle(lList *bundle, const std::string& name, lList *parameter);
       static std::string get_procedure_from_bundle(const lList *parameter_bundle);
+      static std::string get_sub_procedure_from_bundle(const lList *parameter_bundle);
 #pragma endregion
 
 #pragma region Constructor/Destructor

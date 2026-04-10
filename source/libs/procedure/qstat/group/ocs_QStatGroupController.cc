@@ -22,15 +22,122 @@
 #include <iostream>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_time.h"
 
 #include "sgeobj/sge_cqueue.h"
+#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_host.h"
 
 #include "sched/load_correction.h"
+#include "sched/sge_resource_utilization.h"
+#include "sched/sge_select_queue.h"
 
 #include "qstat/group/ocs_QStatGroupController.h"
 #include "qstat/group/ocs_QStatGroupViewBase.h"
-#include "ocs_client_cqueue.h"
+
+bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue, const lList *exechost_list, const lList *centry_list,
+                                                         double *load, bool *is_load_available, uint32_t *used, uint32_t *resv, uint32_t *total,
+                                                         uint32_t *suspend_manual, uint32_t *suspend_threshold, uint32_t *suspend_on_subordinate,
+                                                         uint32_t *suspend_calendar, uint32_t *unknown, uint32_t *load_alarm,
+                                                         uint32_t *disabled_manual, uint32_t *disabled_calendar, uint32_t *ambiguous,
+                                                         uint32_t *orphaned, uint32_t *error, uint32_t *available, uint32_t *temp_disabled,
+                                                         uint32_t *manual_intervention) {
+   bool ret = true;
+
+   DENTER(TOP_LAYER);
+   if (cqueue != nullptr) {
+      const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+      double host_load_avg = 0.0;
+      uint32_t load_slots = 0;
+      uint32_t used_available = 0;
+      uint32_t used_slots = 0;
+      uint32_t resv_slots = 0;
+
+      *load = 0.0;
+      *is_load_available = false;
+      *used = *total = *resv = 0;
+      *available = *temp_disabled = *manual_intervention = 0;
+      *suspend_manual = *suspend_threshold = *suspend_on_subordinate = 0;
+      *suspend_calendar = *unknown = *load_alarm = 0;
+      *disabled_manual = *disabled_calendar = *ambiguous = 0;
+      *orphaned = *error = 0;
+      for_each_ep_lv(qinstance, qinstance_list) {
+         uint32_t slots = lGetUlong(qinstance, QU_job_slots);
+         bool has_value_from_object;
+
+         used_slots = qinstance_slots_used(qinstance);
+         resv_slots = qinstance_slots_reserved_now(qinstance);
+         (*used) += used_slots;
+         (*resv) += resv_slots;
+         (*total) += slots;
+
+         if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, qinstance, exechost_list, centry_list,
+                                   &has_value_from_object)) {
+            if (has_value_from_object) {
+               load_slots += slots;
+               *load += host_load_avg * slots;
+            }
+         }
+
+         /*
+          * manual_intervention: cdsuE
+          * temp_disabled: aoACDS
+          */
+         if (qinstance_state_is_manual_suspended(qinstance) || qinstance_state_is_unknown(qinstance) ||
+             qinstance_state_is_manual_disabled(qinstance) || qinstance_state_is_ambiguous(qinstance) ||
+             qinstance_state_is_error(qinstance)) {
+            *manual_intervention += slots;
+         } else if (qinstance_state_is_alarm(qinstance) || qinstance_state_is_cal_disabled(qinstance) ||
+                    qinstance_state_is_orphaned(qinstance) || qinstance_state_is_susp_on_sub(qinstance) ||
+                    qinstance_state_is_cal_suspended(qinstance) || qinstance_state_is_suspend_alarm(qinstance)) {
+            *temp_disabled += slots;
+         } else {
+            *available += slots;
+            used_available += used_slots;
+         }
+         if (qinstance_state_is_unknown(qinstance)) {
+            *unknown += slots;
+         }
+         if (qinstance_state_is_alarm(qinstance)) {
+            *load_alarm += slots;
+         }
+         if (qinstance_state_is_manual_disabled(qinstance)) {
+            *disabled_manual += slots;
+         }
+         if (qinstance_state_is_cal_disabled(qinstance)) {
+            *disabled_calendar += slots;
+         }
+         if (qinstance_state_is_ambiguous(qinstance)) {
+            *ambiguous += slots;
+         }
+         if (qinstance_state_is_orphaned(qinstance)) {
+            *orphaned += slots;
+         }
+         if (qinstance_state_is_manual_suspended(qinstance)) {
+            *suspend_manual += slots;
+         }
+         if (qinstance_state_is_susp_on_sub(qinstance)) {
+            *suspend_on_subordinate += slots;
+         }
+         if (qinstance_state_is_cal_suspended(qinstance)) {
+            *suspend_calendar += slots;
+         }
+         if (qinstance_state_is_suspend_alarm(qinstance)) {
+            *suspend_threshold += slots;
+         }
+         if (qinstance_state_is_error(qinstance)) {
+            *error += slots;
+         }
+      }
+      if (load_slots > 0) {
+         *is_load_available = true;
+         *load /= load_slots;
+      }
+      *available -= used_available;
+   }
+   DRETURN(ret);
+}
 
 
 void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatGroupViewBase &view) {

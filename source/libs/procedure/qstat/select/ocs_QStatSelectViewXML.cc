@@ -22,7 +22,7 @@
 
 #include "qstat/select//ocs_QStatSelectViewXML.h"
 
-ocs::QStatSelectViewXML::QStatSelectViewXML(QStatParameter &parameter) : QStatSelectViewBase(parameter) {
+ocs::QStatSelectViewXML::QStatSelectViewXML(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
 }
 
 void

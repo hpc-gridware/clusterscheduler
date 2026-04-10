@@ -85,6 +85,13 @@ namespace ocs {
 #pragma region Data Retrieval
 
    private:
+      static int select_by_queue_state(uint32_t queue_states, lList *exechost_list, lList *queue_list, lList *centry_list);
+      static int select_by_queue_user_list(lList *exechost_list, lList *cqueue_list, lList *queue_user_list, lList *acl_list, lList *project_list);
+      static int select_by_pe_list(lList *queue_list, lList *peref_list, lList *pe_list);
+      static int select_by_resource_list(lList *resource_list, lList *exechost_list, lList *queue_list, lList *centry_list, uint32_t empty_qs);
+      static int select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list);
+      static bool is_cqueue_selected(lList *queue_list);
+
       void filter_jobs(const QStatParameter &parameter);
       int filter_queues(lList **answer_list, const QStatParameter &parameter) const;
 

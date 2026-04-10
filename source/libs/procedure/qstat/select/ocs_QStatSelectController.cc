@@ -29,24 +29,20 @@
 
 #include "qstat/select/ocs_QStatSelectController.h"
 
-void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatSelectViewBase &view) {
+void ocs::QStatSelectController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatSelectViewBase &view) {
    DENTER(TOP_LAYER);
 
-   std::ostringstream oss;
-
-   view.report_started(oss);
+   view.report_started(out_);
 
    for_each_ep_lv(cqueue, model.get_queue_list()) {
       for_each_ep_lv(qep, lGetList(cqueue, CQ_qinstances)) {
          if ((lGetUlong(qep, QU_tag) & TAG_SHOW_IT) == TAG_SHOW_IT) {
-            view.report_queue(oss, lGetString(qep, QU_full_name));
+            view.report_queue(out_, lGetString(qep, QU_full_name));
          }
       }
    }
 
-   view.report_finished(oss);
-
-   std::cout << oss.str();
+   view.report_finished(out_);
 
    DRETURN_VOID;
 }
