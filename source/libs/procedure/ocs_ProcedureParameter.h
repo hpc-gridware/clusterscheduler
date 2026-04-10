@@ -45,17 +45,24 @@ namespace ocs {
 
 #pragma region Data
    protected:
-      std::string procedure_name_;
-      std::string sub_procedure_name_;
-      OutputFormat output_format_ = OutputFormat::PLAIN;
-      ExecContext exec_context_ = ExecContext::SERVER;
+      std::string procedure_name_; ///< primary procedure name (e.g. 'qstat')
+      std::string sub_procedure_name_; ///< sub-procedure name if the command supports that (e.g. 'qselect', 'cq-view', ...)
+      OutputFormat output_format_ = OutputFormat::PLAIN; ///< output format
+      ExecContext exec_context_ = ExecContext::SERVER; ///< where the request will be executed
+      lList *env_variable_list_ = nullptr;
 
    public:
       [[nodiscard]] OutputFormat get_output_format() const { return output_format_ ; }
       [[nodiscard]] ExecContext get_exec_context() const { return exec_context_ ; }
+
       [[nodiscard]] const std::string& get_procedure_name() const { return procedure_name_; }
       [[nodiscard]] const std::string& get_sub_procedure_name() const { return sub_procedure_name_; }
       void set_sub_procedure_name(const std::string& procedure_name) { sub_procedure_name_ = procedure_name; }
+
+      [[nodiscard]] const lList* get_env_variable_list() const { return env_variable_list_; }
+      void add_variable(const char *name, const char *value);
+      const char *get_variable(const char *name) const;
+
 #pragma endregion
 
 #pragma region Constants
@@ -65,6 +72,7 @@ namespace ocs {
       static constexpr auto SUB_PROCEDURE = "sub_procedure";
       static constexpr auto RESPONSE = "response";
       static constexpr auto OUTPUT_FORMAT = "output_format";
+      static constexpr auto ENVIRONMENT = "environment";
 #pragma endregion
 
 #pragma region Marshaling

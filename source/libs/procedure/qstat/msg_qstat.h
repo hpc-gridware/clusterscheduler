@@ -60,9 +60,6 @@
 #define MSG_QSTAT_USAGE_SHOWTASKINFO                        _MESSAGE(19028, _("show task information (implicitly -g t)"))
 #define MSG_QSTAT_USAGE_VIEWONLYJOBSOFTHISUSER              _MESSAGE(19029, _("view only jobs of this user"))
 #define MSG_QSTAT_USAGE_SELECTQUEUESWHEREUSERXHAVEACCESS    _MESSAGE(19030, _("select only queues where these users have access"))
-#define MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS          _MESSAGE(19031, _("Additional debugging options:"))
-#define MSG_QSTAT_USAGE_DUMPCOMPLETEJOBLISTTOSTDOUT         _MESSAGE(19032, _("dump complete job list to stdout"))
-#define MSG_QSTAT_USAGE_DUMPCOMPLETEQUEUELISTTOSTDOUT       _MESSAGE(19033, _("dump complete queue list to stdout"))
 #define MSG_SCHEDD_SCHEDULINGINFO                           _MESSAGE(19034, _("scheduling info"))
 #define MSG_QSTAT_USAGE_SHOW_DEPT_VIEW                      _MESSAGE(19035, _("enable department view (hide objects without access)"))
 

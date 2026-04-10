@@ -37,7 +37,7 @@
 #include "qstat/job/ocs_QStatJobModel.h"
 #include "qstat/msg_qstat.h"
 
-void ocs::QStatJobModel::free_data() {
+ocs::QStatJobModel::~QStatJobModel() {
    lFreeList(&ilp);
    lFreeList(&jlp);
 }

@@ -26,7 +26,7 @@
 namespace ocs {
    class QStatGroupViewPlain : public QStatGroupViewBase {
    public:
-      QStatGroupViewPlain(ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
+      explicit QStatGroupViewPlain(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
       ~QStatGroupViewPlain() override = default;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;

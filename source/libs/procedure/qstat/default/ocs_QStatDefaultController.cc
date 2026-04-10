@@ -76,7 +76,7 @@ void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
 }
 
 void
-ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    /* no need to iterate through queues if queues are not printed */
@@ -154,7 +154,7 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* ce
 }
 
 void
-ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    uint32_t jid = 0, old_jid;
    uint32_t jataskid = 0, old_jataskid;
@@ -291,7 +291,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
 
 void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
                     const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                    QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view)
+                    QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    uint32_t jstate;
@@ -823,7 +823,7 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
 
    lListElem *nxt, *jep, *jatep, *nxt_jatep;
    lList* ja_task_list = nullptr;
@@ -929,7 +929,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
 }
 
 
-void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, ocs::QStatParameter &parameter, ocs::QStatModelClient &model, ocs::QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
@@ -939,11 +939,13 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
          if (lGetUlong(jatep, JAT_status) == JFINISHED) {
             lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
 
-            if (!getenv("MORE_INFO"))
+            // @todo a switch would be better to enable this
+            if (parameter.get_variable("MORE_INFO") == nullptr) {
                continue;
+            }
 
-            if (!lGetNumberOfElem(parameter.get_user_list()) || (lGetNumberOfElem(parameter.get_user_list()) &&
-                  (lGetUlong(jatep, JAT_suitable)&TAG_SELECT_IT))) {
+            if (!lGetNumberOfElem(parameter.get_user_list()) ||
+                (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable) & TAG_SELECT_IT))) {
 
                if (count == 0) {
                   view.report_finished_jobs_started(os, parameter);
@@ -967,7 +969,7 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
 }
 
 
-void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
@@ -1000,7 +1002,7 @@ void ocs::QStatDefaultController::process_jobs_error_state(std::ostream &os, QSt
 
 void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master,
                                     int slots, int slot, int *count,
-                                    QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view)
+                                    QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view)
 {
    DENTER(TOP_LAYER);
    lList *range_list[16];         /* RN_Type */
@@ -1081,7 +1083,7 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, lL
 }
 
 void
-ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
@@ -1211,18 +1213,16 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view) {
+void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view) {
    DENTER(TOP_LAYER);
 
    model.calc_longest_queue_length(parameter);
 
    correct_capacities(model.get_exechost_list(), model.get_centry_list());
 
-   std::ostringstream oss;
+   view.report_started(out_);
 
-   view.report_started(oss);
-
-   process_queues_with_its_jobs(oss, parameter, model, view);
+   process_queues_with_its_jobs(out_, parameter, model, view);
 
    remove_tagged_jobs(model.get_job_list());
 
@@ -1231,13 +1231,11 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
       Job::sgeee_sort_jobs(model.get_job_list());
    }
 
-   process_jobs_pending_state(oss, parameter, model, view);
-   process_jobs_finished_state(oss, parameter, model, view);
-   process_jobs_error_state(oss, parameter, model, view);
+   process_jobs_pending_state(out_, parameter, model, view);
+   process_jobs_finished_state(out_, parameter, model, view);
+   process_jobs_error_state(out_, parameter, model, view);
 
-   view.report_finished(oss);
-
-   std::cout << oss.str();
+   view.report_finished(out_);
 
    DRETURN_VOID;
 }

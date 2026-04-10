@@ -58,8 +58,14 @@ ocs::ProcedureParameter::get_bundle() {
    lAddElemUlong(&output_format_list, ULNG_value, static_cast<uint32_t>(output_format_), ULNG_Type);
    ep = lAddElemStr(&bundle, SPP_name, OUTPUT_FORMAT, SPP_Type);
    lSetList(ep, SPP_value_list, output_format_list);
+   DPRINTF("output_format: %d\n", output_format_);
 
-   // exec_context can be ignored here. Its evaluated on client side only
+   // environment
+   ep = lAddElemStr(&bundle, SPP_name, ENVIRONMENT, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList("", env_variable_list_));
+   DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
+
+   // exec_context can be ignored here. It is evaluated on client side only
    DRETURN(bundle);
 }
 
@@ -85,6 +91,12 @@ void ocs::ProcedureParameter::set_bundle(const lList *bundle) {
    output_format_ = static_cast<OutputFormat>(lGetUlong(lFirst(output_format_list), ULNG_value));
    DPRINTF("output_format: %d\n", output_format_);
 
+   // environment
+   lListElem *env_param = lGetElemStrRW(bundle, SPP_name, ENVIRONMENT);
+   env_variable_list_ = nullptr;
+   lXchgList(env_param, SPP_value_list, &env_variable_list_);
+   DPRINTF("env_variable_list: " sge_u32 "\n", lGetNumberOfElem(env_variable_list_));
+
    DRETURN_VOID;
 }
 
@@ -100,4 +112,22 @@ std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
    const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE);
    return lGetString(sub_procedure_elem, VA_value);
+}
+
+void ocs::ProcedureParameter::add_variable(const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   lListElem *elem = lAddElemStr(&env_variable_list_, VA_variable, name, VA_Type);
+   if (value != nullptr) {
+      lSetString(elem, VA_value, value);
+   }
+   DRETURN_VOID;
+}
+
+const char *ocs::ProcedureParameter::get_variable(const char *name) const {
+   DENTER(TOP_LAYER);
+   const lListElem *elem = lGetElemStr(env_variable_list_, VA_variable, name);
+   if (elem == nullptr) {
+      DRETURN(nullptr);
+   }
+   DRETURN(lGetString(elem, VA_value));
 }

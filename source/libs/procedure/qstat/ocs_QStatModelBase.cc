@@ -124,38 +124,35 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
 }
 
 void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) const {
-
-   int name;
-   if (parameter.output_mode_== QStatParameter::OutputMode::QSTAT_GROUP) {
-      name = CQ_name;
-   } else {
-      name = QU_full_name;
+   const char *env = parameter.get_variable("SGE_LONG_QNAMES");
+   if (env == nullptr) {
+      return;
    }
 
-   // @todo Not available on server side
-   if (const char *env = getenv("SGE_LONG_QNAMES"); env != nullptr){
-      int queue_length;
-      try {
-         queue_length = std::stoi(env);
-      } catch (std::invalid_argument &e) {
-         queue_length = 30;
-      } catch (std::out_of_range &e) {
-         queue_length = 30;
-      }
-      if (queue_length == -1) {
-         for_each_ep_lv(qep, queue_list_) {
-            const char *queue_name = lGetString(qep, name);
-            if (const int length = static_cast<int>(strlen(queue_name)); length > parameter.get_longest_queue_length()){
-               queue_length = length;
-            }
-         }
-      } else {
-         if (queue_length < 10) {
-            queue_length = 10;
-         }
-      }
-      parameter.set_longest_queue_length(30);
+   // parse env value
+   int queue_length;
+   try {
+      queue_length = std::stoi(env);
+   } catch (std::invalid_argument &e) {
+      queue_length = 30;
+   } catch (std::out_of_range &e) {
+      queue_length = 30;
    }
+
+   // variable set but to -1 then find max length
+   if (queue_length == -1) {
+      const int name = parameter.output_mode_== QStatParameter::OutputMode::QSTAT_GROUP ?
+         static_cast<int>(CQ_name) : static_cast<int>(QU_full_name);
+      for_each_ep_lv(qep, queue_list_) {
+         queue_length = std::max(queue_length, static_cast<int>(strlen(lGetString(qep, name))));
+      }
+   }
+
+   // take a minimum of 10 characters
+   if (queue_length < 10) {
+      queue_length = 10;
+   }
+   parameter.set_longest_queue_length(queue_length);
 }
 
 lEnumeration *
@@ -668,7 +665,7 @@ bool ocs::QStatModelBase::fetch_data(lList **alpp, QStatParameter &parameter) {
    DRETURN(true);
 }
 
-bool ocs::QStatModelBase::prepare_data(lList **alpp) {
+bool ocs::QStatModelBase::prepare_data(lList **alpp, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    // has to be overridden by derived class
    DRETURN(true);
@@ -1365,7 +1362,7 @@ bool ocs::QStatModelBase::make_snapshot(lList **answer_list, QStatParameter &par
       DRETURN(false);
    }
 
-   if (!prepare_data(answer_list)) {
+   if (!prepare_data(answer_list, parameter)) {
       DRETURN(false);
    }
 

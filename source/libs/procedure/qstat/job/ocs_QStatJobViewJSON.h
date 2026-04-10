@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,25 +19,16 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "cull/cull.h"
-
-#include "qstat/ocs_QStatModelBase.h"
-#include "qstat/ocs_QStatParameter.h"
+#include "ocs_QStatJobViewBase.h"
+#include "ocs_QStatJobModel.h"
 
 namespace ocs {
-   class QStatJobModel : public QStatModelBase {
-   protected:
-      bool fetch_data(lList **alpp, QStatParameter &parameter) override;
-      bool prepare_data(lList **alpp, QStatParameter &parameter);
-   public:
-      lList* ilp = nullptr;
-      lList* jlp = nullptr;
+   class QStatJobViewJSON : public QStatJobViewBase {
+      public:
+         explicit QStatJobViewJSON(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {} ;
+         ~QStatJobViewJSON() override = default;
 
-      QStatJobModel() = default;
-      ~QStatJobModel() override;
-
-      bool make_snapshot(lList **answer_list, QStatParameter &parameter) override;
-
-      [[nodiscard]] bool is_manager() const { return is_manager_; }
+         void report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
+         void report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
    };
 }

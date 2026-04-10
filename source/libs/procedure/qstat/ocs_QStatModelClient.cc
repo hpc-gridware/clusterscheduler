@@ -226,7 +226,7 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
    DRETURN(true);
 }
 
-bool ocs::QStatModelClient::prepare_data(lList **answer_list) {
+bool ocs::QStatModelClient::prepare_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
 
    // init the sconf module

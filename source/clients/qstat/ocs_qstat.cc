@@ -73,6 +73,7 @@
 #include "procedure/qstat/ocs_QStatModelClient.h"
 
 #include "sig_handlers.h"
+#include "../../daemons/shepherd/builtin_starter.h"
 #include "qstat/ocs_QStatParameterClient.h"
 
 extern char **environ;
@@ -101,9 +102,19 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
-   std::ostringstream out_ss;
+   // fetch additional environment variables
+   auto long_qnames_name = "SGE_LONG_QNAMES";
+   if (const char *long_qnames_value = getenv(long_qnames_name); long_qnames_value != nullptr) {
+      parameter.add_variable(long_qnames_name, long_qnames_value);
+   }
+   auto more_info_name = "MORE_INFO";
+   if (const char *more_info_value = getenv(more_info_name); more_info_value != nullptr) {
+      parameter.add_variable(more_info_name, more_info_value);
+   }
+
 
    // start processing
+   std::ostringstream out_ss;
    switch (parameter.output_mode_) {
       case ocs::QStatParameter::OutputMode::JOB_INFO: {
          std::unique_ptr<ocs::QStatModelBase> model;
@@ -159,41 +170,71 @@ int main(int argc, char *argv[]) {
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_GROUP: {
-         std::unique_ptr<ocs::QStatModelBase> model;
-         model = std::make_unique<ocs::QStatModelClient>();
-         if (!model->make_snapshot(&answer_list, parameter)) {
-            answer_list_output(&answer_list);
-            sge_exit(1);
-         }
+         parameter.set_sub_procedure_name(ocs::QStatParameter::CQ_FORMAT);
 
-         std::unique_ptr<ocs::QStatGroupViewBase> view;
-         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
-            view = std::make_unique<ocs::QStatGroupViewXML>(parameter);
+         if (parameter.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+            // prepare data for output
+            ocs::ProcedureModel model;
+            if (!model.make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
+
+            ocs::ProcedureView view(parameter);
+            ocs::ProcedureController controller(out_ss);
+            controller.process_request(parameter, model, view);
          } else {
-            view = std::make_unique<ocs::QStatGroupViewPlain>(parameter);
-         }
+            std::unique_ptr<ocs::QStatModelBase> model;
+            model = std::make_unique<ocs::QStatModelClient>();
+            if (!model->make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
 
-         ocs::QStatGroupController controller(out_ss);
-         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+            std::unique_ptr<ocs::QStatGroupViewBase> view;
+            if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
+               view = std::make_unique<ocs::QStatGroupViewXML>(parameter);
+            } else {
+               view = std::make_unique<ocs::QStatGroupViewPlain>(parameter);
+            }
+
+            ocs::QStatGroupController controller(out_ss);
+            controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+         }
          break;
       }
       case ocs::QStatParameter::OutputMode::QSTAT_DEFAULT: {
-         std::unique_ptr<ocs::QStatModelBase> model;
-         model = std::make_unique<ocs::QStatModelClient>();
-         if (!model->make_snapshot(&answer_list, parameter)) {
-            answer_list_output(&answer_list);
-            sge_exit(1);
-         }
+         parameter.set_sub_procedure_name(ocs::QStatParameter::DEFAULT_FORMAT);
 
-         std::unique_ptr<ocs::QStatDefaultViewBase> view;
-         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
-            view = std::make_unique<ocs::QStatDefaultViewXML>(parameter);
+         if (parameter.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+            // prepare data for output
+            ocs::ProcedureModel model;
+            if (!model.make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
+
+            ocs::ProcedureView view(parameter);
+            ocs::ProcedureController controller(out_ss);
+            controller.process_request(parameter, model, view);
          } else {
-            view = std::make_unique<ocs::QStatDefaultViewPlain>(parameter);
-         }
+            std::unique_ptr<ocs::QStatModelBase> model;
+            model = std::make_unique<ocs::QStatModelClient>();
+            if (!model->make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
 
-         ocs::QStatDefaultController controller(out_ss);
-         controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+            std::unique_ptr<ocs::QStatDefaultViewBase> view;
+            if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
+               view = std::make_unique<ocs::QStatDefaultViewXML>(parameter);
+            } else {
+               view = std::make_unique<ocs::QStatDefaultViewPlain>(parameter);
+            }
+
+            ocs::QStatDefaultController controller(out_ss);
+            controller.process_request(parameter, dynamic_cast<ocs::QStatModelClient &>(*model), *view);
+         }
          break;
       }
          // no default, to get compiler warning if a new output mode is added but not handled here

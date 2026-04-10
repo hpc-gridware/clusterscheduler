@@ -64,11 +64,13 @@ set(LIBRARY_SOURCES
         qstat/default/ocs_QStatDefaultViewBase.cc
         qstat/default/ocs_QStatDefaultViewPlain.cc
         qstat/default/ocs_QStatDefaultViewXML.cc
+        qstat/default/ocs_QStatDefaultViewJSON.cc
 
         qstat/group/ocs_QStatGroupController.cc
         qstat/group/ocs_QStatGroupViewBase.cc
         qstat/group/ocs_QStatGroupViewPlain.cc
         qstat/group/ocs_QStatGroupViewXML.cc
+        qstat/group/ocs_QStatGroupViewJSON.cc
 
         qstat/select/ocs_QStatSelectController.cc
         qstat/select/ocs_QStatSelectViewBase.cc
@@ -76,11 +78,12 @@ set(LIBRARY_SOURCES
         qstat/select/ocs_QStatSelectViewXML.cc
         qstat/select/ocs_QStatSelectViewJSON.cc
 
+        qstat/job/ocs_QStatJobController.cc
         qstat/job/ocs_QStatJobModel.cc
         qstat/job/ocs_QStatJobViewBase.cc
         qstat/job/ocs_QStatJobViewPlain.cc
         qstat/job/ocs_QStatJobViewXML.cc
-        qstat/job/ocs_QStatJobController.cc
+        qstat/job/ocs_QStatJobViewJSON.cc
 
         qstat/ocs_QStatModelBase.cc
         qstat/ocs_QStatModelClient.cc

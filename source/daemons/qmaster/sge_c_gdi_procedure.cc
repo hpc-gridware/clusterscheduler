@@ -51,15 +51,33 @@
 #include "procedure/qrstat/ocs_QRStatViewPlain.h"
 #include "procedure/qrstat/ocs_QRStatViewXML.h"
 
-#include "sge_c_gdi_procedure.h"
+#include "qstat/default/ocs_QStatDefaultController.h"
+#include "qstat/default/ocs_QStatDefaultViewBase.h"
+#include "qstat/default/ocs_QStatDefaultViewJSON.h"
+#include "qstat/default/ocs_QStatDefaultViewPlain.h"
+#include "qstat/default/ocs_QStatDefaultViewXML.h"
 
-#include "qstat/ocs_QStatModelServer.h"
-#include "qstat/ocs_QStatParameter.h"
+#include "qstat/group/ocs_QStatGroupController.h"
+#include "qstat/group/ocs_QStatGroupViewBase.h"
+#include "qstat/group/ocs_QStatGroupViewJSON.h"
+#include "qstat/group/ocs_QStatGroupViewPlain.h"
+#include "qstat/group/ocs_QStatGroupViewXML.h"
+
+#include "qstat/job/ocs_QStatJobController.h"
+#include "qstat/job/ocs_QStatJobViewBase.h"
+#include "qstat/job/ocs_QStatJobViewJSON.h"
+#include "qstat/job/ocs_QStatJobViewPlain.h"
+#include "qstat/job/ocs_QStatJobViewXML.h"
+
 #include "qstat/select/ocs_QStatSelectController.h"
 #include "qstat/select/ocs_QStatSelectViewBase.h"
 #include "qstat/select/ocs_QStatSelectViewJSON.h"
 #include "qstat/select/ocs_QStatSelectViewPlain.h"
 #include "qstat/select/ocs_QStatSelectViewXML.h"
+
+#include "qstat/ocs_QStatModelServer.h"
+#include "qstat/ocs_QStatParameter.h"
+#include "sge_c_gdi_procedure.h"
 
 namespace {
    struct QHostTraits {
@@ -146,6 +164,69 @@ namespace {
       }
    };
 
+   struct QStatCQFormatTraits {
+      using Parameter = ocs::QStatParameter;
+      using Model = ocs::QStatModelServer;
+      using ViewBase = ocs::QStatGroupViewBase;
+      using Controller = ocs::QStatGroupController;
+
+      static constexpr ProgName prog_number = QSTAT;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatGroupViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatGroupViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatGroupViewJSON>(parameter);
+      }
+   };
+
+   struct QStatDefaultTraits {
+      using Parameter = ocs::QStatParameter;
+      using Model = ocs::QStatModelServer;
+      using ViewBase = ocs::QStatDefaultViewBase;
+      using Controller = ocs::QStatDefaultController;
+
+      static constexpr ProgName prog_number = QSTAT;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatDefaultViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatDefaultViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatDefaultViewJSON>(parameter);
+      }
+   };
+
+   struct QStatJobTraits {
+      using Parameter = ocs::QStatParameter;
+      using Model = ocs::QStatModelServer;
+      using ViewBase = ocs::QStatJobViewBase;
+      using Controller = ocs::QStatJobController;
+
+      static constexpr ProgName prog_number = QSTAT;
+
+      static std::unique_ptr<ViewBase> make_xml_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatJobViewXML>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_plain_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatJobViewPlain>(parameter);
+      }
+
+      static std::unique_ptr<ViewBase> make_json_view(const Parameter &parameter) {
+         return std::make_unique<ocs::QStatJobViewJSON>(parameter);
+      }
+   };
+
    template<typename Traits>
    void exec_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os) {
       DENTER(TOP_LAYER);
@@ -229,12 +310,15 @@ namespace {
       ProcedureHandler handler;
    };
 
-   constexpr std::array<ProcedureDispatchEntry, 4> procedure_dispatch_table{
+   constexpr std::array<ProcedureDispatchEntry, 7> procedure_dispatch_table{
       {
          {to_string_view(QHOST), "",  &run_procedure<QHostTraits>},
          {to_string_view(QQUOTA), "",  &run_procedure<QQuotaTraits>},
          {to_string_view(QRSTAT), "", &run_procedure<QRStatTraits>},
-         {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>}
+         {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>},
+         {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, &run_procedure<QStatDefaultTraits>},
+         {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, &run_procedure<QStatCQFormatTraits>},
+         {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatSelectTraits>},
       }
    };
 } // namespace

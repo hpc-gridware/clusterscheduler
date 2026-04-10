@@ -29,19 +29,19 @@ namespace ocs {
 
       void remove_tagged_jobs(lList *job_list);
 
-      void process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
-      void process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
-      void process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
+      void process_queues_with_its_jobs(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_queue(std::ostream &os, lListElem *queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_jobs_in_queue(std::ostream &os, lListElem *queue, bool print_jobs_of_queue, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
 
-      void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
-      void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
-      void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
+      void process_jobs_pending_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_jobs_finished_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
+      void process_jobs_error_state(std::ostream &os, QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
       void process_jobs_not_enrolled(std::ostream &os, lListElem *job, bool print_jobid, char *master, int slots, int slot, int *count,
-                                     QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
+                                     QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
 
       void process_job(std::ostream &os, lListElem *job, lListElem *jatep, lListElem *qep, lListElem *gdil_ep, bool print_jobid,
                        const char *master, dstring *dyn_task_str, int slots, int slot, int slots_per_line,
-                       QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
+                       QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
       void process_subtask(std::ostream &os, lListElem *job, lListElem *ja_task, lListElem *pe_task, QStatDefaultViewBase &view);
       void process_resources(std::ostream &os, const lList* cel, lList* centry_list, int slots, int scope, bool is_hard_resource, QStatDefaultViewBase &view);
 
@@ -52,6 +52,6 @@ namespace ocs {
 
       ~QStatDefaultController() = default;
 
-      void process_request(QStatParameter &parameter, QStatModelClient &model, QStatDefaultViewBase &view);
+      void process_request(QStatParameter &parameter, QStatModelBase &model, QStatDefaultViewBase &view);
    };
 }

@@ -68,7 +68,7 @@ namespace ocs {
       // endregion
 
       // region Job handling
-      void report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelClient &model) override;
+      void report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) override;
       void report_sub_tasks_started(std::ostream &os) override;
       void report_sub_task(std::ostream &os, task_summary_t *summary) override;
       void report_sub_tasks_finished(std::ostream &os) override;

@@ -20,13 +20,14 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <ostream>
+#include <cinttypes>
 
 #include "qstat/ocs_QStatParameter.h"
 
 #include "ocs_ProcedureView.h"
 
 namespace ocs {
-   class QStatGroupViewBase : ProcedureView {
+   class QStatGroupViewBase : public ProcedureView {
    public:
       struct Summary {
          double load;
@@ -48,7 +49,7 @@ namespace ocs {
          uint32_t orphaned, error;
       };
 
-      QStatGroupViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {} ;
+      explicit QStatGroupViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {} ;
       ~QStatGroupViewBase() override = default;
 
       virtual void report_started(std::ostream &os, QStatParameter &parameter) = 0;

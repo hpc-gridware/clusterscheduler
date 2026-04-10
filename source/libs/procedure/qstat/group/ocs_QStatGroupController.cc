@@ -140,15 +140,13 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
 }
 
 
-void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelClient &model, QStatGroupViewBase &view) {
+void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatGroupViewBase &view) {
    DENTER(TOP_LAYER);
-
-   std::ostringstream oss;
 
    model.calc_longest_queue_length(parameter);
    correct_capacities(model.get_exechost_list(), model.get_centry_list());
 
-   view.report_started(oss, parameter);
+   view.report_started(out_, parameter);
 
    for_each_ep_lv(cqueue, model.get_queue_list()) {
       if (lGetUlong(cqueue, CQ_tag) != TAG_DEFAULT) {
@@ -177,13 +175,11 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
                                   &(summary.temp_disabled),
                                   &(summary.manual_intervention));
 
-         view.report_cqueue(oss, lGetString(cqueue, CQ_name), &summary, parameter);
+         view.report_cqueue(out_, lGetString(cqueue, CQ_name), &summary, parameter);
       }
    }
 
-   view.report_finished(oss, parameter);
-
-   std::cout << oss.str();
+   view.report_finished(out_, parameter);
 
    DRETURN_VOID;
 }

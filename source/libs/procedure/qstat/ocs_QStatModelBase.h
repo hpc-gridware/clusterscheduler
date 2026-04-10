@@ -98,7 +98,7 @@ namespace ocs {
    protected:
       virtual void prepare_filter(QStatParameter &parameter);
       virtual bool fetch_data(lList **answer_list, QStatParameter &parameter);
-      virtual bool prepare_data(lList **answer_list);
+      virtual bool prepare_data(lList **answer_list, QStatParameter &parameter);
       virtual bool filter_data(lList **answer_list, QStatParameter &parameter);
 
    public:

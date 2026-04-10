@@ -42,6 +42,6 @@ namespace ocs {
 
       virtual ~QStatGroupController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatModelClient &model, QStatGroupViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatModelBase &model, QStatGroupViewBase &view);
    };
 }

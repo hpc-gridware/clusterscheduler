@@ -31,7 +31,7 @@
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_ulong.h"
 
-#include "qstat/default/ocs_QStatDefaultViewPlain.h"
+#include "qstat/default/ocs_QStatDefaultViewJSON.h"
 #include "qstat/msg_qstat.h"
 
 #include "msg_clients_common.h"
@@ -60,7 +60,7 @@ static char jhul5[] = "---------------------------------------------------------
 static char jhul6[] = "-----------------------------------";
 #endif
 
-void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
+void ocs::QStatDefaultViewJSON::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
    DENTER(TOP_LAYER);
    const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED);
    const auto line = std::string(sge_ext ? 165 : 81, '#');
@@ -76,13 +76,13 @@ void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const 
 }
 
 
-void ocs::QStatDefaultViewPlain::report_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_started(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
+void ocs::QStatDefaultViewJSON::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
    const int sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
@@ -145,40 +145,40 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_jobs_started(std::ostream &os, const char *qname) {
+void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_jobs_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_queue_jobs_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason)
+void ocs::QStatDefaultViewJSON::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason)
 {
    DENTER(TOP_LAYER);
    os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason)
+void ocs::QStatDefaultViewJSON::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason)
 {
    DENTER(TOP_LAYER);
    os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_message(std::ostream &os, const char* qname, const char *message)
+void ocs::QStatDefaultViewJSON::report_queue_message(std::ostream &os, const char* qname, const char *message)
 {
    DENTER(TOP_LAYER);
    os << "\t" << (message != nullptr ? message : "no queue message given") << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const char* dom,
+void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const char* dom,
                                        const char* name, const char* value, const char *details)
 {
    DENTER(TOP_LAYER);
@@ -192,7 +192,7 @@ void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const c
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter)
+void ocs::QStatDefaultViewJSON::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
 
@@ -205,10 +205,10 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, Q
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_pending_jobs_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_pending_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    static bool finished_header_printed = false;
    if (!finished_header_printed) {
@@ -218,10 +218,10 @@ void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_finished_jobs_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_finished_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_error_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    static bool error_header_printed = false;
    if (!error_header_printed) {
@@ -230,10 +230,10 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QSt
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_error_jobs_finished(std::ostream &os) {
 }
 
-void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
+void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
    bool print_job_id;
@@ -507,7 +507,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os)
+void ocs::QStatDefaultViewJSON::report_sub_tasks_started(std::ostream &os)
 {
    DENTER(TOP_LAYER);
 
@@ -516,7 +516,7 @@ void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_t *summary) {
+void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
 
    os << std::format("{:>16} ", summary->task_id ? summary->task_id : "x");
@@ -551,13 +551,13 @@ void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_tasks_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_sub_tasks_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value) {
+void ocs::QStatDefaultViewJSON::show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value) {
    DENTER(TOP_LAYER);
 
    const char *name_str = nullptr;
@@ -589,13 +589,13 @@ void ocs::QStatDefaultViewPlain::show_header_with_subtitle(std::ostream &os, job
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
+void ocs::QStatDefaultViewJSON::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
    DENTER(TOP_LAYER);
    show_header_with_subtitle(os, REQUESTED_PE, pe_name, pe_range);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
+void ocs::QStatDefaultViewJSON::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
    DENTER(TOP_LAYER);
    std::ostringstream ss_slots;
    ss_slots << pe_slots;
@@ -603,20 +603,20 @@ void ocs::QStatDefaultViewPlain::report_granted_pe(std::ostream &os, const char*
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
+void ocs::QStatDefaultViewJSON::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
    DENTER(TOP_LAYER);
    show_header_with_subtitle(os, name, value, nullptr);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_request(std::ostream &os, const char *name, const char *value) {
+void ocs::QStatDefaultViewJSON::report_request(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
    os << std::format("\t{}={} (default)\n", name, value);
    DRETURN_VOID;
 }
 
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
+void ocs::QStatDefaultViewJSON::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
 
    if (hard_requested_queue_count > 0) {
@@ -629,13 +629,13 @@ void ocs::QStatDefaultViewPlain::report_hard_requested_queue(std::ostream &os, i
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queues_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_hard_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard) {
+void ocs::QStatDefaultViewJSON::show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard) {
    DENTER(TOP_LAYER);
 
    switch(scope) {
@@ -692,14 +692,14 @@ void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &o
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_requested_queues_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_hard_requested_queues_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
    show_queues_or_resource_started(os, scope,true,true);
    hard_requested_queue_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queues_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_soft_requested_queues_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
 
    show_queues_or_resource_started(os, scope, true, false);
@@ -707,21 +707,21 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_started(std::ostre
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_resources_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_hard_resources_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
    show_queues_or_resource_started(os, scope, false, true);
    hard_resource_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_resources_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_soft_resources_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
    show_queues_or_resource_started(os, scope, false, false);
    soft_resource_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
+void ocs::QStatDefaultViewJSON::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
 
    if (soft_requested_queue_count > 0) {
@@ -734,7 +734,7 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queue(std::ostream &os, i
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_soft_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
@@ -742,7 +742,7 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostr
 
 
 
-void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
       os << std::format("\t{:<36.36} ", " ");
@@ -752,7 +752,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scop
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_hard_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (hard_resource_count == 0) {
       os << "\n";
@@ -761,7 +761,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os
 }
 
 
-void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (soft_resource_count > 0 ) {
       os << std::format("\t{:<36.36} ", " ");
@@ -771,7 +771,7 @@ void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scop
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_soft_resources_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_soft_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    if (soft_resource_count == 0) {
       os << "\n";
@@ -779,14 +779,14 @@ void ocs::QStatDefaultViewPlain::report_soft_resources_finished(std::ostream &os
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_requested_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << std::format("\t{:<36.36} ", "Predecessor Jobs (request):");
    predecessor_requested_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessor_requested(std::ostream &os, const char *name) {
+void ocs::QStatDefaultViewJSON::report_predecessor_requested(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    if (predecessor_requested_count > 0 ) {
       os << ", " << name;
@@ -797,20 +797,20 @@ void ocs::QStatDefaultViewPlain::report_predecessor_requested(std::ostream &os, 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_requested_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << std::format("\t{:<36.36} ", "Predecessor Jobs:");
    predecessor_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessor(std::ostream &os, uint32_t jid) {
+void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
    if (predecessor_count > 0 ) {
       os << ", " << jid;
@@ -821,20 +821,20 @@ void ocs::QStatDefaultViewPlain::report_predecessor(std::ostream &os, uint32_t j
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_predecessors_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << std::format("\t{:<36.36} ", "Predecessor Array Jobs (request):");
    ad_predecessor_requested_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(std::ostream &os, const char *name) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessor_requested(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    if (ad_predecessor_requested_count > 0) {
       os << ", " << name;
@@ -845,20 +845,20 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(std::ostream &o
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << std::format("\t{:<36.36} ", "Predecessor Array Jobs:");
    ad_predecessor_count = 0;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessor(std::ostream &os, uint32_t jid) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
    if (ad_predecessor_count > 0) {
       os << ", " << jid;
@@ -869,31 +869,31 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor(std::ostream &os, uint32_
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_ad_predecessors_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding_started(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_binding_started(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << std::format("\t{:<36.36} ", "Binding:");
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding(std::ostream &os, const char *binding) {
+void ocs::QStatDefaultViewJSON::report_binding(std::ostream &os, const char *binding) {
    DENTER(TOP_LAYER);
    os << binding;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding_finished(std::ostream &os) {
+void ocs::QStatDefaultViewJSON::report_binding_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_job_finished(std::ostream &os, u_int jid) {
+void ocs::QStatDefaultViewJSON::report_job_finished(std::ostream &os, u_int jid) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }

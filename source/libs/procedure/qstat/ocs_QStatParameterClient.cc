@@ -116,11 +116,6 @@ ocs::QStatParameterClient::qstat_usage(FILE *fp, char *what)
          fprintf(fp, "        [-pri]                            %s\n",MSG_QSTAT_PRIORITYINFO );
       }
 
-      if (getenv("MORE_INFO")) {
-         fprintf(fp, SFNMAX"\n", MSG_QSTAT_USAGE_ADDITIONALDEBUGGINGOPTIONS);
-         fprintf(fp, "        [-dj]                             %s\n",MSG_QSTAT_USAGE_DUMPCOMPLETEJOBLISTTOSTDOUT);
-         fprintf(fp, "        [-dq]                             %s\n",MSG_QSTAT_USAGE_DUMPCOMPLETEQUEUELISTTOSTDOUT);
-      }
       fprintf(fp, "\n");
       fprintf(fp, "pe_list                  pe[,pe,...]\n");
       fprintf(fp, "job_identifier_list      [job_id|job_name|pattern]{, [job_id|job_name|pattern]}\n");
@@ -242,21 +237,6 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdlin
       /* -pe */
       if ((rp = parse_until_next_opt(sp, "-pe", nullptr, ppcmdline, answer_list)) != sp)
          continue;
-
-      /*
-      ** Two additional flags only if MORE_INFO is set:
-      ** -dj   dump jobs:  displays full global_job_list
-      ** -dq   dump queue: displays full global_queue_list
-      */
-      if (getenv("MORE_INFO")) {
-         /* -dj */
-         if ((rp = parse_noopt(sp, "-dj", nullptr, ppcmdline, answer_list)) != sp)
-            continue;
-
-         /* -dq */
-         if ((rp = parse_noopt(sp, "-dq", nullptr, ppcmdline, answer_list)) != sp)
-            continue;
-      }
 
       /* oops */
       snprintf(str, sizeof(str), MSG_ANSWER_INVALIDOPTIONARGX_S, *sp);

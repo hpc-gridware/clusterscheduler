@@ -33,6 +33,15 @@
 namespace ocs {
    class QStatParameter : public ProcedureParameter {
 
+#pragma region Constants
+
+   public:
+      static constexpr auto CQ_FORMAT = "cluster-queue-format";
+      static constexpr auto DEFAULT_FORMAT = "default-format";
+      static constexpr auto JOB_FORMAT = "job-format";
+
+#pragma endregion
+
 #pragma region Procedure Parameter
 
    private:

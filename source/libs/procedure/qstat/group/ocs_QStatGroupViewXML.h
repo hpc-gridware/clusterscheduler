@@ -27,7 +27,7 @@ namespace ocs {
    class QStatGroupViewXML : public QStatGroupViewBase {
       lList *xml_elems = nullptr;
    public:
-      explicit QStatGroupViewXML(ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
+      explicit QStatGroupViewXML(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
       ~QStatGroupViewXML() override = default;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;

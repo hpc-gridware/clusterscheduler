@@ -19,29 +19,41 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <ostream>
+#include <cinttypes>
+
+#include "uti/sge_dstring.h"
 
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {
-   class QStatDefaultViewXML : public QStatDefaultViewBase {
-      lListElem *queue_list_elem = nullptr;
-      lListElem *queue_elem = nullptr;
+   class QStatDefaultViewJSON : public QStatDefaultViewBase {
+      bool  header_printed = false;
+      bool  job_header_printed = false;
 
-      lListElem *job_list_elem = nullptr;
-      lList     *job_list = nullptr;
-      lListElem *job_elem = nullptr;
+      /* id of the last reported job */
+      uint32_t last_job_id = 0;
+      dstring  last_queue_name = DSTRING_INIT;
 
+      int  sub_task_count = 0;
+      int  hard_resource_count = 0;
+      int  soft_resource_count = 0;
+      int  hard_requested_queue_count = 0;
+      int  soft_requested_queue_count = 0;
+      int  predecessor_requested_count = 0;
+      int  predecessor_count = 0;
+      int  ad_predecessor_requested_count = 0;
+      int  ad_predecessor_count = 0;
 
-      void qstat_xml_create_job_list();
-      void qstat_xml_finish_job_list(const char* state, lList* target_list);
+      void show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title);
+      void show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value);
+      void show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard);
    public:
-      explicit QStatDefaultViewXML(const ProcedureParameter& parameter) : QStatDefaultViewBase(parameter) {};
-      ~QStatDefaultViewXML() override = default;
+      explicit QStatDefaultViewJSON(const ProcedureParameter &parameter) : QStatDefaultViewBase(parameter) {};
+      ~QStatDefaultViewJSON() override = default;
 
+      // region General report handling
       void report_started(std::ostream &os) override;
       void report_finished(std::ostream &os) override;
-
       void report_queue_summary(std::ostream &os, const char* qname,  queue_summary_t *summary, QStatParameter &parameter) override;
       void report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) override;
       void report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason) override;
@@ -57,6 +69,7 @@ namespace ocs {
       void report_finished_jobs_finished(std::ostream &os) override;
       void report_error_jobs_started(std::ostream &os, QStatParameter &parameter) override;
       void report_error_jobs_finished(std::ostream &os) override;
+      // endregion
 
       // region Job handling
       void report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) override;
@@ -96,5 +109,6 @@ namespace ocs {
       void report_binding_finished(std::ostream &os) override;
       void report_job_finished(std::ostream &os, uint32_t jid) override;
       // endregion
+
    };
 }
