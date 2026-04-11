@@ -28,14 +28,14 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
 typedef int (*tShepherd_trace)(const char *format, ...); 
 
-extern int foreground;      /* != 0 if we can write to stderr/out     */
+extern bool foreground; // make shepherd_trace() write to both trace file and stdout for debugging
 
 void shepherd_trace_init();
 void shepherd_trace_exit();
@@ -50,5 +50,6 @@ void shepherd_error(int do_exit, const char *format, ...);
 void shepherd_error_ptr(const char *text);
 void shepherd_write_exit_status( const char *exit_status );
 
-int  is_shepherd_trace_fd( int fd );
-int  count_exit_status();
+int get_shepherd_trace_fp();
+int is_shepherd_trace_fd(int fd);
+int count_exit_status();

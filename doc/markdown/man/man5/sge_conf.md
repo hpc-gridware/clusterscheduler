@@ -613,6 +613,19 @@ Changing *shepherd_cmd* will take immediate effect. The default for *shepherd_cm
 
 The global configuration entry for this value may be overwritten by the execution host local configuration.
 
+In a shepherd wrapper make sure to call the actual shepherd binary with the same arguments as the wrapper, e.g.,
+
+```bash
+#!/bin/sh
+
+ARCH=`$SGE_ROOT/util/arch`
+SHEPHERD="$SGE_ROOT/bin/$ARCH/sge_shepherd"
+
+# Do the shepherd wrapper specific actions here.
+
+exec "$SHEPHERD" "$@"
+```
+
 ## gid_range
 
 The *gid_range* is a comma separated list of range expressions of the form n-m (n as well as m are integer numbers 

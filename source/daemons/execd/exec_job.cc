@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -2000,7 +2000,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
-         execlp(shepherd_cmd, ps_name, nullptr);
+         if (ISTRACE) {
+            execlp(shepherd_cmd, ps_name, nullptr);
+         } else {
+            execl(shepherd_cmd, ps_name, "-bg", nullptr);
+         }
       } else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
          DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
                  lGetString(jep, JB_job_name),
@@ -2012,10 +2016,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
                  lGetString(jep, JB_job_name),
                  lGetString(master_q, QU_full_name));
 
-         if (ISTRACE)
+         if (ISTRACE) {
             execlp(shepherd_path, ps_name, nullptr);
-         else
+         } else {
             execlp(shepherd_path, ps_name, "-bg", nullptr);
+         }
       } else {
          char commandline[2048];
 

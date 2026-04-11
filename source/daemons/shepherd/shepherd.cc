@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -311,19 +311,19 @@ static int wait_until_parent_has_registered_to_server(int fd_pipe_to_child[])
    SIGIGNORE(SIGWINCH);
 
    /* close parents end of our copy of the pipe */
-   shepherd_trace("child: closing parents end of the pipe_to_child");
+   shepherd_trace("child: closing parent side ends of pipes: %d", fd_pipe_to_child[1]);
    close(fd_pipe_to_child[1]);
    fd_pipe_to_child[1] = -1;
 
    /* wait until parent has registered at the server */
-   shepherd_trace("child: trying to read from parent through the pipe_to_child");
+   shepherd_trace("child: trying to read from parent through the pipe_to_child[0] = %d", fd_pipe_to_child[0]);
    ret = read(fd_pipe_to_child[0], tmpbuf, 11);
    if (ret <= 0) {
-      shepherd_trace("child: error communicating with parent: %d, %s",
-                     errno, strerror(errno));
+      shepherd_trace("child: error communicating with parent: %d, %s", errno, strerror(errno));
       ret = -1;
    } else {
       /* close other side of our copy of the pipe */
+      shepherd_trace("child: closing child side ends of pipes: %d", fd_pipe_to_child[0]);
       close(fd_pipe_to_child[0]);
       fd_pipe_to_child[0] = -1;
       shepherd_trace("child: parent sent us '%s'", tmpbuf);
@@ -709,8 +709,8 @@ int main(int argc, char **argv)
       shepherd_error(1, "can't read cwd - getcwd failed: %s", strerror(errno));
    }
 
-   if (argc >= 2 && !strcmp("-bg", argv[1])) {
-      foreground = 0;   /* no output to stderr */
+   if (argc >= 2 && strcmp("-bg", argv[1]) == 0) {
+      foreground = false;   // no shepherd_trace() output to stdout
    }
 
    set_shepherd_signal_mask();
@@ -1138,8 +1138,14 @@ static int start_child(
          }
       }
 
-      if (pid==0) { /* child */
+      if (pid == 0) { // child
          if (g_new_interactive_job_support && is_interactive) {
+            // When we are running a builtin interactive job, in foreground mode shepherd_trace() would
+            // print the messages to stdout which is redirected to a pipe to the shepherd parent.
+            // The output would then be forwarded to the qrsh client.
+            // Disable foreground mode.
+            foreground = false;
+
             // Why do we wait until the connection to qrsh is up?
             // To avoid starting the job when the qrsh client has terminated in the meantime?
             ret = wait_until_parent_has_registered_to_server(fd_pipe_to_child);
@@ -1393,9 +1399,7 @@ static int start_child(
       }
 
       /******* write usage to file "usage" ************/
-      shepherd_write_usage_file(wait_status, exit_status,
-                                child_signal, start_time,
-                                end_time, &rusage);
+      shepherd_write_usage_file(wait_status, exit_status, child_signal, start_time, end_time, &rusage);
 
       /* this is SEMPA stuff */
       notify_tasker(exit_status);
@@ -1537,9 +1541,6 @@ dstring       *dstr_error       /* OUT: error message - if any */
    int     ret;
    int     remote_port  = 0;
    int     exit_status  = -1;
-
-   /* close child's end of the pipe */
-   shepherd_trace("parent: closing child's end of the pipe");
 
    /* read destination host and port from config */
    ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, dstr_error);
@@ -2774,6 +2775,8 @@ static int start_async_command(const char *descr, char *cmd)
    if ((pid = fork()) == -1) {
       shepherd_trace("can't fork for starting %s command", descr);
    } else if (pid == 0) {
+      foreground = false;
+
       int use_qsub_gid;
       gid_t gid;
       char *tmp_str;
@@ -2817,8 +2820,6 @@ static int start_async_command(const char *descr, char *cmd)
          shepherd_trace("error opening std* file descriptor %d", failed_fd);
          exit(1);
       }
-
-      foreground = 0;
 
       cwd = get_conf_val("cwd");
       if (sge_chdir(cwd)) {
