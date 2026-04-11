@@ -2003,7 +2003,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          if (ISTRACE) {
             execlp(shepherd_cmd, ps_name, nullptr);
          } else {
-            execl(shepherd_cmd, ps_name, "-bg", nullptr);
+            execlp(shepherd_cmd, ps_name, "-bg", nullptr);
          }
       } else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
          DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
