@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -90,7 +90,7 @@ static pthread_mutex_t g_trace_mutex;
 extern pid_t coshepherd_pid;
 extern int   shepherd_state;  /* holds exit status for shepherd_error() */
 extern bool  g_new_interactive_job_support;
-int foreground = 1;           /* usability of stderr/out */
+bool foreground = true; // make shepherd_trace() write to both trace file and stdout for debugging
 
 /* Forward declaration of static functions */
 
@@ -327,8 +327,7 @@ int shepherd_trace(const char *format, ...)
          sge_dstring_vsprintf(&message, format, ap);
          va_end(ap);
 
-   	 ret = sh_str2file(header_str, sge_dstring_get_string(&message), 
-                           shepherd_trace_fp);
+      	ret = sh_str2file(header_str, sge_dstring_get_string(&message), shepherd_trace_fp);
 
          if (foreground) {
             printf("%s%s\n", header_str, sge_dstring_get_string(&message));
@@ -545,6 +544,10 @@ int is_shepherd_trace_fd(int fd)
    } else {
       return 0;
    }
+}
+
+int get_shepherd_trace_fp() {
+	return fileno(shepherd_trace_fp);
 }
 
 /****** count_exit_status *****************************************************
@@ -814,7 +817,7 @@ static FILE* shepherd_trace_init_intern(st_shepherd_file_t shepherd_file)
 		return nullptr;
 	}
 
-	/* To avoid to block stdin, stdout or stderr, dup the fd until it is >= 3 */
+	/* To avoid blocking stdin, stdout or stderr, dup the fd until it is >= 3 */
 	if (fd<3) {
 		dup_fd(&fd);
 	}

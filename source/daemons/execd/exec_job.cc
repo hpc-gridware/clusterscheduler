@@ -1,33 +1,33 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -135,22 +135,22 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem);
 #endif
 
 #if defined(BINDING_SOLARIS)
-/* creates string with processor set id created here which is then written 
+/* creates string with processor set id created here which is then written
    to "config" file */
 static bool create_binding_strategy_string_solaris(dstring* result,
-   lListElem *jep, char* err_str, int err_length, char** env, 
+   lListElem *jep, char* err_str, int err_length, char** env,
    char** rankfileinput);
 
 /* do linear (automatic) binding on solaris */
 static bool linear_automatic_solaris(dstring* result, const lListElem* binding_elem,
                char** env);
 
-/* do striding binding on solaris */   
+/* do striding binding on solaris */
 static bool striding_solaris(dstring* result, const lListElem* binding_elem,
-   const bool automatic, const bool do_linear, char* err_str, int err_length, 
+   const bool automatic, const bool do_linear, char* err_str, int err_length,
    char** env);
 
-/* do explicit binding on solaris */   
+/* do explicit binding on solaris */
 static bool explicit_solaris(dstring* result, const lListElem* binding_elem,
                               char* err_str, int err_length, char** env);
 #endif
@@ -174,7 +174,7 @@ static long get_next_addgrpid(lList *, long);
 #endif
 #endif
 
-/* 
+/*
    in case of regular jobs the queue is the first entry in the gdil list of the job
    in case of tasks the queue is the appropriate entry in the gdil list of the slave job
 */
@@ -326,7 +326,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
  part of execd. Setup job environment then start shepherd.
 
  If we encounter an error we return an error
- return -1==error 
+ return -1==error
         -2==general error (Halt queue)
         -3==general error (Halt job)
         err_str set to error string
@@ -514,10 +514,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          line in the "config" file */
       create_binding_strategy_string_linux(&core_binding_strategy_string, jep,
                                            &rankfileinput);
- 
+
       if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
             && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
-         
+
          INFO("core binding: %s", sge_dstring_get_string(&core_binding_strategy_string));
 
          /* add to job report */
@@ -534,33 +534,33 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_dstring_free(&pseudo_usage);
 #elif defined(BINDING_SOLARIS)
 
-      /* try to create processor set according to binding strategy 
-         and write processor set id to "binding" element in 
+      /* try to create processor set according to binding strategy
+         and write processor set id to "binding" element in
          config file */
          dstring pseudo_usage = DSTRING_INIT;
          lListElem* jr        = nullptr;
 
-         create_binding_strategy_string_solaris(&core_binding_strategy_string, 
-                           jep, err_str, err_length, &sge_binding_environment, 
+         create_binding_strategy_string_solaris(&core_binding_strategy_string,
+                           jep, err_str, err_length, &sge_binding_environment,
                            &rankfileinput);
 
-         /* in case SGE_BINDING environment variable has to be setup instead 
-            of creating processor sets, this have to be done here (on Linux 
+         /* in case SGE_BINDING environment variable has to be setup instead
+            of creating processor sets, this have to be done here (on Linux
             this is done from shepherd itself) */
          if (sge_binding_environment != nullptr) {
             INFO("SGE_BINDING variable set: %s", sge_binding_environment);
          }
-         
+
          if (sge_dstring_get_string(&core_binding_strategy_string) != nullptr
                && strcmp(sge_dstring_get_string(&core_binding_strategy_string), "nullptr") != 0) {
-            
-            sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s", 
+
+            sge_dstring_sprintf(&pseudo_usage, "binding_inuse!%s",
                            binding_get_topology_for_job((sge_dstring_get_string(&core_binding_strategy_string))));
 
             jr = get_job_report(job_id, ja_task_id, pe_task_id);
-            
+
             add_usage(jr, sge_dstring_get_string(&pseudo_usage), nullptr, 0);
-            
+
             /* send job report   */
             flush_job_report(jr);
          }
@@ -1540,7 +1540,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       int nargs = 1;
 
       /* for pe tasks we have no args - the daemon (rshd etc.) to start
-       * comes from the cluster configuration 
+       * comes from the cluster configuration
        */
       if (petep != nullptr) {
          args = nullptr;
@@ -1662,9 +1662,9 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          if ((elem = lGetElemStr(environmentList, VA_variable, "QRSH_PORT")) != nullptr) {
             fprintf(fp, "qrsh_control_port=%s\n", lGetString(elem, VA_value));
          }
-        
+
          snprintf(daemon, sizeof(daemon), "%s/utilbin/%s/", sge_root, arch);
-        
+
          if(JOB_TYPE_IS_QLOGIN(jb_now)) {
             char* qlogin_daemon = mconf_get_qlogin_daemon();
             fprintf(fp, "qlogin_daemon=%s\n", qlogin_daemon);
@@ -1883,8 +1883,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    }
    {
 
-      /* 
-       * Add the signals to the set of blocked signals. Save previous signal 
+      /*
+       * Add the signals to the set of blocked signals. Save previous signal
        * mask. We do this before the fork() to avoid any race conditions with
        * signals being immediately sent to the shepherd after the fork.
        * After the fork we  need to restore the oldsignal mask in the execd
@@ -1974,7 +1974,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name),
               lGetString(master_q, QU_full_name));
-      execlp(shepherd_cmd, ps_name, nullptr);
+      if (ISTRACE) {
+         execlp(shepherd_cmd, ps_name, nullptr);
+      } else {
+         execlp(shepherd_cmd, ps_name, "-bg", nullptr);
+      }
    } else if (mconf_get_do_credentials() && feature_is_enabled(FEATURE_DCE_SECURITY)) {
       DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
               lGetString(jep, JB_job_name),
@@ -1986,10 +1990,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
               lGetString(jep, JB_job_name),
               lGetString(master_q, QU_full_name));
 
-      if (ISTRACE)
+      if (ISTRACE) {
          execlp(shepherd_path, ps_name, nullptr);
-      else
+      } else {
          execlp(shepherd_path, ps_name, "-bg", nullptr);
+      }
    } else {
       char commandline[2048];
 
@@ -2100,35 +2105,35 @@ get_nhosts(const lList *gdil_orig) {
 
 /****** exec_job/create_binding_strategy_string_linux() ************************
 *  NAME
-*     create_binding_strategy_string_linux() -- Creates the core binding strategy string. 
+*     create_binding_strategy_string_linux() -- Creates the core binding strategy string.
 *
 *  SYNOPSIS
-*     static bool create_binding_strategy_string_linux(dstring* result, 
-*     lListElem *jep, char** rankfileinput) 
+*     static bool create_binding_strategy_string_linux(dstring* result,
+*     lListElem *jep, char** rankfileinput)
 *
 *  FUNCTION
 *     Creates the core binding strategy string depending on the given request in
 *     the CULL list. This string is written in the config file in order to
 *     tell the shepherd which binding has to be performed.
-*     
+*
 *
 *  INPUTS
-*     lListElem *jep       - CULL list with the core binding request 
+*     lListElem *jep       - CULL list with the core binding request
 *
 *  OUTPUTS
-*     dstring* result      - Contains the string which is written in config file. 
-*     char** rankfileinput - String which is written in the pe_hostfile when requested. 
+*     dstring* result      - Contains the string which is written in config file.
+*     char** rankfileinput - String which is written in the pe_hostfile when requested.
 *
 *  RESULT
 *     static bool - returns true in case of success otherwise false
 *
 *  NOTES
-*     MT-NOTE: create_binding_strategy_string_linux() is not MT safe 
+*     MT-NOTE: create_binding_strategy_string_linux() is not MT safe
 *
 *******************************************************************************/
 static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep,
                                                  char **rankfileinput) {
-   /* temporary result string with or without "env:" prefix (when environment 
+   /* temporary result string with or without "env:" prefix (when environment
       variable for binding should be set or not) */
    dstring tmp_result = DSTRING_INIT;
    bool retval;
@@ -2147,7 +2152,7 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
 
          /* check if a leading "env_" or "pe_" is needed */
          if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_ENV) {
-            /* we have just to set the environment variable SGE_BINDING for the 
+            /* we have just to set the environment variable SGE_BINDING for the
                job */
             sge_dstring_append(result, "env_");
 
@@ -2181,13 +2186,13 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
             /* BN_strategy does not contain anything usefull */
             retval = false;
          }
-                  
+
         if (retval != false) {
-           /* parse the topology used by the job out of the string (it is at the 
-              end) and convert it to "<socket>,<core>:<socket>,<core>:..." but just 
+           /* parse the topology used by the job out of the string (it is at the
+              end) and convert it to "<socket>,<core>:<socket>,<core>:..." but just
               when config binding element has prefix "pe_" */
            if (lGetUlong(binding_elem, BN_type) == BINDING_TYPE_PE) {
-              /* generate pe_hostfile input */ 
+              /* generate pe_hostfile input */
               if (!parse_job_accounting_and_create_logical_list(
                      sge_dstring_get_string(&tmp_result), rankfileinput)) {
                  WARNING("Core binding: Couldn't create input for pe_hostfile");
@@ -2218,31 +2223,31 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
 
 /****** exec_job/linear_linux() ************************************************
 *  NAME
-*     linear_linux() -- Creates a binding request string from request (CULL list). 
+*     linear_linux() -- Creates a binding request string from request (CULL list).
 *
 *  SYNOPSIS
-*     static bool linear_linux(dstring* result, lListElem* binding_elem, const 
-*     bool automatic) 
+*     static bool linear_linux(dstring* result, lListElem* binding_elem, const
+*     bool automatic)
 *
 *  FUNCTION
 *     Tries to allocate processor cores according the request in the binding_elem.
-*     If this is possible the cores are listed in the result string and true 
+*     If this is possible the cores are listed in the result string and true
 *     is returned.
 *
-*     Linear means that the job is tried to be accomodated on a single socket, 
-*     if this is not possible than the remaining cores are taken from another 
-*     free socket (or afterwards from that socket with the most free cores). 
+*     Linear means that the job is tried to be accomodated on a single socket,
+*     if this is not possible than the remaining cores are taken from another
+*     free socket (or afterwards from that socket with the most free cores).
 *
 *     Linear with automatic=false means that the same algorithms as for striding
-*     with automatic=false is applied. Both have a core requested to be the 
-*     first core. This core is taken and his successors if this is possible 
+*     with automatic=false is applied. Both have a core requested to be the
+*     first core. This core is taken and his successors if this is possible
 *     otherwise no binding is done at all.
 *
 *     In case of success the cores were marked internally as beeing bound.
 *
 *  INPUTS
 *     lListElem* binding_elem - List containing the binding request.
-*     const bool automatic    - If the start core to allocate is given or not. 
+*     const bool automatic    - If the start core to allocate is given or not.
 *
 *  OUTPUTS
 *     dstring* result         - String containing the requested cores if possible.
@@ -2251,7 +2256,7 @@ static bool create_binding_strategy_string_linux(dstring *result, lListElem *jep
 *     static bool - True in case core binding was possible.
 *
 *  NOTES
-*     MT-NOTE: linear_linux() is not MT safe 
+*     MT-NOTE: linear_linux() is not MT safe
 *
 *******************************************************************************/
 static bool linear_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
@@ -2268,7 +2273,7 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
 
    amount = (int) lGetUlong(binding_elem, BN_parameter_n);
 
-   /* check if first socket and first core have to be determined by execd or 
+   /* check if first socket and first core have to be determined by execd or
       not */
    if (!automatic) {
       /* we have to retrieve socket,core to begin with when explicitly given */
@@ -2276,11 +2281,11 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
       first_core = (int) lGetUlong(binding_elem, BN_parameter_core_offset);
    }
 
-   /* check if the resources are free and binding could be performed from 
+   /* check if the resources are free and binding could be performed from
       shephered */
 
    if (automatic) {
-      /* user has not specified where to begin, this has now beeing 
+      /* user has not specified where to begin, this has now beeing
          figured out automatically */
       int *list_of_sockets = nullptr;
       int samount = 0;
@@ -2322,15 +2327,15 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
       }
 
    } else {
-      /* we have already a socket,core tuple to start with, therefore we 
+      /* we have already a socket,core tuple to start with, therefore we
          use this one if possible or do not do any binding */
       if (get_striding_first_socket_first_core_and_account(amount, 1, first_socket,
                                                            first_core, automatic, &used_first_socket, &used_first_core,
                                                            &topo_job,
                                                            &topo_job_length)) {
 
-         /* only "linear" is allowed in config file, because execd has to figure 
-            out first <socket,core> to bind to (not shepherd - because of race 
+         /* only "linear" is allowed in config file, because execd has to figure
+            out first <socket,core> to bind to (not shepherd - because of race
             conditions) */
          sge_dstring_sprintf(result, "%s:%d:%d,%d:%s",
                              "linear",
@@ -2361,32 +2366,32 @@ static bool linear_linux(dstring *result, const lListElem *binding_elem, const b
 *     striding_linux() -- Creates a binding request string from request (CULL list).
 *
 *  SYNOPSIS
-*     static bool striding_linux(dstring* result, lListElem* binding_elem, 
-*     const bool automatic) 
+*     static bool striding_linux(dstring* result, lListElem* binding_elem,
+*     const bool automatic)
 *
 *  FUNCTION
 *     Tries to allocate processor cores according the request in the binding_elem.
-*     If this is possible the cores are listed in the result string and true 
+*     If this is possible the cores are listed in the result string and true
 *     is returned.
-*     Striding means that cores with a specific distance (the step size) are 
-*     tried to be used. In case of automatic=false the first core to allocate 
-*     is given in the CULL list (binding_elem). If the request could not be 
+*     Striding means that cores with a specific distance (the step size) are
+*     tried to be used. In case of automatic=false the first core to allocate
+*     is given in the CULL list (binding_elem). If the request could not be
 *     fulfilled the function returns false.
 *
 *     In case of success the cores were marked internally as beeing bound.
 *
 *  INPUTS
-*     lListElem* binding_elem - The CULL list with the request. 
-*     const bool automatic    - True when the first core have to be searched. 
+*     lListElem* binding_elem - The CULL list with the request.
+*     const bool automatic    - True when the first core have to be searched.
 *
 *  OUTPUTS
-*     dstring* result         - Contains the requested cores is case of success. 
+*     dstring* result         - Contains the requested cores is case of success.
 *
 *  RESULT
 *     static bool - true in case of success otherwise false
 *
 *  NOTES
-*     MT-NOTE: striding_linux() is not MT safe 
+*     MT-NOTE: striding_linux() is not MT safe
 *
 *******************************************************************************/
 static bool striding_linux(dstring *result, const lListElem *binding_elem, const bool automatic) {
@@ -2406,7 +2411,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
 
    if (!automatic) {
       /* We have to determine the first socket and core to use for core binding
-         automatically. The rest of the cores are then implicitly given by the 
+         automatically. The rest of the cores are then implicitly given by the
          strategy. */
 
       /* get the start socket and start core which was a submission parameter */
@@ -2433,7 +2438,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
       retval = true;
 
    } else {
-      /* it was not possible to fit the binding strategy on host 
+      /* it was not possible to fit the binding strategy on host
          because it is occupied already or any other reason */
       DPRINTF("ERROR: couldn't allocate cores with respect to binding request");
       sge_dstring_append(result, "nullptr");
@@ -2455,18 +2460,18 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
 *     explicit_linux() -- Creates a binding request string from request (CULL list).
 *
 *  SYNOPSIS
-*     static bool explicit_linux(dstring* result, lListElem* binding_elem) 
+*     static bool explicit_linux(dstring* result, lListElem* binding_elem)
 *
 *  FUNCTION
 *     Tries to allocate processor cores according the request in the binding_elem.
-*     If this is possible the cores are listed in the result string and true 
+*     If this is possible the cores are listed in the result string and true
 *     is returned.
-* 
+*
 *     Explicit means that specific cores (as socket, core list) are requested
-*     on submission time. If one of these cores can not be allocated (because 
+*     on submission time. If one of these cores can not be allocated (because
 *     it is not available on the exution host or it is currently bound) than
 *     no binding will be done.
-* 
+*
 *     In case of success the cores were marked internally as beeing bound.
 *
 *  INPUTS
@@ -2479,7 +2484,7 @@ static bool striding_linux(dstring *result, const lListElem *binding_elem, const
 *     static bool - true in case of success otherwise false
 *
 *  NOTES
-*     MT-NOTE: explicit_linux() is not MT safe 
+*     MT-NOTE: explicit_linux() is not MT safe
 *
 *******************************************************************************/
 static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
@@ -2500,10 +2505,10 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
 
    request = (char *) lGetString(binding_elem, BN_parameter_explicit);
 
-   /* get the socket and core number lists */ 
-   if (!binding_explicit_extract_sockets_cores(request, &socket_list, 
+   /* get the socket and core number lists */
+   if (!binding_explicit_extract_sockets_cores(request, &socket_list,
       &socket_list_length, &core_list, &core_list_length)) {
-      /* problems while parsing the binding request */ 
+      /* problems while parsing the binding request */
       INFO("Couldn't extract socket and core lists out of string");
       sge_dstring_append(result, "nullptr");
       retval = false;
@@ -2520,7 +2525,7 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
          retval = true;
       } else {
 
-         /* couldn't find an appropriate binding because topology doesn't offer 
+         /* couldn't find an appropriate binding because topology doesn't offer
             it or some cores are already occupied */
          INFO("ERROR: Couldn't determine appropriate core binding %s %d %d %d %d", request, socket_list_length, socket_list[0], core_list_length, core_list[0]);
          sge_dstring_append(result, "nullptr");
@@ -2544,41 +2549,41 @@ static bool explicit_linux(dstring *result, const lListElem *binding_elem) {
 *     create_binding_strategy_string_solaris() --  Creates a binding request string from request (CULL list).
 *
 *  SYNOPSIS
-*     static bool create_binding_strategy_string_solaris(dstring* result, 
-*     lListElem *jep, char* err_str, int err_length, char** env, char** 
-*     rankfileinput) 
+*     static bool create_binding_strategy_string_solaris(dstring* result,
+*     lListElem *jep, char* err_str, int err_length, char** env, char**
+*     rankfileinput)
 *
 *  FUNCTION
 *     Tries to allocate processor cores according the request in the binding_elem.
-*     If this is possible the cores are listed in the result string and true 
-*     is returned. 
+*     If this is possible the cores are listed in the result string and true
+*     is returned.
 *
 *     This function dispatches the task to the appropriate helper functions.
-* 
+*
 *     TODO DG: eliminate err_str and err_length.
 *
 *  INPUTS
 *     lListElem *jep       -  The CULL list with the request.
 *
-*  OUTPUTS 
+*  OUTPUTS
 *     dstring* result      - Contains the requested cores is case of success.
-*     char* err_str        - Contains error messages in case of errors. 
-*     int err_length       - Length of the error messages 
-*     char** env           - Contains the SGE_BINDING content in case of 'env'. 
-*     char** rankfileinput - Contains the selected cores for pe_hostfile in case of 'pe'. 
+*     char* err_str        - Contains error messages in case of errors.
+*     int err_length       - Length of the error messages
+*     char** env           - Contains the SGE_BINDING content in case of 'env'.
+*     char** rankfileinput - Contains the selected cores for pe_hostfile in case of 'pe'.
 *
 *  RESULT
 *     static bool - true in case of success otherwise false.
 *
 *  NOTES
-*     MT-NOTE: create_binding_strategy_string_solaris() is not MT safe 
+*     MT-NOTE: create_binding_strategy_string_solaris() is not MT safe
 *
 *******************************************************************************/
-static bool create_binding_strategy_string_solaris(dstring* result, 
-               lListElem *jep, char* err_str, int err_length, char** env, 
+static bool create_binding_strategy_string_solaris(dstring* result,
+               lListElem *jep, char* err_str, int err_length, char** env,
                char** rankfileinput)
 {
-   
+
    /* 1. check cull list and check which binding strategy was requested */
    bool retval;
    /* binding strategy */
@@ -2590,29 +2595,29 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    if (binding != nullptr && ((binding_elem = lFirst(binding)) != nullptr)) {
 
       if (strcmp(lGetString(binding_elem, BN_strategy), "striding_automatic") == 0) {
-         
-         /* try to allocate processor set according the settings and account it on 
+
+         /* try to allocate processor set according the settings and account it on
             execution host level */
-         retval = striding_solaris(result, binding_elem, true, false, err_str, 
+         retval = striding_solaris(result, binding_elem, true, false, err_str,
                                     err_length, env);
-         
+
       } else if (strcmp(lGetString(binding_elem, BN_strategy), "striding") == 0) {
-         
-         retval = striding_solaris(result, binding_elem, false, false, err_str, 
+
+         retval = striding_solaris(result, binding_elem, false, false, err_str,
                                     err_length, env);
-         
+
       } else if(strcmp(lGetString(binding_elem, BN_strategy), "linear_automatic") == 0) {
-         
+
          retval = linear_automatic_solaris(result, binding_elem, env);
-         
+
       } else if (strcmp(lGetString(binding_elem, BN_strategy), "linear") == 0) {
 
          /* use same algorithm than striding with stepsize 1 */
-         retval = striding_solaris(result, binding_elem, false, true, 
+         retval = striding_solaris(result, binding_elem, false, true,
                                     err_str, err_length, env);
-         
+
       } else if (strcmp(lGetString(binding_elem, BN_strategy), "explicit") == 0) {
-         
+
          retval = explicit_solaris(result, binding_elem, err_str, err_length, env);
 
       } else {
@@ -2630,13 +2635,13 @@ static bool create_binding_strategy_string_solaris(dstring* result,
    if (!retval) {
       sge_dstring_append(result, "nullptr");
    } else {
-      /* in case of -binding PE the string with the socket,core pairs 
+      /* in case of -binding PE the string with the socket,core pairs
          must be returned */
-         
+
       if (result != nullptr && sge_dstring_get_string(result) != nullptr &&
             strstr(sge_dstring_get_string(result), "pe_") != nullptr) {
          retval = parse_job_accounting_and_create_logical_list(
-               sge_dstring_get_string(result), rankfileinput); 
+               sge_dstring_get_string(result), rankfileinput);
       }
    }
 
@@ -2647,27 +2652,27 @@ static bool create_binding_strategy_string_solaris(dstring* result,
 
 /****** exec_job/linear_automatic_solaris() ************************************
 *  NAME
-*     linear_automatic_solaris() -- Creates core binding string.  
+*     linear_automatic_solaris() -- Creates core binding string.
 *
 *  SYNOPSIS
-*     static bool linear_automatic_solaris(dstring* result, lListElem* 
-*     binding_elem, char** env) 
+*     static bool linear_automatic_solaris(dstring* result, lListElem*
+*     binding_elem, char** env)
 *
 *  FUNCTION
-*    Tries to allocate cores in a "linear" (successive) manner. It beginns with 
-*    the first free socket on the system. If there are still cores left 
-*    to be allocated or there is no free socket on the system, the socket 
+*    Tries to allocate cores in a "linear" (successive) manner. It beginns with
+*    the first free socket on the system. If there are still cores left
+*    to be allocated or there is no free socket on the system, the socket
 *    with the most free cores is taken. And so on.
 *
 *  INPUTS
-*     lListElem* binding_elem - Cull list containing the core binding request. 
-*     
+*     lListElem* binding_elem - Cull list containing the core binding request.
+*
 *  OUTPUTS
-*     dstring* result         - String with the allocated cores. 
-*     char** env              - String with the SGE_BINDING content if neccessary. 
+*     dstring* result         - String with the allocated cores.
+*     char** env              - String with the SGE_BINDING content if neccessary.
 *
 *  RESULT
-*     static bool - true in case of success otherwise false 
+*     static bool - true in case of success otherwise false
 *
 *******************************************************************************/
 static bool linear_automatic_solaris(dstring* result, const lListElem* binding_elem,
@@ -2696,22 +2701,22 @@ static bool linear_automatic_solaris(dstring* result, const lListElem* binding_e
    type   = (binding_type_t) lGetUlong(binding_elem, BN_type);
 
    /* get <socket,core> tuples */
-   if (get_linear_automatic_socket_core_list_and_account(amount, 
-         &list_of_sockets, &samount, &list_of_cores, &camount, 
+   if (get_linear_automatic_socket_core_list_and_account(amount,
+         &list_of_sockets, &samount, &list_of_cores, &camount,
          &topo_by_job, &topo_by_job_length)) {
-      
+
       int processor_set = 0;
 
       /* 4. create processor set */
       sge_switch2start_user();
       /* create the processor set with the given list of socket and cores */
-      processor_set = create_processor_set_explicit_solaris(list_of_sockets, 
+      processor_set = create_processor_set_explicit_solaris(list_of_sockets,
                          samount, list_of_cores, camount, type, env);
-      sge_switch2admin_user();       
-      
+      sge_switch2admin_user();
+
       /* 5. delete accounting when creating of processor set was not successful */
       if (processor_set < 0) {
-               
+
          /* free the cores occupied by this job because we couldn't generate processor set */
          free_topology(topo_by_job, topo_by_job_length);
 
@@ -2734,7 +2739,7 @@ static bool linear_automatic_solaris(dstring* result, const lListElem* binding_e
       }
 
    }
-   
+
    sge_free(&list_of_cores);
    sge_free(&list_of_sockets);
    sge_free(&topo_by_job);
@@ -2744,44 +2749,44 @@ static bool linear_automatic_solaris(dstring* result, const lListElem* binding_e
 
 /****** exec_job/striding_solaris() ********************************************
 *  NAME
-*     striding_solaris() -- Creates binding request string. 
+*     striding_solaris() -- Creates binding request string.
 *
 *  SYNOPSIS
-*     static bool striding_solaris(dstring* result, lListElem* binding_elem, 
-*     const bool automatic, const bool do_linear, char* err_str, int 
-*     err_length, char** env) 
+*     static bool striding_solaris(dstring* result, lListElem* binding_elem,
+*     const bool automatic, const bool do_linear, char* err_str, int
+*     err_length, char** env)
 *
 *  FUNCTION
 *     Tries to allocate processor cores according the request in the binding_elem.
-*     If this is possible the cores are listed in the result string and true 
+*     If this is possible the cores are listed in the result string and true
 *     is returned.
-*     Striding means that cores with a specific distance (the step size) are 
-*     tried to be used. In case of automatic=false the first core to allocate 
-*     is given in the CULL list (binding_elem). If the request could not be 
+*     Striding means that cores with a specific distance (the step size) are
+*     tried to be used. In case of automatic=false the first core to allocate
+*     is given in the CULL list (binding_elem). If the request could not be
 *     fulfilled the function returns false.
-*  
+*
 *  INPUTS
-*     lListElem* binding_elem - CULL list containing the request. 
-*     const bool automatic    - Finds first core automatically. 
-*     const bool do_linear    - In case of linear request. 
+*     lListElem* binding_elem - CULL list containing the request.
+*     const bool automatic    - Finds first core automatically.
+*     const bool do_linear    - In case of linear request.
 *
 *  OUTPUTS
-*     dstring* result         - String with core binding request. 
-*     char* err_str           - String containing errors in case of. 
-*     int err_length          - Length of the error string. 
-*     char** env              - Content of SGE_BINDING env var when requested. 
-*    
+*     dstring* result         - String with core binding request.
+*     char* err_str           - String containing errors in case of.
+*     int err_length          - Length of the error string.
+*     char** env              - Content of SGE_BINDING env var when requested.
+*
 *  RESULT
 *     static bool - true in case of success false otherwise
 *
 *  NOTES
-*     MT-NOTE: striding_solaris() is not MT safe 
+*     MT-NOTE: striding_solaris() is not MT safe
 *
 *******************************************************************************/
 static bool striding_solaris(dstring* result, const lListElem* binding_elem, const bool automatic,
    const bool do_linear, char* err_str, int err_length, char** env)
 {
-   /* 2. check if a starting point exist */ 
+   /* 2. check if a starting point exist */
    int first_socket = 0;
    int first_core = 0;
    int used_first_socket = 0;
@@ -2796,7 +2801,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
 
    /* return value */
    bool retval = false;
-   
+
    DENTER(TOP_LAYER);
 
    /* get mandatory parameters of -binding striding */
@@ -2810,7 +2815,7 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       step_size = 1;
    }
 
-   /* in automatic mode the socket,core pair which is bound first is determined 
+   /* in automatic mode the socket,core pair which is bound first is determined
       automatically */
    if (!automatic) {
       /* get the start socket and start core which was a submission parameter */
@@ -2822,35 +2827,35 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
    }
 
    /* try to allocate first core and first socket */
-   if (get_striding_first_socket_first_core_and_account(amount, step_size, 
-         first_socket, first_core, automatic, &used_first_socket, &used_first_core, 
+   if (get_striding_first_socket_first_core_and_account(amount, step_size,
+         first_socket, first_core, automatic, &used_first_socket, &used_first_core,
          &topo_by_job, &topo_by_job_length)) {
-            
+
       int processor_set = 0;
-      
-      /* check against errors: in automatic case the used first socket (and core) 
+
+      /* check against errors: in automatic case the used first socket (and core)
          must be the same than the first socket (and core) from user parameters */
-      if (!automatic && (first_socket != used_first_socket 
+      if (!automatic && (first_socket != used_first_socket
             || first_core != used_first_core)) {
-         /* we've a bug */ 
+         /* we've a bug */
          DPRINTF("The starting point for binding is not like the user specified!");
       }
 
       /* we found a socket and a core we can use as start point */
       DPRINTF("Found a socket and a core as starting point for binding");
-            
+
       /* 4. create processor set */
 
       sge_switch2start_user();
 
-      processor_set = create_processor_set_striding_solaris(used_first_socket, 
+      processor_set = create_processor_set_striding_solaris(used_first_socket,
          used_first_core, amount, step_size, type, env);
-          
+
       sge_switch2admin_user();
 
       /* 5. delete accounting when creating of processor set was not successful */
       if (processor_set < 0) {
-               
+
          snprintf(err_str, err_length, "binding: couldn't create processor set");
 
          /* free the cores occupied by this job because we couldn't generate processor set */
@@ -2877,11 +2882,11 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
       }
 
    } else {
-      
+
       snprintf(err_str, err_length, "binding: strategy does not fit on execution host");
 
       DPRINTF("Didn't find socket,core to start binding with");
-      retval = false; 
+      retval = false;
    }
 
    sge_free(&topo_by_job);
@@ -2891,30 +2896,30 @@ static bool striding_solaris(dstring* result, const lListElem* binding_elem, con
 
 /****** exec_job/explicit_solaris() ********************************************
 *  NAME
-*     explicit_solaris() -- Creates a binding request string from request (CULL list). 
+*     explicit_solaris() -- Creates a binding request string from request (CULL list).
 *
 *  SYNOPSIS
-*     static bool explicit_solaris(dstring* result, lListElem* binding_elem, 
-*     char* err_str, int err_length, char** env) 
+*     static bool explicit_solaris(dstring* result, lListElem* binding_elem,
+*     char* err_str, int err_length, char** env)
 *
 *  FUNCTION
-*     Creates a binding request string out of the explicit core binding request. 
+*     Creates a binding request string out of the explicit core binding request.
 *
 *  INPUTS
 *     lListElem* binding_elem - List containing the binding request.
 *
 *  OUTPUTS
-*     dstring* result         - String containing the core bindin request. 
-*     char* err_str           - String containing possible errors. 
-*     int err_length          - Length of the error string. 
-*     char** env              - String containing the SGE_BINDING env var content 
-*                               when requested. 
+*     dstring* result         - String containing the core bindin request.
+*     char* err_str           - String containing possible errors.
+*     int err_length          - Length of the error string.
+*     char** env              - String containing the SGE_BINDING env var content
+*                               when requested.
 *
 *  RESULT
-*     static bool - true in case the request could be fulfilled otherwise false 
+*     static bool - true in case the request could be fulfilled otherwise false
 *
 *  NOTES
-*     MT-NOTE: explicit_solaris() is not MT safe 
+*     MT-NOTE: explicit_solaris() is not MT safe
 *
 *******************************************************************************/
 static bool explicit_solaris(dstring* result, const lListElem* binding_elem, char* err_str,
@@ -2922,28 +2927,28 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 {
    /* pointer to string which contains the <socket>,<core> pairs */
    const char* request = nullptr;
-   
+
    /* the from the request extracted sockets and cores (to bind to) */
    int* socket_list = nullptr;
    int* core_list = nullptr;
    int socket_list_length, core_list_length;
-   
+
    int processor_set = 0;
    binding_type_t type;
    bool retval = false;
 
    DENTER(TOP_LAYER);
 
-   /* get the socket and core numbers */ 
+   /* get the socket and core numbers */
    request = (char*) lGetString(binding_elem, BN_parameter_explicit);
    type   = (binding_type_t) lGetUlong(binding_elem, BN_type);
-   
+
 
    INFO("request: %s", request);
 
-   if (!binding_explicit_extract_sockets_cores(request, &socket_list, 
+   if (!binding_explicit_extract_sockets_cores(request, &socket_list,
             &socket_list_length, &core_list, &core_list_length)) {
-      /* problems while parsing the binding request */ 
+      /* problems while parsing the binding request */
       snprintf(err_str, err_length, "binding: couldn't parse explicit parameter");
       INFO("Couldn't parse binding explicit parameter");
       retval = false;
@@ -2952,30 +2957,30 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
       char* topo_by_job = nullptr;
       int topo_by_job_length;
 
-      /* check if socket and core numbers are free */ 
-      if (binding_explicit_check_and_account(socket_list, socket_list_length, 
+      /* check if socket and core numbers are free */
+      if (binding_explicit_check_and_account(socket_list, socket_list_length,
          core_list, core_list_length, &topo_by_job, &topo_by_job_length)) {
          /* it is possible to bind to the given cores */
-         
-         /* create the processor set as user root */ 
+
+         /* create the processor set as user root */
          sge_switch2start_user();
 
-         processor_set = create_processor_set_explicit_solaris(socket_list, 
+         processor_set = create_processor_set_explicit_solaris(socket_list,
             socket_list_length, core_list, core_list_length, type, env);
-         
-         sge_switch2admin_user();      
-         
+
+         sge_switch2admin_user();
+
          if (processor_set < 0) {
-            /* creating processor set was not possible (could be also because 
-               these are ALL remaining cores on system [one must left]) 
-               TODO DG check this in create_processor_set method */ 
+            /* creating processor set was not possible (could be also because
+               these are ALL remaining cores on system [one must left])
+               TODO DG check this in create_processor_set method */
             snprintf(err_str, err_length, "binding: couldn't create processor set");
             /* free the cores occupied by this job because we couldn't generate processor set */
             free_topology(topo_by_job, topo_by_job_length);
             INFO("Could't create processor set in order to bind job to.");
             retval = false;
          } else {
-            
+
             /* record processor set id and the topology which the job consumes */
             if (type == BINDING_TYPE_ENV) {
                sge_dstring_sprintf(result, "env_psrset:%d:%s", -1, topo_by_job);
@@ -2987,7 +2992,7 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 
             /* write processor set id into "binding" in config file */
             snprintf(err_str, err_length, "binding: created processor set");
-            
+
             retval = true;
          }
 
@@ -3013,27 +3018,27 @@ static bool explicit_solaris(dstring* result, const lListElem* binding_elem, cha
 
 /****** exec_job/parse_job_accounting_and_create_logical_list() ****************
 *  NAME
-*     parse_job_accounting_and_create_logical_list() -- Creates the core list out of accounting string. 
+*     parse_job_accounting_and_create_logical_list() -- Creates the core list out of accounting string.
 *
 *  SYNOPSIS
-*     static bool parse_job_accounting_and_create_logical_list(const char* 
-*     binding_string, char** rankfileinput) 
+*     static bool parse_job_accounting_and_create_logical_list(const char*
+*     binding_string, char** rankfileinput)
 *
 *  FUNCTION
-*     Creates the input for the rankfile out of the core binding string 
+*     Creates the input for the rankfile out of the core binding string
 *     which is written in the config file in the active_jobs directory.
 *
 *  INPUTS
-*     const char* binding_string - Pointer to the core binding string. 
+*     const char* binding_string - Pointer to the core binding string.
 *
 *  OUTPUTS
-*     char** rankfileinput       - String with logical socket,core list. 
+*     char** rankfileinput       - String with logical socket,core list.
 *
 *  RESULT
 *     static bool - true when string with socket,core list was created
 *
 *  NOTES
-*     MT-NOTE: parse_job_accounting_and_create_logical_list() is MT safe 
+*     MT-NOTE: parse_job_accounting_and_create_logical_list() is MT safe
 *
 *******************************************************************************/
 static bool parse_job_accounting_and_create_logical_list(const char *binding_string,
@@ -3051,8 +3056,8 @@ static bool parse_job_accounting_and_create_logical_list(const char *binding_str
    /* get the position of the "SCCSCc" job accounting string in string */
    pos = binding_get_topology_for_job(binding_string);
 
-   /* convert job usage in terms of the topology string into 
-      a list as string */ 
+   /* convert job usage in terms of the topology string into
+      a list as string */
    if (!topology_string_to_socket_core_lists(pos, &sockets, &cores, &amount)) {
       WARNING("Core binding: Couldn't parse job topology string! %s", pos);
       retval = false;

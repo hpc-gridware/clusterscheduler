@@ -457,22 +457,19 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
 
    ret = pipe(fd_pipe_in);
    if (ret == -1) {
-      sge_dstring_sprintf(err_msg, "can't create pipe for stdin: %d: %s",
-                          errno, strerror(errno));
+      sge_dstring_sprintf(err_msg, "can't create pipe for stdin: %d: %s", errno, strerror(errno));
       return -1;
    }
 
    ret = pipe(fd_pipe_out);
    if (ret == -1) {
-      sge_dstring_sprintf(err_msg, "can't create pipe for stdout: %d: %s",
-                          errno, strerror(errno));
+      sge_dstring_sprintf(err_msg, "can't create pipe for stdout: %d: %s", errno, strerror(errno));
       return -1;
    }
 
    ret = pipe(fd_pipe_err);
    if (ret == -1) {
-      sge_dstring_sprintf(err_msg, "can't create pipe for stderr: %d: %s",
-                          errno, strerror(errno));
+      sge_dstring_sprintf(err_msg, "can't create pipe for stderr: %d: %s", errno, strerror(errno));
       return -1;
    }
 
@@ -480,8 +477,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
       return -1;
    } else if (pid == 0) {     /* child */
       if (setsid() < 0) {
-         sge_dstring_sprintf(err_msg, "setsid() error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "setsid() error: %d, %s", errno, strerror(errno));
          return -1;
       }
 
@@ -489,8 +485,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
       close(fd_pipe_in[1]);
       fd_pipe_in[1] = -1;
       if ((dup2(fd_pipe_in[0], STDIN_FILENO)) != STDIN_FILENO) {
-         sge_dstring_sprintf(err_msg, "dup2 to stdin error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "dup2 to stdin error: %d, %s", errno, strerror(errno));
          return -1;
       }
       close(fd_pipe_in[0]);
@@ -499,8 +494,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
       close(fd_pipe_out[0]);
       fd_pipe_out[0] = -1;
       if ((dup2(fd_pipe_out[1], STDOUT_FILENO)) != STDOUT_FILENO) {
-         sge_dstring_sprintf(err_msg, "dup2 to stdout error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "dup2 to stdout error: %d, %s", errno, strerror(errno));
          return -1;
       }
       close(fd_pipe_out[1]);
@@ -509,8 +503,7 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
       close(fd_pipe_err[0]);
       fd_pipe_out[0] = -1;
       if ((dup2(fd_pipe_err[1], STDERR_FILENO)) != STDERR_FILENO) {
-         sge_dstring_sprintf(err_msg, "dup2 to stderr error: %d, %s",
-                             errno, strerror(errno));
+         sge_dstring_sprintf(err_msg, "dup2 to stderr error: %d, %s", errno, strerror(errno));
          return -1;
       }
       close(fd_pipe_err[1]);
@@ -525,5 +518,3 @@ pid_t fork_no_pty(int *fd_pipe_in, int *fd_pipe_out,
    }
    DRETURN(pid);
 }
-
-

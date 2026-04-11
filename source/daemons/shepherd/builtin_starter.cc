@@ -29,7 +29,7 @@
  *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -172,7 +172,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    bool skip_silently = false;
    int pty;
 
-   foreground = 0; /* VX sends SIGTTOU if trace messages go to foreground */
+   foreground = false; // VX sends SIGTTOU if trace messages go to foreground
 
    /* From here only the son --------------------------------------*/
    if (!script_file) {
@@ -418,7 +418,7 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
          }
       }
    }
-   foreground = 0;
+   foreground = false;
 
    /* We have different possibilities to start the job script:
     * - We can start it as login shell or not
