@@ -1,0 +1,104 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-group.schema.json",
+   "title": "OCS/GCS qstat group schema",
+   "description": "Schema describing qstat group output (-g c). Fields after 'manual_intervention' are only present with -ext switch.",
+   "type": "object",
+   "required": ["queues"],
+   "additionalProperties": true,
+   "properties": {
+      "queues": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "required": [
+               "name",
+               "load",
+               "used",
+               "resv",
+               "available",
+               "total",
+               "temp_disabled",
+               "manual_intervention"
+            ],
+            "properties": {
+               "name": {
+                  "type": "string"
+               },
+               "load": {
+                  "type": "number"
+               },
+               "used": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "resv": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "available": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "total": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "temp_disabled": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "manual_intervention": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "suspend_manual": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "suspend_threshold": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "suspend_on_subordinate": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "suspend_calendar": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "unknown": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "load_alarm": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "disabled_manual": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "disabled_calendar": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "ambiguous": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "orphaned": {
+                  "type": "integer",
+                  "minimum": 0
+               },
+               "error": {
+                  "type": "integer",
+                  "minimum": 0
+               }
+            },
+            "additionalProperties": true
+         }
+      }
+   }
+}

@@ -75,6 +75,9 @@
 #include "sig_handlers.h"
 #include "../../daemons/shepherd/builtin_starter.h"
 #include "qstat/ocs_QStatParameterClient.h"
+#include "qstat/default/ocs_QStatDefaultViewJSON.h"
+#include "qstat/group/ocs_QStatGroupViewJSON.h"
+#include "qstat/select/ocs_QStatSelectViewJSON.h"
 
 extern char **environ;
 
@@ -160,6 +163,8 @@ int main(int argc, char *argv[]) {
             std::unique_ptr<ocs::QStatSelectViewBase> view;
             if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
                view = std::make_unique<ocs::QStatSelectViewXML>(parameter);
+            } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
+               view = std::make_unique<ocs::QStatSelectViewJSON>(parameter);
             } else {
                view = std::make_unique<ocs::QStatSelectViewPlain>(parameter);
             }
@@ -194,6 +199,8 @@ int main(int argc, char *argv[]) {
             std::unique_ptr<ocs::QStatGroupViewBase> view;
             if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
                view = std::make_unique<ocs::QStatGroupViewXML>(parameter);
+            } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
+               view = std::make_unique<ocs::QStatGroupViewJSON>(parameter);
             } else {
                view = std::make_unique<ocs::QStatGroupViewPlain>(parameter);
             }
@@ -228,6 +235,8 @@ int main(int argc, char *argv[]) {
             std::unique_ptr<ocs::QStatDefaultViewBase> view;
             if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
                view = std::make_unique<ocs::QStatDefaultViewXML>(parameter);
+            } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
+               view = std::make_unique<ocs::QStatDefaultViewJSON>(parameter);
             } else {
                view = std::make_unique<ocs::QStatDefaultViewPlain>(parameter);
             }
