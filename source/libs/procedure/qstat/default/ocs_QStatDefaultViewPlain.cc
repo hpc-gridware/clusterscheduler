@@ -36,29 +36,14 @@
 
 #include "msg_clients_common.h"
 
-
 inline void opti_print8(std::ostream& os, double value) {
+   DENTER(TOP_LAYER);
    if (value > 99999999) {
       os << std::format("{:>8.3g} ", value);
-   } else {
       os << std::format("{:>8.0f} ", value);
    }
+   DRETURN_VOID;
 }
-
-#if 0
-/* regular output */
-static char jhul1[] = "---------------------------------------------------------------------------------------------";
-/* -g t */
-static char jhul2[] = "-";
-/* -ext */
-static char jhul3[] = "-------------------------------------------------------------------------------";
-/* -t */
-static char jhul4[] = "-----------------------------------------------------";
-/* -urg */
-static char jhul5[] = "----------------------------------------------------------------";
-/* -pri */
-static char jhul6[] = "-----------------------------------";
-#endif
 
 void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
    DENTER(TOP_LAYER);
@@ -67,19 +52,24 @@ void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const 
 
    os << "\n" << line
       << "\n" << title
-      << "\n" << line
-      << "\n";
+      << "\n" << line;
 
    last_job_id = 0;
-
    DRETURN_VOID;
 }
 
-
 void ocs::QStatDefaultViewPlain::report_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   // if anything was printed then close the last line with a newline-character
+   if (header_printed || job_header_printed) {
+      os << "\n";
+   }
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_section_started(std::ostream &os, QStatParameter &parameter) {
@@ -96,9 +86,10 @@ void ocs::QStatDefaultViewPlain::report_queue_section_finished(std::ostream &os,
 void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
 {
    DENTER(TOP_LAYER);
-   const int sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
+   const bool sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
    const int queue_length = parameter.get_longest_queue_length();
 
+   // print queue header
    if (!header_printed) {
       header_printed = true;
 
@@ -107,33 +98,29 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
          << std::format("{:<14.14} ", MSG_QSTAT_PRT_RESVUSEDTOT)
          << std::format("{:<8.8} ", summary->load_avg_str)
          << std::format("{:<13.13} ", LOAD_ATTR_ARCH)
-         << std::format("{} ", MSG_QSTAT_PRT_STATES)
-         << "\n";
+         << std::format("{} ", MSG_QSTAT_PRT_STATES);
    }
 
-   os << "---------------------------------------------------------------------------------";
+   // print separator line
+   os << "\n---------------------------------------------------------------------------------";
    if (sge_ext) {
       os << "------------------------------------------------------------------------------------------------------------";
    }
-   for(int i = 0; i < queue_length - 30; i++)
+   for(int i = 0; i < queue_length - 30; i++) {
       os << "-";
+   }
+
+   // print line with queue's data fields
    os << "\n";
-
-
-   // queue name
    os << std::format("{:<{}.{}} ", qname, queue_length, queue_length);
-
-   // queue type
    os << std::format("{:<5.5} ", summary->queue_type);
 
-   /* number of used/total slots */
    std::ostringstream ss_res_used_total;
    ss_res_used_total << std::format("{}/{}/{}", summary->resv_slots, summary->used_slots, summary->total_slots);
    os << std::format("{:<14.14} ", ss_res_used_total.str());
 
-   /* load avg */
-   std::ostringstream ss_load_avg;
    // Why is has_load_value required?
+   std::ostringstream ss_load_avg;
    if (summary->has_load_value || (summary->state != nullptr && strchr(summary->state, 'u') != nullptr)) {
       ss_load_avg << "-NA-";
    } else {
@@ -143,49 +130,48 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
          ss_load_avg << "---";
       }
    }
+
    os << std::format("{:<8.8} ", ss_load_avg.str());
-
-   /* arch */
    os << std::format("{:<13.13} ", summary->arch ? summary->arch : "-NA-");
-
-   // state
    os << std::format("{} ", summary->state ? summary->state : "NA");
-
-   os << "\n";
-
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_jobs_started(std::ostream &os, const char *qname, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_jobs_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
-}
-
-void ocs::QStatDefaultViewPlain::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason)
-{
    DENTER(TOP_LAYER);
-   os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason)
-{
+void ocs::QStatDefaultViewPlain::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
-   os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
+   os << "\n\t" << (reason ? reason : "no alarm reason given");
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_message(std::ostream &os, const char* qname, const char *message)
-{
+void ocs::QStatDefaultViewPlain::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason) {
    DENTER(TOP_LAYER);
-   os << "\t" << (message != nullptr ? message : "no queue message given") << "\n";
+   os << "\n\t" << (reason ? reason : "no alarm reason given");
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_queue_message(std::ostream &os, const char* qname, const char *message) {
+   DENTER(TOP_LAYER);
+   os << "\n\t" << (message != nullptr ? message : "no queue message given");
    DRETURN_VOID;
 }
 
@@ -200,24 +186,19 @@ void ocs::QStatDefaultViewPlain::report_queue_resource_finished(std::ostream &os
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom,
-                                       const char* name, const char* value, const char *details)
-{
+                                                       const char* name, const char* value, const char *details) {
    DENTER(TOP_LAYER);
-   os << "\t";
+   os << "\n\t";
    if (details != nullptr && strlen(details) > 0) {
       os << std::format("{}:{}={} ({})", dom, name, value, details);
    } else {
       os << std::format("{}:{}={}", dom, name, value);
    }
-   os << "\n";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter)
-{
+void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-
-   static bool pending_header_printed = false;
    if (!pending_header_printed && (parameter.show_ & QSTAT_DISPLAY_FULL) && (parameter.show_ & QSTAT_DISPLAY_PENDING)) {
       show_header_with_title(os, parameter, MSG_QSTAT_PRT_PEDINGJOBS);
       pending_header_printed = true;
@@ -231,7 +212,6 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_finished(std::ostream &os) 
 
 void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   static bool finished_header_printed = false;
    if (!finished_header_printed) {
       show_header_with_title(os, parameter, MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
       finished_header_printed = true;
@@ -244,7 +224,6 @@ void ocs::QStatDefaultViewPlain::report_finished_jobs_finished(std::ostream &os)
 
 void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   static bool error_header_printed = false;
    if (!error_header_printed) {
       show_header_with_title(os, parameter, MSG_QSTAT_PRT_ERRORJOBS);
    }
@@ -256,23 +235,17 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
 
 void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
-   int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
-   bool print_job_id;
-
-   dstring ds = DSTRING_INIT;
-
-   sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
-   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
-   sge_time = !sge_ext;
-   sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
+   const bool sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
+   const bool tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
+   const bool sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
+   const bool sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
+   const bool sge_time = !sge_ext | tsk_ext | sge_urg | sge_pri;
 
    if ((parameter.show_ & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
       job_header_printed = true;
    }
 
-   print_job_id = summary->print_jobid;
+   const bool print_job_id = summary->print_jobid;
 
    last_job_id = jid;
    if (summary->queue == nullptr) {
@@ -345,13 +318,14 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
       size_t line_length = oss.str().length();
 
       os << oss.str() << "\n";
-      os << std::string(line_length, '-') << "\n";
+      os << std::string(line_length, '-');
 
       job_header_printed = true;
    }
 
+   os << "\n";
+
    /* job id */
-   /* job number / ja task id */
    if (print_job_id) {
       os << std::format("{:>10} ", jid);
    } else {
@@ -396,7 +370,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    }
    if (sge_pri) {
       if (print_job_id) {
-         os << std::format("{:>5d} ", (int)summary->priority);
+         os << std::format("{:>5} ", summary->priority);
       } else {
          os << std::string(5 + 1, ' ');
       }
@@ -424,6 +398,7 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
       os << std::string(5 + 1, ' ');
    }
 
+   DSTRING_STATIC(ds, 32);
    if (sge_time) {
       if (print_job_id) {
          if (summary->is_running) {
@@ -450,21 +425,16 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
 
    if (sge_ext) {
       /* scaled cpu usage */
-      if (!summary->has_cpu_usage)
+      if (!summary->has_cpu_usage) {
          os << std::format("{:<10.10} ", summary->is_running ? "NA" : "");
-      else {
-         int secs, minutes, hours, days;
-
-         secs = summary->cpu_usage;
-
-         days    = secs/(60*60*24);
-         secs   -= days*(60*60*24);
-
-         hours   = secs/(60*60);
-         secs   -= hours*(60*60);
-
-         minutes = secs/60;
-         secs   -= minutes*60;
+      } else {
+         int secs = static_cast<int>(summary->cpu_usage);
+         int days = secs/(60*60*24);
+         secs -= days*(60*60*24);
+         int hours = secs/(60*60);
+         secs -= hours*(60*60);
+         int minutes = secs/60;
+         secs -= minutes*60;
 
          os << std::format("{}:{:02}:{:02}:{:02} ", days, hours, minutes, secs);
       }
@@ -486,11 +456,11 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
       if (sge_ext || summary->is_queue_assigned) {
-         os << std::format("{:<5d} ", (int)summary->tickets);
-         os << std::format("{:<5d} ", (int)summary->override_tickets);
-         os << std::format("{:<5d} ", (int)summary->otickets);
-         os << std::format("{:<5d} ", (int)summary->ftickets);
-         os << std::format("{:<5d} ", (int)summary->stickets);
+         os << std::format("{:<5} ", summary->tickets);
+         os << std::format("{:<5} ", summary->override_tickets);
+         os << std::format("{:<5} ", summary->otickets);
+         os << std::format("{:<5} ", summary->ftickets);
+         os << std::format("{:<5} ", summary->stickets);
          os << std::format("{:<5.2f} ", summary->share);
       } else {
          os << std::string((5 + 1) * 6, ' ');
@@ -503,37 +473,30 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
       os << std::format("{:<{}.{}} ", summary->queue ? summary->queue : "", queue_length, queue_length);
    }
 
-   // master/slave or grantes slots
+   // master/slave or granted slots
    if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
-      if (summary->master)
+      if (summary->master) {
          os << std::format("{:<6} ", summary->master);
-      else
+      } else {
          os << std::string(6 + 1, ' ');
+      }
    } else {
-      os << std::format("{:<6d} ", (int)summary->slots);
+      os << std::format("{:<6} ", summary->slots);
    }
 
    // job array task id(s)
-   if (summary->task_id && summary->is_array)
+   if (summary->task_id && summary->is_array) {
       os << std::format("{:<10s} ", summary->task_id ? summary->task_id : "");
-   else
+   } else {
       os << std::string(10 + 1, ' ');
-
-   if (!tsk_ext) {
-      os << "\n";
    }
-
-   sge_dstring_free(&ds);
 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os)
-{
+void ocs::QStatDefaultViewPlain::report_sub_tasks_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    sub_task_count = 0;
-
    DRETURN_VOID;
 }
 
@@ -544,11 +507,9 @@ void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_
    os << std::format("{:>5.5} ", summary->state);
 
    if (summary->has_cpu_usage) {
-      dstring resource_string = DSTRING_INIT;
-
+      DSTRING_STATIC(resource_string, 32);
       double_print_time_to_dstring(summary->cpu_usage, &resource_string, true);
       os << std::format("{:>10.10} ", sge_dstring_get_string(&resource_string));
-      sge_dstring_free(&resource_string);
    } else {
       os << std::format("{:>10.10} ", summary->is_running? "NA" : "");
    }
@@ -566,7 +527,7 @@ void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_
    }
 
    if (summary->has_exit_status) {
-      os << std::format("{:>4d} ", (int)summary->exit_status);
+      os << std::format("{:>4} ", summary->exit_status);
    }
 
    DRETURN_VOID;
@@ -574,7 +535,6 @@ void ocs::QStatDefaultViewPlain::report_sub_task(std::ostream &os, task_summary_
 
 void ocs::QStatDefaultViewPlain::report_sub_tasks_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
@@ -604,9 +564,8 @@ void ocs::QStatDefaultViewPlain::show_header_with_subtitle(std::ostream &os, job
    }
 
    // Show the name of the additional info (e.g. "Checkpoint Env.:") and the name.
-   os << std::format("\t{:<36.36} {} ", name_str != nullptr ? name_str : "", name != nullptr ? name : "");
-
-   os << (value != nullptr ? value : "") << '\n';
+   os << std::format("\n\t{:<36.36} {} ", name_str != nullptr ? name_str : "", name != nullptr ? name : "");
+   os << (value != nullptr ? value : "");
    DRETURN_VOID;
 }
 
@@ -642,61 +601,59 @@ void ocs::QStatDefaultViewPlain::report_default_request_finished(std::ostream &o
 
 void ocs::QStatDefaultViewPlain::report_default_request(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{}={} (default)\n", name, value);
+   os << std::format("\n\t{}={} (default)", name, value);
    DRETURN_VOID;
 }
 
 
 void ocs::QStatDefaultViewPlain::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
-
    if (hard_requested_queue_count > 0) {
       os << ", " << name;
    } else {
       os << name;
    }
    hard_requested_queue_count++;
-
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_hard_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard) {
    DENTER(TOP_LAYER);
 
+   os << "\n\t";
    switch(scope) {
       case JRS_SCOPE_MASTER:
          if (queue) {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Master task hard requested queues:");
+               os << std::format("{:<36.36} ", "Master task hard requested queues:");
             } else {
-               os << std::format("\t{:<36.36} ", "Master task soft requested queues:");
+               os << std::format("{:<36.36} ", "Master task soft requested queues:");
             }
          } else {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Master Hard Resources:");
+               os << std::format("{:<36.36} ", "Master Hard Resources:");
             } else {
-               os << std::format("\t{:<36.36} ", "Master Soft Resources:");
+               os << std::format("{:<36.36} ", "Master Soft Resources:");
             }
          }
          break;
       case JRS_SCOPE_SLAVE:
          if (queue) {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Slave task hard requested queues:");
+               os << std::format("{:<36.36} ", "Slave task hard requested queues:");
             } else {
-               os << std::format("\t{:<36.36} ", "Slave task soft requested queues:");
+               os << std::format("{:<36.36} ", "Slave task soft requested queues:");
             }
          } else {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Slave Hard Resources:");
+               os << std::format("{:<36.36} ", "Slave Hard Resources:");
             } else {
-               os << std::format("\t{:<36.36} ", "Slave Soft Resources:");
+               os << std::format("{:<36.36} ", "Slave Soft Resources:");
 
             }
          }
@@ -704,15 +661,15 @@ void ocs::QStatDefaultViewPlain::show_queues_or_resource_started(std::ostream &o
       case JRS_SCOPE_GLOBAL:
          if (queue) {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Hard requested queues:");
+               os << std::format("{:<36.36} ", "Hard requested queues:");
             } else {
-               os << std::format("\t{:<36.36} ", "Soft requested queues:");
+               os << std::format("{:<36.36} ", "Soft requested queues:");
             }
          } else {
             if (hard) {
-               os << std::format("\t{:<36.36} ", "Hard Resources:");
+               os << std::format("{:<36.36} ", "Hard Resources:");
             } else {
-               os << std::format("\t{:<36.36} ", "Soft Resources:");
+               os << std::format("{:<36.36} ", "Soft Resources:");
 
             }
          }
@@ -754,40 +711,32 @@ void ocs::QStatDefaultViewPlain::report_soft_resources_started(std::ostream &os,
 
 void ocs::QStatDefaultViewPlain::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
    DENTER(TOP_LAYER);
-
    if (soft_requested_queue_count > 0) {
       os << ", " << name;
    } else {
       os << name;
    }
    soft_requested_queue_count++;
-
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
-
-
 
 void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
-      os << std::format("\t{:<36.36} ", " ");
+      os << std::format("\n\t{:<36.36} ", " ");
    }
-   os << std::format("{}={} ({:f})\n", name, (value ? value : ""), uc);
+   os << std::format("{}={} ({:f})", name, (value ? value : ""), uc);
    hard_resource_count++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   if (hard_resource_count == 0) {
-      os << "\n";
-   }
    DRETURN_VOID;
 }
 
@@ -795,24 +744,21 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os
 void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (soft_resource_count > 0 ) {
-      os << std::format("\t{:<36.36} ", " ");
+      os << std::format("\n\t{:<36.36} ", " ");
    }
-   os << std::format("{}={}\n", name, value ? value : "");
+   os << std::format("{}={}", name, value ? value : "");
    soft_resource_count++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_soft_resources_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   if (soft_resource_count == 0) {
-      os << "\n";
-   }
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Jobs (request):");
+   os << std::format("\n\t{:<36.36} ", "Predecessor Jobs (request):");
    predecessor_requested_count = 0;
    DRETURN_VOID;
 }
@@ -830,13 +776,12 @@ void ocs::QStatDefaultViewPlain::report_predecessor_requested(std::ostream &os, 
 
 void ocs::QStatDefaultViewPlain::report_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Jobs:");
+   os << std::format("\n\t{:<36.36} ", "Predecessor Jobs:");
    predecessor_count = 0;
    DRETURN_VOID;
 }
@@ -854,13 +799,12 @@ void ocs::QStatDefaultViewPlain::report_predecessor(std::ostream &os, uint32_t j
 
 void ocs::QStatDefaultViewPlain::report_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Array Jobs (request):");
+   os << std::format("\n\t{:<36.36} ", "Predecessor Array Jobs (request):");
    ad_predecessor_requested_count = 0;
    DRETURN_VOID;
 }
@@ -878,13 +822,12 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor_requested(std::ostream &o
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_requested_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Array Jobs:");
+   os << std::format("\n\t{:<36.36} ", "Predecessor Array Jobs:");
    ad_predecessor_count = 0;
    DRETURN_VOID;
 }
@@ -902,19 +845,17 @@ void ocs::QStatDefaultViewPlain::report_ad_predecessor(std::ostream &os, uint32_
 
 void ocs::QStatDefaultViewPlain::report_ad_predecessors_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_binding_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Binding:");
+   os << std::format("\n\t{:<36.36} ", "Binding:");
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_binding_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
@@ -925,9 +866,13 @@ void ocs::QStatDefaultViewPlain::report_binding(std::ostream &os, const char *bi
 }
 
 void ocs::QStatDefaultViewPlain::report_binding_attribute(std::ostream &os, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_binding_attribute(std::ostream &os, const char *name, uint32_t value) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewPlain::report_job_finished(std::ostream &os, u_int jid) {

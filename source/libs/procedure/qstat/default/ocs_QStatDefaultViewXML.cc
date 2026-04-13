@@ -533,8 +533,6 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, job_addi
 
             DPRINTF("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
             xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
-            /* xml_elem = xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
-            TODO: xml_addAttribute(xmlElem, "name", lGetString(job, JB_pe)); */
          }
    }
    DRETURN_VOID;

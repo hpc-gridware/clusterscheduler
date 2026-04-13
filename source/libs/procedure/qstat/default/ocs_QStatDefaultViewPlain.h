@@ -23,8 +23,11 @@
 
 namespace ocs {
    class QStatDefaultViewPlain : public QStatDefaultViewBase {
-      bool  header_printed = false;
-      bool  job_header_printed = false;
+      bool pending_header_printed = false;
+      bool finished_header_printed = false;
+      bool error_header_printed = false;
+      bool header_printed = false;
+      bool job_header_printed = false;
 
       /* id of the last reported job */
       uint32_t last_job_id = 0;
@@ -41,8 +44,8 @@ namespace ocs {
       int  ad_predecessor_count = 0;
 
       void show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title);
-      void show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value);
-      void show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard);
+      static void show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value);
+      static void show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard);
    public:
       explicit QStatDefaultViewPlain(const ProcedureParameter &parameter) : QStatDefaultViewBase(parameter) {};
       ~QStatDefaultViewPlain() override = default;

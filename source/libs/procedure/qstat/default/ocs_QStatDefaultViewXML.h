@@ -19,8 +19,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <ostream>
-
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {

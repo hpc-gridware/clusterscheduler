@@ -29,16 +29,22 @@
 #include "msg_clients_common.h"
 
 ocs::QQuotaViewPlain::QQuotaViewPlain(const QQuotaParameter &parameter) : QQuotaViewBase(parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 ocs::QQuotaViewPlain::~QQuotaViewPlain() = default;
 
 void
 ocs::QQuotaViewPlain::report_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QQuotaViewPlain::report_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
@@ -54,7 +60,6 @@ ocs::QQuotaViewPlain::report_limit_rule_begin(std::ostream &os, const char *rqs_
 
    std::ostringstream oss;
    oss << rqs_name << "/" << rule_name;
-
    os << std::format("{:<20.20} ", oss.str());
    DRETURN_VOID;
 }

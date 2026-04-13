@@ -255,8 +255,8 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(lList **ppcmdlin
  **** queue/res/user-arguments into the lists.
  ****/
 lList *
-ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
-{
+ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
+   DENTER(TOP_LAYER);
    stringT str;
    lList *alp = nullptr;
    uint32_t helpflag;
@@ -265,7 +265,6 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
    uint32_t full = 0;
    lList *plstringopt = nullptr;
 
-   DENTER(TOP_LAYER);
 
    /* Loop over all options. Only valid options can be in the
       ppcmdline list.
@@ -442,7 +441,7 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
          group_opt_ |= parse_group_options(plstringopt, &alp);
 
          // -g c is here misused to switch to a different output mode.
-         // @todo We should consider to introduce a siwtch like -mode ...
+         // @todo We should consider to introduce a switch like -mode ...
          if (group_opt_ & GROUP_CQ_SUMMARY) {
             output_mode_ = OutputMode::QSTAT_GROUP;
             group_opt_ &= ~GROUP_CQ_SUMMARY;
@@ -476,44 +475,38 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid)
 }
 
 bool
-ocs::QStatParameterClient::switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file)
-{
+ocs::QStatParameterClient::switch_list_qstat_parse_from_file(lList **switch_list, lList **answer_list, const char *file) {
    DENTER(TOP_LAYER);
-   bool ret = true;
-
    if (switch_list == nullptr) {
-      ret = false;
-   } else {
-      if (!sge_is_file(file)) {
-         // it is ok if the file does not exist
-         ret = true;
-      } else {
-         char *file_as_string = nullptr;
-         int file_as_string_length;
-
-         file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                    MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
-            ret = false;
-         } else {
-            char **token = stra_from_str(file_as_string, " \n\t");
-            ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, token);
-            sge_strafree(&token);
-         }
-         sge_free(&file_as_string);
-      }
+      DRETURN(false);
    }
+   if (!sge_is_file(file)) {
+      // it is ok if the file does not exist
+      DRETURN_VOID(true);
+   }
+
+   int file_as_string_length;
+   char *file_as_string = sge_file2string(file, &file_as_string_length);
+   if (file_as_string == nullptr) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
+      DRETURN(false);
+   }
+
+   char **token = stra_from_str(file_as_string, " \n\t");
+   const int ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, token);
+   sge_strafree(&token);
+   sge_free(&file_as_string);
    DRETURN(ret);
 }
 
 bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **argv, char **envp) {
+   DENTER(TOP_LAYER);
    lList *alp = nullptr;
    lList *pfile = nullptr;
    lList *pcmdline = nullptr;
    lList *ref_list = nullptr;
    lListElem *ep_2 = nullptr;
-   bool more = true;
 
    const char *username = component_get_username();
    const char *cell_root = bootstrap_get_cell_root();
@@ -523,57 +516,56 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       need_queues_ = true;
    }
 
-   {
-      // get name of files that contain default options
-      dstring file = DSTRING_INIT;
-      const char *common_file = SGE_COMMON_DEF_QSTAT_FILE;
-      const char *home_file = SGE_HOME_DEF_QSTAT_FILE;
+   bool more = true;
+   // get name of files that contain default options
+   dstring file = DSTRING_INIT;
+   const char *common_file = SGE_COMMON_DEF_QSTAT_FILE;
+   const char *home_file = SGE_HOME_DEF_QSTAT_FILE;
 
-      if (output_mode_ == OutputMode::QSELECT) {
-         common_file = SGE_COMMON_DEF_QSELECT_FILE;
-         home_file = SGE_HOME_DEF_QSELECT_FILE;
-      }
+   if (output_mode_ == OutputMode::QSELECT) {
+      common_file = SGE_COMMON_DEF_QSELECT_FILE;
+      home_file = SGE_HOME_DEF_QSELECT_FILE;
+   }
 
-      // get options from the global and user specific files
-      if (get_root_file_path(&file, cell_root, common_file)) {
-         switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
-      }
-      if (get_user_home_file_path(&file, home_file, username, &alp)) {
-         switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
-      }
-      sge_dstring_free(&file);
+   // get options from the global and user specific files
+   if (get_root_file_path(&file, cell_root, common_file)) {
+      switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
+   }
+   if (get_user_home_file_path(&file, home_file, username, &alp)) {
+      switch_list_qstat_parse_from_file(&pfile, &alp, sge_dstring_get_string(&file));
+   }
+   sge_dstring_free(&file);
 
-      // get options from the command line
-      switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, argv);
+   // get options from the command line
+   switch_list_qstat_parse_from_cmdline(&pcmdline, &alp, argv);
 
-      // remove duplicate options
-      for_each_ep_lv(ep_1, pcmdline) {
-         do {
-            /*
-             * Need that logic to handle multiple SPA
-             * objects representing the same option.
-             */
-            more = false;
-            for_each_rw(ep_2, pfile) {
-               if (strcmp(lGetString(ep_1, SPA_switch_val), lGetString(ep_2, SPA_switch_val)) == 0) {
-                  // remove duplicate options
-                  lRemoveElem(pfile, &ep_2);
-                  more = true;
-                  break;
-               }
+   // remove duplicate options
+   for_each_ep_lv(ep_1, pcmdline) {
+      do {
+         /*
+          * Need that logic to handle multiple SPA
+          * objects representing the same option.
+          */
+         more = false;
+         for_each_rw(ep_2, pfile) {
+            if (strcmp(lGetString(ep_1, SPA_switch_val), lGetString(ep_2, SPA_switch_val)) == 0) {
+               // remove duplicate options
+               lRemoveElem(pfile, &ep_2);
+               more = true;
+               break;
             }
-         } while(more);
-      }
+         }
+      } while(more);
+   }
 
-      // merge the options from the files and the command line
-      if (lGetNumberOfElem(pcmdline) > 0) {
-         lAppendList(pcmdline, pfile);
-         lFreeList(&pfile);
-      } else if (lGetNumberOfElem(pfile) > 0) {
-         lAppendList(pfile, pcmdline);
-         lFreeList(&pcmdline);
-         pcmdline = pfile;
-      }
+   // merge the options from the files and the command line
+   if (lGetNumberOfElem(pcmdline) > 0) {
+      lAppendList(pcmdline, pfile);
+      lFreeList(&pfile);
+   } else if (lGetNumberOfElem(pfile) > 0) {
+      lAppendList(pfile, pcmdline);
+      lFreeList(&pcmdline);
+      pcmdline = pfile;
    }
 
    // parsing error => show error and exit
@@ -583,7 +575,6 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       }
       lFreeList(&alp);
       lFreeList(&pcmdline);
-      //qstat_env_destroy(&qstat_env);
       sge_exit(1);
    }
 
@@ -599,10 +590,9 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
       lFreeList(&alp);
       lFreeList(&pcmdline);
       lFreeList(&ref_list);
-      //qstat_env_destroy(&qstat_env);
       sge_exit(1);
    }
 
    str_list_transform_user_list(&user_list_, answer_list, username);
-   return true;
+   DRETURN(true);
 }

@@ -110,8 +110,13 @@ std::string ocs::ProcedureParameter::get_procedure_from_bundle(const lList *para
 std::string ocs::ProcedureParameter::get_sub_procedure_from_bundle(const lList *parameter_bundle) {
    const lListElem *name_value_param = lGetElemStr(parameter_bundle, SPP_name, NAME_VALUE_LIST);
    const lList *name_value_list = lGetList(name_value_param, SPP_value_list);
-   const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE);
-   return lGetString(sub_procedure_elem, VA_value);
+
+   // Not every request contains sub-procedure requests
+   if (const lListElem *sub_procedure_elem = lGetElemStr(name_value_list, VA_variable, SUB_PROCEDURE); sub_procedure_elem != nullptr) {
+      const char *value = lGetString(sub_procedure_elem, VA_value);
+      return (value != nullptr ? value : "");
+   }
+   return "";
 }
 
 void ocs::ProcedureParameter::add_variable(const char *name, const char *value) {

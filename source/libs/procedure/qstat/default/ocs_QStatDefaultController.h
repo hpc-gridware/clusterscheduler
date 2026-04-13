@@ -19,8 +19,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "../ocs_QStatParameter.h"
-#include "../ocs_QStatModelClient.h"
+#include "qstat/ocs_QStatParameter.h"
+#include "qstat/ocs_QStatModelClient.h"
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {

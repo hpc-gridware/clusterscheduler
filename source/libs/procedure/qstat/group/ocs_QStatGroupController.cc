@@ -18,11 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <sstream>
-#include <iostream>
-
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_time.h"
 
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_qinstance.h"

@@ -36,7 +36,7 @@ void ocs::QStatDefaultViewJSON::report_started(std::ostream &os, QStatParameter 
    indent++;
    os << std::string(indent * 3, ' ') << "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n";
    os << std::string(indent * 3, ' ') <<
-         "\"$id\": \"https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-";
+         R"("$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-)";
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
       os << "full";
    } else {
@@ -49,7 +49,7 @@ void ocs::QStatDefaultViewJSON::report_started(std::ostream &os, QStatParameter 
 
 void ocs::QStatDefaultViewJSON::report_finished(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   if (!first_queue ) {
+   if (!first_queue) {
       os << "\n";
    }
 
@@ -80,8 +80,8 @@ void ocs::QStatDefaultViewJSON::report_queue_section_finished(std::ostream &os, 
 void ocs::QStatDefaultViewJSON::report_queue_summary(std::ostream &os, const char *qname, queue_summary_t *summary,
                                                      QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   os << "\n" << std::string(indent * 3, ' ') << "\"name\": \"" << qname << "\"";
-   os << ",\n" << std::string(indent * 3, ' ') << "\"qtype\": \"" << summary->queue_type << "\"";
+   os << "\n" << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(qname);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"qtype\": " << raw2quotedJSON(summary->queue_type);
    os << ",\n" << std::string(indent * 3, ' ') << "\"slots_used\": " << summary->used_slots;
    os << ",\n" << std::string(indent * 3, ' ') << "\"slots_resv\": " << summary->resv_slots;
    os << ",\n" << std::string(indent * 3, ' ') << "\"slots_total\": " << summary->total_slots;
@@ -90,8 +90,8 @@ void ocs::QStatDefaultViewJSON::report_queue_summary(std::ostream &os, const cha
    } else {
       os << ",\n" << std::string(indent * 3, ' ') << "\"load_avg\": " << 0;
    }
-   os << ",\n" << std::string(indent * 3, ' ') << "\"arch\": \"" << summary->arch << "\"";
-   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"arch\": " << raw2quotedJSON(summary->arch);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state);
    DRETURN_VOID;
 }
 
@@ -123,23 +123,23 @@ void ocs::QStatDefaultViewJSON::report_queue_finished(std::ostream &os, const ch
 
 void ocs::QStatDefaultViewJSON::report_queue_load_alarm(std::ostream &os, const char *qname, const char *reason) {
    DENTER(TOP_LAYER);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"load_alarm_reason\": \"" << reason << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"load_alarm_reason\": " << raw2quotedJSON(reason);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_suspend_alarm(std::ostream &os, const char *qname, const char *reason) {
    DENTER(TOP_LAYER);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"suspend_alarm_reason\": \"" << reason << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"suspend_alarm_reason\": " << raw2quotedJSON(reason);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_message(std::ostream &os, const char *qname, const char *message) {
    DENTER(TOP_LAYER);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"message\": \"" << message << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"message\": " << raw2quotedJSON(message);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_resource_started(std::ostream &os, const char* name) {
+void ocs::QStatDefaultViewJSON::report_queue_resource_started(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    os << ",\n";
    os << std::string(indent * 3, ' ') << "\"queue_resources\": {";
@@ -147,30 +147,31 @@ void ocs::QStatDefaultViewJSON::report_queue_resource_started(std::ostream &os, 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_resource_finished(std::ostream &os, const char* name) {
+void ocs::QStatDefaultViewJSON::report_queue_resource_finished(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "}";
    first_sub_object = true;
-   DRETURN_VOID;   DRETURN_VOID;
+   DRETURN_VOID;
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const lListElem *resource, const char *dom,
                                                       const char *name, const char *value, const char *details) {
    DENTER(TOP_LAYER);
-   // @todo
    if (first_sub_object) {
       os << "\n";
       first_sub_object = false;
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": ";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": ";
    show_resource_as_JSON_type(os, resource);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname, QStatParameter &parameter) {
+void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname,
+                                                          QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
       if (first_queue) {
@@ -276,15 +277,15 @@ void ocs::QStatDefaultViewJSON::report_error_jobs_finished(std::ostream &os) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary,
+void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid, job_summary_t *summary,
                                            QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
 
-   const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
-   const bool sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY) ? true : false;
-   const bool sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
-   const bool tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
-   const bool sge_time = !sge_ext | tsk_ext | sge_urg | sge_pri;
+   const bool show_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   const bool show_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY) ? true : false;
+   const bool show_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
+   const bool show_tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
+   const bool show_time = !show_ext | show_tsk_ext | show_urg | show_pri;
 
    if (first_job) {
       os << "\n";
@@ -298,43 +299,43 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_s
 
    os << std::string(indent * 3, ' ') << "\"job_number\": " << jid;
    os << ",\n" << std::string(indent * 3, ' ') << "\"prio\": " << summary->priority;
-   if (sge_ext) {
+   if (show_ext) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"ntix\": " << summary->ntckts;
    }
-   if (sge_urg) {
+   if (show_urg) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"nurg\": " << summary->nurg;
       os << ",\n" << std::string(indent * 3, ' ') << "\"urg\": " << summary->nurg;
       os << ",\n" << std::string(indent * 3, ' ') << "\"rrcontr\": " << summary->rrcontr;
       os << ",\n" << std::string(indent * 3, ' ') << "\"wtcontr\": " << summary->wtcontr;
       os << ",\n" << std::string(indent * 3, ' ') << "\"dlcontr\": " << summary->dlcontr;
    }
-   if (sge_pri) {
+   if (show_pri) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"nppri\": " << summary->nppri;
       os << ",\n" << std::string(indent * 3, ' ') << "\"priority\": " << summary->priority;
    }
-   os << ",\n" << std::string(indent * 3, ' ') << "\"name\": \"" << summary->name << "\"";
-   os << ",\n" << std::string(indent * 3, ' ') << "\"owner\": \"" << summary->user << "\"";
-   if (sge_ext) {
-      os << ",\n" << std::string(indent * 3, ' ') << "\"project\": \"" << (summary->project ? summary->project : "") <<
-            "\"";
-      os << ",\n" << std::string(indent * 3, ' ') << "\"department\": \"" << (summary->department
-                                                                                 ? summary->department
-                                                                                 : "") << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(summary->name);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"owner\": " << raw2quotedJSON(summary->user);
+   if (show_ext) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"project\": "
+            << raw2quotedJSON(summary->project ? summary->project : "");
+      os << ",\n" << std::string(indent * 3, ' ') << "\"department\": "
+            << raw2quotedJSON(summary->department ? summary->department : "");
    }
-   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
-   if (sge_time) {
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state);
+   if (show_time) {
       const char *attrib = summary->is_running ? "start_time" : "submission_time";
-      uint64_t timestamp = summary->is_running ? summary->start_time : summary->submit_time;
-      os << ",\n" << std::string(indent * 3, ' ') << "\"" << attrib << "\": \"";
+      const uint64_t timestamp = summary->is_running ? summary->start_time : summary->submit_time;
+
+      os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(attrib) << ": \"";
       show_ISO_8601_timestamp(os, timestamp);
       os << "\"";
    }
-   if (sge_urg) {
+   if (show_urg) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"" << "deadline" << "\": \"";
       show_ISO_8601_timestamp(os, summary->deadline);
       os << "\"";
    }
-   if (sge_ext) {
+   if (show_ext) {
       if (summary->has_cpu_usage) {
          os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
       }
@@ -356,7 +357,8 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_s
          os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << summary->queue;
       }
       if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
-         os << ",\n" << std::string(indent * 3, ' ') << "\"master\": \"" << (summary->master ? summary->master : "") << "\"";
+         os << ",\n" << std::string(indent * 3, ' ') << "\"master\": "
+               << raw2quotedJSON(summary->master ? summary->master : "");
       }
       os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << summary->slots;
       if (summary->task_id && summary->is_array) {
@@ -377,32 +379,29 @@ void ocs::QStatDefaultViewJSON::report_job_finished(std::ostream &os, u_int jid)
 
 void ocs::QStatDefaultViewJSON::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"requested_pe\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"requested_pe\": {";
    indent++;
-   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": \"" << (pe_name ? pe_name : "") << "\"";
-   os << ",\n" << std::string(indent * 3, ' ') << "\"pe_range\": \"" << (pe_range ? pe_range : "") << "\"";
+   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": " << raw2quotedJSON(pe_name ? pe_name : "");
+   os << ",\n" << std::string(indent * 3, ' ') << "\"pe_range\": " << raw2quotedJSON(pe_range ? pe_range : "");
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "}";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_granted_pe(std::ostream &os, const char *pe_name, int pe_slots) {
+void ocs::QStatDefaultViewJSON::report_granted_pe(std::ostream &os, const char *pe_name, const int pe_slots) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"granted_pe\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"granted_pe\": {";
    indent++;
-   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": \"" << (pe_name ? pe_name : "") << "\"";
+   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": " << raw2quotedJSON(pe_name ? pe_name : "");
    os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << pe_slots;
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "}";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_hard_requested_queues_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_hard_requested_queues_started(std::ostream &os, const int scope) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_queue\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_queue\": {";
    indent++;
    DRETURN_VOID;
 }
@@ -423,14 +422,13 @@ void ocs::QStatDefaultViewJSON::report_hard_requested_queue(std::ostream &os, in
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(name);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_soft_requested_queues_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_queue\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_queue\": {";
    indent++;
    DRETURN_VOID;
 }
@@ -451,14 +449,13 @@ void ocs::QStatDefaultViewJSON::report_soft_requested_queue(std::ostream &os, in
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(name);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_hard_resources_started(std::ostream &os, int scope) {
+void ocs::QStatDefaultViewJSON::report_hard_resources_started(std::ostream &os, const int scope) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_request\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_request\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -471,7 +468,8 @@ void ocs::QStatDefaultViewJSON::report_hard_resources_finished(std::ostream &os)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const lListElem *resource,
+                                                     const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";
@@ -481,7 +479,7 @@ void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope
    }
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    os << std::string(indent * 3, ' ') << "\"value\": ";
    show_resource_as_JSON_type(os, resource);
    os << ",\n";
@@ -493,8 +491,7 @@ void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope
 
 void ocs::QStatDefaultViewJSON::report_default_request_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << "default_hard_request\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << "default_hard_request\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -517,7 +514,7 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
    }
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    os << std::string(indent * 3, ' ') << "\"value\": ";
    //show_resource_as_JSON_type(os, resource);
    os << value;
@@ -531,8 +528,7 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
 
 void ocs::QStatDefaultViewJSON::report_soft_resources_started(std::ostream &os, int scope) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_request\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_request\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -545,7 +541,8 @@ void ocs::QStatDefaultViewJSON::report_soft_resources_finished(std::ostream &os)
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const lListElem *resource,
+                                                     const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";
@@ -555,7 +552,7 @@ void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope
    }
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\"\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << "\n";
    os << std::string(indent * 3, ' ') << "\"value\": ";
    show_resource_as_JSON_type(os, resource);
    os << "\n";
@@ -567,8 +564,7 @@ void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope
 
 void ocs::QStatDefaultViewJSON::report_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"predecessors_requested\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"predecessors_requested\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -589,14 +585,13 @@ void ocs::QStatDefaultViewJSON::report_predecessor_requested(std::ostream &os, c
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(name);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_binding_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"requested_binding\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"requested_binding\": {";
    indent++;
    DRETURN_VOID;
 }
@@ -615,18 +610,17 @@ void ocs::QStatDefaultViewJSON::report_binding(std::ostream &os, const char *bin
 }
 
 void ocs::QStatDefaultViewJSON::report_binding_attribute(std::ostream &os, const char *name, const char *value) {
-   os << ",\n" << std::string(indent * 3, ' ') << "\"" << name << "\": \"" << value << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << name << "\": " << raw2quotedJSON(value);
 }
 
-void ocs::QStatDefaultViewJSON::report_binding_attribute(std::ostream &os, const char *name, uint32_t value) {
+void ocs::QStatDefaultViewJSON::report_binding_attribute(std::ostream &os, const char *name, const uint32_t value) {
    os << ",\n" << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
 }
 
 
 void ocs::QStatDefaultViewJSON::report_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"predecessors\": {";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"predecessors\": {";
    indent++;
    DRETURN_VOID;
 }
@@ -638,7 +632,7 @@ void ocs::QStatDefaultViewJSON::report_predecessors_finished(std::ostream &os) {
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, uint32_t jid) {
+void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, const uint32_t jid) {
    DENTER(TOP_LAYER);
    if (first_sub_object) {
       os << "\n";
@@ -652,8 +646,7 @@ void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, uint32_t ji
 
 void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -674,14 +667,13 @@ void ocs::QStatDefaultViewJSON::report_ad_predecessor_requested(std::ostream &os
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(name);
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_ad_predecessors_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -708,8 +700,7 @@ void ocs::QStatDefaultViewJSON::report_ad_predecessor(std::ostream &os, uint32_t
 
 void ocs::QStatDefaultViewJSON::report_sub_tasks_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"parallel_task\": [";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"parallel_task\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -731,8 +722,8 @@ void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t
    }
    os << std::string(indent * 3, ' ') << "{";
    indent++;
-   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": \"" << summary->task_id << "\"";
-   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
+   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": " << raw2quotedJSON(summary->task_id);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state);
    os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
    os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
    os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;
@@ -743,10 +734,9 @@ void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
+void
+ocs::QStatDefaultViewJSON::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
    DENTER(TOP_LAYER);
    // no need to show this again.
    DRETURN_VOID;
 }
-
-

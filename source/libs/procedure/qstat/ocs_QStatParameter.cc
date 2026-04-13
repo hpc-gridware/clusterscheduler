@@ -26,10 +26,10 @@
 #include "ocs_ProcedureParameter.h"
 #include "ocs_QStatParameter.h"
 
-#include "symbols.h"
 #include "sgeobj/cull/sge_str_ST_L.h"
 
 ocs::QStatParameter::~QStatParameter() {
+   DENTER(TOP_LAYER);
    lFreeList(&resource_list_);
    lFreeList(&q_resource_list_);
    lFreeList(&queue_ref_list_);
@@ -37,13 +37,14 @@ ocs::QStatParameter::~QStatParameter() {
    lFreeList(&user_list_);
    lFreeList(&queue_user_list_);
    lFreeList(&jid_list_);
+   DRETURN_VOID;
 }
 
 ocs::QStatParameter::QStatParameter(lList **bundle) : ProcedureParameter("") {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   ocs::QStatParameter::set_bundle(*bundle);
+   QStatParameter::set_bundle(*bundle);
 
    // free the bundle
    lFreeList(bundle);
@@ -62,6 +63,12 @@ void ocs::QStatParameter::set_bundle(const lList *bundle) {
    const lList *show_list = lGetList(show_param, SPP_value_list);
    show_ = lGetUlong(lFirst(show_list), ULNG_value);
    DPRINTF("show_: " sge_u32 "\n", show_);
+
+   // -explain bits
+   const lListElem *explain_param = lGetElemStr(bundle, SPP_name, EXPLAIN_BITS);
+   const lList *explain_list = lGetList(explain_param, SPP_value_list);
+   explain_bits_ = lGetUlong(lFirst(explain_list), ULNG_value);
+   DPRINTF("explain_bits_: " sge_u32 "\n", explain_bits_);
 
    // output mode
    const lListElem *output_param = lGetElemStr(bundle, SPP_name, OUTPUT_MODE);
@@ -208,6 +215,13 @@ lList *ocs::QStatParameter::get_bundle() {
    ep = lAddElemStr(&bundle, SPP_name, SHOW, SPP_Type);
    lSetList(ep, SPP_value_list, show_list);
    DPRINTF("show_=%u\n", static_cast<uint32_t>(show_));
+
+   // explain bits
+   lList *explain_list = nullptr;
+   lAddElemUlong(&explain_list, ULNG_value, explain_bits_, ULNG_Type);
+   ep = lAddElemStr(&bundle, SPP_name, EXPLAIN_BITS, SPP_Type);
+   lSetList(ep, SPP_value_list, explain_list);
+   DPRINTF("explain_bits_=%u\n", static_cast<uint32_t>(explain_bits_));
 
    // need queues
    lList *need_queues_list = nullptr;

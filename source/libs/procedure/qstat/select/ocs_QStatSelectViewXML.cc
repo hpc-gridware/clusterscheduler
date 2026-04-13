@@ -18,25 +18,35 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include "uti/sge_rmon_macros.h"
+
 #include <sgeobj/ocs_EscapedString.h>
 
 #include "qstat/select//ocs_QStatSelectViewXML.h"
 
 ocs::QStatSelectViewXML::QStatSelectViewXML(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewXML::report_started(std::ostream &os) {
-   os << "<qselect>" << std::endl;
+   DENTER(TOP_LAYER);
+   os << "<qselect>\n";
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewXML::report_finished(std::ostream &os) {
-   os << "</qselect>" << std::endl;
+   DENTER(TOP_LAYER);
+   os << "</qselect>\n";
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewXML::report_queue(std::ostream &os, const char* qname) {
-   os << "   " << "<queue>" << EscapedString(qname) << "</queue>" << std::endl;
+   DENTER(TOP_LAYER);
+   os << "   " << "<queue>" << EscapedString(qname) << "</queue>\n";
+   DRETURN_VOID;
 }
 

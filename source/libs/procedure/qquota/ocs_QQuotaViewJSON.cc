@@ -63,7 +63,7 @@ ocs::QQuotaViewJSON::report_finished(std::ostream &os) {
 }
 
 void
-ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char* rqs_name, const char *rule_name) {
+ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char *rqs_name, const char *rule_name) {
    // terminate last rule  if there was one
    if (!first_rule) {
       os << ",\n";
@@ -76,8 +76,8 @@ ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char* rqs_n
    indent++;
 
    // rule attributes
-   os << std::string(indent * 3, ' ') << "\"rqs_name\": \"" << rqs_name << "\",\n";
-   os << std::string(indent * 3, ' ') << "\"rule_name\": \"" << rule_name << "\"";
+   os << std::string(indent * 3, ' ') << "\"rqs_name\": " << raw2quotedJSON(rqs_name) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"rule_name\": " << raw2quotedJSON(rule_name);
 }
 
 void
@@ -94,7 +94,7 @@ ocs::QQuotaViewJSON::report_limit_rule_finished(std::ostream &os) {
 }
 
 void
-ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *filter_name, const char *value, bool exclude) {
+ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *filter_name, const char *value, const bool exclude) {
 
    if (last_filter_name == filter_name) {
       // if we have the same filer as previously, then just append the name to the array
@@ -119,7 +119,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"exclude\": " << (exclude ? "true" : "false") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"name\": \"" << value << "\"\n";
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value) << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    }
@@ -127,11 +127,11 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
 }
 
 void
-ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resource, uint64_t max, uint64_t used) {
+ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resource, const uint64_t max, const uint64_t used) {
    // show the resource and the max limit.
-   // used is optional. not available for static limits (non-consumables)
+   // `used` is optional. not available for static limits (non-consumables)
    os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"resource\": \"" << resource << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"resource\": " << raw2quotedJSON(resource) << ",\n";
    if (used != 0) {
       os << std::string(indent * 3, ' ') << "\"used\": " << used << ",\n";
    }

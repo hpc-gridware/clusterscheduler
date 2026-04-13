@@ -31,6 +31,8 @@
 #include <format>
 
 ocs::QRStatViewPlain::QRStatViewPlain(const QRStatParameter &parameter) : QRStatViewBase(parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 };
 
 void
@@ -50,14 +52,14 @@ ocs::QRStatViewPlain::report_ar_start(std::ostream &os) {
    DENTER(TOP_LAYER);
 
    if (!show_summary) {
-      os << "----------";
-      os << "----------";
-      os << "----------";
-      os << "----------";
-      os << "----------";
-      os << "----------";
-      os << "----------";
-      os << "----------" << "\n";
+      os << "----------"
+         << "----------"
+         << "----------"
+         << "----------"
+         << "----------"
+         << "----------"
+         << "----------"
+         << "----------" << "\n";
    } else if (!header_printed) {
       std::ostringstream oss;
       oss << std::format("{:<9.9} ", "ar-id")
@@ -81,7 +83,6 @@ ocs::QRStatViewPlain::report_ar_start(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_ar_finish(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (show_summary) {
       os << "\n";
    }
@@ -91,7 +92,6 @@ ocs::QRStatViewPlain::report_ar_finish(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_ar_node_ulong(std::ostream &os, const char *name, uint32_t value) {
    DENTER(TOP_LAYER);
-
    if (show_summary) {
       os << std::format("{:9} ", value);
    } else {
@@ -150,9 +150,7 @@ ocs::QRStatViewPlain::report_ar_node_string(std::ostream &os, const char *name, 
 void
 ocs::QRStatViewPlain::report_ar_node_time(std::ostream &os, const char *name, uint64_t value) {
    DENTER(TOP_LAYER);
-
    DSTRING_STATIC(time_string, 64);
-
    if (show_summary) {
       if (strcmp("start_time", name) == 0 || strcmp("end_time", name) == 0) {
          sge_ctime64_short(value, &time_string);
@@ -162,14 +160,12 @@ ocs::QRStatViewPlain::report_ar_node_time(std::ostream &os, const char *name, ui
       sge_ctime64(value, &time_string);
       os << std::format("{:<30.30} ", name) << sge_dstring_get_string(&time_string) << "\n";
    }
-
    DRETURN_VOID;
 }
 
 void
 ocs::QRStatViewPlain::report_ar_node_state(std::ostream &os, const char *name, uint32_t state) {
    DENTER(TOP_LAYER);
-
    dstring state_string = DSTRING_INIT;
    ar_state2dstring(static_cast<ar_state_t>(state), &state_string);
    if (show_summary) {
@@ -184,7 +180,6 @@ ocs::QRStatViewPlain::report_ar_node_state(std::ostream &os, const char *name, u
 void
 ocs::QRStatViewPlain::report_resource_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << std::format("{:<30.30} ", "resource_list");
       first_resource = true;
@@ -195,7 +190,6 @@ ocs::QRStatViewPlain::report_resource_list_start(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_resource_list_finish(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << "\n";
    }
@@ -205,7 +199,6 @@ ocs::QRStatViewPlain::report_resource_list_finish(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_resource_list_node_str(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_resource ? "" : ",") <<  name << "=" << value;
       if (first_resource) {
@@ -218,7 +211,6 @@ ocs::QRStatViewPlain::report_resource_list_node_str(std::ostream &os, const char
 void
 ocs::QRStatViewPlain::report_resource_list_node_double(std::ostream &os, const char *name, const double value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_resource ? "" : ",") <<  name << "=" << value;
       if (first_resource) {
@@ -231,7 +223,6 @@ ocs::QRStatViewPlain::report_resource_list_node_double(std::ostream &os, const c
 void
 ocs::QRStatViewPlain::report_resource_list_node_uint64(std::ostream &os, const char *name, const uint64_t value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_resource ? "" : ",") <<  name << "=" << value;
       if (first_resource) {
@@ -244,7 +235,6 @@ ocs::QRStatViewPlain::report_resource_list_node_uint64(std::ostream &os, const c
 void
 ocs::QRStatViewPlain::report_resource_list_node_bool(std::ostream &os, const char *name, const bool value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_resource ? "" : ",") <<  name << "=" << value;
       if (first_resource) {
@@ -255,7 +245,7 @@ ocs::QRStatViewPlain::report_resource_list_node_bool(std::ostream &os, const cha
 }
 
 void
-ocs::QRStatViewPlain::report_ar_node_boolean(std::ostream &os, const char *name, bool value) {
+ocs::QRStatViewPlain::report_ar_node_boolean(std::ostream &os, const char *name, const bool value) {
    DENTER(TOP_LAYER);
    const char* chvalue = value ? "true" : "false";
 
@@ -270,7 +260,6 @@ ocs::QRStatViewPlain::report_ar_node_boolean(std::ostream &os, const char *name,
 void
 ocs::QRStatViewPlain::report_exec_queue_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << std::format("{:<30.30} ", "exec_queue_list");
       first_exec_queue = true;
@@ -281,7 +270,6 @@ ocs::QRStatViewPlain::report_exec_queue_list_start(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_exec_queue_list_finish(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << "\n";
    }
@@ -291,7 +279,6 @@ ocs::QRStatViewPlain::report_exec_queue_list_finish(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_exec_queue_list_node(std::ostream &os, const char *name, uint32_t value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_exec_queue ? "" : ",") << name << "=" << value;
       if (first_exec_queue) {
@@ -304,7 +291,6 @@ ocs::QRStatViewPlain::report_exec_queue_list_node(std::ostream &os, const char *
 void
 ocs::QRStatViewPlain::report_exec_binding_list_start(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << std::format("{:<30.30} ", "exec_binding_list");
       first_exec_queue = true;
@@ -315,7 +301,6 @@ ocs::QRStatViewPlain::report_exec_binding_list_start(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_exec_binding_list_finish(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << "\n";
    }
@@ -325,7 +310,6 @@ ocs::QRStatViewPlain::report_exec_binding_list_finish(std::ostream &os) {
 void
 ocs::QRStatViewPlain::report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << (first_exec_queue ? "" : ", ") << name << "=" << value;
       if (first_exec_queue) {
@@ -338,7 +322,6 @@ ocs::QRStatViewPlain::report_exec_binding_list_node(std::ostream &os, const char
 void
 ocs::QRStatViewPlain::report_granted_parallel_environment_start(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << std::format("{:<30.30} ", "granted_parallel_environment");
    }
@@ -348,7 +331,6 @@ ocs::QRStatViewPlain::report_granted_parallel_environment_start(std::ostream &os
 void
 ocs::QRStatViewPlain::report_granted_parallel_environment_finish(std::ostream &os) {
    DENTER(TOP_LAYER);
-
    if (!show_summary) {
       os << "\n";
    }

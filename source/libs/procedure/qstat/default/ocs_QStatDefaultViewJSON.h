@@ -19,10 +19,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cinttypes>
-
-#include "uti/sge_dstring.h"
-
 #include "ocs_QStatDefaultViewBase.h"
 
 namespace ocs {

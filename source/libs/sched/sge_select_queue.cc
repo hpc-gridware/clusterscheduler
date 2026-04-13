@@ -2679,6 +2679,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
                snprintf(buffer, MAX_STRING_SIZE, MSG_SCHEDD_NOCOMPLEXATTRIBUTEFORTHRESHOLD_S, name);
             }
             strncat(reason, buffer, reason_size);
+            DTRACE;
             continue;
          }
 
@@ -2702,6 +2703,7 @@ char *sge_load_alarm_reason(lListElem *qep, lList *threshold,
                  limit_value
                 );
 
+         DTRACE;
          strncat(reason, buffer, reason_size);
       }
 

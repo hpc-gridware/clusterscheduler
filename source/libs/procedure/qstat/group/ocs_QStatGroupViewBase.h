@@ -19,9 +19,6 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <ostream>
-#include <cinttypes>
-
 #include "qstat/ocs_QStatParameter.h"
 
 #include "ocs_ProcedureView.h"

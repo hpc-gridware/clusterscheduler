@@ -36,16 +36,15 @@
 
 #include "ocs_client_job.h"
 
-void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
+void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter,
+                                                                      QStatJobModel &model) {
    DENTER(TOP_LAYER);
 
    /* print scheduler job information and global scheduler info */
    for_each_ep_lv(j_elem, model.jlp) {
-      uint32_t jid = lGetUlong(j_elem, JB_job_number);
-      const lListElem *sme;
+      const uint32_t jid = lGetUlong(j_elem, JB_job_number);
       const char *owner = lGetString(j_elem, JB_owner);
-      bool show_job = job_is_visible(owner,  model.is_manager());
-      if (!show_job) {
+      if (const bool show_job = job_is_visible(owner, model.is_manager()); !show_job) {
          DTRACE;
          continue;
       }
@@ -55,35 +54,33 @@ void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostre
       cull_show_job(os, j_elem, 0);
 
       /* print scheduling information */
-      if ((sme = lFirst(model.ilp)) != nullptr) {
+      if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
          int first_run = 1;
 
-         if (sme) {
-            /* global schduling info */
-            for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
-               if (first_run) {
-                  os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
-                  first_run = 0;
-               } else {
-                  os << "                                 ";
-               }
-               os << lGetString(mes, MES_message) << "\n";
+         /* global scheduling info */
+         for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
+            if (first_run) {
+               os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
+               first_run = 0;
+            } else {
+               os << "                                 ";
             }
+            os << lGetString(mes, MES_message) << "\n";
+         }
 
-            /* job scheduling info */
-            for_each_ep_lv(mes, lGetList(sme, SME_message_list)) {
-               const lListElem *mes_jid;
+         /* job scheduling info */
+         for_each_ep_lv(mes, lGetList(sme, SME_message_list)) {
+            const lListElem *mes_jid;
 
-               for_each_ep(mes_jid, lGetList(mes, MES_job_number_list)) {
-                  if (lGetUlong(mes_jid, ULNG_value) == jid) {
-                     if (first_run) {
-                        os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
-                        first_run = 0;
-                     } else {
-                        os << "                                 ";
-                     }
-                     os << lGetString(mes, MES_message) << "\n";
+            for_each_ep(mes_jid, lGetList(mes, MES_job_number_list)) {
+               if (lGetUlong(mes_jid, ULNG_value) == jid) {
+                  if (first_run) {
+                     os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
+                     first_run = 0;
+                  } else {
+                     os << "                                 ";
                   }
+                  os << lGetString(mes, MES_message) << "\n";
                }
             }
          }
@@ -96,19 +93,18 @@ void ocs::QStatJobViewPlain::report_jobs_and_reasons_with_job_request(std::ostre
 void
 ocs::QStatJobViewPlain::report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
-   lList *mlp = nullptr;
-   int initialized = 0;
-   uint32_t last_jid = 0;
-   uint32_t last_mid = 0;
    char text[256], ltext[256];
-   int ids_per_line = 0;
-   int first_run = 1;
-   int first_row = 1;
 
-   lListElem *sme = lFirstRW(model.ilp);
-   if (sme) {
-      /* print global schduling info */
-      first_run = 1;
+   if (lListElem *sme = lFirstRW(model.ilp); sme != nullptr) {
+      lList *mlp = nullptr;
+      uint32_t last_jid = 0;
+      int initialized = 0;
+      uint32_t last_mid = 0;
+      int ids_per_line = 0;
+      int first_run = 1;
+      int first_row = 1;
+
+      /* print global scheduling info */
       for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
          if (first_run) {
             os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
@@ -132,25 +128,23 @@ ocs::QStatJobViewPlain::report_reasons(std::ostream &os, QStatParameter &paramet
        * After this step the MES_messages are not correct anymore
        * We do not need this messages for the summary output
        */
-      lListElem *flt_msg, *flt_nxt_msg;
+      lListElem *flt_msg;
 
       lList *new_list = lCreateList("filtered message list", MES_Type);
 
-      flt_nxt_msg = lFirstRW(mlp);
+      lListElem *flt_nxt_msg = lFirstRW(mlp);
       while ((flt_msg = flt_nxt_msg)) {
          lListElem *flt_jid;
-         lListElem *flt_nxt_jid;
-         int found_msg, found_jid;
 
          flt_nxt_msg = lNextRW(flt_msg);
-         found_msg = 0;
+         int found_msg = 0;
          for_each_ep_lv(ref_msg, new_list) {
             if (lGetUlong(ref_msg, MES_message_number) == lGetUlong(flt_msg, MES_message_number)) {
-               flt_nxt_jid = lFirstRW(lGetList(flt_msg, MES_job_number_list));
+               lListElem *flt_nxt_jid = lFirstRW(lGetList(flt_msg, MES_job_number_list));
                while ((flt_jid = flt_nxt_jid)) {
                   flt_nxt_jid = lNextRW(flt_jid);
 
-                  found_jid = 0;
+                  int found_jid = 0;
                   for_each_ep_lv(ref_jid, lGetList(ref_msg, MES_job_number_list)) {
                      if (lGetUlong(ref_jid, ULNG_value) ==
                          lGetUlong(flt_jid, ULNG_value)) {
@@ -175,16 +169,15 @@ ocs::QStatJobViewPlain::report_reasons(std::ostream &os, QStatParameter &paramet
          mlp = new_list;
       }
 
-      text[0]=0;
+      text[0] = 0;
       for_each_ep_lv(mes, mlp) {
          lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
          for_each_ep_lv(jid_ulng, lGetList(mes, MES_job_number_list)) {
             int skip = 0;
             int header = 0;
-
-            uint32_t mid = lGetUlong(mes, MES_message_number);
-            uint32_t jid = lGetUlong(jid_ulng, ULNG_value);
+            const uint32_t mid = lGetUlong(mes, MES_message_number);
+            const uint32_t jid = lGetUlong(jid_ulng, ULNG_value);
 
             if (initialized) {
                if (last_mid == mid && last_jid == jid) {

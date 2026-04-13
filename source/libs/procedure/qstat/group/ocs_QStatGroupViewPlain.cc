@@ -18,12 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cstdio>
-#include <cstdlib>
 #include <format>
 #include <iomanip>
 
-#include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "qstat/group/ocs_QStatGroupViewPlain.h"
@@ -54,7 +51,7 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
    os << '\n';
 
    // show dashes
-   auto print_dashes = [&](int n) {
+   auto print_dashes = [&](const int n) {
       os << std::setfill('-') << std::setw(n) << "";
    };
    print_dashes(queue_length + 7 + 6 + 6 + 6 + 6 + 6 + 6 + 7*1);
@@ -67,40 +64,42 @@ void ocs::QStatGroupViewPlain::report_started(std::ostream &os, QStatParameter &
 }
 
 void ocs::QStatGroupViewPlain::report_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
-void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
+void ocs::QStatGroupViewPlain::report_cqueue(std::ostream &os, const char* cq_name, Summary *cqueue_summary, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    const bool show_states = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
 
    int queue_length = parameter.get_longest_queue_length();
    os << std::format("{:<{}.{}s} ", cq_name, queue_length, queue_length);
 
-   if (summary->is_load_available) {
-      os << std::format("{:>7.2f} ", summary->load);
+   if (cqueue_summary->is_load_available) {
+      os << std::format("{:>7.2f} ", cqueue_summary->load);
    } else {
       os << std::format("{:>7} ", "-NA-");
    }
 
-   os << std::format("{:>6} ", summary->used);
-   os << std::format("{:>6} ", summary->resv);
-   os << std::format("{:>6} ", summary->available);
-   os << std::format("{:>6} ", summary->total);
-   os << std::format("{:>6} ", summary->temp_disabled);
-   os << std::format("{:>6} ", summary->manual_intervention);
+   os << std::format("{:>6} ", cqueue_summary->used);
+   os << std::format("{:>6} ", cqueue_summary->resv);
+   os << std::format("{:>6} ", cqueue_summary->available);
+   os << std::format("{:>6} ", cqueue_summary->total);
+   os << std::format("{:>6} ", cqueue_summary->temp_disabled);
+   os << std::format("{:>6} ", cqueue_summary->manual_intervention);
 
    if (show_states) {
-      os << std::format("{:>5} ", summary->suspend_manual);
-      os << std::format("{:>5} ", summary->suspend_threshold);
-      os << std::format("{:>5} ", summary->suspend_on_subordinate);
-      os << std::format("{:>5} ", summary->suspend_calendar);
-      os << std::format("{:>5} ", summary->unknown);
-      os << std::format("{:>5} ", summary->load_alarm);
-      os << std::format("{:>5} ", summary->disabled_manual);
-      os << std::format("{:>5} ", summary->disabled_calendar);
-      os << std::format("{:>5} ", summary->ambiguous);
-      os << std::format("{:>5} ", summary->orphaned);
-      os << std::format("{:>5} ", summary->error);
+      os << std::format("{:>5} ", cqueue_summary->suspend_manual);
+      os << std::format("{:>5} ", cqueue_summary->suspend_threshold);
+      os << std::format("{:>5} ", cqueue_summary->suspend_on_subordinate);
+      os << std::format("{:>5} ", cqueue_summary->suspend_calendar);
+      os << std::format("{:>5} ", cqueue_summary->unknown);
+      os << std::format("{:>5} ", cqueue_summary->load_alarm);
+      os << std::format("{:>5} ", cqueue_summary->disabled_manual);
+      os << std::format("{:>5} ", cqueue_summary->disabled_calendar);
+      os << std::format("{:>5} ", cqueue_summary->ambiguous);
+      os << std::format("{:>5} ", cqueue_summary->orphaned);
+      os << std::format("{:>5} ", cqueue_summary->error);
    }
 
    os << '\n';

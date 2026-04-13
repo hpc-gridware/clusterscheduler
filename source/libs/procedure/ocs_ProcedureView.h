@@ -28,6 +28,9 @@ namespace ocs {
    /** @brief View that shows the result of a stored procedure */
    class ProcedureView {
    public:
+      static std::string raw2JSON(const std::string& input);
+      static std::string raw2quotedJSON(const std::string &input);
+
       static void show_ISO_8601_timestamp(std::ostream &os, uint64_t time);
       static void show_resource_as_JSON_type(std::ostream &os, const lListElem *resource);
 

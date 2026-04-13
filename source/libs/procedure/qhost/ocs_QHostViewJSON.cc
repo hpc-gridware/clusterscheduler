@@ -21,29 +21,27 @@
 #include <ostream>
 #include <iomanip>
 #include <chrono>
-#include <format>
 
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_QHostViewJSON.h"
 
-#include "msg_clients_common.h"
-
 void
 ocs::QHostViewJSON::start(std::ostream &os) {
+   DENTER(TOP_LAYER);
    os << std::string(indent * 3, ' ') << "{\n";
-
    indent++;
-   os << std::string(indent * 3, ' ') << "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n";
-   os << std::string(indent * 3, ' ') << "\"$id\": \"https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qhost-root.schema.json\"";
+   os << std::string(indent * 3, ' ') << "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n"
+      << std::string(indent * 3, ' ') << R"("$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qhost-root.schema.json")";
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::end(std::ostream &os) {
+   DENTER(TOP_LAYER);
    // terminate resource list
    if (resource_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       resource_list_open = false;
    }
 
@@ -58,8 +56,7 @@ ocs::QHostViewJSON::end(std::ostream &os) {
 
    // close job list
    if (job_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       job_list_open = false;
    }
 
@@ -74,55 +71,44 @@ ocs::QHostViewJSON::end(std::ostream &os) {
 
    // close queue list
    if (queue_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       queue_list_open = false;
    }
 
    // close host objects that are still open
    if (host_open) {
       indent--;
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "}";
+      os << "\n" << std::string(indent * 3, ' ') << "}";
       indent--;
       host_open = false;
    }
 
    // close host list
    if (host_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       host_list_open = false;
    }
 
 
    // final close object
    os << "\n}\n";
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::host_start(std::ostream &os, const char* host_name) {
+   DENTER(TOP_LAYER);
    bool first_host = false;
 
    // start the host list
    if (!host_list_open) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"hosts\": [\n";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"hosts\": [\n";
       host_list_open = true;
       first_host = true;
    }
 
-   if (resource_open) {
-      os << "\n";
-      indent--;
-      os << std::string(indent * 3, ' ') << "}";
-      indent--;
-      resource_open = false;
-   }
-
    if (resource_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       resource_list_open = false;
    }
 
@@ -137,8 +123,7 @@ ocs::QHostViewJSON::host_start(std::ostream &os, const char* host_name) {
 
    // close job list
    if (job_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       job_list_open = false;
    }
 
@@ -153,16 +138,14 @@ ocs::QHostViewJSON::host_start(std::ostream &os, const char* host_name) {
 
    // close queue list
    if (queue_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       queue_list_open = false;
    }
 
    // close host objects that are still open
    if (host_open) {
       indent--;
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "}";
+      os << "\n" << std::string(indent * 3, ' ') << "}";
       indent--;
       host_open = false;
    }
@@ -177,47 +160,51 @@ ocs::QHostViewJSON::host_start(std::ostream &os, const char* host_name) {
 
    // show the hostname as host attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << host_name << "\"";
-
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(host_name);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::host_end(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::host_value(std::ostream &os, const char *format_str, const char *name, const char *value) {
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": \"" << value << "\"";
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << raw2quotedJSON(value);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::host_value(std::ostream &os, const char *format_str, const char* name, const uint64_t value) {
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << value;
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::host_value(std::ostream &os, const char *format_str, const char* name, double value) {
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
+ocs::QHostViewJSON::host_value(std::ostream &os, const char *format_str, const char* name, const double value) {
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << value;
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::queue_start(std::ostream &os, const char *format_str, const char *qname) {
+   DENTER(TOP_LAYER);
    bool first_queue = false;
 
    // terminate resource list
    if (resource_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       resource_list_open = false;
    }
 
    // start the queue list
    if (!queue_list_open) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"queues\": [\n";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"queues\": [\n";
       queue_list_open = true;
       first_queue = true;
    }
@@ -233,8 +220,7 @@ ocs::QHostViewJSON::queue_start(std::ostream &os, const char *format_str, const 
 
    // close job list
    if (job_list_open) {
-      os << "\n";
-      os << std::string(indent * 3, ' ') << "]";
+      os << "\n" << std::string(indent * 3, ' ') << "]";
       job_list_open = false;
    }
 
@@ -257,27 +243,33 @@ ocs::QHostViewJSON::queue_start(std::ostream &os, const char *format_str, const 
 
    // show the queue name as attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << qname << "\"";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(qname);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::queue_end(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const char *value) {
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": \"" << value << "\"";
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << raw2quotedJSON(value);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::queue_value(std::ostream &os, const char* qname, const char *format_str, const char* name, const uint32_t value) {
-   os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << value;
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::job_start(std::ostream &os, const char *format_str, const uint32_t jid) {
+   DENTER(TOP_LAYER);
    bool first_queue = false;
 
    // terminate resource list
@@ -315,25 +307,29 @@ ocs::QHostViewJSON::job_start(std::ostream &os, const char *format_str, const ui
    // show the jobs ID as attribute
    indent++;
    os << std::string(indent * 3, ' ') << "\"id\": " << jid;
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::job_end(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, const char *value) {
+   DENTER(TOP_LAYER);
    if (name != nullptr && value != nullptr) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"" << name << "\": \"" << value << "\"";
+      os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << raw2quotedJSON(value);
    }
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, uint64_t value, bool as_timestamp) {
+ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, const uint64_t value, const bool as_timestamp) {
+   DENTER(TOP_LAYER);
    if (name != nullptr) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"" << name << "\": ";
+      os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": ";
       if (as_timestamp) {
          os << "\"";
          show_ISO_8601_timestamp(os, value);
@@ -342,24 +338,26 @@ ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *
          os << value;
       }
    }
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, double value) {
+ocs::QHostViewJSON::job_value(std::ostream &os, const uint32_t jid, const char *format_str, const char* name, const double value) {
+   DENTER(TOP_LAYER);
    if (name != nullptr) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
+      os << ",\n" << std::string(indent * 3, ' ') << raw2quotedJSON(name) << ": " << value;
    }
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details, bool as_string) {
+ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, const char* value, const char *details, const bool as_string) {
+   DENTER(TOP_LAYER);
    bool first_resource = false;
 
    // start the queue list
    if (!resource_list_open) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"resources\": [\n";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"resources\": [\n";
       resource_list_open = true;
       first_resource = true;
    }
@@ -373,31 +371,32 @@ ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, cons
 
    // show the jobs ID as attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    if (as_string) {
-      os << std::string(indent * 3, ' ') << "\"value\": \"" << value << "\",\n";
+      os << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(value) << ",\n";
    } else {
       os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
    }
    if (details != nullptr) {
-      os << std::string(indent * 3, ' ') << "\"details\": \"" << details << "\",\n";
+      os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details) << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"dominance\": \"" << dominance << "\"\n";
+   os << std::string(indent * 3, ' ') << "\"dominance\": " << raw2quotedJSON(dominance) << "\n";
 
    // close the resource
    indent--;
    os << std::string(indent * 3, ' ') << "}";
    indent--;
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, uint64_t value, const char *details, bool as_string) {
+ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, const uint64_t value, const char *details, const bool as_string) {
+   DENTER(TOP_LAYER);
    bool first_resource = false;
 
    // start the queue list
    if (!resource_list_open) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"resources\": [\n";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"resources\": [\n";
       resource_list_open = true;
       first_resource = true;
    }
@@ -411,31 +410,32 @@ ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, cons
 
    // show the jobs ID as attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    if (as_string) {
-      os << std::string(indent * 3, ' ') << "\"value\": \"" << value << "\",\n";
+      os << std::string(indent * 3, ' ') << R"("value": ")" << value << "\",\n";
    } else {
       os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
    }
    if (details != nullptr) {
-      os << std::string(indent * 3, ' ') << "\"details\": \"" << details << "\",\n";
+      os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details) << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"dominance\": \"" << dominance << "\"\n";
+   os << std::string(indent * 3, ' ') << "\"dominance\": " << raw2quotedJSON(dominance) << "\n";
 
    // close the resource
    indent--;
    os << std::string(indent * 3, ' ') << "}";
    indent--;
+   DRETURN_VOID;
 }
 
 void
-ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, double value, const char *details, bool as_string) {
+ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, const char* name, const double value, const char *details, const bool as_string) {
+   DENTER(TOP_LAYER);
    bool first_resource = false;
 
    // start the queue list
    if (!resource_list_open) {
-      os << ",\n";
-      os << std::string(indent * 3, ' ') << "\"resources\": [\n";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"resources\": [\n";
       resource_list_open = true;
       first_resource = true;
    }
@@ -449,19 +449,20 @@ ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, cons
 
    // show the jobs ID as attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    if (as_string) {
-      os << std::string(indent * 3, ' ') << "\"value\": \"" << value << "\",\n";
+      os << std::string(indent * 3, ' ') << R"("value": ")" << value << "\",\n";
    } else {
       os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
    }
    if (details != nullptr) {
-      os << std::string(indent * 3, ' ') << "\"details\": \"" << details << "\",\n";
+      os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details) << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"dominance\": \"" << dominance << "\"\n";
+   os << std::string(indent * 3, ' ') << "\"dominance\": " << raw2quotedJSON(dominance) << "\n";
 
    // close the resource
    indent--;
    os << std::string(indent * 3, ' ') << "}";
    indent--;
+   DRETURN_VOID;
 }

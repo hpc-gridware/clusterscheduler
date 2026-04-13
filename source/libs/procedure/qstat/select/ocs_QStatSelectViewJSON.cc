@@ -57,10 +57,12 @@ ocs::QStatSelectViewJSON::report_finished(std::ostream &os) {
 
 void
 ocs::QStatSelectViewJSON::report_queue(std::ostream &os, const char* qname) {
+   DENTER(TOP_LAYER);
    if (!first_queue) {
       os << ",\n";
    } else {
       first_queue = false;
    }
-   os << std::string(indent * 3, ' ') << "\"" << qname << "\"";
+   os << std::string(indent * 3, ' ') << raw2quotedJSON(qname);
+   DRETURN_VOID;
 }

@@ -20,20 +20,30 @@
 
 #include <sstream>
 
+#include "uti/sge_rmon_macros.h"
+
 #include "qstat/select/ocs_QStatSelectViewPlain.h"
 
 ocs::QStatSelectViewPlain::QStatSelectViewPlain(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewPlain::report_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewPlain::report_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
 }
 
 void
 ocs::QStatSelectViewPlain::report_queue(std::ostream &os, const char* qname) {
+   DENTER(TOP_LAYER);
    os << qname << std::endl;
+   DRETURN_VOID;
 }

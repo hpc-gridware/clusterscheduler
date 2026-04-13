@@ -1133,12 +1133,13 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
                                                  &summary.has_load_value_from_object) ? true : false;
 
    char load_alarm_reason[MAX_STRING_SIZE] {};
-   char suspend_alarm_reason[MAX_STRING_SIZE] {};
    if (sge_load_alarm(nullptr, 0, queue, lGetList(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), nullptr, true)) {
       qinstance_state_set_alarm(queue, true);
+
       sge_load_alarm_reason(queue, lGetListRW(queue, QU_load_thresholds), model.get_exechost_list(), model.get_centry_list(), load_alarm_reason, MAX_STRING_SIZE - 1, "load");
    }
 
+   char suspend_alarm_reason[MAX_STRING_SIZE] {};
    uint32_t interval;
    parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, lGetString(queue, QU_suspend_interval), nullptr, 0);
    if (lGetUlong(queue, QU_nsuspend) != 0 && interval != 0 &&

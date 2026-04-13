@@ -21,8 +21,6 @@
 
 #include <iosfwd>
 
-#include "cull/cull.h"
-
 #include "ocs_QHostParameter.h"
 #include "ocs_QHostViewBase.h"
 
@@ -36,7 +34,6 @@ namespace ocs {
       bool host_open = false;
       bool queue_open = false;
       bool job_open = false;
-      bool resource_open = false;
    public:
       explicit QHostViewJSON(const QHostParameter &parameter) : QHostViewBase(parameter) {}
       ~QHostViewJSON() override = default;
