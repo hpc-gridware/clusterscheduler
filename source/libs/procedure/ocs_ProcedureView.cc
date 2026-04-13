@@ -25,6 +25,9 @@
 
 #include "ocs_ProcedureView.h"
 
+#include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/cull/sge_centry_CE_L.h"
+
 /** @brief convert the timestamp to ISO 8601 format
  */
 void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time) {
@@ -43,9 +46,26 @@ void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time
    DRETURN_VOID;
 }
 
+void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lListElem *resource) {
+   // get the dominant value of the resource for this host
+   const auto type = static_cast<CEntry::Type>(lGetUlong(resource, CE_valtype));
+   const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type
+                          == CEntry::Type::RESTR || type == CEntry::Type::HOST;
+   const bool as_double = type == CEntry::Type::DOUBLE;
+   const bool as_bool = type == CEntry::Type::BOOL;
+   if (as_string) {
+      os << "\"" << lGetString(resource, CE_stringval) << "\"";
+   } else if (as_double) {
+      os << lGetDouble(resource, CE_doubleval);
+   } else if (as_bool) {
+      os << (lGetDouble(resource, CE_doubleval) ? "true" : "false");
+   } else {
+      os << static_cast<uint64_t>(lGetDouble(resource, CE_doubleval));
+   }
+}
+
 void ocs::ProcedureView::show(std::ostream &os, const char *output) {
    DENTER(TOP_LAYER);
    os << output;
    DRETURN_VOID;
 }
-

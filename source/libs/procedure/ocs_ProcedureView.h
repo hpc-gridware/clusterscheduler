@@ -29,6 +29,7 @@ namespace ocs {
    class ProcedureView {
    public:
       static void show_ISO_8601_timestamp(std::ostream &os, uint64_t time);
+      static void show_resource_as_JSON_type(std::ostream &os, const lListElem *resource);
 
    public:
       explicit ProcedureView(const ProcedureParameter &parameter) {};

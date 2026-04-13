@@ -40,6 +40,7 @@
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_usage.h"
+#include "sgeobj/ocs_BindingInstance.h"
 
 #include "sched/load_correction.h"
 #include "sched/sge_complex_schedd.h"
@@ -92,8 +93,6 @@ ocs::QStatDefaultController::process_queues_with_its_jobs(std::ostream &os, QSta
 
       // here we have the queue
       if (lGetUlong(qep, QU_tag) & TAG_SHOW_IT) {
-
-
          if ((parameter.show_ & QSTAT_DISPLAY_NOEMPTYQ) && !qinstance_slots_used(qep)) {
             continue;
          }
@@ -115,9 +114,6 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* ce
                                                   bool is_hard_resource, QStatDefaultViewBase &view) {
 
    DENTER(TOP_LAYER);
-   const lListElem *centry;
-   const char *s, *name;
-   double uc;
 
    if (cel == nullptr || lGetNumberOfElem(cel) == 0) {
        DRETURN_VOID;
@@ -131,18 +127,17 @@ ocs::QStatDefaultController::process_resources(std::ostream &os, const lList* ce
 
    /* walk through complex entries */
    for_each_ep_lv(ce, cel) {
-      name = lGetString(ce, CE_name);
-      if ((centry = centry_list_locate(centry_list, name))) {
+      double uc{0.0};
+      const char *name = lGetString(ce, CE_name);
+      if (const lListElem *centry = centry_list_locate(centry_list, name); centry != nullptr) {
          uc = centry_urgency_contribution(slots, name, lGetDouble(ce, CE_doubleval), centry);
-      } else {
-         uc = 0.0;
       }
 
-      s = lGetString(ce, CE_stringval);
+      const char *s = lGetString(ce, CE_stringval);
       if (is_hard_resource) {
-         view.report_hard_resource(os, scope, name, s, uc);
+         view.report_hard_resource(os, scope, ce, name, s, uc);
       } else {
-         view.report_soft_resource(os, scope, name, s, uc);
+         view.report_soft_resource(os, scope, ce, name, s, uc);
       }
    }
    if (is_hard_resource) {
@@ -160,8 +155,7 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
    uint32_t jataskid = 0, old_jataskid;
    const char *qnm = queue ? lGetString(queue, QU_full_name) : nullptr;
    dstring dyn_task_str = DSTRING_INIT;
-
-   view.report_queue_jobs_started(os, qnm);
+   bool started = false;
 
    for_each_rw_lv(jlep, model.get_job_list()) {
       int master, i;
@@ -271,6 +265,11 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                            print_it = false;
                         }
                         if (print_it) {
+                           if (!started) {
+                              view.report_queue_jobs_started(os, qnm, parameter);
+                              started = true;
+                           }
+
                            sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                            process_job(os, jlep, jatep, queue, gdilep, print_jobid, (master && different && (i==0))?"MASTER":"SLAVE",
                                           &dyn_task_str, slots_in_queue+slot_adjust, i, slots_per_line, parameter, model, view);
@@ -283,7 +282,14 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
       }
    }
 
-   view.report_queue_jobs_finished(os, qnm, parameter);
+   if (parameter.get_output_format() != ProcedureParameter::OutputFormat::JSON && !started) {
+      view.report_queue_jobs_started(os, qnm, parameter);
+      started = true;
+   }
+
+   if (started) {
+      view.report_queue_jobs_finished(os, qnm, parameter);
+   }
 
    sge_dstring_free(&dyn_task_str);
    DRETURN_VOID;
@@ -499,8 +505,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       const lListElem *ep;
       const char *qname;
       int subtask_ndx=1;
-
-      view.report_sub_tasks_started(os);
+      bool close_tasks{false};
 
       /* print master sub-task belonging to this queue */
       if (!slot && task_list && summary.queue &&
@@ -508,7 +513,12 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
           ((qname=lGetString(ep, JG_qname))) &&
           !strcmp(qname, summary.queue)) {
 
-          process_subtask(os, job, jatep, nullptr, view);
+         if (!close_tasks) {
+            view.report_sub_tasks_started(os);
+            close_tasks = true;
+         }
+
+         process_subtask(os, job, jatep, nullptr, view);
       }
 
       /* print sub-tasks belonging to this queue */
@@ -517,11 +527,17 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
               ((ep=lFirst(lGetList(task, PET_granted_destin_identifier_list)))) &&
               ((qname=lGetString(ep, JG_qname))) &&
               !strcmp(qname, summary.queue) && ((subtask_ndx++%slots)==slot))) {
-             process_subtask(os, job, jatep, task, view);
+            if (!close_tasks) {
+               view.report_sub_tasks_started(os);
+               close_tasks = true;
+            }
+            process_subtask(os, job, jatep, task, view);
          }
       }
 
-      view.report_sub_tasks_finished(os);
+      if (close_tasks) {
+         view.report_sub_tasks_finished(os);
+      }
    }
 
    /* print additional job info if requested */
@@ -571,6 +587,7 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
          lList *attributes = nullptr;
          const char *name;
          lListElem *hep;
+         bool first_default_request{true};
 
          queue_complexes2scheduler(&attributes, qep, model.get_exechost_list(), model.get_centry_list());
          for_each_ep_lv(ce, attributes) {
@@ -595,9 +612,15 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
                  lGetSubStr(hep, CE_name, name, EH_consumable_config_list)) ||
                   ((hep=host_list_locate(model.get_exechost_list(), SGE_GLOBAL_NAME)) &&
                   lGetSubStr(hep, CE_name, name, EH_consumable_config_list))) {
-
-                     view.report_request(os, name, lGetString(ce, CE_defaultval));
+               if (first_default_request) {
+                  view.report_default_request_started(os);
+                  first_default_request = false;
+               }
+               view.report_default_request(os, name, lGetString(ce, CE_defaultval));
             }
+         }
+         if (!first_default_request) {
+            view.report_default_request_finished(os);
          }
          lFreeList(&attributes);
       }
@@ -705,12 +728,22 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       if (const lListElem *binding_elem = lGetObject(job, JB_binding); binding_elem != nullptr) {
          dstring binding_param = DSTRING_INIT;
 
+         // all binding specific parameter as one string
          std::string binding_str;
          BindingIo::binding_print_to_string(binding_elem, binding_str);
          sge_dstring_sprintf(&binding_param, "%s", binding_str.c_str());
 
          view.report_binding_started(os);
          view.report_binding(os, sge_dstring_get_string(&binding_param));
+         view.report_binding_attribute(os, "bamount", lGetUlong(binding_elem, BN_amount));
+         view.report_binding_attribute(os, "binstance", BindingInstance::to_string(static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance))).c_str());
+         view.report_binding_attribute(os, "bstrategy", BindingStrategy::to_string(static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy))).c_str());
+         view.report_binding_attribute(os, "btype", BindingType::to_string(static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type))).c_str());
+         view.report_binding_attribute(os, "bunit", BindingUnit::to_string(static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit))).c_str());
+         view.report_binding_attribute(os, "bfilter", lGetString(binding_elem, BN_filter));
+         view.report_binding_attribute(os, "bsort", lGetString(binding_elem, BN_sort));
+         view.report_binding_attribute(os, "bstart", BindingStart::to_string(static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start))).c_str());
+         view.report_binding_attribute(os, "bstop", BindingStop::to_string(static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop))).c_str());
          view.report_binding_finished(os);
          sge_dstring_free(&binding_param);
       }
@@ -1175,6 +1208,7 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
       lList *rlp = nullptr;
       queue_complexes2scheduler(&rlp, queue, model.get_exechost_list(), model.get_centry_list());
 
+      bool in_resource_list = false;
       for_each_rw_lv(rep , rlp) {
          /* we had a -F request */
          if (parameter.get_q_resource_list()) {
@@ -1202,7 +1236,15 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
             details = host_get_topology_in_use(host);
          }
 
-         view.report_queue_resource(os, dom, lGetString(rep, CE_name), s, details.c_str());
+         if (!in_resource_list) {
+            view.report_queue_resource_started(os, "");
+            in_resource_list = true;
+         }
+         view.report_queue_resource(os, rep, dom, lGetString(rep, CE_name), s, details.c_str());
+      }
+
+      if (in_resource_list) {
+         view.report_queue_resource_finished(os, "");
       }
 
       lFreeList(&rlp);
@@ -1220,7 +1262,8 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
 
    correct_capacities(model.get_exechost_list(), model.get_centry_list());
 
-   view.report_started(out_);
+   view.report_started(out_, parameter);
+   view.report_queue_section_started(out_, parameter);
 
    process_queues_with_its_jobs(out_, parameter, model, view);
 
@@ -1231,11 +1274,15 @@ void ocs::QStatDefaultController::process_request(QStatParameter &parameter, QSt
       Job::sgeee_sort_jobs(model.get_job_list());
    }
 
+   view.report_queue_section_finished(out_, parameter);
+
    process_jobs_pending_state(out_, parameter, model, view);
+
+   // @todo when will following two states be shown if all is printed as part of the pending section
    process_jobs_finished_state(out_, parameter, model, view);
    process_jobs_error_state(out_, parameter, model, view);
 
-   view.report_finished(out_);
+   view.report_finished(out_, parameter);
 
    DRETURN_VOID;
 }

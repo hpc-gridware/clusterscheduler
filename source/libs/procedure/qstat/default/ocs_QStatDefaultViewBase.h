@@ -119,15 +119,19 @@ namespace ocs {
 
       // region General report handling
       virtual void report_queue_summary(std::ostream &os, const char* qname,  queue_summary_t *summary, QStatParameter &parameter) = 0;
-      virtual void report_started(std::ostream &os) = 0;
-      virtual void report_finished(std::ostream &os) = 0;
+      virtual void report_started(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_finished(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_queue_section_started(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_queue_section_finished(std::ostream &os, QStatParameter &parameter) = 0;
       virtual void report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) = 0;
       virtual void report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason) = 0;
       virtual void report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason) = 0;
       virtual void report_queue_message(std::ostream &os, const char* qname, const char *message) = 0;
-      virtual void report_queue_resource(std::ostream &os, const char* dom, const char* name, const char* value, const char *details) = 0;
+      virtual void report_queue_resource_started(std::ostream &os, const char* name) = 0;
+      virtual void report_queue_resource_finished(std::ostream &os, const char* name) = 0;
+      virtual void report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom, const char* name, const char* value, const char *details) = 0;
       virtual void report_queue_finished(std::ostream &os, const char* qname, QStatParameter &parameter) = 0;
-      virtual void report_queue_jobs_started(std::ostream &os, const char* qname) = 0;
+      virtual void report_queue_jobs_started(std::ostream &os, const char* qname, QStatParameter &parameter) = 0;
       virtual void report_queue_jobs_finished(std::ostream &os, const char* qname, QStatParameter &parameter) = 0;
       virtual void report_pending_jobs_started(std::ostream &os, QStatParameter &parameter) = 0;
       virtual void report_pending_jobs_finished(std::ostream &os) = 0;
@@ -145,12 +149,14 @@ namespace ocs {
       virtual void report_additional_info(std::ostream &os, job_additional_info_t name, const char* value) = 0;
       virtual void report_requested_pe(std::ostream &os, const char* pe_name, const char* pe_range) = 0;
       virtual void report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) = 0;
-      virtual void report_request(std::ostream &os, const char* name, const char* value) = 0;
+      virtual void report_default_request_started(std::ostream &os) = 0;
+      virtual void report_default_request_finished(std::ostream &os) = 0;
+      virtual void report_default_request(std::ostream &os, const char* name, const char* value) = 0;
       virtual void report_hard_resources_started(std::ostream &os, int scope) = 0;
-      virtual void report_hard_resource(std::ostream &os, int scope, const char* name, const char* value, double uc) = 0;
-      virtual void report_hard_resources_finished(std::ostream &os) = 0;
+      virtual void report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) = 0;
       virtual void report_soft_resources_started(std::ostream &os, int scope) = 0;
-      virtual void report_soft_resource(std::ostream &os, int scope, const char* name, const char* value, double uc) = 0;
+      virtual void report_hard_resources_finished(std::ostream &os) = 0;
+      virtual void report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char* name, const char* value, double uc) = 0;
       virtual void report_soft_resources_finished(std::ostream &os) = 0;
       virtual void report_hard_requested_queues_started(std::ostream &os, int scope) = 0;
       virtual void report_hard_requested_queue(std::ostream &os, int scope, const char* name) = 0;
@@ -172,6 +178,8 @@ namespace ocs {
       virtual void report_ad_predecessors_finished(std::ostream &os) = 0;
       virtual void report_binding_started(std::ostream &os) = 0;
       virtual void report_binding(std::ostream &os, const char *binding) = 0;
+      virtual void report_binding_attribute(std::ostream &os, const char *name, const char *value) = 0;
+      virtual void report_binding_attribute(std::ostream &os, const char *name, uint32_t value) = 0;
       virtual void report_binding_finished(std::ostream &os) = 0;
       virtual void report_job_finished(std::ostream &os, uint32_t jid) = 0;
       // endregion

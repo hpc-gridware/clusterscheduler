@@ -76,11 +76,22 @@ void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const 
 }
 
 
-void ocs::QStatDefaultViewPlain::report_started(std::ostream &os) {
+void ocs::QStatDefaultViewPlain::report_started(std::ostream &os, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os) {
+void ocs::QStatDefaultViewPlain::report_finished(std::ostream &os, QStatParameter &parameter) {
 }
+
+void ocs::QStatDefaultViewPlain::report_queue_section_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_queue_section_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
 
 void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
 {
@@ -148,7 +159,7 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
 void ocs::QStatDefaultViewPlain::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_jobs_started(std::ostream &os, const char *qname) {
+void ocs::QStatDefaultViewPlain::report_queue_jobs_started(std::ostream &os, const char *qname, QStatParameter &parameter) {
 }
 
 void ocs::QStatDefaultViewPlain::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
@@ -178,7 +189,17 @@ void ocs::QStatDefaultViewPlain::report_queue_message(std::ostream &os, const ch
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const char* dom,
+void ocs::QStatDefaultViewPlain::report_queue_resource_started(std::ostream &os, const char* name) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_queue_resource_finished(std::ostream &os, const char* name) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os, const lListElem *resource, const char* dom,
                                        const char* name, const char* value, const char *details)
 {
    DENTER(TOP_LAYER);
@@ -609,7 +630,17 @@ void ocs::QStatDefaultViewPlain::report_additional_info(std::ostream &os, job_ad
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_request(std::ostream &os, const char *name, const char *value) {
+void ocs::QStatDefaultViewPlain::report_default_request_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_default_request_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewPlain::report_default_request(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
    os << std::format("\t{}={} (default)\n", name, value);
    DRETURN_VOID;
@@ -742,7 +773,7 @@ void ocs::QStatDefaultViewPlain::report_soft_requested_queues_finished(std::ostr
 
 
 
-void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewPlain::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (hard_resource_count > 0 ) {
       os << std::format("\t{:<36.36} ", " ");
@@ -761,7 +792,7 @@ void ocs::QStatDefaultViewPlain::report_hard_resources_finished(std::ostream &os
 }
 
 
-void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
+void ocs::QStatDefaultViewPlain::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
    DENTER(TOP_LAYER);
    if (soft_resource_count > 0 ) {
       os << std::format("\t{:<36.36} ", " ");
@@ -881,16 +912,22 @@ void ocs::QStatDefaultViewPlain::report_binding_started(std::ostream &os) {
    DRETURN_VOID;
 }
 
+void ocs::QStatDefaultViewPlain::report_binding_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   DRETURN_VOID;
+}
+
 void ocs::QStatDefaultViewPlain::report_binding(std::ostream &os, const char *binding) {
    DENTER(TOP_LAYER);
    os << binding;
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewPlain::report_binding_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
+void ocs::QStatDefaultViewPlain::report_binding_attribute(std::ostream &os, const char *name, const char *value) {
+}
+
+void ocs::QStatDefaultViewPlain::report_binding_attribute(std::ostream &os, const char *name, uint32_t value) {
 }
 
 void ocs::QStatDefaultViewPlain::report_job_finished(std::ostream &os, u_int jid) {

@@ -33,7 +33,7 @@ void ocs::QStatGroupViewJSON::report_started(std::ostream &os, QStatParameter &p
 
    indent++;
    os << std::string(indent * 3, ' ') << "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n";
-   os << std::string(indent * 3, ' ') << "\"$id\": \"https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-group.schema.json\",\n";
+   os << std::string(indent * 3, ' ') << "\"$id\": \"https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-cqueue.schema.json\",\n";
 
    os << std::string(indent * 3, ' ') << "\"queues\": [\n";
    indent++;

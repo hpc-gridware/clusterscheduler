@@ -1201,8 +1201,6 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
    DRETURN(ret);
 }
 
-/* EB: CLEANUP: change order of parameter */
-
 /****** sgeobj/centry/centry_urgency_contribution() ***************************
 *  NAME
 *     centry_urgency_contribution() -- Compute urgency for a particular resource

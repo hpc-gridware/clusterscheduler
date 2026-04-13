@@ -18,882 +18,735 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cstdio>
-#include <cstdlib>
 #include <sstream>
 #include <format>
 
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_time.h"
 
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_ulong.h"
 
 #include "qstat/default/ocs_QStatDefaultViewJSON.h"
-#include "qstat/msg_qstat.h"
 
-#include "msg_clients_common.h"
-
-
-inline void opti_print8(std::ostream& os, double value) {
-   if (value > 99999999) {
-      os << std::format("{:>8.3g} ", value);
-   } else {
-      os << std::format("{:>8.0f} ", value);
-   }
-}
-
-#if 0
-/* regular output */
-static char jhul1[] = "---------------------------------------------------------------------------------------------";
-/* -g t */
-static char jhul2[] = "-";
-/* -ext */
-static char jhul3[] = "-------------------------------------------------------------------------------";
-/* -t */
-static char jhul4[] = "-----------------------------------------------------";
-/* -urg */
-static char jhul5[] = "----------------------------------------------------------------";
-/* -pri */
-static char jhul6[] = "-----------------------------------";
-#endif
-
-void ocs::QStatDefaultViewJSON::show_header_with_title(std::ostream &os, const QStatParameter &parameter, const char *title) {
+void ocs::QStatDefaultViewJSON::report_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED);
-   const auto line = std::string(sge_ext ? 165 : 81, '#');
+   os << std::string(indent * 3, ' ') << "{\n";
 
-   os << "\n" << line
-      << "\n" << title
-      << "\n" << line
-      << "\n";
-
-   last_job_id = 0;
+   indent++;
+   os << std::string(indent * 3, ' ') << "\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n";
+   os << std::string(indent * 3, ' ') <<
+         "\"$id\": \"https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-";
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      os << "full";
+   } else {
+      os << "reduced";
+   }
+   os << ".schema.json\"";
 
    DRETURN_VOID;
 }
 
-
-void ocs::QStatDefaultViewJSON::report_started(std::ostream &os) {
-}
-
-void ocs::QStatDefaultViewJSON::report_finished(std::ostream &os) {
-}
-
-void ocs::QStatDefaultViewJSON::report_queue_summary(std::ostream &os, const char* qname, queue_summary_t *summary, QStatParameter &parameter)
-{
+void ocs::QStatDefaultViewJSON::report_finished(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   const int sge_ext = parameter.show_ & QSTAT_DISPLAY_EXTENDED;
-   const int queue_length = parameter.get_longest_queue_length();
-
-   if (!header_printed) {
-      header_printed = true;
-
-      os << std::format("{:<{}.{}} ", MSG_QSTAT_PRT_QUEUENAME, queue_length, queue_length)
-         << std::format("{:<5.5} ", MSG_QSTAT_PRT_QTYPE)
-         << std::format("{:<14.14} ", MSG_QSTAT_PRT_RESVUSEDTOT)
-         << std::format("{:<8.8} ", summary->load_avg_str)
-         << std::format("{:<13.13} ", LOAD_ATTR_ARCH)
-         << std::format("{} ", MSG_QSTAT_PRT_STATES)
-         << "\n";
+   if (!first_queue ) {
+      os << "\n";
    }
 
-   os << "---------------------------------------------------------------------------------";
-   if (sge_ext) {
-      os << "------------------------------------------------------------------------------------------------------------";
+   // final close object
+   indent--;
+   os << std::string(indent * 3, ' ') << "}\n";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_section_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"queues\": [\n";
+      indent++;
    }
-   for(int i = 0; i < queue_length - 30; i++)
-      os << "-";
-   os << "\n";
+   DRETURN_VOID;
+}
 
+void ocs::QStatDefaultViewJSON::report_queue_section_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      indent--;
+      os << "\n" << std::string(indent * 3, ' ') << "]";
+   }
+   DRETURN_VOID;
+}
 
-   // queue name
-   os << std::format("{:<{}.{}} ", qname, queue_length, queue_length);
-
-   // queue type
-   os << std::format("{:<5.5} ", summary->queue_type);
-
-   /* number of used/total slots */
-   std::ostringstream ss_res_used_total;
-   ss_res_used_total << std::format("{}/{}/{}", summary->resv_slots, summary->used_slots, summary->total_slots);
-   os << std::format("{:<14.14} ", ss_res_used_total.str());
-
-   /* load avg */
-   std::ostringstream ss_load_avg;
-   // Why is has_load_value required?
-   if (summary->has_load_value || (summary->state != nullptr && strchr(summary->state, 'u') != nullptr)) {
-      ss_load_avg << "-NA-";
+void ocs::QStatDefaultViewJSON::report_queue_summary(std::ostream &os, const char *qname, queue_summary_t *summary,
+                                                     QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   os << "\n" << std::string(indent * 3, ' ') << "\"name\": \"" << qname << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"qtype\": \"" << summary->queue_type << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"slots_used\": " << summary->used_slots;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"slots_resv\": " << summary->resv_slots;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"slots_total\": " << summary->total_slots;
+   if (summary->has_load_value && summary->has_load_value_from_object) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"load_avg\": " << summary->load_avg;
    } else {
-      if (summary->has_load_value_from_object) {
-         ss_load_avg << std::format("{:2.2f}", summary->load_avg);
+      os << ",\n" << std::string(indent * 3, ' ') << "\"load_avg\": " << 0;
+   }
+   os << ",\n" << std::string(indent * 3, ' ') << "\"arch\": \"" << summary->arch << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_started(std::ostream &os, const char *qname, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      within_queue_section = true;
+      if (!first_queue) {
+         os << ",\n";
       } else {
-         ss_load_avg << "---";
+         first_queue = false;
       }
+      os << std::string(indent * 3, ' ') << "{";
+      indent++;
    }
-   os << std::format("{:<8.8} ", ss_load_avg.str());
-
-   /* arch */
-   os << std::format("{:<13.13} ", summary->arch ? summary->arch : "-NA-");
-
-   // state
-   os << std::format("{} ", summary->state ? summary->state : "NA");
-
-   os << "\n";
-
    DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_queue_started(std::ostream &os, const char* qname, QStatParameter &parameter) {
-}
-
-void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname) {
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
-}
-
-void ocs::QStatDefaultViewJSON::report_queue_jobs_finished(std::ostream &os, const char *qname, QStatParameter &parameter) {
-}
-
-void ocs::QStatDefaultViewJSON::report_queue_load_alarm(std::ostream &os, const char* qname, const char* reason)
-{
    DENTER(TOP_LAYER);
-   os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      os << "\n";
+      indent--;
+      os << std::string(indent * 3, ' ') << "}";
+      within_queue_section = false;
+   }
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_suspend_alarm(std::ostream &os, const char* qname, const char* reason)
-{
+void ocs::QStatDefaultViewJSON::report_queue_load_alarm(std::ostream &os, const char *qname, const char *reason) {
    DENTER(TOP_LAYER);
-   os << "\t" << (reason ? reason : "no alarm reason given") << "\n";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"load_alarm_reason\": \"" << reason << "\"";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_message(std::ostream &os, const char* qname, const char *message)
-{
+void ocs::QStatDefaultViewJSON::report_queue_suspend_alarm(std::ostream &os, const char *qname, const char *reason) {
    DENTER(TOP_LAYER);
-   os << "\t" << (message != nullptr ? message : "no queue message given") << "\n";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"suspend_alarm_reason\": \"" << reason << "\"";
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const char* dom,
-                                       const char* name, const char* value, const char *details)
-{
+void ocs::QStatDefaultViewJSON::report_queue_message(std::ostream &os, const char *qname, const char *message) {
    DENTER(TOP_LAYER);
-   os << "\t";
-   if (details != nullptr && strlen(details) > 0) {
-      os << std::format("{}:{}={} ({})", dom, name, value, details);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"message\": \"" << message << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_resource_started(std::ostream &os, const char* name) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"queue_resources\": {";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_resource_finished(std::ostream &os, const char* name) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   first_sub_object = true;
+   DRETURN_VOID;   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const lListElem *resource, const char *dom,
+                                                      const char *name, const char *value, const char *details) {
+   DENTER(TOP_LAYER);
+   // @todo
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
    } else {
-      os << std::format("{}:{}={}", dom, name, value);
+      os << ",\n";
    }
-   os << "\n";
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": ";
+   show_resource_as_JSON_type(os, resource);
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter)
-{
+void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-
-   static bool pending_header_printed = false;
-   if (!pending_header_printed && (parameter.show_ & QSTAT_DISPLAY_FULL) && (parameter.show_ & QSTAT_DISPLAY_PENDING)) {
-      show_header_with_title(os, parameter, MSG_QSTAT_PRT_PEDINGJOBS);
-      pending_header_printed = true;
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      if (first_queue) {
+         os << "\n";
+         first_queue = false;
+      } else {
+         os << ",\n";
+      }
+   } else {
+      os << ",\n";
    }
-   last_job_id = 0;
+   os << std::string(indent * 3, ' ') << "\"jobs_running\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_queue_jobs_finished(std::ostream &os, const char *qname,
+                                                           QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "]";
+   first_job = true;
+   DRETURN_VOID;
+}
+
+
+void ocs::QStatDefaultViewJSON::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      if (first_queue) {
+         os << "\n";
+         first_queue = false;
+      } else {
+         os << ",\n";
+      }
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"jobs_pending\": [";
+   indent++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_pending_jobs_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "]";
+   first_job = true;
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   static bool finished_header_printed = false;
-   if (!finished_header_printed) {
-      show_header_with_title(os, parameter, MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
-      finished_header_printed = true;
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      if (first_queue) {
+         os << "\n";
+         first_queue = false;
+      } else {
+         os << ",\n";
+      }
+   } else {
+      os << ",\n";
    }
+   os << std::string(indent * 3, ' ') << "\"jobs_finished\": [";
+   indent++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_finished_jobs_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "]";
+   first_job = true;
+   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_error_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   static bool error_header_printed = false;
-   if (!error_header_printed) {
-      show_header_with_title(os, parameter, MSG_QSTAT_PRT_ERRORJOBS);
+   if (parameter.show_ & QSTAT_DISPLAY_FULL) {
+      if (first_queue) {
+         os << "\n";
+         first_queue = false;
+      } else {
+         os << ",\n";
+      }
+   } else {
+      os << ",\n";
    }
+   os << std::string(indent * 3, ' ') << "\"jobs_error\": [";
+   indent++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_error_jobs_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "]";
+   first_job = true;
+   DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
+void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary,
+                                           QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
-   int sge_urg, sge_pri, sge_ext, sge_time, tsk_ext;
-   bool print_job_id;
 
-   dstring ds = DSTRING_INIT;
+   const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   const bool sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY) ? true : false;
+   const bool sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
+   const bool tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
+   const bool sge_time = !sge_ext | tsk_ext | sge_urg | sge_pri;
 
-   sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
-   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
-   sge_time = !sge_ext;
-   sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
-
-   if ((parameter.show_ & QSTAT_DISPLAY_FULL) == QSTAT_DISPLAY_FULL) {
-      job_header_printed = true;
-   }
-
-   print_job_id = summary->print_jobid;
-
-   last_job_id = jid;
-   if (summary->queue == nullptr) {
-      sge_dstring_clear(&last_queue_name);
+   if (first_job) {
+      os << "\n";
+      first_job = false;
    } else {
-      sge_dstring_copy_string(&last_queue_name, summary->queue);
+      os << ",\n";
    }
 
-   if (!job_header_printed) {
-      std::ostringstream oss;
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
 
-      oss << std::format("{:<10} ", "job-ID");
-      oss << std::format("{:<7} ", "prior");
-      if (sge_pri || sge_urg) {
-         oss << std::format("{:<7} ", "nurg");
-      }
-      if (sge_pri) {
-         oss << std::format("{:<7} ", "npprior");
-      }
-      if (sge_pri || sge_ext) {
-         oss << std::format("{:<7} ", "ntckts");
-      }
-      if (sge_urg) {
-         oss << std::format("{:<8} ", "urg");
-         oss << std::format("{:<8} ", "rrcontr");
-         oss << std::format("{:<8} ", "wtcontr");
-         oss << std::format("{:<8} ", "dlcontr");
-      }
-      if (sge_pri) {
-         oss << std::format("{:<5} ", "pri");
-      }
-      oss << std::format("{:<10} ", "name");
-      oss << std::format("{:<12} ", "user");
-      if (sge_ext) {
-         oss << std::format("{:<16} ", "project");
-         oss << std::format("{:<10} ", "department");
-      }
-      oss << std::format("{:<5} ", "state");
-      if (sge_time) {
-         oss << std::format("{:<19} ", "submit/start at");
-      }
-      if (sge_urg) {
-         oss << std::format("{:<19} ", "deadline");
-      }
-      if (sge_ext) {
-         oss << std::format("{:<10} ", "cpu");
-         oss << std::format("{:<7} ", "mem");
-         oss << std::format("{:<7} ", "io");
-      }
-      if (sge_ext) {
-         oss << std::format("{:<5} ", "tckts");
-         oss << std::format("{:<5} ", "ovrts");
-         oss << std::format("{:<5} ", "otckt");
-         oss << std::format("{:<5} ", "ftckt");
-         oss << std::format("{:<5} ", "stckt");
-         oss << std::format("{:<5} ", "share");
-      }
-      oss << std::format("{:<{}} ", "queue", parameter.get_longest_queue_length());
-      oss << std::format("{:<6} ", (parameter.group_opt_ & GROUP_NO_PETASK_GROUPS) ? "master" : "slots");
-      oss << std::format("{:<10} ", "ja-task-ID");
-      if (tsk_ext) {
-         oss << std::format("{:<16} ", "task-ID");
-         oss << std::format("{:<5} ", "state");
-         oss << std::format("{:<10} ", "cpu");
-         oss << std::format("{:<7} ", "mem");
-         oss << std::format("{:<7} ", "io");
-         oss << std::format("{:<4} ", "stat");
-      }
-
-      size_t line_length = oss.str().length();
-
-      os << oss.str() << "\n";
-      os << std::string(line_length, '-') << "\n";
-
-      job_header_printed = true;
-   }
-
-   /* job id */
-   /* job number / ja task id */
-   if (print_job_id) {
-      os << std::format("{:>10} ", jid);
-   } else {
-      os << std::format("{:>10} ", "");
-   }
-
-   if (print_job_id) {
-      os << std::format("{:>7.5f} ", summary->nprior); /* nprio 0.0 - 1.0 */
-   } else {
-      os << std::string(7 + 1, ' ');
-   }
-   if (sge_pri || sge_urg) {
-      if (print_job_id) {
-         os << std::format("{:>7.5f} ", summary->nurg); /* nurg 0.0 - 1.0 */
-      } else {
-         os << std::string(7 + 1, ' ');
-      }
-   }
-   if (sge_pri) {
-      if (print_job_id) {
-         os << std::format("{:>7.5f} ", summary->nppri); /* nppri 0.0 - 1.0 */
-      } else {
-         os << std::string(7 + 1, ' ');
-      }
-   }
-   if (sge_pri || sge_ext) {
-      if (print_job_id) {
-         os << std::format("{:>7.5f} ", summary->ntckts); /* ntix 0.0 - 1.0 */
-      } else {
-         os << std::string(7 + 1, ' ');
-      }
+   os << std::string(indent * 3, ' ') << "\"job_number\": " << jid;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"prio\": " << summary->priority;
+   if (sge_ext) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"ntix\": " << summary->ntckts;
    }
    if (sge_urg) {
-      if (print_job_id) {
-         opti_print8(os, summary->urg);
-         opti_print8(os, summary->rrcontr);
-         opti_print8(os, summary->wtcontr);
-         opti_print8(os, summary->dlcontr);
-      } else {
-         os << std::string((8 + 1) * 4, ' ');
-      }
+      os << ",\n" << std::string(indent * 3, ' ') << "\"nurg\": " << summary->nurg;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"urg\": " << summary->nurg;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"rrcontr\": " << summary->rrcontr;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"wtcontr\": " << summary->wtcontr;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"dlcontr\": " << summary->dlcontr;
    }
    if (sge_pri) {
-      if (print_job_id) {
-         os << std::format("{:>5d} ", (int)summary->priority);
-      } else {
-         os << std::string(5 + 1, ' ');
-      }
+      os << ",\n" << std::string(indent * 3, ' ') << "\"nppri\": " << summary->nppri;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"priority\": " << summary->priority;
    }
-
-   if (print_job_id) {
-      os << std::format("{:<10.10} ", summary->name);
-      os << std::format("{:<12.12} ", summary->user);
-   } else {
-      os << std::string(10 + 1 + 12 + 1, ' ');
-   }
-
+   os << ",\n" << std::string(indent * 3, ' ') << "\"name\": \"" << summary->name << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"owner\": \"" << summary->user << "\"";
    if (sge_ext) {
-      if (print_job_id) {
-         os << std::format("{:<16.16} ", summary->project?summary->project:"NA");
-         os << std::format("{:<10.10} ", summary->department?summary->department:"NA");
-      } else {
-         os << std::string(16 + 1 + 10 + 1, ' ');
-      }
+      os << ",\n" << std::string(indent * 3, ' ') << "\"project\": \"" << (summary->project ? summary->project : "") <<
+            "\"";
+      os << ",\n" << std::string(indent * 3, ' ') << "\"department\": \"" << (summary->department
+                                                                                 ? summary->department
+                                                                                 : "") << "\"";
    }
-
-   if (print_job_id) {
-      os << std::format("{:<5.5} ", summary->state);
-   } else {
-      os << std::string(5 + 1, ' ');
-   }
-
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
    if (sge_time) {
-      if (print_job_id) {
-         if (summary->is_running) {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->start_time, &ds));
-         } else {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->submit_time, &ds));
-         }
-      } else {
-         os << std::string(19 + 1, ' ');
-      }
+      const char *attrib = summary->is_running ? "start_time" : "submission_time";
+      uint64_t timestamp = summary->is_running ? summary->start_time : summary->submit_time;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"" << attrib << "\": \"";
+      show_ISO_8601_timestamp(os, timestamp);
+      os << "\"";
    }
-
    if (sge_urg) {
-      if (print_job_id) {
-         if (summary->deadline) {
-            os << std::format("{:<19} ", sge_ctime64_short(summary->deadline, &ds));
-         } else {
-            os << std::string(19 + 1, ' ');
-         }
-      } else {
-         os << std::string(19 + 1, ' ');
-      }
+      os << ",\n" << std::string(indent * 3, ' ') << "\"" << "deadline" << "\": \"";
+      show_ISO_8601_timestamp(os, summary->deadline);
+      os << "\"";
    }
-
    if (sge_ext) {
-      /* scaled cpu usage */
-      if (!summary->has_cpu_usage)
-         os << std::format("{:<10.10} ", summary->is_running ? "NA" : "");
-      else {
-         int secs, minutes, hours, days;
-
-         secs = summary->cpu_usage;
-
-         days    = secs/(60*60*24);
-         secs   -= days*(60*60*24);
-
-         hours   = secs/(60*60);
-         secs   -= hours*(60*60);
-
-         minutes = secs/60;
-         secs   -= minutes*60;
-
-         os << std::format("{}:{:02}:{:02}:{:02} ", days, hours, minutes, secs);
+      if (summary->has_cpu_usage) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
       }
-      /* scaled mem usage */
       if (summary->has_mem_usage) {
-         os << std::format("{:<5.5f} ", summary->mem_usage);
-      } else {
-         os << std::format("{:<7.7} ", summary->is_running?"NA":"");
+         os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
       }
-
-      /* scaled io usage */
       if (summary->has_io_usage) {
-         os << std::format("{:<5.5f} ", summary->io_usage);
-      } else {
-         os << std::format("{:<7.7} ", summary->is_running ? "NA" : "");
+         os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;
       }
-
-      /* report jobs dynamic scheduling attributes */
-      /* only scheduled have these attribute */
-      /* Pending jobs can also have tickets */
-      if (sge_ext || summary->is_queue_assigned) {
-         os << std::format("{:<5d} ", (int)summary->tickets);
-         os << std::format("{:<5d} ", (int)summary->override_tickets);
-         os << std::format("{:<5d} ", (int)summary->otickets);
-         os << std::format("{:<5d} ", (int)summary->ftickets);
-         os << std::format("{:<5d} ", (int)summary->stickets);
-         os << std::format("{:<5.2f} ", summary->share);
-      } else {
-         os << std::string((5 + 1) * 6, ' ');
+      if (summary->is_queue_assigned) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"tickets\": " << summary->tickets;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"override_tickets\": " << summary->override_tickets;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"jobshare\": " << summary->share;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"otickets\": " << summary->otickets;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"ftickets\": " << summary->ftickets;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"stickets\": " << summary->stickets;
+      }
+      if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << summary->queue;
+      }
+      if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"master\": \"" << (summary->master ? summary->master : "") << "\"";
+      }
+      os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << summary->slots;
+      if (summary->task_id && summary->is_array) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"tasks\": " << summary->task_id;
       }
    }
 
-   // queue
-   int queue_length = parameter.get_longest_queue_length();
-   if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
-      os << std::format("{:<{}.{}} ", summary->queue ? summary->queue : "", queue_length, queue_length);
-   }
-
-   // master/slave or grantes slots
-   if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
-      if (summary->master)
-         os << std::format("{:<6} ", summary->master);
-      else
-         os << std::string(6 + 1, ' ');
-   } else {
-      os << std::format("{:<6d} ", (int)summary->slots);
-   }
-
-   // job array task id(s)
-   if (summary->task_id && summary->is_array)
-      os << std::format("{:<10s} ", summary->task_id ? summary->task_id : "");
-   else
-      os << std::string(10 + 1, ' ');
-
-   if (!tsk_ext) {
-      os << "\n";
-   }
-
-   sge_dstring_free(&ds);
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_sub_tasks_started(std::ostream &os)
-{
-   DENTER(TOP_LAYER);
-
-   sub_task_count = 0;
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t *summary) {
-   DENTER(TOP_LAYER);
-
-   os << std::format("{:>16} ", summary->task_id ? summary->task_id : "x");
-   os << std::format("{:>5.5} ", summary->state);
-
-   if (summary->has_cpu_usage) {
-      dstring resource_string = DSTRING_INIT;
-
-      double_print_time_to_dstring(summary->cpu_usage, &resource_string, true);
-      os << std::format("{:>10.10} ", sge_dstring_get_string(&resource_string));
-      sge_dstring_free(&resource_string);
-   } else {
-      os << std::format("{:>10.10} ", summary->is_running? "NA" : "");
-   }
-   if (summary->has_mem_usage) {
-      os << std::format("{:>5.5f} ", summary->mem_usage);
-   } else {
-      os << std::format("{:>7.7} ", summary->is_running? "NA" : "");
-   }
-
-   /* scaled io usage */
-   if (summary->has_io_usage) {
-      os << std::format("{:>5.5f} ", summary->io_usage);
-   } else {
-      os << std::format("{:>7.7} ", summary->is_running ? "NA" : "");
-   }
-
-   if (summary->has_exit_status) {
-      os << std::format("{:>4d} ", (int)summary->exit_status);
-   }
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_sub_tasks_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::show_header_with_subtitle(std::ostream &os, job_additional_info_t subtitle, const char *name, const char *value) {
-   DENTER(TOP_LAYER);
-
-   const char *name_str = nullptr;
-   switch (subtitle) {
-      case CHECKPOINT_ENV:
-         name_str = "Checkpoint Env.:";
-         break;
-      case MASTER_QUEUE:
-         name_str = "Master Queue:";
-         break;
-      case FULL_JOB_NAME:
-         name_str = "Full jobname:";
-         break;
-      case REQUESTED_PE:
-         name_str = "Requested PE:";
-         break;
-      case GRANTED_PE:
-         name_str = "Granted PE:";
-         break;
-      case JOB_ADDITIONAL_INFO_ERROR:
-         name_str = "Error:";
-         break;
-   }
-
-   // Show the name of the additional info (e.g. "Checkpoint Env.:") and the name.
-   os << std::format("\t{:<36.36} {} ", name_str != nullptr ? name_str : "", name != nullptr ? name : "");
-
-   os << (value != nullptr ? value : "") << '\n';
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
-   DENTER(TOP_LAYER);
-   show_header_with_subtitle(os, REQUESTED_PE, pe_name, pe_range);
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
-   DENTER(TOP_LAYER);
-   std::ostringstream ss_slots;
-   ss_slots << pe_slots;
-   show_header_with_subtitle(os, GRANTED_PE, pe_name, ss_slots.str().c_str());
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
-   DENTER(TOP_LAYER);
-   show_header_with_subtitle(os, name, value, nullptr);
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_request(std::ostream &os, const char *name, const char *value) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{}={} (default)\n", name, value);
-   DRETURN_VOID;
-}
-
-
-void ocs::QStatDefaultViewJSON::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
-   DENTER(TOP_LAYER);
-
-   if (hard_requested_queue_count > 0) {
-      os << ", " << name;
-   } else {
-      os << name;
-   }
-   hard_requested_queue_count++;
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_hard_requested_queues_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::show_queues_or_resource_started(std::ostream &os, int scope, bool queue, bool hard) {
-   DENTER(TOP_LAYER);
-
-   switch(scope) {
-      case JRS_SCOPE_MASTER:
-         if (queue) {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Master task hard requested queues:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Master task soft requested queues:");
-            }
-         } else {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Master Hard Resources:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Master Soft Resources:");
-            }
-         }
-         break;
-      case JRS_SCOPE_SLAVE:
-         if (queue) {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Slave task hard requested queues:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Slave task soft requested queues:");
-            }
-         } else {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Slave Hard Resources:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Slave Soft Resources:");
-
-            }
-         }
-         break;
-      case JRS_SCOPE_GLOBAL:
-         if (queue) {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Hard requested queues:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Soft requested queues:");
-            }
-         } else {
-            if (hard) {
-               os << std::format("\t{:<36.36} ", "Hard Resources:");
-            } else {
-               os << std::format("\t{:<36.36} ", "Soft Resources:");
-
-            }
-         }
-      default:
-         break;
-   }
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_hard_requested_queues_started(std::ostream &os, int scope) {
-   DENTER(TOP_LAYER);
-   show_queues_or_resource_started(os, scope,true,true);
-   hard_requested_queue_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_soft_requested_queues_started(std::ostream &os, int scope) {
-   DENTER(TOP_LAYER);
-
-   show_queues_or_resource_started(os, scope, true, false);
-   soft_requested_queue_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_hard_resources_started(std::ostream &os, int scope) {
-   DENTER(TOP_LAYER);
-   show_queues_or_resource_started(os, scope, false, true);
-   hard_resource_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_soft_resources_started(std::ostream &os, int scope) {
-   DENTER(TOP_LAYER);
-   show_queues_or_resource_started(os, scope, false, false);
-   soft_resource_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
-   DENTER(TOP_LAYER);
-
-   if (soft_requested_queue_count > 0) {
-      os << ", " << name;
-   } else {
-      os << name;
-   }
-   soft_requested_queue_count++;
-
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_soft_requested_queues_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-
-
-void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
-   DENTER(TOP_LAYER);
-   if (hard_resource_count > 0 ) {
-      os << std::format("\t{:<36.36} ", " ");
-   }
-   os << std::format("{}={} ({:f})\n", name, (value ? value : ""), uc);
-   hard_resource_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_hard_resources_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   if (hard_resource_count == 0) {
-      os << "\n";
-   }
-   DRETURN_VOID;
-}
-
-
-void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const char *name, const char *value, double uc) {
-   DENTER(TOP_LAYER);
-   if (soft_resource_count > 0 ) {
-      os << std::format("\t{:<36.36} ", " ");
-   }
-   os << std::format("{}={}\n", name, value ? value : "");
-   soft_resource_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_soft_resources_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   if (soft_resource_count == 0) {
-      os << "\n";
-   }
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessors_requested_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Jobs (request):");
-   predecessor_requested_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessor_requested(std::ostream &os, const char *name) {
-   DENTER(TOP_LAYER);
-   if (predecessor_requested_count > 0 ) {
-      os << ", " << name;
-   } else {
-      os << name;
-   }
-   predecessor_requested_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessors_requested_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessors_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Jobs:");
-   predecessor_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, uint32_t jid) {
-   DENTER(TOP_LAYER);
-   if (predecessor_count > 0 ) {
-      os << ", " << jid;
-   } else {
-      os << jid;
-   }
-   predecessor_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_predecessors_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Array Jobs (request):");
-   ad_predecessor_requested_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessor_requested(std::ostream &os, const char *name) {
-   DENTER(TOP_LAYER);
-   if (ad_predecessor_requested_count > 0) {
-      os << ", " << name;
-   } else {
-      os << name;
-   }
-   ad_predecessor_requested_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessors_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Predecessor Array Jobs:");
-   ad_predecessor_count = 0;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessor(std::ostream &os, uint32_t jid) {
-   DENTER(TOP_LAYER);
-   if (ad_predecessor_count > 0) {
-      os << ", " << jid;
-   } else {
-      os << jid;
-   }
-   ad_predecessor_count++;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_ad_predecessors_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_binding_started(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << std::format("\t{:<36.36} ", "Binding:");
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_binding(std::ostream &os, const char *binding) {
-   DENTER(TOP_LAYER);
-   os << binding;
-   DRETURN_VOID;
-}
-
-void ocs::QStatDefaultViewJSON::report_binding_finished(std::ostream &os) {
-   DENTER(TOP_LAYER);
-   os << "\n";
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_job_finished(std::ostream &os, u_int jid) {
    DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
    DRETURN_VOID;
 }
+
+
+void ocs::QStatDefaultViewJSON::report_requested_pe(std::ostream &os, const char *pe_name, const char *pe_range) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"requested_pe\": {";
+   indent++;
+   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": \"" << (pe_name ? pe_name : "") << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"pe_range\": \"" << (pe_range ? pe_range : "") << "\"";
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_granted_pe(std::ostream &os, const char *pe_name, int pe_slots) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"granted_pe\": {";
+   indent++;
+   os << "\n" << std::string(indent * 3, ' ') << "\"pe_name\": \"" << (pe_name ? pe_name : "") << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << pe_slots;
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_requested_queues_started(std::ostream &os, int scope) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_queue\": {";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_requested_queues_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_requested_queue(std::ostream &os, int scope, const char *name) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_soft_requested_queues_started(std::ostream &os, int scope) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_queue\": {";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_soft_requested_queues_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_soft_requested_queue(std::ostream &os, int scope, const char *name) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_resources_started(std::ostream &os, int scope) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_hard_request\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_resources_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_hard_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
+   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"value\": ";
+   show_resource_as_JSON_type(os, resource);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"utilization_contribution\": " << uc << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_default_request_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"" << "default_hard_request\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_default_request_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const char *name, const char *value) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
+   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\",\n";
+   os << std::string(indent * 3, ' ') << "\"value\": ";
+   //show_resource_as_JSON_type(os, resource);
+   os << value;
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"is_default_request\": " << "true" << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+
+void ocs::QStatDefaultViewJSON::report_soft_resources_started(std::ostream &os, int scope) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"" << scope_to_string(scope) << "_soft_request\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_soft_resources_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope, const lListElem *resource, const char *name, const char *value, double uc) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
+   os << std::string(indent * 3, ' ') << "\"name\": \"" << name << "\"\n";
+   os << std::string(indent * 3, ' ') << "\"value\": ";
+   show_resource_as_JSON_type(os, resource);
+   os << "\n";
+   os << std::string(indent * 3, ' ') << "\"utilization_contribution\": " << uc << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_predecessors_requested_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"predecessors_requested\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_predecessors_requested_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_predecessor_requested(std::ostream &os, const char *name) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_binding_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"requested_binding\": {";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_binding_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_binding(std::ostream &os, const char *binding) {
+   DENTER(TOP_LAYER);
+   // not implemented because parameters are shown individually
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_binding_attribute(std::ostream &os, const char *name, const char *value) {
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << name << "\": \"" << value << "\"";
+}
+
+void ocs::QStatDefaultViewJSON::report_binding_attribute(std::ostream &os, const char *name, uint32_t value) {
+   os << ",\n" << std::string(indent * 3, ' ') << "\"" << name << "\": " << value;
+}
+
+
+void ocs::QStatDefaultViewJSON::report_predecessors_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"predecessors\": {";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_predecessors_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_predecessor(std::ostream &os, uint32_t jid) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << jid;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_requested_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessor_requested(std::ostream &os, const char *name) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\"";
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"ad_predecessors_requested\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessors_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_ad_predecessor(std::ostream &os, uint32_t jid) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+      first_sub_object = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << jid;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_sub_tasks_started(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   os << ",\n";
+   os << std::string(indent * 3, ' ') << "\"parallel_task\": [";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_sub_tasks_finished(std::ostream &os) {
+   DENTER(TOP_LAYER);
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   first_sub_object = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t *summary) {
+   DENTER(TOP_LAYER);
+   if (first_sub_object) {
+      os << "\n";
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{";
+   indent++;
+   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": \"" << summary->task_id << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": \"" << summary->state << "\"";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"exit_status\": " << summary->exit_status;
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "}";
+   first_sub_object = false;
+   DRETURN_VOID;
+}
+
+void ocs::QStatDefaultViewJSON::report_additional_info(std::ostream &os, job_additional_info_t name, const char *value) {
+   DENTER(TOP_LAYER);
+   // no need to show this again.
+   DRETURN_VOID;
+}
+
+

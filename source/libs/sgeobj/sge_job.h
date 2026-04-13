@@ -491,6 +491,19 @@ job_init_binding_elem(lListElem *jep);
 #define JRS_SCOPE_MASTER 1
 #define JRS_SCOPE_SLAVE  2
 
+constexpr const char *scope_to_string(const int scope) {
+   switch (scope) {
+      case JRS_SCOPE_GLOBAL:
+         return "global";
+      case JRS_SCOPE_MASTER:
+         return "master";
+      case JRS_SCOPE_SLAVE:
+         return "slave";
+      default:
+         return "unknown";
+   }
+}
+
 bool job_parse_scope_string(const char *scope, char &scope_id);
 const char *job_scope_name(uint32_t scope_id);
 const char *job_scope_name(const lListElem *scope_ep);

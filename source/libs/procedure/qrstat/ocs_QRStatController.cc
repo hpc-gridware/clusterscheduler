@@ -81,7 +81,6 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             view.report_resource_list_start(out_);
 
             for_each_ep_lv(resource, lGetList(ar, AR_resource_list)) {
-#if 1
                // get the dominant value of the resource for this host
                const auto type = static_cast<CEntry::Type>(lGetUlong(resource, CE_valtype));
                const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type == CEntry::Type::RESTR || type == CEntry::Type::HOST;
@@ -96,19 +95,6 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
                } else {
                   view.report_resource_list_node_uint64(out_, lGetString(resource, CE_name), static_cast<uint64_t>(lGetDouble(resource, CE_doubleval)));
                }
-#else
-
-               dstring string_value = DSTRING_INIT;
-
-               if (lGetString(resource, CE_stringval)) {
-                  sge_dstring_append(&string_value, lGetString(resource, CE_stringval));
-               } else {
-                  sge_dstring_sprintf(&string_value, "%f", lGetDouble(resource, CE_doubleval));
-               }
-
-               view.report_resource_list_node_str(out_, lGetString(resource, CE_name), sge_dstring_get_string(&string_value));
-               sge_dstring_free(&string_value);
-#endif
             }
             view.report_resource_list_finish(out_);
          }

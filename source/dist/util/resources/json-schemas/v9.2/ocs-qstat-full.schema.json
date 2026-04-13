@@ -1,0 +1,379 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-full.schema.json",
+   "title": "OCS/GCS qstat full schema",
+   "description": "Schema describing qstat full output (-f). Additional task information may be present with -t, request information with -r, queue resource information with -F, and queue explanations with -explain.",
+   "type": "object",
+   "required": [
+      "queues"
+   ],
+   "additionalProperties": true,
+   "properties": {
+      "queues": {
+         "type": "array",
+         "description": "List of queue instances after applying optional filters such as `-q`, `-pe`, `-l`, and `-qs`.",
+         "items": {
+            "type": "object",
+            "required": [
+               "name",
+               "qtype",
+               "slots_used",
+               "slots_resv",
+               "slots_total",
+               "load_avg",
+               "arch",
+               "state"
+            ],
+            "properties": {
+               "name": {
+                  "type": "string",
+                  "pattern": "^[^@]+@[^@]+$",
+                  "description": "Queue instance name in the format '<cluster-queue-name>@<hostname>'."
+               },
+               "qtype": {
+                  "type": "string",
+                  "description": "Queue type identifier as reported by qstat (e.g. B, I, P, C flags)."
+               },
+               "slots_used": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Number of slots currently in use."
+               },
+               "slots_resv": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Number of reserved slots."
+               },
+               "slots_total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total number of slots available in the queue."
+               },
+               "load_avg": {
+                  "type": "number",
+                  "description": "Current load average of the execution host."
+               },
+               "arch": {
+                  "type": "string",
+                  "description": "Architecture string of the execution host."
+               },
+               "state": {
+                  "type": "string",
+                  "description": "Queue state string as reported by qstat (e.g. empty, E, d, etc.)."
+               },
+               "message": {
+                  "type": "string",
+                  "description": "Optional status message describing the queue state, returned when `-explain` is used."
+               },
+               "queue_resources": {
+                  "type": "object",
+                  "description": "Queue resource attributes as reported by `qstat -f -F`. Standard resources are present if not filtered; additional cluster-specific resources may appear as extra properties.",
+                  "required": [
+                     "load_avg",
+                     "load_short",
+                     "load_medium",
+                     "load_long",
+                     "arch",
+                     "num_proc",
+                     "mem_free",
+                     "swap_free",
+                     "virtual_free",
+                     "mem_total",
+                     "swap_total",
+                     "virtual_total",
+                     "mem_used",
+                     "swap_used",
+                     "virtual_used",
+                     "cpu",
+                     "m_topology",
+                     "m_socket",
+                     "m_core",
+                     "m_thread",
+                     "np_load_avg",
+                     "np_load_short",
+                     "np_load_medium",
+                     "np_load_long",
+                     "slots",
+                     "qname",
+                     "hostname",
+                     "tmpdir",
+                     "seq_no",
+                     "rerun",
+                     "calendar",
+                     "s_rt",
+                     "h_rt",
+                     "s_cpu",
+                     "h_cpu",
+                     "s_fsize",
+                     "h_fsize",
+                     "s_data",
+                     "h_data",
+                     "s_stack",
+                     "h_stack",
+                     "s_core",
+                     "h_core",
+                     "s_rss",
+                     "h_rss",
+                     "s_vmem",
+                     "h_vmem",
+                     "min_cpu_interval"
+                  ],
+                  "properties": {
+                     "load_avg": {
+                        "type": "number",
+                        "description": "Normalized load average."
+                     },
+                     "load_short": {
+                        "type": "number"
+                     },
+                     "load_medium": {
+                        "type": "number"
+                     },
+                     "load_long": {
+                        "type": "number"
+                     },
+                     "arch": {
+                        "type": "string"
+                     },
+                     "num_proc": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "mem_free": {
+                        "type": "number"
+                     },
+                     "swap_free": {
+                        "type": "number"
+                     },
+                     "virtual_free": {
+                        "type": "number"
+                     },
+                     "mem_total": {
+                        "type": "number"
+                     },
+                     "swap_total": {
+                        "type": "number"
+                     },
+                     "virtual_total": {
+                        "type": "number"
+                     },
+                     "mem_used": {
+                        "type": "number"
+                     },
+                     "swap_used": {
+                        "type": "number"
+                     },
+                     "virtual_used": {
+                        "type": "number"
+                     },
+                     "cpu": {
+                        "type": "number"
+                     },
+                     "m_topology": {
+                        "type": "string",
+                        "description": "Topology string describing CPU layout."
+                     },
+                     "m_socket": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "m_core": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "m_thread": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "np_load_avg": {
+                        "type": "number"
+                     },
+                     "np_load_short": {
+                        "type": "number"
+                     },
+                     "np_load_medium": {
+                        "type": "number"
+                     },
+                     "np_load_long": {
+                        "type": "number"
+                     },
+                     "slots": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "qname": {
+                        "type": "string", "description": "Cluster queue name."
+                     },
+                     "hostname": {
+                        "type": "string", "description": "Execution host name."
+                     },
+                     "tmpdir": {
+                        "type": "string"
+                     },
+                     "seq_no": {
+                        "type": "integer", "minimum": 0
+                     },
+                     "rerun": {
+                        "type": "boolean"
+                     },
+                     "calendar": {
+                        "type": "string"
+                     },
+                     "s_rt": {
+                        "type": "number"
+                     },
+                     "h_rt": {
+                        "type": "number"
+                     },
+                     "s_cpu": {
+                        "type": "number"
+                     },
+                     "h_cpu": {
+                        "type": "number"
+                     },
+                     "s_fsize": {
+                        "type": "number"
+                     },
+                     "h_fsize": {
+                        "type": "number"
+                     },
+                     "s_data": {
+                        "type": "number"
+                     },
+                     "h_data": {
+                        "type": "number"
+                     },
+                     "s_stack": {
+                        "type": "number"
+                     },
+                     "h_stack": {
+                        "type": "number"
+                     },
+                     "s_core": {
+                        "type": "number"
+                     },
+                     "h_core": {
+                        "type": "number"
+                     },
+                     "s_rss": {
+                        "type": "number"
+                     },
+                     "h_rss": {
+                        "type": "number"
+                     },
+                     "s_vmem": {
+                        "type": "number"
+                     },
+                     "h_vmem": {
+                        "type": "number"
+                     },
+                     "min_cpu_interval": {
+                        "type": "integer",
+                        "minimum": 0
+                     }
+                  },
+                  "additionalProperties": {
+                     "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                     ]
+                  }
+               },
+               "jobs_running": {
+                  "type": "array",
+                  "description": "Jobs currently active in the queue, including running and suspended jobs.",
+                  "items": {
+                     "type": "object",
+                     "required": [
+                        "job_number",
+                        "prio",
+                        "name",
+                        "owner",
+                        "state",
+                        "start_time"
+                     ],
+                     "properties": {
+                        "job_number": {
+                           "type": "integer",
+                           "minimum": 1,
+                           "description": "Unique job identifier."
+                        },
+                        "prio": {
+                           "type": "number",
+                           "description": "Scheduling priority of the job."
+                        },
+                        "name": {
+                           "type": "string",
+                           "description": "Job name."
+                        },
+                        "owner": {
+                           "type": "string",
+                           "description": "Submitting user."
+                        },
+                        "state": {
+                           "type": "string",
+                           "description": "Job state (e.g. r, qw, Eqw)."
+                        },
+                        "start_time": {
+                           "type": "string",
+                           "format": "date-time",
+                           "description": "Time when the job started execution."
+                        },
+                        "parallel_task": {
+                           "type": "array",
+                           "description": "Active parallel environment (PE) tasks of a tightly integrated parallel job.",
+                           "items": {
+                              "type": "object",
+                              "required": [
+                                 "task_id",
+                                 "state",
+                                 "cpu_usage",
+                                 "mem_usage",
+                                 "io_usage",
+                                 "exit_status"
+                              ],
+                              "properties": {
+                                 "task_id": {"type": "string"},
+                                 "state": {"type": "string"},
+                                 "cpu_usage": {"type": "number"},
+                                 "mem_usage": {"type": "number"},
+                                 "io_usage": {"type": "number"},
+                                 "exit_status": {"type": "integer"}
+                              },
+                              "additionalProperties": true
+                           }
+                        }
+                     },
+                     "additionalProperties": true
+                  }
+               }
+            },
+            "additionalProperties": false
+         }
+      },
+      "jobs_pending": {
+         "type": "array",
+         "description": "Jobs that are pending and not yet running on any queue.",
+         "items": {
+            "type": "object",
+            "required": [
+               "job_number",
+               "prio",
+               "name",
+               "owner",
+               "state",
+               "submission_time"
+            ],
+            "properties": {
+               "job_number": {"type": "integer", "minimum": 1},
+               "prio": {"type": "number"},
+               "name": {"type": "string"},
+               "owner": {"type": "string"},
+               "state": {"type": "string"},
+               "submission_time": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Time when the job was submitted."
+               }
+            },
+            "additionalProperties": true
+         }
+      }
+   }
+}
