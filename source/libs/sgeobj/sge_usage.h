@@ -44,7 +44,7 @@ enum {
 
 /*
  * sge standard usage value names
- * 
+ *
  * use these defined names for refering special usage values
  */
 
@@ -82,6 +82,8 @@ enum {
 #define USAGE_ATTR_RSS "rss"
 #define USAGE_ATTR_MAXRSS "maxrss"
 
+int
+usage_list_get_int_usage(const lList *usage_list, const char *name, int def);
 u_long32
 usage_list_get_ulong_usage(const lList *usage_list, const char *name, u_long32 def);
 u_long64
