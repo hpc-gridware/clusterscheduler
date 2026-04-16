@@ -57,7 +57,7 @@
 #include "msg_qmaster.h"
 
 #define ACTFILE_FPRINTF_FORMAT \
-"%s%c%s%c%s%c%s%c%s%c" sge_u32"%c%s%c" sge_u32"%c" sge_u64"%c" sge_u64"%c" sge_u64"%c" sge_u32"%c" sge_u32"%c" \
+"%s%c%s%c%s%c%s%c%s%c" sge_u32"%c%s%c" sge_u32"%c" sge_u64"%c" sge_u64"%c" sge_u64"%c" sge_u32"%c%d%c" \
 sge_u32"%c%f%c%f%c%f%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%f%c" \
 sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s%c%d%c" sge_u32"%c%f%c%f%c%f%c%s%c%f%c%s%c%f%c" sge_u32"%c" sge_u64"" \
 "\n"
@@ -71,8 +71,8 @@ sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s
 *
 *  SYNOPSIS
 *     static u_long32
-*     reporting_get_ulong_usage(const lList *usage_list, lList *reported_list, 
-*                               const char *name, const char *rname, u_long32 def) 
+*     reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
+*                               const char *name, const char *rname, u_long32 def)
 *
 *  FUNCTION
 *     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
@@ -81,10 +81,10 @@ sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s
 *     If no usage information is available for the given attribute, a default
 *     value will be returned.
 *
-*     name and rname may differ, as already reported usage is taken from job 
+*     name and rname may differ, as already reported usage is taken from job
 *     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
 *     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract 
+*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
 *     already reported usage coming from online usage USAGE_ATTR_CPU.
 *
 *  INPUTS
@@ -99,7 +99,7 @@ sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c" sge_u32"%c%s%c%s%c%s
 *     static u_long32 - the usage
 *
 *  NOTES
-*     MT-NOTE: reporting_get_ulong_usage() is MT safe 
+*     MT-NOTE: reporting_get_ulong_usage() is MT safe
 *
 *  SEE ALSO
 *     sgeobj/usage/usage_list_get_ulong_usage()
@@ -119,7 +119,7 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
       /* after this action, we'll have reported the total usage */
       usage_list_set_ulong_usage(reported_list, rname, usage);
 
-      /* in this intermediate accounting record, we'll report the usage 
+      /* in this intermediate accounting record, we'll report the usage
        * consumed since the last intermediate accounting record.
        */
       usage -= reported;
@@ -149,10 +149,10 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
 *     If reported_usage is nullptr, no usage will be booked as already reported,
 *     e.g. for maximum values.
 *
-*     name and rname may differ, as already reported usage is taken from job 
+*     name and rname may differ, as already reported usage is taken from job
 *     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
 *     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract 
+*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
 *     already reported usage coming from online usage USAGE_ATTR_CPU.
 *
 *  INPUTS
@@ -169,7 +169,7 @@ reporting_get_ulong_usage(const lList *usage_list, lList *reported_list,
 *     static u_long32 - the usage
 *
 *  NOTES
-*     MT-NOTE: reporting_get_ulong_usage_sum() is MT safe 
+*     MT-NOTE: reporting_get_ulong_usage_sum() is MT safe
 *
 *  SEE ALSO
 *     sge_rusage/reporting_get_ulong_usage()
@@ -206,8 +206,8 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
 *
 *  SYNOPSIS
 *     static double
-*     reporting_get_double_usage(const lList *usage_list, lList *reported_list, 
-*                                const char *name, const char *rname, double def) 
+*     reporting_get_double_usage(const lList *usage_list, lList *reported_list,
+*                                const char *name, const char *rname, double def)
 *
 *  FUNCTION
 *     Return the usage information of a certain attribute (e.g. cpu, mem, ...).
@@ -216,10 +216,10 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
 *     If no usage information is available for the given attribute, a default
 *     value will be returned.
 *
-*     name and rname may differ, as already reported usage is taken from job 
+*     name and rname may differ, as already reported usage is taken from job
 *     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
 *     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract 
+*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
 *     already reported usage coming from online usage USAGE_ATTR_CPU.
 *
 *  INPUTS
@@ -234,7 +234,7 @@ reporting_get_ulong_usage_sum(const lList *usage_list, lList *reported_list, boo
 *     static double - the usage
 *
 *  NOTES
-*     MT-NOTE: reporting_get_double_usage() is MT safe 
+*     MT-NOTE: reporting_get_double_usage() is MT safe
 *
 *  SEE ALSO
 *     sgeobj/usage/usage_list_get_double_usage()
@@ -254,7 +254,7 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
       /* after this action, we'll have reported the total usage */
       usage_list_set_double_usage(reported_list, rname, usage);
 
-      /* in this intermediate accounting record, we'll report the usage 
+      /* in this intermediate accounting record, we'll report the usage
        * consumed since the last intermediate accounting record.
        */
       usage -= reported;
@@ -284,10 +284,10 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
 *     If reported_usage is nullptr, no usage will be booked as already reported,
 *     e.g. for maximum values.
 *
-*     name and rname may differ, as already reported usage is taken from job 
+*     name and rname may differ, as already reported usage is taken from job
 *     online usage, e.g. attr USAGE_ATTR_CPU, whereas the final usage
 *     is reported in the attr USAGE_ATTR_CPU_ACCT. When we report final usage,
-*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract 
+*     we take the usage given by USAGE_ATTR_CPU_ACCT, but have to subtract
 *     already reported usage coming from online usage USAGE_ATTR_CPU.
 *
 *  INPUTS
@@ -304,7 +304,7 @@ reporting_get_double_usage(const lList *usage_list, lList *reported_list, const 
 *     static double - the usage
 *
 *  NOTES
-*     MT-NOTE: reporting_get_double_usage_sum() is MT safe 
+*     MT-NOTE: reporting_get_double_usage_sum() is MT safe
 *
 *  SEE ALSO
 *     sge_rusage/reporting_get_double_usage()
@@ -373,7 +373,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    u_long64 now = sge_get_gmt64();
    u_long32 ar_id = 0;
    lListElem *ar = nullptr;
-   u_long32 exit_status = 0;
+   int exit_status = 0;
    bool do_accounting_summary = false;
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_ar_list = *ocs::DataStore::get_master_list(SGE_TYPE_AR);
@@ -388,7 +388,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       DRETURN(false);
    }
 
-   /* 
+   /*
     * Figure out if it is a parallel job,
     * and if we shall write individual accounting entries or a summary.
     */
@@ -428,7 +428,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
    }
 
    /*
-    * For intermediate records, we store the reported usage in 
+    * For intermediate records, we store the reported usage in
     * ja_task or pe_task reported_list.
     */
    if (intermediate) {
@@ -438,7 +438,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
          reported_list = lGetOrCreateList(ja_task, JAT_reported_usage_list, "reported_usage", UA_Type);
       }
 
-      /* 
+      /*
        * The LAST_INTERMEDIATE timestamp of the previous intermediate
        * record is the start_time of the current interval.
        */
@@ -469,13 +469,13 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
    if (intermediate) {
       /*
-       * for the job, we don't have the submission time in the job report 
-       * before job exit 
+       * for the job, we don't have the submission time in the job report
+       * before job exit
        */
       if (job != nullptr && pe_task == nullptr) {
          submission_time = lGetUlong64(job, JB_submission_time);
       }
-      /* 
+      /*
        * For the first intermediate record, the start_time is the ja_task start time.
        * For consequent intermediate records, we already set the start_time to the
        * previous intermediate record's end time.
@@ -499,10 +499,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * In this case set exit_status to -1, meaning in ARCo: Job still running.
        * See CR 6621482.
        */
-      exit_status = usage_list_get_ulong_usage(usage_list, "exit_status", -1);
+      exit_status = usage_list_get_int_usage(usage_list, "exit_status", -1);
    } else {
       start_time = usage_list_get_ulong64_usage(usage_list, "start_time", 0);
-      exit_status = usage_list_get_ulong_usage(usage_list, "exit_status", 0);
+      exit_status = usage_list_get_int_usage(usage_list, "exit_status", 0);
    }
 
    ar_id = lGetUlong(job, JB_ar);
