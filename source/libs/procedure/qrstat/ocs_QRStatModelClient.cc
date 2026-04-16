@@ -25,6 +25,8 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "ocs_QRStatModelClient.h"
+
+#include "msg_common.h"
 #include "ocs_QRStatParameterClient.h"
 
 bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& parameter) {
@@ -41,7 +43,7 @@ bool ocs::QRStatModelClient::fetch_data(lList **answer_list, QRStatParameter& pa
    lFreeList(answer_list);
 
    if (!parameter.is_summary() && lGetNumberOfElem(ar_list_) == 0) {
-      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING, "Requested AR does not exist");
+      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);
       DRETURN(false);
    }
 

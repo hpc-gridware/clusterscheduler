@@ -40,6 +40,7 @@ inline void opti_print8(std::ostream& os, double value) {
    DENTER(TOP_LAYER);
    if (value > 99999999) {
       os << std::format("{:>8.3g} ", value);
+   } else {
       os << std::format("{:>8.0f} ", value);
    }
    DRETURN_VOID;

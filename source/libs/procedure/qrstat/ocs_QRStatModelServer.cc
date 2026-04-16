@@ -21,8 +21,11 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_answer.h"
 
 #include "ocs_QRStatModelServer.h"
+
+#include "msg_common.h"
 
 bool ocs::QRStatModelServer::fetch_data(lList **answer_list, QRStatParameter& parameter) {
    DENTER(TOP_LAYER);
@@ -33,6 +36,11 @@ bool ocs::QRStatModelServer::fetch_data(lList **answer_list, QRStatParameter& pa
    ar_list_ = lSelect("", master_ar_list, ar_where, ar_what);
    lFreeWhat(&ar_what);
    lFreeWhere(&ar_where);
+
+   if (!parameter.is_summary() && lGetNumberOfElem(ar_list_) == 0) {
+      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_GDI_AR_DOES_NOT_EXIT);
+      DRETURN(false);
+   }
 
    DRETURN(true);
 }

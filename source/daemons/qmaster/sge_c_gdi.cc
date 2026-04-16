@@ -262,6 +262,7 @@ sge_c_gdi_check_execution_permission(ocs::gdi::Packet *packet, ocs::gdi::Task *t
 
    switch (const ocs::gdi::Command cmd = task->command) {
       case ocs::gdi::Command::GET:
+      case ocs::gdi::Command::GET_PROCEDURE:
          DRETURN(sge_task_check_get_perm_host(packet, task));
       case ocs::gdi::Command::ADD:
       case ocs::gdi::Command::MOD:
@@ -414,7 +415,7 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          MONITOR_GDI_REPLACE(monitor);
          sge_c_gdi_replace(ao, packet, task, command, sub_command, monitor);
          break;
-      case ocs::gdi::Command::PROCEDURE:
+      case ocs::gdi::Command::GET_PROCEDURE:
          // @todo CS-1913 Enhance monitoring interface to monitor stored procedures
          //MONITOR_GDI_REPLACE(monitor);
          sge_c_gdi_procedure(ao, packet, task, command, sub_command, monitor);
@@ -1428,9 +1429,9 @@ sge_task_check_get_perm_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    // only external requests need to be checked
    if (!packet->is_intern_request) {
       const lList *master_admin_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_ADMINHOST);
-      bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
+      const bool is_admin_host = host_list_locate(master_admin_host_list, packet->host) != nullptr ? true : false;
       const lList *master_submit_host_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUBMITHOST);
-      bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
+      const bool is_submit_host = host_list_locate(master_submit_host_list, packet->host) != nullptr ? true : false;
 
       switch (task->target) {
          case ocs::gdi::Target::CONF_LIST: {

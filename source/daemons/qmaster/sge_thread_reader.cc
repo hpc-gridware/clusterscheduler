@@ -194,7 +194,7 @@ sge_reader_main(void *arg) {
             for (auto *task : packet->tasks) {
                auto command = task->command;
 
-               if (command != ocs::gdi::Command::GET && command != ocs::gdi::Command::PROCEDURE) {
+               if (command != ocs::gdi::Command::GET && command != ocs::gdi::Command::GET_PROCEDURE) {
                   is_only_read_request = false;
                   break;
                }

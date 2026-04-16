@@ -34,7 +34,6 @@
 
 #include <pthread.h>
 #include <cstring>
-#include <cinttypes>
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_log.h"

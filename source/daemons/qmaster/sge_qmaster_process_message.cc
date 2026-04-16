@@ -330,7 +330,7 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
          // show event client list (SGE_EV_LIST); data comes from event master therefor Listener DS possible
          // show thread list (SGE_DUMMY_LIST); data comes from thread main therefor Listener DS possible
          type = get_most_restrictive_datastore(type, ocs::DataStore::LISTENER);
-      } else if (operation == ocs::gdi::Command::PROCEDURE) {
+      } else if (operation == ocs::gdi::Command::GET_PROCEDURE) {
          // So far all procedures are read only
          // They can get processed by reader threads in parallel
          type = get_most_restrictive_datastore(type, ocs::DataStore::READER);

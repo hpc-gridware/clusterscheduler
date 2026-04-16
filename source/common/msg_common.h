@@ -1123,4 +1123,6 @@
 #define MSG_GDI_USAGE_ectx_OPT            "[-ectx client|server]"
 #define MSG_GDI_UTEXT_ectx_OPT            _MESSAGE(60748, _("specifies the execution context for the command"))
 
+#define MSG_GDI_AR_DOES_NOT_EXIT          _MESSAGE(60749, _("Requested AR does not exist"))
+
 // clang-format on

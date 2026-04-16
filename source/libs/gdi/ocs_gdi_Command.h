@@ -34,7 +34,7 @@ namespace ocs::gdi {
       SPECIAL,
       COPY,
       REPLACE,
-      PROCEDURE,
+      GET_PROCEDURE,
    };
 
    std::string to_string(Command cmd);
@@ -77,7 +77,7 @@ namespace ocs::gdi {
    }
 
    inline bool get_response_from_master(Command cmd, SubCommand sub_cmd) {
-      return cmd == Command::GET || cmd == Command::PERMCHECK || cmd == Command::PROCEDURE
+      return cmd == Command::GET || cmd == Command::PERMCHECK || cmd == Command::GET_PROCEDURE
              || (cmd == Command::ADD && sub_cmd == SubCommand::RETURN_NEW_VERSION);
    }
 }
