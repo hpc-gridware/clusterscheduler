@@ -40,7 +40,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-static const int FIFO_LOCK_QUEUE_LENGTH = 512;
+static constexpr int FIFO_LOCK_QUEUE_LENGTH = MAX_TOTAL_COMPONENT_THREADS;
 
 /**
  * initialize a fifo read/write lock.

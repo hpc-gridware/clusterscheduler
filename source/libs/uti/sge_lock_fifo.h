@@ -46,6 +46,9 @@ struct sge_fifo_rw_lock_t {
    int signaled; ///< number of waiting threads which have been signaled so that they wake up (maximum is 1)
 };
 
+// max thread count in any OCS component (e.g. qmaster)
+constexpr int MAX_TOTAL_COMPONENT_THREADS = 512;
+
 bool
 sge_fifo_lock_init(sge_fifo_rw_lock_t *lock);
 
