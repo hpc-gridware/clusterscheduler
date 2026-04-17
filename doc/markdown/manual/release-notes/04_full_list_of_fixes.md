@@ -1,5 +1,83 @@
 # Full List of Fixes
 
+## v9.0.12
+
+### Improvement
+
+[CS-336](https://hpc-gridware.atlassian.net/browse/CS-336) provide a Maven build for dbwriter
+
+[CS-1176](https://hpc-gridware.atlassian.net/browse/CS-1176) Installation on xlx-amd64 fails due to core of qping
+
+[CS-1489](https://hpc-gridware.atlassian.net/browse/CS-1489) test dbwriter with MySQL
+
+[CS-1852](https://hpc-gridware.atlassian.net/browse/CS-1852) Add 9.0.11 to quick install script on github
+
+[CS-1887](https://hpc-gridware.atlassian.net/browse/CS-1887) Add support for linux kernel release 7.\*
+
+[CS-1918](https://hpc-gridware.atlassian.net/browse/CS-1918) Improve logging of lmstat requests in license-manager for better traceability
+
+[CS-1919](https://hpc-gridware.atlassian.net/browse/CS-1919) Make license-manager lmstat data caching timeout configurable
+
+### New Feature
+
+[CS-1777](https://hpc-gridware.atlassian.net/browse/CS-1777) License manager must support feature name aliasing
+
+[CS-1886](https://hpc-gridware.atlassian.net/browse/CS-1886) Add operations JSONL operations log history to Qontrol interface to track changes done with UI
+
+[CS-1900](https://hpc-gridware.atlassian.net/browse/CS-1900) Add license feature aggregation supporting multiple license servers to license-manager
+
+[CS-1917](https://hpc-gridware.atlassian.net/browse/CS-1917) license-manager should have a configurable timeout for individual license server requests
+
+[CS-1927](https://hpc-gridware.atlassian.net/browse/CS-1927) add qontrol to the gcs-9.0.x packages
+
+[CS-1933](https://hpc-gridware.atlassian.net/browse/CS-1933) Add MCP server to Qontrol to provide tools for read only cluster analysis
+
+### Sub-task
+
+[CS-1809](https://hpc-gridware.atlassian.net/browse/CS-1809) replace generated dbwriter xml parsing code
+
+[CS-1810](https://hpc-gridware.atlassian.net/browse/CS-1810) move common code into dbwriter module
+
+[CS-1868](https://hpc-gridware.atlassian.net/browse/CS-1868) qselect ignores the -xml switch
+
+[CS-1934](https://hpc-gridware.atlassian.net/browse/CS-1934) make dbwriter maven build from ant build
+
+[CS-1935](https://hpc-gridware.atlassian.net/browse/CS-1935) make sure that all dbwriter dependencies and all maven plugins have the current version
+
+[CS-1936](https://hpc-gridware.atlassian.net/browse/CS-1936) adapt testsuite to use dbwriter maven build
+
+[CS-1942](https://hpc-gridware.atlassian.net/browse/CS-1942) adapt dbwriter directory structure to maven standard
+
+### Bug
+
+[CS-1791](https://hpc-gridware.atlassian.net/browse/CS-1791) Update Admin Guide with new qgpu parameters
+
+[CS-1800](https://hpc-gridware.atlassian.net/browse/CS-1800) mk\_dist does not handle tar errors which can result in incomplete packages
+
+[CS-1812](https://hpc-gridware.atlassian.net/browse/CS-1812) remove dbwriter logging "0 lines marked as erroneous, these will be skipped"
+
+[CS-1818](https://hpc-gridware.atlassian.net/browse/CS-1818) Qontrol: Displaying userset in User Management does not display where the list is used
+
+[CS-1825](https://hpc-gridware.atlassian.net/browse/CS-1825) changing the maximum number of event clients does not have immediate effect
+
+[CS-1834](https://hpc-gridware.atlassian.net/browse/CS-1834) PE round robin allocation rule does not respect the masterq and scope switch
+
+[CS-1837](https://hpc-gridware.atlassian.net/browse/CS-1837) Solaris SMF related scripts in $SGE\_ROOT/util/sgeSMF are not executable
+
+[CS-1850](https://hpc-gridware.atlassian.net/browse/CS-1850) if master and slave queue requests are overlapping slave tasks can be scheduled to queue instances which do not match the slave queue request
+
+[CS-1863](https://hpc-gridware.atlassian.net/browse/CS-1863) GDI multi call \(as done by cetrain client apps\) can cause core of client application
+
+[CS-1894](https://hpc-gridware.atlassian.net/browse/CS-1894) Runtime crash due to mixed compiler/runtime libraries when using non-system toolchain \(xlx-amd64\)
+
+[CS-1904](https://hpc-gridware.atlassian.net/browse/CS-1904) loadcheck shows product name as OGE
+
+[CS-1905](https://hpc-gridware.atlassian.net/browse/CS-1905) Zombie jobs are not displayed
+
+[CS-1922](https://hpc-gridware.atlassian.net/browse/CS-1922) shepherd\_cmd does not work with qrsh jobs
+
+[CS-1940](https://hpc-gridware.atlassian.net/browse/CS-1940) dbwriter reports an error when parsing accounting records around midnight
+
 ## v9.0.11
 
 ### Improvement
