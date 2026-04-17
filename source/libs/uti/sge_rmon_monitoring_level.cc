@@ -35,7 +35,7 @@
 #include "uti/sge_rmon_monitoring_level.h"
 
 int
-rmon_mliszero(monitoring_level *m) {
+rmon_mliszero(const monitoring_level *m) {
    for (int j = 0; j < N_LAYER; j++) {
        if (m->ml[j] != 0) {
            return 0;
@@ -52,12 +52,12 @@ rmon_mlclr(monitoring_level *d) {
 }
 
 u_long
-rmon_mlgetl(monitoring_level *s, int i) {
+rmon_mlgetl(const monitoring_level *s, const int i) {
    return s->ml[i];
 }
 
 void
-rmon_mlputl(monitoring_level *s, int i, u_long mask) {
+rmon_mlputl(monitoring_level *s, const int i, const u_long mask) {
    s->ml[i] = mask;
 }
 

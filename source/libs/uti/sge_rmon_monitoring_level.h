@@ -55,10 +55,10 @@ struct monitoring_level {
    u_long ml[N_LAYER];
 };
 
-int rmon_mliszero(monitoring_level *);
+int rmon_mliszero(const monitoring_level *);
 
 void rmon_mlclr(monitoring_level *);
 
-u_long rmon_mlgetl(monitoring_level *, int);
+u_long rmon_mlgetl(const monitoring_level *, int);
 
 void rmon_mlputl(monitoring_level *, int, u_long);

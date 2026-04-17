@@ -40,7 +40,6 @@
 #include "sge_getloadavg.h"
 #include "sge_loadmem.h"
 #include "sge_nprocs.h"
-#include "sge_nice.h"
 
 #if defined(LINUX) || defined(FREEBSD) || defined(NETBSD) || defined(DARWIN)
 #  define PSCMD "/bin/ps -axc"

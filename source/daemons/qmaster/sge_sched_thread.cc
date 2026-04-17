@@ -295,39 +295,49 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    if (prof_is_active(SGE_PROF_CUSTOM0)) {
       prof_stop_measurement(SGE_PROF_CUSTOM0, nullptr);
 
-      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d sequential, %d parallel, " sge_u32 " orders, " sge_u32 " H, " sge_u32 " Q, " sge_u32 " QA, " sge_u32 " J(qw), " sge_u32 " J(r), " sge_u32 " J(s), " sge_u32 " J(h), " sge_u32 " J(e), " sge_u32 " J(x), %d J(all), " sge_u32 " C, " sge_u32 " ACL, " sge_u32 " PE, " sge_u32 " U, " sge_u32 " D, " sge_u32 " PRJ, " sge_u32 " ST, " sge_u32 " CKPT, " sge_u32 " RU, %d gMes, %d jMes, " sge_u32 "/" sge_u32 " pre-send, %d/%d/%d pe-alg",
+      PROFILING("PROF: scheduled in %.3f (u %.3f + s %.3f = %.3f): %d "
+                "sequential, %d parallel, " sge_u32 " orders, " sge_u32 " H, " sge_u32 " Q, " sge_u32
+                " QA, " sge_u32 " J(qw), " sge_u32 " J(r), " sge_u32 " J(s), " sge_u32 " J(h), " sge_u32
+                " J(e), " sge_u32 " J(x), %d J(all), " sge_u32 " C, " sge_u32 " ACL, " sge_u32 " PE, "
+                sge_u32 " U, " sge_u32 " D, " sge_u32 " PRJ, " sge_u32 " ST, " sge_u32 " CKPT, "
+                sge_u32 " RU, %d gMes, %d jMes, " sge_u32 "/" sge_u32
+                " pre-send, %d/%d/%d pe-alg",
                       prof_get_measurement_wallclock(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr),
                       prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
-                      prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr) +
-                      prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
+                      prof_get_measurement_utime(SGE_PROF_CUSTOM0, true, nullptr) + prof_get_measurement_stime(SGE_PROF_CUSTOM0, true, nullptr),
                       sconf_get_fast_jobs(),
+
                       sconf_get_pe_jobs(),
                       orders.numberSendOrders,
                       lGetNumberOfElem(lists->host_list),
                       lGetNumberOfElem(lists->queue_list),
                       lGetNumberOfElem(lists->all_queue_list),
-                      (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) +
-                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_NOT_STARTED]))),
+
+                      (lGetNumberOfElem(*(splitted_job_lists[SPLIT_PENDING])) + lGetNumberOfElem(*(splitted_job_lists[SPLIT_NOT_STARTED]))),
                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_RUNNING])),
                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_SUSPENDED])),
                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_HOLD])),
                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_ERROR])),
+
                       lGetNumberOfElem(*(splitted_job_lists[SPLIT_FINISHED])),
                       prof_job_count,
                       lGetNumberOfElem(lists->centry_list),
                       lGetNumberOfElem(lists->acl_list),
                       lGetNumberOfElem(lists->pe_list),
+
                       lGetNumberOfElem(lists->user_list),
                       lGetNumberOfElem(lists->dept_list),
                       lGetNumberOfElem(lists->project_list),
                       lGetNumberOfElem(lists->share_tree),
                       lGetNumberOfElem(lists->ckpt_list),
+
                       lGetNumberOfElem(lists->running_per_user),
                       global_mes_count,
                       job_mes_count,
                       orders.numberSendOrders,
                       orders.numberSendPackages,
+
                       sconf_get_pe_alg_value(SCHEDD_PE_LOW_FIRST),
                       sconf_get_pe_alg_value(SCHEDD_PE_BINARY),
                       sconf_get_pe_alg_value(SCHEDD_PE_HIGH_FIRST)
@@ -347,7 +357,10 @@ void scheduler_method(sge_evc_class_t *evc, lList **answer_list, scheduler_all_d
    if (prof_is_active(SGE_PROF_CUSTOM5)) {
       prof_stop_measurement(SGE_PROF_CUSTOM5, nullptr);
 
-      PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s", prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr), prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
+      PROFILING("PROF: send orders and cleanup took: %.3f (u %.3f,s %.3f) s",
+         prof_get_measurement_wallclock(SGE_PROF_CUSTOM5, true, nullptr),
+         prof_get_measurement_utime(SGE_PROF_CUSTOM5, true, nullptr),
+         prof_get_measurement_stime(SGE_PROF_CUSTOM5, true, nullptr));
    }
 
    // print separator line in the schedule file *after* the scheduling run

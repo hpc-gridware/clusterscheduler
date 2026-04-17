@@ -275,8 +275,8 @@ void setrlimits(bool trace_rlimit) {
    //    However, since Linux 2.6.12, an unprivileged process can decrease the nice value of a target process
    //    that has a suitable RLIMIT_NICE soft limit; see getrlimit(2) for details.
    sge_switch2start_user(); 
-   SETPRIORITY(priority);
-   sge_switch2admin_user();  
+   setpriority(PRIO_PROCESS, 0, priority);
+   sge_switch2admin_user();
 
    /* how many slots do we have at this host */
    if (!(s=search_nonone_conf_val("host_slots")) || !(host_slots=atoi(s)))

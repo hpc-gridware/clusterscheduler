@@ -228,36 +228,23 @@ int sge_get_lib_dir(char *buffer, size_t size) {
 *     MT-NOTE: sge_get_default_cell() is MT safe
 ******************************************************************************/
 const char *sge_get_default_cell() {
-   char *sge_cell;
-   char *s;
-
    DENTER_(TOP_LAYER);
-   /*
-    * Read some env variables
-    */
-   sge_cell = getenv("SGE_CELL");
+   char *sge_cell = getenv("SGE_CELL");
 
-   /*
-    * Check the env variables
-    */
+   char *s;
    if (sge_cell) {
       s = sge_cell;
    } else {
       s = nullptr;
    }
 
-   /*
-    * Use default? 
-    */
    if (!s || strlen(s) == 0) {
       DRETURN_(DEFAULT_CELL);
-   } else {
-      /*
-       * Get rid of trailing slash
-       */
-      if (s[strlen(s) - 1] == '/') {
-         s[strlen(s) - 1] = '\0';
-      }
+   }
+
+   // Get rid of trailing slash
+   if (s[strlen(s) - 1] == '/') {
+      s[strlen(s) - 1] = '\0';
    }
    DRETURN_(s);
 }
@@ -277,23 +264,19 @@ const char *sge_get_default_cell() {
 *
 ******************************************************************************/
 const char *sge_get_alias_path() {
-   const char *sge_root, *sge_cell;
-   char *cp;
-   int cp_len;
-   SGE_STRUCT_STAT sbuf;
-
    DENTER_(TOP_LAYER);
 
-   sge_root = sge_get_root_dir(1, nullptr, 0, 1);
-   sge_cell = sge_get_default_cell();
-
+   const char *sge_root = sge_get_root_dir(1, nullptr, 0, 1);
+   const char *sge_cell = sge_get_default_cell();
+   SGE_STRUCT_STAT sbuf{};
    if (SGE_STAT(sge_root, &sbuf)) {
       CRITICAL(MSG_SGETEXT_SGEROOTNOTFOUND_S, sge_root);
       sge_exit(1);
    }
 
-   cp_len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
-   if (!(cp = sge_malloc(cp_len))) {
+   const size_t cp_len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
+   char *cp = sge_malloc(cp_len);
+   if (cp == nullptr) {
       CRITICAL(SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE);
       sge_exit(1);
    }

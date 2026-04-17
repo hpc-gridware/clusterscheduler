@@ -2903,7 +2903,8 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       prof_stop_measurement(SGE_PROF_SCHEDLIB4, nullptr);
       prof_calc = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr);
    
-      PROFILING("PROF: job ticket calculation: init: %.3f s, pass 0: %.3f s, pass 1: %.3f, pass2: %.3f, calc: %.3f s", prof_init, prof_pass0, prof_pass1, prof_pass2, prof_calc);
+      PROFILING("PROF: job ticket calculation: init: %.3f s, pass 0: %.3f s, pass 1: %.3f, pass2: %.3f, calc: %.3f s",
+         prof_init, prof_pass0, prof_pass1, prof_pass2, prof_calc);
    }
 
    DRETURN(sge_scheduling_run);

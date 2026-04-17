@@ -38,12 +38,11 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include <cinttypes>
-
 #include "uti/msg_utilib.h"
 #include "uti/sge_dstring.h"
-#include "uti/sge_log.h"
 #include "uti/sge_profiling.h"
+#include "uti/sge_log.h"
+#include "uti/sge_lock_fifo.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 #include "uti/sge_time.h"
@@ -199,12 +198,7 @@ static bool profiling_enabled = true;
 
 static pthread_once_t prof_once = PTHREAD_ONCE_INIT;
 
-/*
- * TODO: If application starts more than MAX_THREAD_NUM threads,
- *       this value must be increased:
- *
- */
-int MAX_THREAD_NUM = 64;
+constexpr int MAX_THREAD_NUM = MAX_TOTAL_COMPONENT_THREADS;
 
 /****** uti/profiling/sge_prof_set_enabled() ***********************************
 *  NAME
