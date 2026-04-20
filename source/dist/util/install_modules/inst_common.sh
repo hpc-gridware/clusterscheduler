@@ -159,7 +159,7 @@ Enter()
 
 #-------------------------------------------------------------------------
 # Makedir: make directory, chown/chgrp/chmod it. Exit if failure
-# 
+#
 Makedir()
 {
    dir=$1
@@ -197,7 +197,7 @@ Makedir()
 
 #-------------------------------------------------------------------------
 # Removedir: remove directory, chown/chgrp/chmod it. Exit if failure
-# 
+#
 Removedir()
 {
    dir=$1
@@ -253,7 +253,7 @@ ExecuteAsAdmin()
       $INFOTEXT -log "Probably a permission problem. Please check file access permissions."
       $INFOTEXT -log "Check read/write permission. Check if SGE daemons are running."
 
-      if [ "$insideMoveLog" != true ]; then #To prevent endless recursion when failure occures in the MoveLog due to perm problems when moving the log file   
+      if [ "$insideMoveLog" != true ]; then #To prevent endless recursion when failure occures in the MoveLog due to perm problems when moving the log file
          MoveLog
       fi
       if [ "$ADMINRUN_NO_EXIT" != "true" ]; then
@@ -490,8 +490,8 @@ ErrUsage()
              "   inst_sge -sm      Install a Shadow Master Host on local host\n" \
              "   inst_sge -copycerts host or inst_sge -copycerts \"host1 host2\"\n" $myname
 
-   if [ "$option" != "" ]; then 
-      $INFOTEXT -e "   The option %s is not valid!" $option 
+   if [ "$option" != "" ]; then
+      $INFOTEXT -e "   The option %s is not valid!" $option
    fi
 
    $INFOTEXT -log "It seems, that you have entered a wrong option, please check the usage!"
@@ -516,7 +516,7 @@ GetConfigFromFile()
   else
      $INFOTEXT "No config file. Please, start the installation with\n a valid configuration file"
   fi
-  IFS="   
+  IFS="
 "
    #-nosmf takes precedence over the value in the autoinstall template
    if [ "$SGE_ENABLE_SMF_LAST" = false ]; then
@@ -542,7 +542,7 @@ IsIpAddress()
          if [ "$isNotDigit" = "" -a "$value" != "" ]; then
             if [ "$value" -ge 0 -a "$value" -lt 256 ]; then
                isIp="${isIp}1"
-               if [ "$ipFound" != "" ]; then 
+               if [ "$ipFound" != "" ]; then
                   ipFound="${ipFound}."
                fi
                ipFound="${ipFound}$value"
@@ -690,7 +690,7 @@ LogResolvedHostLists()
 #--------------------------------------------------------------------------
 # Save the result of the resolving in a global list. The resolve result
 # can later be logged by LogResolvedHostLists()
-# 
+#
 # $1 unresolved host name
 # $2 resolved host name
 AddChangedHost()
@@ -700,7 +700,7 @@ AddChangedHost()
    if [ "$UNRESOLVED" != "$RESOLVED" ]; then
       if [ "$RESOLVED_CHANGED_HOSTNAMES" != "" ]; then
          RESOLVED_CHANGED_HOSTNAMES="${RESOLVED_CHANGED_HOSTNAMES} "
-      fi 
+      fi
       RESOLVED_CHANGED_HOSTNAMES="${RESOLVED_CHANGED_HOSTNAMES}${UNRESOLVED}#${RESOLVED}"
    fi
 }
@@ -733,14 +733,14 @@ CheckConfigFile()
       if [ -z "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< entry is not set!"
          $INFOTEXT -log "Your >SGE_ROOT< entry is not set!"
-         is_valid="false" 
+         is_valid="false"
       elif [ ! -d "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< directory %s does not exist!" $SGE_ROOT
          $INFOTEXT -log "Your >SGE_ROOT< directory %s does not exist!" $SGE_ROOT
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ -z "$SGE_CELL" ]; then
-         $INFOTEXT -e "Your >SGE_CELL< entry is not set!" 
+         $INFOTEXT -e "Your >SGE_CELL< entry is not set!"
          $INFOTEXT -log "Your >SGE_CELL< entry is not set!"
          is_valid="false"
       elif [ ! -d "$SGE_ROOT/$SGE_CELL" ]; then
@@ -751,13 +751,13 @@ CheckConfigFile()
       if [ -z "$BACKUP_DIR" ]; then
          $INFOTEXT -e "Your >BACKUP_DIR< directory is not set!"
          $INFOTEXT -log "Your >BACKUP_DIR< directory is not set!"
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ -z "$TAR" ]; then
          $INFOTEXT -e "Your >TAR< flag is not set!"
          $INFOTEXT -log "Your >TAR< flag is not set!"
          is_valid="false"
-      fi 
+      fi
       if [ "$TAR" = "1" ]; then
          TAR="true"
       elif [ "$TAR" = "0" ]; then
@@ -767,24 +767,24 @@ CheckConfigFile()
       if [ "$TAR" != "true" -a "$TAR" != "false" ]; then
          $INFOTEXT -e "Your >TAR< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >TAR< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ -z "$BACKUP_FILE" -a "$TAR" = "true" ]; then
          $INFOTEXT -e "Your >BACKUP_FILE< name is not set!"
          $INFOTEXT -log "Your >BACKUP_FILE< name is not set!"
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ "$is_valid" = "false" ]; then
          $INFOTEXT -e "\nAn invalid entry was found in your autobackup configuration file"
          $INFOTEXT -e "Please check your autobackup configuration file!\n >%s<" $FILE
          $INFOTEXT -log "\nAn invalid entry was found in your autobackup configuration file"
          $INFOTEXT -log "Please check your autobackup configuration file!\n >%s<" $FILE
-         exit 2  #ToDo: documentation exit 2 configuration file error 
+         exit 2  #ToDo: documentation exit 2 configuration file error
       fi
       return
    fi
 
-   #translate the CELL_NAME entry to SGE_CELL as needed by installscript   
+   #translate the CELL_NAME entry to SGE_CELL as needed by installscript
    SGE_CELL=$CELL_NAME
 
    #do hostname resolving. fetching hostname from config file, try to resolve and
@@ -818,18 +818,18 @@ CheckConfigFile()
       if [ -z "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< entry is not set!"
          $INFOTEXT -log "Your >SGE_ROOT< entry is not set!"
-         is_valid="false" 
+         is_valid="false"
       elif [ ! -d "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< directory %s does not exist!" $SGE_ROOT
          $INFOTEXT -log "Your >SGE_ROOT< directory %s does not exist!" $SGE_ROOT
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ -z "$SGE_CELL" ]; then
          $INFOTEXT -e "Your >CELL_NAME< entry is not set!"
          $INFOTEXT -log "Your >CELL_NAME< entry is not set!"
          is_valid="false"
-      fi 
-   fi 
+      fi
+   fi
 
    if [ "$QMASTER" = "install" ]; then
       # if we have a bdb server, the cell directory already exists - this is OK.
@@ -860,7 +860,7 @@ CheckConfigFile()
          $INFOTEXT -e "Please check your logfile!\n >%s<" "$LOGSNAME"
          is_valid="false"
       fi
-    
+
       if [ -z "$QMASTER_SPOOL_DIR" -o  "`echo "$QMASTER_SPOOL_DIR" | cut -d"/" -f1`" = "`echo "$QMASTER_SPOOL_DIR" | cut -d"/" -f2`" ]; then
          $INFOTEXT -e "Your >QMASTER_SPOOL_DIR< is empty or an invalid path. It must be a valid path!"
          $INFOTEXT -log "Your >QMASTER_SPOOL_DIR< is empty or an invalid path. It must be a valid path!"
@@ -897,7 +897,7 @@ CheckConfigFile()
          $INFOTEXT -e "Your >PAR_EXECD_INST_COUNT< entry is invalid, please enter a number between 1\n and number of execution host"
          $INFOTEXT -log "Your >PAR_EXECD_INST_COUNT< entry is invalid, please enter a number between 1\n and number of execution host"
          is_valid="false"
-      fi 
+      fi
       `IsValidClusterName "$SGE_CLUSTER_NAME"`
       if [ "$?" -eq 1 ]; then
          $INFOTEXT -e "Your >SGE_CLUSTER_NAME< entry is invalid. Valid Clustername is e.g. p_1234"
@@ -916,7 +916,7 @@ CheckConfigFile()
          $INFOTEXT -e "Your >GID_RANGE< has invalid values."
          $INFOTEXT -log "Your >GID_RANGE< has invalid values."
          is_valid="false"
-      fi 
+      fi
       if [ "`echo "$EXECD_SPOOL_DIR_LOCAL" | cut -d"/" -f1`" = "`echo "$EXECD_SPOOL_DIR_LOCAL" | cut -d"/" -f2`" -a ! -z "$EXECD_SPOOL_DIR_LOCAL" ]; then
          $INFOTEXT -e "Your >EXECD_SPOOL_DIR_LOCAL< entry is not a path. It must be a valid path or empty!"
          $INFOTEXT -log "Your >EXECD_SPOOL_DIR_LOCAL< entry is not a path. It must be a valid path or empty!"
@@ -925,8 +925,8 @@ CheckConfigFile()
       if [ -z "$HOSTNAME_RESOLVING" ]; then
          $INFOTEXT -e "Your >HOSTNAME_RESOLVING< flag is not set!"
          $INFOTEXT -log "Your >HOSTNAME_RESOLVING< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$HOSTNAME_RESOLVING" = "1" ]; then
          HOSTNAME_RESOLVING="true"
       elif [ "$HOSTNAME_RESOLVING" = "0" ]; then
@@ -938,14 +938,14 @@ CheckConfigFile()
          $INFOTEXT -log "Your >HOSTNAME_RESOLVING< flag is wrong! Valid values are: 0, 1, true, false"
          is_valid="false"
       fi
-      
+
       if [ -z "$DEFAULT_DOMAIN" ]; then
             $INFOTEXT -e "Your >DEFAULT_DOMAIN< entry is invalid, valid entries are >none< or a domain name"
             $INFOTEXT -log "Your >DEFAULT_DOMAIN< entry is invalid, valid entries are >none< or a domain name"
             is_valid="false"
       fi
       `IsMailAdress "$ADMIN_MAIL"`
-      if [ "$?" -eq 1 -a "$ADMIN_MAIL" != "none" ]; then 
+      if [ "$?" -eq 1 -a "$ADMIN_MAIL" != "none" ]; then
            $INFOTEXT -e "Your >ADMIN_MAIL< entry seems not to be a email adress or not >none<"
            $INFOTEXT -log "Your >ADMIN_MAIL< entry seems not to be a email adress or not >none<"
       fi
@@ -953,8 +953,8 @@ CheckConfigFile()
       if [ -z "$SET_FILE_PERMS" ]; then
          $INFOTEXT -e "Your >SET_FILE_PERMS< flag is not set!"
          $INFOTEXT -log "Your >SET_FILE_PERMS< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$SET_FILE_PERMS" = "1" ]; then
          SET_FILE_PERMS="true"
       elif [ "$SET_FILE_PERMS" = "0" ]; then
@@ -964,7 +964,7 @@ CheckConfigFile()
       if [ "$SET_FILE_PERMS" != "true" -a "$SET_FILE_PERMS" != "false" ]; then
          $INFOTEXT -e "Your >SET_FILE_PERMS< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >SET_FILE_PERMS< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       fi
    fi
 
@@ -972,8 +972,8 @@ CheckConfigFile()
       if [ -z "$ADD_TO_RC" ]; then
          $INFOTEXT -e "Your >ADD_TO_RC< flag is not set!"
          $INFOTEXT -log "Your >ADD_TO_RC< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$ADD_TO_RC" = "1" ]; then
          ADD_TO_RC="true"
       elif [ "$ADD_TO_RC" = "0" ]; then
@@ -983,7 +983,7 @@ CheckConfigFile()
       if [ "$ADD_TO_RC" != "true" -a "$ADD_TO_RC" != "false" ]; then
          $INFOTEXT -e "Your >ADD_TO_RC< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >ADD_TO_RC< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ "$SHELL_NAME" != "ssh" -a "$SHELL_NAME" != "rsh" -a "$SHELL_NAME" != "remsh" ]; then
            $INFOTEXT -e "Your >SHELL_NAME< entry is wrong. Allowed values are >ssh<, >rsh< or >remsh<"
@@ -993,8 +993,8 @@ CheckConfigFile()
       if [ -z "$SGE_ENABLE_SMF" ]; then
          $INFOTEXT -e "Your >SGE_ENABLE_SMF< flag is not set!"
          $INFOTEXT -log "Your >SGE_ENABLE_SMF< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$SGE_ENABLE_SMF" = "1" ]; then
          SGE_ENABLE_SMF="true"
       elif [ "$SGE_ENABLE_SMF" = "0" ]; then
@@ -1004,7 +1004,7 @@ CheckConfigFile()
       if [ "$SGE_ENABLE_SMF" != "true" -a "$SGE_ENABLE_SMF" != "false" ]; then
          $INFOTEXT -e "Your >SGE_ENABLE_SMF< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >SGE_ENABLE_SMF< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       elif [ "$SGE_ENABLE_SMF" = "false" ]; then
          SMF_FLAGS="-nosmf"
       fi
@@ -1017,14 +1017,14 @@ CheckConfigFile()
          $INFOTEXT -log "Your >EXEC_HOST_LIST< is empty!"
          $INFOTEXT -log "For a automatic execd installation you have to enter a valid exechost name!"
          is_valid="false"
-      fi      
+      fi
    fi
 
    if [ "$QMASTER" = "uninstall" -o "$EXECD" = "uninstall" ]; then
       if [ -z "$REMOVE_RC" ]; then
          $INFOTEXT -e "Your >REMOVE_RC< flag is not set!"
          $INFOTEXT -log "Your >REMOVE_RC< flag is not set!"
-         is_valid="false" 
+         is_valid="false"
       fi
       if [ "$REMOVE_RC" = "1" ]; then
          REMOVE_RC="true"
@@ -1083,8 +1083,8 @@ CheckConfigFile()
       if [ -z "$CSP_RECREATE" ]; then
          $INFOTEXT -e "Your >CSP_RECREATE< flag is not set!"
          $INFOTEXT -log "Your >CSP_RECREATE< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$CSP_RECREATE" = "1" ]; then
          CSP_RECREATE="true"
       elif [ "$CSP_RECREATE" = "0" ]; then
@@ -1094,14 +1094,14 @@ CheckConfigFile()
       if [ "$CSP_RECREATE" != "true" -a "$CSP_RECREATE" != "false" ]; then
          $INFOTEXT -e "Your >CSP_RECREATE< flag is wrong! Valid values are: 0, 1, true, false"
          $INFOTEXT -log "Your >CSP_RECREATE< flag is wrong! Valid values are: 0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       fi
 
       if [ -z "$CSP_COPY_CERTS" ]; then
          $INFOTEXT -e "Your >CSP_COPY_CERTS< flag is not set!"
          $INFOTEXT -log "Your >CSP_COPY_CERTS< flag is not set!"
-         is_valid="false" 
-      fi 
+         is_valid="false"
+      fi
       if [ "$CSP_COPY_CERTS" = "1" ]; then
          CSP_COPY_CERTS="true"
       elif [ "$CSP_COPY_CERTS" = "0" ]; then
@@ -1111,7 +1111,7 @@ CheckConfigFile()
       if [ "$CSP_COPY_CERTS" != "true" -a "$CSP_COPY_CERTS" != "false" ]; then
          $INFOTEXT -e "Your >CSP_COPY_CERTS< flag is wrong! Valid values are:0, 1, true, false"
          $INFOTEXT -log "Your >CSP_COPY_CERTS< flag is wrong! Valid values are:0, 1, true, false"
-         is_valid="false" 
+         is_valid="false"
       fi
       #COPY_COMMAND is checked only if CSP_COPY_CERTS=true
       if [ "$CSP_COPY_CERTS" = true -a \( "$COPY_COMMAND" != "scp" -a "$COPY_COMMAND" != "rcp" \) ]; then
@@ -1147,7 +1147,7 @@ CheckConfigFile()
       $INFOTEXT -e "Please check your autoinstall configuration file!\n >%s<" $FILE
       $INFOTEXT -log "\nAn invalid entry was found in your autoinstall configuration file."
       $INFOTEXT -log "Please check your autoinstall configuration file!\n >%s<" $FILE
-      exit 2  #ToDo: documentation exit 2 configuration file error 
+      exit 2  #ToDo: documentation exit 2 configuration file error
    fi
 }
 
@@ -1302,7 +1302,7 @@ CheckWhoInstallsSGE()
 #-------------------------------------------------------------------------
 # CheckForLocalHostResolving
 #   "localhost", localhost.localdomain and 127.0.x.x are not supported
-#   
+#
 #
 CheckForLocalHostResolving()
 {
@@ -1342,7 +1342,7 @@ CheckForLocalHostResolving()
       exit 2
    fi
 }
-               
+
 #-------------------------------------------------------------------------
 # ProcessSGERoot: read SGE root directory and set $SGE_ROOT
 #                    check if $SGE_ROOT matches current directory
@@ -1361,11 +1361,11 @@ ProcessSGERoot()
             $ECHO
             eval SGE_ROOT=`pwd | sed 's/\/tmp_mnt//'`
             $INFOTEXT -n "The Cluster Scheduler root directory is not set!\n" \
-                         "Please enter a correct path for SGE_ROOT.\n" 
+                         "Please enter a correct path for SGE_ROOT.\n"
             $INFOTEXT -n "If this directory is not correct (e.g. it may contain an automounter\n" \
                          "prefix) enter the correct path to this directory or hit <RETURN>\n" \
                          "to use default [%s] >> " $SGE_ROOT
-         
+
             eval SGE_ROOT=`Enter $SGE_ROOT`
          done
          export SGE_ROOT
@@ -1402,7 +1402,7 @@ ProcessSGERoot()
                       "This may be a permission problem (e.g. no read/write permission\n" \
                       "on a NFS mounted filesystem).\n" \
                       "Please check your permissions. You may cancel the installation now\n" \
-                      "and restart it or continue and try again.\n" $SGE_ROOT_VAL            
+                      "and restart it or continue and try again.\n" $SGE_ROOT_VAL
             $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
             unset SGE_ROOT
             if [ "$AUTO" = true ]; then
@@ -1413,7 +1413,7 @@ ProcessSGERoot()
                       "Please check your permissions. You may cancel the installation now\n" \
                       "and restart it or continue and try again.\n" $SGE_ROOT_VAL
                exit 2
-            fi            
+            fi
             $CLEAR
          elif [ ! -f tst$$ ]; then
             # check if SGE_ROOT points to current directory
@@ -1444,7 +1444,7 @@ ProcessSGERoot()
          RestoreStdout
          $INFOTEXT "Your selected \$SGE_ROOT directory: %s\n is not readable/writeable for user: %s" $SGE_ROOT_VAL $output_username
          exit 2
-      fi  
+      fi
    done
 
    CheckPath
@@ -1612,7 +1612,7 @@ CheckRCfiles()
 #                                  Requires SGE_ROOT and SGE_CELL to be set
 # $1 ... component we are installing
 #
-CheckIfClusterNameAlreadyExists() 
+CheckIfClusterNameAlreadyExists()
 {
    if [ -z "$1" ]; then
       return 0
@@ -1645,7 +1645,7 @@ CheckIfClusterNameAlreadyExists()
 
    CheckRCfiles $hosttype
    rc_res=$?
-  
+
    #Prepare correct return value and message
    if [ $rc_res -eq 1 ]; then
       if [ $ret -eq 1 ]; then
@@ -1661,14 +1661,14 @@ CheckIfClusterNameAlreadyExists()
          $INFOTEXT  "$infotext_temp_msg" $SGE_CLUSTER_NAME $rc_path
       fi
    fi
-   
+
    return $ret
 }
 
 #-------------------------------------------------------------------------
 # RemoveRC_SMF: Remove RC files or SMF service
-# $1 ... service name 
-# $2 ... exit code from CheckIfClusterNameAlreadyExists 
+# $1 ... service name
+# $2 ... exit code from CheckIfClusterNameAlreadyExists
 #        valid values are: 0 1 2 3
 #
 RemoveRC_SMF()
@@ -1711,14 +1711,14 @@ SearchForExistingInstallations()
    if [ -z "$SGE_CLUSTER_NAME" ]; then
       return
    fi
-   
+
    TMP_DAEMON_LIST=$1
    exists=0
    for TMP_DAEMON in $TMP_DAEMON_LIST; do
       CheckIfClusterNameAlreadyExists $TMP_DAEMON
       eval "$TMP_DAEMON"_ret=$?
       eval test_val='$'"$TMP_DAEMON"_ret
-      if [ $test_val -ne 0 ]; then 
+      if [ $test_val -ne 0 ]; then
          exists=1
       fi
    done
@@ -1760,7 +1760,7 @@ ProcessSGEClusterName()
    if [ -n "$TMP_CLUSTER_NAME" ]; then
       SGE_CLUSTER_NAME=$TMP_CLUSTER_NAME
       return
-   fi   
+   fi
 
    if [ "$SGE_QMASTER_PORT" = "" ]; then
       SGE_QMASTER_PORT=`./utilbin/$SGE_ARCH/getservbyname -number sge_qmaster`
@@ -1788,7 +1788,7 @@ ProcessSGEClusterName()
       if [ $? -ne 0 ]; then
          $INFOTEXT "Specified cluster name is not valid!\n" \
                    "The cluster name must start with a letter ([A-Za-z]), followed by letters, \n" \
-                   "digits ([0-9]), dashes ("-") or underscores ("_")."  
+                   "digits ([0-9]), dashes ("-") or underscores ("_")."
          if [ $AUTO = true ]; then
             $INFOTEXT  -log "Specified cluster name is not valid!\n" \
                "The cluster name must start with a letter ([A-Za-z]), followed by letters, \n" \
@@ -1814,10 +1814,10 @@ ProcessSGEClusterName()
                $CLEAR
                RemoveRC_SMF $1 $validation_res
                done="true"
-            fi                  
+            fi
          else
             done="true"
-         fi      
+         fi
       else
          done="true"
       fi
@@ -1863,7 +1863,7 @@ CheckForSMF()
 {
    #SGE_ENABLE_SMF=true now mean we want to try to use it means we want and have SMF
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
-      if [ -f /lib/svc/share/smf_include.sh ]; then 
+      if [ -f /lib/svc/share/smf_include.sh ]; then
          . /lib/svc/share/smf_include.sh
          smf_present
          SGE_ENABLE_SMF="$?"
@@ -1871,7 +1871,7 @@ CheckForSMF()
             SGE_ENABLE_SMF="true"
             . ./util/sgeSMF/sge_smf_support.sh
          else
-            $INFOTEXT "Disabling SMF - SVC repository not found!!!" 
+            $INFOTEXT "Disabling SMF - SVC repository not found!!!"
             SGE_ENABLE_SMF="false"
             SMF_FLAGS="-nosmf"
          fi
@@ -1975,7 +1975,7 @@ GiveHints()
 #-------------------------------------------------------------------------
 # PrintLocalConf:  print execution host local SGE configuration
 # $1 - flag not to modify
-# $2 - "shadowd", optinal to include local conf libjvm attribute  
+# $2 - "shadowd", optinal to include local conf libjvm attribute
 PrintLocalConf()
 {
    SGE_ARCH=`$SGE_UTIL/arch`
@@ -2012,7 +2012,7 @@ PrintLocalConf()
 
 
 #-------------------------------------------------------------------------
-# CreateSGEStartUpScripts: create startup scripts 
+# CreateSGEStartUpScripts: create startup scripts
 #
 CreateSGEStartUpScripts()
 {
@@ -2089,7 +2089,7 @@ CreateSGEStartUpScripts()
          AddDefaultOperator $USER
       fi
 
-      $INFOTEXT "Creating >%s< script" $STARTUP_FILE_NAME 
+      $INFOTEXT "Creating >%s< script" $STARTUP_FILE_NAME
    fi
 
 }
@@ -2107,9 +2107,9 @@ AddSGEStartUpScript()
       $INFOTEXT "AddSGEStartUpScript error: expected SGE_CLUSTER_NAME!!!"
       exit 1
    fi
-   
+
    $CLEAR
-   
+
    SetupRcScriptNames $hosttype
 
    InstallRcScript
@@ -2362,6 +2362,9 @@ InstallSystemdUnitFile()
       execd)
          template_file="$SGE_ROOT/util/rctemplates/sgeexecd_systemd_template"
          ;;
+      dbwriter)
+         template_file="$SGE_ROOT/dbwriter/util/sgedbwriter_systemd_template"
+         ;;
       *)
          $INFOTEXT "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
          $INFOTEXT -log "\nStarting up %s via systemd is not yet supported!\n" $DAEMON_NAME
@@ -2446,7 +2449,7 @@ InstallRcScript()
          return
       fi
    fi
-      
+
    #SMF
    if [ "$SGE_ENABLE_SMF" = "true" ]; then
       #DBwriter does not have CLUSTER NAME at this point
@@ -2659,15 +2662,15 @@ MoveLog()
    if [ "$AUTO" = "false" ]; then
       return
    fi
-   
+
    insideMoveLog=true
 
    GetAdminUser
 
    if [ "$BACKUP" = "true" -a "$AUTO" = "true" ]; then
-      ExecuteAsAdmin cp /tmp/$LOGSNAME $backup_dir/backup.log 
-      rm -f /tmp/$LOGSNAME 
-      return   
+      ExecuteAsAdmin cp /tmp/$LOGSNAME $backup_dir/backup.log
+      rm -f /tmp/$LOGSNAME
+      return
    fi
 
    install_log_dir="$SGE_ROOT/$SGE_CELL/common/install_logs"
@@ -2703,7 +2706,7 @@ MoveLog()
    else
       $INFOTEXT "Can't find install log file: /tmp/%s" "$LOGSNAME"
    fi
-   
+
    insideMoveLog=""
 }
 
@@ -2750,7 +2753,7 @@ RestoreStdout()
 {
    if [ "$STDOUT2LOG" = "1" ]; then
       unset SGE_NOMSG
-      # close file logfile 
+      # close file logfile
       exec 1>&-
       # make stdout a copy of FD 4 (reset stdout)
       exec 1>&4
@@ -2797,7 +2800,7 @@ CheckRunningDaemon()
       sge_execd )
        h=`hostname`
        $SGE_BIN/qping -info $h $SGE_EXECD_PORT execd 1 > /dev/null
-       return $?      
+       return $?
       ;;
 
       sge_shadowd )
@@ -2819,7 +2822,7 @@ BackupConfig()
    BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST_TMP="sgeCA local_conf" 
+   BUP_CLASSIC_DIR_LIST_TMP="sgeCA local_conf"
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts usermapping users usersets zombies"
    BUP_COMMON_FILE_LIST=""
    BUP_SPOOL_FILE_LIST=""
@@ -2835,7 +2838,7 @@ BackupConfig()
                 if [ $AUTO != "true" ]; then
                    SGE_ROOT=`pwd`
                 fi
-   $INFOTEXT -n "\nPlease enter your SGE_ROOT directory. \nDefault: [%s]" $SGE_ROOT 
+   $INFOTEXT -n "\nPlease enter your SGE_ROOT directory. \nDefault: [%s]" $SGE_ROOT
                 SGE_ROOT=`Enter $SGE_ROOT`
    $INFOTEXT -n "\nPlease enter your SGE_CELL name. Default: [default]"
                 if [ $AUTO != "true" ]; then
@@ -2861,7 +2864,7 @@ BackupConfig()
       TAR=$TAR
    fi
 
-   DoBackup 
+   DoBackup
    CreateTarArchive
 
    $INFOTEXT -n "\n... backup completed"
@@ -2869,7 +2872,7 @@ BackupConfig()
 
    if [ "$AUTO" = "true" ]; then
       MoveLog
-   fi  
+   fi
    exit 0
 }
 
@@ -2886,7 +2889,7 @@ RestoreConfig()
    BUP_COMMON_DIR_LIST="sgeCA"
    BUP_SPOOL_FILE_LIST="jobseqnum"
    BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
-   BUP_CLASSIC_DIR_LIST="sgeCA local_conf" 
+   BUP_CLASSIC_DIR_LIST="sgeCA local_conf"
    BUP_CLASSIC_SPOOL_FILE_LIST="jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts usermapping users usersets zombies"
 
    MKDIR="mkdir -p"
@@ -2897,7 +2900,7 @@ RestoreConfig()
    $INFOTEXT -n "\nThis feature restores the configuration from a backup you made\n" \
                 "previously.\n\n"
 
-   $INFOTEXT -wait -n "Hit, <ENTER> to continue!" 
+   $INFOTEXT -wait -n "Hit, <ENTER> to continue!"
    $CLEAR
                 SGE_ROOT=`pwd`
    $INFOTEXT -n "\nPlease enter your SGE_ROOT directory. \nDefault: [%s]" $SGE_ROOT
@@ -2910,7 +2913,7 @@ RestoreConfig()
 
    $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nIs your backupfile in tar.gz[Z] format? (y/n) [y] "
 
-   
+
    if [ $? = 0 ]; then
       ExtractBackup
 
@@ -3034,7 +3037,7 @@ RestoreConfig()
                ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common
             fi
          done
- 
+
       fi
 
       $INFOTEXT -n "\nYour configuration has been restored\n"
@@ -3056,8 +3059,8 @@ RestoreConfig()
 
       RestoreCheckBootStrapFile $bup_file
       #CheckArchBins
-  
-      if [ "$spooling_method" = "berkeleydb" ]; then 
+
+      if [ "$spooling_method" = "berkeleydb" ]; then
          if [ "$is_rpc" = 0 ]; then
             $INFOTEXT -n "\nThe path to your spooling db is [%s]" $db_home
             $INFOTEXT -n "\nIf this is correct hit <ENTER> to continue, else enter the path. >> "
@@ -3107,7 +3110,7 @@ RestoreConfig()
             if [ -f $bup_file/$f ]; then
                ExecuteAsAdmin $CP $bup_file/$f $master_spool
             fi
-         done      
+         done
       else
 
          if [ -d $SGE_ROOT/$SGE_CELL ]; then
@@ -3208,7 +3211,7 @@ SwitchArchRst()
 #            LD_LIBRARY_PATH="$OLD_LD_PATH:./lib/sol-sparc64"
 #            export LD_LIBRARY_PATH
 #         else
-            DB_LOAD="$SGE_UTILBIN/db_load -f" 
+            DB_LOAD="$SGE_UTILBIN/db_load -f"
             ExecuteAsAdmin $DB_LOAD $dump_dir/*.dump -h $db_home sge
 #         fi
 }
@@ -3220,7 +3223,7 @@ CheckArchBins()
    if [ "$is_rpc" = 1 -a "$SGE_ARCH" = "sol-sparc64" ]; then
       DB_BIN="$SGE_ROOT/utilbin/sol-sparc/db_load $SGE_ROOT/utilbin/sol-sparc/db_dump"
       DB_LIB="$SGE_ROOT/lib/sol-sparc/libdb-4.2.so"
-      for db in $DB_BIN; do 
+      for db in $DB_BIN; do
          if [ -f $db ]; then
             :
          else
@@ -3288,7 +3291,7 @@ RemoveRcScript()
          return
       fi
    fi
-   
+
    #If Solaris 10+ and SMF used and 6.1 version not specified
    if [ "$SGE_ENABLE_SMF" = true ]; then
       ServiceAlreadyExists $hosttype
@@ -3312,7 +3315,7 @@ RemoveRcScript()
          $CLEAR
          return
       fi
-      #If we didn't remove any SMF service we continue and try to remove 
+      #If we didn't remove any SMF service we continue and try to remove
       #RC script (sysv_rc)
       #This might happen when we do a reinstall and have RC scripts, but now
       #want to use SMF.
@@ -3438,7 +3441,7 @@ RemoveRcScript()
          cp $RC_FILE $RC_FILE.sge_uninst
          cp $RC_FILE.new.1 $RC_FILE
          $INFOTEXT "Application removed from %s" $RC_FILE
-         
+
          rm $RC_FILE.new.1
       fi
    fi
@@ -3493,17 +3496,17 @@ BackupCheckBootStrapFile()
 
          $INFOTEXT -n "\nThe following settings could be detected.\n"
          $INFOTEXT -n "Spooling Method: Berkeley DB RPC Server spooling.\n"
-         $INFOTEXT -n "Berkeley DB Server host: %s\n" $BDB_SERVER   
+         $INFOTEXT -n "Berkeley DB Server host: %s\n" $BDB_SERVER
          $INFOTEXT -n "Berkeley DB home directory: %s\n\n" $BDB_HOME
 
          $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Are all settings right? (y/n) [y] >>"
          if [ $? = 1 ]; then
-            $INFOTEXT -n "Please enter your Berkeley DB Server host. >>" 
+            $INFOTEXT -n "Please enter your Berkeley DB Server host. >>"
             BDB_SERVER=`Enter`
-            $INFOTEXT -n "Please enter your Berkeley DB home directory. >>" 
+            $INFOTEXT -n "Please enter your Berkeley DB home directory. >>"
             BDB_HOME=`Enter`
          fi
-      
+
          if [ `$SGE_UTILBIN/gethostname -aname` != "$BDB_SERVER" ]; then
             $INFOTEXT -n "You're not on the BDB Server host.\nPlease start the backup on the Server host again!\n"
             $INFOTEXT -n "Exiting backup!\n"
@@ -3579,37 +3582,37 @@ CreateTarArchive()
             ExecuteAsAdmin $TAR $bup_file $DATE.dump $BUP_COMMON_FILE_LIST $BUP_SPOOL_FILE_LIST $BUP_COMMON_DIR_LIST
          else
             ExecuteAsAdmin $TAR $bup_file $BUP_COMMON_FILE_LIST $BUP_SPOOL_FILE_LIST $BUP_COMMON_DIR_LIST
-         fi          
+         fi
 
          ZIP=`which gzip`
          if [ $? -eq 0 ]; then
-            ExecuteAsAdmin $ZIP $bup_file 
+            ExecuteAsAdmin $ZIP $bup_file
          else
             ZIP=`which compress`
             if [ $? -ep 0 ]; then
                ExecuteAsAdmin $ZIP $bup_file
             else
                $INFOTEXT -n "Neither gzip, nor compress could be found!\n Can't compress your tar file!"
-            fi 
+            fi
          fi
        else
          $INFOTEXT -n "tar could not be found! No tar archive can be created!\n You will find your backup files" \
-                      "in: \n%s\n" $backup_dir 
-       fi   
+                      "in: \n%s\n" $backup_dir
+       fi
 
       cd $SGE_ROOT
          $INFOTEXT -n "\n... backup completed"
       $INFOTEXT -n "\nAll information is saved in \n[%s]\n\n" $backup_dir/$bup_file".gz[Z]"
 
-      cd $backup_dir     
-      RMF="rm -fR" 
+      cd $backup_dir
+      RMF="rm -fR"
       ExecuteAsAdmin $RMF $DATE.dump.tar $DATE.dump $BUP_COMMON_FILE_LIST $BUP_SPOOL_FILE_LIST $BUP_COMMON_DIR_LIST
 
       cd $SGE_ROOT
 
       if [ $AUTO = "true" ]; then
          MoveLog
-      fi 
+      fi
 
       exit 0
    fi
@@ -3618,7 +3621,7 @@ CreateTarArchive()
 
 DoBackup()
 {
-   $INFOTEXT -n "\n... starting with backup\n"    
+   $INFOTEXT -n "\n... starting with backup\n"
 
    CPF="cp -f"
    CPFR="cp -fR"
@@ -3679,7 +3682,7 @@ ExtractBackup()
          $INFOTEXT -n "\nPlease enter the full path and name of your backup file." \
                       "\nDefault: [%s]" $SGE_ROOT/backup/backup.tar.gz
          bup_file=`Enter $SGE_ROOT/backup/backup.tar.gz`
-         
+
          if [ -f $bup_file ]; then
             loop_stop="true"
          else
@@ -3691,7 +3694,7 @@ ExtractBackup()
       $INFOTEXT -n "\nCopying backup file to /tmp/bup_tmp_%s\n" $DATE
       cp $bup_file /tmp/bup_tmp_$DATE
       cd /tmp/bup_tmp_$DATE/
-     
+
       echo $bup_file | grep "tar.gz"
       if [ $? -eq 0 ]; then
          ZIP_TYPE="gz"
@@ -3707,14 +3710,14 @@ ExtractBackup()
       elif [ $ZIP_TYPE = "Z" ]; then
          ZIP="uncompress"
       fi
-      
+
       TAR="tar"
       ZIP=`which $ZIP`
       if [ $? -eq 0 ]; then
          TAR=`which $TAR`
          if [ $? -eq 0 ]; then
             TAR=$TAR" -xvf"
-            ExecuteAsAdmin $ZIP -d /tmp/bup_tmp_$DATE/*.$ZIP_TYPE 
+            ExecuteAsAdmin $ZIP -d /tmp/bup_tmp_$DATE/*.$ZIP_TYPE
             ExecuteAsAdmin $TAR /tmp/bup_tmp_$DATE/*.tar
          else
             $INFOTEXT -n "tar could not be found! Can't extract the backup file\n"
@@ -3739,14 +3742,14 @@ RestoreCheckBootStrapFile()
          ADMINUSER="default"
       fi
 
-      MASTER_PORT=`cat $BACKUP_DIR/sgemaster | grep "SGE_QMASTER_PORT=" | head -1 | awk '{ print $1 }' | cut -d"=" -f2 | cut -d";" -f1` 
+      MASTER_PORT=`cat $BACKUP_DIR/sgemaster | grep "SGE_QMASTER_PORT=" | head -1 | awk '{ print $1 }' | cut -d"=" -f2 | cut -d";" -f1`
 
       ACT_QMASTER=`cat $BACKUP_DIR/act_qmaster`
 
       $SGE_BIN/qping -info $ACT_QMASTER $MASTER_PORT qmaster 1 > /dev/null 2>&1
       ret=$?
 
-      while [ $ret = 0 ]; do 
+      while [ $ret = 0 ]; do
          $INFOTEXT -n "\nFound a running qmaster on your master host: %s\nPlease, check this and " \
                       "make sure, that the daemon is down during the restore!\n\n" $ACT_QMASTER
          $INFOTEXT -n -wait "Shutdown qmaster and hit, <ENTER> to continue, or <CTRL-C> to stop\n" \
@@ -3775,17 +3778,17 @@ RestoreCheckBootStrapFile()
 
          $INFOTEXT -n "\nThe following settings could be detected.\n"
          $INFOTEXT -n "Spooling Method: Berkeley DB RPC Server spooling.\n"
-         $INFOTEXT -n "Berkeley DB Server host: %s\n" $BDB_SERVER   
+         $INFOTEXT -n "Berkeley DB Server host: %s\n" $BDB_SERVER
          $INFOTEXT -n "Berkeley DB home directory: %s\n\n" $BDB_HOME
 
          $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "Are all settings right? (y/n) [y] >>"
          if [ $? = 1 ]; then
-            $INFOTEXT -n "Please enter your Berkeley DB Server host. >>" 
+            $INFOTEXT -n "Please enter your Berkeley DB Server host. >>"
             BDB_SERVER=`Enter`
-            $INFOTEXT -n "Please enter your Berkeley DB home directory. >>" 
+            $INFOTEXT -n "Please enter your Berkeley DB home directory. >>"
             BDB_HOME=`Enter`
          fi
-      
+
          if [ `$SGE_UTILBIN/gethostname -aname` != "$BDB_SERVER" ]; then
             $INFOTEXT -n "You're not on the BDB Server host.\nPlease start the backup on the Server host again!\n"
             $INFOTEXT -n "Exiting backup!\n"
@@ -3795,7 +3798,7 @@ RestoreCheckBootStrapFile()
          if [ `ps -efa | grep berkeley | grep -v "grep" | wc -l` = 1 ]; then
             $INFOTEXT -n "The restore procedure detected a running Berkeley DB\n" \
                          "service on this machine! Please stop this service first and\n" \
-                         "and continue with restore or do a restart of the Berkeley DB after restore!\n" 
+                         "and continue with restore or do a restart of the Berkeley DB after restore!\n"
             $INFOTEXT -wait -auto $AUTO "Hit, <ENTER> to continue!"
          fi
       fi
@@ -3829,7 +3832,7 @@ CopyCA()
    if [ "$CSP" = "false" -a "$1" != "copyonly" ]; then
       return 1
    fi
-   
+
    hosttype="undef"
    if [ "$1" = "execd" ]; then
       hosttype="execd"
@@ -3844,14 +3847,14 @@ CopyCA()
       hosttype="remote"
       out_text="remote"
    fi
-       
+
    $INFOTEXT -u "Installing SGE in CSP mode"
    if [ "$hosttype" = "copyonly" ]; then
       $INFOTEXT "\nThe script copies the cert files to each %s host. \n" $out_text
       $INFOTEXT "To use this functionality, it is recommended, that user root\n" \
              "may do rsh/ssh to the %s host, without being asked for a password!\n" $out_text
       `true`
-   else 
+   else
       $INFOTEXT "\nInstalling SGE in CSP mode needs to copy the cert\n" \
                 "files to each %s host. This can be done by script!\n" $out_text
       $INFOTEXT "To use this functionality, it is recommended, that user root\n" \
@@ -3882,7 +3885,7 @@ CopyCA()
    fi
 
    if [ "$hosttype" = "execd" ]; then
-      CopyCaToHostType admin 
+      CopyCaToHostType admin
    elif [ "$hosttype" = "submit" ]; then
       CopyCaToHostType submit
    elif [ "$hosttype" = "copyonly" -o "$hosttype" = "remote" ]; then
@@ -3927,10 +3930,10 @@ CopyCaToHostType()
                echo "chown -R $ADMINUSER /var/sgeCA/$PORT_DIR/$SGE_CELL" | $SHELL_NAME $RHOST /bin/sh &
                for dir in `ls /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys`; do
                   echo "chown -R $dir /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys/$dir" | $SHELL_NAME $RHOST /bin/sh &
-               done               
+               done
             else
-               $INFOTEXT "The certificate copy failed!"      
-               $INFOTEXT -log "The certificate copy failed!"      
+               $INFOTEXT "The certificate copy failed!"
+               $INFOTEXT -log "The certificate copy failed!"
             fi
          else
             $INFOTEXT "rsh/ssh connection to host %s is not working!" $RHOST
@@ -3950,12 +3953,12 @@ CopyCaToHostType()
 CopyCaFromQmaster()
 {
    # TODO: PrimaryMaster?
-   QMASTER_HOST=`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster 2>/dev/null`   
+   QMASTER_HOST=`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster 2>/dev/null`
    #Skip qmaster host
-   if [ x`ResolveHosts $HOST` = x`ResolveHosts $QMASTER_HOST` ]; then 
+   if [ x`ResolveHosts $HOST` = x`ResolveHosts $QMASTER_HOST` ]; then
       return
-   fi 
- 
+   fi
+
    CA_TOP="/var/sgeCA"
 
    #Setup CA location
@@ -3964,10 +3967,10 @@ CopyCaFromQmaster()
    else
       PORT_DIR="port$SGE_QMASTER_PORT"
    fi
-   
+
    $INFOTEXT "Copying certificates to host %s" $HOST
    $INFOTEXT -log "Copying certificates to host %s" $HOST
-   
+
    #TODO: Better to have global clever parsing for ssh options when SHELL_NAME is first specified
    #Prepare SSH
    echo $SHELL_NAME | grep "ssh" >/dev/null 2>&1
@@ -3980,7 +3983,7 @@ CopyCaFromQmaster()
          REM_SH="$REM_SH -o PreferredAuthentications=gssapi-keyex,publickey"
       fi
    fi
-   
+
    #Need to verify we can connect without a password for AUTO mode
    if [ $AUTO = "true" ]; then
       rem_host=`$REM_SH $QMASTER_HOST hostname 2>/dev/null`
@@ -3993,7 +3996,7 @@ CopyCaFromQmaster()
          return 1
       fi
    fi
-   
+
    tmp_dir=/tmp/sgeCA.$$
    mkdir -p $tmp_dir ; chmod 600 $tmp_dir
    connect_user=`id |awk '{print $1}' 2>/dev/null`
@@ -4006,7 +4009,7 @@ CopyCaFromQmaster()
    done)
    rm -f "$tmp_dir".tar
    rm -rf "$tmp_dir"
-   
+
    #Let's verify we have the keystores
    if [ ! -f /var/sgeCA/$PORT_DIR/$SGE_CELL/userkeys/$ADMINUSER/keystore ]; then
       $INFOTEXT "The certificate copy failed for host %s!" "$HOST"
@@ -4034,7 +4037,7 @@ EnterSecurePassword()
    while [ "$secure_pw1" != "$secure_pw2" ]; do
       #Print header if specified
       if [ "$do_clear" = "true" ]; then
-         $CLEAR         
+         $CLEAR
       fi
       do_clear="true"
       if [ -n "$1" ]; then
@@ -4050,7 +4053,7 @@ EnterSecurePassword()
          $INFOTEXT -n "\n\nPassword only %s characters long." "$len"
          $INFOTEXT -wait -auto $AUTO -n "\nHit <RETURN> to try again >> "
          continue
-      fi      
+      fi
       #verify the password, just ask once
       $INFOTEXT -n "\n$3"
       stty -echo
@@ -4137,9 +4140,9 @@ IsNumeric(){
       return 1
    fi
    case $1 in
-      *[!0-9]*) 
+      *[!0-9]*)
          return 1;; # at least one character is invalid, only numbers are good
-      *) 
+      *)
          return 0;; # valid entry
    esac
 }
@@ -4147,11 +4150,11 @@ IsNumeric(){
 IsMailAdress() {
    case $1 in
       [A-Za-z0-9._-]*)  #valid
-         return 0;; 
-      [A-Za-z0-9._-]*@[a-zA-Z0-9._-]) #valid 
+         return 0;;
+      [A-Za-z0-9._-]*@[a-zA-Z0-9._-]) #valid
          return 0;;
       *)
-         return 1;; 
+         return 1;;
    esac
 }
 
@@ -4267,7 +4270,7 @@ ManipulateOneDaemonType()
    if [ "$version" != 61 ]; then
       version=""
    fi
-   
+
    if [ -f $SGE_ROOT/$SGE_CELL/common/bootstrap ]; then
       GetAdminUser
    else
@@ -4275,12 +4278,12 @@ ManipulateOneDaemonType()
                 "   %s\n\ndoes not exist. Exit." \$SGE_ROOT/$SGE_CELL/common/bootstrap
       exit 1
    fi
-   
+
    if [ "$euid" -ne 0 -a "$START_CLUSTER" != true ]; then
       $INFOTEXT -n "\nYou need to be a root to perform this action!\n"
       exit 1
    fi
-   
+
    if [ -f $SGE_ROOT/$SGE_CELL/common/settings.sh ]; then
       . $SGE_ROOT/$SGE_CELL/common/settings.sh
    else
@@ -4289,7 +4292,7 @@ ManipulateOneDaemonType()
                 \$SGE_ROOT/$SGE_CELL/common/settings.sh
       exit 1
    fi
-   
+
    #Construct the correct list when all  hosts required
    if [ "$ALL_RC" = true ]; then
       case $type in
@@ -4323,17 +4326,17 @@ ManipulateOneDaemonType()
          exit 1
       esac
    fi
-   
+
    if [ "$NOREMOTE" = true ]; then
       list="$HOST"
    fi
-   
+
    if [ -z "$list" ]; then
       $INFOTEXT "No %s hosts defined!" $type
       $INFOTEXT -log "No %s hosts defined!" $type
       return 0
    fi
-   
+
    #Basic sommand settings
    rc_cmd=". $SGE_ROOT/$SGE_CELL/common/settings.sh ; . $SGE_ROOT/util/arch_variables ;\
 . $SGE_ROOT/util/install_modules/inst_common.sh ; . $SGE_ROOT/util/install_modules/inst_qmaster.sh ; \
@@ -4343,7 +4346,7 @@ cd $SGE_ROOT ; BasicSettings ; SetUpInfoText ; CheckForSMF ; "
    if [ "$SMF_FLAGS" = -nosmf ]; then
       rc_cmd="$rc_cmd SGE_ENABLE_SMF=false ; "
    fi
-   
+
    if [ "$START_CLUSTER" = true ]; then
       $INFOTEXT -u "Starting all $type hosts:"
       DoRemoteActionForHosts "$list" default "$start_cmd"
@@ -4356,13 +4359,13 @@ cd $SGE_ROOT && RemoteExecSpoolDirDelete"
       $INFOTEXT -u "Initializing all local execd spool directories:"
       DoRemoteActionForHosts "$list" default "$cmd"
    fi
-   
+
    if [ "$REMOVE_RC" = true ]; then                    #REMOVE OLD RCs
       cmd="$rc_cmd RemoveRcScript $HOST $type $euid $version"
       $INFOTEXT -u "Removing all $type $version startup scripts:"
       DoRemoteActionForHosts "$list" default "$cmd"
    fi
-   
+
    if [ "$ADD_RC" = true ]; then                              #ADD NEW RCs
       cmd="$rc_cmd ADD_TO_RC=true; export ADD_TO_RC ; SetupRcScriptNames $type && InstallRcScript"
       $INFOTEXT -u "Creating new startup scripts for all $type hosts:"
@@ -4370,14 +4373,14 @@ cd $SGE_ROOT && RemoteExecSpoolDirDelete"
    fi
 }
 
-RemoteExecSpoolDirDelete() 
+RemoteExecSpoolDirDelete()
 {
    BasicSettings
    SetUpInfoText
    GetAdminUser
    global_dir=`qconf -sconf 2>&1 | grep execd_spool_dir | awk '{ print $2}'`
-   local_dir=`qconf -sconf $HOST 2>&1 | grep execd_spool_dir | awk '{ print $2}'` 
-   if [ -z "$local_dir" ]; then 
+   local_dir=`qconf -sconf $HOST 2>&1 | grep execd_spool_dir | awk '{ print $2}'`
+   if [ -z "$local_dir" ]; then
       local_dir=$global_dir
    fi
    if [ -d "$local_dir/$HOST" ]; then
@@ -4395,19 +4398,19 @@ DeleteQueueNumberAttribute()
    tmpfile="/tmp/clusterqueue_delete$$"
    Execute rm -f $tmpfile
 
-   # get all queue instance files 
+   # get all queue instance files
    queuesdir=`ls $spooldir/qinstances/`
-   
+
    # delete the evidence of queue_number for each queue instance file
-   for dir in $queuesdir; do 
-      queueinstancelist=`ls $spooldir/qinstances/$dir` 
-      for file in $queueinstancelist; do 
+   for dir in $queuesdir; do
+      queueinstancelist=`ls $spooldir/qinstances/$dir`
+      for file in $queueinstancelist; do
          # delete line beginning with "queue_number"
          ExecuteAsAdmin sed "/^queue_number/d" $spooldir/qinstances/$dir/$file > $tmpfile
          Execute chown $ADMINUSER $tmpfile
          ExecuteAsAdmin mv $tmpfile $spooldir/qinstances/$dir/$file
          ExecuteAsAdmin $CHMOD 644 $spooldir/qinstances/$dir/$file
-      done 
+      done
    done
 }
 
@@ -4478,7 +4481,7 @@ ReplaceLineWithMatch()
    #We need to change the file
    ExecuteAsAdmin touch ${repFile}.tmp
    ExecuteAsAdmin chmod 666 ${repFile}.tmp
-  
+
    SEP="|"
    echo "$repExpr $replace" | grep "|" >/dev/null 2>&1
    if [ $? -eq 0 ]; then
