@@ -85,8 +85,8 @@ yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel rh-maven35
 apt-get install -y binutils cmake autoconf automake libudev-dev
 apt-get install -y build-essential manpages-dev git
 apt-get install -y doxygen graphviz
-apt-get install -y expect tcl tdom gnuplot vim
-apt-get install -y tcsh xterm expect tcl gnuplot
+apt-get install -y expect tcl tdom tcllib gnuplot vim
+apt-get install -y tcsh xterm expect gnuplot
 apt-get install -y libssl-dev
 ```
 
@@ -99,7 +99,7 @@ apt-get install y openjdk-17-jdk maven
 
 ```
 apt-get install -y git binutils autoconf automake gettext build-essential manpages-dev patchelf 
-apt-get install -y expect tcl tdom gnuplot xterm
+apt-get install -y expect tcl tdom tcllib gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev
@@ -117,7 +117,7 @@ apt-get install -y openjdk-21-jdk maven
 
 ```
 pkg install cmake git autoconf automake gettext bash libudev-devd
-pkg install expect xterm gnuplot vim mailx
+pkg install expect xterm gnuplot vim mailx tcllib
 pkg install hs-pandoc texlive-full tex-xetex munge
 ```
 
@@ -200,7 +200,7 @@ and only for lx-amd64
 ```
 dnf install -y automake autoconf cmake git libtirpc-devel systemd-devel patchelf
 dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
-dnf install -y expect tcl gnuplot xterm libcgroup-tools perl-Env tcsh
+dnf install -y expect tcl tcllib gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
 dnf install -y texlive*
@@ -295,7 +295,7 @@ zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven
 
 ```
 apt-get install -y git autoconf automake build-essential manpages-dev patchelf 
-apt-get install -y expect tcl tdom gnuplot xterm
+apt-get install -y expect tcl tdom tcllib gnuplot xterm
 apt-get install -y doxygen graphviz pandoc 
 apt-get install -y rapidjson-dev libdb5.3 libdb5.3-dev
 apt-get install -y libjemalloc2 libjemalloc-dev hwloc libhwloc-dev ocl-icd-opencl-dev

@@ -27,8 +27,43 @@
 
 #include "sgeobj/sge_qinstance_state.h"
 
-#include "ocs_client_print.h"
 #include "ocs_ProcedureParameter.h"
+
+#define QSTAT_DISPLAY_FULL (1 << 0)
+#define QSTAT_DISPLAY_EXTENDED (1 << 1)
+#define QSTAT_DISPLAY_RESOURCES (1 << 2)
+#define QSTAT_DISPLAY_QRESOURCES (1 << 3)
+#define QSTAT_DISPLAY_TASKS (1 << 4)
+#define QSTAT_DISPLAY_NOEMPTYQ (1 << 5)
+#define QSTAT_DISPLAY_PENDING (1 << 6)
+#define QSTAT_DISPLAY_SUSPENDED (1 << 7)
+#define QSTAT_DISPLAY_RUNNING (1 << 8)
+#define QSTAT_DISPLAY_FINISHED (1 << 9)
+#define QSTAT_DISPLAY_ALARMREASON (1 << 11)
+#define QSTAT_DISPLAY_USERHOLD (1 << 12)
+#define QSTAT_DISPLAY_SYSTEMHOLD (1 << 13)
+#define QSTAT_DISPLAY_OPERATORHOLD (1 << 14)
+#define QSTAT_DISPLAY_JOBARRAYHOLD (1 << 15)
+#define QSTAT_DISPLAY_JOBHOLD (1 << 16)
+#define QSTAT_DISPLAY_STARTTIMEHOLD (1 << 17)
+#define QSTAT_DISPLAY_URGENCY (1 << 18)
+#define QSTAT_DISPLAY_PRIORITY (1 << 19)
+#define QSTAT_DISPLAY_PEND_REMAIN (1 << 20)
+
+#define QHOST_DISPLAY_QUEUES     (1<<22)
+#define QHOST_DISPLAY_JOBS       (1<<23)
+#define QHOST_DISPLAY_RESOURCES  (1<<24)
+
+#define QSTAT_DISPLAY_HOLD                                                                                             \
+(QSTAT_DISPLAY_USERHOLD | QSTAT_DISPLAY_SYSTEMHOLD | QSTAT_DISPLAY_OPERATORHOLD | QSTAT_DISPLAY_JOBARRAYHOLD |      \
+QSTAT_DISPLAY_JOBHOLD | QSTAT_DISPLAY_STARTTIMEHOLD)
+#define QSTAT_DISPLAY_ALL                                                                                              \
+(QSTAT_DISPLAY_PENDING | QSTAT_DISPLAY_SUSPENDED | QSTAT_DISPLAY_RUNNING | QSTAT_DISPLAY_FINISHED)
+
+#define TAG_DEFAULT 0x00
+#define TAG_SHOW_IT 0x01
+#define TAG_FOUND_IT 0x02
+#define TAG_SELECT_IT 0x04
 
 namespace ocs {
    class QStatParameter : public ProcedureParameter {

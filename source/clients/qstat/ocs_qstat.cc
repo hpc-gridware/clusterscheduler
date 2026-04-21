@@ -64,6 +64,7 @@
 #include "procedure/qstat/job/ocs_QStatJobViewBase.h"
 #include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 #include "procedure/qstat/job/ocs_QStatJobViewXML.h"
+#include "procedure/qstat/job/ocs_QStatJobViewJSON.h"
 #include "procedure/qstat/select/ocs_QStatSelectViewBase.h"
 #include "procedure/qstat/select/ocs_QStatSelectViewPlain.h"
 #include "procedure/qstat/select/ocs_QStatSelectViewXML.h"
@@ -73,7 +74,6 @@
 #include "procedure/qstat/ocs_QStatModelClient.h"
 
 #include "sig_handlers.h"
-#include "../../daemons/shepherd/builtin_starter.h"
 #include "qstat/ocs_QStatParameterClient.h"
 #include "qstat/default/ocs_QStatDefaultViewJSON.h"
 #include "qstat/group/ocs_QStatGroupViewJSON.h"
@@ -130,6 +130,8 @@ int main(int argc, char *argv[]) {
          std::unique_ptr<ocs::QStatJobViewBase> view;
          if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
             view = std::make_unique<ocs::QStatJobViewXML>(parameter);
+         } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
+            view = std::make_unique<ocs::QStatJobViewJSON>(parameter);
          } else {
             view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
          }

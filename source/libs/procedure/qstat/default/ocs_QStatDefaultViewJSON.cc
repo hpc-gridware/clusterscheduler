@@ -49,11 +49,16 @@ void ocs::QStatDefaultViewJSON::report_started(std::ostream &os, QStatParameter 
 
 void ocs::QStatDefaultViewJSON::report_finished(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   if (!first_queue) {
+
+   if (within_running_section) {
       os << "\n";
+      indent--;
+      os << std::string(indent * 3, ' ') << "]";
+      first_job = true;
+      within_running_section = false;
    }
 
-   // final close object
+   os << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "}\n";
    DRETURN_VOID;
@@ -173,6 +178,9 @@ void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const lL
 void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, const char *qname,
                                                           QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+   if (within_running_section) {
+      DRETURN_VOID;
+   }
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
       if (first_queue) {
          os << "\n";
@@ -185,12 +193,20 @@ void ocs::QStatDefaultViewJSON::report_queue_jobs_started(std::ostream &os, cons
    }
    os << std::string(indent * 3, ' ') << "\"jobs_running\": [";
    indent++;
+   if ((parameter.show_ & QSTAT_DISPLAY_FULL) == 0) {
+      within_running_section = true;
+   }
+
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_jobs_finished(std::ostream &os, const char *qname,
                                                            QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+   if (within_running_section) {
+      DRETURN_VOID;
+   }
+
    os << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "]";
@@ -201,6 +217,14 @@ void ocs::QStatDefaultViewJSON::report_queue_jobs_finished(std::ostream &os, con
 
 void ocs::QStatDefaultViewJSON::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
+   if (within_running_section) {
+      os << "\n";
+      indent--;
+      os << std::string(indent * 3, ' ') << "]";
+      first_job = true;
+      within_running_section = false;
+   }
+
    if (parameter.show_ & QSTAT_DISPLAY_FULL) {
       if (first_queue) {
          os << "\n";
@@ -354,7 +378,7 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
          os << ",\n" << std::string(indent * 3, ' ') << "\"stickets\": " << summary->stickets;
       }
       if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
-         os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << summary->queue;
+         os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << raw2quotedJSON(summary->queue ? summary->queue : "");
       }
       if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
          os << ",\n" << std::string(indent * 3, ' ') << "\"master\": "
@@ -722,8 +746,8 @@ void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t
    }
    os << std::string(indent * 3, ' ') << "{";
    indent++;
-   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": " << raw2quotedJSON(summary->task_id);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state);
+   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": " << raw2quotedJSON(summary->task_id ? summary->task_id : "");
+   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state ? summary->state : "");
    os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
    os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
    os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;

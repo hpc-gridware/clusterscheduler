@@ -29,10 +29,15 @@
 void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view) {
    DENTER(TOP_LAYER);
 
+   view.report_started(out_, parameter);
+
    if (parameter.get_jid_list() != nullptr) {
-      view.report_jobs_and_reasons_with_job_request(out_, parameter, model);
+      view.show_jobs_and_reasons(out_, parameter, model);
    } else {
-      view.report_reasons(out_, parameter, model);
+      view.show_reasons(out_, parameter, model);
    }
+
+   view.report_finished(out_, parameter);
+
    DRETURN_VOID;
 }

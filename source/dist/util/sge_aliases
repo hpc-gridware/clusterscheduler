@@ -36,5 +36,6 @@
 # (with a leading /tmp_mnt) to the logical path (w/o leading /tmp_mnt).
 #
 # subm_dir                 subm_host   exec_host   path_replacement
-/tmp_mnt/                  *           *           /
-/private/var/automount/    *           *           /
+#
+#/tmp_mnt/                  *           *           /
+#/private/var/automount/    *           *           /

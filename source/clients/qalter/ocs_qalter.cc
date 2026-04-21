@@ -54,7 +54,6 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sig_handlers.h"
-#include "ocs_client_job.h"
 #include "usage.h"
 #include "parse_qsub.h"
 #include "symbols.h"
@@ -62,6 +61,7 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qalter.h"
+#include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 
 
 /* when this character is modified, it has also be modified
@@ -167,7 +167,7 @@ int main(int argc, const char **argv) {
          show_job()
       */
       std::stringstream ss;
-      cull_show_job(ss, lFirst(request_list), FLG_QALTER);
+      ocs::QStatJobViewPlain::cull_show_job(ss, lFirst(request_list), FLG_QALTER);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }

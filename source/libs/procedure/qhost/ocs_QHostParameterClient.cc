@@ -37,13 +37,13 @@
 
 
 #include "ocs_client_parse.h"
-#include "ocs_client_print.h"
 #include "ocs_QHostParameter.h"
 
 #include "msg_common.h"
 #include "msg_qhost.h"
 #include "msg_clients_common.h"
 
+#include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostParameterClient.h"
 
 extern char **environ;

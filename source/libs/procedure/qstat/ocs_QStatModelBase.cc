@@ -47,8 +47,9 @@
 
 #include "ocs_QStatModelBase.h"
 
+#include <stdexcept>
+
 #include "msg_clients_common.h"
-#include "ocs_client_cqueue.h"
 #include "msg_qstat.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_qref.h"

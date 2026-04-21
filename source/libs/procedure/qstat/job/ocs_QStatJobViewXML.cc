@@ -33,8 +33,12 @@
 
 #include "ocs_QStatJobModel.h"
 
+void ocs::QStatJobViewXML::show_job(std::ostream &os, const lListElem *job, int flags) {
+}
+
 void
-ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
+ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter,
+                                                               QStatJobModel &model) {
    DENTER(TOP_LAYER);
    lList *XML_out = lCreateList("detailed_job_info", XMLE_Type);
 
@@ -65,33 +69,206 @@ ocs::QStatJobViewXML::report_jobs_and_reasons_with_job_request(std::ostream &os,
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewXML::report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
+void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
    DENTER(TOP_LAYER);
-   lListElem *xml_elem = nullptr;
-   const lListElem *sme;
-   lList *mlp = nullptr;
 
    /* need to modify list to display correct message */
-   sme = lFirst(model.ilp);
-   if (sme) {
-      mlp = lGetListRW(sme, SME_message_list);
-   }
-   for_each_rw_lv(mes, mlp) {
-      lPSortList (lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
+   if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
+      for_each_rw_lv(mes, lGetListRW(sme, SME_message_list)) {
+         lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
-      for_each_rw_lv(jid_ulng, lGetList(mes, MES_job_number_list)) {
-         const uint32_t mid = lGetUlong(mes, MES_message_number);
-         lSetString(mes,MES_message,sge_schedd_text(mid+SCHEDD_INFO_OFFSET));
+         for_each_rw_lv(jid_ulng, lGetList(mes, MES_job_number_list)) {
+            const uint32_t mid = lGetUlong(mes, MES_message_number);
+            lSetString(mes, MES_message, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
+         }
       }
-
    }
 
    /* print out xml info from list */
-
-   xml_elem = xml_getHead("message", model.ilp, nullptr);
+   lListElem *xml_elem = xml_getHead("message", model.ilp, nullptr);
    lWriteElemXMLTo(xml_elem, stdout);
    lFreeElem(&xml_elem);
    model.ilp = nullptr;
 
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+
+void ocs::QStatJobViewXML::report_jobs_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_jobs_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_job_id(std::ostream &os, const lListElem *job, int flags) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_category_id(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_exec_file(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_submission_time(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_deadline_time(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_submit_cmd_line(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_ownership(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+void ocs::QStatJobViewXML::report_env_core(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_execution_time(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_account(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_checkpoint(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_cwd(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_path_aliases(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_directive_prefix(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_stdin_path_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_stdout_path_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_stderr_path_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_reserve(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_merge_stderr(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_request_set_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_mail_options(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_mail_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_notify(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_name(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_priority(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_job_share(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_restart(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_shell_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_env_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_verify(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_job_args(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
    DRETURN_VOID;
 }

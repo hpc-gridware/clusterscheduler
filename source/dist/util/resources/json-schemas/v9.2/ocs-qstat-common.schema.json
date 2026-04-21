@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-common.schema.json",
+  "title": "OCS/GCS common schema definitions",
+  "description": "Common reusable schema definitions for OCS/GCS JSON output formats.",
+  "$defs": {
+    "scalarValue": {
+      "description": "Scalar value used for resource attributes and resource requests.",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" }
+      ]
+    },
+
+    "queueInstanceName": {
+      "type": "string",
+      "pattern": "^[^@]+@[^@]+$",
+      "description": "Queue instance name in the format '<cluster-queue-name>@<hostname>'.",
+      "examples": ["all.q@v01701.fritz.box"]
+    },
+
+    "clusterQueueName": {
+      "type": "string",
+      "pattern": "^[^@\\s]+$",
+      "description": "Cluster queue name without host part.",
+      "examples": ["all.q"]
+    },
+
+    "hostname": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "Execution host name.",
+      "examples": ["v01701.fritz.box"]
+    },
+
+    "jobState": {
+      "type": "string",
+      "pattern": "^[A-Za-z]+$",
+      "description": "Job state string as reported by qstat.",
+      "examples": ["r", "qw", "hqw", "Eqw", "s"]
+    },
+
+    "queueState": {
+      "type": "string",
+      "pattern": "^[A-Za-z]*$",
+      "maxLength": 6,
+      "description": "Queue state string as reported by qstat.",
+      "examples": ["", "E", "d", "au"]
+    },
+
+    "qtype": {
+      "type": "string",
+      "pattern": "^[A-Z]+$",
+      "description": "Queue type identifier as reported by qstat.",
+      "examples": ["BIPC"]
+    },
+
+    "jobBase": {
+      "type": "object",
+      "required": [
+        "job_number",
+        "prio",
+        "name",
+        "owner",
+        "state"
+      ],
+      "properties": {
+        "job_number": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Unique job identifier.",
+          "examples": [265]
+        },
+        "prio": {
+          "type": "number",
+          "description": "Scheduling priority of the job."
+        },
+        "ntix": {
+          "type": "number",
+          "description": "Normalized ticket value as reported by qstat."
+        },
+        "nurg": {
+          "type": "number",
+          "description": "Normalized urgency value as reported by qstat."
+        },
+        "urg": {
+          "type": "number",
+          "description": "Urgency value as reported by qstat."
+        },
+        "rrcontr": {
+          "type": "number",
+          "description": "Resource requirement contribution to urgency."
+        },
+        "wtcontr": {
+          "type": "number",
+          "description": "Waiting time contribution to urgency."
+        },
+        "dlcontr": {
+          "type": "number",
+          "description": "Deadline contribution to urgency."
+        },
+        "nppri": {
+          "type": "number",
+          "description": "Normalized priority value as reported by qstat."
+        },
+        "priority": {
+          "type": "number",
+          "description": "Priority value as reported by qstat."
+        },
+        "name": {
+          "type": "string",
+          "description": "Job name.",
+          "examples": ["sleep"]
+        },
+        "owner": {
+          "type": "string",
+          "description": "Submitting user.",
+          "examples": ["ebablick"]
+        },
+        "project": {
+          "type": "string",
+          "description": "Associated project name. May be empty if no project is assigned."
+        },
+        "department": {
+          "type": "string",
+          "description": "Associated department name."
+        },
+        "state": {
+          "$ref": "#/$defs/jobState"
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Job deadline timestamp as reported by qstat."
+        },
+        "slots": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of granted or requested slots."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "runningJobBase": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/jobBase"
+        },
+        {
+          "type": "object",
+          "required": [
+            "start_time"
+          ],
+          "properties": {
+            "start_time": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Time when the job started execution."
+            },
+            "cpu_usage": {
+              "type": "number",
+              "description": "Accumulated CPU usage of the running job."
+            },
+            "mem_usage": {
+              "type": "number",
+              "description": "Current memory usage of the running job."
+            },
+            "io_usage": {
+              "type": "number",
+              "description": "Current I/O usage of the running job."
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+
+    "pendingJobBase": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/jobBase"
+        },
+        {
+          "type": "object",
+          "required": [
+            "submission_time"
+          ],
+          "properties": {
+            "submission_time": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Time when the job was submitted."
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+
+    "parallelTask": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "state",
+        "cpu_usage",
+        "mem_usage",
+        "io_usage",
+        "exit_status"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Parallel task identifier.",
+          "examples": ["1.v01703", ""]
+        },
+        "state": {
+          "$ref": "#/$defs/jobState"
+        },
+        "cpu_usage": {
+          "type": "number",
+          "description": "CPU usage of the parallel task."
+        },
+        "mem_usage": {
+          "type": "number",
+          "description": "Memory usage of the parallel task."
+        },
+        "io_usage": {
+          "type": "number",
+          "description": "I/O usage of the parallel task."
+        },
+        "exit_status": {
+          "type": "integer",
+          "description": "Exit status of the parallel task."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "resourceRequestWithContribution": {
+      "type": "object",
+      "required": [
+        "name",
+        "value",
+        "utilization_contribution"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Requested resource name.",
+          "examples": ["hostname"]
+        },
+        "value": {
+          "$ref": "#/$defs/scalarValue"
+        },
+        "utilization_contribution": {
+          "type": "number",
+          "description": "Contribution of the requested resource to utilization."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "resourceRequestDefault": {
+      "type": "object",
+      "required": [
+        "name",
+        "value",
+        "is_default_request"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Requested resource name.",
+          "examples": ["auto"]
+        },
+        "value": {
+          "$ref": "#/$defs/scalarValue"
+        },
+        "is_default_request": {
+          "type": "boolean",
+          "description": "Indicates whether the request is a scheduler default request."
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "requestedPe": {
+      "type": "object",
+      "required": [
+        "pe_name",
+        "pe_range"
+      ],
+      "properties": {
+        "pe_name": {
+          "type": "string",
+          "description": "Requested parallel environment name.",
+          "examples": ["mytestpe"]
+        },
+        "pe_range": {
+          "type": "string",
+          "description": "Requested parallel environment slot range.",
+          "examples": ["3", "1-8"]
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "grantedPe": {
+      "type": "object",
+      "required": [
+        "pe_name",
+        "slots"
+      ],
+      "properties": {
+        "pe_name": {
+          "type": "string",
+          "description": "Granted parallel environment name.",
+          "examples": ["mytestpe"]
+        },
+        "slots": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of granted slots."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

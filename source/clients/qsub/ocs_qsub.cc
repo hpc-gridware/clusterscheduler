@@ -59,10 +59,10 @@
 #include "usage.h"
 #include "parse_job_cull.h"
 #include "ocs_client_parse.h"
-#include "ocs_client_job.h"
 #include "msg_clients_common.h"
 #include "msg_qsub.h"
 #include "msg_qmaster.h"
+#include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 
 
 extern char **environ;
@@ -231,7 +231,7 @@ main(int argc, const char **argv)
 
    if (lGetUlong(job, JB_verify)) {
       std::stringstream ss;
-      cull_show_job(ss, job, 0);
+      ocs::QStatJobViewPlain::cull_show_job(ss, job, 0);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }

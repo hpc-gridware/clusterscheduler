@@ -32,6 +32,7 @@ target_include_directories(qalter PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       qalter
       PRIVATE clientscommon
+      procedure
       gdi
       sched
       sgeobj

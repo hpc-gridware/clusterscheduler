@@ -23,9 +23,9 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_manop.h"
 
+#include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
 #include "ocs_QHostModelServer.h"
-#include "ocs_client_print.h"
 
 
 bool ocs::QHostModelServer::fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show) {

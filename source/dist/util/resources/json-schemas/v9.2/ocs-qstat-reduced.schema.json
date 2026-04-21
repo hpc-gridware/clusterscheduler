@@ -1,0 +1,69 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-reduced.schema.json",
+   "title": "OCS/GCS qstat reduced schema",
+   "description": "Schema describing qstat reduced output. Additional priority and urgency related attributes may be present when qstat is called with switches such as `-pri`, `-urg`, or `-ext`.",
+   "type": "object",
+   "required": [
+      "jobs_running"
+   ],
+   "additionalProperties": true,
+   "$defs": {
+      "runningJob": {
+         "allOf": [
+            {
+               "$ref": "./ocs-qstat-common.schema.json#/$defs/runningJobBase"
+            },
+            {
+               "type": "object",
+               "required": [
+                  "queue_name"
+               ],
+               "properties": {
+                  "queue_name": {
+                     "$ref": "./ocs-qstat-common.schema.json#/$defs/queueInstanceName"
+                  }
+               },
+               "additionalProperties": true
+            }
+         ]
+      },
+      "pendingJob": {
+         "allOf": [
+            {
+               "$ref": "./ocs-qstat-common.schema.json#/$defs/pendingJobBase"
+            },
+            {
+               "type": "object",
+               "required": [
+                  "queue_name"
+               ],
+               "properties": {
+                  "queue_name": {
+                     "type": "string",
+                     "maxLength": 0,
+                     "description": "Queue instance name if already assigned, or an empty string if not yet assigned."
+                  }
+               },
+               "additionalProperties": true
+            }
+         ]
+      }
+   },
+   "properties": {
+      "jobs_running": {
+         "type": "array",
+         "description": "Jobs currently running in a queue.",
+         "items": {
+            "$ref": "#/$defs/runningJob"
+         }
+      },
+      "jobs_pending": {
+         "type": "array",
+         "description": "Jobs that are pending and not yet running.",
+         "items": {
+            "$ref": "#/$defs/pendingJob"
+         }
+      }
+   }
+}

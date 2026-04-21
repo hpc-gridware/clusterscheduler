@@ -33,6 +33,7 @@ target_include_directories(qsub PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       qsub
       PRIVATE clientscommon
+      procedure
       comm
       commlists
       evc

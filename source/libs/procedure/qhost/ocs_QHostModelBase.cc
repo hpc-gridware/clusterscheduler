@@ -34,8 +34,8 @@
 
 #include "sched/sge_select_queue.h"
 
+#include "qstat/ocs_QStatParameter.h"
 #include "ocs_QHostModelBase.h"
-#include "ocs_client_print.h"
 
 
 ocs::QHostModelBase::~QHostModelBase() {

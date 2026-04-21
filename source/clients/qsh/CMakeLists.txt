@@ -36,6 +36,7 @@ target_include_directories(qsh PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       qsh
       PRIVATE clientscommon
+      procedure
       gdi
       sched
       sgeobj

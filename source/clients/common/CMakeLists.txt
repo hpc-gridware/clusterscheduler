@@ -21,10 +21,7 @@
 # source/clients/common
 set(LIBRARY_NAME clientscommon)
 set(LIBRARY_SOURCES
-      "ocs_client_print.cc"
-      "ocs_client_parse.cc"
-      "ocs_client_cqueue.cc"
-      "ocs_client_job.cc")
+      "ocs_client_parse.cc")
 set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})

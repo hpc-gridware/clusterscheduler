@@ -75,6 +75,7 @@
 
 #include "symbols.h"
 #include "msg_common.h"
+#include "reschedule.h"
 #include "uti/sge_hostname.h"
 
 
@@ -4377,6 +4378,37 @@ const char *job_scope_name(uint32_t scope_id) {
 
    return ret;
 }
+
+std::string get_scope_list_name(const uint32_t scope, const int nm) {
+   std::string name;
+   if (scope > JRS_SCOPE_GLOBAL) {
+      name += job_scope_name(scope);
+      name += "_";
+   }
+
+   if (nm != JRS_allocation_rule) {
+      const bool is_hard = (nm == JRS_hard_resource_list || nm == JRS_hard_queue_list);
+      name += is_hard ? "hard_" : "soft_";
+   }
+
+   switch (nm) {
+      case JRS_hard_resource_list:
+      case JRS_soft_resource_list:
+         name += "resource_list";
+         break;
+      case JRS_soft_queue_list:
+      case JRS_hard_queue_list:
+         name += "queue_list";
+         break;
+      case JRS_allocation_rule:
+         name += "allocation_rule";
+         break;
+      default:
+         name += "unknown";
+   }
+   return name;
+}
+
 
 const char *
 job_scope_name(const lListElem *scope_ep) {

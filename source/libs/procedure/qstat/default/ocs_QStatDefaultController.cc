@@ -49,7 +49,6 @@
 #include "sched/sge_urgency.h"
 
 #include "qstat/default/ocs_QStatDefaultController.h"
-#include "ocs_client_cqueue.h"
 #include "sched/sge_resource_utilization.h"
 
 void ocs::QStatDefaultController::remove_tagged_jobs(lList *job_list) {
@@ -750,9 +749,6 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
    }
 
    view.report_job_finished(os, lGetUlong(job, JB_job_number));
-
-#undef QSTAT_INDENT
-#undef QSTAT_INDENT2
 
    DRETURN_VOID;
 }

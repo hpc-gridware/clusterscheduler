@@ -19,16 +19,69 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <ostream>
+
 #include "ocs_QStatJobViewBase.h"
 #include "ocs_QStatJobModel.h"
 
 namespace ocs {
    class QStatJobViewJSON : public QStatJobViewBase {
-      public:
-         explicit QStatJobViewJSON(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {} ;
-         ~QStatJobViewJSON() override = default;
+      int indent{0};
+      bool first_attribute{true};
 
-         void report_jobs_and_reasons_with_job_request(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
-         void report_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
+      void report_X_path_list(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_boolean(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_uint32(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_string(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_ISO_8601_timestamp(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_resource_list(std::ostream &os, const lListElem *job, int nm, const char *name);
+      void report_X_queue_list(std::ostream &os, const lListElem *jrs, int nm, const char *name);
+   public:
+      explicit QStatJobViewJSON(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {
+      } ;
+
+      ~QStatJobViewJSON() override = default;
+
+      void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
+      void show_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
+
+      void report_started(std::ostream &os, QStatParameter &parameter) override;
+      void report_finished(std::ostream &os, QStatParameter &parameter) override;
+
+      void report_jobs_started(std::ostream &os, QStatParameter &parameter) override;
+      void report_jobs_finished(std::ostream &os, QStatParameter &parameter) override;
+
+      void report_job_id(std::ostream &os, const lListElem *job, int flags) override;
+      void report_category_id(std::ostream &os, const lListElem *job) override;
+      void report_exec_file(std::ostream &os, const lListElem *job) override;
+      void report_submission_time(std::ostream &os, const lListElem *job) override;
+      void report_deadline_time(std::ostream &os, const lListElem *job) override;
+      void report_submit_cmd_line(std::ostream &os, const lListElem *job) override;
+      void report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) override;
+      void report_ownership(std::ostream &os, const lListElem *job) override;
+      void report_env_core(std::ostream &os, const lListElem *job) override;
+      void report_execution_time(std::ostream &os, const lListElem *job) override;
+      void report_account(std::ostream &os, const lListElem *job) override;
+      void report_checkpoint(std::ostream &os, const lListElem *job) override;
+      void report_cwd(std::ostream &os, const lListElem *job) override;
+      void report_path_aliases(std::ostream &os, const lListElem *job) override;
+      void report_directive_prefix(std::ostream &os, const lListElem *job) override;
+      void report_stdin_path_list(std::ostream &os, const lListElem *job) override;
+      void report_stdout_path_list(std::ostream &os, const lListElem *job) override;
+      void report_stderr_path_list(std::ostream &os, const lListElem *job) override;
+      void report_reserve(std::ostream &os, const lListElem *job) override;
+      void report_merge_stderr(std::ostream &os, const lListElem *job) override;
+      void report_request_set_list(std::ostream &os, const lListElem *job) override;
+      void report_mail_options(std::ostream &os, const lListElem *job) override;
+      void report_mail_list(std::ostream &os, const lListElem *job) override;
+      void report_notify(std::ostream &os, const lListElem *job) override;
+      void report_name(std::ostream &os, const lListElem *job) override;
+      void report_priority(std::ostream &os, const lListElem *job) override;
+      void report_job_share(std::ostream &os, const lListElem *job) override;
+      void report_restart(std::ostream &os, const lListElem *job) override;
+      void report_shell_list(std::ostream &os, const lListElem *job) override;
+      void report_env_list(std::ostream &os, const lListElem *job) override;
+      void report_verify(std::ostream &os, const lListElem *job) override;
+      void report_job_args(std::ostream &os, const lListElem *job) override;
    };
 }

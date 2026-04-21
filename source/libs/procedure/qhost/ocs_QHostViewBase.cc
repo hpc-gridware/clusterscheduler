@@ -54,12 +54,12 @@
 #include "sched/sge_urgency.h"
 #include "sched/sge_job_schedd.h"
 
-#include "ocs_client_print.h"
-
 #include "qhost/ocs_QHostModelBase.h"
 #include "qhost/ocs_QHostViewXML.h"
 #include "qhost/ocs_QHostViewPlain.h"
 #include "qhost/ocs_QHostViewBase.h"
+
+#include "qstat/ocs_QStatParameter.h"
 
 #include "ocs_QHostViewJSON.h"
 

@@ -31,8 +31,7 @@
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_Request.h"
 
-#include "ocs_client_print.h"
-
+#include "qstat/ocs_QStatParameter.h"
 #include "qhost/ocs_QHostModelClient.h"
 
 bool

@@ -78,7 +78,6 @@
 #include "parse_qsub.h"
 #include "ocs_qsh_parse.h"
 #include "ocs_client_parse.h"
-#include "ocs_client_job.h"
 #include "msg_clients_common.h"
 #include "msg_qsh.h"
 #include "msg_common.h"
@@ -86,6 +85,7 @@
 #include <termios.h>
 
 #include "ocs_Bootstrap.h"
+#include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
@@ -1688,7 +1688,7 @@ int main(int argc, const char **argv)
 
       if (lGetUlong(job, JB_verify)) {
          std::stringstream ss;
-         cull_show_job(ss, job, 0);
+         ocs::QStatJobViewPlain::cull_show_job(ss, job, 0);
          printf("%s", ss.str().c_str());
          sge_exit(0);
       }

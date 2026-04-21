@@ -507,6 +507,7 @@ constexpr const char *scope_to_string(const int scope) {
 bool job_parse_scope_string(const char *scope, char &scope_id);
 const char *job_scope_name(uint32_t scope_id);
 const char *job_scope_name(const lListElem *scope_ep);
+std::string get_scope_list_name(uint32_t scope, int nm);
 
 const lListElem *job_get_request_set(const lListElem *job, uint32_t scope);
 lListElem *job_get_request_setRW(lListElem *job, uint32_t scope);
