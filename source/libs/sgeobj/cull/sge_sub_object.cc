@@ -106,9 +106,6 @@ object_get_subtype(int nm)
       case JB_job_identifier_list:
          ret = ID_Type;
          break;
-      case JB_qs_args:
-         ret = ST_Type;
-         break;
       case JB_path_aliases:
          ret = PA_Type;
          break;

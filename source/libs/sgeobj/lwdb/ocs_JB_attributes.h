@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025-2026 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -97,7 +97,6 @@ enum {
    JB_soft_wallclock_gmt,
    JB_hard_wallclock_gmt,
    JB_override_tickets,
-   JB_qs_args,
    JB_path_aliases,
    JB_urg,
    JB_nurg,
@@ -186,7 +185,6 @@ constexpr const int JB_Type[] = {
    JB_soft_wallclock_gmt,
    JB_hard_wallclock_gmt,
    JB_override_tickets,
-   JB_qs_args,
    JB_path_aliases,
    JB_urg,
    JB_nurg,
@@ -276,7 +274,6 @@ constexpr const int JB_Type[] = {
    {JB_soft_wallclock_gmt, "JB_soft_wallclock_gmt", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_hard_wallclock_gmt, "JB_hard_wallclock_gmt", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_override_tickets, "JB_override_tickets", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
-   {JB_qs_args, "JB_qs_args", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JB_path_aliases, "JB_path_aliases", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JB_urg, "JB_urg", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JB_nurg, "JB_nurg", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \

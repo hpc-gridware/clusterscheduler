@@ -306,10 +306,6 @@
 *    SGEEE - override tickets assigned by admin.
 *    (qalter -ot tickets).
 *
-*    SGE_LIST(JB_qs_args) - Queuing System Arguments
-*    Arguments for foreign queuing system (qsi?) (ST_Type).
-*    @todo Either delete it, or recycle it to be used with starter_method.
-*
 *    SGE_LIST(JB_path_aliases) - Path Aliases List
 *    Path aliases list (PA_Type).
 *
@@ -455,7 +451,6 @@ enum {
    JB_soft_wallclock_gmt,
    JB_hard_wallclock_gmt,
    JB_override_tickets,
-   JB_qs_args,
    JB_path_aliases,
    JB_urg,
    JB_nurg,
@@ -544,7 +539,6 @@ LISTDEF(JB_Type)
    SGE_ULONG64(JB_soft_wallclock_gmt, CULL_SPOOL)
    SGE_ULONG64(JB_hard_wallclock_gmt, CULL_SPOOL)
    SGE_ULONG(JB_override_tickets, CULL_SPOOL)
-   SGE_LIST(JB_qs_args, ST_Type, CULL_DEFAULT)
    SGE_LIST(JB_path_aliases, PA_Type, CULL_SPOOL)
    SGE_DOUBLE(JB_urg, CULL_DEFAULT)
    SGE_DOUBLE(JB_nurg, CULL_DEFAULT)
@@ -633,7 +627,6 @@ NAMEDEF(JBN)
    NAME("JB_soft_wallclock_gmt")
    NAME("JB_hard_wallclock_gmt")
    NAME("JB_override_tickets")
-   NAME("JB_qs_args")
    NAME("JB_path_aliases")
    NAME("JB_urg")
    NAME("JB_nurg")

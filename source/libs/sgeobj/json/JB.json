@@ -1236,22 +1236,6 @@
          ]
       },
       {
-         "name": "qs_args",
-         "summary": "Queuing System Arguments",
-         "description": [
-            {"line": "Arguments for foreign queuing system (qsi?) (ST_Type)."},
-            {"line": "@todo Either delete it, or recycle it to be used with starter_method."}
-         ],
-         "type": "lListT",
-         "subClassName": "ST",
-         "subCullPrefix": "ST",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
          "name": "path_aliases",
          "summary": "Path Aliases List",
          "description": [

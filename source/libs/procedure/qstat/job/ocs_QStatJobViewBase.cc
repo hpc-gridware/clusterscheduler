@@ -94,18 +94,6 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lListElem *job, int
    report_verify(os, job);
    report_job_args(os, job);
 
-
-
-   if (lGetPosViaElem(job, JB_qs_args, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_qs_args); list != nullptr || (flags & FLG_QALTER)) {
-         std::ostringstream ss_list;
-         int fields[] = {ST_name, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "qs_args:", left_width, ss_list.str());
-      }
-   }
-
    if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0) {
       if (const lList *list = lGetList(job, JB_job_identifier_list)) {
          std::ostringstream ss_list;

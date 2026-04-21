@@ -2881,15 +2881,6 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       var_list_filter_env_list(lGetListRW(new_job, JB_env_list), alpp);
    }
 
-   /* ---- JB_qs_args */
-   if ((pos = lGetPosViaElem(jep, JB_qs_args, SGE_NO_ABORT)) >= 0) {
-      DPRINTF("got new JB_qs_args\n");
-      lSetList(new_job, JB_qs_args, lCopyList("", lGetList(jep, JB_qs_args)));
-      *trigger |= MOD_EVENT;
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_QSARGS, jobid);
-      answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
-   }
-
    /* ---- JB_job_args */
    if ((pos = lGetPosViaElem(jep, JB_job_args, SGE_NO_ABORT)) >= 0) {
       DPRINTF("got new JB_job_args\n");

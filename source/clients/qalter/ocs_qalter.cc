@@ -786,15 +786,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
       if (lGetList(job, JB_env_list))
          nm_set(job_field, JB_env_list);
 
-      /*
-      ** -qs_args ... -qs_end
-      */
-      while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-qs_args"))) {
-         lSwapList(job, JB_qs_args, ep, SPA_argval_lListT);
-         lRemoveElem(cmdline, &ep);
-         nm_set(job_field, JB_qs_args);
-      }
-
       while ((ep = lGetElemStrRW(cmdline, SPA_switch_val, "-tc"))) {
          lSetUlong(job, JB_ja_task_concurrency, lGetUlong(ep, SPA_argval_lUlongT));
          lRemoveElem(cmdline, &ep);
@@ -1053,7 +1044,6 @@ static lList *qalter_parse_job_parameter(uint32_t me_who, lList *cmdline, lList 
             JB_shell_list,
             JB_env_list,
             JB_job_args,
-            JB_qs_args,
             JB_context,
             JB_ja_tasks,
             JB_ja_structure,
