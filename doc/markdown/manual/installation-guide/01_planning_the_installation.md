@@ -229,7 +229,7 @@ The binaries, libraries, applications, scripts and documentation for xxQS_NAMExx
 a directory hierarchy located below an installation directory (e.g. */opt/ocs*).
 
 This installation directory can be on a shared network filesystem or on each participating host in the cluster 
-individually. While local installation provides a performance benefit, central installation simplifies upgrades 
+individually. While a local installation provides a performance benefit, a central installation simplifies upgrades  
 and maintenance.
 
 All instructions in this document assume a shared installation location. Please note that additional steps are 
