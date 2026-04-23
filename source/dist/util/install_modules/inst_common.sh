@@ -516,7 +516,7 @@ GetConfigFromFile()
   else
      $INFOTEXT "No config file. Please, start the installation with\n a valid configuration file"
   fi
-  IFS="
+  IFS="   
 "
    #-nosmf takes precedence over the value in the autoinstall template
    if [ "$SGE_ENABLE_SMF_LAST" = false ]; then
