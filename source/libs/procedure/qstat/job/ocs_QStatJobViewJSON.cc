@@ -329,7 +329,7 @@ void ocs::QStatJobViewJSON::report_exec_file(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewJSON::report_X_ISO_8601_timestamp(std::ostream &os, const lListElem *job, int nm,
+void ocs::QStatJobViewJSON::report_X_ISO_8601_timestamp(std::ostream &os, const lListElem *job, const int nm,
                                                         const char *name) {
    DENTER(TOP_LAYER);
    const uint64_t sec = lGetUlong64(job, nm);
@@ -369,13 +369,17 @@ void ocs::QStatJobViewJSON::report_submit_cmd_line(std::ostream &os, const lList
 
 void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
+   const char *str = lGetString(job, JB_submission_command_line);
+   if (str == nullptr) {
+      DRETURN_VOID;
+   }
+
    if (first_attribute) {
       os << "\n";
       first_attribute = false;
    } else {
       os << ",\n";
    }
-   const char *str = lGetString(job, JB_submission_command_line);
    char *copied_str = strdup(str);
    if (const char *command = strtok(copied_str, " "); command != nullptr) {
       dstring dstr_cmd = DSTRING_INIT;
@@ -996,5 +1000,168 @@ void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const lListElem *j
 
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const lListElem *job, const int list_nm, const int value_nm, const char *name) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, list_nm, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   const lList *list = lGetList(job, list_nm);
+   if (list == nullptr) {
+      DRETURN_VOID;
+   }
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, list) {
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      const char *value = lGetString(elem, value_nm);
+      os << std::string(indent * 3, ' ') << value;
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const lListElem *job, const int list_nm, const int value_nm, const char *name) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, list_nm, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   const lList *list = lGetList(job, list_nm);
+   if (list == nullptr) {
+      DRETURN_VOID;
+   }
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, list) {
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      const uint32_t value = lGetUlong(elem, value_nm);
+      os << std::string(indent * 3, ' ') << value;
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_job_identifier_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string_list(os, job, JB_job_identifier_list, JRE_job_number, "job_identifier_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_script_size(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_script_size, "script_size");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_script_file(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string(os, job, JB_script_file, "script_file");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_script_ptr(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string(os, job, JB_script_ptr, "script_ptr");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_pe(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_pe, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   const char *pe_name = lGetString(job, JB_pe);
+   if (pe_name == nullptr) {
+      DRETURN_VOID;
+   }
+   dstring range_string = DSTRING_INIT;
+   range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"pe\": {\n";
+   indent++;
+
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(pe_name) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"range\": " << raw2quotedJSON(sge_dstring_get_string(&range_string)) << "\n";
+
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+
+   sge_dstring_free(&range_string);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_jid_request_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string_list(os, job, JB_jid_request_list, JRE_job_name, "jid_request_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_jid_predecessor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32_list(os, job, JB_jid_predecessor_list, JRE_job_number, "jid_predecessor_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_jid_successor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32_list(os, job, JB_jid_successor_list, JRE_job_number, "jid_successor_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ja_ad_request_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string_list(os, job, JB_ja_ad_request_list, JRE_job_name, "ja_ad_request_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32_list(os, job, JB_ja_ad_predecessor_list, JRE_job_number, "ja_ad_predecessor_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ja_ad_successor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32_list(os, job, JB_ja_ad_successor_list, JRE_job_number, "ja_ad_successor_list");
    DRETURN_VOID;
 }

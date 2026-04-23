@@ -93,107 +93,21 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lListElem *job, int
    report_env_list(os, job);
    report_verify(os, job);
    report_job_args(os, job);
-
-   if (lGetPosViaElem(job, JB_job_identifier_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_job_identifier_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "job_identifier_list:", left_width, ss_list.str());
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_script_size, SGE_NO_ABORT) >= 0) {
-      if (const uint32_t size = lGetUlong(job, JB_script_size)) {
-         os << std::format("{:<{}} {}", "script_size:", left_width, size) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_script_file, SGE_NO_ABORT) >= 0) {
-      if (const char *file = lGetString(job, JB_script_file)) {
-         os << std::format("{:<{}} {}", "script_file:", left_width, file) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_script_ptr, SGE_NO_ABORT) >= 0) {
-      if (const char *script = lGetString(job, JB_script_ptr)) {
-         os << std::format("{:<{}} {}", "script_ptr:\n", left_width, script) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_pe, SGE_NO_ABORT) >= 0) {
-      if (const char *pe = lGetString(job, JB_pe)) {
-         dstring range_string = DSTRING_INIT;
-
-         range_list_print_to_string(lGetList(job, JB_pe_range), &range_string, true, false, false);
-         std::stringstream ss_pe_details;
-         ss_pe_details << pe << " range: " << sge_dstring_get_string(&range_string);
-         sge_dstring_free(&range_string);
-
-         os << std::format("{:<{}} {}", "parallel_environment:", left_width, ss_pe_details.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_jid_request_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_jid_request_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_name, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_request_list (req):", left_width, ss_list.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_jid_predecessor_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_jid_predecessor_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_predecessor_list:", left_width, ss_list.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_jid_successor_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_jid_successor_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "jid_successor_list:", left_width, ss_list.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_ja_ad_request_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_ja_ad_request_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_name, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_redecessor_list (req):", left_width, ss_list.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_ja_ad_predecessor_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_ja_ad_predecessor_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_predecessor_list:", left_width, ss_list.str()) << "\n";
-      }
-   }
-
-   if (lGetPosViaElem(job, JB_ja_ad_successor_list, SGE_NO_ABORT) >= 0) {
-      if (const lList *list = lGetList(job, JB_ja_ad_successor_list)) {
-         std::ostringstream ss_list;
-         int fields[] = {JRE_job_number, 0};
-         delis[0] = "";
-         uni_print_list(ss_list, list, fields, delis, 0);
-         os << std::format("{:<{}} {}", "ja_ad_successor_list:", left_width, ss_list.str()) << "\n";
-      }
-   }
+#if 0
+   report_job_identifier_list(os, job); // What is this?
+#endif
+   report_script_size(os, job);
+   report_script_file(os, job);
+#if 0 // data is not subscribed and also not available in worker
+   report_script_ptr(os, job);
+#endif
+   report_pe(os, job);
+   report_jid_request_list(os, job);
+   report_jid_predecessor_list(os, job);
+   report_jid_successor_list(os, job);
+   report_ja_ad_request_list(os, job);
+   report_ja_ad_predecessor_list(os, job);
+   report_ja_ad_successor_list(os, job);
 
    if (lGetPosViaElem(job, JB_verify_suitable_queues, SGE_NO_ABORT) >= 0) {
       if (const uint32_t vsq = lGetUlong(job, JB_verify_suitable_queues)) {

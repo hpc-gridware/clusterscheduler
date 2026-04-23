@@ -272,3 +272,58 @@ void ocs::QStatJobViewXML::report_job_args(std::ostream &os, const lListElem *jo
    DENTER(TOP_LAYER);
    DRETURN_VOID;
 }
+
+void ocs::QStatJobViewXML::report_job_identifier_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_script_size(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_script_file(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_script_ptr(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_pe(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_jid_request_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_jid_predecessor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_jid_successor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_ja_ad_request_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewXML::report_ja_ad_successor_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}

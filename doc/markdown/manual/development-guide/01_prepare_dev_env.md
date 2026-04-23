@@ -194,12 +194,12 @@ apt-get install expect xterm gnuplot tdom
 apt-get install -y openjdk-8-jdk maven
 ```
 
-### Rocky 8 / Alma 8 / CentOS 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
+### Rocky / Alma / Oracle Linux / CentOS - 8 (default for lx-amd64, lx-arm64, lx-ppc64le)
 and only for lx-amd64
 
 ```
-dnf install -y automake autoconf cmake git libtirpc-devel systemd-devel patchelf
-dnf install -y gcc-toolset-11 gcc-toolset-11-libasan-devel gcc-toolset-11-libubsan-devel
+dnf install -y automake autoconf cmake git libtirpc-devel systemd-devel patchelf munge
+dnf install -y gcc-toolset-15 gcc-toolset-15-libasan-devel gcc-toolset-15-libubsan-devel
 dnf install -y expect tcl tcllib gnuplot xterm libcgroup-tools perl-Env tcsh
 dnf config-manager --set-enabled powertools
 dnf --enablerepo=devel install -y doxygen graphviz pandoc
@@ -214,11 +214,11 @@ Depending on the OS patchlevel `cmake` needs to be (compiled and) installed manu
 dnf install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel maven
 ```
 
-### Rocky 10 / Alma 10 / CentOS 10 / RHEL 10
+### Rocky / Alma / Oracle Linux / CentOS / RHEL - 9 and 10 
 
 ```
 dnf install -y automake autoconf cmake git systemd-devel
-dnf install -y gcc-toolset-15 gcc-toolset-15-libasan-devel gcc-toolset-15-libubsan-devel
+dnf install -y gcc-toolset-15 gcc-toolset-15-libasan-devel gcc-toolset-15-libubsan-devel munge
 dnf install -y expect tcl xterm perl-Env tcsh graphviz
 dnf install epel-release    (or on RHEL 10: dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm)
 dnf install -y pandoc 

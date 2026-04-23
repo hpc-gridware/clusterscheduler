@@ -36,6 +36,8 @@ namespace ocs {
       void report_X_ISO_8601_timestamp(std::ostream &os, const lListElem *job, int nm, const char *name);
       void report_X_resource_list(std::ostream &os, const lListElem *job, int nm, const char *name);
       void report_X_queue_list(std::ostream &os, const lListElem *jrs, int nm, const char *name);
+      void report_X_string_list(std::ostream &os, const lListElem *job, int list_nm, int value_nm, const char *name);
+      void report_X_uint32_list(std::ostream &os, const lListElem *job, const int list_nm, const int value_nm, const char *name);
    public:
       explicit QStatJobViewJSON(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {
       } ;
@@ -83,5 +85,16 @@ namespace ocs {
       void report_env_list(std::ostream &os, const lListElem *job) override;
       void report_verify(std::ostream &os, const lListElem *job) override;
       void report_job_args(std::ostream &os, const lListElem *job) override;
+      void report_job_identifier_list(std::ostream &os, const lListElem *job) override;
+      void report_script_size(std::ostream &os, const lListElem *job) override;
+      void report_script_file(std::ostream &os, const lListElem *job) override;
+      void report_script_ptr(std::ostream &os, const lListElem *job) override;
+      void report_pe(std::ostream &os, const lListElem *job) override;
+      void report_jid_request_list(std::ostream &os, const lListElem *job) override;
+      void report_jid_predecessor_list(std::ostream &os, const lListElem *job) override;
+      void report_jid_successor_list(std::ostream &os, const lListElem *job) override;
+      void report_ja_ad_request_list(std::ostream &os, const lListElem *job) override;
+      void report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) override;
+      void report_ja_ad_successor_list(std::ostream &os, const lListElem *job) override;
    };
 }

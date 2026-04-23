@@ -94,7 +94,8 @@ bool ocs::QStatJobModel::fetch_data(lList **alpp, QStatParameter &parameter) {
                        "%I%I%I"
                        "%I%I%I%I%I"
                        "%I%I%I%I"
-                       "%I%I%I%I)",
+                       "%I%I%I%I%I"
+                       "%I%I)",
 
                JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time,
                JB_submission_command_line, JB_owner, JB_uid, JB_group, JB_gid,
@@ -117,7 +118,8 @@ bool ocs::QStatJobModel::fetch_data(lList **alpp, QStatParameter &parameter) {
                JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
                JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
                JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
-               JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases);
+               JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases, JB_ja_ad_predecessor_list,
+               JB_ja_ad_request_list, JB_ja_ad_successor_list);
 
       /* get job list */
       *alpp = gdi::Client::sge_gdi(gdi::Target::JB_LIST, gdi::Command::GET, gdi::SubCommand::NONE, &jlp, where, what);
