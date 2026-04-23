@@ -2,6 +2,128 @@
 
 # Release notes - Cluster Scheduler - 9.1.0
 
+## v9.1.1
+
+### Improvement
+
+[CS-336](https://hpc-gridware.atlassian.net/browse/CS-336) provide a Maven build for dbwriter
+
+[CS-612](https://hpc-gridware.atlassian.net/browse/CS-612) allow to overwrite the PE allocation rule on the submission command line
+
+[CS-1176](https://hpc-gridware.atlassian.net/browse/CS-1176) Installation on xlx-amd64 fails due to core of qping
+
+[CS-1489](https://hpc-gridware.atlassian.net/browse/CS-1489) test dbwriter with MySQL
+
+[CS-1860](https://hpc-gridware.atlassian.net/browse/CS-1860) remove extra string copy operation in logging to messages files
+
+[CS-1864](https://hpc-gridware.atlassian.net/browse/CS-1864) Improve qtelemetry section in Admin Guide
+
+[CS-1875](https://hpc-gridware.atlassian.net/browse/CS-1875) speed up testsuite cluster shutdown
+
+[CS-1887](https://hpc-gridware.atlassian.net/browse/CS-1887) Add support for linux kernel release 7.\*
+
+[CS-1893](https://hpc-gridware.atlassian.net/browse/CS-1893) testsuite test tight\_integration shall ignore non test related warning messages
+
+[CS-1918](https://hpc-gridware.atlassian.net/browse/CS-1918) Improve logging of lmstat requests in license-manager for better traceability
+
+[CS-1919](https://hpc-gridware.atlassian.net/browse/CS-1919) Make license-manager lmstat data caching timeout configurable
+
+[CS-1923](https://hpc-gridware.atlassian.net/browse/CS-1923) qgpu requires a flag which influences CUDA\_VISIBLE\_DEVICES numbering scheme for device isolation
+
+[CS-1924](https://hpc-gridware.atlassian.net/browse/CS-1924) run dbwriter as systemd services
+
+[CS-1928](https://hpc-gridware.atlassian.net/browse/CS-1928) Provide an example of enforcing GPU device isolation using a shepherd wrapper script
+
+[CS-1949](https://hpc-gridware.atlassian.net/browse/CS-1949) inst\_dbwriter prints "Welcome to the @@GRID\_ENGINE\_NAME@@ ARCo dbwriter module installation"
+
+[CS-1950](https://hpc-gridware.atlassian.net/browse/CS-1950) inst\_dbwriter is not executable
+
+[CS-1960](https://hpc-gridware.atlassian.net/browse/CS-1960) Add license aliasing / pooling feature description to admin guide
+
+[CS-1961](https://hpc-gridware.atlassian.net/browse/CS-1961) Add license aliasing / pooling feature description to man page
+
+### New Feature
+
+[CS-1857](https://hpc-gridware.atlassian.net/browse/CS-1857) Add sharetree support to Qontrol
+
+[CS-1870](https://hpc-gridware.atlassian.net/browse/CS-1870) make testsuite create an overview page comparing and linking multiple performance test results
+
+[CS-1886](https://hpc-gridware.atlassian.net/browse/CS-1886) Add operations JSONL operations log history to Qontrol interface to track changes done with UI
+
+[CS-1900](https://hpc-gridware.atlassian.net/browse/CS-1900) Add license feature aggregation supporting multiple license servers to license-manager
+
+[CS-1917](https://hpc-gridware.atlassian.net/browse/CS-1917) license-manager should have a configurable timeout for individual license server requests
+
+[CS-1933](https://hpc-gridware.atlassian.net/browse/CS-1933) Add MCP server to Qontrol to provide tools for read only cluster analysis
+
+### Task
+
+[CS-1869](https://hpc-gridware.atlassian.net/browse/CS-1869) make sure that throughput test results can be re-read and reports can be re-generated
+
+[CS-1878](https://hpc-gridware.atlassian.net/browse/CS-1878) in testsuite reports containing tables allow to set the background color per individual cell
+
+[CS-1954](https://hpc-gridware.atlassian.net/browse/CS-1954) Add management of single users to User Management in Qontrol
+
+### Sub-task
+
+[CS-953](https://hpc-gridware.atlassian.net/browse/CS-953) Testsuite: add a chart for number of qstats per second
+
+[CS-1685](https://hpc-gridware.atlassian.net/browse/CS-1685) Implement generation for SBOM of Java code
+
+[CS-1809](https://hpc-gridware.atlassian.net/browse/CS-1809) replace generated dbwriter xml parsing code
+
+[CS-1810](https://hpc-gridware.atlassian.net/browse/CS-1810) move common code into dbwriter module
+
+[CS-1868](https://hpc-gridware.atlassian.net/browse/CS-1868) qselect ignores the -xml switch
+
+[CS-1925](https://hpc-gridware.atlassian.net/browse/CS-1925) modify dbwriter installation to install a systemd unit file and start it as service
+
+[CS-1926](https://hpc-gridware.atlassian.net/browse/CS-1926) when testsuite is called with option install\_rc also install rc files / systemd service for dbwriter
+
+[CS-1934](https://hpc-gridware.atlassian.net/browse/CS-1934) make dbwriter maven build from ant build
+
+[CS-1935](https://hpc-gridware.atlassian.net/browse/CS-1935) make sure that all dbwriter dependencies and all maven plugins have the current version
+
+[CS-1936](https://hpc-gridware.atlassian.net/browse/CS-1936) adapt testsuite to use dbwriter maven build
+
+[CS-1942](https://hpc-gridware.atlassian.net/browse/CS-1942) adapt dbwriter directory structure to maven standard
+
+[CS-1956](https://hpc-gridware.atlassian.net/browse/CS-1956) Document dbwriter installation
+
+[CS-1957](https://hpc-gridware.atlassian.net/browse/CS-1957) Document dbwriter configuration in the admin guide
+
+### Bug
+
+[CS-1812](https://hpc-gridware.atlassian.net/browse/CS-1812) remove dbwriter logging "0 lines marked as erroneous, these will be skipped"
+
+[CS-1834](https://hpc-gridware.atlassian.net/browse/CS-1834) PE round robin allocation rule does not respect the masterq and scope switch
+
+[CS-1850](https://hpc-gridware.atlassian.net/browse/CS-1850) if master and slave queue requests are overlapping slave tasks can be scheduled to queue instances which do not match the slave queue request
+
+[CS-1859](https://hpc-gridware.atlassian.net/browse/CS-1859) with profiling enabled qmaster messages file contains empty lines
+
+[CS-1861](https://hpc-gridware.atlassian.net/browse/CS-1861) Munge installation in the GCP deployment seems to be incomplete
+
+[CS-1863](https://hpc-gridware.atlassian.net/browse/CS-1863) GDI multi call \(as done by cetrain client apps\) can cause core of client application
+
+[CS-1867](https://hpc-gridware.atlassian.net/browse/CS-1867) qtelemetry fails parsing qhost
+
+[CS-1871](https://hpc-gridware.atlassian.net/browse/CS-1871) testsuite framework function ge\_has\_feature sometimes returns an incorrect result
+
+[CS-1872](https://hpc-gridware.atlassian.net/browse/CS-1872) Malformed qstat -j output for job arrays
+
+[CS-1894](https://hpc-gridware.atlassian.net/browse/CS-1894) Runtime crash due to mixed compiler/runtime libraries when using non-system toolchain \(xlx-amd64\)
+
+[CS-1904](https://hpc-gridware.atlassian.net/browse/CS-1904) loadcheck shows product name as OGE
+
+[CS-1905](https://hpc-gridware.atlassian.net/browse/CS-1905) Zombie jobs are not displayed
+
+[CS-1922](https://hpc-gridware.atlassian.net/browse/CS-1922) shepherd\_cmd does not work with qrsh jobs
+
+[CS-1940](https://hpc-gridware.atlassian.net/browse/CS-1940) dbwriter reports an error when parsing accounting records around midnight
+
+[CS-1943](https://hpc-gridware.atlassian.net/browse/CS-1943) dbwriter doesn't create the daily derived d\_jobs\_finished values for hosts
+
 ## v9.1.0
 
 ### Improvement
