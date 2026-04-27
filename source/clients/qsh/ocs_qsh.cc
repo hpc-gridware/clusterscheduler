@@ -1025,8 +1025,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job)
       VERBOSE_LOG((stderr, "\n"))
    } else {
       client_name = strdup(client_name);
-      VERBOSE_LOG((stderr, MSG_QSH_RSH_CLIENT_FROM_QMASTER_SS, session_type, client_name));
-      VERBOSE_LOG((stderr, "\n"))
+      DPRINTF("Got  %s_client name from global/local config: %s\n", session_type, client_name);
    }
 
    if (strcasecmp(client_name, "builtin") == 0) {

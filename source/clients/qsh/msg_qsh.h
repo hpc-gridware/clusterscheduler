@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2024-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -79,7 +79,6 @@
 #define MSG_QSH_ERRORWHILEWAITINGFORBUILTINIJSCONNECTION_S  _MESSAGE(17039, _("error while waiting for builtin IJS connection: " SFQ)) \
 
 #define MSG_QSH_RSH_CLIENT_FROM_ENVIRONMENT_S               _MESSAGE(17040, _("Got rsh client name from environment: " SFN))
-#define MSG_QSH_RSH_CLIENT_FROM_QMASTER_SS                  _MESSAGE(17041, _("Got " SFN " client name from global/local config: " SFN))
 #define MSG_QSH_RSH_NO_CONFIG_USING_DEFAULT_SS              _MESSAGE(17042, _("No " SFN " client configured in global/local config, using default: " SFN))
                                                                                                                                      \
 // clang-format on
