@@ -60,7 +60,7 @@
 #define MSG_QSTAT_USAGE_SHOWTASKINFO                        _MESSAGE(19028, _("show task information (implicitly -g t)"))
 #define MSG_QSTAT_USAGE_VIEWONLYJOBSOFTHISUSER              _MESSAGE(19029, _("view only jobs of this user"))
 #define MSG_QSTAT_USAGE_SELECTQUEUESWHEREUSERXHAVEACCESS    _MESSAGE(19030, _("select only queues where these users have access"))
-#define MSG_SCHEDD_SCHEDULINGINFO                           _MESSAGE(19034, _("scheduling info"))
+#define MSG_SCHEDD_SCHEDULINGINFO                           _MESSAGE(19034, _("scheduling info:"))
 #define MSG_QSTAT_USAGE_SHOW_DEPT_VIEW                      _MESSAGE(19035, _("enable department view (hide objects without access)"))
 
 #define MSG_QSTAT_FOLLOWINGDONOTEXIST                       _MESSAGE(19040, _("Following jobs do not exist: "))

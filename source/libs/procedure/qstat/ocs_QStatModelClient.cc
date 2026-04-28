@@ -18,10 +18,12 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <sstream>
+
+#include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
-#include "uti/sge.h"
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull_what.h"
@@ -29,12 +31,18 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_str.h"
+#include "sgeobj/sge_ulong.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_QStatModelClient.h"
+
+#include "msg_qstat.h"
 #include "ocs_QStatParameter.h"
 
 
@@ -46,6 +54,27 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
    if (!gdi::Client::sge_gdi_get_permission(answer_list, &is_manager_, nullptr, nullptr, nullptr)) {
       DRETURN(false);
    }
+
+   // Data for the qstat -j view
+
+   lEnumeration* what_sme = get_sme_what();
+   const int sme_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::SME_LIST, gdi::Command::GET,
+                                       gdi::SubCommand::NONE, nullptr, nullptr, what_sme, true);
+   lFreeWhat(&what_sme);
+
+   int job_view_id = -1;
+   if (parameter.get_jid_list() != nullptr) {
+      lCondition *job_view_where = get_job_view_where(parameter.get_jid_list());
+      lEnumeration *job_view_what = get_job_view_what();
+
+      /* get job list for qtstat -j output */
+      job_view_id = gdi_multi.request(answer_list, gdi::Mode::RECORD, gdi::Target::JB_LIST, gdi::Command::GET,
+                                      gdi::SubCommand::NONE, nullptr, job_view_where, job_view_what, true);
+      lFreeWhere(&job_view_where);
+      lFreeWhat(&job_view_what);
+   }
+
+   // Data for all other views
 
    int q_id = -1;
    if (parameter.need_queues_) {
@@ -147,9 +176,25 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       DRETURN(false);
    }
 
+
    gdi_multi.wait();
+
    // Start fetching the lists
 
+   // Job view data (-j)
+   gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::SME_LIST, sme_id, &ilp);
+   if (answer_list_has_error(answer_list)) {
+      DRETURN(false);
+   }
+
+   if (parameter.get_jid_list() != nullptr) {
+      gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::JB_LIST, job_view_id, &jlp);
+      if (answer_list_has_error(answer_list)) {
+         DRETURN(false);
+      }
+   }
+
+   // Other views
    if (parameter.need_queues_) {
       gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CQ_LIST, q_id, &queue_list_);
       if (answer_list_has_error(answer_list)) {
@@ -236,6 +281,75 @@ bool ocs::QStatModelClient::prepare_data(lList **answer_list, QStatParameter &pa
 
    // make the centry list ready to get used
    centry_list_init_double(centry_list_);
+
+   // report an error if response does not contain all information for the job view
+   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.get_jid_list()) != 0) {
+
+      // remove all pattern
+      bool removed_pattern = false;
+      lListElem *elem1;
+      lListElem *elem2 = lFirstRW(parameter.get_jid_list());
+      while ((elem1 = elem2) != nullptr) {
+         elem2 = lNextRW(elem1);
+
+         if (is_pattern(lGetString(elem1, ST_name))) {
+            lDechainElem(parameter.get_jid_list(), elem1);
+            removed_pattern = true;
+         }
+      }
+
+      // if there is still something missing then report an error
+      std::stringstream ss;
+      if (lGetNumberOfElem(parameter.get_jid_list()) > 0) {
+         bool first_time = true;
+         ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         for_each_rw(elem1, parameter.get_jid_list()) {
+            if (!first_time) {
+               ss << ", ";
+            }
+            first_time = false;
+            ss << lGetString(elem1, ST_name);
+         }
+      } else {
+         if (removed_pattern) {
+            ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         }
+      }
+      answer_list_add(answer_list, ss.str().c_str(), STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML) {
+      DRETURN(true);
+   }
+
+   /* filter the message list to contain only jobs that have been requested.
+      First remove all entries in the job_number_list that are not in the
+      jbList. Then remove all entries (job_number_list, message_number and
+      message) from the message_list that have no jobs in them.
+   */
+   for_each_ep_lv(tmpElem, ilp) {
+      lList *msgList = lGetListRW(tmpElem, SME_message_list);
+      lListElem *msgElem = lFirstRW(msgList);
+      while (msgElem) {
+
+         lListElem *tmp_msgElem = lNextRW(msgElem);
+         lList *jbList = lGetListRW(msgElem, MES_job_number_list);
+         lListElem *jbElem = lFirstRW(jbList);
+
+         while (jbElem) {
+            lListElem *tmp_jbElem = lNextRW(jbElem);
+            if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == nullptr) {
+               lRemoveElem(jbList, &jbElem);
+            }
+            jbElem = tmp_jbElem;
+         }
+         if (lGetNumberOfElem(lGetList(msgElem, MES_job_number_list)) == 0) {
+            lRemoveElem(msgList, &msgElem);
+         }
+         msgElem = tmp_msgElem;
+      }
+   }
 
    DRETURN(true);
 }

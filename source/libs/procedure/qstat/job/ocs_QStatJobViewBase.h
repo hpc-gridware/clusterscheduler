@@ -24,23 +24,49 @@
 #include "cull/cull_list.h"
 
 #include "ocs_ProcedureView.h"
-#include "ocs_QStatJobModel.h"
+#include "qstat/ocs_QStatModelBase.h"
 
 namespace ocs {
    class QStatJobViewBase : public ProcedureView {
    public:
+      struct Usage {
+         double wallclock{0.0};
+         double cpu{0.0};
+         double mem{0.0};
+         double io{0.0};
+         double ioops{0.0};
+         double iow{0.0};
+         double vmem{0.0};
+         double maxvmem{0.0};
+         double rss{0.0};
+         double maxrss{0.0};
+
+         // In case we have execd_params ENABLE_MEM_DETAILS set, output these values as well.
+         bool have_mem_details{false};
+         double pss{0.0};
+         double maxpss{0.0};
+         double pmem{0.0};
+         double smem{0.0};
+      };
+
+   protected:
+      static void accumulate_usage(const lListElem *task, Usage &usage);
+   public:
       explicit QStatJobViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {};
       ~QStatJobViewBase() override = default;
 
-      virtual void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) = 0;
-      virtual void show_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) = 0;
-      virtual void show_job(std::ostream &os, const lListElem *job, int flags);
+      virtual void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) = 0;
+      virtual void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) = 0;
+      virtual void show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
 
       virtual void report_started(std::ostream &os, QStatParameter &parameter) = 0;
       virtual void report_finished(std::ostream &os, QStatParameter &parameter) = 0;
 
       virtual void report_jobs_started(std::ostream &os, QStatParameter &parameter) = 0;
       virtual void report_jobs_finished(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_job_separator(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_job_started(std::ostream &os, QStatParameter &parameter) = 0;
+      virtual void report_job_finished(std::ostream &os, QStatParameter &parameter) = 0;
 
       virtual void report_job_id(std::ostream &os, const lListElem *job, int flags) = 0;
       virtual void report_category_id(std::ostream &os, const lListElem *job) = 0;
@@ -85,6 +111,37 @@ namespace ocs {
       virtual void report_ja_ad_request_list(std::ostream &os, const lListElem *job) = 0;
       virtual void report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) = 0;
       virtual void report_ja_ad_successor_list(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_verify_suitable_queues(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_version(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_override_tickets(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_ar(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_project(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_department(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_sync_options(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_ja_structure(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_ja_task_concurrency(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_ctx_list(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_binding(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_schedd_job_info(std::ostream &os, const lList *ilp, const lListElem *job) = 0;
 
+      virtual void report_task_list_started(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_task_list_finished(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_exec_binding_list(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+      virtual void report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) = 0;
+
+   private:
+      double sum_up_jatask_usage(const lListElem *ja_task, const char *attr) const;
+      double sum_up_petask_usage(const lListElem *pe_task, const char *attr) const;
    };
 }

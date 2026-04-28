@@ -26,10 +26,15 @@
 namespace ocs {
    class QStatModelBase {
 #pragma region Data
-
+   public:
+      // Data for the job view -j
+      lList* ilp = nullptr;
+      lList* jlp = nullptr;
    protected:
       // data lists
       bool is_manager_ = false;
+
+      // Data for all views except for job view
       lList* queue_list_ = nullptr;
       lList* centry_list_ = nullptr;
       lList* exechost_list_ = nullptr;
@@ -41,7 +46,10 @@ namespace ocs {
       lList* hgrp_list_ = nullptr;
       lList* project_list_ = nullptr;
 
+
    public:
+      [[nodiscard]] bool is_manager() const { return is_manager_; }
+
       [[nodiscard]] lList* get_queue_list() const { return queue_list_; }
       [[nodiscard]] lList* get_centry_list() const { return centry_list_; }
       [[nodiscard]] lList* get_exechost_list() const { return exechost_list_; }
@@ -52,7 +60,6 @@ namespace ocs {
       [[nodiscard]] lList* get_job_list() const { return job_list_; }
       [[nodiscard]] lList* get_hgrp_list() const { return hgrp_list_; }
       [[nodiscard]] lList* get_project_list() const { return project_list_; }
-      [[nodiscard]] bool is_manager() const { return is_manager_; }
 
 #pragma endregion
 
@@ -79,6 +86,9 @@ namespace ocs {
       static lEnumeration *get_conf_what();
       static lCondition *get_job_where(const QStatParameter &parameter);
       static lEnumeration *get_job_what(const QStatParameter &parameter);
+      static lCondition *get_job_view_where(const lList *job_view_list);
+      static lEnumeration *get_job_view_what();
+      static lEnumeration *get_sme_what();
 
 #pragma endregion
 

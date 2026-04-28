@@ -167,7 +167,7 @@ int main(int argc, const char **argv) {
          show_job()
       */
       std::stringstream ss;
-      ocs::QStatJobViewPlain::cull_show_job(ss, lFirst(request_list), FLG_QALTER);
+      ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, lFirst(request_list), FLG_QALTER);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }

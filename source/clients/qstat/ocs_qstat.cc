@@ -60,7 +60,6 @@
 #include "procedure/qstat/group/ocs_QStatGroupViewXML.h"
 #include "procedure/qstat/group/ocs_QStatGroupController.h"
 #include "procedure/qstat/job/ocs_QStatJobController.h"
-#include "procedure/qstat/job/ocs_QStatJobModel.h"
 #include "procedure/qstat/job/ocs_QStatJobViewBase.h"
 #include "procedure/qstat/job/ocs_QStatJobViewPlain.h"
 #include "procedure/qstat/job/ocs_QStatJobViewXML.h"
@@ -120,24 +119,39 @@ int main(int argc, char *argv[]) {
    std::ostringstream out_ss;
    switch (parameter.output_mode_) {
       case ocs::QStatParameter::OutputMode::JOB_INFO: {
-         std::unique_ptr<ocs::QStatModelBase> model;
-         model = std::make_unique<ocs::QStatJobModel>();
-         if (!model->make_snapshot(&answer_list, parameter)) {
-            answer_list_output(&answer_list);
-            sge_exit(1);
-         }
+         parameter.set_sub_procedure_name(ocs::QStatParameter::JOB_FORMAT);
 
-         std::unique_ptr<ocs::QStatJobViewBase> view;
-         if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
-            view = std::make_unique<ocs::QStatJobViewXML>(parameter);
-         } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
-            view = std::make_unique<ocs::QStatJobViewJSON>(parameter);
+         if (parameter.get_exec_context() == ocs::ProcedureParameter::ExecContext::SERVER) {
+            // prepare data for output
+            ocs::ProcedureModel model;
+            if (!model.make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
+
+            ocs::ProcedureView view(parameter);
+            ocs::ProcedureController controller(out_ss);
+            controller.process_request(parameter, model, view);
          } else {
-            view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
-         }
+            std::unique_ptr<ocs::QStatModelBase> model;
+            model = std::make_unique<ocs::QStatModelClient>();
+            if (!model->make_snapshot(&answer_list, parameter)) {
+               answer_list_output(&answer_list);
+               sge_exit(1);
+            }
 
-         ocs::QStatJobController controller(out_ss);
-         controller.process_request(parameter, dynamic_cast<ocs::QStatJobModel &>(*model), *view);
+            std::unique_ptr<ocs::QStatJobViewBase> view;
+            if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::XML) {
+               view = std::make_unique<ocs::QStatJobViewXML>(parameter);
+            } else if (parameter.get_output_format() == ocs::QStatParameter::OutputFormat::JSON) {
+               view = std::make_unique<ocs::QStatJobViewJSON>(parameter);
+            } else {
+               view = std::make_unique<ocs::QStatJobViewPlain>(parameter);
+            }
+
+            ocs::QStatJobController controller(out_ss);
+            controller.process_request(parameter, dynamic_cast<ocs::QStatModelBase &>(*model), *view);
+         }
          break;
       }
       case ocs::QStatParameter::OutputMode::QSELECT: {

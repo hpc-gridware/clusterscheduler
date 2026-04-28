@@ -1688,7 +1688,7 @@ int main(int argc, const char **argv)
 
       if (lGetUlong(job, JB_verify)) {
          std::stringstream ss;
-         ocs::QStatJobViewPlain::cull_show_job(ss, job, 0);
+         ocs::QStatJobViewPlain::cull_show_job(ss, nullptr, job, 0);
          printf("%s", ss.str().c_str());
          sge_exit(0);
       }

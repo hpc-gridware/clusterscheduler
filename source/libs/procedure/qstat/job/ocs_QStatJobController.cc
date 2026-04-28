@@ -26,7 +26,7 @@
 #include "qstat/job/ocs_QStatJobController.h"
 #include "qstat/job/ocs_QStatJobViewBase.h"
 
-void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view) {
+void ocs::QStatJobController::process_request(QStatParameter &parameter, QStatModelBase &model, QStatJobViewBase &view) {
    DENTER(TOP_LAYER);
 
    view.report_started(out_, parameter);

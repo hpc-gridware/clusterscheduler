@@ -24,7 +24,7 @@
 #include "qstat/ocs_QStatParameter.h"
 
 #include "ocs_QStatJobViewBase.h"
-#include "ocs_QStatJobModel.h"
+#include "qstat/ocs_QStatModelBase.h"
 
 namespace ocs {
    class QStatJobViewXML : public QStatJobViewBase {
@@ -32,12 +32,15 @@ namespace ocs {
       explicit QStatJobViewXML(const ProcedureParameter &parameter) : QStatJobViewBase(parameter) {};
       ~QStatJobViewXML() override = default;
 
-      void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
-      void show_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) override;
-      void show_job(std::ostream &os, const lListElem *job, int flags) override;
+      void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
+      void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
+      void show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags) override;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;
       void report_finished(std::ostream &os, QStatParameter &parameter) override;
+      void report_job_separator(std::ostream &os, QStatParameter &parameter) override;
+      void report_job_started(std::ostream &os, QStatParameter &parameter) override;
+      void report_job_finished(std::ostream &os, QStatParameter &parameter) override;
 
       void report_jobs_started(std::ostream &os, QStatParameter &parameter) override;
       void report_jobs_finished(std::ostream &os, QStatParameter &parameter) override;
@@ -85,5 +88,33 @@ namespace ocs {
       void report_ja_ad_request_list(std::ostream &os, const lListElem *job) override;
       void report_ja_ad_predecessor_list(std::ostream &os, const lListElem *job) override;
       void report_ja_ad_successor_list(std::ostream &os, const lListElem *job) override;
+      void report_verify_suitable_queues(std::ostream &os, const lListElem *job) override;
+      void report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) override;
+      void report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) override;
+      void report_version(std::ostream &os, const lListElem *job) override;
+      void report_override_tickets(std::ostream &os, const lListElem *job) override;
+      void report_ar(std::ostream &os, const lListElem *job) override;
+      void report_project(std::ostream &os, const lListElem *job) override;
+      void report_department(std::ostream &os, const lListElem *job) override;
+      void report_sync_options(std::ostream &os, const lListElem *job) override;
+      void report_ja_structure(std::ostream &os, const lListElem *job) override;
+      void report_ja_task_concurrency(std::ostream &os, const lListElem *job) override;
+      void report_ctx_list(std::ostream &os, const lListElem *job) override;
+      void report_binding(std::ostream &os, const lListElem *job) override;
+      void report_schedd_job_info(std::ostream &os, const lList *ilp, const lListElem *job) override;
+
+      void report_task_list_started(std::ostream &os, const lListElem *job) override;
+      void report_task_list_finished(std::ostream &os, const lListElem *job) override;
+      void report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_exec_binding_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) override;
    };
 }

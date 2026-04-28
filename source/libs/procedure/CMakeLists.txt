@@ -79,7 +79,6 @@ set(LIBRARY_SOURCES
         qstat/select/ocs_QStatSelectViewJSON.cc
 
         qstat/job/ocs_QStatJobController.cc
-        qstat/job/ocs_QStatJobModel.cc
         qstat/job/ocs_QStatJobViewBase.cc
         qstat/job/ocs_QStatJobViewPlain.cc
         qstat/job/ocs_QStatJobViewXML.cc

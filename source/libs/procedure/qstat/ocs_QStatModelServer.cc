@@ -30,6 +30,20 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    DENTER(TOP_LAYER);
    const lList *master_manager_list = *DataStore::get_master_list(SGE_TYPE_MANAGER);
    is_manager_ = manop_is_manager(packet, master_manager_list);
+   const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);
+
+   lEnumeration* sme_what = get_sme_what();
+   const lList *master_sme_list = *DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
+   ilp = lSelect("", master_sme_list, nullptr, sme_what);
+   lFreeWhat(&sme_what);
+
+   if (parameter.get_jid_list() != nullptr) {
+      lCondition *job_view_where = get_job_view_where(parameter.get_jid_list());
+      lEnumeration *job_view_what = get_job_view_what();
+      jlp = lSelect("", master_job_list, job_view_where, job_view_what);
+      lFreeWhere(&job_view_where);
+      lFreeWhat(&job_view_what);
+   }
 
    if (parameter.need_queues_) {
       const lList *master_cqueue_list = *DataStore::get_master_list(SGE_TYPE_CQUEUE);
@@ -39,7 +53,6 @@ ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter
    }
 
    if (parameter.need_job_list_) {
-      const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);
       lEnumeration *job_what = get_job_what(parameter);
       lCondition *job_where = get_job_where(parameter);
       job_list_ = lSelect("", master_job_list, job_where, job_what);

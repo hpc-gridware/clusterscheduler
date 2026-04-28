@@ -18,33 +18,33 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include "uti/ocs_Pattern.h"
+#include <sstream>
+
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
 
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_range.h"
-#include "sgeobj/sge_ulong.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_path_alias.h"
-
-#include "sched/sge_schedd_text.h"
+#include "sgeobj/ocs_Binding.h"
+#include "sgeobj/ocs_BindingInstance.h"
+#include "sgeobj/ocs_BindingStart.h"
+#include "sgeobj/ocs_BindingStop.h"
+#include "sgeobj/ocs_BindingStrategy.h"
+#include "sgeobj/ocs_BindingType.h"
+#include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_GrantedResources.h"
+#include "sgeobj/ocs_TopologyString.h"
+#include "sgeobj/sge_var.h"
+#include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_mailrec.h"
+#include "sgeobj/sge_qref.h"
 
 #include "qstat/ocs_QStatParameter.h"
 #include "qstat/job/ocs_QStatJobViewJSON.h"
 
-#include <sstream>
-
-#include "qstat/msg_qstat.h"
-#include "sgeobj/sge_var.h"
-#include "sgeobj/cull/sge_centry_CE_L.h"
-#include "sgeobj/cull/sge_mailrec_MR_L.h"
-#include "sgeobj/cull/sge_qref_QR_L.h"
-#include "uti/sge_stdlib.h"
-
-void ocs::QStatJobViewJSON::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
+void ocs::QStatJobViewJSON::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    bool first_job = true;
 
@@ -60,41 +60,11 @@ void ocs::QStatJobViewJSON::show_jobs_and_reasons(std::ostream &os, QStatParamet
          first_job = false;
       }
 
-      os << "==============================================================\n";
-      /* print job information */
-      show_job(os, j_elem, 0);
+      report_job_separator(os, parameter);
 
-      /* print scheduling information */
-      if (const lListElem *sme = lFirst(model.ilp); sme != nullptr) {
-         int first_run = 1;
-
-         /* global scheduling info */
-         for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
-            if (first_run) {
-               os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
-               first_run = 0;
-            } else {
-               os << "                                 ";
-            }
-            os << lGetString(mes, MES_message) << "\n";
-         }
-
-         /* job scheduling info */
-         const uint32_t jid = lGetUlong(j_elem, JB_job_number);
-         for_each_ep_lv(mes, lGetList(sme, SME_message_list)) {
-            for_each_ep_lv(mes_jid, lGetList(mes, MES_job_number_list)) {
-               if (lGetUlong(mes_jid, ULNG_value) == jid) {
-                  if (first_run) {
-                     os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
-                     first_run = 0;
-                  } else {
-                     os << "                                 ";
-                  }
-                  os << lGetString(mes, MES_message) << "\n";
-               }
-            }
-         }
-      }
+      report_job_started(os, parameter);
+      show_job(os, model.ilp, j_elem, 0);
+      report_job_finished(os, parameter);
    }
    if (!first_job) {
       report_jobs_finished(os, parameter);
@@ -105,150 +75,9 @@ void ocs::QStatJobViewJSON::show_jobs_and_reasons(std::ostream &os, QStatParamet
 }
 
 void
-ocs::QStatJobViewJSON::show_reasons(std::ostream &os, QStatParameter &parameter, QStatJobModel &model) {
+ocs::QStatJobViewJSON::show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
-   lList *mlp = nullptr;
-   int initialized = 0;
-   uint32_t last_jid = 0;
-   uint32_t last_mid = 0;
-   char text[256], ltext[256];
-   int ids_per_line = 0;
-   int first_run = 1;
-   int first_row = 1;
-
-   lListElem *sme = lFirstRW(model.ilp);
-   if (sme) {
-      /* print global schduling info */
-      first_run = 1;
-      for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
-         if (first_run) {
-            os << MSG_SCHEDD_SCHEDULINGINFO << ":                 ";
-            first_run = 0;
-         } else {
-            os << "                                 ";
-         }
-         os << lGetString(mes, MES_message) << "\n";
-      }
-      if (!first_run) {
-         os << "\n";
-      }
-
-      first_run = 1;
-
-      mlp = lGetListRW(sme, SME_message_list);
-      lPSortList(mlp, "I+", MES_message_number);
-
-      /*
-       * Remove all jids which have more than one entry for a MES_message_number
-       * After this step the MES_messages are not correct anymore
-       * We do not need this messages for the summary output
-       */
-      lListElem *flt_msg, *flt_nxt_msg;
-
-      lList *new_list = lCreateList("filtered message list", MES_Type);
-
-      flt_nxt_msg = lFirstRW(mlp);
-      while ((flt_msg = flt_nxt_msg)) {
-         lListElem *flt_jid;
-         lListElem *flt_nxt_jid;
-         int found_msg, found_jid;
-
-         flt_nxt_msg = lNextRW(flt_msg);
-         found_msg = 0;
-         for_each_ep_lv(ref_msg, new_list) {
-            if (lGetUlong(ref_msg, MES_message_number) == lGetUlong(flt_msg, MES_message_number)) {
-               flt_nxt_jid = lFirstRW(lGetList(flt_msg, MES_job_number_list));
-               while ((flt_jid = flt_nxt_jid)) {
-                  flt_nxt_jid = lNextRW(flt_jid);
-
-                  found_jid = 0;
-                  for_each_ep_lv(ref_jid, lGetList(ref_msg, MES_job_number_list)) {
-                     if (lGetUlong(ref_jid, ULNG_value) ==
-                         lGetUlong(flt_jid, ULNG_value)) {
-                        lRemoveElem(lGetListRW(flt_msg, MES_job_number_list), &flt_jid);
-                        found_jid = 1;
-                        break;
-                     }
-                  }
-                  if (!found_jid) {
-                     lDechainElem(lGetListRW(flt_msg, MES_job_number_list), flt_jid);
-                     lAppendElem(lGetListRW(ref_msg, MES_job_number_list), flt_jid);
-                  }
-               }
-               found_msg = 1;
-            }
-         }
-         if (!found_msg) {
-            lDechainElem(mlp, flt_msg);
-            lAppendElem(new_list, flt_msg);
-         }
-         lSetList(sme, SME_message_list, new_list);
-         mlp = new_list;
-      }
-
-      text[0] = 0;
-      for_each_ep_lv(mes, mlp) {
-         lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
-
-         for_each_ep_lv(jid_ulng, lGetList(mes, MES_job_number_list)) {
-            int skip = 0;
-            int header = 0;
-
-            uint32_t mid = lGetUlong(mes, MES_message_number);
-            uint32_t jid = lGetUlong(jid_ulng, ULNG_value);
-
-            if (initialized) {
-               if (last_mid == mid && last_jid == jid) {
-                  skip = 1;
-               } else if (last_mid != mid) {
-                  header = 1;
-               }
-            } else {
-               initialized = 1;
-               header = 1;
-            }
-
-            if (strlen(text) >= MAX_LINE_LEN || ids_per_line >= MAX_IDS_PER_LINE || header) {
-               os << text;
-               text[0] = 0;
-               ids_per_line = 0;
-               first_row = 0;
-            }
-
-            if (header) {
-               if (!first_run) {
-                  os << "\n\n";
-               } else {
-                  first_run = 0;
-               }
-               os << sge_schedd_text(mid + SCHEDD_INFO_OFFSET) << "\n";
-               first_row = 1;
-            }
-
-            if (!skip) {
-               if (ids_per_line == 0) {
-                  if (first_row) {
-                     strcat(text, "\t");
-                  } else {
-                     strcat(text, ",\n\t");
-                  }
-               } else {
-                  strcat(text, ",\t");
-               }
-               snprintf(ltext, sizeof(ltext), sge_u32, jid);
-               strcat(text, ltext);
-               ids_per_line++;
-            }
-
-            last_jid = jid;
-            last_mid = mid;
-         }
-      }
-      if (text[0] != 0) {
-         os << text << "\n";
-      }
-   }
-
+   // -j without jid's is deprecated
    DRETURN_VOID;
 }
 
@@ -269,10 +98,9 @@ void ocs::QStatJobViewJSON::report_finished(std::ostream &os, QStatParameter &pa
    DRETURN_VOID;
 }
 
-
 void ocs::QStatJobViewJSON::report_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"jobs\": [\n";
+   os << ",\n" << std::string(indent * 3, ' ') << "\"jobs\": [";
    indent++;
    DRETURN_VOID;
 }
@@ -285,8 +113,37 @@ void ocs::QStatJobViewJSON::report_jobs_finished(std::ostream &os, QStatParamete
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewJSON::report_job_separator(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_job_started(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   if (first_attribute) {
+      os << "\n";
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{";
+   indent++;
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_job_finished(std::ostream &os, QStatParameter &parameter) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   first_attribute = true;
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewJSON::report_X_uint32(std::ostream &os, const lListElem *job, const int nm, const char *name) {
    DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, nm, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
    if (first_attribute) {
       os << "\n";
       first_attribute = false;
@@ -349,6 +206,26 @@ void ocs::QStatJobViewJSON::report_X_ISO_8601_timestamp(std::ostream &os, const 
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewJSON::report_X_task_ISO_8601_timestamp(std::ostream &os, const lListElem *job, const int nm,
+                                                             const char *name) {
+   DENTER(TOP_LAYER);
+   const uint64_t sec = lGetUlong64(job, nm);
+   if (sec == 0) {
+      DRETURN_VOID;
+   }
+
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": \"";
+   show_ISO_8601_timestamp(os, sec);
+   os << "\"";
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewJSON::report_submission_time(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    report_X_ISO_8601_timestamp(os, job, JB_submission_time, "submission_time");
@@ -374,14 +251,14 @@ void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os, c
       DRETURN_VOID;
    }
 
-   if (first_attribute) {
-      os << "\n";
-      first_attribute = false;
-   } else {
-      os << ",\n";
-   }
    char *copied_str = strdup(str);
    if (const char *command = strtok(copied_str, " "); command != nullptr) {
+      if (first_attribute) {
+         os << "\n";
+         first_attribute = false;
+      } else {
+         os << ",\n";
+      }
       dstring dstr_cmd = DSTRING_INIT;
       os << std::string(indent * 3, ' ') << "\"effective_submit_cmd_line\": " << raw2quotedJSON(
          job_get_effective_command_line(job, &dstr_cmd, command));
@@ -455,11 +332,15 @@ void ocs::QStatJobViewJSON::report_env_core(std::ostream &os, const lListElem *j
    os << std::string(indent * 3, ' ') << "\"environment_core\": [\n";
    indent++;
 
+   bool is_first = true;
    while (name[++i] != nullptr) {
       char fullname[MAX_STRING_SIZE];
       snprintf(fullname, sizeof(fullname), "%s%s", VAR_PREFIX, name[i]);
       if (const char *value = job_get_env_string(job, fullname)) {
-         if (i != 0) {
+         if (is_first) {
+            os << "\n";
+            is_first = false;
+         } else {
             os << ",\n";
          }
          os << std::string(indent * 3, ' ') << "{\n";
@@ -774,7 +655,7 @@ void ocs::QStatJobViewJSON::report_request_set_list(std::ostream &os, const lLis
 
 void ocs::QStatJobViewJSON::report_mail_options(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
-   if (const uint32_t mail_options =  lGetUlong(job, JB_mail_options)) {
+   if (const uint32_t mail_options = lGetUlong(job, JB_mail_options)) {
       dstring mailopt = DSTRING_INIT;
       sge_dstring_append_mailopt(&mailopt, mail_options);
 
@@ -820,7 +701,7 @@ void ocs::QStatJobViewJSON::report_mail_list(std::ostream &os, const lListElem *
       const char *user = lGetString(elem, MR_user);
       os << std::string(indent * 3, ' ') << "\"user\": " << raw2quotedJSON(user ? user : "") << ",\n";
       const char *host = lGetHost(elem, MR_host);
-      os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << ",\n";
+      os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << "\n";
 
       indent--;
       os << std::string(indent * 3, ' ') << "}";
@@ -851,7 +732,8 @@ void ocs::QStatJobViewJSON::report_priority(std::ostream &os, const lListElem *j
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"priority\": " << (static_cast<int>(lGetUlong(job, JB_priority)) - BASE_PRIORITY);
+   os << std::string(indent * 3, ' ') << "\"priority\": " << (
+      static_cast<int>(lGetUlong(job, JB_priority)) - BASE_PRIORITY);
    DRETURN_VOID;
 }
 
@@ -904,59 +786,11 @@ void ocs::QStatJobViewJSON::report_shell_list(std::ostream &os, const lListElem 
       const char *user = lGetString(elem, PN_path);
       os << std::string(indent * 3, ' ') << "\"path\": " << raw2quotedJSON(user ? user : "") << ",\n";
       const char *host = lGetHost(elem, PN_host);
-      os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << ",\n";
+      os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << "\n";
 
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    }
-
-   indent--;
-   os << "\n" << std::string(indent * 3, ' ') << "]";
-   DRETURN_VOID;
-}
-
-void ocs::QStatJobViewJSON::report_env_list(std::ostream &os, const lListElem *job) {
-   DENTER(TOP_LAYER);
-
-   lList *env_list = lGetListRW(job, JB_env_list);
-   if (env_list == nullptr) {
-      DRETURN_VOID;
-   }
-
-   lList *do_not_print = nullptr;
-   var_list_split_prefix_vars(&env_list, &do_not_print, VAR_PREFIX);
-
-   if (first_attribute) {
-      os << "\n";
-      first_attribute = false;
-   } else {
-      os << ",\n";
-   }
-   os << std::string(indent * 3, ' ') << "\"env_list\": [";
-   indent++;
-
-   bool is_first = true;
-   for_each_ep_lv(elem, env_list) {
-      if (is_first) {
-         os << "\n";
-         is_first = false;
-      } else {
-         os << ",\n";
-      }
-      os << std::string(indent * 3, ' ') << "{\n";
-      indent++;
-
-      const char *user = lGetString(elem, VA_variable);
-      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(user ? user : "") << ",\n";
-      if (const char *host = lGetString(elem, VA_value); host != nullptr) {
-         os << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(host ? host : "") << ",\n";
-      }
-
-      indent--;
-      os << std::string(indent * 3, ' ') << "}";
-   }
-
-   lAddList(env_list, &do_not_print);
 
    indent--;
    os << "\n" << std::string(indent * 3, ' ') << "]";
@@ -1003,7 +837,8 @@ void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const lListElem *j
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const lListElem *job, const int list_nm, const int value_nm, const char *name) {
+void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const lListElem *job, const int list_nm,
+                                                 const int value_nm, const char *name) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, list_nm, SGE_NO_ABORT) < 0) {
       DRETURN_VOID;
@@ -1031,7 +866,7 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const lListEl
          os << ",\n";
       }
       const char *value = lGetString(elem, value_nm);
-      os << std::string(indent * 3, ' ') << value;
+      os << std::string(indent * 3, ' ') << raw2quotedJSON(value ? value : "");
    }
 
    indent--;
@@ -1039,7 +874,8 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
-void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const lListElem *job, const int list_nm, const int value_nm, const char *name) {
+void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const lListElem *job, const int list_nm,
+                                                 const int value_nm, const char *name) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, list_nm, SGE_NO_ABORT) < 0) {
       DRETURN_VOID;
@@ -1074,6 +910,7 @@ void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const lListEl
    os << "\n" << std::string(indent * 3, ' ') << "]";
    DRETURN_VOID;
 }
+
 
 void ocs::QStatJobViewJSON::report_job_identifier_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
@@ -1163,5 +1000,611 @@ void ocs::QStatJobViewJSON::report_ja_ad_predecessor_list(std::ostream &os, cons
 void ocs::QStatJobViewJSON::report_ja_ad_successor_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    report_X_uint32_list(os, job, JB_ja_ad_successor_list, JRE_job_number, "ja_ad_successor_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_verify_suitable_queues(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_verify_suitable_queues, "verify_suitable_queues");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_soft_wallclock_gmt(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_ISO_8601_timestamp(os, job, JB_soft_wallclock_gmt, "soft_wallclock_gmt");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_hard_wallclock_gmt(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_ISO_8601_timestamp(os, job, JB_hard_wallclock_gmt, "hard_wallclock_gmt");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_version(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_version, "version");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_override_tickets(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_override_tickets, "override_tickets");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ar(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_ar, "ar_id");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_project(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string(os, job, JB_project, "project");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_department(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_string(os, job, JB_department, "department");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_sync_options(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_sync_options, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   const std::string sync_flags = job_get_sync_options_string(job);
+   os << std::string(indent * 3, ' ') << "\"sync_options\": " << raw2quotedJSON(sync_flags);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ja_structure(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_ja_structure, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   uint32_t start, end, step;
+   job_get_submit_task_ids(job, &start, &end, &step);
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"job_array_tasks\": {\n";
+   indent++;
+
+   os << std::string(indent * 3, ' ') << "\"start\": " << start << ",\n";
+   os << std::string(indent * 3, ' ') << "\"end\": " << end << ",\n";
+   os << std::string(indent * 3, ' ') << "\"step\": " << step << "\n";
+
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ja_task_concurrency(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_uint32(os, job, JB_ja_task_concurrency, "task_concurrency");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem *job, int nm, const char *name) {
+   DENTER(TOP_LAYER);
+
+   lList *env_list = lGetListRW(job, nm);
+   if (env_list == nullptr) {
+      DRETURN_VOID;
+   }
+
+   lList *do_not_print = nullptr;
+   var_list_split_prefix_vars(&env_list, &do_not_print, VAR_PREFIX);
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, env_list) {
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      os << std::string(indent * 3, ' ') << "{\n";
+      indent++;
+
+      const char *user = lGetString(elem, VA_variable);
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(user ? user : "");
+      if (const char *host = lGetString(elem, VA_value); host != nullptr) {
+         os << ",\n" << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(host ? host : "") << "\n";
+      } else {
+         os << "\n";
+      }
+
+      indent--;
+      os << std::string(indent * 3, ' ') << "}";
+   }
+
+   lAddList(env_list, &do_not_print);
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_env_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_env_list(os, job, JB_env_list, "env_list");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_ctx_list(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   report_X_env_list(os, job, JB_context, "context");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_binding(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_binding, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   const lListElem *binding_elem = lGetObject(job, JB_binding);
+   if (binding_elem == nullptr) {
+      DRETURN_VOID;
+   }
+   const uint32_t amount = lGetUlong(binding_elem, BN_amount);
+   const auto instance = static_cast<BindingInstance::Instance>(lGetUlong(binding_elem, BN_instance));
+   const char *sort = lGetString(binding_elem, BN_sort);
+   const auto start = static_cast<BindingStart::Start>(lGetUlong(binding_elem, BN_start));
+   const auto stop = static_cast<BindingStop::Stop>(lGetUlong(binding_elem, BN_stop));
+   const auto strategy = static_cast<BindingStrategy::Strategy>(lGetUlong(binding_elem, BN_strategy));
+   const auto type = static_cast<BindingType::Type>(lGetUlong(binding_elem, BN_new_type));
+   const auto unit = static_cast<BindingUnit::Unit>(lGetUlong(binding_elem, BN_unit));
+   const auto filter = lGetString(binding_elem, BN_filter);
+
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"binding\": {\n";
+   indent++;
+
+   os << std::string(indent * 3, ' ') << "\"bstrategy\": " << raw2quotedJSON(BindingStrategy::to_string(strategy)) <<
+         ",\n";
+   os << std::string(indent * 3, ' ') << "\"amount\": " << amount << ",\n";
+   os << std::string(indent * 3, ' ') << "\"bunit\": " << raw2quotedJSON(BindingUnit::to_string(unit)) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"btype\": " << raw2quotedJSON(BindingType::to_string(type)) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"bfilter\": " << raw2quotedJSON(filter ? filter : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"bsort\": " << raw2quotedJSON(sort ? sort : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"bstart\": " << raw2quotedJSON(BindingStart::to_string(start)) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"bstop\": " << raw2quotedJSON(BindingStop::to_string(stop)) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"binstance\": " << raw2quotedJSON(BindingInstance::to_string(instance)) <<
+         "\n";
+
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_list_started(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   os << ",\n" << std::string(indent * 3, ' ') << "\"array_tasks\": [";
+   indent++;
+   first_task = true;
+   first_task_attribute = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_list_finished(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_started(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (first_task) {
+      os << "\n";
+      first_task = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "{\n";
+   indent++;
+   first_task_attribute = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_finished(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   os << "\n";
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+   first_task_attribute = true;
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_id(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   const uint32_t task_id = lGetUlong(task, JAT_task_number);
+   os << std::string(indent * 3, ' ') << "\"task_id\": " << task_id;
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_state(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+
+   char state_string[8];
+   const uint32_t state = jatask_combine_state_and_status_for_output(job, task);
+   job_get_state_string(state_string, state);
+
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"job_state\": " << raw2quotedJSON(state_string);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_usage(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   /* jobs whose job start orders were not processed to the end due to a qmaster/schedd collision appear
+    * in the JB_ja_tasks list but are not running - thus we may not print usage for those */
+   if (lGetUlong(task, JAT_status) != JRUNNING && lGetUlong(task, JAT_status) != JTRANSFERING) {
+      DRETURN_VOID;
+   }
+
+   // Collect data
+   Usage usage = {};
+   accumulate_usage(task, usage);
+
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"usage\": {\n";
+   indent++;
+
+   os << std::string(indent * 3, ' ') << "\"wallclock\": " << usage.wallclock;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"cpu\": " << usage.cpu;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"mem\": " << usage.mem;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"io\": " << usage.io;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"ioops\": " << usage.ioops;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"iow\": " << usage.iow;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"vmem\": " << usage.vmem;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"maxvmem\": " << usage.maxvmem;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"maxrss\": " << usage.maxrss;
+   if (usage.have_mem_details) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"pss\": " << usage.pss;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"maxpss\": " << usage.maxpss;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"pmem\": " << usage.pmem;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"smem\": " << usage.smem;
+   }
+   os << "\n";
+
+   indent--;
+   os << std::string(indent * 3, ' ') << "}";
+
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os, const lListElem *job,
+                                                          const lListElem *task) {
+   DENTER(TOP_LAYER);
+
+   const lList *list = lGetListRW(task, JAT_granted_resources_list);
+   if (list == nullptr) {
+      DRETURN_VOID;
+   }
+
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"exec_binding_list\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, list) {
+      if (const char *name = lGetString(elem, GRU_name); name == nullptr || strcmp(name, SGE_ATTR_SLOTS) != 0) {
+         continue;
+      }
+
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      os << std::string(indent * 3, ' ') << "{\n";
+      indent++;
+
+      const char *hostname = lGetHost(elem, GRU_host);
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(hostname ? hostname : "") << ",\n";
+      os << std::string(indent * 3, ' ') << "\"binding\": [\n";
+      indent++;
+      const lList *binding_in_use_list = lGetList(elem, GRU_binding_inuse);
+      bool first_binding = true;
+      for_each_ep_lv(binding_in_use, binding_in_use_list) {
+         if (first_binding) {
+            first_binding = false;
+         } else {
+            os << ",\n";
+         }
+         TopologyString topo_in_use(lGetString(binding_in_use, ST_name));
+         os << std::string(indent * 3, ' ') << "\"" << topo_in_use.to_product_topology_string() << "\"";
+      }
+      indent--;
+      os << "\n" << std::string(indent * 3, ' ') << "]";
+      indent--;
+      os << "\n" << std::string(indent * 3, ' ') << "}";
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_X_task_str_uint32_list(std::ostream &os, const lListElem *task, const int nm,
+                                                          const char *name,
+                                                          const int str_nm, const char *str_name, const int uint32_nm,
+                                                          const char *uint32_name) {
+   DENTER(TOP_LAYER);
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, lGetList(task, nm)) {
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      os << std::string(indent * 3, ' ') << "{\n";
+      indent++;
+
+      const char *string = lGetString(elem, str_nm);
+      os << std::string(indent * 3, ' ') << "\"" << str_name << "\": " << raw2quotedJSON(string ? string : "") << ",\n";
+      const uint32_t value = lGetUlong(elem, uint32_nm);
+      os << std::string(indent * 3, ' ') << "\"" << uint32_name << "\": " << value << "\n";
+
+      indent--;
+      os << std::string(indent * 3, ' ') << "}";
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   report_X_task_str_uint32_list(os, task, JAT_granted_destin_identifier_list, "granted_queue_list", JG_qname,
+                                 "queue_name", JG_slots, "slots");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+
+   if (lGetPosViaElem(task, JAT_granted_destin_identifier_list, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+
+   lList *gdil_org = lGetListRW(task, JAT_granted_destin_identifier_list);
+   lList *gdil_unique = gdil_make_host_unique(gdil_org);
+
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"exec_host_list\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, gdil_unique) {
+      if (is_first) {
+         os << "\n";
+         is_first = false;
+      } else {
+         os << ",\n";
+      }
+      os << std::string(indent * 3, ' ') << "{\n";
+      indent++;
+
+      const char *string = lGetHost(elem, JG_qhostname);
+      os << std::string(indent * 3, ' ') << "\"hostname\": " << raw2quotedJSON(string ? string : "") << ",\n";
+      const uint32_t value = lGetUlong(elem, JG_slots);
+      os << std::string(indent * 3, ' ') << "\"slots\": " << value << "\n";
+
+      indent--;
+      os << std::string(indent * 3, ' ') << "}";
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+
+   lFreeList(&gdil_unique);
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   report_X_task_ISO_8601_timestamp(os, task, JAT_start_time, "start_time");
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"resource_map\": [";
+   indent++;
+
+   /* go through all RSMAP resources for the particular task and create a string */
+   bool is_first_remap = true;
+   for_each_ep_lv(resu, lGetList(task, JAT_granted_resources_list)) {
+      if (static_cast<GrantedResources::Type>(lGetUlong(resu, GRU_type)) ==
+          GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+         const char *name = lGetString(resu, GRU_name);
+         const char *host = lGetHost(resu, GRU_host);
+         const lList *ids = lGetList(resu, GRU_resource_map_list);
+
+         if (name != nullptr && ids != nullptr && host != nullptr) {
+            if (is_first_remap) {
+               is_first_remap = false;
+               os << "\n";
+            } else {
+               os << ",\n";
+            }
+            os << std::string(indent * 3, ' ') << "{\n";
+            indent++;
+
+            os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
+            os << std::string(indent * 3, ' ') << "\"hostname\": " << raw2quotedJSON(host) << ",\n";
+            os << std::string(indent * 3, ' ') << "\"rsmap_ids\": [";
+            indent++;
+            u_int32_t total_amount = 0;
+            bool first_id = true;
+            for_each_ep_lv(id, ids) {
+               const char *id_string = lGetString(id, RESL_value);
+               const uint32_t amount = lGetUlong(id, RESL_amount);
+
+               total_amount += amount;
+               for (uint32_t i = 0; i < amount; i++) {
+                  if (first_id) {
+                     os << "\n";
+                     first_id = false;
+                  } else {
+                     os << ",\n";
+                  }
+                  os << std::string(indent * 3, ' ') << raw2quotedJSON(id_string ? id_string : "");
+               }
+            }
+            indent--;
+            os << "\n" << std::string(indent * 3, ' ') << "],";
+            os << "\n" << std::string(indent * 3, ' ') << "\"total_amount\": " << total_amount;
+            indent--;
+            os << "\n" << std::string(indent * 3, ' ') << "}";
+         }
+      }
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) {
+   DENTER(TOP_LAYER);
+   if (first_task_attribute) {
+      os << "\n";
+      first_task_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"error_reason\": [";
+   indent++;
+
+   bool is_first = true;
+   for_each_ep_lv(elem, lGetList(task, JAT_message_list)) {
+      if (const char *message = lGetString(elem, QIM_message)) {
+         if (is_first) {
+            os << "\n";
+            is_first = false;
+         } else {
+            os << ",\n";
+         }
+         os << std::string(indent * 3, ' ') << raw2quotedJSON(message);
+      }
+   }
+
+   indent--;
+   os << "\n" << std::string(indent * 3, ' ') << "]";
+
+   DRETURN_VOID;
+}
+
+void ocs::QStatJobViewJSON::report_schedd_job_info(std::ostream &os, const lList *ilp, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (const lListElem *sme = lFirst(ilp); sme != nullptr) {
+      // Local lambda to print a message with correct prefix/indent
+      bool first_run = true;
+      auto print_sched_message = [&](const char *msg) {
+         os << ",\n";
+         if (first_run) {
+            os << std::string(indent * 3, ' ') << "\"scheduling_info\": [\n";
+            indent++;
+            first_run = false;
+         }
+         os << std::string(indent * 3, ' ') << raw2quotedJSON(msg ? msg : "");
+      };
+
+      /* global scheduling info */
+      for_each_ep_lv(mes, lGetList(sme, SME_global_message_list)) {
+         print_sched_message(lGetString(mes, MES_message));
+      }
+
+      /* job scheduling info */
+      const uint32_t jid = lGetUlong(job, JB_job_number);
+      for_each_ep_lv(mes, lGetList(sme, SME_message_list)) {
+         for_each_ep_lv(mes_jid, lGetList(mes, MES_job_number_list)) {
+            if (lGetUlong(mes_jid, ULNG_value) == jid) {
+               print_sched_message(lGetString(mes, MES_message));
+            }
+         }
+      }
+      if (!first_run) {
+         indent--;
+         os << "\n" << std::string(indent * 3, ' ') << "]";
+      }
+   }
    DRETURN_VOID;
 }

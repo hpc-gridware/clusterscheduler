@@ -53,6 +53,7 @@
 #include "msg_qstat.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_qref.h"
+#include "sgeobj/cull/sge_message_SME_L.h"
 
 ocs::QStatModelBase::~QStatModelBase() {
    lFreeList(&queue_list_);
@@ -653,6 +654,84 @@ lCondition *ocs::QStatModelBase::get_conf_where() {
 
 lEnumeration *ocs::QStatModelBase::get_conf_what() {
    return lWhat("%T(ALL)", CONF_Type);
+}
+
+lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) {
+   lCondition *where = nullptr;
+
+   for_each_ep_lv(j_elem, job_view_list) {
+      const char *job_name = lGetString(j_elem, ST_name);
+      lCondition *new_where;
+
+      if (isdigit(job_name[0])) {
+         uint32_t jid = atol(lGetString(j_elem, ST_name));
+         new_where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jid);
+      } else {
+         new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
+      }
+      if (new_where) {
+         if (!where) {
+            where = new_where;
+         } else {
+            where = lOrWhere(where, new_where);
+         }
+      }
+   }
+   return where;
+}
+lEnumeration *ocs::QStatModelBase::get_sme_what() {
+   return lWhat("%T(ALL)", SME_Type);
+}
+
+lEnumeration *ocs::QStatModelBase::get_job_view_what() {
+   lEnumeration *what = lWhat( "%T(%I%I%I%I"
+                                   "%I%I%I%I%I"
+                                   "%I%I%I%I"
+                                   "%I%I%I%I"
+                                   "%I%I%I"
+
+                                   "%I%I%I"
+                                   "%I->%T(%I%I%I"
+                                   "%I%I%I%I"
+                                   "%I%I%I"
+                                   "%I)%I"
+
+                                   "%I%I%I->%T"
+                                   "(%I)%I->%T(%I)%I"
+                                   "%I%I%I%I%I"
+                                   "%I%I%I%I"
+                                   "%I%I%I%I%I"
+
+                                   "%I%I%I"
+                                   "%I%I%I%I%I"
+                                   "%I%I%I%I"
+                                   "%I%I%I%I%I"
+                                   "%I%I)",
+
+            JB_Type, JB_job_number, JB_ar, JB_exec_file, JB_submission_time,
+            JB_submission_command_line, JB_owner, JB_uid, JB_group, JB_gid,
+            JB_account, JB_merge_stderr, JB_mail_list, JB_project,
+            JB_department, JB_notify, JB_job_name, JB_stdout_path_list,
+            JB_jobshare, JB_request_set_list, JB_shell_list,
+
+            JB_env_list, JB_job_args, JB_script_file,
+            JB_ja_tasks, JAT_Type, JAT_state, JAT_status, JAT_hold,
+            JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted, JAT_task_list,
+            JAT_message_list, JAT_start_time, JAT_granted_resources_list,
+            JAT_granted_destin_identifier_list, JB_context,
+
+            JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, JRE_Type,
+            JRE_job_number, JB_jid_successor_list, JRE_Type, JRE_job_number, JB_deadline,
+            JB_execution_time, JB_checkpoint_name, JB_checkpoint_attr, JB_checkpoint_interval, JB_directive_prefix,
+            JB_reserve, JB_mail_options, JB_stdin_path_list, JB_priority,
+            JB_restart, JB_verify, JB_script_size, JB_pe, JB_pe_range,
+
+            JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
+            JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version, JB_ja_structure,
+            JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+            JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases, JB_ja_ad_predecessor_list,
+            JB_ja_ad_request_list, JB_ja_ad_successor_list);
+   return what;
 }
 
 void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {

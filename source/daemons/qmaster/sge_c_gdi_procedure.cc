@@ -318,7 +318,7 @@ namespace {
          {to_string_view(QSTAT), to_string_view(QSELECT), &run_procedure<QStatSelectTraits>},
          {to_string_view(QSTAT), ocs::QStatParameter::DEFAULT_FORMAT, &run_procedure<QStatDefaultTraits>},
          {to_string_view(QSTAT), ocs::QStatParameter::CQ_FORMAT, &run_procedure<QStatCQFormatTraits>},
-         {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatSelectTraits>},
+         {to_string_view(QSTAT), ocs::QStatParameter::JOB_FORMAT, &run_procedure<QStatJobTraits>},
       }
    };
 } // namespace

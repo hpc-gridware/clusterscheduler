@@ -21,7 +21,7 @@
 
 #include "cull/cull.h"
 
-#include "qstat/job/ocs_QStatJobModel.h"
+#include "qstat/ocs_QStatModelBase.h"
 #include "qstat/ocs_QStatParameter.h"
 
 #include "ocs_QStatJobViewBase.h"
@@ -36,6 +36,6 @@ namespace ocs {
 
       virtual ~QStatJobController() = default;
 
-      virtual void process_request(QStatParameter &parameter, QStatJobModel &model, QStatJobViewBase &view);
+      virtual void process_request(QStatParameter &parameter, QStatModelBase &model, QStatJobViewBase &view);
    };
 }
