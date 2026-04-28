@@ -170,6 +170,7 @@ namespace ocs::uti {
       static bool is_openssl_available() { return libssl_handle != nullptr; }
       static bool build_cert_path(std::string &cert_path, const char *home_dir, const char *hostname, const char *comp_name);
       static bool build_key_path(std::string &key_path, const char *home_dir, const char *hostname, u_long32 port, const char *comp_name);
+      static const char *get_error_message();
 
       // sub-classes
       class OpenSSLContext {
@@ -186,7 +187,7 @@ namespace ocs::uti {
          OpenSSLContext(bool is_server, SSL_CTX *ssl_ctx, std::filesystem::path(cert_path), std::filesystem::path(key_path))
          : is_server(is_server), renewal_time(0), connection_count(0), ssl_ctx(ssl_ctx), cert_path{cert_path}, key_path {key_path} {}
 
-         bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs);
+         bool verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) const;
          bool certificate_recreate_required(dstring *error_dstr);
 
          bool configure_server_context(dstring *error_dstr, bool is_recreate);
@@ -197,7 +198,7 @@ namespace ocs::uti {
       public:
          static OpenSSLContext *create(dstring *error_dstr);
          static OpenSSLContext *create(const OpenSSLContext *source, dstring *error_dstr, bool is_recreate);
-         static OpenSSLContext *create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr, bool is_recreate);
+         static OpenSSLContext *create(bool is_server, const std::string &cert_path, const std::string &key_path, dstring *error_dstr, bool is_recreate);
          static void mark_context_for_deletion(OpenSSLContext *context);
 
          ~OpenSSLContext();
@@ -206,10 +207,10 @@ namespace ocs::uti {
          void inc_connection_count() { connection_count++; }
          void dec_connection_count() { connection_count--; delete_no_longer_used_contexts(); }
          SSL_CTX *get_SSL_CTX() { return ssl_ctx; }
-         const char *get_cert();
+         const char *get_cert() const;
          const char *get_cert_file() { return cert_path.c_str(); }
          u_long64 get_renewal_time() { return renewal_time; }
-         bool certificate_recreate_required();
+         bool certificate_recreate_required() const;
          bool is_cert_file_updated();
       };
 
@@ -223,7 +224,7 @@ namespace ocs::uti {
          // private constructor, use the create() method
          OpenSSLConnection(OpenSSLContext *context, bool is_server, SSL *ssl)
          : context(context), is_server(is_server), ssl(ssl), fd(-1), repeat_write(false) { context->inc_connection_count(); }
-         bool wait_for_socket_ready(int reason, dstring *error_dstr);
+         bool wait_for_socket_ready(int reason, dstring *error_dstr) const;
 
       public:
          static OpenSSLConnection *create(OpenSSLContext *context, dstring *error_dstr);
@@ -231,10 +232,10 @@ namespace ocs::uti {
 
          SSL *get_ssl() { return ssl; } // @todo remove it
          bool set_fd(int new_fd, dstring *error_dstr);
-         bool accept(dstring *error_dstr); // server side
-         bool set_server_name_for_sni(const char *server_name, dstring *error_dstr); // client side
-         bool connect(dstring *error_dstr);
-         int read(char *buffer, size_t max_len, dstring *error_dstr);
+         bool accept(dstring *error_dstr) const; // server side
+         bool set_server_name_for_sni(const char *server_name, dstring *error_dstr) const; // client side
+         bool connect(dstring *error_dstr) const;
+         int read(char *buffer, size_t max_len, dstring *error_dstr) const;
          int write(char *buffer, size_t len, dstring *error_dstr);
          bool repeat_write_required() { return repeat_write; }
       };

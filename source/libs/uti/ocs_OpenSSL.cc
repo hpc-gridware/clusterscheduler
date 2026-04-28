@@ -25,8 +25,9 @@
 #include <dlfcn.h>
 #include <libgen.h>
 
-#include "uti/ocs_Bootstrap.h"
 #include "uti/msg_utilib.h"
+#include "uti/ocs_Bootstrap.h"
+#include "uti/sge_bootstrap_env.h"
 #include "uti/sge_component.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -35,9 +36,6 @@
 
 #include "ocs_OpenSSL.h"
 
-#include <ocs_OpenSSL.h>
-#include <sge_bootstrap_env.h>
-#include <sge_string.h>
 
 #if defined(OCS_WITH_OPENSSL)
 
@@ -645,7 +643,7 @@ namespace ocs::uti {
       }
 
       if (ret) {
-         // this should actually not be necessary, unless we want to change the default settings
+         // this should actually not be necessary unless we want to change the default settings
          if (!OPENSSL_init_ssl_func(0, nullptr)) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_INIT_FAILED);
             ret = false;
@@ -680,6 +678,23 @@ namespace ocs::uti {
    }
 
    /**
+    * @brief Get OpenSSL error message
+    *
+    * Retrieves the currently valid OpenSSL error via ERR_get_error() and the corresponding error
+    * message. If the error message is nullptr (there was no error reported by OpenSSL?),
+    * then return a static string.
+    *
+    * @return the OpenSSL error message or "not an OpenSSL error"
+    */
+   const char *OpenSSL::get_error_message() {
+      const char *ret = ERR_reason_error_string_func(ERR_get_error_func());
+      if (ret == nullptr) {
+         ret = "not an OpenSSL error";
+      }
+      return ret;
+   }
+
+   /**
     * @brief Constructs the filesystem path for storing an SSL certificate.
     *
     * This function builds the path where an SSL certificate should be stored based on
@@ -689,7 +704,7 @@ namespace ocs::uti {
     *   $SGE_ROOT/$SGE_CELL/common/certs/component_hostname.pem
     *
     * - For user processes we currently generate certificates and key on the fly and only in memory.
-    *   Once we implement CS-1576 cache the per user certificate used by qrsh for the IJS connection
+    *   Once we implement CS-1576 cache the per-user certificate used by qrsh for the IJS connection,
     *   we will store certificates and keys in the user's homedirectory, in directories below a
     *   `.ocs` directory, e.g., $HOME/.ocs/certs/component_hostname.pem
     *
@@ -739,8 +754,8 @@ namespace ocs::uti {
     *   /var/lib/ocs/<port>/private/component_hostname.pem
     *   If port is 0, it's omitted from the path.
     *
-    * - For user processes we currently generate certificates and key on the fly and only in memory.
-    *   Once we implement CS-1576 cache the per user certificate used by qrsh for the IJS connection
+    * - For user processes we currently generate the certificates and keys on the fly and only in memory.
+    *   Once we implement CS-1576 cache the per-user certificate used by qrsh for the IJS connection,
     *   we will store certificates and keys in the user's homedirectory, in directories below a
     *   `.ocs` directory, e.g., $HOME/.ocs/private/component_hostname.pem
     *
@@ -750,7 +765,7 @@ namespace ocs::uti {
     * @param port Port number to include in the path (daemon only), or 0 to omit
     * @param comp_name The component name (e.g., "qmaster", "execd") to include in the filename
     *
-    * @return true if path was successfully constructed, false if required parameters are nullptr
+    * @return true if a path was successfully constructed, false if required parameters are nullptr
     *
     * @note Private keys are stored in directories with restricted permissions (700).
     * @see build_cert_path()
@@ -802,7 +817,7 @@ namespace ocs::uti {
     *
     * @return true if directories exist or were successfully created, false on error
     */
-   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) {
+   bool OpenSSL::OpenSSLContext::verify_create_directories(bool switch_user, bool called_as_root, dstring *error_dstr, bool &created_dirs) const {
       DENTER(TOP_LAYER);
       bool ret = true;
 
@@ -882,7 +897,7 @@ namespace ocs::uti {
     * @note This version does not read the certificate file; it only checks cached renewal time.
     * @see certificate_recreate_required(dstring*)
     */
-   bool OpenSSL::OpenSSLContext::certificate_recreate_required() {
+   bool OpenSSL::OpenSSLContext::certificate_recreate_required() const {
       DENTER(TOP_LAYER);
 
       bool ret = false;
@@ -983,7 +998,7 @@ namespace ocs::uti {
          const ASN1_TIME *notAfter = X509_get0_notAfter_func(cert);
 
          // Diff between notAfter and current time.
-         // ==> If from or to is nullptr the current time is used.
+         // ==> If from or to is nullptr, the current time is used.
          if (ASN1_TIME_diff_func(&days_left, &secs_left, nullptr, notAfter) != 1) {
             sge_dstring_sprintf(error_dstr, SFNMAX, MSG_OPENSSL_CANNOT_CALC_DIFF_TIME);
             // We cannot calculate the diff?
@@ -1040,11 +1055,11 @@ namespace ocs::uti {
     * - Renewal scheduled at 75% of lifetime
     *
     * User switching for daemons:
-    * - Switches to admin user for writing certificates (may be on NFS)
+    * - Switches to admin user for writing certificates (can be on NFS)
     * - Switches to root for writing private keys (/var/lib/ocs)
     *
     * @param error_dstr Output parameter for error messages
-    * @param is_recreate Is this the re-create of an existing certificate?
+    * @param is_recreate Is this the re-creation of an existing certificate?
     *
     * @return true if server context was successfully configured, false on error
     *
@@ -1058,12 +1073,12 @@ namespace ocs::uti {
       bool ret = true;
 
       // When we are starting as root and creating a daemon certificate
-      // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/private
+      // in $SGE_ROOT/$SGE_CELL/common/certs and /var/lib/ocs/private,
       // we need to be root to write the key.
       // But as root we might not be able to create directories or files in $SGE_ROOT,
       // so we need to switch to admin user.
-      // When we are renewing certificates during qmaster/execd run time, we are admin user,
-      // so we need to switch to the start user (root) for writing the key and back to admin user
+      // When we are renewing certificates during qmaster/execd run time, we are the admin user,
+      // so we need to switch to the start user (root) for writing the key and back to the admin user
       // to write the cert file.
       // OTOH when running qrsh as root, we write the certificate and key in $HOME/.ocs
       // and need to be root to write there.
@@ -1194,13 +1209,13 @@ namespace ocs::uti {
 
          if (ret) {
             if (SSL_CTX_use_certificate_func(ssl_ctx, x509) <= 0) {
-               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_X509_S, ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_X509_S, get_error_message());
                ret = false;
             }
          }
          if (ret) {
             if (SSL_CTX_use_PrivateKey_func(ssl_ctx, pkey) <= 0) {
-               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S, ERR_reason_error_string_func(ERR_get_error_func()));
+               sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_KEY_PKEY_S, get_error_message());
                ret = false;
             }
          }
@@ -1226,7 +1241,7 @@ namespace ocs::uti {
             // We can read this file, as admin user and as root.
             if (SSL_CTX_use_certificate_chain_file_func(ssl_ctx, cert_path.c_str()) <= 0) {
                sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS, cert_path.c_str(),
-                                   ERR_reason_error_string_func(ERR_get_error_func()));
+                                   get_error_message());
                ret = false;
             }
          }
@@ -1239,7 +1254,7 @@ namespace ocs::uti {
             }
             if (SSL_CTX_use_PrivateKey_file_func(ssl_ctx, key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
                sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_KEY_FILE_SS, key_path.c_str(),
-                                   ERR_reason_error_string_func(ERR_get_error_func()));
+                                   get_error_message());
                ret = false;
             }
             if (switch_user && !called_as_root) {
@@ -1275,7 +1290,7 @@ namespace ocs::uti {
       if (cert_path.empty()) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_OPENSSL_EMPTY_CERT_PATH);
          ret = false;
-         // We could instead disable certificate verification by setting verify func SSL_VERIFY_NONE.
+         // We could instead disable certificate verification by setting the verify-func SSL_VERIFY_NONE.
          // SSL_CTX_set_verify_func(ssl_ctx, SSL_VERIFY_NONE, nullptr);
       } else {
          // clear previously occurred but not yet fetched errors
@@ -1293,7 +1308,7 @@ namespace ocs::uti {
           */
          if (!SSL_CTX_load_verify_locations_func(ssl_ctx, cert_path.c_str(), nullptr)) {
             sge_dstring_sprintf(error_dstr, MSG_OPENSSL_CANNOT_USE_CERT_FILE_SS, cert_path.c_str(),
-                                ERR_reason_error_string_func(ERR_get_error_func()));
+                                get_error_message());
             ret = false;
          }
       }
@@ -1484,7 +1499,7 @@ namespace ocs::uti {
        * @note This is the most flexible create method - others delegate to this one.
        * @note Caller is responsible for deleting the returned context.
        */
-      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, std::string &cert_path, std::string &key_path, dstring *error_dstr, bool is_recreate) {
+      OpenSSL::OpenSSLContext * OpenSSL::OpenSSLContext::create(bool is_server, const std::string &cert_path, const std::string &key_path, dstring *error_dstr, bool is_recreate) {
       DENTER(TOP_LAYER);
       OpenSSLContext *ret{nullptr};
 
@@ -1494,7 +1509,7 @@ namespace ocs::uti {
       ERR_clear_error_func();
 
       // prepare object parameters
-      SSL_CTX *ssl_ctx;
+      SSL_CTX *ssl_ctx = nullptr;
       if (ok) {
          const SSL_METHOD *method;
          if (is_server) {
@@ -1504,7 +1519,7 @@ namespace ocs::uti {
          }
          ssl_ctx = SSL_CTX_new_func(method);
          if (ssl_ctx == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_CREATE_SSL_CONTEXT_S, ERR_reason_error_string_func(ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_CREATE_SSL_CONTEXT_S, get_error_message());
             ok = false;
          }
       }
@@ -1551,7 +1566,7 @@ namespace ocs::uti {
     * @note Caller is responsible for freeing the returned string using sge_free().
     * @note The returned string is null-terminated and suitable for transmission or display.
     */
-   const char *OpenSSL::OpenSSLContext::get_cert() {
+   const char *OpenSSL::OpenSSLContext::get_cert() const {
       DENTER(TOP_LAYER);
       char *ret = nullptr;
 
@@ -1564,7 +1579,7 @@ namespace ocs::uti {
                ret = sge_malloc(size + 1);
                if (ret != nullptr) {
                   memset(ret, 0, size + 1);
-                  BIO_read_func(bio, ret, size);
+                  BIO_read_func(bio, ret, static_cast<int>(size));
                }
             }
             BIO_free_func(bio);
@@ -1608,11 +1623,11 @@ namespace ocs::uti {
       ERR_clear_error_func();
 
       // initialize the SSL connection
-      SSL *ssl;
+      SSL *ssl = nullptr;
       if (ok) {
          ssl = OpenSSL::SSL_new_func(context->get_SSL_CTX());
          if (ssl == nullptr) {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_CREATE_SSL_S, OpenSSL::ERR_reason_error_string_func(OpenSSL::ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_CREATE_SSL_S, OpenSSL::get_error_message());
             ok = false;
          }
       }
@@ -1671,7 +1686,7 @@ namespace ocs::uti {
     *                Which is tricky, e.g., when waiting for accept or connect to continue, we may not
     *               repeat the TCP accept() or connect() operation, just take up the interrupted connection again.
     */
-   bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLConnection::wait_for_socket_ready(int reason, dstring *error_dstr) const {
       // wait until the socket is ready for read or write
       DENTER(TOP_LAYER);
 
@@ -1705,7 +1720,7 @@ namespace ocs::uti {
          }
          if (ret) {
             // @todo CS-1579 make timeout configurable
-            struct timeval tv;
+            struct timeval tv{};
             tv.tv_sec = 1;
             tv.tv_usec = 0;
             int select_ret = select(fd + 1, read_fds, write_fds, nullptr, &tv);
@@ -1784,7 +1799,7 @@ namespace ocs::uti {
       }
       if (ret) {
          if (!SSL_set_fd_func(ssl, fd)) {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_SET_FD_S, ERR_reason_error_string_func(ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_SET_FD_S, get_error_message());
             ret = false;
          }
       }
@@ -1816,7 +1831,7 @@ namespace ocs::uti {
     * @note On non-blocking sockets, returning 0 is normal and not an error.
     * @note SSL protocol data is handled transparently (does not appear in the buffer).
     */
-   int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) {
+   int OpenSSL::OpenSSLConnection::read(char *buffer, size_t max_len, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       DPRINTF("OpenSSLConnection::read()\n");
@@ -1840,8 +1855,7 @@ namespace ocs::uti {
             // The fact that SSL_read() returns SSL_ERROR_WANT_READ is somewhat misleading in this case.
             ret = 0;
          } else {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_READ_DS, err,
-                                ERR_reason_error_string_func(ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_READ_DS, err, get_error_message());
             ret = -1;
          }
       }
@@ -1898,8 +1912,7 @@ namespace ocs::uti {
             repeat_write = true;
             ret = 0;
          } else {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_WRITE_DS, err,
-                                ERR_reason_error_string_func(ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_WRITE_DS, err, get_error_message());
             ret = -1;
          }
       }
@@ -1932,10 +1945,10 @@ namespace ocs::uti {
     * @note On non-blocking sockets, this function handles retries internally.
     * @todo CS-1679 Make timeout configurable.
     */
-#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER 1 * 1000000 // 1 second
-#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT 10 * 1000000 // 10 seconds
+#define SGE_OPENSSL_RETRY_TIMEOUT_SERVER (1 * 1000000) // 1 second
+#define SGE_OPENSSL_RETRY_TIMEOUT_CLIENT (10 * 1000000) // 10 seconds
 
-   bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) {
+   bool OpenSSL::OpenSSLConnection::accept(dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = ssl != nullptr;
@@ -1973,8 +1986,7 @@ namespace ocs::uti {
                      }
                   }
                } else {
-                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err,
-                                      ERR_reason_error_string_func(ERR_get_error_func()));
+                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_ACCEPT_DS, err, get_error_message());
                   DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
                   ret = false;
                }
@@ -2008,7 +2020,7 @@ namespace ocs::uti {
     * @note Must be called before connect() to be included in the handshake.
     * @note The hostname is used both for SNI and for certificate hostname verification.
     */
-   bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) {
+   bool OpenSSL::OpenSSLConnection::set_server_name_for_sni(const char *server_name, dstring *error_dstr) const {
       DENTER(TOP_LAYER);
       bool ret = ssl != nullptr;
 
@@ -2022,7 +2034,7 @@ namespace ocs::uti {
          SSL_ctrl_func(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, (void *)server_name);
          /* Configure server hostname check */
          if (!SSL_set1_host_func(ssl, server_name)) {
-            sge_dstring_sprintf(error_dstr, MSG_CANNOT_SET_SERVERNAME_S, ERR_reason_error_string_func(ERR_get_error_func()));
+            sge_dstring_sprintf(error_dstr, MSG_CANNOT_SET_SERVERNAME_S, get_error_message());
             ret = false;
          }
       }
@@ -2056,7 +2068,7 @@ namespace ocs::uti {
     * @note Client timeout (10s) is longer than server timeout (1s) to accommodate network delays.
     * @todo CS-1679 Make timeout configurable.
     */
-   bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) {
+   bool OpenSSL::OpenSSLConnection::connect(dstring *error_dstr) const {
       DENTER(TOP_LAYER);
 
       bool ret = ssl != nullptr;
@@ -2097,8 +2109,7 @@ namespace ocs::uti {
                      }
                   }
                } else {
-                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err,
-                                      ERR_reason_error_string_func(ERR_get_error_func()));
+                  sge_dstring_sprintf(error_dstr, MSG_CANNOT_CONNECT_DS, err, get_error_message());
                   DPRINTF("  --> got error: %d: %s\n", err, sge_dstring_get_string(error_dstr));
                   ret = false;
                }
