@@ -41,33 +41,26 @@ extern char **environ;
 
 bool
 ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, lList **ppcmdline, lList **alpp) {
-   bool ret = true;
-
    DENTER(TOP_LAYER);
+
+   bool ret = true;
 
    if (ppcmdline == nullptr) {
       ret = false;
    } else {
       if (!sge_is_file(file)) {
-         /*
-          * This is no error
-          */
          DPRINTF("file " SFQ " does not exist\n", file);
       } else {
-         char *file_as_string = nullptr;
          int file_as_string_length;
-
-         file_as_string = sge_file2string(file, &file_as_string_length);
-         if (file_as_string == nullptr) {
-            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN,
-                                    ANSWER_QUALITY_ERROR,
-                                    MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
-            ret = false;
-         } else {
-            const char **token = nullptr;
-
-            token = (const char **)stra_from_str(file_as_string, " \n\t");
+         char *file_as_string = sge_file2string(file, &file_as_string_length);
+         if (file_as_string != nullptr) {
+            auto token = const_cast<const char **>(stra_from_str(file_as_string, " \n\t"));
             *alpp = cull_parse_cmdline(QRSTAT, token, environ, ppcmdline, FLG_USE_PSEUDOS);
+            sge_free(&file_as_string);
+            sge_free(&token);
+         } else {
+            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
+            ret = false;
          }
       }
    }
