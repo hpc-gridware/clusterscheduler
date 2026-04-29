@@ -73,7 +73,7 @@ void ocs::QRStatViewXML::report_ar_node_duration(std::ostream &os, const char *n
    os << "      <" << name << ">"
       << std::format("{:02}", hours) << ":"
       << std::format("{:02}", minutes) << ":"
-      << std::format("{:02}", seconds) << ":"
+      << std::format("{:02}", seconds)
       << "</" << name << ">\n";
    DRETURN_VOID;
 }
