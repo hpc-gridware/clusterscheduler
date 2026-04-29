@@ -34,7 +34,7 @@
       "hostName": {
          "type": "string",
          "description": "Hostname or the keyword 'global' for the global host.",
-         "pattern": "^([a-zA-Z0-9.-]+)$",
+         "pattern": "^([a-zA-Z0-9._-]+)$",
          "examples": [
             "v01701.fritz.box",
             "global"
@@ -172,8 +172,8 @@
             },
             "dominance": {
                "type": "string",
-               "description": "Two-letter dominance specifier. First letter: g = cluster global, h = host total, q = queue-related resource consumption. Second letter: l = reported load, L = scaled load, c = consumable-derived availability, f = fixed availability.",
-               "pattern": "^[ghq][lLcf]$",
+               "description": "Two-letter dominance specifier. First letter: g = cluster global, h = host, q = queue. Second letter: f = fixed, l = load, L = scaled load, c = consumable.",
+               "pattern": "^[ghq][flLc]$",
                "examples": [
                   "hl",
                   "hc",
@@ -258,8 +258,7 @@
             "job_name",
             "job_owner",
             "job_state",
-            "start_time",
-            "pe_master"
+            "start_time"
          ],
          "properties": {
             "id": {

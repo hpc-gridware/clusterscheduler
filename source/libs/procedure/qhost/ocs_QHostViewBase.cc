@@ -835,7 +835,8 @@ ocs::QHostViewBase::show_job(std::ostream &os, lListElem *job, lListElem *jatep,
 
    if ((group_opt & GROUP_NO_PETASK_GROUPS)) {
       /* MASTER/SLAVE information needed only to show parallel job distribution */
-      if (typeid(report_handler) == typeid(ocs::QHostViewXML) || master) {
+      if (typeid(report_handler) == typeid(ocs::QHostViewXML) ||
+          typeid(report_handler) == typeid(ocs::QHostViewJSON) || master) {
          report_handler.job_value(os, jid, "{:<6.6s} ","pe_master", master);
       } else {
          report_handler.job_value(os, jid, "{:<6.6s} ", "pe_master", std::string(7, ' ').c_str());
