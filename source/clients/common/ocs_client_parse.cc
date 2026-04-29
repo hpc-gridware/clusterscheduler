@@ -476,15 +476,10 @@ void opt_list_append_opts_from_script_path(uint32_t prog_number, lList **opts_sc
       if ((scriptfile != nullptr) && (path != nullptr) && (scriptfile[0] != '/') && (strncmp(scriptfile, "$HOME/", 6) != 0) &&
           (strcmp(scriptfile, "$HOME") != 0)) {
          /* Malloc space for the path, the filename, the \0, and perhaps a / */
-         scriptpath = sge_malloc(sizeof(char) * (strlen(path) + strlen(scriptfile) + 2));
-         strcpy(scriptpath, path);
-
-         /* If the last character is not a slash, add one. */
-         if (scriptpath[strlen(scriptpath) - 1] != '/') {
-            strcat(scriptpath, "/");
-         }
-
-         strcat(scriptpath, scriptfile);
+         const size_t size = strlen(path) + strlen(scriptfile) + 2;
+         scriptpath = sge_malloc(sizeof(char) * size);
+         const char *sep = (path[strlen(path) - 1] != '/') ? "/" : "";
+         snprintf(scriptpath, size, "%s%s%s", path, sep, scriptfile);
       } else if (scriptfile) {
          scriptpath = strdup(scriptfile);
       }
