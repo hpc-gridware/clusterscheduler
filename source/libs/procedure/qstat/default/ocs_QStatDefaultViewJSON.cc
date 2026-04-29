@@ -539,10 +539,8 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
    os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
-   os << std::string(indent * 3, ' ') << "\"value\": ";
-   //show_resource_as_JSON_type(os, resource);
-   os << value;
-   os << ",\n";
+   // values does not need to get quoted because a default request is automatically a number
+   os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
    os << std::string(indent * 3, ' ') << "\"is_default_request\": " << "true" << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "}";
@@ -576,10 +574,10 @@ void ocs::QStatDefaultViewJSON::report_soft_resource(std::ostream &os, int scope
    }
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << "\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    os << std::string(indent * 3, ' ') << "\"value\": ";
    show_resource_as_JSON_type(os, resource);
-   os << "\n";
+   os << ",\n";
    os << std::string(indent * 3, ' ') << "\"utilization_contribution\": " << uc << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "}";

@@ -602,17 +602,8 @@ void ocs::QStatJobViewJSON::report_X_queue_list(std::ostream &os, const lListEle
       } else {
          os << ",\n";
       }
-      os << std::string(indent * 3, ' ') << "{\n";
-      indent++;
-
       const char *qname = lGetString(elem, QR_name);
-      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(qname ? qname : "") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"value\": ",
-            show_resource_as_JSON_type(os, elem);
-      os << "\n";
-
-      indent--;
-      os << std::string(indent * 3, ' ') << "}";
+      os << std::string(indent * 3, ' ') << raw2quotedJSON(qname ? qname : "");
    }
 
    indent--;

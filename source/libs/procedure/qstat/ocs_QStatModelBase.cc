@@ -151,7 +151,9 @@ void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) c
       const int name = parameter.output_mode_== QStatParameter::OutputMode::QSTAT_GROUP ?
          static_cast<int>(CQ_name) : static_cast<int>(QU_full_name);
       for_each_ep_lv(qep, queue_list_) {
-         queue_length = std::max(queue_length, static_cast<int>(strlen(lGetString(qep, name))));
+         if (const char *qname = lGetString(qep, name); qname != nullptr) {
+            queue_length = std::max(queue_length, static_cast<int>(strlen(qname)));
+         }
       }
    }
 

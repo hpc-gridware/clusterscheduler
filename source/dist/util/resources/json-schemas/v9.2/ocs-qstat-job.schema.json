@@ -243,7 +243,11 @@
             "iow": { "type": "number" },
             "vmem": { "type": "number" },
             "maxvmem": { "type": "number" },
-            "maxrss": { "type": "number" }
+            "maxrss": { "type": "number" },
+            "pss": { "type": "number" },
+            "maxpss": { "type": "number" },
+            "pmem": { "type": "number" },
+            "smem": { "type": "number" }
          }
       },
       "task": {
@@ -316,6 +320,30 @@
                "type": "array",
                "items": { "$ref": "#/$defs/resource_request" }
             },
+            "hard_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "soft_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "master_hard_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "master_soft_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "slave_hard_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "slave_soft_queue_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
             "mail_list": {
                "type": "array",
                "items": { "$ref": "#/$defs/mail_recipient" }
@@ -381,7 +409,65 @@
             "shell_list": {
                "type": "array",
                "items": { "$ref": "#/$defs/shell" }
-            }
+            },
+            "deadline_time": { "$ref": "#/$defs/timestamp" },
+            "execution_time": { "$ref": "#/$defs/timestamp" },
+            "soft_wallclock_gmt": { "$ref": "#/$defs/timestamp" },
+            "hard_wallclock_gmt": { "$ref": "#/$defs/timestamp" },
+            "directive_prefix": { "type": "string" },
+            "mail_options": { "type": "string" },
+            "project": { "type": "string" },
+            "jid_predecessor_list": {
+               "type": "array",
+               "items": { "type": "integer" }
+            },
+            "jid_successor_list": {
+               "type": "array",
+               "items": { "type": "integer" }
+            },
+            "ja_ad_predecessor_list": {
+               "type": "array",
+               "items": { "type": "integer" }
+            },
+            "ja_ad_successor_list": {
+               "type": "array",
+               "items": { "type": "integer" }
+            },
+            "jid_request_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "ja_ad_request_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "job_identifier_list": {
+               "type": "array",
+               "items": { "type": "string" }
+            },
+            "context": {
+               "type": "array",
+               "items": { "$ref": "#/$defs/name_value_string" }
+            },
+            "master_hard_resource_list": {
+               "type": "array",
+               "items": { "$ref": "#/$defs/resource_request" }
+            },
+            "slave_hard_resource_list": {
+               "type": "array",
+               "items": { "$ref": "#/$defs/resource_request" }
+            },
+            "master_soft_resource_list": {
+               "type": "array",
+               "items": { "$ref": "#/$defs/resource_request" }
+            },
+            "slave_soft_resource_list": {
+               "type": "array",
+               "items": { "$ref": "#/$defs/resource_request" }
+            },
+            "allocation_rule": { "type": "string" },
+            "master_allocation_rule": { "type": "string" },
+            "slave_allocation_rule": { "type": "string" }
          }
       }
    }
