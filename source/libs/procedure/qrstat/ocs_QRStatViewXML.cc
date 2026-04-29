@@ -24,6 +24,7 @@
 #include "uti/sge_time.h"
 
 #include "sgeobj/sge_advance_reservation.h"
+#include "sgeobj/ocs_EscapedString.h"
 
 #include "ocs_QRStatParameterClient.h"
 #include "qrstat/ocs_QRStatViewXML.h"
@@ -84,7 +85,7 @@ void ocs::QRStatViewXML::report_ar_node_duration(std::ostream &os, const char *n
 void ocs::QRStatViewXML::report_ar_node_string(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
    if (value != nullptr) {
-      os << "      <" << name << ">" << value << "</" << name << ">\n";
+      os << "      <" << name << ">" << EscapedString(value) << "</" << name << ">\n";
    } else {
       os << "      <" << name << "/>\n";
    }
@@ -123,25 +124,25 @@ void ocs::QRStatViewXML::report_resource_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_resource_list_node_str(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   os << "         <resource name=\"" << name << "\" type=\"" << value << "\"/>\n";
+   os << "         <resource name=\"" << EscapedString(name) << "\" type=\"" << EscapedString(value) << "\"/>\n";
    DRETURN_VOID;
 }
 
 void ocs::QRStatViewXML::report_resource_list_node_double(std::ostream &os, const char *name, const double value) {
    DENTER(TOP_LAYER);
-   os << "         <resource name=\"" << name << "\" type=\"" << value << "\"/>\n";
+   os << "         <resource name=\"" << EscapedString(name) << "\" type=\"" << value << "\"/>\n";
    DRETURN_VOID;
 }
 
 void ocs::QRStatViewXML::report_resource_list_node_uint64(std::ostream &os, const char *name, const uint64_t value) {
    DENTER(TOP_LAYER);
-   os << "         <resource name=\"" << name << "\" type=\"" << value << "\"/>\n";
+   os << "         <resource name=\"" << EscapedString(name) << "\" type=\"" << value << "\"/>\n";
    DRETURN_VOID;
 }
 
 void ocs::QRStatViewXML::report_resource_list_node_bool(std::ostream &os, const char *name, bool value) {
    DENTER(TOP_LAYER);
-   os << "         <resource name=\"" << name << "\" type=\"" << value << "\"/>\n";
+   os << "         <resource name=\"" << EscapedString(name) << "\" type=\"" << value << "\"/>\n";
    DRETURN_VOID;
 }
 
@@ -165,7 +166,7 @@ void ocs::QRStatViewXML::report_exec_queue_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_exec_queue_list_node(std::ostream &os, const char *name, u_int value) {
    DENTER(TOP_LAYER);
-   os << "         <exec_queue><queue_instance>" << name << "</queue_instance><slots>" << value << "</slots></exec_queue>\n";
+   os << "         <exec_queue><queue_instance>" << EscapedString(name) << "</queue_instance><slots>" << value << "</slots></exec_queue>\n";
    DRETURN_VOID;
 }
 
@@ -183,7 +184,7 @@ void ocs::QRStatViewXML::report_exec_binding_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_exec_binding_list_node(std::ostream &os, const char *name, const char *value) {
    DENTER(TOP_LAYER);
-   os << "         <exec_binding><exec_host>" << name << "</exec_host><binding>" << value << "</binding></exec_binding>\n";
+   os << "         <exec_binding><exec_host>" << EscapedString(name) << "</exec_host><binding>" << EscapedString(value) << "</binding></exec_binding>\n";
    DRETURN_VOID;
 }
 
@@ -201,8 +202,8 @@ void ocs::QRStatViewXML::report_granted_parallel_environment_finish(std::ostream
 
 void ocs::QRStatViewXML::report_granted_parallel_environment_node(std::ostream &os, const char *name, const char *slots_range) {
    DENTER(TOP_LAYER);
-   os << "         <parallel_environment>" << (name != nullptr ? name : "") << "</parallel_environment>\n";
-   os << "         <slots>" << (slots_range != nullptr ? slots_range : "") << "</slots>\n";
+   os << "         <parallel_environment>" << EscapedString(name) << "</parallel_environment>\n";
+   os << "         <slots>" << EscapedString(slots_range) << "</slots>\n";
    DRETURN_VOID;
 }
 
@@ -220,7 +221,7 @@ void ocs::QRStatViewXML::report_mail_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_mail_list_node(std::ostream &os, const char *name, const char *host) {
    DENTER(TOP_LAYER);
-   os << "         <mail  user=\"" << name << "\" host=\"" << (host ? host : "nullptr") << "\"/>\n";
+   os << "         <mail  user=\"" << EscapedString(name) << "\" host=\"" << EscapedString(host) << "\"/>\n";
    DRETURN_VOID;
 }
 
@@ -238,7 +239,7 @@ void ocs::QRStatViewXML::report_acl_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_acl_list_node(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
-   os << "         <acl  user=\"" << name << "\"/>\n";
+   os << "         <acl  user=\"" << EscapedString(name) << "\"/>\n";
    DRETURN_VOID;
 }
 
@@ -256,6 +257,6 @@ void ocs::QRStatViewXML::report_xacl_list_finish(std::ostream &os) {
 
 void ocs::QRStatViewXML::report_xacl_list_node(std::ostream &os, const char *name) {
    DENTER(TOP_LAYER);
-   os << "         <acl  user=\"" << name << "\"/>\n";
+   os << "         <acl  user=\"" << EscapedString(name) << "\"/>\n";
    DRETURN_VOID;
 }
