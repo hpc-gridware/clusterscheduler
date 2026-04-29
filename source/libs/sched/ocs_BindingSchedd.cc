@@ -248,7 +248,7 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
    int max{0};
    int slots{a->slots};
    if (a->mallocation_rule != nullptr) {
-      const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->mallocation_rule, slots, false);
+      const int max_slots_according_to_allocation_rule = a->mallocation_parsed;
       DPRINTF("slots_reduced_to_available_maximum: master allocation rule: %d\n", max_slots_according_to_allocation_rule);
       if (max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
          DPRINTF("slots_reduced_to_available_maximum: master allocation rule is round robin, so we can only handle 1 slot at a time\n");
@@ -264,14 +264,19 @@ ocs::BindingSchedd::slots_reduced_to_available_maximum(const sge_assignment_t *a
    }
    // We always call pe_allocation_rule_slots, even with nullptr as allocation rule.
    // This indicates that it is a sequential job and the function will return 1.
-   const int max_slots_according_to_allocation_rule = pe_allocation_rule_slots(a->allocation_rule, slots, false);
-   DPRINTF("slots_reduced_to_available_maximum: allocation rule: %d\n", max_slots_according_to_allocation_rule);
-   if (max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
-      DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slot at a time\n");
-      max = MAX(max, 1);
-   } else if (max_slots_according_to_allocation_rule > 0) {
-      DPRINTF("slots_reduced_to_available_maximum: allocation rule allows only %d slots\n", max_slots_according_to_allocation_rule);
-      max = MAX(max, MIN(slots_max_available, max_slots_according_to_allocation_rule));
+   if (a->allocation_rule == nullptr) {
+      max = 1;
+   } else {
+      int max_slots_according_to_allocation_rule = a->allocation_parsed;
+      DPRINTF("slots_reduced_to_available_maximum: allocation rule: %d\n", max_slots_according_to_allocation_rule);
+      if (max_slots_according_to_allocation_rule == ALLOC_RULE_ROUNDROBIN) {
+         DPRINTF("slots_reduced_to_available_maximum: allocation rule is round robin, so we can only handle 1 slot at a time\n");
+         max = MAX(max, 1);
+      } else if (max_slots_according_to_allocation_rule > 0) {
+         max_slots_according_to_allocation_rule = MIN(max_slots_according_to_allocation_rule, slots);
+         DPRINTF("slots_reduced_to_available_maximum: allocation rule allows only %d slots\n", max_slots_according_to_allocation_rule);
+         max = MAX(max, MIN(slots_max_available, max_slots_according_to_allocation_rule));
+      }
    }
 
    if (max > 0) {
