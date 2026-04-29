@@ -351,18 +351,6 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, lListElem *host, const
    const lList *resl = parameter.get_resource_visible_list();
    uint32_t show = parameter.get_show();
 
-   // does the executing qstat user have access to this queue?
-   //if (dept_view) {
-   //   const char *username = component_get_username();
-   //   const char *groupname = component_get_groupname();
-   //   int amount;
-   //   ocs_grp_elem_t *grp_array;
-   //   component_get_supplementray_groups(&amount, &grp_array);
-   //   lList *grp_list = grp_list_array2list(amount, grp_array);
-   //   hide_data = !sge_has_access_(username, groupname, grp_list, lGetList(host, EH_acl), lGetList(host, EH_xacl), acl_list);
-   //   lFreeList(&grp_list);
-   //}
-
    if (!(show & QHOST_DISPLAY_RESOURCES)) {
       DRETURN_VOID;
    }
