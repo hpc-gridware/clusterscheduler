@@ -201,12 +201,6 @@ bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &para
       if (answer_list_has_error(answer_list)) {
          DRETURN(false);
       }
-
-      // @todo this will not work as stored procedure
-      // debug output to perform testsuite tests
-      if (sge_getenv("_SGE_TEST_QSTAT_JOB_STATES") != nullptr) {
-         fprintf(stderr, "_SGE_TEST_QSTAT_JOB_STATES: jobs_received=" sge_u32 "\n", lGetNumberOfElem(job_list_));
-      }
    }
 
    gdi_multi.get_response(answer_list, gdi::Command::GET, gdi::SubCommand::NONE, gdi::Target::CE_LIST, ce_id, &centry_list_);
