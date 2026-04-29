@@ -102,7 +102,7 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lLis
    // get the dominant value of the resource for this host
    const auto type = static_cast<CEntry::Type>(lGetUlong(resource, CE_valtype));
    const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR
-                          || type == CEntry::Type::HOST || type == CEntry::Type::RESTR || type == CEntry::Type::HOST;
+                          || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
    const bool as_double = type == CEntry::Type::DOUBLE;
    const bool as_bool = type == CEntry::Type::BOOL;
    if (as_string) {

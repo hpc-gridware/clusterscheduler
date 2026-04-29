@@ -83,7 +83,7 @@ ocs::QRStatController::process_request(QRStatParameter &parameter, QRStatModelBa
             for_each_ep_lv(resource, lGetList(ar, AR_resource_list)) {
                // get the dominant value of the resource for this host
                const auto type = static_cast<CEntry::Type>(lGetUlong(resource, CE_valtype));
-               const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type == CEntry::Type::RESTR || type == CEntry::Type::HOST;
+               const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
                const bool as_double = type == CEntry::Type::DOUBLE;
                const bool as_bool = type == CEntry::Type::BOOL;
                if (as_string) {
