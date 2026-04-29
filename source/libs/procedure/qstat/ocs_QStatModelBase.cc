@@ -670,11 +670,13 @@ lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) 
       const char *job_name = lGetString(j_elem, ST_name);
       lCondition *new_where;
 
-      if (isdigit(job_name[0])) {
-         uint32_t jid = atol(lGetString(j_elem, ST_name));
+      if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
+         auto jid = static_cast<uint32_t>(strtoul(job_name, nullptr, 10));
          new_where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jid);
-      } else {
+      } else if (job_name != nullptr) {
          new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
+      } else {
+         new_where = nullptr;
       }
       if (new_where) {
          if (!where) {
