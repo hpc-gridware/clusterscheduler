@@ -375,7 +375,7 @@ ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, cons
    if (as_string) {
       os << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(value ? value : "") << ",\n";
    } else {
-      os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
+      os << std::string(indent * 3, ' ') << "\"value\": " << (value ? value : "0") << ",\n";
    }
    if (details != nullptr) {
       os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details ? details : "") << ",\n";
