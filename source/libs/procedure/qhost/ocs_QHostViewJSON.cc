@@ -371,16 +371,16 @@ ocs::QHostViewJSON::resource_value(std::ostream &os, const char* dominance, cons
 
    // show the jobs ID as attribute
    indent++;
-   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name ? name : "") << ",\n";
    if (as_string) {
-      os << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(value) << ",\n";
+      os << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(value ? value : "") << ",\n";
    } else {
       os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
    }
    if (details != nullptr) {
-      os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details) << ",\n";
+      os << std::string(indent * 3, ' ') << "\"details\": " << raw2quotedJSON(details ? details : "") << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"dominance\": " << raw2quotedJSON(dominance) << "\n";
+   os << std::string(indent * 3, ' ') << "\"dominance\": " << raw2quotedJSON(dominance ? dominance : "") << "\n";
 
    // close the resource
    indent--;
