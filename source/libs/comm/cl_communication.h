@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -207,6 +207,7 @@ int cl_com_connection_set_connect_port(cl_com_connection_t *connection, int port
 int cl_com_connection_get_service_port(cl_com_connection_t *connection, int *port);
 
 int cl_com_connection_get_fd(cl_com_connection_t *connection, int *fd);
+const char *cl_com_connection_get_ip(cl_com_connection_t *connection, dstring *dstr);
 
 int cl_com_connection_get_client_socket_in_port(cl_com_connection_t *connection, int *port);
 

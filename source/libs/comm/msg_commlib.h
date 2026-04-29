@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -39,7 +39,7 @@
 
 #define MSG_CL_CRM_ERROR_MESSAGE2_SS                                          _MESSAGE(85001, _("server host resolves destination host " SFQ " as " SFQ ""))
 #define MSG_CL_CRM_ERROR_MESSAGE3_SS                                          _MESSAGE(85002, _("server host resolves rdata host " SFQ " as " SFQ ""))
-#define MSG_CL_CRM_ERROR_MESSAGE4_SS                                          _MESSAGE(85003, _("client IP resolved to host name " SFQ ". This is not identical to clients host name " SFQ ""))
+#define MSG_CL_CRM_ERROR_MESSAGE4_SSS                                         _MESSAGE(85003, _("client IP " SFN " resolved to host name " SFQ ". This is not identical to clients host name " SFQ ""))
 
 /* cl_tcp_framework.c */
 
@@ -55,8 +55,8 @@
 #define MSG_CL_TCP_FW_CANT_RESOLVE_RDATA_HOST_S                               _MESSAGE(85020, _("can't resolve rdata hostname " SFQ ""))
 #define MSG_CL_TCP_FW_EMPTY_RDATA_HOST                                        _MESSAGE(85021, _("got empty rdata host name from connected client" ))
 #define MSG_CL_TCP_FW_REMOTE_RDATA_HOSTNAME_X_NOT_Y_SS                        _MESSAGE(85022, _("remote rdata host name " SFQ " is not equal to local resolved host name " SFQ ""))
-#define MSG_CL_TCP_FW_IP_ADDRESS_RESOLVING_X_NOT_Y_SS                         _MESSAGE(85023, _("IP based host name resolving " SFQ " doesn't match client host name from connect message " SFQ ""))
-#define MSG_CL_TCP_FW_CANT_RESOLVE_CLIENT_IP                                  _MESSAGE(85024, _("can't resolve client IP address"))
+#define MSG_CL_TCP_FW_IP_ADDRESS_RESOLVING_X_NOT_Y_SSS                        _MESSAGE(85023, _("IP based host name resolving " SFQ " (" SFN ") doesn't match client host name from connect message " SFQ ""))
+#define MSG_CL_TCP_FW_CANT_RESOLVE_CLIENT_IP_S                                _MESSAGE(85024, _("can't resolve client IP address " SFN))
 #define MSG_CL_TCP_FW_EMPTY_REMOTE_HOST                                       _MESSAGE(85025, _("got no remote host name from client"))
 #define MSG_CL_TCP_FW_ENDPOINT_X_DOESNT_MATCH_Y_SSUSSU                        _MESSAGE(85026, _("local endpoint \"" SFN "/" SFN "/" sge_u32 "\" doesn't match requested endpoint \"" SFN "/" SFN "/" sge_u32 "\""))
 #define MSG_CL_TCP_FW_ENDPOINT_X_ALREADY_CONNECTED_SSU                        _MESSAGE(85027, _("endpoint \"" SFN "/" SFN "/" sge_u32 "\" is already connected"))
