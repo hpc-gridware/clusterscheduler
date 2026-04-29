@@ -275,6 +275,12 @@ namespace {
    void prepare_response(ocs::gdi::Task *task, std::ostringstream &os) {
       DENTER(TOP_LAYER);
 
+      // if exec_procedure failed then the answer_list contains already an error
+      // that is transferred via GDI. No need to send this separately
+#if 0
+      lWriteListTo(task->answer_list, stderr);
+#endif
+
       // Prepare a response
       ocs::ProcedureParameter response(to_string(Traits::prog_number));
       lList *bundle = response.get_bundle();

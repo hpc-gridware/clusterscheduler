@@ -20,7 +20,6 @@
 
 #include <sstream>
 
-#include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
@@ -31,19 +30,14 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/sge_str.h"
-#include "sgeobj/sge_ulong.h"
 
 #include "gdi/ocs_gdi_Client.h"
 #include "gdi/ocs_gdi_Request.h"
 
-#include "ocs_QStatModelClient.h"
-
-#include "msg_qstat.h"
 #include "ocs_QStatParameter.h"
+#include "ocs_QStatModelClient.h"
 
 
 bool ocs::QStatModelClient::fetch_data(lList **answer_list, QStatParameter &parameter) {
@@ -282,74 +276,6 @@ bool ocs::QStatModelClient::prepare_data(lList **answer_list, QStatParameter &pa
    // make the centry list ready to get used
    centry_list_init_double(centry_list_);
 
-   // report an error if response does not contain all information for the job view
-   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.get_jid_list()) != 0) {
-
-      // remove all pattern
-      bool removed_pattern = false;
-      lListElem *elem1;
-      lListElem *elem2 = lFirstRW(parameter.get_jid_list());
-      while ((elem1 = elem2) != nullptr) {
-         elem2 = lNextRW(elem1);
-
-         if (is_pattern(lGetString(elem1, ST_name))) {
-            lDechainElem(parameter.get_jid_list(), elem1);
-            removed_pattern = true;
-         }
-      }
-
-      // if there is still something missing then report an error
-      std::stringstream ss;
-      if (lGetNumberOfElem(parameter.get_jid_list()) > 0) {
-         bool first_time = true;
-         ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
-         for_each_rw(elem1, parameter.get_jid_list()) {
-            if (!first_time) {
-               ss << ", ";
-            }
-            first_time = false;
-            ss << lGetString(elem1, ST_name);
-         }
-      } else {
-         if (removed_pattern) {
-            ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
-         }
-      }
-      answer_list_add(answer_list, ss.str().c_str(), STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      DRETURN(false);
-   }
-
-   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML) {
-      DRETURN(true);
-   }
-
-   /* filter the message list to contain only jobs that have been requested.
-      First remove all entries in the job_number_list that are not in the
-      jbList. Then remove all entries (job_number_list, message_number and
-      message) from the message_list that have no jobs in them.
-   */
-   for_each_ep_lv(tmpElem, ilp) {
-      lList *msgList = lGetListRW(tmpElem, SME_message_list);
-      lListElem *msgElem = lFirstRW(msgList);
-      while (msgElem) {
-
-         lListElem *tmp_msgElem = lNextRW(msgElem);
-         lList *jbList = lGetListRW(msgElem, MES_job_number_list);
-         lListElem *jbElem = lFirstRW(jbList);
-
-         while (jbElem) {
-            lListElem *tmp_jbElem = lNextRW(jbElem);
-            if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == nullptr) {
-               lRemoveElem(jbList, &jbElem);
-            }
-            jbElem = tmp_jbElem;
-         }
-         if (lGetNumberOfElem(lGetList(msgElem, MES_job_number_list)) == 0) {
-            lRemoveElem(msgList, &msgElem);
-         }
-         msgElem = tmp_msgElem;
-      }
-   }
-
-   DRETURN(true);
+   // do common client/server things
+   DRETURN(QStatModelBase::prepare_data(answer_list, parameter));
 }

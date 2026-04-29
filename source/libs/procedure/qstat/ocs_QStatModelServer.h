@@ -32,7 +32,6 @@ namespace ocs {
 
    protected:
       bool fetch_data(lList **answer_list, QStatParameter &parameter) override;
-
    public:
       QStatModelServer(gdi::Packet *packet, gdi::Task *task) : packet(packet), task(task) {
       };

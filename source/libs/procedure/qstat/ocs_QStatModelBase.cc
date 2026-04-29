@@ -19,6 +19,8 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <fnmatch.h>
+#include <sstream>
+#include <stdexcept>
 
 #include "uti/sge.h"
 #include "uti/ocs_Pattern.h"
@@ -26,7 +28,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_parse_num_par.h"
 
-#include "sgeobj/cull/sge_qinstance_QU_L.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
@@ -42,20 +43,20 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_range.h"
+#include "sgeobj/sge_mesobj.h"
+#include "sgeobj/sge_qinstance_type.h"
+#include "sgeobj/sge_qinstance.h"
+#include "sgeobj/sge_qref.h"
+#include "sgeobj/sge_ulong.h"
 
 #include "sched/sge_select_queue.h"
 
 #include "ocs_QStatModelBase.h"
-
-#include <stdexcept>
-
 #include "msg_clients_common.h"
 #include "msg_qstat.h"
-#include "sgeobj/sge_qinstance_type.h"
-#include "sgeobj/sge_qref.h"
-#include "sgeobj/cull/sge_message_SME_L.h"
 
 ocs::QStatModelBase::~QStatModelBase() {
+   // non-job-view's data
    lFreeList(&queue_list_);
    lFreeList(&centry_list_);
    lFreeList(&exechost_list_);
@@ -66,6 +67,10 @@ ocs::QStatModelBase::~QStatModelBase() {
    lFreeList(&job_list_);
    lFreeList(&hgrp_list_);
    lFreeList(&project_list_);
+
+   // job view
+   lFreeList(&ilp);
+   lFreeList(&jlp);
 }
 
 void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
@@ -739,15 +744,83 @@ void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {
    apply_state_filter(parameter);
 }
 
-bool ocs::QStatModelBase::fetch_data(lList **alpp, QStatParameter &parameter) {
+bool ocs::QStatModelBase::fetch_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    // has to be overridden by derived class
    DRETURN(true);
 }
 
-bool ocs::QStatModelBase::prepare_data(lList **alpp, QStatParameter &parameter) {
+bool ocs::QStatModelBase::prepare_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   // has to be overridden by derived class
+
+   // report an error if response does not contain all information for the job view
+   if (lGetNumberOfElem(jlp) == 0 && lGetNumberOfElem(parameter.get_jid_list()) != 0) {
+
+      // remove all pattern
+      bool removed_pattern = false;
+      lListElem *elem1;
+      lListElem *elem2 = lFirstRW(parameter.get_jid_list());
+      while ((elem1 = elem2) != nullptr) {
+         elem2 = lNextRW(elem1);
+
+         if (is_pattern(lGetString(elem1, ST_name))) {
+            lDechainElem(parameter.get_jid_list(), elem1);
+            removed_pattern = true;
+         }
+      }
+
+      // if there is still something missing then report an error
+      std::stringstream ss;
+      if (lGetNumberOfElem(parameter.get_jid_list()) > 0) {
+         ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         bool first_time = true;
+         for_each_rw(elem1, parameter.get_jid_list()) {
+            if (!first_time) {
+               ss << ", ";
+            }
+            first_time = false;
+            ss << lGetString(elem1, ST_name);
+         }
+      } else {
+         if (removed_pattern) {
+            ss << MSG_QSTAT_FOLLOWINGDONOTEXIST;
+         }
+      }
+      answer_list_add(answer_list, ss.str().c_str(), STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(false);
+   }
+
+   if (parameter.get_output_format() != QStatParameter::OutputFormat::XML) {
+      DRETURN(true);
+   }
+
+   /* filter the message list to contain only jobs that have been requested.
+      First remove all entries in the job_number_list that are not in the
+      jbList. Then remove all entries (job_number_list, message_number and
+      message) from the message_list that have no jobs in them.
+   */
+   for_each_ep_lv(tmp_elem, ilp) {
+      lList *msg_list = lGetListRW(tmp_elem, SME_message_list);
+
+      lListElem *msg_elem;
+      lListElem *tmp_msg_elem = lFirstRW(msg_list);
+      while ((msg_elem = tmp_msg_elem) != nullptr) {
+         tmp_msg_elem = lNextRW(msg_elem);
+
+         lList *jbList = lGetListRW(msg_elem, MES_job_number_list);
+         lListElem *jbElem = lFirstRW(jbList);
+         while (jbElem) {
+            lListElem *tmp_jbElem = lNextRW(jbElem);
+            if (lGetElemUlong(jlp, JB_job_number, lGetUlong(jbElem, ULNG_value)) == nullptr) {
+               lRemoveElem(jbList, &jbElem);
+            }
+            jbElem = tmp_jbElem;
+         }
+         if (lGetNumberOfElem(lGetList(msg_elem, MES_job_number_list)) == 0) {
+            lRemoveElem(msg_list, &msg_elem);
+         }
+      }
+   }
    DRETURN(true);
 }
 
@@ -1043,10 +1116,9 @@ int ocs::QStatModelBase::filter_queues(lList **answer_list, const QStatParameter
 
 bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
    DENTER(TOP_LAYER);
-
-   bool a_qinstance_is_selected = false;
    bool a_cqueue_is_selected = false;
 
+   bool a_qinstance_is_selected = false;
    for_each_rw_lv(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       bool tmp_a_qinstance_is_selected = false;
