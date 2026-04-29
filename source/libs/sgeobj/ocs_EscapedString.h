@@ -27,7 +27,7 @@ namespace ocs {
    class EscapedString {
       std::string escaped_string_;
    public:
-      EscapedString(const char *string) : escaped_string_(string) {}
+      EscapedString(const char *string) : escaped_string_(string ? string : "") {}
 
       friend std::ostream &operator<<(std::ostream &os, const EscapedString &es) {
          const size_t len = strlen(es.escaped_string_.c_str());
