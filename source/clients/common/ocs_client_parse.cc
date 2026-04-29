@@ -211,6 +211,7 @@ static char *get_cwd_defaults_file_path(lList **answer_list) {
       char str[MAX_STRING_SIZE];
       snprintf(str, sizeof(str), SFNMAX, MSG_FILE_CANTREADCURRENTWORKINGDIR);
       answer_list_add(answer_list, str, STATUS_EDISK, ANSWER_QUALITY_ERROR);
+      DRETURN(nullptr);
    }
 
    char *file = sge_malloc(strlen(cwd) + strlen(SGE_HOME_DEF_REQ_FILE) + 2);
