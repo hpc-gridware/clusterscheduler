@@ -480,17 +480,11 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_file(lList **switch_list
    if (switch_list == nullptr) {
       DRETURN(false);
    }
-   if (!sge_is_file(file)) {
-      // it is ok if the file does not exist
-      DRETURN_VOID(true);
-   }
-
    int file_as_string_length;
    char *file_as_string = sge_file2string(file, &file_as_string_length);
    if (file_as_string == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_ANSWER_ERRORREADINGFROMFILEX_S, file);
-      DRETURN(false);
+      // file does not exist or is not readable — both are acceptable
+      DRETURN(true);
    }
 
    char **token = stra_from_str(file_as_string, " \n\t");
