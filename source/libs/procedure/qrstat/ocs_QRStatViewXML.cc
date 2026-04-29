@@ -65,16 +65,19 @@ void ocs::QRStatViewXML::report_ar_node_ulong(std::ostream &os, const char *name
 
 void ocs::QRStatViewXML::report_ar_node_duration(std::ostream &os, const char *name, u_long value) {
    DENTER(TOP_LAYER);
-   uint32_t value32 = sge_gmt64_to_gmt32(value);
-   int seconds = value32 % 60;
-   int minutes = ((value32 - seconds) / 60) % 60;
-   int hours = ((value32 - seconds - minutes * 60) / 3600);
+   const uint32_t value32 = sge_gmt64_to_gmt32(value);
+   const uint32_t days    = value32 / 86400;
+   const uint32_t hours   = (value32 / 3600) % 24;
+   const uint32_t minutes = (value32 / 60) % 60;
+   const uint32_t seconds = value32 % 60;
 
-   os << "      <" << name << ">"
-      << std::format("{:02}", hours) << ":"
-      << std::format("{:02}", minutes) << ":"
-      << std::format("{:02}", seconds)
-      << "</" << name << ">\n";
+   os << "      <" << name << ">";
+   if (days > 0) {
+      os << std::format("{}:{:02}:{:02}:{:02}", days, hours, minutes, seconds);
+   } else {
+      os << std::format("{:02}:{:02}:{:02}", hours, minutes, seconds);
+   }
+   os << "</" << name << ">\n";
    DRETURN_VOID;
 }
 
