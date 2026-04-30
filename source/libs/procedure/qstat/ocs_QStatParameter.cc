@@ -40,14 +40,11 @@ ocs::QStatParameter::~QStatParameter() {
    DRETURN_VOID;
 }
 
-ocs::QStatParameter::QStatParameter(lList **bundle) : ProcedureParameter("") {
+ocs::QStatParameter::QStatParameter(lList *bundle) : ProcedureParameter("") {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   QStatParameter::set_bundle(*bundle);
-
-   // free the bundle
-   lFreeList(bundle);
+   QStatParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }

@@ -237,7 +237,8 @@ namespace {
       using Controller = typename Traits::Controller;
 
       // Create parameter object containing the parsed switch information from the client
-      Parameter parameter(&task->data_list);
+      Parameter parameter(task->data_list);
+      lFreeList(&task->data_list);
 
       // Create the server side model and make a snapshot of the required data
       Model model(packet, task);
@@ -289,7 +290,9 @@ namespace {
       lList *output_list = nullptr;
       lAddElemStr(&output_list, ST_name, os.str().c_str(), ST_Type);
       ocs::ProcedureParameter::add_parameter_bundle(bundle, ocs::ProcedureParameter::RESPONSE, output_list);
+#if 0
       DPRINTF("response:\n %s", os.str().c_str());
+#endif
 
       // Pass responsibility for the bundle to gdi
       task->data_list = bundle;

@@ -28,14 +28,11 @@
 #include "qhost/ocs_QHostParameter.h"
 #include "sgeobj/cull/sge_param_SPP_L.h"
 
-ocs::QRStatParameter::QRStatParameter(lList **bundle) : ProcedureParameter("") {
+ocs::QRStatParameter::QRStatParameter(lList *bundle) : ProcedureParameter("") {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   QRStatParameter::set_bundle(*bundle);
-
-   // free the bundle
-   lFreeList(bundle);
+   QRStatParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }

@@ -71,7 +71,7 @@ namespace ocs {
 
 #pragma region Constructor/Destructor
    public:
-      explicit QHostParameter(lList **bundle);
+      explicit QHostParameter(lList *bundle);
       explicit QHostParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {};
       ~QHostParameter() override;
 #pragma endregion

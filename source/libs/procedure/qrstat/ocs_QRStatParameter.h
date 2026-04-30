@@ -68,7 +68,7 @@ namespace ocs {
 #pragma region Constructor/Destructor
 
    public:
-      explicit QRStatParameter(lList **bundle);
+      explicit QRStatParameter(lList *bundle);
 
       explicit QRStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {
       };

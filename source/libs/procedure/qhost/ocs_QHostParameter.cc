@@ -39,14 +39,11 @@ ocs::QHostParameter::~QHostParameter() {
    lFreeList(&resource_visible_list_);
 }
 
-ocs::QHostParameter::QHostParameter(lList **bundle) : ProcedureParameter("") {
+ocs::QHostParameter::QHostParameter(lList *bundle) : ProcedureParameter("") {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
-   QHostParameter::set_bundle(*bundle);
-
-   // free the bundle
-   lFreeList(bundle);
+   QHostParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }

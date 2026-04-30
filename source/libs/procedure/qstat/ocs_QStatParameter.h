@@ -164,7 +164,7 @@ namespace ocs {
 #pragma region Constructors/Destructors
 
    public:
-      explicit QStatParameter(lList **bundle);
+      explicit QStatParameter(lList *bundle);
       explicit QStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {};
       ~QStatParameter() override;
 

@@ -38,13 +38,10 @@ ocs::QQuotaParameter::~QQuotaParameter() {
    DRETURN_VOID;
 }
 
-ocs::QQuotaParameter::QQuotaParameter(lList **bundle) : ProcedureParameter("") {
+ocs::QQuotaParameter::QQuotaParameter(lList *bundle) : ProcedureParameter("") {
    DENTER(TOP_LAYER);
 
-   QQuotaParameter::set_bundle(*bundle);
-
-   // free the bundle. information is now part of member variables
-   lFreeList(bundle);
+   QQuotaParameter::set_bundle(bundle);
 
    DRETURN_VOID;
 }

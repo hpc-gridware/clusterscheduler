@@ -70,7 +70,7 @@ namespace ocs {
    private:
 
    public:
-      explicit QQuotaParameter(lList **bundle);
+      explicit QQuotaParameter(lList *bundle);
 
       explicit QQuotaParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {
       };
