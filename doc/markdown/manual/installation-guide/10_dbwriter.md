@@ -12,7 +12,7 @@ Before installing DBWriter make sure to have the following requirements met:
 
 * A database server is installed (supported are PostgreSQL, MySQL, Oracle).
 * The database is accessible from the DBWriter host.
-* On the DBWriter host, Java 8 must be installed. The DBWriter host can be any host that can access the database server and the xxQS_NAMExx installation directory.
+* On the DBWriter host, Java 11 or higher must be installed. The DBWriter host can be any host that can access the database server and the xxQS_NAMExx installation directory.
 * DBWriter uses JDBC to connect to the database. Get the JDBC driver for your database server.
   * It is a jar file, e.g., for PostgreSQL: `postgresql-42.7.7.jar`
   * You usually get it from the database vendor's website.
