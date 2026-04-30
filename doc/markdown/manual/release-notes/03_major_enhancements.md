@@ -1,5 +1,15 @@
 # Major Enhancements
 
+## v9.1.2
+
+### Updates to dbwriter
+
+In this release, the required Java version and many other dependencies have been updated. The DBWriter now supports Java 11 or higher, ensuring compatibility with modern environments and reducing the risk of compatibility issues.
+
+When you have an existing DBWriter installation, please ensure that at least Java 11 is installed on the DBWriter host.
+Edit the file `$SGE_ROOT/$SGE_CELL/common/sgedbwriter` and modify the line setting `JAVA_HOME` to point to the Java 11 (or higher) installation directory.   
+If you are doing a fresh installation, specify the Java 11 (or higher) installation directory when asked during the installation process.
+
 ## v9.1.0
 
 ### Advanced Binding Framework for Topology-Aware Job Placement
