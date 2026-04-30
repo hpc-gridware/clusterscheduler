@@ -26,6 +26,15 @@
 #include "ocs_QQuotaModelBase.h"
 
 namespace ocs {
+   /** @brief QQuota model for the server execution context.
+    *
+    * Implements `fetch_data()` by reading directly from in-process qmaster master
+    * lists, avoiding any GDI network round-trip.  Constructed with the originating
+    * client's `gdi::Packet` so that permission checks reflect the real caller.
+    *
+    * @see QQuotaModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QQuotaModelServer : public QQuotaModelBase {
       [[maybe_unused]] gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;

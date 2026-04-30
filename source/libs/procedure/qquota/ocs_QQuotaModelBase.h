@@ -24,6 +24,24 @@
 #include "ocs_QQuotaParameter.h"
 
 namespace ocs {
+   /** @brief Base model for qquota that holds the CULL lists needed for resource quota rendering.
+    *
+    * Fetches resource quota sets (RQS), complex entries, user sets, host groups,
+    * and execution hosts, then passes them to the view for rendering.
+    *
+    * ## Client vs. server execution
+    *
+    * - **QQuotaModelClient** (`ExecContext::CLIENT`): issues GDI requests to qmaster
+    *   to fetch all required lists.
+    * - **QQuotaModelServer** (`ExecContext::SERVER`): reads directly from the in-process
+    *   qmaster master lists, avoiding any network round-trip.
+    *
+    * ## Virtual pipeline inside make_snapshot()
+    *
+    * 1. `fetch_data()` — populates the CULL list members (overridden per context).
+    *
+    * @ingroup libprocedure
+    */
    class QQuotaModelBase {
 #pragma region Data
    protected:
@@ -50,8 +68,18 @@ namespace ocs {
       static lEnumeration *get_host_what();
       static lCondition *get_host_where(const lList *host_list);
 
+      /** @brief Fetch raw CULL lists into the member variables.
+       *
+       * Overridden by QQuotaModelClient (GDI calls) and QQuotaModelServer (master lists).
+       */
       virtual bool fetch_data(lList **answer_list, const lList *host_list);
    public:
+      /** @brief Run the full pipeline: fetch_data, then hand off to the view.
+       *
+       * @param answer_list  Receives error messages on failure.
+       * @param parameter    Parsed qquota parameters.
+       * @return true if fetch_data succeeded.
+       */
       virtual bool make_snapshot(lList **answer_list, QQuotaParameter &parameter);
 #pragma endregion
 

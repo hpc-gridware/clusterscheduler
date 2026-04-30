@@ -27,6 +27,16 @@
 #include "ocs_QRStatParameter.h"
 
 namespace ocs {
+   /** @brief QRStat model for the server execution context.
+    *
+    * Implements `fetch_data()` by reading the advance reservation list directly
+    * from the in-process qmaster master lists, avoiding any GDI network round-trip.
+    * Constructed with the originating client's `gdi::Packet` so that permission
+    * checks reflect the real caller.
+    *
+    * @see QRStatModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QRStatModelServer : public QRStatModelBase {
       [[maybe_unused]] gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;

@@ -26,13 +26,26 @@
 
 namespace ocs {
 
-   /** @brief Base class for QHost data models.
+   /** @brief Base model for qhost that holds all CULL data lists needed for rendering.
     *
-    * This class defines the interface for QHost data models and provides common functionality for managing the data
-    * lists. Derived classes must implement the data retrieval, preparation, filtering, and sorting logic.
+    * Fetches execution host, queue, job, centry, PE, and ACL lists, then applies
+    * resource-match filtering and sorts the result before handing it to the view.
     *
-    * The class also provides accessors for the data lists and a flag indicating whether the model is a manager model.
-    * The destructor is virtual to ensure proper cleanup of resources in derived classes.
+    * ## Client vs. server execution
+    *
+    * - **QHostModelClient** (`ExecContext::CLIENT`): issues GDI requests to qmaster
+    *   to fetch all required lists and performs preparation locally.
+    * - **QHostModelServer** (`ExecContext::SERVER`): reads directly from the in-process
+    *   qmaster master lists, avoiding any network round-trip.
+    *
+    * ## Virtual pipeline inside make_snapshot()
+    *
+    * 1. `fetch_data()`   — populates the CULL list members (overridden per context).
+    * 2. `prepare_data()` — post-processes fetched lists (e.g. resolves hostgroup references).
+    * 3. `filter_data()`  — applies the resource-match filter from the parameters.
+    * 4. `sort_data()`    — sorts the result list for deterministic view output.
+    *
+    * @ingroup libprocedure
     */
    class QHostModelBase {
 
@@ -68,11 +81,24 @@ namespace ocs {
       static lEnumeration *get_pe_what();
       static lEnumeration *get_user_set_what();
 
+      /** @brief Fetch raw CULL lists into the member variables.
+       *
+       * Overridden by QHostModelClient (GDI calls) and QHostModelServer (master lists).
+       */
       virtual bool fetch_data(lList **answer_list, const lList *hostname_list, const lList *user_name_list, uint32_t show);
+      /** @brief Post-process fetched lists (e.g. resolve hostgroup references). */
       virtual bool prepare_data(lList **answer_list, const lList *resource_match_list, uint32_t show) const;
+      /** @brief Apply the resource-match filter to the exec host list. */
       virtual void filter_data(const lList *resource_match_list);
+      /** @brief Sort the exec host list for deterministic view output. */
       virtual void sort_data();
    public:
+      /** @brief Run the full pipeline: fetch_data → prepare_data → filter_data → sort_data.
+       *
+       * @param answer_list  Receives error messages on failure.
+       * @param parameter    Parsed qhost parameters.
+       * @return true if all pipeline steps succeeded.
+       */
       virtual bool make_snapshot(lList **answer_list, QHostParameter &parameter);
 #pragma endregion
 

@@ -26,6 +26,15 @@
 #include "ocs_QStatModelBase.h"
 
 namespace ocs {
+   /** @brief QStat model for the server execution context.
+    *
+    * Implements `fetch_data()` by reading directly from in-process qmaster master
+    * lists, avoiding any GDI network round-trip.  Constructed with the originating
+    * client's `gdi::Packet` so that permission checks reflect the real caller.
+    *
+    * @see QStatModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QStatModelServer : public QStatModelBase {
       gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;

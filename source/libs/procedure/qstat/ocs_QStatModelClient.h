@@ -26,6 +26,15 @@
 #include "ocs_QStatParameter.h"
 
 namespace ocs {
+   /** @brief QStat model for the client execution context.
+    *
+    * Implements `fetch_data()` by issuing GDI requests to qmaster to retrieve
+    * the queue, job, host, and auxiliary CULL lists.  All subsequent filtering
+    * and rendering happens locally on the client side.
+    *
+    * @see QStatModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QStatModelClient : public QStatModelBase {
    protected:
       bool fetch_data(lList **answer_list, QStatParameter &parameter) override;

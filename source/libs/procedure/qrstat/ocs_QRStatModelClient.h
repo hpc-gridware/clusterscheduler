@@ -24,6 +24,14 @@
 #include "ocs_QRStatModelBase.h"
 
 namespace ocs {
+   /** @brief QRStat model for the client execution context.
+    *
+    * Implements `fetch_data()` by issuing a GDI request to qmaster to retrieve
+    * the advance reservation list filtered according to the given parameters.
+    *
+    * @see QRStatModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QRStatModelClient : public QRStatModelBase {
    protected:
       bool fetch_data(lList **answer_list, QRStatParameter& parameter) override;

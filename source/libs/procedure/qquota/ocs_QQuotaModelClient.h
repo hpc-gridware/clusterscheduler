@@ -24,6 +24,14 @@
 #include "ocs_QQuotaModelBase.h"
 
 namespace ocs {
+   /** @brief QQuota model for the client execution context.
+    *
+    * Implements `fetch_data()` by issuing GDI requests to qmaster to retrieve
+    * RQS, centry, user set, host group, and exec host CULL lists.
+    *
+    * @see QQuotaModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QQuotaModelClient : public QQuotaModelBase {
    protected:
       bool fetch_data(lList **answer_list, const lList *host_list) override;

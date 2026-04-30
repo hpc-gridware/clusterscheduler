@@ -24,6 +24,15 @@
 #include "ocs_QHostModelBase.h"
 
 namespace ocs {
+   /** @brief QHost model for the server execution context.
+    *
+    * Implements `fetch_data()` by reading directly from in-process qmaster master
+    * lists, avoiding any GDI network round-trip.  Constructed with the originating
+    * client's `gdi::Packet` so that permission checks reflect the real caller.
+    *
+    * @see QHostModelBase for the full pipeline description.
+    * @ingroup libprocedure
+    */
    class QHostModelServer : public QHostModelBase {
       [[maybe_unused]] gdi::Packet *packet = nullptr;
       [[maybe_unused]] gdi::Task *task = nullptr;

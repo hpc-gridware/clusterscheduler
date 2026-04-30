@@ -24,6 +24,33 @@
 #include "ocs_QStatParameter.h"
 
 namespace ocs {
+   /** @brief Base model for qstat that holds all CULL data lists needed for rendering.
+    *
+    * Unlike the generic ProcedureModel (which delegates rendering to qmaster),
+    * QStatModelBase fetches typed CULL lists, applies filtering, and exposes
+    * the results directly to the view layer — in both client and server contexts.
+    *
+    * ## Client vs. server execution
+    *
+    * Two concrete subclasses implement the data-fetch step:
+    *
+    * - **QStatModelClient** (`ExecContext::CLIENT`): issues multiple GDI requests to
+    *   qmaster to fetch queue, job, host, and auxiliary lists.
+    *
+    * - **QStatModelServer** (`ExecContext::SERVER`): reads directly from the in-process
+    *   master lists inside qmaster, avoiding any network round-trip.
+    *
+    * Both subclasses share the filtering and preparation pipeline defined here.
+    *
+    * ## Virtual pipeline inside make_snapshot()
+    *
+    * 1. `prepare_filter()` — normalises parameter flags before data is fetched.
+    * 2. `fetch_data()`     — populates the CULL list members (overridden per context).
+    * 3. `prepare_data()`   — post-processes the fetched lists (e.g. resolves hostgroups).
+    * 4. `filter_data()`    — applies user-specified filters (queue state, resource, PE …).
+    *
+    * @ingroup libprocedure
+    */
    class QStatModelBase {
 #pragma region Data
    public:
@@ -106,12 +133,25 @@ namespace ocs {
       int filter_queues(lList **answer_list, const QStatParameter &parameter) const;
 
    protected:
+      /** @brief Normalise parameter flags before any data is fetched. */
       virtual void prepare_filter(QStatParameter &parameter);
+      /** @brief Fetch raw CULL lists into the member variables.
+       *
+       * Overridden by QStatModelClient (GDI calls) and QStatModelServer (master lists).
+       */
       virtual bool fetch_data(lList **answer_list, QStatParameter &parameter);
+      /** @brief Post-process fetched lists (e.g. resolve hostgroup references). */
       virtual bool prepare_data(lList **answer_list, QStatParameter &parameter);
+      /** @brief Apply user-specified filters (queue state, resource, PE, queue ref …). */
       virtual bool filter_data(lList **answer_list, QStatParameter &parameter);
 
    public:
+      /** @brief Run the full pipeline: prepare_filter → fetch_data → prepare_data → filter_data.
+       *
+       * @param answer_list  Receives error messages on failure.
+       * @param parameter    Parsed qstat parameters.
+       * @return true if all pipeline steps succeeded.
+       */
       virtual bool make_snapshot(lList **answer_list, QStatParameter &parameter);
 
       void calc_longest_queue_length(QStatParameter &parameter) const;
