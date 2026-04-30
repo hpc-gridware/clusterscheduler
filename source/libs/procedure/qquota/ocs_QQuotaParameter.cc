@@ -38,7 +38,7 @@ ocs::QQuotaParameter::~QQuotaParameter() {
    DRETURN_VOID;
 }
 
-ocs::QQuotaParameter::QQuotaParameter(lList *bundle) : ProcedureParameter("") {
+ocs::QQuotaParameter::QQuotaParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    QQuotaParameter::set_bundle(bundle);

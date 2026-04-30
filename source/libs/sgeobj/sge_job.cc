@@ -4378,7 +4378,7 @@ const char *job_scope_name(uint32_t scope_id) {
    return ret;
 }
 
-std::string get_scope_list_name(const uint32_t scope, const int nm) {
+std::string get_scope_list_name(const uint32_t scope, const int nm, const bool with_colon) {
    std::string name;
    if (scope > JRS_SCOPE_GLOBAL) {
       name += job_scope_name(scope);
@@ -4404,6 +4404,10 @@ std::string get_scope_list_name(const uint32_t scope, const int nm) {
          break;
       default:
          name += "unknown";
+   }
+
+   if (with_colon) {
+      name += ":";
    }
    return name;
 }
@@ -4650,12 +4654,10 @@ job_get_sync_options_string(const lListElem *job) {
  *
  * @param owner the owner of the job
  * @param is_manager true if the current user is a manager
- * @param show_department_view true if the department view should be shown
- * @param acl_list the ACL list
  * @return true if the job should be visible, false otherwise
  */
 bool
-job_is_visible(const char *owner, const bool is_manager) {
+job_is_visible(ocs::gdi::Packet *packet, const char *owner, const bool is_manager) {
    DENTER(BASIS_LAYER);
 
    // manager can see everything
@@ -4663,8 +4665,17 @@ job_is_visible(const char *owner, const bool is_manager) {
       DRETURN(true);
    }
 
-   // if the qstat-user is the owner of the job, show the data
-   const char *username = component_get_username();
+   // On the server side, when executed as stored procedure then we have a packet containing the
+   // owner of the request. If executed on client side then the component name contains the user
+   // that started the client command
+   const char *username;
+   if (packet != nullptr) {
+      username = packet->user;
+   } else {
+      username = component_get_username();
+   }
+
+   // if the request owner and the job owner are identical
    if (strcmp(username, owner) == 0) {
       DRETURN(true);
    }

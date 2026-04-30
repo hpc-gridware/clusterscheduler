@@ -868,7 +868,7 @@ void ocs::QStatDefaultController::process_jobs_pending_state(std::ostream &os, Q
       nxt_jatep = lFirstRW(lGetList(jep, JB_ja_tasks));
       FoundTasks = 0;
 
-      bool hide_data = !job_is_visible(lGetString(jep, JB_owner), model.is_manager());
+      bool hide_data = !job_is_visible(parameter.get_packet(), lGetString(jep, JB_owner), model.is_manager());
       if (hide_data) {
          continue;
       }

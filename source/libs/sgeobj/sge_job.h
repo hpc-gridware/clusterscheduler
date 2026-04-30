@@ -507,7 +507,7 @@ constexpr const char *scope_to_string(const int scope) {
 bool job_parse_scope_string(const char *scope, char &scope_id);
 const char *job_scope_name(uint32_t scope_id);
 const char *job_scope_name(const lListElem *scope_ep);
-std::string get_scope_list_name(uint32_t scope, int nm);
+std::string get_scope_list_name(uint32_t scope, int nm, bool with_colon = false);
 
 const lListElem *job_get_request_set(const lListElem *job, uint32_t scope);
 lListElem *job_get_request_setRW(lListElem *job, uint32_t scope);
@@ -576,7 +576,7 @@ std::string
 job_get_sync_options_string(const lListElem *job);
 
 bool
-job_is_visible(const char *owner, bool is_manager);
+job_is_visible(ocs::gdi::Packet *packet, const char *owner, bool is_manager);
 
 void
 job_normalize_priority(lListElem *jep, uint32_t priority);

@@ -50,7 +50,6 @@ namespace ocs {
 
       ~QStatJobViewJSON() override = default;
 
-      void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
       void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;

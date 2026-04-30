@@ -81,29 +81,10 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const lList *ce
 
 void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, const int flags) {
    // create dummy params and view so that we can call virtual methods in this static function
-   const ProcedureParameter parameter("");
+   const ProcedureParameter parameter("", nullptr);
    QStatJobViewPlain view(parameter);
 
    view.show_job(os, ilp, job, flags);
-}
-
-void ocs::QStatJobViewPlain::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
-   DENTER(TOP_LAYER);
-
-   /* print scheduler job information and global scheduler info */
-   for_each_ep_lv(j_elem, model.jlp) {
-      const char *owner = lGetString(j_elem, JB_owner);
-      if (const bool show_job = job_is_visible(owner, model.is_manager()); !show_job) {
-         DTRACE;
-         continue;
-      }
-
-      os << "==============================================================\n";
-      /* print job information */
-      show_job(os, model.ilp, j_elem, 0);
-   }
-
-   DRETURN_VOID;
 }
 
 void
@@ -587,7 +568,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
          uint32_t scope = lGetUlong(jrs, JRS_scope);
 
          if (const lList *lp = lGetList(jrs, JRS_hard_resource_list)) {
-            std::string str_attrib = get_scope_list_name(scope, JRS_hard_resource_list);
+            std::string str_attrib = get_scope_list_name(scope, JRS_hard_resource_list, true);
 
             std::ostringstream ss_list;
             show_ce_type_list(ss_list, lp, "", ",");
@@ -596,7 +577,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
          }
 
          if (const lList *lp = lGetList(jrs, JRS_soft_resource_list)) {
-            std::string str_attrib = get_scope_list_name(scope, JRS_soft_resource_list);
+            std::string str_attrib = get_scope_list_name(scope, JRS_soft_resource_list, true);
 
             std::ostringstream ss_list;
             show_ce_type_list(ss_list, lp, "", ",");
@@ -605,7 +586,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
          }
 
          if (const lList *lp = lGetList(jrs, JRS_hard_queue_list)) {
-            std::string str_attrib = get_scope_list_name(scope, JRS_hard_queue_list);
+            std::string str_attrib = get_scope_list_name(scope, JRS_hard_queue_list, true);
             delis[0] = " ";
 
             std::ostringstream ss_list;
@@ -616,7 +597,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
          }
 
          if (const lList *lp = lGetList(jrs, JRS_soft_queue_list)) {
-            std::string str_attrib = get_scope_list_name(scope, JRS_soft_queue_list);
+            std::string str_attrib = get_scope_list_name(scope, JRS_soft_queue_list, true);
             delis[0] = " ";
 
             std::ostringstream ss_list;
@@ -628,7 +609,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const lLi
 
          const char *allocation_rule = lGetString(jrs, JRS_allocation_rule);
          if (allocation_rule != nullptr) {
-            std::string str_attrib = get_scope_list_name(scope, JRS_allocation_rule);
+            std::string str_attrib = get_scope_list_name(scope, JRS_allocation_rule, true);
 
             os << std::format("{:<{}} {}", str_attrib, left_width, allocation_rule) << "\n";
          }

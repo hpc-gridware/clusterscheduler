@@ -237,7 +237,7 @@ namespace {
       using Controller = typename Traits::Controller;
 
       // Create parameter object containing the parsed switch information from the client
-      Parameter parameter(task->data_list);
+      Parameter parameter(task->data_list, packet);
       lFreeList(&task->data_list);
 
       // Create the server side model and make a snapshot of the required data
@@ -273,7 +273,7 @@ namespace {
    }
 
    template<typename Traits>
-   void prepare_response(ocs::gdi::Task *task, std::ostringstream &os) {
+   void prepare_response(ocs::gdi::Packet *packet, ocs::gdi::Task *task, std::ostringstream &os) {
       DENTER(TOP_LAYER);
 
       // if exec_procedure failed then the answer_list contains already an error
@@ -283,7 +283,7 @@ namespace {
 #endif
 
       // Prepare a response
-      ocs::ProcedureParameter response(to_string(Traits::prog_number));
+      ocs::ProcedureParameter response(to_string(Traits::prog_number), packet);
       lList *bundle = response.get_bundle();
 
       // Add the procedures output to the bundle
@@ -306,7 +306,7 @@ namespace {
 
       std::ostringstream out_ss;
       exec_procedure<Traits>(packet, task, out_ss);
-      prepare_response<Traits>(task, out_ss);
+      prepare_response<Traits>(packet, task, out_ss);
 
       DRETURN_VOID;
    }

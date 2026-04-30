@@ -55,7 +55,7 @@ namespace ocs {
       explicit QStatJobViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {};
       ~QStatJobViewBase() override = default;
 
-      virtual void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) = 0;
+      virtual void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model);
       virtual void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) = 0;
       virtual void show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
 

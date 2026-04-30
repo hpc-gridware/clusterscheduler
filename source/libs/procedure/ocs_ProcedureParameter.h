@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "cull/cull.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 namespace ocs {
 
@@ -50,6 +51,7 @@ namespace ocs {
       OutputFormat output_format_ = OutputFormat::PLAIN; ///< output format
       ExecContext exec_context_ = ExecContext::SERVER; ///< where the request will be executed
       lList *env_variable_list_ = nullptr;
+      gdi::Packet *packet_ = nullptr;
 
    public:
       [[nodiscard]] OutputFormat get_output_format() const { return output_format_ ; }
@@ -62,6 +64,8 @@ namespace ocs {
       [[nodiscard]] const lList* get_env_variable_list() const { return env_variable_list_; }
       void add_variable(const char *name, const char *value);
       const char *get_variable(const char *name) const;
+
+      [[nodiscard]] gdi::Packet* get_packet() const { return packet_; }
 
 #pragma endregion
 
@@ -87,7 +91,7 @@ namespace ocs {
 
 #pragma region Constructor/Destructor
    public:
-      explicit ProcedureParameter(std::string procedure_name) : procedure_name_(std::move(procedure_name)) {};
+      explicit ProcedureParameter(std::string procedure_name, gdi::Packet *packet) : procedure_name_(std::move(procedure_name)), packet_(packet) {};
       virtual ~ProcedureParameter() = default;
 #pragma endregion
    };

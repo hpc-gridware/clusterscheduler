@@ -44,40 +44,10 @@
 #include "qstat/ocs_QStatParameter.h"
 #include "qstat/job/ocs_QStatJobViewJSON.h"
 
-void ocs::QStatJobViewJSON::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
-   DENTER(TOP_LAYER);
-   bool first_job = true;
-
-   /* print scheduler job information and global scheduler info */
-   for_each_ep_lv(j_elem, model.jlp) {
-      // Do not show jobs that should not be visible
-      if (!job_is_visible(lGetString(j_elem, JB_owner), model.is_manager())) {
-         continue;
-      }
-
-      if (first_job) {
-         report_jobs_started(os, parameter);
-         first_job = false;
-      }
-
-      report_job_separator(os, parameter);
-
-      report_job_started(os, parameter);
-      show_job(os, model.ilp, j_elem, 0);
-      report_job_finished(os, parameter);
-   }
-   if (!first_job) {
-      report_jobs_finished(os, parameter);
-      first_job = false;
-   }
-
-   DRETURN_VOID;
-}
-
 void
 ocs::QStatJobViewJSON::show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
-   // -j without jid's is deprecated
+   // -j without jid's is deprecated and not implemented for JSON output
    DRETURN_VOID;
 }
 

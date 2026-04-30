@@ -70,9 +70,9 @@ namespace ocs {
    private:
 
    public:
-      explicit QQuotaParameter(lList *bundle);
+      explicit QQuotaParameter(lList *bundle, gdi::Packet *packet);
 
-      explicit QQuotaParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {
+      explicit QQuotaParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {
       };
 
       ~QQuotaParameter() override;

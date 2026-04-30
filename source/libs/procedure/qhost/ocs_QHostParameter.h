@@ -22,6 +22,7 @@
 #include <string>
 
 #include "cull/cull.h"
+#include "gdi/ocs_gdi_Packet.h"
 
 #include "procedure/ocs_ProcedureParameter.h"
 
@@ -71,8 +72,8 @@ namespace ocs {
 
 #pragma region Constructor/Destructor
    public:
-      explicit QHostParameter(lList *bundle);
-      explicit QHostParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {};
+      explicit QHostParameter(lList *bundle, gdi::Packet *packet);
+      explicit QHostParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {};
       ~QHostParameter() override;
 #pragma endregion
 

@@ -30,6 +30,7 @@
 
 ocs::QStatParameter::~QStatParameter() {
    DENTER(TOP_LAYER);
+   // Data that was allocated
    lFreeList(&resource_list_);
    lFreeList(&q_resource_list_);
    lFreeList(&queue_ref_list_);
@@ -37,13 +38,14 @@ ocs::QStatParameter::~QStatParameter() {
    lFreeList(&user_list_);
    lFreeList(&queue_user_list_);
    lFreeList(&jid_list_);
+
    DRETURN_VOID;
 }
 
-ocs::QStatParameter::QStatParameter(lList *bundle) : ProcedureParameter("") {
+ocs::QStatParameter::QStatParameter(const lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
-   // initialize local member variables
+   // initialize local member variables with data received from client
    QStatParameter::set_bundle(bundle);
 
    DRETURN_VOID;

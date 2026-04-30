@@ -40,7 +40,6 @@ namespace ocs {
       ~QStatJobViewPlain() override = default;
 
       static void cull_show_job(std::ostream &os, const lList *ilp, const lListElem *job, int flags);
-      void show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
       void show_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) override;
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;

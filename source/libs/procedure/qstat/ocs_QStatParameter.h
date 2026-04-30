@@ -25,6 +25,8 @@
 
 #include "cull/cull.h"
 
+#include "gdi/ocs_gdi_Packet.h"
+
 #include "sgeobj/sge_qinstance_state.h"
 
 #include "ocs_ProcedureParameter.h"
@@ -164,8 +166,8 @@ namespace ocs {
 #pragma region Constructors/Destructors
 
    public:
-      explicit QStatParameter(lList *bundle);
-      explicit QStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name)) {};
+      explicit QStatParameter(const lList *bundle, gdi::Packet *packet);
+      explicit QStatParameter(std::string procedure_name) : ProcedureParameter(std::move(procedure_name), nullptr) {}
       ~QStatParameter() override;
 
 #pragma endregion

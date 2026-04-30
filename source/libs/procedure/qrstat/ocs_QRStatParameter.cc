@@ -28,7 +28,7 @@
 #include "qhost/ocs_QHostParameter.h"
 #include "sgeobj/cull/sge_param_SPP_L.h"
 
-ocs::QRStatParameter::QRStatParameter(lList *bundle) : ProcedureParameter("") {
+ocs::QRStatParameter::QRStatParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    // initialize local member variables

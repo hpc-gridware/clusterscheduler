@@ -39,7 +39,7 @@ ocs::QHostParameter::~QHostParameter() {
    lFreeList(&resource_visible_list_);
 }
 
-ocs::QHostParameter::QHostParameter(lList *bundle) : ProcedureParameter("") {
+ocs::QHostParameter::QHostParameter(lList *bundle, gdi::Packet *packet) : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
    // initialize local member variables
