@@ -725,7 +725,7 @@ static int clean_up_job(lListElem *jr, int failed, int shepherd_exit_status,
             job_caused_failure = 1;
          } else if ((failed == SSTATE_NO_SHELL) && (master_queue != nullptr)) {
             char* shell_start_mode = mconf_get_shell_start_mode();
-            const char *mode = job_get_shell_start_mode(job, master_queue, shell_start_mode);
+            const char *mode = job_get_shell_start_mode(master_queue, shell_start_mode);
             sge_free(&shell_start_mode);
 
             if (strcmp(mode, "unix_behavior") == 0) {

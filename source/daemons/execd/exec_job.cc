@@ -1343,7 +1343,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
 
    shell_start_mode = mconf_get_shell_start_mode();
    fprintf(fp, "shell_start_mode=%s\n",
-           job_get_shell_start_mode(jep, master_q, shell_start_mode));
+           job_get_shell_start_mode(master_q, shell_start_mode));
    sge_free(&shell_start_mode);
 
    /* we need the basename for loginshell test */

@@ -75,7 +75,6 @@
 
 #include "symbols.h"
 #include "msg_common.h"
-#include "reschedule.h"
 #include "uti/sge_hostname.h"
 
 
@@ -235,25 +234,25 @@ lListElem *job_get_ja_task_template(const lListElem *job,
 *  RESULT
 *     uint32_t - hold state
 *******************************************************************************/
+static uint32_t job_accumulate_hold_flags(const lListElem *job, uint32_t ja_task_id)
+{
+   constexpr int attribute[4] = {JB_ja_u_h_ids, JB_ja_o_h_ids, JB_ja_s_h_ids, JB_ja_a_h_ids};
+   constexpr uint32_t hold_flag[4] = {MINUS_H_TGT_USER, MINUS_H_TGT_OPERATOR, MINUS_H_TGT_SYSTEM, MINUS_H_TGT_JA_AD};
+   uint32_t ret = 0;
+
+   for (int i = 0; i < 4; i++) {
+      if (range_list_is_id_within(lGetList(job, attribute[i]), ja_task_id)) {
+         ret |= hold_flag[i];
+      }
+   }
+   return ret;
+}
+
 uint32_t job_get_ja_task_hold_state(const lListElem *job,
                                      uint32_t ja_task_id)
 {
-   uint32_t ret = 0;
-
    DENTER(TOP_LAYER);
-   if (range_list_is_id_within(lGetList(job, JB_ja_u_h_ids), ja_task_id)) {
-      ret |= MINUS_H_TGT_USER;
-   }
-   if (range_list_is_id_within(lGetList(job, JB_ja_o_h_ids), ja_task_id)) {
-      ret |= MINUS_H_TGT_OPERATOR;
-   }
-   if (range_list_is_id_within(lGetList(job, JB_ja_s_h_ids), ja_task_id)) {
-      ret |= MINUS_H_TGT_SYSTEM;
-   }
-   if (range_list_is_id_within(lGetList(job, JB_ja_a_h_ids), ja_task_id)) {
-      ret |= MINUS_H_TGT_JA_AD;
-   }
-   DRETURN(ret);
+   DRETURN(job_accumulate_hold_flags(job, ja_task_id));
 }
 
 /****** sgeobj/job/job_create_hold_id_lists() *********************************
@@ -778,21 +777,20 @@ static int job_count_rescheduled_ja_tasks(const lListElem *job, bool count_all)
 *  RESULT
 *     int - number of tasks or simply 0/1 if count_all is 'false'
 ******************************************************************************/
-int job_count_pending_tasks(const lListElem *job, bool count_all)
-{
-   int n = 0;
-
+uint32_t job_count_pending_tasks(const lListElem *job, bool count_all) {
    DENTER(TOP_LAYER);
 
    if (count_all) {
-      n = range_list_get_number_of_ids(lGetList(job, JB_ja_n_h_ids));
+      uint32_t n = range_list_get_number_of_ids(lGetList(job, JB_ja_n_h_ids));
       n += job_count_rescheduled_ja_tasks(job, true);
-   } else {
-      if (lGetList(job, JB_ja_n_h_ids) || job_count_rescheduled_ja_tasks(job, false))
-         n = 1;
+      DRETURN(n);
    }
 
-   DRETURN(n);
+   if (lGetList(job, JB_ja_n_h_ids) || job_count_rescheduled_ja_tasks(job, false)) {
+      DRETURN(1);
+   }
+
+   DRETURN(0);
 }
 
 
@@ -952,9 +950,9 @@ void job_set_hold_state(lListElem *job, lList **answer_list,
 ******************************************************************************/
 uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id)
 {
+   DENTER(TOP_LAYER);
    uint32_t ret = 0;
 
-   DENTER(TOP_LAYER);
    if (job_is_enrolled(job, ja_task_id)) {
       lListElem *ja_task = job_search_task(job, nullptr, ja_task_id);
 
@@ -964,19 +962,7 @@ uint32_t job_get_hold_state(lListElem *job, uint32_t ja_task_id)
          ret = 0;
       }
    } else {
-      int attribute[4] = {JB_ja_u_h_ids, JB_ja_o_h_ids,
-                          JB_ja_s_h_ids, JB_ja_a_h_ids };
-      uint32_t hold_flag[4] = {MINUS_H_TGT_USER, MINUS_H_TGT_OPERATOR,
-                               MINUS_H_TGT_SYSTEM, MINUS_H_TGT_JA_AD};
-      int i;
-
-      for (i = 0; i < 4; i++) {
-         const lList *hold_list = lGetList(job, attribute[i]);
-
-         if (range_list_is_id_within(hold_list, ja_task_id)) {
-            ret |= hold_flag[i];
-         }
-      }
+      ret = job_accumulate_hold_flags(job, ja_task_id);
    }
    DRETURN(ret);
 }
@@ -1081,19 +1067,13 @@ lListElem *job_create_task(lListElem *job, lList **answer_list, uint32_t ja_task
 *  RESULT
 *     const char* - shell start mode
 ******************************************************************************/
-const char *job_get_shell_start_mode(const lListElem *job,
-                                     const lListElem *queue,
-                                     const char *conf_shell_start_mode)
-{
-   const char *ret;
-   const char *queue_start_mode = lGetString(queue, QU_shell_start_mode);
-
-   if (queue_start_mode && strcasecmp(queue_start_mode, "none")) {
-      ret = queue_start_mode;
-   } else {
-      ret = conf_shell_start_mode;
+const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode) {
+   DENTER(TOP_LAYER);
+   if (const char *queue_start_mode = lGetString(queue, QU_shell_start_mode);
+       queue_start_mode && strcasecmp(queue_start_mode, "none") != 0) {
+      DRETURN(queue_start_mode);
    }
-   return ret;
+   DRETURN(conf_shell_start_mode);
 }
 
 /****** sgeobj/job/job_list_add_job() *****************************************
@@ -1394,38 +1374,36 @@ int job_set_submit_task_ids(lListElem *job, uint32_t start, uint32_t end,
 *  RESULT
 *     uint32_t - task id or 0
 ******************************************************************************/
-uint32_t job_get_smallest_unenrolled_task_id(const lListElem *job)
+static uint32_t job_get_extreme_unenrolled_task_id(const lListElem *job, bool find_min)
 {
-   uint32_t n_h_id, u_h_id, o_h_id, s_h_id, a_h_id;
-   uint32_t ret = 0;
+   const int lists[5] = {JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_o_h_ids,
+                         JB_ja_s_h_ids, JB_ja_a_h_ids};
+   uint32_t ids[5];
 
-   n_h_id = range_list_get_first_id(lGetList(job, JB_ja_n_h_ids), nullptr);
-   u_h_id = range_list_get_first_id(lGetList(job, JB_ja_u_h_ids), nullptr);
-   o_h_id = range_list_get_first_id(lGetList(job, JB_ja_o_h_ids), nullptr);
-   s_h_id = range_list_get_first_id(lGetList(job, JB_ja_s_h_ids), nullptr);
-   a_h_id = range_list_get_first_id(lGetList(job, JB_ja_a_h_ids), nullptr);
-   ret = n_h_id;
-   if (ret > 0 && u_h_id > 0) {
-      ret = std::min(ret, u_h_id);
-   } else if (u_h_id > 0) {
-      ret = u_h_id;
+   for (int i = 0; i < 5; i++) {
+      ids[i] = find_min ? range_list_get_first_id(lGetList(job, lists[i]), nullptr)
+                        : range_list_get_last_id(lGetList(job, lists[i]), nullptr);
    }
-   if (ret > 0 && o_h_id > 0) {
-      ret = std::min(ret, o_h_id);
-   } else if (o_h_id > 0) {
-      ret = o_h_id;
+
+   uint32_t ret = ids[0];
+   for (int i = 1; i < 4; i++) {
+      if (ret > 0 && ids[i] > 0) {
+         ret = find_min ? std::min(ret, ids[i]) : std::max(ret, ids[i]);
+      } else if (ids[i] > 0) {
+         ret = ids[i];
+      }
    }
-   if (ret > 0 && s_h_id > 0)  {
-      ret = std::min(ret, s_h_id);
-   } else if (s_h_id > 0){
-      ret = s_h_id;
-   }
-   if (ret == 0 && a_h_id > 0)  {
-      ret = std::min(ret, a_h_id);
-   } else if (a_h_id > 0){
-      ret = a_h_id;
+   if (ret == 0 && ids[4] > 0) {
+      ret = find_min ? std::min(ret, ids[4]) : std::max(ret, ids[4]);
+   } else if (ids[4] > 0) {
+      ret = ids[4];
    }
    return ret;
+}
+
+uint32_t job_get_smallest_unenrolled_task_id(const lListElem *job)
+{
+   return job_get_extreme_unenrolled_task_id(job, true);
 }
 
 /****** sgeobj/job/job_get_smallest_enrolled_task_id() ************************
@@ -1492,36 +1470,7 @@ uint32_t job_get_smallest_enrolled_task_id(const lListElem *job)
 ******************************************************************************/
 uint32_t job_get_biggest_unenrolled_task_id(const lListElem *job)
 {
-   uint32_t n_h_id, u_h_id, o_h_id, s_h_id, a_h_id;
-   uint32_t ret = 0;
-
-   n_h_id = range_list_get_last_id(lGetList(job, JB_ja_n_h_ids), nullptr);
-   u_h_id = range_list_get_last_id(lGetList(job, JB_ja_u_h_ids), nullptr);
-   o_h_id = range_list_get_last_id(lGetList(job, JB_ja_o_h_ids), nullptr);
-   s_h_id = range_list_get_last_id(lGetList(job, JB_ja_s_h_ids), nullptr);
-   a_h_id = range_list_get_last_id(lGetList(job, JB_ja_a_h_ids), nullptr);
-   ret = n_h_id;
-   if (ret > 0 && u_h_id > 0) {
-      ret = std::max(ret, u_h_id);
-   } else if (u_h_id > 0) {
-      ret = u_h_id;
-   }
-   if (ret > 0 && o_h_id > 0) {
-      ret = std::max(ret, o_h_id);
-   } else if (o_h_id > 0) {
-      ret = o_h_id;
-   }
-   if (ret > 0 && s_h_id > 0)  {
-      ret = std::max(ret, s_h_id);
-   } else if (s_h_id > 0 ){
-      ret = s_h_id;
-   }
-   if (ret == 0 && a_h_id > 0)  {
-      ret = std::max(ret, a_h_id);
-   } else if (a_h_id > 0 ){
-      ret = a_h_id;
-   }
-   return ret;
+   return job_get_extreme_unenrolled_task_id(job, false);
 }
 
 /****** sgeobj/job/job_get_biggest_enrolled_task_id() *************************
@@ -2176,57 +2125,49 @@ void job_add_parent_id_to_context(lListElem *job)
 int job_check_qsh_display(const lListElem *job, lList **answer_list,
                           bool output_warning)
 {
-   const lListElem *display_ep;
-   const char *display;
-
    DENTER(TOP_LAYER);
 
+   dstring id_dstring = DSTRING_INIT;
+   const char *id_str = job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring);
+   int ret = STATUS_OK;
+
    /* check for existence of DISPLAY */
-   display_ep = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "DISPLAY");
-   if(display_ep == nullptr) {
-      dstring id_dstring = DSTRING_INIT;
-      if(output_warning) {
-         WARNING(MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+   if (const lListElem *display_ep = lGetElemStr(lGetList(job, JB_env_list), VA_variable, "DISPLAY"); display_ep == nullptr) {
+      if (output_warning) {
+         WARNING(MSG_JOB_NODISPLAY_S, id_str);
       } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NODISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_NODISPLAY_S, id_str);
       }
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      sge_dstring_free(&id_dstring);
-      DRETURN(STATUS_EUNKNOWN);
-   }
-
-   /* check value of display variable, if it is an empty string,
-    * it is useless in a grid environment.
-    */
-   display = lGetString(display_ep, VA_value);
-   if(display == nullptr || strlen(display) == 0) {
-      dstring id_dstring = DSTRING_INIT;
-      if(output_warning) {
-         WARNING(MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
-      } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_EMPTYDISPLAY_S, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
+      ret = STATUS_EUNKNOWN;
+   } else {
+      /* check value of display variable, if it is an empty string,
+       * it is useless in a grid environment.
+       */
+      if (const char *display = lGetString(display_ep, VA_value); display == nullptr || strlen(display) == 0) {
+         if (output_warning) {
+            WARNING(MSG_JOB_EMPTYDISPLAY_S, id_str);
+         } else {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_EMPTYDISPLAY_S, id_str);
+         }
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = STATUS_EUNKNOWN;
+      } else if (*display == ':') {
+         /* check value of display variable, if it has the form :<id> (local display)
+          * it is useless in a grid environment.
+          */
+         if (output_warning) {
+            WARNING(MSG_JOB_LOCALDISPLAY_SS, display, id_str);
+         } else {
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_LOCALDISPLAY_SS, display, id_str);
+         }
+         answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = STATUS_EUNKNOWN;
       }
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      sge_dstring_free(&id_dstring);
-      DRETURN(STATUS_EUNKNOWN);
    }
 
-   /* check value of display variable, if it has the form :<id> (local display)
-    * it is useless in a grid environment.
-    */
-   if(*display == ':') {
-      dstring id_dstring = DSTRING_INIT;
-      if(output_warning) {
-         WARNING(MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
-      } else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_LOCALDISPLAY_SS, display, job_get_id_string(lGetUlong(job, JB_job_number), 0, nullptr, &id_dstring));
-      }
-      answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-      sge_dstring_free(&id_dstring);
-      DRETURN(STATUS_EUNKNOWN);
-   }
-
-   DRETURN(STATUS_OK);
+   sge_dstring_free(&id_dstring);
+   DRETURN(ret);
 }
 
 /****** sgeobj/job/job_check_owner() ******************************************
@@ -3082,91 +3023,76 @@ bool sge_unparse_binding_dstring(dstring *category_str, const lListElem *job, co
 *     sge_job/job_verify_execd_job()
 *******************************************************************************/
 bool
-job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify)
-{
+job_verify(const lListElem *job, lList **answer_list, bool do_cull_verify) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
-   DENTER(TOP_LAYER);
-
    if (job == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                              MSG_NULLELEMENTPASSEDTO_S, "job_verify");
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_NULLELEMENTPASSEDTO_S, "job_verify");
       DRETURN(false);
    }
 
-   if (ret && do_cull_verify) {
-      if (!object_verify_cull(job, JB_Type)) {
-         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                 MSG_OBJECT_STRUCTURE_ERROR);
-         ret = false;
+   if (do_cull_verify && !object_verify_cull(job, JB_Type)) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);
+      DRETURN(false);
+   }
+
+   if (const char *name = lGetString(job, JB_job_name); name != nullptr) {
+      if (strlen(name) >= MAX_VERIFY_STRING) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JOB_NAMETOOLONG_I, MAX_VERIFY_STRING);
+         DRETURN(false);
+      }
+   } else {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_JOB_NOJOBNAME);
+      DRETURN(false);
+   }
+
+   if (const char *cwd = lGetString(job, JB_cwd); cwd != nullptr) {
+      /*
+       * cwd needn't be an absolute path, we also accept
+       * relative paths, e.g. via -wd switch,
+       * or even pseudo variables, e.g. $HOME used by drmaa submit
+       */
+      ret = path_verify(cwd, answer_list, "cwd", false);
+      if (!ret) {
+         DRETURN(false);
       }
    }
 
-   if (ret) {
-      const char *name = lGetString(job, JB_job_name);
-      if (name != nullptr) {
-         if (strlen(name) >= MAX_VERIFY_STRING) {
-            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                    MSG_JOB_NAMETOOLONG_I, MAX_VERIFY_STRING);
-            ret = false;
-         }
-      } else {
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                 MSG_JOB_NOJOBNAME);
-         ret = false;
+   if (const lList *path_aliases = lGetList(job, JB_path_aliases); path_aliases != nullptr) {
+      ret = path_alias_verify(path_aliases, answer_list);
+      if (!ret) {
+         DRETURN(false);
       }
    }
 
-   if (ret) {
-      const char *cwd = lGetString(job, JB_cwd);
-
-      if (cwd != nullptr) {
-         /*
-          * cwd needn't be an absolute path, we also accept
-          * relative paths, e.g. via -wd switch,
-          * or even pseudo variables, e.g. $HOME used by drmaa submit
-          */
-         ret = path_verify(cwd, answer_list, "cwd", false);
+   if (const lList *env_list = lGetList(job, JB_env_list); env_list != nullptr) {
+      ret = var_list_verify(env_list, answer_list);
+      if (!ret) {
+         DRETURN(false);
       }
    }
 
-   if (ret) {
-      const lList *path_aliases = lGetList(job, JB_path_aliases);
-
-      if (path_aliases != nullptr) {
-         ret = path_alias_verify(path_aliases, answer_list);
+   if (const lList *context_list = lGetList(job, JB_context); context_list != nullptr) {
+      ret = var_list_verify(context_list, answer_list);
+      if (!ret) {
+         DRETURN(false);
       }
    }
 
-   if (ret) {
-      const lList *env_list = lGetList(job, JB_env_list);
-
-      if (env_list != nullptr) {
-         ret = var_list_verify(env_list, answer_list);
+   constexpr struct { int nm; const char *name; } path_lists[] = {
+      {JB_stdout_path_list, "stdout path"},
+      {JB_stderr_path_list, "stderr path"},
+      {JB_stdin_path_list,  "stdin path"},
+   };
+   for (const auto &[nm, name] : path_lists) {
+      ret = path_list_verify(lGetList(job, nm), answer_list, name);
+      if (!ret) {
+         DRETURN(false);
       }
    }
 
-   if (ret) {
-      const lList *context_list = lGetList(job, JB_context);
-
-      if (context_list != nullptr) {
-         ret = var_list_verify(context_list, answer_list);
-      }
-   }
-
-   if (ret) {
-      ret = path_list_verify(lGetList(job, JB_stdout_path_list), answer_list, "stdout path");
-   }
-
-   if (ret) {
-      ret = path_list_verify(lGetList(job, JB_stderr_path_list), answer_list, "stderr path");
-   }
-
-   if (ret) {
-      ret = path_list_verify(lGetList(job, JB_stdin_path_list), answer_list, "stdin path");
-   }
-
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /****** sge_job/job_verify_submitted_job() *************************************
@@ -3531,13 +3457,12 @@ job_verify_submitted_job(lListElem *job, lList **answer_list)
 *
 *******************************************************************************/
 bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
+   DENTER(TOP_LAYER);
    const lListElem *ep;
    double d_ret = 0, d_tmp;
    const char *s;
    bool got_duration = false;
    char error_str[1024];
-
-   DENTER(TOP_LAYER);
 
    const lList *hard_resource_list = job_get_hard_resource_list(jep);
    if ((ep=lGetElemStr(hard_resource_list, CE_name, SGE_ATTR_H_RT))) {
@@ -3564,7 +3489,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const lListElem *jep) {
    }
 
    if (got_duration) {
-      if (d_ret > (double)std::numeric_limits<uint32_t>::max()) {
+      if (d_ret > static_cast<double>(std::numeric_limits<uint32_t>::max())) {
          *limit = std::numeric_limits<uint64_t>::max();
       } else {
          *limit = sge_gmt32_to_gmt64(d_ret);
@@ -4657,7 +4582,7 @@ job_get_sync_options_string(const lListElem *job) {
  * @return true if the job should be visible, false otherwise
  */
 bool
-job_is_visible(ocs::gdi::Packet *packet, const char *owner, const bool is_manager) {
+job_is_visible(const ocs::gdi::Packet *packet, const char *owner, const bool is_manager) {
    DENTER(BASIS_LAYER);
 
    // manager can see everything
@@ -4666,8 +4591,8 @@ job_is_visible(ocs::gdi::Packet *packet, const char *owner, const bool is_manage
    }
 
    // On the server side, when executed as stored procedure then we have a packet containing the
-   // owner of the request. If executed on client side then the component name contains the user
-   // that started the client command
+   // owner of the request. If executed on the client-side, then the component module contains the user
+   // that started the client command.
    const char *username;
    if (packet != nullptr) {
       username = packet->user;

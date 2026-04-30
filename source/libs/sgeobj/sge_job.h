@@ -290,7 +290,7 @@ void job_unenroll(lListElem *job, lList **answer_list, lListElem **ja_task);
 void job_delete_not_enrolled_ja_task(lListElem *job, lList **answer_list,
                                      uint32_t ja_task_number);
 
-int job_count_pending_tasks(const lListElem *job, bool count_all);
+uint32_t job_count_pending_tasks(const lListElem *job, bool count_all);
 
 bool job_has_soft_requests(lListElem *job);
 
@@ -329,9 +329,7 @@ void job_destroy_hold_id_lists(const lListElem *job, lList *id_list[16]);
 void job_create_hold_id_lists(const lListElem *job, lList *id_list[16],
                               uint32_t hold_state[16]);
 
-const char *job_get_shell_start_mode(const lListElem *job,
-                                     const lListElem *queue,
-                                     const char *conf_shell_start_mode);
+const char *job_get_shell_start_mode(const lListElem *queue, const char *conf_shell_start_mode);
 
 bool job_is_array(const lListElem *job);
 
@@ -576,7 +574,7 @@ std::string
 job_get_sync_options_string(const lListElem *job);
 
 bool
-job_is_visible(ocs::gdi::Packet *packet, const char *owner, bool is_manager);
+job_is_visible(const ocs::gdi::Packet *packet, const char *owner, bool is_manager);
 
 void
 job_normalize_priority(lListElem *jep, uint32_t priority);
