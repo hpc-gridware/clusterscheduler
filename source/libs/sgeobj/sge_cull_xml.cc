@@ -207,7 +207,7 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
       }
       else {
          const char* listName = lGetListName(lp);
-         if (strcmp (listName, "No list name specified") == 0){
+         if (listName == nullptr || strcmp(listName, "No list name specified") == 0 || strcmp(listName, "") == 0){
             listName = "element";
          }
          os << indent << "<" << listName << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";

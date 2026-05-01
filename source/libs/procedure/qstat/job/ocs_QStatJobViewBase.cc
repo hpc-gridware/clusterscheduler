@@ -35,14 +35,18 @@
 void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    bool first_job = true;
+#if 0
    gdi::Packet *packet = parameter.get_packet();
+#endif
 
    /* print scheduler job information and global scheduler info */
    for_each_ep_lv(j_elem, model.jlp) {
+#if 0
       // Do not show jobs that should not be visible
       if (!job_is_visible(packet, lGetString(j_elem, JB_owner), model.is_manager())) {
          continue;
       }
+#endif
 
       if (first_job) {
          report_jobs_started(os, parameter);

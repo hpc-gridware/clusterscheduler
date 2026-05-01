@@ -61,7 +61,7 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    lAppendElem(XML_out, xmlElem);
 
    lListElem *xml_elem = xml_getHead("detailed_job_info", XML_out, nullptr);
-   lWriteElemXMLTo(xml_elem, stdout);
+   lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
 
    DRETURN_VOID;
@@ -84,7 +84,7 @@ void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parame
 
    /* print out xml info from list */
    lListElem *xml_elem = xml_getHead("message", model.ilp, nullptr);
-   lWriteElemXMLTo(xml_elem, stdout);
+   lWriteElemXMLTo(xml_elem, os);
    lFreeElem(&xml_elem);
    model.ilp = nullptr;
 
