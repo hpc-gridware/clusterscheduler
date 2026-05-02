@@ -354,7 +354,7 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
       show_ISO_8601_timestamp(os, timestamp);
       os << "\"";
    }
-   if (show_urg) {
+   if (show_urg && summary->deadline > 0) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"" << "deadline" << "\": \"";
       show_ISO_8601_timestamp(os, summary->deadline);
       os << "\"";

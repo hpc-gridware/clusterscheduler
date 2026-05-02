@@ -419,10 +419,8 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
    }
 
    /* deadline time */
-   if (sge_urg) {
-      if (summary->deadline) {
-         xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64(summary->deadline, &ds, true, compat ? false : true));
-      }
+   if (sge_urg && summary->deadline > 0) {
+      xml_append_Attr_S(attribute_list, "JB_deadline", sge_ctime64(summary->deadline, &ds, true, compat ? false : true));
    }
 
    if (sge_ext) {
