@@ -170,6 +170,19 @@
             "io_usage": {
               "type": "number",
               "description": "Current I/O usage of the running job."
+            },
+            "master": {
+              "type": "string",
+              "description": "Parallel task role as reported by qstat -t. MASTER for the master task, SLAVE for slave tasks."
+            },
+            "task_id": {
+              "type": "string",
+              "description": "Parallel task identifier as reported by qstat -t.",
+              "examples": ["1.v01703", ""]
+            },
+            "stat": {
+              "type": "integer",
+              "description": "Exit status of the parallel task as reported by qstat -t."
             }
           },
           "additionalProperties": true
@@ -197,45 +210,6 @@
           "additionalProperties": true
         }
       ]
-    },
-
-    "parallelTask": {
-      "type": "object",
-      "required": [
-        "task_id",
-        "state",
-        "cpu_usage",
-        "mem_usage",
-        "io_usage",
-        "exit_status"
-      ],
-      "properties": {
-        "task_id": {
-          "type": "string",
-          "description": "Parallel task identifier.",
-          "examples": ["1.v01703", ""]
-        },
-        "state": {
-          "$ref": "#/$defs/jobState"
-        },
-        "cpu_usage": {
-          "type": "number",
-          "description": "CPU usage of the parallel task."
-        },
-        "mem_usage": {
-          "type": "number",
-          "description": "Memory usage of the parallel task."
-        },
-        "io_usage": {
-          "type": "number",
-          "description": "I/O usage of the parallel task."
-        },
-        "exit_status": {
-          "type": "integer",
-          "description": "Exit status of the parallel task."
-        }
-      },
-      "additionalProperties": true
     },
 
     "resourceRequestWithContribution": {

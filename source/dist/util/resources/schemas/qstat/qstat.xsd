@@ -153,6 +153,12 @@ ___INFO__MARK_END__-->
 			<xs:element name="slots" type="xs:unsignedInt"/>
 			<xs:element name="tasks" type="xs:string" minOccurs="0"/>
 
+			<xs:element name="task-id" type="xs:string" minOccurs="0"/>
+			<xs:element name="cpu-usage" type="xs:float" minOccurs="0"/>
+			<xs:element name="mem-usage" type="xs:float" minOccurs="0"/>
+			<xs:element name="io-usage" type="xs:float" minOccurs="0"/>
+			<xs:element name="stat" type="xs:unsignedInt" minOccurs="0"/>
+
 			<xs:element name="requested_pe" type="requested_pe_t" minOccurs="0"/>
 			<xs:element name="granted_pe" type="granted_pe_t" minOccurs="0"/>
 			<xs:element name="JB_checkpoint_name" type="xs:string" minOccurs="0"/>

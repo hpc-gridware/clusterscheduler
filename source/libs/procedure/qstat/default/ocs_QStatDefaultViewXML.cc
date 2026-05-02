@@ -477,40 +477,25 @@ void ocs::QStatDefaultViewXML::report_job_finished(std::ostream &os, uint32_t ji
 }
 
 void ocs::QStatDefaultViewXML::report_sub_task(std::ostream &os, task_summary_t *summary) {
-   lListElem *xml_elem = nullptr;
-   lList *attribute_list = nullptr;
-
    DENTER(TOP_LAYER);
 
-   xml_elem = lCreateElem(XMLE_Type);
-   attribute_list = lCreateList("attributes", XMLE_Type);
-   lSetList(xml_elem, XMLE_List, attribute_list);
+   lList *attribute_list = lGetListRW(job_elem, XMLE_List);
 
-   if(summary->task_id) {
+   if (summary->task_id) {
       xml_append_Attr_S(attribute_list, "task-id", summary->task_id);
    }
-
-   xml_append_Attr_S(attribute_list, "state", summary->state);
-
    if (summary->has_cpu_usage) {
       xml_append_Attr_D(attribute_list, "cpu-usage", summary->cpu_usage);
    }
-
    if (summary->has_mem_usage) {
       xml_append_Attr_D(attribute_list, "mem-usage", summary->mem_usage);
    }
-
    if (summary->has_io_usage) {
       xml_append_Attr_D(attribute_list, "io-usage", summary->io_usage);
    }
-
    if (summary->has_exit_status) {
       xml_append_Attr_U(attribute_list, "stat", summary->exit_status);
    }
-
-   /* add the sub-task to the current job element */
-   attribute_list = lGetListRW(job_elem, XMLE_Attribute);
-   lAppendElem(attribute_list, xml_elem);
 
    DRETURN_VOID;
 }

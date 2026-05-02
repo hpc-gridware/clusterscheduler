@@ -380,14 +380,14 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
          os << ",\n" << std::string(indent * 3, ' ') << "\"ftickets\": " << summary->ftickets;
          os << ",\n" << std::string(indent * 3, ' ') << "\"stickets\": " << summary->stickets;
       }
-      if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
-         os << ",\n" << std::string(indent * 3, ' ') << "\"master\": "
-               << raw2quotedJSON(summary->master ? summary->master : "");
-      }
-      os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << summary->slots;
-      if (summary->task_id && summary->is_array) {
-         os << ",\n" << std::string(indent * 3, ' ') << "\"tasks\": " << summary->task_id;
-      }
+   }
+   if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"master\": "
+            << raw2quotedJSON(summary->master ? summary->master : "");
+   }
+   os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << summary->slots;
+   if (summary->task_id && summary->is_array) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"tasks\": " << summary->task_id;
    }
 
    DRETURN_VOID;
@@ -722,37 +722,31 @@ void ocs::QStatDefaultViewJSON::report_ad_predecessor(std::ostream &os, uint32_t
 
 void ocs::QStatDefaultViewJSON::report_sub_tasks_started(std::ostream &os) {
    DENTER(TOP_LAYER);
-   os << ",\n" << std::string(indent * 3, ' ') << "\"parallel_task\": [";
-   indent++;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_sub_tasks_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   indent--;
-   os << "\n" << std::string(indent * 3, ' ') << "]";
-   first_sub_object = true;
    DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
-   if (first_sub_object) {
-      os << "\n";
-   } else {
-      os << ",\n";
+   if (summary->task_id) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"task_id\": " << raw2quotedJSON(summary->task_id);
    }
-   os << std::string(indent * 3, ' ') << "{";
-   indent++;
-   os << "\n" << std::string(indent * 3, ' ') << "\"task_id\": " << raw2quotedJSON(summary->task_id ? summary->task_id : "");
-   os << ",\n" << std::string(indent * 3, ' ') << "\"state\": " << raw2quotedJSON(summary->state ? summary->state : "");
-   os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
-   os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
-   os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;
-   os << ",\n" << std::string(indent * 3, ' ') << "\"exit_status\": " << summary->exit_status;
-   indent--;
-   os << "\n" << std::string(indent * 3, ' ') << "}";
-   first_sub_object = false;
+   if (summary->has_cpu_usage) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
+   }
+   if (summary->has_mem_usage) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"mem_usage\": " << summary->mem_usage;
+   }
+   if (summary->has_io_usage) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"io_usage\": " << summary->io_usage;
+   }
+   if (summary->has_exit_status) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"stat\": " << summary->exit_status;
+   }
    DRETURN_VOID;
 }
 

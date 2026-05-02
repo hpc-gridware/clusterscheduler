@@ -125,13 +125,6 @@
             {
                "type": "object",
                "properties": {
-                  "parallel_task": {
-                     "type": "array",
-                     "description": "Active parallel environment (PE) tasks of a tightly integrated parallel job.",
-                     "items": {
-                        "$ref": "./ocs-qstat-common.schema.json#/$defs/parallelTask"
-                     }
-                  },
                   "global_hard_request": {
                      "type": "array",
                      "description": "Global hard resource requests of the job.",
