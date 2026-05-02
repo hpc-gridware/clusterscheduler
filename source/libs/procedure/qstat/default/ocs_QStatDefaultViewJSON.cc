@@ -322,13 +322,13 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
    indent++;
 
    os << std::string(indent * 3, ' ') << "\"job_number\": " << jid;
-   os << ",\n" << std::string(indent * 3, ' ') << "\"prio\": " << summary->priority;
+   os << ",\n" << std::string(indent * 3, ' ') << "\"prio\": " << summary->nprior;
    if (show_ext) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"ntix\": " << summary->ntckts;
    }
    if (show_urg) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"nurg\": " << summary->nurg;
-      os << ",\n" << std::string(indent * 3, ' ') << "\"urg\": " << summary->nurg;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"urg\": " << summary->urg;
       os << ",\n" << std::string(indent * 3, ' ') << "\"rrcontr\": " << summary->rrcontr;
       os << ",\n" << std::string(indent * 3, ' ') << "\"wtcontr\": " << summary->wtcontr;
       os << ",\n" << std::string(indent * 3, ' ') << "\"dlcontr\": " << summary->dlcontr;
@@ -359,6 +359,9 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
       show_ISO_8601_timestamp(os, summary->deadline);
       os << "\"";
    }
+   if (summary->is_running) {
+      os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << raw2quotedJSON(summary->queue ? summary->queue : "");
+   }
    if (show_ext) {
       if (summary->has_cpu_usage) {
          os << ",\n" << std::string(indent * 3, ' ') << "\"cpu_usage\": " << summary->cpu_usage;
@@ -376,9 +379,6 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
          os << ",\n" << std::string(indent * 3, ' ') << "\"otickets\": " << summary->otickets;
          os << ",\n" << std::string(indent * 3, ' ') << "\"ftickets\": " << summary->ftickets;
          os << ",\n" << std::string(indent * 3, ' ') << "\"stickets\": " << summary->stickets;
-      }
-      if (!(parameter.show_ & QSTAT_DISPLAY_FULL)) {
-         os << ",\n" << std::string(indent * 3, ' ') << "\"queue_name\": " << raw2quotedJSON(summary->queue ? summary->queue : "");
       }
       if ((parameter.group_opt_ & GROUP_NO_PETASK_GROUPS)) {
          os << ",\n" << std::string(indent * 3, ' ') << "\"master\": "

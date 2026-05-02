@@ -300,7 +300,6 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
 {
    DENTER(TOP_LAYER);
    uint32_t jstate;
-   int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    const lList *ql = nullptr;
    QStatDefaultViewBase::job_summary_t summary{};
 
@@ -310,12 +309,11 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       summary.queue = lGetString(gdil_ep, JG_qname);
    }
 
-   sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
-   tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS);
-   sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY);
-   sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY);
-   sge_time = !sge_ext;
-   sge_time = sge_time | tsk_ext | sge_urg | sge_pri;
+   const bool sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
+   const bool tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;
+   const bool sge_urg = (parameter.show_ & QSTAT_DISPLAY_URGENCY) ? true : false;
+   const bool sge_pri = (parameter.show_ & QSTAT_DISPLAY_PRIORITY) ? true : false;
+   const bool sge_time = !sge_ext | tsk_ext | sge_urg | sge_pri;
 
    summary.nprior = lGetDouble(jatep, JAT_prio);
    if (sge_pri || sge_urg) {
