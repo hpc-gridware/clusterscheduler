@@ -324,7 +324,7 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
    os << std::string(indent * 3, ' ') << "\"job_number\": " << jid;
    os << ",\n" << std::string(indent * 3, ' ') << "\"prio\": " << summary->nprior;
    if (show_ext) {
-      os << ",\n" << std::string(indent * 3, ' ') << "\"ntix\": " << summary->ntckts;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"ntckts\": " << summary->ntckts;
    }
    if (show_urg) {
       os << ",\n" << std::string(indent * 3, ' ') << "\"nurg\": " << summary->nurg;
