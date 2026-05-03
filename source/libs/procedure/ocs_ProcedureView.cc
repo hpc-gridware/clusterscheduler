@@ -54,7 +54,7 @@ std::string ocs::ProcedureView::raw2JSON(const std::string &input) {
          case '\t': output += "\\t";
             break;
          default:
-            if (c < 0x20) {
+            if (c < 0x20 || c >= 0x80) {
                const auto hex = "0123456789ABCDEF";
 
                // \u00XX
