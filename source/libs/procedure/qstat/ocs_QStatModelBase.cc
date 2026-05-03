@@ -18,7 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cerrno>
 #include <fnmatch.h>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -675,8 +677,14 @@ lCondition *ocs::QStatModelBase::get_job_view_where(const lList *job_view_list) 
       lCondition *new_where;
 
       if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
-         auto jid = static_cast<uint32_t>(strtoul(job_name, nullptr, 10));
-         new_where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, jid);
+         char *end = nullptr;
+         errno = 0;
+         unsigned long raw = strtoul(job_name, &end, 10);
+         if (errno == 0 && end != job_name && *end == '\0' && raw <= std::numeric_limits<uint32_t>::max()) {
+            new_where = lWhere("%T(%I==%u)", JB_Type, JB_job_number, static_cast<uint32_t>(raw));
+         } else {
+            new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
+         }
       } else if (job_name != nullptr) {
          new_where = lWhere("%T(%I p= %s)", JB_Type, JB_job_name, job_name);
       } else {
