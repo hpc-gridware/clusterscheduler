@@ -117,11 +117,15 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
           */
          const char *s = parameter.state_filter_value_.c_str();
          while (*s != '\0') {
+            const char *s_before = s;
             for (int i = 0; flags[i] != nullptr; i++) {
                if (strncmp(s, flags[i], strlen(flags[i])) == 0) {
                   parameter.show_ |= bits[i];
                   s += strlen(flags[i]);
                }
+            }
+            if (s == s_before) {
+               s++;
             }
          }
       }
