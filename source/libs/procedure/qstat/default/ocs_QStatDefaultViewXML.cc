@@ -39,7 +39,9 @@ static const char* ADDITIONAL_TAG_NAMES[] = {
    "ERROR",
    "checkpoint_env",
    "master_queue",
-   "full_job_name"
+   "full_job_name",
+   "requested_pe",
+   "granted_pe"
 };
 
 void ocs::QStatDefaultViewXML::qstat_xml_create_job_list() {
@@ -500,13 +502,15 @@ void ocs::QStatDefaultViewXML::report_sub_task(std::ostream &os, task_summary_t 
    DRETURN_VOID;
 }
 
-void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, job_additional_info_t name, const char* value) {
+void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const job_additional_info_t name, const char* value) {
 
    DENTER(TOP_LAYER);
 
    switch(name) {
       case CHECKPOINT_ENV:
       case MASTER_QUEUE:
+      case REQUESTED_PE:
+      case GRANTED_PE:
          DPRINTF("Skip additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
          DRETURN_VOID;
       default:
