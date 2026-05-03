@@ -28,7 +28,7 @@ namespace ocs {
       lList *xml_elems = nullptr;
    public:
       explicit QStatGroupViewXML(const ProcedureParameter &parameter) : QStatGroupViewBase(parameter) {};
-      ~QStatGroupViewXML() override = default;
+      ~QStatGroupViewXML() override { lFreeList(&xml_elems); }
 
       void report_started(std::ostream &os, QStatParameter &parameter) override;
       void report_finished(std::ostream &os, QStatParameter &parameter) override;

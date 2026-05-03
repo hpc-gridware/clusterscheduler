@@ -36,6 +36,9 @@ void ocs::QStatGroupViewXML::report_finished(std::ostream &os, QStatParameter &p
 
 void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name, Summary *summary, QStatParameter &parameter) {
    lListElem *elem = lCreateElem(XMLE_Type);
+   if (elem == nullptr) {
+      return;
+   }
    lList *attributes = lCreateList("attributes", XMLE_Type);
    lSetList(elem, XMLE_List, attributes);
 
@@ -63,10 +66,8 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char* cq_name
       xml_append_Attr_U(attributes, "orphaned", summary->orphaned);
       xml_append_Attr_U(attributes, "error", summary->error);
    }
-   if (elem) {
-      if (xml_elems == nullptr){
-         xml_elems = lCreateList("cluster_queue_summary", XMLE_Type);
-      }
-      lAppendElem(xml_elems, elem);
+   if (xml_elems == nullptr){
+      xml_elems = lCreateList("cluster_queue_summary", XMLE_Type);
    }
+   lAppendElem(xml_elems, elem);
 }
