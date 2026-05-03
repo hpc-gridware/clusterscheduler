@@ -387,7 +387,7 @@ void ocs::QStatDefaultViewJSON::report_job(std::ostream &os, const uint32_t jid,
    }
    os << ",\n" << std::string(indent * 3, ' ') << "\"slots\": " << summary->slots;
    if (summary->task_id && summary->is_array) {
-      os << ",\n" << std::string(indent * 3, ' ') << "\"tasks\": " << summary->task_id;
+      os << ",\n" << std::string(indent * 3, ' ') << "\"tasks\": " << raw2quotedJSON(summary->task_id);
    }
 
    DRETURN_VOID;
