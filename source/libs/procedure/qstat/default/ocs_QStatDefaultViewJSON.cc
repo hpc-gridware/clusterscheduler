@@ -18,6 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cerrno>
 #include <sstream>
 #include <format>
 
@@ -539,8 +540,19 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
    os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
-   // values does not need to get quoted because a default request is automatically a number
-   os << std::string(indent * 3, ' ') << "\"value\": " << value << ",\n";
+   {
+      char *end = nullptr;
+      errno = 0;
+      strtod(value != nullptr ? value : "", &end);
+      const bool is_number = (errno == 0 && end != value && end != nullptr && *end == '\0');
+      os << std::string(indent * 3, ' ') << "\"value\": ";
+      if (is_number) {
+         os << value;
+      } else {
+         os << raw2quotedJSON(value != nullptr ? value : "");
+      }
+      os << ",\n";
+   }
    os << std::string(indent * 3, ' ') << "\"is_default_request\": " << "true" << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "}";
