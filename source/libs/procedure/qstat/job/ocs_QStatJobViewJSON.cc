@@ -222,7 +222,8 @@ void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os, c
    }
 
    char *copied_str = strdup(str);
-   if (const char *command = strtok(copied_str, " "); command != nullptr) {
+   char *saveptr = nullptr;
+   if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
       if (first_attribute) {
          os << "\n";
          first_attribute = false;

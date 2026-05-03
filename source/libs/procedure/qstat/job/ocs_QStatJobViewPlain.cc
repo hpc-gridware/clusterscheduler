@@ -322,7 +322,8 @@ void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os, 
    if (lGetPosViaElem(job, JB_submission_command_line, SGE_NO_ABORT) >= 0) {
       if (const char *str = lGetString(job, JB_submission_command_line); str != nullptr) {
          char *copied_str = strdup(str);
-         if (const char *command = strtok(copied_str, " "); command != nullptr) {
+         char *saveptr = nullptr;
+         if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
             dstring dstr_cmd = DSTRING_INIT;
             os << std::format("{:<{}} {}", "effective_submit_cmd_line:", left_width,
                               job_get_effective_command_line(job, &dstr_cmd, command)) << "\n";
