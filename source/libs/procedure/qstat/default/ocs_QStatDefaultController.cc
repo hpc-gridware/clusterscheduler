@@ -18,6 +18,7 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <limits>
 #include <sstream>
 #include <iostream>
 
@@ -174,7 +175,10 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
                int slot_adjust = 0;
                int lines_to_print;
                int slots_per_line = 0;
-               int slots_in_queue = lGetUlong(gdilep, JG_slots);
+               const u_long raw_slots = lGetUlong(gdilep, JG_slots);
+               int slots_in_queue = raw_slots > static_cast<u_long>(std::numeric_limits<int>::max())
+                                    ? std::numeric_limits<int>::max()
+                                    : static_cast<int>(raw_slots);
 
                if (!queue)
                   qnm = lGetString(gdilep, JG_qname);
