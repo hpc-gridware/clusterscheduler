@@ -1139,7 +1139,7 @@ bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
    DENTER(TOP_LAYER);
    bool a_cqueue_is_selected = false;
 
-   bool a_qinstance_is_selected = false;
+   //bool a_qinstance_is_selected = false;
    for_each_rw_lv(cqueue, queue_list) {
       const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
       bool tmp_a_qinstance_is_selected = false;
@@ -1150,7 +1150,7 @@ bool ocs::QStatModelBase::is_cqueue_selected(lList *queue_list) {
             break;
          }
       }
-      a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
+      //a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
       if (!tmp_a_qinstance_is_selected && (lGetNumberOfElem(lGetList(cqueue, CQ_qinstances)) > 0)) {
          lSetUlong(cqueue, CQ_tag, TAG_DEFAULT);
       } else {

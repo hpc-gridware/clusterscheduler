@@ -28,7 +28,7 @@ namespace ocs {
       bool first_job{true};
       bool first_sub_object{true};
       bool within_queue_section{false};
-      bool within_pending_section{false};
+      //bool within_pending_section{false};
       bool within_running_section{false};
    public:
       explicit QStatDefaultViewJSON(const ProcedureParameter &parameter) : QStatDefaultViewBase(parameter) {};

@@ -20,6 +20,7 @@
 
 #include <sstream>
 #include <string>
+#include <format>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
