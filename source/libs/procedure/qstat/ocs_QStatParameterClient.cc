@@ -289,6 +289,9 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
       }
 
       if (parse_string(ppcmdline, "-ectx", &alp, &argstr)) {
+         if (argstr == nullptr) {
+            continue;
+         }
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -304,6 +307,9 @@ ocs::QStatParameterClient::sge_parse_qstat(lList **ppcmdline, lList **ppljid) {
       }
 
       if (parse_string(ppcmdline, "-fmt", &alp, &argstr)) {
+         if (argstr == nullptr) {
+            continue;
+         }
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {

@@ -173,7 +173,10 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
                                   &(summary.temp_disabled),
                                   &(summary.manual_intervention));
 
-         view.report_cqueue(out_, lGetString(cqueue, CQ_name), &summary, parameter);
+         const char *cq_name = lGetString(cqueue, CQ_name);
+         if (cq_name != nullptr) {
+            view.report_cqueue(out_, cq_name, &summary, parameter);
+         }
       }
    }
 
