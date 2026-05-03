@@ -72,7 +72,10 @@ void ocs::QStatParameter::set_bundle(const lList *bundle) {
    // output mode
    const lListElem *output_param = lGetElemStr(bundle, SPP_name, OUTPUT_MODE);
    const lList *output_list = lGetList(output_param, SPP_value_list);
-   output_mode_ = static_cast<OutputMode>(lGetUlong(lFirst(output_list), ULNG_value));
+   const auto raw_output_mode = lGetUlong(lFirst(output_list), ULNG_value);
+   output_mode_ = raw_output_mode <= static_cast<uint32_t>(OutputMode::JOB_INFO)
+                  ? static_cast<OutputMode>(raw_output_mode)
+                  : OutputMode::QSTAT_DEFAULT;
    DPRINTF("output_mode_: " sge_u32 "\n", static_cast<uint32_t>(output_mode_));
 
    // need queues
