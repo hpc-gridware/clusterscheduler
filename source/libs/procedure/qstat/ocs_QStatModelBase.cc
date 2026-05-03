@@ -876,46 +876,40 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
 }
 
 int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hgrp_list, const lList *qref_list) {
-   int ret = 0;
-   lList *queueref_list = nullptr;
-
    DENTER(TOP_LAYER);
+   int ret = 0;
 
-   /*
-    * Resolve queue pattern
-    */
-   {
-      lList *tmp_list = nullptr;
-      bool found_something = true;
-      queueref_list = lCopyList("", qref_list);
+   // Resolve queue pattern
+   lList *tmp_list = nullptr;
+   bool found_something = true;
+   lList *queueref_list = lCopyList("", qref_list);
 
-      qref_list_resolve(queueref_list, nullptr, &tmp_list, &found_something, cqueue_list, hgrp_list, true, true);
-      if (!found_something) {
-         lFreeList(&queueref_list);
-         DRETURN(-1);
-      }
+   qref_list_resolve(queueref_list, nullptr, &tmp_list, &found_something, cqueue_list, hgrp_list, true, true);
+   if (!found_something) {
       lFreeList(&queueref_list);
-      queueref_list = tmp_list;
-      tmp_list = nullptr;
+      DRETURN(-1);
    }
+   lFreeList(&queueref_list);
+   queueref_list = tmp_list;
+   tmp_list = nullptr;
 
    if (cqueue_list != nullptr && queueref_list != nullptr) {
       for_each_ep_lv(qref, queueref_list) {
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
-         const char *full_name = nullptr;
 
-         full_name = lGetString(qref, QR_name);
-
-         if (cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
+         if (const char *full_name = lGetString(qref, QR_name);
+             cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
             const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
             const char *hostname = sge_dstring_get_string(&hostname_buffer);
-            const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
-            const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
-            lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname);
 
-            uint32_t tag = lGetUlong(qinstance, QU_tag);
-            lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
+            if (const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name); cqueue != nullptr) {
+               const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
+               if (lListElem *qinstance = lGetElemHostRW(qinstance_list, QU_qhostname, hostname); qinstance != nullptr) {
+                  const uint32_t tag = lGetUlong(qinstance, QU_tag);
+                  lSetUlong(qinstance, QU_tag, tag | TAG_SELECT_IT);
+               }
+            }
          }
 
          sge_dstring_free(&cqueue_buffer);
@@ -926,9 +920,8 @@ int ocs::QStatModelBase::select_by_qref_list(lList *cqueue_list, const lList *hg
          const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
          for_each_rw_lv(qinstance, qinstance_list) {
             uint32_t tag = lGetUlong(qinstance, QU_tag);
-            bool selected = ((tag & TAG_SELECT_IT) != 0) ? true : false;
 
-            if (!selected) {
+            if (const bool selected = (tag & TAG_SELECT_IT) != 0; !selected) {
                tag &= ~(TAG_SELECT_IT | TAG_SHOW_IT);
                lSetUlong(qinstance, QU_tag, tag);
             } else {
