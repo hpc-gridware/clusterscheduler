@@ -106,7 +106,8 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lLis
    const bool as_double = type == CEntry::Type::DOUBLE;
    const bool as_bool = type == CEntry::Type::BOOL;
    if (as_string) {
-      os << "\"" << raw2JSON(lGetString(resource, CE_stringval)) << "\"";
+      const char *strval = lGetString(resource, CE_stringval);
+      os << "\"" << raw2JSON(strval != nullptr ? strval : "") << "\"";
    } else if (as_double) {
       os << lGetDouble(resource, CE_doubleval);
    } else if (as_bool) {
