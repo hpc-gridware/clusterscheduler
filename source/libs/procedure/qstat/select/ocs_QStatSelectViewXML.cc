@@ -22,7 +22,7 @@
 
 #include <sgeobj/ocs_EscapedString.h>
 
-#include "qstat/select//ocs_QStatSelectViewXML.h"
+#include "qstat/select/ocs_QStatSelectViewXML.h"
 
 ocs::QStatSelectViewXML::QStatSelectViewXML(const QStatParameter &parameter) : QStatSelectViewBase(parameter) {
    DENTER(TOP_LAYER);

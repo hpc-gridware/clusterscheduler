@@ -159,7 +159,6 @@ void ocs::QStatDefaultViewJSON::report_queue_resource_finished(std::ostream &os,
    os << "\n" << std::string(indent * 3, ' ') << "}";
    first_sub_object = true;
    DRETURN_VOID;
-   DRETURN_VOID;
 }
 
 void ocs::QStatDefaultViewJSON::report_queue_resource(std::ostream &os, const lListElem *resource, const char *dom,
