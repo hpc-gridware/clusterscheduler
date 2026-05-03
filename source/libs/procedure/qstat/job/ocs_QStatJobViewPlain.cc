@@ -19,6 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <sstream>
+#include <string>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
@@ -155,13 +156,12 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
          mlp = new_list;
       }
 
-      char text[256], ltext[256];
+      std::string text;
       uint32_t last_jid = 0;
       uint32_t last_mid = 0;
       int ids_per_line = 0;
       int initialized = 0;
       first_run = true;
-      text[0] = 0;
       for_each_ep_lv(mes, mlp) {
          lPSortList(lGetListRW(mes, MES_job_number_list), "I+", ULNG_value);
 
@@ -181,9 +181,9 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
                initialized = 1;
                header = true;
             }
-            if (strlen(text) >= MAX_LINE_LEN || ids_per_line >= MAX_IDS_PER_LINE || header) {
+            if (text.size() >= MAX_LINE_LEN || ids_per_line >= MAX_IDS_PER_LINE || header) {
                os << text;
-               text[0] = 0;
+               text.clear();
                ids_per_line = 0;
                first_row = 0;
             }
@@ -200,16 +200,11 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
 
             if (!skip) {
                if (ids_per_line == 0) {
-                  if (first_row) {
-                     strcat(text, "\t");
-                  } else {
-                     strcat(text, ",\n\t");
-                  }
+                  text += first_row ? "\t" : ",\n\t";
                } else {
-                  strcat(text, ",\t");
+                  text += ",\t";
                }
-               snprintf(ltext, sizeof(ltext), sge_u32, jid);
-               strcat(text, ltext);
+               text += std::to_string(jid);
                ids_per_line++;
             }
 
@@ -217,7 +212,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
             last_mid = mid;
          }
       }
-      if (text[0] != 0) {
+      if (!text.empty()) {
          os << text << "\n";
       }
    }
