@@ -1286,10 +1286,12 @@ int ocs::QStatModelBase::select_by_queue_user_list(lList *exechost_list, lList *
    /* untag all queues where no of the users has access */
 
    ehep = host_list_locate(exechost_list, "global");
-   global_acl = lGetList(ehep, EH_acl);
-   global_xacl = lGetList(ehep, EH_xacl);
-   global_prj = lGetList(ehep, EH_prj);
-   global_xprj = lGetList(ehep, EH_xprj);
+   if (ehep != nullptr) {
+      global_acl  = lGetList(ehep, EH_acl);
+      global_xacl = lGetList(ehep, EH_xacl);
+      global_prj  = lGetList(ehep, EH_prj);
+      global_xprj = lGetList(ehep, EH_xprj);
+   }
 
    config_acl = mconf_get_user_lists();
    config_xacl = mconf_get_xuser_lists();
