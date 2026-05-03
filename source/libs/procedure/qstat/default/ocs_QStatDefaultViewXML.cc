@@ -364,6 +364,7 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, uint32_t jid, job_su
    int sge_ext, tsk_ext, sge_urg, sge_pri, sge_time;
    dstring ds = DSTRING_INIT;
    lList *attribute_list = nullptr;
+   // @todo: static init is frozen at first call — re-evaluate if this code is ever reused in a long-running process
    static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
 
    job_elem = lCreateElem(XMLE_Type);

@@ -260,13 +260,6 @@ lList *ocs::QStatParameter::get_bundle() {
    lSetList(ep, SPP_value_list, queue_state_list);
    DPRINTF("queue_state_=%u\n", static_cast<uint32_t>(queue_state_));
 
-   // explain bits
-   lList *explain_bits_list = nullptr;
-   lAddElemUlong(&explain_bits_list, ULNG_value, explain_bits_, ULNG_Type);
-   ep = lAddElemStr(&bundle, SPP_name, EXPLAIN_BITS, SPP_Type);
-   lSetList(ep, SPP_value_list, explain_bits_list);
-   DPRINTF("explain_bits_=%u\n", static_cast<uint32_t>(explain_bits_));
-
    // group opt
    lList *group_opt_list = nullptr;
    lAddElemUlong(&group_opt_list, ULNG_value, group_opt_, ULNG_Type);
