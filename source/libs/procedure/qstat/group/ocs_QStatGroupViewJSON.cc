@@ -63,7 +63,9 @@ void ocs::QStatGroupViewJSON::report_cqueue(std::ostream &os, const char* cq_nam
    os << std::string(indent * 3, ' ') << "{\n";
    indent++;
    os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(cq_name) << ",\n";
-   os << std::string(indent * 3, ' ') << "\"load\": " << summary->load << ",\n";
+   if (summary->is_load_available) {
+      os << std::string(indent * 3, ' ') << "\"load\": " << summary->load << ",\n";
+   }
    os << std::string(indent * 3, ' ') << "\"used\": " << summary->used << ",\n";
    os << std::string(indent * 3, ' ') << "\"resv\": " << summary->resv << ",\n";
    os << std::string(indent * 3, ' ') << "\"available\": " << summary->available << ",\n";
