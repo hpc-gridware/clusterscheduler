@@ -846,7 +846,19 @@ int ocs::QStatModelBase::select_by_queue_state(uint32_t queue_states, lList *exe
    /* only show queues in the requested state */
    /* make it possible to display any load value in qstat output */
    const char *load_avg_str = getenv("SGE_LOAD_AVG");
-   if (load_avg_str == nullptr || !strlen(load_avg_str)) {
+   static const char *valid_load_attrs[] = {
+      LOAD_ATTR_LOAD_AVG, LOAD_ATTR_LOAD_SHORT, LOAD_ATTR_LOAD_MEDIUM, LOAD_ATTR_LOAD_LONG,
+      LOAD_ATTR_NP_LOAD_AVG, LOAD_ATTR_NP_LOAD_SHORT, LOAD_ATTR_NP_LOAD_MEDIUM, LOAD_ATTR_NP_LOAD_LONG,
+      nullptr
+   };
+   bool valid = false;
+   for (int i = 0; valid_load_attrs[i] != nullptr; i++) {
+      if (load_avg_str != nullptr && strcmp(load_avg_str, valid_load_attrs[i]) == 0) {
+         valid = true;
+         break;
+      }
+   }
+   if (!valid) {
       load_avg_str = LOAD_ATTR_LOAD_AVG;
    }
 
