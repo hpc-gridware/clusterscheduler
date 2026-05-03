@@ -90,27 +90,27 @@ lList *ocs::QQuotaParameter::get_bundle() {
 
    // -q
    ep = lAddElemStr(&bundle, SPP_name, QUEUE_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, queue_name_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, queue_name_list_));
 
    // -h
    ep = lAddElemStr(&bundle, SPP_name, HOSTNAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, host_name_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, host_name_list_));
 
    // -pe
    ep = lAddElemStr(&bundle, SPP_name, PE_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, pe_name_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, pe_name_list_));
 
    // -P
    ep = lAddElemStr(&bundle, SPP_name, PROJECT_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, project_name_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, project_name_list_));
 
    // -l
    ep = lAddElemStr(&bundle, SPP_name, RESOURCE_MATCH_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, resource_match_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_match_list_));
 
    // -u
    ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, user_name_list);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_name_list));
 
    DRETURN(bundle);
 }

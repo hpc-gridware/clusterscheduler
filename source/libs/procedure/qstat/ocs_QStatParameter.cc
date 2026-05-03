@@ -167,39 +167,39 @@ lList *ocs::QStatParameter::get_bundle() {
    //lList *name_value_list = lGetListRW(lGetElemStrRW(bundle, SPP_name, NAME_VALUE_LIST), SPP_value_list);
 
    // -j
-   ep = lAddElemStr(&bundle, SPP_name, JID_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, jid_list_);
    DPRINTF("jid_list_: " sge_u32 " elements\n", lGetNumberOfElem(jid_list_));
+   ep = lAddElemStr(&bundle, SPP_name, JID_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, jid_list_));
 
    // -U
-   ep = lAddElemStr(&bundle, SPP_name, QUEUE_USER_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, queue_user_list_);
    DPRINTF("queue_user_list_: " sge_u32 " element\n", lGetNumberOfElem(queue_user_list_));
+   ep = lAddElemStr(&bundle, SPP_name, QUEUE_USER_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, queue_user_list_));
 
    // -u
-   ep = lAddElemStr(&bundle, SPP_name, USER_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, user_list_);
    DPRINTF("user_list_: " sge_u32 " elements\n", lGetNumberOfElem(user_list_));
+   ep = lAddElemStr(&bundle, SPP_name, USER_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_list_));
 
    // -pe
-   ep = lAddElemStr(&bundle, SPP_name, PE_REF_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, pe_ref_list_);
    DPRINTF("pr_ref_list_: " sge_u32 " elements\n", lGetNumberOfElem(pe_ref_list_));
+   ep = lAddElemStr(&bundle, SPP_name, PE_REF_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, pe_ref_list_));
 
    // -u
-   ep = lAddElemStr(&bundle, SPP_name, QUEUE_REF_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, queue_ref_list_);
    DPRINTF("queue_ref_list_: " sge_u32 " elements\n", lGetNumberOfElem(queue_ref_list_));
+   ep = lAddElemStr(&bundle, SPP_name, QUEUE_REF_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, queue_ref_list_));
 
    // -F
-   ep = lAddElemStr(&bundle, SPP_name, Q_RESOURCE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, q_resource_list_);
    DPRINTF("q_resource_list_: " sge_u32 " elements\n", lGetNumberOfElem(q_resource_list_));
+   ep = lAddElemStr(&bundle, SPP_name, Q_RESOURCE_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, q_resource_list_));
 
    // -l
-   ep = lAddElemStr(&bundle, SPP_name, RESOURCE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, resource_list_);
    DPRINTF("resource_list_: " sge_u32 " elements\n", lGetNumberOfElem(resource_list_));
+   ep = lAddElemStr(&bundle, SPP_name, RESOURCE_LIST, SPP_Type);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_list_));
 
    // output mode
    lList *output_list = nullptr;

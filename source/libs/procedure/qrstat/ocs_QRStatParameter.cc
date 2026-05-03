@@ -86,11 +86,11 @@ lList * ocs::QRStatParameter::get_bundle() {
 
    // -ar
    lListElem *ep = lAddElemStr(&bundle, SPP_name, AR_ID_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, ar_id_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, ar_id_list_));
 
    // -u
    ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, user_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_list_));
 
    // show summary or individual AR
    lList *username_list = nullptr;

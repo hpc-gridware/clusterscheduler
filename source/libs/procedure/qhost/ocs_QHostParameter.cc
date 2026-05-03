@@ -92,19 +92,19 @@ lList *ocs::QHostParameter::get_bundle() {
 
    // -h
    ep = lAddElemStr(&bundle, SPP_name, HOSTNAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, hostname_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, hostname_list_));
 
    // -u
    ep = lAddElemStr(&bundle, SPP_name, USER_NAME_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, user_name_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, user_name_list_));
 
    // -l
    ep = lAddElemStr(&bundle, SPP_name, RESOURCE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, resource_match_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_match_list_));
 
    // -F
    ep = lAddElemStr(&bundle, SPP_name, RESOURCE_VISIBLE_LIST, SPP_Type);
-   lSetList(ep, SPP_value_list, resource_visible_list_);
+   lSetList(ep, SPP_value_list, lCopyList(nullptr, resource_visible_list_));
 
    // flags for used switches: -F -q -j -u
    lList *show_list = nullptr;
