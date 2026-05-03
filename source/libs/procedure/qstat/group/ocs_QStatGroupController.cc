@@ -18,6 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <algorithm>
+
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_cqueue.h"
@@ -130,7 +132,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
          *is_load_available = true;
          *load /= load_slots;
       }
-      *available -= used_available;
+      *available -= std::min(used_available, *available);
    }
    DRETURN(ret);
 }
