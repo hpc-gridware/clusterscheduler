@@ -1,0 +1,204 @@
+{
+   "className": "Role",
+   "summary": "RBAC Role",
+   "description": [
+      {
+         "line": "An RBAC Role defines a named and centrally managed collection of Permissions that specifies"
+      },
+      {
+         "line": "which actions are authorized on which resource types and under which conditions."
+      },
+      {
+         "line": "Roles are assigned to users via user access lists (user_list) and may inherit Permissions"
+      },
+      {
+         "line": "from other Roles through a directed acyclic role hierarchy (parent_role_list)."
+      },
+      {
+         "line": "Authorization decisions are derived dynamically at runtime from the effective Permission set"
+      },
+      {
+         "line": "of the Role, including all transitively inherited Permissions, and are enforced by the"
+      },
+      {
+         "line": "qmaster GDI request handler according to the default-deny principle."
+      }
+   ],
+   "cullPrefix": "RL",
+   "attributes": [
+      {
+         "name": "name",
+         "summary": "Role Name",
+         "description": [
+            {
+               "line": "The unique name of the Role as defined for object_name in sge_types(1)."
+            },
+            {
+               "line": "The name is used as argument to the -role command-line switch available for all"
+            },
+            {
+               "line": "GCS commands, and may alternatively be specified via the SGE_ROLE environment variable."
+            },
+            {
+               "line": "Three built-in role names are reserved and cannot be deleted: manager, operator, user."
+            }
+         ],
+         "type": "lStringT",
+         "flags": [
+            { "name": "PRIMARY_KEY" },
+            { "name": "UNIQUE" },
+            { "name": "HASH" },
+            { "name": "SPOOL" }
+         ]
+      },
+      {
+         "name": "enabled",
+         "summary": "Enabled",
+         "description": [
+            {
+               "line": "Controls whether the Role may be used directly to authorize incoming requests."
+            },
+            {
+               "line": "When set to false, requests that specify this Role (via -role, SGE_ROLE, or default_role)"
+            },
+            {
+               "line": "are rejected. A disabled Role that appears in another Role's parent_role_list still"
+            },
+            {
+               "line": "contributes its Permissions to that child Role via inheritance."
+            },
+            {
+               "line": "This allows base Roles to be defined that are only used through inheritance and never"
+            },
+            {
+               "line": "directly. The built-in manager Role cannot be disabled."
+            }
+         ],
+         "type": "lBoolT",
+         "flags": [
+            { "name": "SPOOL" }
+         ]
+      },
+      {
+         "name": "user_list",
+         "summary": "User List",
+         "description": [
+            {
+               "line": "List of GCS user access list names (US_Type) whose members are authorized to use"
+            },
+            {
+               "line": "this Role to submit requests, provided the Role is enabled."
+            },
+            {
+               "line": "A user must be a member of at least one of the referenced access lists to assume the Role."
+            },
+            {
+               "line": "If set to NONE (the default), no user is authorized to use the Role."
+            },
+            {
+               "line": "Unlike other configuration objects, Roles do not support an xuser_list parameter."
+            },
+            {
+               "line": "Access must be explicitly granted; it is never implicitly allowed and later revoked."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "UserSet",
+         "subCullPrefix": "US",
+         "flags": [
+            { "name": "SPOOL" }
+         ]
+      },
+      {
+         "name": "parent_role_list",
+         "summary": "Parent Role List",
+         "description": [
+            {
+               "line": "List of Role names (ST_Type) from which this Role inherits all Permissions transitively."
+            },
+            {
+               "line": "Inheritance is transitive: a Role acquires the Permissions of all ancestor Roles in the"
+            },
+            {
+               "line": "hierarchy. The Role Hierarchy must form a directed acyclic graph (DAG); cyclic references"
+            },
+            {
+               "line": "are not permitted and are rejected during validation."
+            },
+            {
+               "line": "Permissions are merged in depth-first, left-to-right order. The first matching Permission"
+            },
+            {
+               "line": "rule encountered during evaluation (starting from the Role itself, then parent Roles in"
+            },
+            {
+               "line": "declaration order) determines the authorization outcome."
+            },
+            {
+               "line": "If set to NONE (the default), no Permissions are inherited."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "String",
+         "subCullPrefix": "ST",
+         "flags": [
+            { "name": "SPOOL" }
+         ]
+      },
+      {
+         "name": "perm_list",
+         "summary": "Permission List",
+         "description": [
+            {
+               "line": "Comma-separated list of RBAC permission rules that define the access rights granted by"
+            },
+            {
+               "line": "this Role. Each rule consists of exactly six colon-separated characteristics:"
+            },
+            {
+               "line": "  <source_of_request>:<origin_of_request>:<operation_type>:<object_type>:<object_key>:<object_value_constraint>"
+            },
+            {
+               "line": "A request is authorized if at least one rule in the list matches all six characteristics."
+            },
+            {
+               "line": "The first matching rule determines the outcome; no further rules are evaluated."
+            },
+            {
+               "line": "The keyword NONE defines an empty rule set that does not match any request."
+            },
+            {
+               "line": "Unlike other configuration objects, Roles do not support a negation (xperm_list);"
+            },
+            {
+               "line": "Permissions must be explicitly granted and cannot be implicitly revoked."
+            }
+         ],
+         "type": "lStringT",
+         "flags": [
+            { "name": "SPOOL" }
+         ]
+      },
+      {
+         "name": "joker",
+         "summary": "Joker",
+         "description": [
+            {
+               "line": "Placeholder which can be used for arbitrary data."
+            },
+            {
+               "line": "Its purpose is to be able to add new attributes without changing the spooling format."
+            },
+            {
+               "line": "It is a list of arbitrary type and it is spooled."
+            }
+         ],
+         "type": "lListT",
+         "subClassName": "Variable",
+         "subCullPrefix": "VA",
+         "flags": [
+            { "name": "SPOOL" }
+         ]
+      }
+   ]
+}

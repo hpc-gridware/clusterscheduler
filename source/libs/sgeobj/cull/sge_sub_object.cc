@@ -670,6 +670,15 @@ object_get_subtype(int nm)
       case TEST_obj_jb:
          ret = JB_Type;
          break;
+      case RL_user_list:
+         ret = US_Type;
+         break;
+      case RL_parent_role_list:
+         ret = ST_Type;
+         break;
+      case RL_joker:
+         ret = VA_Type;
+         break;
    }
    return ret;
 }
