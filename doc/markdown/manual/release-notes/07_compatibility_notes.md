@@ -1,43 +1,36 @@
 # Compatibility Notes
 
-## Binding
+## GDI Request Limits for Status Query Commands
 
-With the introduction of the new advanced binding framework in version 9.1.0, there are important 
-compatibility considerations to be aware of:
+With the introduction of stored procedures in version 9.2, the GDI request behavior of the status query commands
+*qstat*, *qhost*, *qrstat*, and *qquota* has changed fundamentally.
 
-- **Legacy Binding Syntax**: The previous `-binding` option has been deprecated and replaced with the new `-b...` 
-  option family. Scripts and job submission commands using the old syntax will need to be updated to ensure 
-  compatibility with the new framework. Please read the "Notes and Caveats" section in the sge_binding(5) manual page
-  we will add examples there that illustrate the transition from legacy to new syntax.
-- **Binding with Processor Sets**: The processor set binding implementation has been removed. The new scheduler based 
-  binding framework is not available for those architectures (like Solaris). If you need this then please contact our
-  support.
-- **Configuration Changes**: OCS and GCS are topology aware which eliminates possible hooks and custom scripts that 
-  might have been used in the past to make the feature work. Any custom configurations that relied on the legacy binding
-  mechanisms should be reviewed and modified to align with the new resource model.
-- **Job Scheduling Behavior**: The new binding framework integrates binding requests directly into the scheduling 
-  process. This may affect job start times and resource allocation strategies. Administrators should monitor job 
-  scheduling behavior after upgrading to ensure that it meets the cluster's performance requirements.
-- **Documentation and Training**: Users and administrators should familiarize themselves with the new binding options
-  and their implications. Updated documentation and training materials should be provided to facilitate a smooth
-  transition.
-- **Testing and Validation**: It is recommended to thoroughly test the new binding configurations in a staging 
-  environment before deploying them in production. This will help identify any potential issues and ensure that 
-  workloads run as expected.
-- **Support and Assistance**: For any challenges encountered during the transition, users are encouraged to reach out 
-  to the support team for guidance and assistance.
-- **XML Output Changes**: The XML output format for binding information has been updated to reflect the new resource model. 
-  Scripts that parse XML output for binding details may need to be adjusted to accommodate these changes.
+In version 9.1.x and earlier, these commands issued multiple individual GDI GET requests per invocation — for
+example, a single `qstat -f` would trigger up to 15 separate GET requests for different object types (jobs, queues,
+execution hosts, complexes, etc.).
 
-## Resource Request Scope
+Starting with version 9.2, each of these commands sends a single GET request targeting the object type `PROC`, which
+triggers a stored procedure on the qmaster to collect all required data at once. As a result, each command invocation
+corresponds to exactly one GDI request.
 
-With the new resource request scope introduced in version 9.0.0 and further refined in 9.1.0, there are several 
-compatibility considerations to keep in mind:
+**Impact on existing `gdi_request_limits` configurations:**
 
-- **Output of Resource Requests**: The output format for resource requests has been updated to reflect the new scope. 
-  Scripts and tools that parse resource request outputs may need to be modified to accommodate the new format. Also the 
-  XML output format for resource request information has been updated to reflect the new resource model. 
-  Scripts that parse XML output for resource request details may need to be adjusted to accommodate these changes.
+- Rules that match these commands by specific object type — such as `qstat:get:job:*:*=N` or
+  `qstat:get:cqueue:*:*=N` — will no longer fire in version 9.2, because these commands no longer issue
+  object-specific GET requests. Such rules should be replaced.
+- Generic wildcard rules such as `*:get:*:*:*=N` will now match the new `GET:PROC` request from these commands
+  and may apply an unintended limit.
+
+Replace existing rules for these commands with a `PROC`-targeted rule and adjust the limit value accordingly.
+Since there is no longer a multiplier (one command = one request), the limit can be set directly to the desired
+number of invocations per second:
+
+| Version 9.1.x        | Version 9.2             |
+|----------------------|-------------------------|
+| `qstat:get:*:*:*=N`  | `qstat:get:proc:*:*=N`  |
+| `qhost:get:*:*:*=N`  | `qhost:get:proc:*:*=N`  |
+| `qrstat:get:*:*:*=N` | `qrstat:get:proc:*:*=N` |
+| `qquota:get:*:*:*=N` | `qquota:get:proc:*:*=N` |
 
 [//]: # (Each file has to end with two empty lines)
 

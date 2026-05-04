@@ -1128,13 +1128,12 @@ Each section of the limit rule that is separated by a colon allows you to filter
 
 The following request characteristics can be used:
 
-- *source* : The source of the request. Possible values are names of command line tools names such as *qsub*, *qstat*, *qalter*. *qconf*, *qhost*, ... that send GDI requests.
-- *type* : The type of the request can be either *ADD*, *MOD*, *DEL* or *GET* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *MOD* requests.
+- *source* : The source of the request. Possible values are names of command line tools such as *qsub*, *qstat*, *qalter*, *qconf*, *qhost*, ... that send GDI requests.
+- *type* : The type of the request can be either *ADD*, *MOD*, *DEL* or *GET* for object specific CRUD operations. Trigger requests that are intended to trigger a specific action in the qmaster (such as startup/shutdown actions) are interpreted as *MOD* requests. Stored procedure requests are interpreted as *GET* requests.
 - *object* : The object of the request. Possible values are
   - *JOB* : Job
   - *CQUEUE* : Cluster Queue
   - *AHOST*, *EHOST*, *SHOST* : Admin, Execution, Submission Host
-  - *SHARETREE* : Share Tree
   - *ECLIENT* : Event Clients
   - *CPLX* : Complex
   - *CONF* : Configuration
@@ -1150,15 +1149,16 @@ The following request characteristics can be used:
   - *HGROUP* : Host Group
   - *RQS* : Resource Quota Set
   - *AR* : Advance Reservation
-- *host* : The name of the host (or host group) from which the request is being sent.
+  - *PROC* : Procedure requests for any object.
 - *user* : The username of the user sending the request or the name of a user list.
+- *host* : The name of the host (or host group) from which the request is being sent.
 
 For all filter sections, fmatch(1) patterns are allowed as long as they do not contain a colon character or an equal sign.
 
-If *host* and/or *user* specifies a host or user group, the limit applies to all hosts or users in the group combined. Also in case of patterns, the limit applies to all matching objects combined.
+If *host* and/or *user* specifies a host or user group, the limit applies to all hosts or users in the group combined. Also, in the case of patterns, the limit applies to all matching objects combined.
 Only the first matching rule is used to decide whether to accept the request. Therefore, more specific rules should be placed before more general rules.
 
-Note that command line clients may send multiple GDI requests to the xxqs_name_sxx_qmaster(8) process for a single command call. Reducing a limit below a certain threshold (e.g. 15 for qstat) may lead to scenarios where the command line tool is no longer able to trigger GDI requests anymore for regular users without manager privileges.
+GDI request limits are not respected for manager requests. This means that users with manager privileges can bypass these limits and issue as many GDI requests as they want.
 
 To enforce the limits, time is divided into 1-second intervals. The algorithm tracks the number of requests in the current second and the previous second. Each time a request arrives, the number of requests within a sliding 1-second window is calculated. This window includes the requests from the current second and a proportionate number of requests from the previous second. The difference between the number of requests in this window and the limit determines whether a new request can be accepted or rejected. The algorithm assumes that requests were evenly distributed in the previous second to prevent spikes at the start of a new interval.
 
@@ -1166,12 +1166,15 @@ For example:
 
     gdi_request_limits=*:add:job:john:*=500,
                        *:add:job:*:*=50,
-                       qstat:get:*:*:*=60000
+                       qstat:*:proc:*:*=4000
 
 The first rule allows user *john* to submit 500 jobs per second. The second rule allows all (remaining) users to post 50 jobs per second. Both rules are submit client independent. This means that users can use any submit client (qsub, qrsh, DRMAA client or GUI) to submit jobs. Any attempt to submit more jobs will be rejected and the user will see the limit rule that has been violated.
 
-The third rule allows the *qstat* commands to query the status via *qstat* for 60000 requests per second. Please note that one *qstat* command can trigger multiple GDI requests at once. For example, *qstat -f* will query up to 15 different objects (job, queue, ehost, cplx etc.) in one command. Therefore, the limit should be set to a value that is high enough to allow users to get all the information they need in one command, or in other words, the
-limit of 60000 get requests will allow about 4000 *qstat -f* commands per second or 60000 *qstat -j* commands per second.
+The third rule limits the number of *qstat* status queries to 4000 requests per second. Note that starting with Gridware Cluster Scheduler 9.2, *qstat* no longer issues multiple individual GDI GET requests to collect job, queue, and host information. Instead, it sends a single stored procedure request that triggers a stored procedure on the qmaster to gather all required data. As a result, each *qstat* invocation corresponds to exactly one GDI request, and the limit value maps directly to the maximum number of *qstat* commands per second without any multiplier. 
+
+*qhost*, *qquota* and *qrstat* also trigger a single *GET_PROCEDURE* request for each command call, but they are not limited by the *gdi_request_limits* setting in the example above.
+
+This setting is available in Gridware Cluster Scheduler only.
 
 ## binding_params
 

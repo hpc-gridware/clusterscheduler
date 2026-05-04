@@ -20,7 +20,7 @@
 
 #include "ocs_gdi_Command.h"
 
-std::string ocs::gdi::to_string(Command cmd) {
+std::string ocs::gdi::to_string(const Command cmd) {
    switch (cmd) {
       case Command::GET: return "GET";
       case Command::ADD: return "ADD";

@@ -33,6 +33,9 @@ the symbols/letter used in the table.
 | CentOS Linux     | 9       | x86-64       |           x           |         x         |          x           |
 | Free BSD         | 13      | x86-64       |           a           |         x         |          x           |
 | Free BSD         | 14      | x86-64       |           a           |         x         |          x           |
+| Oracle Linux     | 8       | x86-64       |           x           |         x         |          x           |
+| Oracle Linux     | 9       | x86-64       |           x           |         x         |          x           |
+| Oracle Linux     | 10      | x86-64       |           x           |         x         |          x           |
 | Redhat Linux     | 7       | x86-64       |           a           |         x         |          x           |
 | Redhat Linux     | 8       | x86-64       |           x           |         x         |          x           |
 | Redhat Linux     | 9       | x86-64       |           x           |         x         |          x           |
