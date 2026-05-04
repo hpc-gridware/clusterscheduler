@@ -113,6 +113,7 @@ typedef enum {
    SGE_TYPE_JOBSCRIPT,
    SGE_TYPE_CATEGORY, // 30
    SGE_TYPE_PROCEDURE,
+   SGE_TYPE_RL,
 
 
    /*

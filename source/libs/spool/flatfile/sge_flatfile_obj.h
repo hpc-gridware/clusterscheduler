@@ -50,6 +50,7 @@ extern spooling_field SH_fields[];
 extern spooling_field AH_fields[];
 extern spooling_field AR_fields[];
 extern spooling_field PE_fields[];
+extern spooling_field RL_fields[];
 extern spooling_field RQS_fields[];
 
 spooling_field *sge_build_PR_field_list(bool spool);

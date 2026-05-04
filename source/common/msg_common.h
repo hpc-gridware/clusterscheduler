@@ -1125,4 +1125,6 @@
 
 #define MSG_GDI_AR_DOES_NOT_EXIT          _MESSAGE(60749, _("Requested AR does not exist"))
 
+#define MSG_OBJ_ROLE                      _MESSAGE(60750, _("role"))
+
 // clang-format on

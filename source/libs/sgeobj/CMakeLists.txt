@@ -92,6 +92,7 @@ set(LIBRARY_SOURCES
         ocs_Job.cc
         ocs_ObjectContainer.cc
         ocs_ResourceQuota.cc
+        ocs_Role.cc
         ocs_Session.cc
         ocs_ShareTree.cc
         ocs_TopologyString.cc

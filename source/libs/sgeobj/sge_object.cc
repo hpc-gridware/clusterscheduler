@@ -51,6 +51,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/ocs_Role.h"
 #include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
@@ -105,6 +106,8 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"AR",                AR_Type,   AR_id},
         {"JOBSCRIPT",         STU_Type,  STU_name},
         {"CATEGORY",          CT_Type,   CT_id},
+        {"PROCEDURE",         nullptr,   NoName},
+        {"ROLE",              RL_Type,   RL_name},
 };
 
 

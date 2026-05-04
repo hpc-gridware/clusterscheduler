@@ -51,6 +51,7 @@
 #include "sgeobj/sge_resource_quota.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/ocs_Role.h"
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj_rsmap.h"
@@ -556,6 +557,15 @@ spooling_field PE_fields[] = {
    {  PE_master_forks_slaves,                  20,   "master_forks_slaves",  false, nullptr, false, nullptr, nullptr},
    {  PE_daemon_forks_slaves,                  20,   "daemon_forks_slaves",  false, nullptr, false, nullptr, nullptr},
    {  NoName,                                  20,   nullptr,                false, nullptr, false, nullptr, nullptr}
+};
+
+spooling_field RL_fields[] = {
+   {  RL_name,              20,   "name",              false, nullptr,       false, nullptr, nullptr},
+   {  RL_enabled,           20,   "enabled",           false, nullptr,       false, nullptr, nullptr},
+   {  RL_user_list,         20,   "user_list",         false, US_sub_fields, false, nullptr, nullptr},
+   {  RL_parent_role_list,  20,   "parent_role_list",  false, ST_sub_fields, false, nullptr, nullptr},
+   {  RL_perm_list,         20,   "perm_list",         false, nullptr,       false, nullptr, nullptr},
+   {  NoName,               20,   nullptr,             false, nullptr,       false, nullptr, nullptr}
 };
 
 spooling_field RQS_fields[] = {

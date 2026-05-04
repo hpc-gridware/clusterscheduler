@@ -169,6 +169,8 @@ static const mirror_description dev_mirror_base[SGE_TYPE_ALL] = {
    { nullptr, ar_update_master_list,                  nullptr, nullptr }, /*advance reservation*/
    { nullptr, nullptr,                                nullptr, nullptr }, /*jobscripts*/
    { nullptr, cat_update_master_list,                 nullptr, nullptr }, // sgeE_CATEGORY_LIST
+   { nullptr, nullptr,                                nullptr, nullptr }, /* procedure (no mirror) */
+   { nullptr, generic_update_master_list,             nullptr, nullptr }, /* role */
 };
 
 /*-------------------------*/

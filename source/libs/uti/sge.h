@@ -163,6 +163,7 @@
 #define CQUEUE_DIR                "cqueues"
 #define QINSTANCES_DIR            "qinstances"
 #define PE_DIR                    "pe"
+#define ROLE_DIR                  "roles"
 #define HGROUP_DIR                "hostgroups"
 #define CENTRY_DIR                "centry"
 #define CKPTOBJ_DIR               "ckpt"

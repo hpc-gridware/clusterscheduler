@@ -211,6 +211,10 @@ spool_classic_create_context(lList **answer_list, const char *args)
                   field_info[i].fields = PE_fields;
                   field_info[i].instr  = &qconf_sfi;
                   break;
+               case SGE_TYPE_RL:
+                  field_info[i].fields = RL_fields;
+                  field_info[i].instr  = &qconf_sfi;
+                  break;
                case SGE_TYPE_CKPT:
                   field_info[i].fields = CK_fields;
                   field_info[i].instr  = &qconf_sfi;
@@ -621,6 +625,9 @@ spool_classic_default_list_func(lList **answer_list,
          case SGE_TYPE_PE:
             directory = PE_DIR;
             break;
+         case SGE_TYPE_RL:
+            directory = ROLE_DIR;
+            break;
          case SGE_TYPE_QINSTANCE:
             directory = QINSTANCES_DIR;
             /* JG: TODO: we'll have to quicksort the queue list, see
@@ -860,6 +867,10 @@ spool_classic_default_read_func(lList **answer_list,
          directory = PE_DIR;
          filename = key;
          break;
+      case SGE_TYPE_RL:
+         directory = ROLE_DIR;
+         filename = key;
+         break;
       case SGE_TYPE_CQUEUE:
          directory = CQUEUE_DIR;
          filename  = key;
@@ -1047,6 +1058,10 @@ spool_classic_default_write_func(lList **answer_list,
          break;
       case SGE_TYPE_PE:
          directory = PE_DIR;
+         filename = key;
+         break;
+      case SGE_TYPE_RL:
+         directory = ROLE_DIR;
          filename = key;
          break;
       case SGE_TYPE_CQUEUE:
@@ -1325,6 +1340,9 @@ spool_classic_default_delete_func(lList **answer_list,
          break;
       case SGE_TYPE_PE:
          ret = sge_unlink(PE_DIR, key);
+         break;
+      case SGE_TYPE_RL:
+         ret = sge_unlink(ROLE_DIR, key);
          break;
       case SGE_TYPE_PROJECT:
          ret = sge_unlink(PROJECT_DIR, key);
