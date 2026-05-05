@@ -4622,8 +4622,8 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 /*-----------------------------------------------------------------------------*/
-      /* "-srolea" */
-      if (strcmp("-srolea", *spp) == 0) {
+      /* "-srolel" */
+      if (strcmp("-srolel", *spp) == 0) {
          if (!show_object_list(ocs::gdi::Target::RL_LIST, RL_Type, RL_name, "role")) {
             sge_parse_return = 1;
          }

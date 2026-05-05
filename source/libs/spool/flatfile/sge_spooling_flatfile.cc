@@ -383,6 +383,7 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, PROJECT_DIR, 0755, true);
          sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0755, true);
          sge_mkdir2(url, AR_DIR, 0755, true);
+         sge_mkdir2(url, ROLE_DIR, 0755, true);
       }
    }
 
