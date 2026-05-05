@@ -24,6 +24,7 @@
 #include "sgeobj/ocs_Role.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_event.h"
+#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/ocs_DataStore.h"
 
@@ -42,44 +43,62 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
          const char *ruser, const char *rhost, gdi_object_t *object,
          ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
          monitoring_t *monitor) {
-   const char *role_name;
-
    DENTER(TOP_LAYER);
 
-   /* ---- RL_name */
+   // ---- RL_name: copy and validate the role name on add
    if (add) {
       if (attr_mod_str(alpp, ep, new_ep, RL_name, object->object_name)) {
-         goto ERROR;
+         // answer list already filled by attr_mod_str()
+         DRETURN(STATUS_EUNKNOWN);
       }
    }
-   role_name = lGetString(new_ep, RL_name);
+   const char *role_name = lGetString(new_ep, RL_name);
 
    if (add && verify_str_key(alpp, role_name, MAX_VERIFY_STRING, MSG_OBJ_ROLE, KEY_TABLE) != STATUS_OK) {
+      // answer list already filled by verify_str_key()
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   /* ---- RL_enabled */
+   // ---- RL_enabled
    attr_mod_bool(ep, new_ep, RL_enabled, "enabled");
 
-   /* ---- RL_user_list */
+   // ---- RL_user_list: verify all referenced usersets exist, then apply
    if (lGetPosViaElem(ep, RL_user_list, SGE_NO_ABORT) >= 0) {
+      normalize_sublist(ep, RL_user_list);
+      const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+      if (userset_list_validate_acl_list(lGetList(ep, RL_user_list), alpp, master_userset_list) != STATUS_OK) {
+         // answer list already filled by userset_list_validate_acl_list()
+         DRETURN(STATUS_EUNKNOWN);
+      }
       attr_mod_sub_list(alpp, new_ep, RL_user_list, US_name, ep, cmd, sub_command,
                         SGE_ATTR_USER_LISTS, SGE_OBJ_ROLE, 0, nullptr);
    }
 
-   /* ---- RL_parent_role_list */
+   // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
    if (lGetPosViaElem(ep, RL_parent_role_list, SGE_NO_ABORT) >= 0) {
+      normalize_sublist(ep, RL_parent_role_list);
+      const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
+      for_each_ep_lv(parent_ep, lGetList(ep, RL_parent_role_list)) {
+         const char *parent_name = lGetString(parent_ep, ST_name);
+         if (strcmp(parent_name, role_name) == 0) {
+            ERROR(MSG_ROLE_SELF_REFERENCE_S, role_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EUNKNOWN);
+         }
+         if (!lGetElemStr(master_role_list, RL_name, parent_name)) {
+            ERROR(MSG_ROLE_PARENT_DOESNOTEXIST_SS, parent_name, role_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EUNKNOWN);
+         }
+      }
       attr_mod_sub_list(alpp, new_ep, RL_parent_role_list, ST_name, ep, cmd, sub_command,
                         "parent_role_list", SGE_OBJ_ROLE, 0, nullptr);
    }
 
-   /* ---- RL_perm_list */
+   // ---- RL_perm_list
    attr_mod_zerostr(ep, new_ep, RL_perm_list, "perm_list");
 
    DRETURN(0);
-
-   ERROR:
-   DRETURN(STATUS_EUNKNOWN);
 }
 
 int
@@ -134,6 +153,15 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLis
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_ROLE, role_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
+   }
+
+   // refuse deletion if this role is still a parent of another role
+   for_each_ep_lv(other_role, *master_role_list) {
+      if (lGetSubStr(other_role, ST_name, role_name, RL_parent_role_list)) {
+         ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, lGetString(other_role, RL_name));
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         DRETURN(STATUS_EUNKNOWN);
+      }
    }
 
    sge_event_spool(alpp, 0, sgeE_RL_DEL, 0, 0, role_name, nullptr, nullptr,

@@ -697,4 +697,9 @@
 #define MSG_NO_SSL_CONTEXT_FOUND                   _MESSAGE(33986, _("no SSL context found for security operations"))
 #define MSG_NEXT_CERTIFICATE_RENEWAL_AT_S          _MESSAGE(33987, _("next certificate renewal is scheduled at " SFN))
 
+// sge_role_qmaster.cc
+#define MSG_ROLE_SELF_REFERENCE_S              _MESSAGE(33988, _("denied: role " SFQ " cannot reference itself in parent_role_list"))
+#define MSG_ROLE_PARENT_DOESNOTEXIST_SS        _MESSAGE(33989, _("denied: role " SFQ " referenced in parent_role_list of role " SFQ " does not exist"))
+#define MSG_ROLE_STILL_REFERENCED_INPARENT_SS  _MESSAGE(33990, _("denied: role " SFQ " cannot be deleted: still referenced in parent_role_list of role " SFQ))
+
 // clang-format on
