@@ -551,7 +551,7 @@ unsigned short sge_options[][ALL_OPT + 1] =
    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
    /* srole_OPT - show role */
    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-   /* srolea_OPT - show all role names */
+   /* srolel_OPT - show all role names */
    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
    /*
        n  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A

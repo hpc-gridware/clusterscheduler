@@ -320,7 +320,7 @@ enum {
    mrole_OPT,   ///< modify role interactively
    Mrole_OPT,   ///< modify role from file
    srole_OPT,   ///< show role
-   srolea_OPT,  ///< show all role names
+   srolel_OPT,  ///< show all role names
 };
 
 /* macros used in parsing */

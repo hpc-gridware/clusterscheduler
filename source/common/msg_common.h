@@ -1139,7 +1139,7 @@
 #define MSG_GDI_UTEXT_Mrole_OPT           _MESSAGE(60755, _("modify role from file"))
 #define MSG_GDI_USAGE_srole_OPT           "[-srole role_name]"
 #define MSG_GDI_UTEXT_srole_OPT           _MESSAGE(60756, _("show role"))
-#define MSG_GDI_USAGE_srolea_OPT          "[-srolel]"
-#define MSG_GDI_UTEXT_srolea_OPT          _MESSAGE(60757, _("show all role names"))
+#define MSG_GDI_USAGE_srolel_OPT          "[-srolel]"
+#define MSG_GDI_UTEXT_srolel_OPT          _MESSAGE(60757, _("show all role names"))
 
 // clang-format on

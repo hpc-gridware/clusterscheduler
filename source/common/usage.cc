@@ -1136,8 +1136,8 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_srole_OPT, MSG_GDI_UTEXT_srole_OPT);
    }
 
-   if (VALID_OPT(srolea_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_srolea_OPT, MSG_GDI_UTEXT_srolea_OPT);
+   if (VALID_OPT(srolel_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_srolel_OPT, MSG_GDI_UTEXT_srolel_OPT);
    }
 
    if (VALID_OPT(sckpt_OPT, prog_number)) {
