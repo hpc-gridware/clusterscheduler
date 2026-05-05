@@ -74,5 +74,7 @@
 
 #define MSG_CAT_DOESNOTEXIST_U                        _MESSAGE(5252, _("Category " sge_u32 " does not exist"))
 
+#define MSG_ROLE_DOESNOTEXIST_S                       _MESSAGE(5253, _(SFQ " is not a role"))
+
 // clang-format on
 

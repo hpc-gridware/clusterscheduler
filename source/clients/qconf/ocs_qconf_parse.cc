@@ -85,6 +85,7 @@
 #include "ocs_qconf_centry.h"
 #include "ocs_qconf_cqueue.h"
 #include "ocs_qconf_rqs.h"
+#include "sgeobj/ocs_Role.h"
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
@@ -620,6 +621,126 @@ int sge_parse_qconf(char *argv[])
             sge_parse_return |= 1;
          }
 
+         lFreeList(&lp);
+
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-arole role_name" / "-Arole fname" */
+      if ((strcmp("-arole", *spp) == 0) ||
+          (strcmp("-Arole", *spp) == 0)) {
+         if (!strcmp("-arole", *spp)) {
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
+
+            spp = sge_parser_get_next(spp);
+
+            ep = ocs::Role::create_template();
+            lSetString(ep, RL_name, *spp);
+            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+                                                 RL_fields, &qconf_sfi,
+                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 nullptr, false);
+            lFreeElem(&ep);
+
+            if (answer_list_output(&alp)) {
+               if (filename != nullptr) {
+                  unlink(filename);
+                  sge_free(&filename);
+               }
+               sge_error_and_exit(nullptr);
+            }
+
+            status = sge_edit(filename, uid, gid);
+            if (status < 0) {
+               unlink(filename);
+               sge_free(&filename);
+               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+                  continue;
+               }
+            }
+
+            if (status > 0) {
+               unlink(filename);
+               sge_free(&filename);
+               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
+                  continue;
+               }
+            }
+
+            fields_out[0] = NoName;
+            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
+                                            RL_fields, fields_out, true, &qconf_sfi,
+                                            SP_FORM_ASCII, nullptr, filename);
+            unlink(filename);
+            sge_free(&filename);
+
+            if (answer_list_output(&alp)) {
+               lFreeElem(&ep);
+            }
+
+            if (ep != nullptr) {
+               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
+            }
+
+            if (missing_field != NoName) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if (ep == nullptr) {
+               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+                  continue;
+               }
+            }
+         } else { /* -Arole */
+            spp = sge_parser_get_next(spp);
+
+            fields_out[0] = NoName;
+            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
+                                            RL_fields, fields_out, true, &qconf_sfi,
+                                            SP_FORM_ASCII, nullptr, *spp);
+
+            if (answer_list_output(&alp)) {
+               lFreeElem(&ep);
+            }
+
+            if (ep != nullptr) {
+               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
+            }
+
+            if (missing_field != NoName) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if (ep == nullptr) {
+               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+                  continue;
+               }
+            }
+         }
+
+         lp = lCreateList("role list to add", RL_Type);
+         lAppendElem(lp, ep);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         sge_parse_return |= show_answer_list(alp);
+
+         lFreeList(&alp);
          lFreeList(&lp);
 
          spp++;
@@ -1448,6 +1569,23 @@ int sge_parse_qconf(char *argv[])
          if (!del_host_of_type(lp, ocs::gdi::Target::AH_LIST)) {
             sge_parse_return = 1;
          }
+         lFreeList(&lp);
+
+         spp++;
+         continue;
+      }
+/*----------------------------------------------------------------------------*/
+      /* "-drole role_name" */
+      if (strcmp("-drole", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+
+         ep = lCreateElem(RL_Type);
+         lSetString(ep, RL_name, *spp);
+         lp = lCreateList("roles to del", RL_Type);
+         lAppendElem(lp, ep);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         sge_parse_return |= show_answer_list(alp);
+         lFreeList(&alp);
          lFreeList(&lp);
 
          spp++;
@@ -2333,6 +2471,152 @@ int sge_parse_qconf(char *argv[])
             lFreeList(&alp);
          }
          lFreeList(&arglp);
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-mrole role_name" / "-Mrole fname" */
+      if ((strcmp("-mrole", *spp) == 0) ||
+          (strcmp("-Mrole", *spp) == 0)) {
+         if (!strcmp("-mrole", *spp)) {
+            qconf_is_manager_on_admin_host(username, qualified_hostname);
+
+            spp = sge_parser_get_next(spp);
+
+            where = lWhere("%T( %I==%s )", RL_Type, RL_name, *spp);
+            what = lWhat("%T(ALL)", RL_Type);
+            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
+            lFreeWhere(&where);
+            lFreeWhat(&what);
+
+            aep = lFirst(alp);
+            answer_exit_if_not_recoverable(aep);
+            if (answer_get_status(aep) != STATUS_OK) {
+               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+               lFreeList(&alp);
+               sge_parse_return = 1;
+               spp++;
+               continue;
+            }
+            lFreeList(&alp);
+
+            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+               fprintf(stderr, MSG_ROLE_DOESNOTEXIST_S, *spp);
+               fprintf(stderr, "\n");
+               lFreeList(&lp);
+               DRETURN(1);
+            }
+
+            ep = lFirstRW(lp);
+
+            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+                                                 RL_fields, &qconf_sfi,
+                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 nullptr, false);
+            lFreeList(&lp);
+
+            if (answer_list_output(&alp)) {
+               if (filename != nullptr) {
+                  unlink(filename);
+                  sge_free(&filename);
+               }
+               sge_error_and_exit(nullptr);
+            }
+
+            status = sge_edit(filename, uid, gid);
+            if (status < 0) {
+               unlink(filename);
+               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+                  sge_free(&filename);
+                  continue;
+               }
+            }
+
+            if (status > 0) {
+               unlink(filename);
+               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
+                  sge_free(&filename);
+                  continue;
+               }
+            }
+
+            fields_out[0] = NoName;
+            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
+                                            RL_fields, fields_out, true, &qconf_sfi,
+                                            SP_FORM_ASCII, nullptr, filename);
+
+            unlink(filename);
+            sge_free(&filename);
+
+            if (answer_list_output(&alp)) {
+               lFreeElem(&ep);
+            }
+
+            if (ep != nullptr) {
+               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
+            }
+
+            if (missing_field != NoName) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if (ep == nullptr) {
+               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+                  continue;
+               }
+            }
+         } else { /* -Mrole */
+            spp = sge_parser_get_next(spp);
+
+            fields_out[0] = NoName;
+            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
+                                            RL_fields, fields_out, true, &qconf_sfi,
+                                            SP_FORM_ASCII, nullptr, *spp);
+
+            if (answer_list_output(&alp)) {
+               lFreeElem(&ep);
+            }
+
+            if (ep != nullptr) {
+               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
+            }
+
+            if (missing_field != NoName) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+               lFreeElem(&ep);
+               answer_list_output(&alp);
+               sge_parse_return = 1;
+            }
+
+            if (ep == nullptr) {
+               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+                  continue;
+               }
+            }
+         }
+
+         lp = lCreateList("role list to mod", RL_Type);
+         lAppendElem(lp, ep);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+
+         sge_parse_return |= show_answer_list(alp);
+
+         lFreeList(&alp);
+         lFreeList(&lp);
+
          spp++;
          continue;
       }
@@ -4286,6 +4570,61 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-sm", *spp) == 0) {
          if (!show_object_list(ocs::gdi::Target::UM_LIST, UM_Type, UM_name, "manager")) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-srole role_name" */
+      if (strcmp("-srole", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+
+         where = lWhere("%T( %I==%s )", RL_Type, RL_name, *spp);
+         what = lWhat("%T(ALL)", RL_Type);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
+         lFreeWhere(&where);
+         lFreeWhat(&what);
+
+         aep = lFirst(alp);
+         answer_exit_if_not_recoverable(aep);
+         if (answer_get_status(aep) != STATUS_OK) {
+            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            lFreeList(&lp);
+            lFreeList(&alp);
+            sge_parse_return = 1;
+            spp++;
+            continue;
+         }
+         lFreeList(&alp);
+
+         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+            fprintf(stderr, MSG_ROLE_DOESNOTEXIST_S, *spp);
+            fprintf(stderr, "\n");
+            lFreeList(&lp);
+            DRETURN(1);
+         }
+
+         ep = lFirstRW(lp);
+
+         filename_stdout = spool_flatfile_write_object(&alp, ep, false,
+                                              RL_fields, &qconf_sfi,
+                                              SP_DEST_STDOUT, SP_FORM_ASCII,
+                                              nullptr, false);
+         lFreeList(&lp);
+         sge_free(&filename_stdout);
+
+         if (answer_list_output(&alp)) {
+            sge_error_and_exit(nullptr);
+         }
+
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-srolea" */
+      if (strcmp("-srolea", *spp) == 0) {
+         if (!show_object_list(ocs::gdi::Target::RL_LIST, RL_Type, RL_name, "role")) {
             sge_parse_return = 1;
          }
          spp++;

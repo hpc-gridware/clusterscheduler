@@ -1112,6 +1112,34 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       MARK(OA_CATEGORY_ID);
    }
 
+   if (VALID_OPT(arole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_arole_OPT, MSG_GDI_UTEXT_arole_OPT);
+   }
+
+   if (VALID_OPT(Arole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Arole_OPT, MSG_GDI_UTEXT_Arole_OPT);
+   }
+
+   if (VALID_OPT(drole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_drole_OPT, MSG_GDI_UTEXT_drole_OPT);
+   }
+
+   if (VALID_OPT(mrole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_mrole_OPT, MSG_GDI_UTEXT_mrole_OPT);
+   }
+
+   if (VALID_OPT(Mrole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Mrole_OPT, MSG_GDI_UTEXT_Mrole_OPT);
+   }
+
+   if (VALID_OPT(srole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_srole_OPT, MSG_GDI_UTEXT_srole_OPT);
+   }
+
+   if (VALID_OPT(srolea_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_srolea_OPT, MSG_GDI_UTEXT_srolea_OPT);
+   }
+
    if (VALID_OPT(sckpt_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sckpt_OPT_CKPT_NAME, 
          MSG_GDI_UTEXT_sckpt_OPT_CKPT_NAME);

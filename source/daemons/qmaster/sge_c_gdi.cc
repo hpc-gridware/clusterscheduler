@@ -74,6 +74,7 @@
 #include "sge_centry_qmaster.h"
 #include "sge_cqueue_qmaster.h"
 #include "sge_pe_qmaster.h"
+#include "sge_role_qmaster.h"
 #include "sge_resource_quota_qmaster.h"
 #include "configuration_qmaster.h"
 #include "evm/sge_event_master.h"
@@ -192,6 +193,7 @@ static gdi_object_t gdi_object[] = {
         {ocs::gdi::Target::AR_LIST,      AR_id,     AR_Type,   "advance reservation",     SGE_TYPE_AR,              ar_mod,       ar_spool,       ar_success},
         {ocs::gdi::Target::DUMMY_LIST,   0,         nullptr,   "general request",         SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::CAT_LIST,     CT_id,     nullptr,   "category",                SGE_TYPE_CATEGORY,        nullptr,      nullptr,        nullptr},
+        {ocs::gdi::Target::RL_LIST,      RL_name,   RL_Type,   "role",                    SGE_TYPE_RL,              role_mod,     role_spool,     role_success},
         {ocs::gdi::Target::PROCEDURE,    0,         nullptr,   "procedure",               SGE_TYPE_CATEGORY,        nullptr,      nullptr,        nullptr},
         {ocs::gdi::Target::NO_TARGET,    0,         nullptr,   nullptr,                   SGE_TYPE_NONE,            nullptr,      nullptr,        nullptr}
 };
@@ -777,6 +779,9 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::gdi::Command 
             case ocs::gdi::Target::AR_LIST:
                ar_del(packet, task, ep, &(task->answer_list), ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), monitor);
                break;
+            case ocs::gdi::Target::RL_LIST:
+               sge_del_role(packet, task, ep, &(task->answer_list), packet->user, packet->host);
+               break;
             default:
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
@@ -1269,6 +1274,7 @@ sge_chck_mod_perm_user(const ocs::gdi::Packet *packet, lList **alpp, ocs::gdi::T
       case ocs::gdi::Target::CAL_LIST:
       case ocs::gdi::Target::HGRP_LIST:
       case ocs::gdi::Target::RQS_LIST:
+      case ocs::gdi::Target::RL_LIST:
       case ocs::gdi::Target::MASTER_EVENT:
          /* user must be a manager */
          if (!manop_is_manager(packet, master_manager_list)) {

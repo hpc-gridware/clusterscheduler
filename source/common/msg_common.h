@@ -1127,4 +1127,19 @@
 
 #define MSG_OBJ_ROLE                      _MESSAGE(60750, _("role"))
 
+#define MSG_GDI_USAGE_arole_OPT           "[-arole role_name]"
+#define MSG_GDI_UTEXT_arole_OPT           _MESSAGE(60751, _("add a new role interactively"))
+#define MSG_GDI_USAGE_Arole_OPT           "[-Arole fname]"
+#define MSG_GDI_UTEXT_Arole_OPT           _MESSAGE(60752, _("add a new role from file"))
+#define MSG_GDI_USAGE_drole_OPT           "[-drole role_name]"
+#define MSG_GDI_UTEXT_drole_OPT           _MESSAGE(60753, _("delete role"))
+#define MSG_GDI_USAGE_mrole_OPT           "[-mrole role_name]"
+#define MSG_GDI_UTEXT_mrole_OPT           _MESSAGE(60754, _("modify role interactively"))
+#define MSG_GDI_USAGE_Mrole_OPT           "[-Mrole fname]"
+#define MSG_GDI_UTEXT_Mrole_OPT           _MESSAGE(60755, _("modify role from file"))
+#define MSG_GDI_USAGE_srole_OPT           "[-srole role_name]"
+#define MSG_GDI_UTEXT_srole_OPT           _MESSAGE(60756, _("show role"))
+#define MSG_GDI_USAGE_srolea_OPT          "[-srolea]"
+#define MSG_GDI_UTEXT_srolea_OPT          _MESSAGE(60757, _("show all role names"))
+
 // clang-format on

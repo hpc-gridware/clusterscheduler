@@ -50,6 +50,7 @@
 #define SGE_OBJ_RQS                    "resource_quota"
 #define SGE_OBJ_JOB                    "job"
 #define SGE_OBJ_AR                     "advance_reservation"
+#define SGE_OBJ_ROLE                   "role"
 
 /* attribute names of sge objects */
 #define SGE_ATTR_LOAD_FORMULA          "load_formula"

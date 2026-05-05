@@ -63,6 +63,7 @@ add_executable(test_qmaster_calendar
       ../../../source/daemons/qmaster/sge_c_gdi.cc
       ../../../source/daemons/qmaster/sge_c_gdi_procedure.cc
       ../../../source/daemons/qmaster/sge_pe_qmaster.cc
+      ../../../source/daemons/qmaster/sge_role_qmaster.cc
       ../../../source/daemons/qmaster/sge_ckpt_qmaster.cc
       ../../../source/daemons/qmaster/sge_hgroup_qmaster.cc
       ../../../source/daemons/qmaster/sge_thread_scheduler.cc

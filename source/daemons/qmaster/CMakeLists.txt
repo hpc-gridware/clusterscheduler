@@ -57,6 +57,7 @@ set(QMASTER_SOURCES
         sge_job_verify.cc
         sge_manop_qmaster.cc
         sge_pe_qmaster.cc
+        sge_role_qmaster.cc
         sge_persistence_qmaster.cc
         sge_qinstance_qmaster.cc
         sge_qmaster_heartbeat.cc

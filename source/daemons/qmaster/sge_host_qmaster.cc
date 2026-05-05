@@ -432,6 +432,8 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
          break;
       case ocs::gdi::Target::CAT_LIST:
          break;
+      case ocs::gdi::Target::RL_LIST:
+         break;
       case ocs::gdi::Target::PROCEDURE:
          break;
    }

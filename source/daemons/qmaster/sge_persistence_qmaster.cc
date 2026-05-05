@@ -461,6 +461,14 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          element = object;
          object_type = SGE_TYPE_AR;
          break;
+      case sgeE_RL_LIST:
+      case sgeE_RL_ADD:
+      case sgeE_RL_DEL:
+      case sgeE_RL_MOD:
+         key = strkey;
+         element = object;
+         object_type = SGE_TYPE_RL;
+         break;
       default:
          /* nothing to spool */
          object_type = SGE_TYPE_ALL;
@@ -493,6 +501,7 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          case sgeE_RQS_DEL:
          case sgeE_HGROUP_DEL:
          case sgeE_AR_DEL:
+         case sgeE_RL_DEL:
             do_delete = true;
             break;
          case sgeE_NEW_SHARETREE:

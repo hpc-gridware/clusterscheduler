@@ -1437,6 +1437,19 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CATEGORY, SGE_EMA_MOD, event);
             break;
 
+         case sgeE_RL_LIST:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_RL, SGE_EMA_LIST, event);
+            break;
+         case sgeE_RL_ADD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_RL, SGE_EMA_ADD, event);
+            break;
+         case sgeE_RL_DEL:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_RL, SGE_EMA_DEL, event);
+            break;
+         case sgeE_RL_MOD:
+            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_RL, SGE_EMA_MOD, event);
+            break;
+
          default:
             break;
       }

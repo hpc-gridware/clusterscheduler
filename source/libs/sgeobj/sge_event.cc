@@ -438,6 +438,20 @@ const char *event_text(const lListElem *event, dstring *buffer)
       break;
 
    /* -------------------- */
+   case sgeE_RL_LIST:
+      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "ROLE", n);
+      break;
+   case sgeE_RL_ADD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "ROLE", strkey);
+      break;
+   case sgeE_RL_DEL:
+      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "ROLE", strkey);
+      break;
+   case sgeE_RL_MOD:
+      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "ROLE", strkey);
+      break;
+
+   /* -------------------- */
    default:
       sge_dstring_sprintf(buffer, MSG_EVENT_MESSAGE_US, number, "????????");
       break;

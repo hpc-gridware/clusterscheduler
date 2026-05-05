@@ -312,6 +312,15 @@ enum {
    par_OPT,  //< submit / qalter parameter to set the PE allocation rule per scope
    ectx_OPT, ///< execution context
    fmt_OPT, ///< output format
+
+   /* role management */
+   arole_OPT,   ///< add role interactively
+   Arole_OPT,   ///< add role from file
+   drole_OPT,   ///< delete role
+   mrole_OPT,   ///< modify role interactively
+   Mrole_OPT,   ///< modify role from file
+   srole_OPT,   ///< show role
+   srolea_OPT,  ///< show all role names
 };
 
 /* macros used in parsing */

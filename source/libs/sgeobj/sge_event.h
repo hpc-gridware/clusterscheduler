@@ -282,6 +282,11 @@ typedef enum {
    sgeE_CATEGORY_DEL,
    sgeE_CATEGORY_MOD,
 
+   sgeE_RL_LIST,                    ///< send role list at registration
+   sgeE_RL_ADD,                     ///< event role add
+   sgeE_RL_DEL,                     ///< event role delete
+   sgeE_RL_MOD,                     ///< event role modify
+
    sgeE_EVENTSIZE
 } ev_event;
 
@@ -315,6 +320,7 @@ typedef bool (*evm_ack_func_t)(
   ((x)==sgeE_USER_LIST) || \
   ((x)==sgeE_USERSET_LIST) || \
   ((x)==sgeE_HGROUP_LIST) || \
+  ((x)==sgeE_RL_LIST) || \
   ((x)==sgeE_SHUTDOWN) || \
   ((x)==sgeE_QMASTER_GOES_DOWN) || \
   ((x)==sgeE_ACK_TIMEOUT))

@@ -48,6 +48,7 @@ std::string ocs::gdi::to_string(const Target target) {
       case Target::DUMMY_LIST: return "DUMMY_LIST";
       case Target::CAT_LIST: return "CAT_LIST";
       case Target::CAL_LIST: return "CAL_LIST";
+      case Target::RL_LIST: return "RL_LIST";
       case Target::SME_LIST: return "SME_LIST";
       case Target::PROCEDURE: return "PROCEDURE";
    }

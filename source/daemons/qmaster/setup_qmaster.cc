@@ -1060,6 +1060,10 @@ setup_qmaster() {
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_PE), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
+   DPRINTF("role_list---------------------------------\n");
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_RL), SGE_TYPE_RL);
+   answer_list_output(&answer_list);
+
    DPRINTF("ckpt_list---------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);

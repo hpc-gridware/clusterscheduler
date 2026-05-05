@@ -19,41 +19,21 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <cstdint>
-#include <string>
+#include "sge_c_gdi.h"
+#include "uti/sge_monitor.h"
 
-namespace ocs::gdi {
-   enum class Target : uint32_t {
-      NO_TARGET = 0,
-      AH_LIST = 1,
-      SH_LIST,
-      EH_LIST,
-      CQ_LIST,
-      JB_LIST,
-      EV_LIST,
-      CE_LIST,
-      ORDER_LIST,
-      MASTER_EVENT,
-      CONF_LIST,
-      UM_LIST,
-      UO_LIST,
-      PE_LIST,
-      SC_LIST,
-      UU_LIST,
-      US_LIST,
-      PR_LIST,
-      STN_LIST,
-      CK_LIST,
-      CAL_LIST,
-      RL_LIST,
-      SME_LIST,
-      HGRP_LIST,
-      RQS_LIST,
-      AR_LIST,
-      DUMMY_LIST,
-      CAT_LIST,
-      PROCEDURE,
-   };
+int
+role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *new_ep, lListElem *ep, int add,
+         const char *ruser, const char *rhost, gdi_object_t *object,
+         ocs::gdi::Command cmd, ocs::gdi::SubCommand sub_command,
+         monitoring_t *monitor);
 
-   std::string to_string(Target target);
-}
+int
+role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem *ep, gdi_object_t *object);
+
+int
+role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lListElem *old_ep, gdi_object_t *object,
+             lList **ppList, monitoring_t *monitor);
+
+int
+sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost);
