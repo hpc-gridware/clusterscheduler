@@ -666,7 +666,7 @@ static int cl_com_tcp_free_com_private(cl_com_connection_t *connection) {
 *     cl_communication/cl_com_close_connection()
 *******************************************************************************/
 int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
-   cl_com_tcp_private_t *private_com = nullptr;
+   const cl_com_tcp_private_t *private_com = nullptr;
 
    if (connection == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -681,19 +681,24 @@ int cl_com_tcp_close_connection(cl_com_connection_t **connection) {
       return CL_RETVAL_NO_FRAMEWORK_INIT;
    }
 
-   // @todo CS-1578 OpenSSL: We could call SSL_shutdown() here as well.
-   // OTOH in the next step we free the connection and here SSL_shutdown() is called.
+   // Save the socket fd before freeing com_private (which frees the memory private_com points to).
+   int sockfd = private_com->sockfd;
 
-   if (private_com->sockfd >= 0) {
+   // Free the SSL object BEFORE closing the socket fd.
+   // The destructor calls SSL_shutdown which writes a TLS close_notify to the socket. With TLS 1.3
+   // that write produces an Application Data record (type=0x17). If we close(sockfd) first, the OS
+   // can immediately reuse that fd number (e.g. for the log file in another thread), and then the
+   // destructor's SSL_shutdown mistakenly writes the close_notify into that unrelated file (CS-1858).
+   const int retval = cl_com_tcp_free_com_private(*connection);
+
+   // Now close the TCP socket (after SSL_shutdown has completed and ssl_connection is freed).
+   if (sockfd >= 0) {
       CL_LOG(CL_LOG_INFO, "closing connection");
-      /* shutdown socket connection */
-      shutdown(private_com->sockfd, 2);
-      close(private_com->sockfd);
-      private_com->sockfd = -1;
+      shutdown(sockfd, 2);
+      close(sockfd);
    }
 
-   /* free com private structure */
-   return cl_com_tcp_free_com_private(*connection);
+   return retval;
 }
 
 #if defined(OCS_WITH_OPENSSL)
