@@ -539,22 +539,17 @@ int lGetElemIndex(const lListElem *ep, const lList *lp) {
    DRETURN(i);
 }
 
-/****** cull/list/lGetNumberOfRemainingElem() *********************************
-*  NAME
-*     lGetNumberOfRemainingElem() -- Number of following elements 
-*
-*  SYNOPSIS
-*     int lGetNumberOfRemainingElem(const lListElem *ep) 
-*
-*  FUNCTION
-*     Returns the number of elements behind an element 
-*
-*  INPUTS
-*     const lListElem *ep - element 
-*
-*  RESULT
-*     int - number of elements 
-******************************************************************************/
+/**
+ * @brief Count the elements that follow @p ep in its list (exclusive).
+ *
+ * Walks the chain of successors starting at `lNext(ep)` and counts them.
+ * The element @p ep itself is **not** included in the count. Callers that
+ * need the inclusive count (ep + its successors) must add 1 themselves.
+ *
+ * @param ep  The reference element. May be nullptr.
+ * @return    Number of elements that come after @p ep.
+ *            0 if @p ep is the last element in its list or if @p ep is nullptr.
+ */
 uint32_t lGetNumberOfRemainingElem(const lListElem *ep) {
    uint32_t i = 0;
 
@@ -1540,27 +1535,24 @@ lList *lCopyListHash(const char *name, const lList *src, bool hash) {
    DRETURN(dst);
 }
 
-/****** cull/list/lInsertElem() ***********************************************
-*  NAME
-*     lInsertElem() -- Insert element after another in a list 
-*
-*  SYNOPSIS
-*     int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) 
-*
-*  FUNCTION
-*     Insert a 'new_ep' element after element 'ep' into list 'lp'.
-*     If 'ep' is nullptr then 'new_ep' will be the first element in 'lp'.
-*
-*  INPUTS
-*     lList *lp      - list 
-*     lListElem *ep  - element 
-*     lListElem *new_ep - new element 
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-******************************************************************************/
+/**
+ * @brief Insert @p new_ep immediately **after** @p ep in list @p lp.
+ *
+ * The insertion point is determined by @p ep:
+ * - If @p ep is non-null, @p new_ep is placed directly after it. Any
+ *   elements that previously followed @p ep now follow @p new_ep.
+ * - If @p ep is **nullptr**, @p new_ep is prepended as the new first element
+ *   of @p lp (equivalent to inserting before `lFirst(lp)`).
+ *
+ * @p new_ep must not already belong to any list. Attempting to insert a
+ * bound element aborts the process.
+ *
+ * @param lp      The list to insert into. Must not be nullptr.
+ * @param ep      The element after which @p new_ep is inserted, or nullptr
+ *                to insert at the front of the list.
+ * @param new_ep  The element to insert. Must be unbound (not in any list).
+ * @return        0 on success, -1 if @p lp or @p new_ep is nullptr.
+ */
 int lInsertElem(lList *lp, lListElem *ep, lListElem *new_ep) {
    DENTER(CULL_LAYER);
 
