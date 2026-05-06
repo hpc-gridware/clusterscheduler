@@ -24,7 +24,9 @@
 #include "cull/cull_list.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/cull/sge_str_ST_L.h"
 #include "sgeobj/ocs_Role.h"
 
 #include "msg_common.h"
@@ -36,7 +38,7 @@ ocs::Role::locate(const lList *role_list, const char *name) {
 }
 
 bool
-ocs::Role::validate(lListElem *role, lList **answer_list, bool startup) {
+ocs::Role::validate(const lListElem *role, lList **answer_list, bool startup) {
    DENTER(TOP_LAYER);
 
    if (const char *name = lGetString(role, RL_name);
@@ -45,6 +47,35 @@ ocs::Role::validate(lListElem *role, lList **answer_list, bool startup) {
    }
 
    DRETURN(true);
+}
+
+void
+ocs::Role::check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list) {
+   DENTER(TOP_LAYER);
+
+   for_each_ep_lv(role, role_list) {
+      const char *role_name = lGetString(role, RL_name);
+
+      // check each user_list entry against the master userset list
+      for_each_ep_lv(user_ep, lGetList(role, RL_user_list)) {
+         const char *userset_name = lGetString(user_ep, US_name);
+         if (!lGetElemStr(userset_list, US_name, userset_name)) {
+            WARNING(MSG_ROLE_INTEGRITY_USERSET_SS, role_name, userset_name);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING);
+         }
+      }
+
+      // check each parent_role_list entry against the master role list
+      for_each_ep_lv(parent_ep, lGetList(role, RL_parent_role_list)) {
+         const char *parent_name = lGetString(parent_ep, ST_name);
+         if (!lGetElemStr(role_list, RL_name, parent_name)) {
+            WARNING(MSG_ROLE_INTEGRITY_PARENT_SS, role_name, parent_name);
+            answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING);
+         }
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 lListElem *

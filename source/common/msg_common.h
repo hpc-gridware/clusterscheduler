@@ -1142,4 +1142,7 @@
 #define MSG_GDI_USAGE_srolel_OPT          "[-srolel]"
 #define MSG_GDI_UTEXT_srolel_OPT          _MESSAGE(60757, _("show all role names"))
 
+#define MSG_ROLE_INTEGRITY_USERSET_SS  _MESSAGE(60758, _("startup integrity: role " SFQ " references userset " SFQ " which does not exist"))
+#define MSG_ROLE_INTEGRITY_PARENT_SS   _MESSAGE(60759, _("startup integrity: role " SFQ " references parent role " SFQ " which does not exist"))
+
 // clang-format on

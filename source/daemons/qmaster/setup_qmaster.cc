@@ -59,6 +59,8 @@
 
 #include "sgeobj/parse.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Role.h"
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
@@ -72,7 +74,6 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/ocs_DataStore.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -1202,6 +1203,16 @@ setup_qmaster() {
    ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(master_category_list, master_job_list,
                                                                    master_project_list, master_userset_list, master_rqs_list,
                                                                    master_cqueue_list, master_pe_list, master_host_list);
+
+   // post-load integrity scan: warn about dangling role references (does not abort startup)
+   {
+      lList *integrity_answers = nullptr;
+      ocs::Role::check_integrity(*ocs::DataStore::get_master_list(SGE_TYPE_RL),
+                                 *ocs::DataStore::get_master_list(SGE_TYPE_USERSET),
+                                 &integrity_answers);
+      answer_list_output(&integrity_answers);
+      lFreeList(&integrity_answers);
+   }
 
    DRETURN(0);
 }

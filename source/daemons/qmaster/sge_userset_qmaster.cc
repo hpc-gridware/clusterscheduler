@@ -37,6 +37,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/ocs_Role.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
@@ -364,6 +365,7 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
    const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
    const lList *master_ehost_list = *ocs::DataStore::get_master_list(SGE_TYPE_EXECHOST);
+   const lList *master_role_list = *ocs::DataStore::get_master_list(SGE_TYPE_RL);
 
 
    /*
@@ -424,6 +426,15 @@ verify_userset_deletion(lList **alpp, const char *userset_name) {
          ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_XUSERLIST, MSG_OBJ_EH, lGetHost(ep, EH_name));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
+      }
+   }
+
+   // refuse deletion if any role still references this userset in its user_list
+   for_each_ep_lv(role_ep, master_role_list) {
+      if (lGetElemStr(lGetList(role_ep, RL_user_list), US_name, userset_name)) {
+         ERROR(MSG_SGETEXT_USERSETSTILLREFERENCED_SSSS, userset_name, MSG_OBJ_USERLIST, MSG_OBJ_ROLE, lGetString(role_ep, RL_name));
+         answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+         ret = STATUS_EUNKNOWN;
       }
    }
 

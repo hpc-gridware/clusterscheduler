@@ -42,7 +42,15 @@ namespace ocs {
        * @param startup      True when called during qmaster startup (relaxes some checks).
        * @return             True if the role is valid.
        */
-      static bool validate(lListElem *role, lList **answer_list, bool startup);
+      static bool validate(const lListElem *role, lList **answer_list, bool startup);
+
+      /**
+       * Post-startup integrity scan for dangling role references.
+       * Logs a WARNING for each RL_user_list entry whose userset does not exist in
+       * userset_list and each RL_parent_role_list entry whose parent role does not
+       * exist in role_list. Does not abort startup.
+       */
+      static void check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list);
 
       /**
        * Create a Role template element with default attribute values.
