@@ -2808,6 +2808,16 @@ bool mconf_get_enable_sup_grp_eval() {
 
 }
 
+void mconf_set_enable_sup_grp_eval(bool value) {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+#if defined(WITH_EXTENSIONS)
+   enable_sup_grp_eval = value;
+#endif
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
+   DRETURN_VOID;
+}
+
 bool mconf_get_enable_enforce_master_limit() {
    bool ret;
 

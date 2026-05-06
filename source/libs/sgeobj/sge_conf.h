@@ -188,6 +188,7 @@ int mconf_get_log_consumables();
 std::string mconf_get_usage_patterns();
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
+void mconf_set_enable_sup_grp_eval(bool value);
 bool mconf_get_enable_forced_qdel_if_unknown();
 bool mconf_get_enable_enforce_master_limit();
 bool mconf_get_enable_test_sleep_after_request();
