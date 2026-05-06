@@ -508,3 +508,42 @@ ocs::Role::collect_perm_rules(const char *role_name, const lList *role_list, Per
    collect_recursive(role_name, role_list, rules, visited);
    DRETURN_VOID;
 }
+
+bool
+ocs::Role::is_authorized(const lList *role_list, const lList *userset_list, const MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   for_each_ep_lv(role_ep, role_list) {
+      // skip disabled roles
+      if (!lGetBool(role_ep, RL_enabled)) {
+         continue;
+      }
+      // check whether the requesting user is a member of this role's user_list
+      bool user_in_role = false;
+      for_each_ep_lv(acl_ep, lGetList(role_ep, RL_user_list)) {
+         const char *userset_name = lGetString(acl_ep, US_name);
+         const lListElem *userset_ep = lGetElemStr(userset_list, US_name, userset_name);
+         if (userset_ep == nullptr) {
+            continue;
+         }
+         if (sge_contained_in_access_list(ctx.request_user.c_str(),
+                                          ctx.request_group.c_str(),
+                                          ctx.request_grp_list,
+                                          userset_ep) == 1) {
+            user_in_role = true;
+            break;
+         }
+      }
+      if (!user_in_role) {
+         continue;
+      }
+      // user is in this role — collect effective rules and evaluate
+      PermRuleList rules;
+      collect_perm_rules(lGetString(role_ep, RL_name), role_list, rules);
+      for (const auto &rule : rules) {
+         if (match_rule(rule, ctx)) {
+            DRETURN(true);
+         }
+      }
+   }
+   DRETURN(false);
+}

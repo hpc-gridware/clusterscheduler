@@ -49,6 +49,8 @@ namespace ocs {
          std::string object_key;                              ///< specific object name or ID
          std::string object_owner;                            ///< owner of the target object
          std::string request_user;                            ///< authenticated requesting user
+         std::string request_group;                           ///< primary UNIX group of the requesting user
+         const lList *request_grp_list{nullptr};              ///< supplementary UNIX groups (ST_Type list)
          std::vector<std::string> source_hostgroups;          ///< @groups the source host belongs to
          std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
       };
@@ -130,5 +132,18 @@ namespace ocs {
        * @param rules       Receives the collected rules (appended, not replaced).
        */
       static void collect_perm_rules(const char *role_name, const lList *role_list, PermRuleList &rules);
+
+      /**
+       * Evaluate whether a request is authorized under the current role configuration.
+       * Iterates all enabled roles; for each role the requesting user belongs to,
+       * collects the effective rule set (own + inherited) and evaluates each rule.
+       * Returns true on the first matching rule. Returns false if no rule matches
+       * across all applicable roles (default-deny).
+       * @param role_list     The master role list.
+       * @param userset_list  The master userset list (for membership checks).
+       * @param ctx           The request context.
+       * @return              True if the request is authorized.
+       */
+      static bool is_authorized(const lList *role_list, const lList *userset_list, const MatchContext &ctx);
    };
 }
