@@ -89,8 +89,10 @@ sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
       if (Log_State.log_fd >= 0 && now - Log_State.last_inode_check > 5 * 1000000ULL) {
          Log_State.last_inode_check = now;
          struct stat st_fd{}, st_path{};
-         if (fstat(Log_State.log_fd, &st_fd) == 0 && stat(Log_State.log_file, &st_path) == 0 && st_fd.st_ino != st_path.st_ino) {
-            // log file was rotated — reopen against the new path
+         // reopen if the path is gone (mv-based rotation, e.g. logchecker.sh) or
+         // resolves to a different inode (rename+recreate rotation, e.g. logrotate)
+         if (fstat(Log_State.log_fd, &st_fd) == 0 &&
+             (stat(Log_State.log_file, &st_path) != 0 || st_fd.st_ino != st_path.st_ino)) {
             close(Log_State.log_fd);
             Log_State.log_fd = -1;
          }
