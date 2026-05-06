@@ -199,6 +199,16 @@ Upon exit from the editor, the RQS is registered with xxqs_name_sxx_qmaster(8). 
 Add the resource quota set (RQS) defined in the file named *fname* to the xxQS_NAMExx cluster. Requires
 root/manager privileges.
 
+## -arole *role_name*
+Adds a new role description under the name *role_name* to the list of roles maintained by xxQS_NAMExx.
+`Qconf` retrieves a default role configuration and executes an editor to allow you to customize the role
+configuration. Upon exit from the editor, the role is registered with xxqs_name_sxx_qmaster(8). Refer to
+xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privileges.
+
+## -Arole *fname*
+Add the role defined in the file named *fname* to the xxQS_NAMExx cluster. Refer to
+xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privileges.
+
 ## -as *hostname*, ...
 Add hosts *hostname* to the list of hosts allowed to submit xxQS_NAMExx jobs and control their behavior only.
 Requires root/manager privileges.
@@ -307,6 +317,10 @@ Removes the specified queue(s). Active jobs will be allowed to run to completion
 
 ## -drqs *rqs_name_list*
 Deletes the specified resource quota sets (RQS). Requires root/manager privileges.
+
+## -drole *role_name*
+Deletes the specified role. Deletion is refused if the role is still referenced as a parent by another
+role. Requires root/manager privileges.
 
 ## -ds host_name,... \<delete submit host>
 Deletes hosts from the xxQS_NAMExx submit host list. Requires root or
@@ -465,6 +479,16 @@ the queue configuration format. Requires root/manager privilege.
 Modifies a queue configuration. Same as `-mq` (see below) but instead of invoking an editor to modify
 the queue configuration the file *fname* is considered to contain a changed configuration.
 Refer to xxqs_name_sxx_queue_conf(5) for details on the queue configuration format. Requires root/manager privilege.
+
+## -mrole *role_name*
+Retrieves the current configuration for the specified role, executes an editor and registers the new
+configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_role(5) for details on the
+role configuration format. Requires root/manager privilege.
+
+## -Mrole *fname*
+Modifies a role configuration. Same as `-mrole` (see above) but instead of invoking an editor to modify
+the role configuration the file *fname* is considered to contain a changed configuration. Refer to
+xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privilege.
 
 ## -mrqs \[*rqs_name*\]
 Retrieves the resource quota set (RQS) configuration defined in *rqs_name*, or if *rqs_name* is not given,
@@ -664,6 +688,13 @@ Shows the definition of the specified project (see xxqs_name_sxx_project(5)).
 
 ## -sprjl
 Shows the list of all currently defined projects.
+
+## -srole *role_name*
+Show the definition of the role specified by *role_name*. Refer to xxqs_name_sxx_role(5) for details
+on the role configuration format.
+
+## -srolel
+Show a list of all currently defined roles.
 
 ## -sq *wc_queue_list*
 Displays one or multiple cluster queues or queue instances. A description of *wc_queue_list* can be found in
