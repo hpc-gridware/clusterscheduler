@@ -292,7 +292,7 @@ Should the connection to the database be tested? (y/n) [y] >>
 ```
 Press `RETURN` to test the database connection.
 
-In case of connection issues the error message from the JDBC library will be printed, e.g.,
+In case of connection issues, the error message from the JDBC library will be printed, e.g.,
 ```text
 Test database connection to 'jdbc:postgresql://ubuntu-22-amd64-1:5432/arco' ...
 SEVERE: Can not get a connection to jdbc:postgresql://ubuntu-22-amd64-1:5432/arco
@@ -490,7 +490,7 @@ Once reporting is enabled and data is processed, you should see output like the 
 
 ## Enable reporting in your Cluster Scheduler installation
 
-DBWriter will read the reporting file written by `sge_qmaster` and write the data to the database. The `reporting` file is located in `$SGE_ROOT/$SGE_CELL/common/reporting`.
+DBWriter will read the reporting file written by `sge_qmaster` and write the data to the database. The `reporting` file is located in `$SGE_ROOT/$SGE_CELL/common/reporting.jsonl`.
 
 For a list of all configuration options, see the section **DBWriter** in the Admin Guide.
 
@@ -500,11 +500,11 @@ Writing of the `reporting` file needs to be enabled in the global configuration.
 This version of the xxQS_NAMExx does not yet support reading the new one line JSON format, therefore writing of the old reporting file format needs to be enabled.
 
 Edit the global configuration and modify the `reporting_params`:
-Set the `reporting=true` and `old_reporting=true` parameters, keep the other parameters unchanged:
+Set the `reporting=true`, keep the other parameters unchanged:
 ```bash
 qconf -mconf
 ...
-reporting_params             accounting=true reporting=true old_reporting=true \
+reporting_params             accounting=true reporting=true \
                              flush_time=00:00:05 joblog=true sharelog=00:10:00
 ...
 ```
