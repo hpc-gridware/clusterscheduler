@@ -528,3 +528,178 @@ xprojects             NONE
 usage_scaling         NONE
 report_variables      cpu,np_load_avg,slots
 ```
+
+# Update DBWriter
+
+Updating DBWriter can be done as a binary replacement. In case the update also requires a database schema update,
+an upgrade script has to be executed.
+
+The following steps will update DBWriter to the latest version and apply any necessary database schema changes.
+
+## Shutdown DBWriter
+
+You need to be user `root` on the DBWriter host to shut down DBWriter.
+
+If DBWriter has been installed as a Systemd service, shut down DBWriter via Systemd:
+
+```bash
+systemctl stop ocs<port>-dbwriter.service
+```
+
+otherwise use the `sgedbwriter` script:
+
+```bash
+$SGE_ROOT/$SGE_CELL/common/sgedbwriter stop
+```
+
+## Backup the DBWriter Directory
+
+You should backup the DBWriter directory before updating.
+
+Make a copy or a `tar` archive of the `$SGE_ROOT/dbwriter` directory.
+
+Back up the database. Follow the instructions of your database management system.
+
+## Prepare the Binary Update
+
+Delete all files in `$SGE_ROOT/dbwriter/lib` except for the JDBC driver JAR file.
+
+## Do the Binary Update
+
+As user root extract the `gcs-<version>-arco.tar.gz` archive in the `$SGE_ROOT` directory.
+
+```bash
+cd $SGE_ROOT
+tar xzf <path-to-packages>/gcs-<version>-arco.tar.gz
+```
+
+## Adjustments for the Update: Older than 9.1.2 to 9.1.2 (or newer)
+
+### Update the Java Version
+If you are updating from a version older than 9.1.2
+to a version greater than or equal to 9.1.2, you need to adjust the Java version in the DBWriter startup script.
+
+Older versions required Java version 1.8.0,
+The current DBWriter version requires Java version 11 and can be used with current Java versions (tested up to Java 25).
+
+Edit `$SGE_ROOT/$SGE_CELL/common/sgedbwriter`,  
+search for `JAVA_HOME`,   
+and set `JAVA_HOME` to the path of a Java version >= 11.
+
+### Update the Reporting File Type
+
+Older versions of DBWriter used the old reporting file format (colon-separated lines).  
+Beginning with version 9.1.2, DBWriter uses the new one-line JSON format.  
+
+If you had been running an older version, the global configuration, `reporting_params`, contained the setting
+`old_reporting=true`. Change this setting to `false` or remove it.
+
+```bash
+qconf -mconf
+# in the editor adjust the setting `old_reporting` to `false` or remove it
+```
+
+Change the path to the reporting file in the `$SGE_ROOT/$SGE_CELL/common/dbwriter.conf` file:
+
+Edit `$SGE_ROOT/$SGE_CELL/common/dbwriter.conf`,  
+search for `DBWRITER_REPORTING_FILE=`,   
+to the file name append the suffix `.jsonl` to make it `reporting.jsonl`.
+
+## Update the Database Schema
+
+As user `root`, run the `updatedb.sh` script.
+It will verify the database schema version and update it if necessary.
+
+Example for an update of DBWriter to schema version 9.1.2:
+
+```bash
+source $SGE_ROOT/$SGE_CELL/common/settings.sh
+cd $SGE_ROOT/dbwriter
+./updatedb.sh
+
+Installation / Upgrade for the @@ARCO_NAME@@ database
+-----------------------------------------------------
+
+
+Java setup
+----------
+
+ARCo needs at least java 11
+
+Enter the path to your java installation [] >> /usr/lib/jvm/java-11-openjdk-amd64/
+
+Enter your SGE_ROOT [/scratch/joga/clusters/master] >>
+
+Enter your SGE_CELL [default] >>
+
+Enter the path to the dbwriter configuration file [/scratch/joga/clusters/master/default/common/dbwriter.conf]>>
+
+Database connection test
+------------------------
+
+Searching for the jdbc driver com.mysql.jdbc.Driver
+in directory /scratch/joga/clusters/master/dbwriter/lib
+
+OK, jdbc driver found
+
+Should the connection to the database be tested? (y/n) [y] >>
+
+
+Test database connection to 'jdbc:mysql://ubuntu-22-amd64-2:3306/arco_8012' ... OK
+
+Shall we only print all sql statements which will be executed during the upgrade? (y/n) [y] >> n
+
+Query database version ... found version 10 6.2u1
+New version of the database model is needed
+
+Should the database model be upgraded to version 11 GCS-9.1.2? (y/n) [y] >> 
+
+Upgrade to database model version 11 GCS-9.1.2... 
+
+Version with name 6.2u1 is already installed. It will be skipped.
+Install version GCS-9.1.2 (id=11) -------
+Drop view view_ar_time_usage
+Drop view view_job_times
+Drop view view_job_times_subquery
+Drop view view_accounting
+Drop view view_ar_attribute
+Drop view view_ar_log
+Drop view view_ar_resource_usage
+Drop view view_ar_usage
+Drop view view_job_log
+Drop view view_jobs_completed
+Modify column ar_number in sge_ar to BIGINT
+Modify columns j_job_number and j_task_number in sge_job to BIGINT
+Recreate view view_accounting
+Recreate view view_ar_attribute
+Recreate view view_ar_log
+Recreate view view_ar_resource_usage
+Recreate view view_ar_usage
+Recreate view view_job_log
+Recreate view view_job_times_subquery
+Recreate view view_job_times
+Recreate view view_ar_time_usage
+Recreate view view_jobs_completed
+Update version table
+committing changes
+Version GCS-9.1.2 (id=11) successfully installed
+OK
+```
+
+## Restart DBWriter
+
+You need to be user `root` to start DBWriter.
+
+If DBWriter has been installed as a Systemd service, start DBWriter via Systemd:
+
+```bash
+systemctl start ocs<port>-dbwriter.service
+```
+
+otherwise use the `sgedbwriter` script:
+
+```bash
+$SGE_ROOT/$SGE_CELL/common/sgedbwriter start
+```
+
+

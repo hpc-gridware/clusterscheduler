@@ -1279,7 +1279,7 @@ in the next major release. See  xxqs_name_sxx_host_conf(5) for further informati
 ***old_accounting*** 
 
 This parameter controls the output format of the accounting file. If not specified or set to default (*false*) 
-then the new one line JSON file format is used formatting each accounting record as JSON structure
+then the new one-line JSON file format is used formatting each accounting record as JSON structure
 in one line. If it is set to *true* then the old file format is used having one line per accounting record 
 with attributes separated by colon. The old file format is kept for compatibility reasons. Please note that
 extensions to the accounting attributes are only made in the new format and that the old format is considered 
@@ -1288,7 +1288,7 @@ deprecated and will eventually be removed in a future version.
 ***old_reporting***
 
 This parameter controls the output format of the reporting file. If not specified or set to default (*false*) then 
-the new one line JSON file format is used formatting each reporting record as JSON structure in one line. If it is 
+the new one-line JSON file format is used formatting each reporting record as JSON structure in one line. If it is 
 set to *true* then the old file format is used having one line per reporting record with attributes separated by colon.
 The old file format is kept for compatibility reasons. Please note that extensions to the accounting and reporting 
 attributes are only made in the new format and that the old format is considered deprecated and will eventually be 
