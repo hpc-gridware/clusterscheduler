@@ -352,29 +352,24 @@ uint32_t range_list_get_number_of_ids(const lList *this_list) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_get_number_of_ids() ********************************
-*  NAME
-*     range_get_number_of_ids() -- Number of ids within a range
-*
-*  SYNOPSIS
-*     uint32_t range_get_number_of_ids(const lList *this_elem)
-*
-*  FUNCTION
-*     This function determines the number of ids contained 
-*     in 'this_elem' 
-*
-*  INPUTS
-*     const lList *this_elem - RN_Type element 
-*
-*  RESULT
-*     uint32_t - number of ids
-*
-*  EXAMPLE
-*     1-5:2 (1, 3, 5)   => 3
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*******************************************************************************/
+/**
+ * @brief Count the distinct id values in a single RN_Type range element.
+ *
+ * Computes @c 1 + (max - min) / step using unsigned integer division.
+ * Integer division truncates towards zero, so a stored @c max that falls off
+ * the step grid is silently ignored and the result is still correct.
+ * Example: [1, 6, 2] → @c 1 + (6-1)/2 = 3  (ids: 1, 3, 5).
+ *
+ * @pre @p this_elem must have a non-zero step (i.e. it must have been
+ *      initialised via range_set_all_ids()).  Calling this on a freshly
+ *      created zeroed element (step == 0) causes division by zero.
+ *
+ * @param this_elem  The RN_Type element to query.
+ * @return           Number of distinct ids in the range.
+ *
+ * @see range_correct_end
+ * @see range_list_get_number_of_ids
+ */
 uint32_t range_get_number_of_ids(const lListElem *this_elem) {
    uint32_t start, end, step, ret;
 
@@ -825,25 +820,25 @@ bool range_list_is_empty(const lList *range_list) {
    return (range_list_get_number_of_ids(range_list) == 0 ? true : false);
 }
 
-/****** sgeobj/range/range_containes_id_less_than() ***************************
-*  NAME
-*     range_containes_id_less_than() -- is one id less than given id 
-*
-*  SYNOPSIS
-*     bool 
-*     range_containes_id_less_than(const lListElem *range, uint32_t id)
-*
-*  FUNCTION
-*     This function tests if at least one id in "range" is less 
-*     than "id" 
-*
-*  INPUTS
-*     const lListElem *range - RN_Type element 
-*     uint32_t id            - number
-*
-*  RESULT
-*     bool - true or false
-******************************************************************************/
+/**
+ * @brief Test whether the range contains any id strictly less than @p id.
+ *
+ * The check is equivalent to @c range.min < id — it operates on the stored
+ * start value only and does **not** traverse the step grid.  In particular:
+ * - Returns @c true even when @p id is greater than @c range.max (only the
+ *   start is compared).
+ * - Returns @c false when @p id == @c range.min (strictly less than, not <=).
+ *
+ * @note This is a start-only comparison.  It does NOT test whether @p id
+ *       itself is within the range.  Use range_is_id_within() for that.
+ *
+ * @param range  RN_Type element.  nullptr returns false.
+ * @param id     The exclusive lower-bound threshold.
+ * @return       true when @c range.min < @p id, false otherwise.
+ *
+ * @see range_is_id_within
+ * @see range_list_containes_id_less_than
+ */
 bool range_containes_id_less_than(const lListElem *range, uint32_t id) {
    bool ret = false;
 
@@ -859,29 +854,27 @@ bool range_containes_id_less_than(const lListElem *range, uint32_t id) {
    DRETURN(ret);
 }
 
-/****** sgeobj/range/range_is_id_within() *************************************
-*  NAME
-*     range_is_id_within() -- Is id contained in range? 
-*
-*  SYNOPSIS
-*     bool range_is_id_within(const lListElem *range, uint32_t id)
-*
-*  FUNCTION
-*     True is returned by this function if 'id' is part of 'range' 
-*
-*  INPUTS
-*     const lListElem *range - RN_Type element 
-*     uint32_t id            - id
-*
-*  RESULT
-*     bool - true or false
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_is_id_within() is MT safe
-******************************************************************************/
+/**
+ * @brief Test whether @p id is a member of the range @p range.
+ *
+ * A value is a member when all three conditions hold:
+ * @code
+ *   id >= min  &&  id <= max  &&  (id - min) % step == 0
+ * @endcode
+ *
+ * @note The stored @c max field is an inclusive upper bound at the field
+ *       level only — it is **not** a guarantee that @c max itself lies on
+ *       the step grid.  For example, [1, 6, 2] contains {1, 3, 5};
+ *       @c range_is_id_within(r, 6) returns @c false because (6-1)%2 == 1.
+ *       Call range_correct_end() first if canonical @c max values are required.
+ *
+ * @param range  RN_Type element.  nullptr returns false.
+ * @param id     The id to test for membership.
+ * @return       true if @p id is a member of @p range, false otherwise.
+ *
+ * @see range_correct_end
+ * @see range_list_is_id_within
+ */
 bool range_is_id_within(const lListElem *range, uint32_t id) {
    bool ret = false;
 
@@ -1157,30 +1150,22 @@ void range_list_insert_id(lList **range_list, lList **answer_list, uint32_t id) 
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_get_all_ids() **************************************
-*  NAME
-*     range_get_all_ids() -- reads 'start', 'end' and 'step' 
-*
-*  SYNOPSIS
-*     void range_get_all_ids(const lListElem *range, uint32_t *min,
-*                            uint32_t *max, uint32_t *step)
-*
-*  FUNCTION
-*     Reads 'min' (start), 'max' (end) and 'step' from a range element.
-*     If 'range' is nullptr then 'min', 'max' and 'step' will be set to 0.
-*
-*  INPUTS
-*     const lListElem *range - range element of type RN_Type 
-*     uint32_t *min          - start value
-*     uint32_t *max          - end value
-*     uint32_t *step         - step size
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_get_all_ids() is MT safe
-******************************************************************************/
+/**
+ * @brief Read the (min, max, step) triple from an RN_Type range element.
+ *
+ * If @p range is nullptr all three output parameters are set to 0.
+ * If any output parameter pointer is nullptr the function returns without
+ * writing anything — all three must be non-null for any write to occur.
+ *
+ * @param range  The RN_Type element to read.  May be nullptr.
+ * @param min    Receives the start of the range; set to 0 when @p range is nullptr.
+ * @param max    Receives the end of the range (field value, may be off the step grid);
+ *               set to 0 when @p range is nullptr.
+ * @param step   Receives the step size; set to 0 when @p range is nullptr.
+ *
+ * @see range_set_all_ids
+ * @see range_correct_end
+ */
 void range_get_all_ids(const lListElem *range, uint32_t *min, uint32_t *max,
                        uint32_t *step) {
    DENTER(RANGE_LAYER);
@@ -1196,32 +1181,24 @@ void range_get_all_ids(const lListElem *range, uint32_t *min, uint32_t *max,
    DRETURN_VOID;
 }
 
-/****** sgeobj/range/range_set_all_ids() **************************************
-*  NAME
-*     range_set_all_ids() -- writes 'start', 'end' and 'step' 
-*
-*  SYNOPSIS
-*     void range_set_all_ids(lListElem *range, uint32_t min,
-*                            uint32_t max, uint32_t step)
-*
-*  FUNCTION
-*     Writes 'min' (start), 'max' (end) and 'step' into a range element 
-*
-*  INPUTS
-*     lListElem *range - range element of type RN_Type 
-*     uint32_t min     - start value
-*     uint32_t max     - end value
-*     uint32_t step    - step size
-*
-*  NOTES
-*     Step values will be nomalized. (e.g. 1-1:3 => 1-1:1)
-*
-*  SEE ALSO
-*     sgeobj/range/RN_Type 
-*
-*  NOTES
-*     MT-NOTE: range_set_all_ids() is MT safe
-******************************************************************************/
+/**
+ * @brief Write (min, max, step) into an RN_Type range element.
+ *
+ * @p range == nullptr is a silent no-op.
+ *
+ * @note Step normalisation: when @p min == @p max the step is always stored
+ *       as 1, regardless of the @p step argument.  This keeps single-element
+ *       ranges in canonical form (e.g. 5-5:3 becomes 5-5:1).
+ *
+ * @param range  The RN_Type element to modify.  May be nullptr (no-op).
+ * @param min    Start of the range.
+ * @param max    End of the range (field value; may be off the step grid —
+ *               call range_correct_end() afterwards if canonical storage is needed).
+ * @param step   Step size.  Overridden to 1 when @p min == @p max.
+ *
+ * @see range_get_all_ids
+ * @see range_correct_end
+ */
 void range_set_all_ids(lListElem *range, uint32_t min, uint32_t max,
                        uint32_t step) {
    DENTER(RANGE_LAYER);
