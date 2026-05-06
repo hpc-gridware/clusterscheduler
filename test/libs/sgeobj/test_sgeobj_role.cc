@@ -32,13 +32,13 @@
 
 static int s_fail = 0;
 
-#define CHECK(label, expr) \
+#define CHECK(id, label, expr) \
    do { \
       if (!(expr)) { \
-         printf("FAIL  %s\n", (label)); \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
          ++s_fail; \
       } else { \
-         printf("ok    %s\n", (label)); \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
       } \
    } while (0)
 
@@ -87,7 +87,12 @@ static lListElem *make_role(const char *name, bool enabled, const char *perm_lis
 }
 
 // ---------------------------------------------------------------------------
-// parse_perm_list
+// parse_perm_list  [T01–T06]
+//
+// parse_perm_list() converts a raw perm_list string into a vector of
+// PermRule structs. Rules are comma-separated; each rule has exactly six
+// colon-separated non-empty fields. "NONE" and nullptr are accepted as the
+// empty rule set.
 // ---------------------------------------------------------------------------
 
 static void test_parse_perm_list() {
@@ -95,56 +100,62 @@ static void test_parse_perm_list() {
    lList *al = nullptr;
    ocs::Role::PermRuleList rules;
 
-   // "NONE" → empty rule set
-   CHECK("NONE yields empty rules", ocs::Role::parse_perm_list("NONE", rules, &al) && rules.empty());
+   // T01: "NONE" is the canonical empty rule set sentinel
+   CHECK(1, "NONE yields empty rules", ocs::Role::parse_perm_list("NONE", rules, &al) && rules.empty());
    lFreeList(&al);
 
-   // nullptr → treated same as NONE
-   CHECK("nullptr yields empty rules", ocs::Role::parse_perm_list(nullptr, rules, &al) && rules.empty());
+   // T02: nullptr input is treated the same as NONE
+   CHECK(2, "nullptr yields empty rules", ocs::Role::parse_perm_list(nullptr, rules, &al) && rules.empty());
    lFreeList(&al);
 
-   // valid single rule with six colon-separated fields
+   // T03: a well-formed single rule with all six fields is parsed correctly
    rules.clear();
    bool ok = ocs::Role::parse_perm_list("*:*:ADD:JOB:*:*", rules, &al);
-   CHECK("valid single rule returns true",      ok);
-   CHECK("valid single rule produces 1 rule",   ok && rules.size() == 1);
-   CHECK("rule source field is *",              ok && rules[0].source == "*");
-   CHECK("rule operation field is ADD",         ok && rules[0].operation == "ADD");
-   CHECK("rule object_type field is JOB",       ok && rules[0].object_type == "JOB");
+   CHECK(3, "valid single rule returns true",      ok);
+   CHECK(3, "valid single rule produces 1 rule",   ok && rules.size() == 1);
+   CHECK(3, "rule source field is *",              ok && rules[0].source == "*");
+   CHECK(3, "rule operation field is ADD",         ok && rules[0].operation == "ADD");
+   CHECK(3, "rule object_type field is JOB",       ok && rules[0].object_type == "JOB");
    lFreeList(&al);
 
-   // five fields → error
+   // T04: a rule with only five colon-separated fields is rejected
    rules.clear();
    {
       int saved = suppress_stderr();
       bool res = ocs::Role::parse_perm_list("*:*:ADD:JOB:*", rules, &al);
       restore_stderr(saved);
-      CHECK("five fields returns false", !res);
+      CHECK(4, "five fields returns false", !res);
    }
    lFreeList(&al);
 
-   // empty third field → error
+   // T05: a rule with an empty (zero-length) field is rejected
    rules.clear();
    {
       int saved = suppress_stderr();
       bool res = ocs::Role::parse_perm_list("*:*::JOB:*:*", rules, &al);
       restore_stderr(saved);
-      CHECK("empty field returns false", !res);
+      CHECK(5, "empty field returns false", !res);
    }
    lFreeList(&al);
 
-   // two comma-separated rules
+   // T06: two comma-separated rules are parsed into two independent PermRule structs
    rules.clear();
    ok = ocs::Role::parse_perm_list("*:*:ADD:JOB:*:*, *:*:DEL:JOB:*:*", rules, &al);
-   CHECK("two rules returns true",              ok);
-   CHECK("two rules produces 2 rules",          ok && rules.size() == 2);
-   CHECK("first rule operation is ADD",         ok && rules[0].operation == "ADD");
-   CHECK("second rule operation is DEL",        ok && rules[1].operation == "DEL");
+   CHECK(6, "two rules returns true",              ok);
+   CHECK(6, "two rules produces 2 rules",          ok && rules.size() == 2);
+   CHECK(6, "first rule operation is ADD",         ok && rules[0].operation == "ADD");
+   CHECK(6, "second rule operation is DEL",        ok && rules[1].operation == "DEL");
    lFreeList(&al);
 }
 
 // ---------------------------------------------------------------------------
-// match_rule
+// match_rule  [T07–T24]
+//
+// match_rule() evaluates a single PermRule against a MatchContext. All six
+// characteristics must match simultaneously for the function to return true.
+// Each field supports wildcards (*), pipe-separated alternation (A|B|C),
+// fnmatch patterns, variable expansions ($job_cmd, $admin_cmd, etc.), and
+// special tokens (owner=$request_user, @hostgroup).
 // ---------------------------------------------------------------------------
 
 static void test_match_rule() {
@@ -160,122 +171,128 @@ static void test_match_rule() {
    ctx.request_user = "alice";
    ctx.object_owner = "alice";
 
-   // all-wildcard rule always matches
+   // T07: an all-wildcard rule matches any context
    rule = {"*", "*", "*", "*", "*", "*"};
-   CHECK("all-wildcard matches", ocs::Role::match_rule(rule, ctx));
+   CHECK(7, "all-wildcard matches", ocs::Role::match_rule(rule, ctx));
 
-   // single characteristic mismatch blocks the rule
+   // T08: a single mismatched characteristic causes the whole rule to fail
    rule = {"*", "*", "DEL", "*", "*", "*"};
-   CHECK("operation DEL vs ADD → false", !ocs::Role::match_rule(rule, ctx));
+   CHECK(8, "operation DEL vs ADD → false", !ocs::Role::match_rule(rule, ctx));
 
-   // pipe alternation: ADD appears in the set
+   // T09: pipe alternation — the context value appears in the allowed set
    rule = {"*", "*", "GET|ADD|DEL", "*", "*", "*"};
-   CHECK("|-alternation: ADD in set → true", ocs::Role::match_rule(rule, ctx));
+   CHECK(9, "|-alternation: ADD in set → true", ocs::Role::match_rule(rule, ctx));
 
-   // pipe alternation: ADD not in the set
+   // T10: pipe alternation — the context value is absent from the allowed set
    rule = {"*", "*", "GET|DEL", "*", "*", "*"};
-   CHECK("|-alternation: ADD not in set → false", !ocs::Role::match_rule(rule, ctx));
+   CHECK(10, "|-alternation: ADD not in set → false", !ocs::Role::match_rule(rule, ctx));
 
-   // fnmatch pattern on operation
+   // T11: fnmatch pattern on the operation field
    rule = {"*", "*", "MO*", "*", "*", "*"};
    ctx.operation = "MOD";
-   CHECK("fnmatch MO* matches MOD",        ocs::Role::match_rule(rule, ctx));
+   CHECK(11, "fnmatch MO* matches MOD",        ocs::Role::match_rule(rule, ctx));
    ctx.operation = "MOD_STATE";
-   CHECK("fnmatch MO* matches MOD_STATE",  ocs::Role::match_rule(rule, ctx));
+   CHECK(11, "fnmatch MO* matches MOD_STATE",  ocs::Role::match_rule(rule, ctx));
    ctx.operation = "GET";
-   CHECK("fnmatch MO* does not match GET", !ocs::Role::match_rule(rule, ctx));
+   CHECK(11, "fnmatch MO* does not match GET", !ocs::Role::match_rule(rule, ctx));
    ctx.operation = "ADD";
 
-   // origin variable expansion: $job_cmd covers qsub
+   // T12: $job_cmd expands to the set of job-submission client names (qsub, qrsh, ...)
    rule = {"*", "$job_cmd", "*", "*", "*", "*"};
    ctx.origin = "qsub";
-   CHECK("$job_cmd covers qsub",       ocs::Role::match_rule(rule, ctx));
+   CHECK(12, "$job_cmd covers qsub",       ocs::Role::match_rule(rule, ctx));
    ctx.origin = "qconf";
-   CHECK("$job_cmd does not cover qconf", !ocs::Role::match_rule(rule, ctx));
+   CHECK(12, "$job_cmd does not cover qconf", !ocs::Role::match_rule(rule, ctx));
 
-   // $admin_cmd covers qconf
+   // T13: $admin_cmd expands to administrative client names (qconf, ...)
    rule = {"*", "$admin_cmd", "*", "*", "*", "*"};
    ctx.origin = "qconf";
-   CHECK("$admin_cmd covers qconf", ocs::Role::match_rule(rule, ctx));
+   CHECK(13, "$admin_cmd covers qconf", ocs::Role::match_rule(rule, ctx));
    ctx.origin = "qsub";
 
-   // $system_service covers sge_qmaster
+   // T14: $system_service expands to internal daemon names (sge_qmaster, ...)
    rule = {"*", "$system_service", "*", "*", "*", "*"};
    ctx.origin = "sge_qmaster";
-   CHECK("$system_service covers sge_qmaster", ocs::Role::match_rule(rule, ctx));
+   CHECK(14, "$system_service covers sge_qmaster", ocs::Role::match_rule(rule, ctx));
    ctx.origin = "qsub";
 
-   // object type group expansion: $submit_objects covers JOB and AR
+   // T15: $submit_objects expands to user-submittable object types (JOB, AR)
    rule = {"*", "*", "*", "$submit_objects", "*", "*"};
    ctx.object_type = "JOB";
-   CHECK("$submit_objects covers JOB",            ocs::Role::match_rule(rule, ctx));
+   CHECK(15, "$submit_objects covers JOB",            ocs::Role::match_rule(rule, ctx));
    ctx.object_type = "AR";
-   CHECK("$submit_objects covers AR",             ocs::Role::match_rule(rule, ctx));
+   CHECK(15, "$submit_objects covers AR",             ocs::Role::match_rule(rule, ctx));
    ctx.object_type = "CQUEUE";
-   CHECK("$submit_objects does not cover CQUEUE", !ocs::Role::match_rule(rule, ctx));
+   CHECK(15, "$submit_objects does not cover CQUEUE", !ocs::Role::match_rule(rule, ctx));
    ctx.object_type = "JOB";
 
-   // source: plain hostname matched via fnmatch
+   // T16: source field matched as an fnmatch pattern against the FQDN
    rule = {"submit*.example.com", "*", "*", "*", "*", "*"};
    ctx.source = "submit1.example.com";
-   CHECK("source fnmatch: submit1 matches",       ocs::Role::match_rule(rule, ctx));
+   CHECK(16, "source fnmatch: submit1 matches",       ocs::Role::match_rule(rule, ctx));
    ctx.source = "admin1.example.com";
-   CHECK("source fnmatch: admin1 does not match", !ocs::Role::match_rule(rule, ctx));
+   CHECK(16, "source fnmatch: admin1 does not match", !ocs::Role::match_rule(rule, ctx));
    ctx.source = "host1.example.com";
 
-   // source: @-prefixed token matched against source_hostgroups
+   // T17: @-prefixed source token is matched against the source_hostgroups vector
    rule = {"@submit_hosts", "*", "*", "*", "*", "*"};
    ctx.source_hostgroups = {"@submit_hosts", "@other"};
-   CHECK("@submit_hosts matched in source_hostgroups",      ocs::Role::match_rule(rule, ctx));
+   CHECK(17, "@submit_hosts matched in source_hostgroups",      ocs::Role::match_rule(rule, ctx));
    ctx.source_hostgroups = {"@exec_hosts"};
-   CHECK("@submit_hosts not in source_hostgroups → false",  !ocs::Role::match_rule(rule, ctx));
+   CHECK(17, "@submit_hosts not in source_hostgroups → false",  !ocs::Role::match_rule(rule, ctx));
    ctx.source_hostgroups = {};
 
-   // object key: owner=$request_user special token
+   // T18: owner=$request_user resolves to the requesting user's name
    rule = {"*", "*", "*", "*", "owner=$request_user", "*"};
    ctx.request_user = "alice";
    ctx.object_owner = "alice";
-   CHECK("owner=$request_user: owner matches → true",           ocs::Role::match_rule(rule, ctx));
+   CHECK(18, "owner=$request_user: owner matches → true",           ocs::Role::match_rule(rule, ctx));
    ctx.object_owner = "bob";
-   CHECK("owner=$request_user: different owner → false",        !ocs::Role::match_rule(rule, ctx));
+   CHECK(18, "owner=$request_user: different owner → false",        !ocs::Role::match_rule(rule, ctx));
    ctx.object_owner = "alice";
 
-   // object key: fnmatch pattern
+   // T19: object_key field supports fnmatch patterns
    rule = {"*", "*", "*", "*", "job_*", "*"};
    ctx.object_key = "job_42";
-   CHECK("object_key fnmatch: job_42 matches",     ocs::Role::match_rule(rule, ctx));
+   CHECK(19, "object_key fnmatch: job_42 matches",      ocs::Role::match_rule(rule, ctx));
    ctx.object_key = "ar_5";
-   CHECK("object_key fnmatch: ar_5 does not match", !ocs::Role::match_rule(rule, ctx));
+   CHECK(19, "object_key fnmatch: ar_5 does not match", !ocs::Role::match_rule(rule, ctx));
    ctx.object_key = "42";
 
-   // value constraint: * always matches even with required constraints
+   // T20: value_constraint=* always matches, regardless of required constraints
    rule = {"*", "*", "*", "*", "*", "*"};
    ctx.required_value_constraints = {"EXCLUSIVE"};
-   CHECK("value_constraint=* always matches", ocs::Role::match_rule(rule, ctx));
+   CHECK(20, "value_constraint=* always matches", ocs::Role::match_rule(rule, ctx));
 
-   // no required constraints → any grant set matches
+   // T21: when no elevated permissions are required, any grant set is acceptable
    rule = {"*", "*", "*", "*", "*", "EXCLUSIVE"};
    ctx.required_value_constraints = {};
-   CHECK("no required constraints → matches any grant set", ocs::Role::match_rule(rule, ctx));
+   CHECK(21, "no required constraints → matches any grant set", ocs::Role::match_rule(rule, ctx));
 
-   // required constraint covered by grant set
+   // T22: required constraint is satisfied when it appears in the grant set
    rule = {"*", "*", "*", "*", "*", "EXCLUSIVE|PRIORITY"};
    ctx.required_value_constraints = {"EXCLUSIVE"};
-   CHECK("required EXCLUSIVE covered → true", ocs::Role::match_rule(rule, ctx));
+   CHECK(22, "required EXCLUSIVE covered → true", ocs::Role::match_rule(rule, ctx));
 
-   // all required constraints covered
+   // T23: all required constraints must appear in the grant set for the rule to match
    ctx.required_value_constraints = {"EXCLUSIVE", "PRIORITY"};
-   CHECK("both required constraints covered → true", ocs::Role::match_rule(rule, ctx));
+   CHECK(23, "both required constraints covered → true", ocs::Role::match_rule(rule, ctx));
 
-   // one required constraint missing from grant set
+   // T24: a required constraint absent from the grant set blocks the match
    rule = {"*", "*", "*", "*", "*", "EXCLUSIVE"};
    ctx.required_value_constraints = {"EXCLUSIVE", "PRIORITY"};
-   CHECK("PRIORITY not in grant set → false", !ocs::Role::match_rule(rule, ctx));
+   CHECK(24, "PRIORITY not in grant set → false", !ocs::Role::match_rule(rule, ctx));
    ctx.required_value_constraints = {};
 }
 
 // ---------------------------------------------------------------------------
-// collect_perm_rules
+// collect_perm_rules  [T25–T27]
+//
+// collect_perm_rules() transitively collects all PermRules reachable from a
+// given role via its parent_role_list, using a DFS traversal. Each role's own
+// rules are appended before recursing into its parents (left-to-right). A
+// visited set prevents duplicate collection when multiple inheritance paths
+// converge on the same ancestor (diamond DAG pattern).
 // ---------------------------------------------------------------------------
 
 static void test_collect_perm_rules() {
@@ -284,46 +301,50 @@ static void test_collect_perm_rules() {
    lList *role_list = lCreateList("roles", RL_Type);
    ocs::Role::PermRuleList rules;
 
-   // single role with no parents: only its own rules are collected
+   // T25: a role with no parents yields only its own rules
    lAppendElem(role_list, make_role("base", true, "*:*:ADD:JOB:*:*", {}, {}));
    ocs::Role::collect_perm_rules("base", role_list, rules);
-   CHECK("no-parent role: 1 rule collected",      rules.size() == 1);
-   CHECK("no-parent role: correct operation ADD",  !rules.empty() && rules[0].operation == "ADD");
+   CHECK(25, "no-parent role: 1 rule collected",       rules.size() == 1);
+   CHECK(25, "no-parent role: correct operation ADD",  !rules.empty() && rules[0].operation == "ADD");
 
-   // linear chain A → B → C: child-first DFS order
+   // T26: a linear chain A → B → C yields rules in child-first DFS order (A, B, C)
    lAppendElem(role_list, make_role("C", true, "*:*:GET:*:*:*", {},    {}));
    lAppendElem(role_list, make_role("B", true, "*:*:DEL:*:*:*", {"C"}, {}));
    lAppendElem(role_list, make_role("A", true, "*:*:ADD:*:*:*", {"B"}, {}));
 
    rules.clear();
    ocs::Role::collect_perm_rules("A", role_list, rules);
-   CHECK("chain A→B→C: 3 rules collected",      rules.size() == 3);
-   CHECK("chain: A's rule first (ADD)",          rules.size() > 0 && rules[0].operation == "ADD");
-   CHECK("chain: B's rule second (DEL)",         rules.size() > 1 && rules[1].operation == "DEL");
-   CHECK("chain: C's rule third (GET)",          rules.size() > 2 && rules[2].operation == "GET");
+   CHECK(26, "chain A→B→C: 3 rules collected",      rules.size() == 3);
+   CHECK(26, "chain: A's rule first (ADD)",          rules.size() > 0 && rules[0].operation == "ADD");
+   CHECK(26, "chain: B's rule second (DEL)",         rules.size() > 1 && rules[1].operation == "DEL");
+   CHECK(26, "chain: C's rule third (GET)",          rules.size() > 2 && rules[2].operation == "GET");
 
-   // diamond DAG: A2 → B2 → D2 and A2 → C2 → D2; D2's rule must appear exactly once
-   lAppendElem(role_list, make_role("D2", true, "*:*:MOD:*:*:*", {},         {}));
-   lAppendElem(role_list, make_role("B2", true, "*:*:DEL:*:*:*", {"D2"},     {}));
-   lAppendElem(role_list, make_role("C2", true, "*:*:GET:*:*:*", {"D2"},     {}));
-   lAppendElem(role_list, make_role("A2", true, "*:*:ADD:*:*:*", {"B2","C2"},{}));
+   // T27: a diamond DAG (A→B→D and A→C→D) yields D's rules exactly once
+   lAppendElem(role_list, make_role("D2", true, "*:*:MOD:*:*:*", {},          {}));
+   lAppendElem(role_list, make_role("B2", true, "*:*:DEL:*:*:*", {"D2"},      {}));
+   lAppendElem(role_list, make_role("C2", true, "*:*:GET:*:*:*", {"D2"},      {}));
+   lAppendElem(role_list, make_role("A2", true, "*:*:ADD:*:*:*", {"B2","C2"}, {}));
 
    rules.clear();
    ocs::Role::collect_perm_rules("A2", role_list, rules);
-   CHECK("diamond DAG: 4 rules total (D2 visited once)", rules.size() == 4);
+   CHECK(27, "diamond DAG: 4 rules total (D2 visited once)", rules.size() == 4);
    int mod_count = 0;
    for (const auto &r : rules) {
-      if (r.operation == "MOD") {
-         ++mod_count;
-      }
+      if (r.operation == "MOD") { ++mod_count; }
    }
-   CHECK("diamond DAG: D2's MOD rule appears exactly once", mod_count == 1);
+   CHECK(27, "diamond DAG: D2's MOD rule appears exactly once", mod_count == 1);
 
    lFreeList(&role_list);
 }
 
 // ---------------------------------------------------------------------------
-// is_authorized
+// is_authorized  [T28–T34]
+//
+// is_authorized() evaluates whether a request context is permitted under the
+// current role configuration. It iterates all enabled roles, checks whether
+// the requesting user belongs to each role's user_list (via userset lookup),
+// collects the effective rule set (including inherited rules), and returns
+// true on the first matching rule. The default is deny.
 // ---------------------------------------------------------------------------
 
 static void test_is_authorized() {
@@ -343,45 +364,45 @@ static void test_is_authorized() {
    ctx.request_user = "alice";
    ctx.request_group = "users";
 
-   // no roles at all → default-deny
+   // T28: with no roles configured the system is default-deny
    lList *role_list = lCreateList("roles", RL_Type);
-   CHECK("empty role list → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(28, "empty role list → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
 
-   // role assigned to devs with NONE perm_list → still denied
+   // T29: a role whose perm_list is NONE grants no permissions even when the user is a member
    lAppendElem(role_list, make_role("r_none", true, "NONE", {}, {"devs"}));
-   CHECK("NONE perm_list → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(29, "NONE perm_list → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
 
-   // role with a rule that matches the request → allowed
+   // T30: a role with a matching rule authorizes the request
    lAppendElem(role_list, make_role("r_submit", true, "*:qsub:ADD:JOB:*:*", {}, {"devs"}));
-   CHECK("matching rule → true", ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(30, "matching rule → true", ocs::Role::is_authorized(role_list, userset_list, ctx));
 
-   // user not assigned to any role → denied
+   // T31: a user who belongs to no role's user_list is denied
    ctx.request_user  = "charlie";
    ctx.request_group = "staff";
-   CHECK("user in no role → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(31, "user in no role → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
    ctx.request_user  = "alice";
    ctx.request_group = "users";
 
-   // disabled role is skipped entirely
+   // T32: a disabled role is skipped entirely; its rules have no effect
    lFreeList(&role_list);
    role_list = lCreateList("roles", RL_Type);
    lAppendElem(role_list, make_role("r_disabled", false, "*:*:*:*:*:*", {}, {"devs"}));
-   CHECK("disabled role skipped → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(32, "disabled role skipped → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
 
-   // rule inherited from parent role authorizes the request
+   // T33: a rule inherited from a parent role is sufficient to authorize the request
    lFreeList(&role_list);
    role_list = lCreateList("roles", RL_Type);
    lAppendElem(role_list, make_role("r_parent", true, "*:qsub:ADD:JOB:*:*", {}, {}));
    lAppendElem(role_list, make_role("r_child",  true, "NONE", {"r_parent"}, {"devs"}));
-   CHECK("inherited rule from parent → true", ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(33, "inherited rule from parent → true", ocs::Role::is_authorized(role_list, userset_list, ctx));
 
-   // bob's role covers only qconf MOD CQUEUE, not qsub ADD JOB → denied
+   // T34: a role whose rules cover a different operation/object type does not authorize the request
    ctx.request_user  = "bob";
    ctx.request_group = "ops";
    lFreeList(&role_list);
    role_list = lCreateList("roles", RL_Type);
    lAppendElem(role_list, make_role("r_ops", true, "*:qconf:MOD:CQUEUE:*:*", {}, {"ops"}));
-   CHECK("non-matching rule → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
+   CHECK(34, "non-matching rule → false", !ocs::Role::is_authorized(role_list, userset_list, ctx));
 
    lFreeList(&role_list);
    lFreeList(&userset_list);
