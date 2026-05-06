@@ -196,8 +196,8 @@ target_link_libraries(
       ${SGE_LIBS})
 
 # get_cloud_provider
-#add_executable(get_cloud_provider get_cloud_provider.cc)
-#target_link_libraries(get_cloud_provider PRIVATE ${CURL_LIBS})
+add_executable(get_cloud_provider get_cloud_provider.cc)
+target_link_libraries(get_cloud_provider PRIVATE ${CURL_LIBS})
 
 if (INSTALL_SGE_BIN_CLIENT)
    install(TARGETS qping DESTINATION bin/${SGE_ARCH})
@@ -219,7 +219,7 @@ if (INSTALL_SGE_BIN_CLIENT)
          sge_share_mon
          testsuidroot
          uidgid
-         #get_cloud_provider
+         get_cloud_provider
          DESTINATION utilbin/${SGE_ARCH})
 endif ()
 
