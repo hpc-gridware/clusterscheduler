@@ -18,6 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <fnmatch.h>
+#include <unordered_map>
+
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
@@ -147,6 +150,170 @@ ocs::Role::parse_perm_list(const char *perm_list_str, PermRuleList &rules, lList
    DRETURN(true);
 }
 
+// ---- helpers for match_rule() -----------------------------------------------
+
+namespace {
+
+// Split s on '|' into non-empty tokens
+static std::vector<std::string> split_pipe(const std::string &s) {
+   DENTER(TOP_LAYER);
+   std::vector<std::string> tokens;
+   size_t pos = 0;
+   while (true) {
+      const size_t bar = s.find('|', pos);
+      const std::string tok = s.substr(pos, bar == std::string::npos ? std::string::npos : bar - pos);
+      if (!tok.empty()) tokens.push_back(tok);
+      if (bar == std::string::npos) break;
+      pos = bar + 1;
+   }
+   DRETURN(tokens);
+}
+
+// Predefined origin variable expansions (spec table in §Origin of Request)
+static const std::unordered_map<std::string, std::vector<std::string>> &origin_vars() {
+   DENTER(TOP_LAYER);
+   static const std::unordered_map<std::string, std::vector<std::string>> m = {
+      {"$job_cmd",        {"qsub","qsh","qrsh","qmake","qselect","qalter","qrerun","qdel","qmod","qhold","qrls","drmaa"}},
+      {"$ar_cmd",         {"qrsub","qrstat","qrdel","drmaa"}},
+      {"$admin_cmd",      {"qconf","qmod"}},
+      {"$monitor_cmd",    {"qstat","qhost","qquota","drmaa"}},
+      {"$diag_cmd",       {"qping"}},
+      {"$reporting_cmd",  {"qacct"}},
+      {"$system_service", {"sge_qmaster","sge_execd","sge_shadowd","sge_shepherd"}},
+   };
+   DRETURN(m);
+}
+
+// Predefined object type group expansions (spec table in §Object Types)
+static const std::unordered_map<std::string, std::vector<std::string>> &object_type_groups() {
+   DENTER(TOP_LAYER);
+   static const std::unordered_map<std::string, std::vector<std::string>> m = {
+      {"$submit_objects", {"JOB","AR"}},
+      {"$comp_objects",   {"THREAD","COMP"}},
+      {"$conf_objects",   {"CAL","CKPT","CONF","CPLX","CQUEUE","HGROUP","HOST",
+                           "ECLIENT","PE","PRJ","ROLE","QINSTANCE","RQS","SCONF",
+                           "STREE","STREENODE","USER","USET"}},
+      {"$all_objects",    {"AR","CAL","CKPT","CONF","CPLX","CQUEUE","HGROUP","HOST",
+                           "JOB","ECLIENT","PE","PRJ","ROLE","QINSTANCE","RQS","SCONF",
+                           "STREE","STREENODE","USER","USET","COMP","THREAD"}},
+   };
+   DRETURN(m);
+}
+
+// characteristic 1: source of request
+// @-prefixed tokens are matched (via fnmatch) against ctx.source_hostgroups;
+// plain tokens are matched via fnmatch against ctx.source (hostname).
+static bool match_source(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   for (const auto &tok : split_pipe(field)) {
+      if (tok == "*") DRETURN(true);
+      if (!tok.empty() && tok[0] == '@') {
+         for (const auto &hg : ctx.source_hostgroups) {
+            if (fnmatch(tok.c_str(), hg.c_str(), 0) == 0) DRETURN(true);
+         }
+      } else {
+         if (fnmatch(tok.c_str(), ctx.source.c_str(), 0) == 0) DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+// characteristic 2: origin of request
+// $-prefixed tokens are expanded via origin_vars(); others are fnmatch patterns.
+static bool match_origin(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   const auto &vars = origin_vars();
+   for (const auto &tok : split_pipe(field)) {
+      if (tok == "*") DRETURN(true);
+      if (!tok.empty() && tok[0] == '$') {
+         const auto it = vars.find(tok);
+         if (it != vars.end()) {
+            for (const auto &client : it->second) {
+               if (ctx.origin == client) DRETURN(true);
+            }
+         }
+      } else {
+         if (fnmatch(tok.c_str(), ctx.origin.c_str(), 0) == 0) DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+// characteristic 3: operation type
+// supports fnmatch patterns (e.g. MO* matches MOD and MOD_STATE) and | alternatives.
+static bool match_operation(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   for (const auto &tok : split_pipe(field)) {
+      if (tok == "*") DRETURN(true);
+      if (fnmatch(tok.c_str(), ctx.operation.c_str(), 0) == 0) DRETURN(true);
+   }
+   DRETURN(false);
+}
+
+// characteristic 4: object type
+// $-prefixed tokens are expanded via object_type_groups(); others are fnmatch patterns.
+static bool match_object_type(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   const auto &groups = object_type_groups();
+   for (const auto &tok : split_pipe(field)) {
+      if (tok == "*") DRETURN(true);
+      if (!tok.empty() && tok[0] == '$') {
+         const auto it = groups.find(tok);
+         if (it != groups.end()) {
+            for (const auto &type : it->second) {
+               if (ctx.object_type == type) DRETURN(true);
+            }
+         }
+      } else {
+         if (fnmatch(tok.c_str(), ctx.object_type.c_str(), 0) == 0) DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+// characteristic 5: object key
+// "owner=$request_user" is the only phase-1 dynamic group; others are fnmatch patterns.
+static bool match_object_key(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   for (const auto &tok : split_pipe(field)) {
+      if (tok == "*") DRETURN(true);
+      if (tok == "owner=$request_user") {
+         if (ctx.object_owner == ctx.request_user) DRETURN(true);
+      } else {
+         if (fnmatch(tok.c_str(), ctx.object_key.c_str(), 0) == 0) DRETURN(true);
+      }
+   }
+   DRETURN(false);
+}
+
+// characteristic 6: object value constraint
+// '*' in the rule grants any elevated capability.
+// Otherwise the rule's |-separated grant set must cover all of ctx.required_value_constraints.
+// A request with no required constraints always matches.
+static bool match_value_constraint(const std::string &field, const ocs::Role::MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   if (field == "*") DRETURN(true);
+   if (ctx.required_value_constraints.empty()) DRETURN(true);
+   const auto granted = split_pipe(field);
+   for (const auto &req : ctx.required_value_constraints) {
+      bool found = false;
+      for (const auto &g : granted) {
+         if (req == g) { found = true; break; }
+      }
+      if (!found) DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+} // anonymous namespace
+
+// -----------------------------------------------------------------------------
+
 lListElem *
 ocs::Role::create_template() {
    DENTER(TOP_LAYER);
@@ -161,4 +328,16 @@ ocs::Role::create_template() {
    lSetString(role, RL_perm_list, "NONE");
 
    DRETURN(role);
+}
+
+bool
+ocs::Role::match_rule(const PermRule &rule, const MatchContext &ctx) {
+   DENTER(TOP_LAYER);
+   // all six characteristics must match simultaneously
+   DRETURN(match_source(rule.source, ctx)
+        && match_origin(rule.origin, ctx)
+        && match_operation(rule.operation, ctx)
+        && match_object_type(rule.object_type, ctx)
+        && match_object_key(rule.object_key, ctx)
+        && match_value_constraint(rule.value_constraint, ctx));
 }

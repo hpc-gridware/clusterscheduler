@@ -40,6 +40,19 @@ namespace ocs {
       };
       using PermRuleList = std::vector<PermRule>;
 
+      /** Runtime context passed to match_rule() for a single authorization check. */
+      struct MatchContext {
+         std::string source;                                  ///< FQDN of the submitting host
+         std::string origin;                                  ///< command name (e.g. "qsub")
+         std::string operation;                               ///< operation type (e.g. "ADD")
+         std::string object_type;                             ///< RBAC object type (e.g. "JOB")
+         std::string object_key;                              ///< specific object name or ID
+         std::string object_owner;                            ///< owner of the target object
+         std::string request_user;                            ///< authenticated requesting user
+         std::vector<std::string> source_hostgroups;          ///< @groups the source host belongs to
+         std::vector<std::string> required_value_constraints; ///< elevated permissions required by the request
+      };
+
       /**
        * Locate a Role by name in a role list.
        * @param role_list  The list to search.
@@ -87,5 +100,14 @@ namespace ocs {
        * @return  A new RL_Type element with default values, or nullptr on error.
        */
       static lListElem *create_template();
+
+      /**
+       * Evaluate a single permission rule against a request context.
+       * Returns true only when all six characteristics match simultaneously.
+       * @param rule  A parsed PermRule (from parse_perm_list).
+       * @param ctx   The request context to match against.
+       * @return      True if the rule matches the context.
+       */
+      static bool match_rule(const PermRule &rule, const MatchContext &ctx);
    };
 }
