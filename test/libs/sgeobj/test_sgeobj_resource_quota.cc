@@ -24,6 +24,7 @@
 #include "uti/sge_component.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_hgroup.h"
 #include "sgeobj/sge_href.h"
 #include "sgeobj/sge_userset.h"
@@ -394,6 +395,47 @@ int main(int /*argc*/, char * /*argv*/[]) {
             !rqs_is_matching_rule(rule, q.users, q.group, nullptr, q.projects,
                                   q.pes, q.hosts, q.queues, userset_list, hgroup_list));
       lFreeElem(&rule);
+   }
+
+   // supplementary-group userset matching — T81–T83 (GCS only; skipped if WITH_EXTENSIONS not built)
+   printf("\n--- supplementary-group matching ---\n");
+   mconf_set_enable_sup_grp_eval(true);
+   if (!mconf_get_enable_sup_grp_eval()) {
+      printf("skipped — WITH_EXTENSIONS not built\n");
+   } else {
+      // userset2 has entry "@staff"; "nobody" is not in any userset by name or primary group
+      filter_t userset2_rule = {"@userset2", nullptr, nullptr, nullptr, nullptr, nullptr};
+
+      lList *sup_staff = lCreateList("", ST_Type);
+      lAddElemStr(&sup_staff, ST_name, "staff", ST_Type);
+
+      lList *sup_other = lCreateList("", ST_Type);
+      lAddElemStr(&sup_other, ST_name, "other", ST_Type);
+
+      // T81: match via supplementary group
+      lListElem *rule = build_rule(userset2_rule);
+      CHECK(id++, "sup-grp: @userset2 matches nobody via supplementary group staff",
+            rqs_is_matching_rule(rule, "nobody", nullptr, sup_staff, nullptr,
+                                 "*", "*", "*", userset_list, hgroup_list));
+      lFreeElem(&rule);
+
+      // T82: no match when supplementary group is not in userset2
+      rule = build_rule(userset2_rule);
+      CHECK(id++, "sup-grp: @userset2 no match when supplementary group is other",
+            !rqs_is_matching_rule(rule, "nobody", nullptr, sup_other, nullptr,
+                                  "*", "*", "*", userset_list, hgroup_list));
+      lFreeElem(&rule);
+
+      // T83: same data but flag disabled — supplementary group path is skipped
+      mconf_set_enable_sup_grp_eval(false);
+      rule = build_rule(userset2_rule);
+      CHECK(id++, "sup-grp: @userset2 no match with flag disabled",
+            !rqs_is_matching_rule(rule, "nobody", nullptr, sup_staff, nullptr,
+                                  "*", "*", "*", userset_list, hgroup_list));
+      lFreeElem(&rule);
+
+      lFreeList(&sup_staff);
+      lFreeList(&sup_other);
    }
 
    lFreeList(&hgroup_list);
