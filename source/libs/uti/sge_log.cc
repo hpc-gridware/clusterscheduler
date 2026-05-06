@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_dstring.h"
@@ -58,9 +59,11 @@ typedef struct {
    int log_level;
    int log_as_admin_user;
    int verbose;
+   int log_fd;                ///< persistent log file descriptor; -1 when not open
+   uint64_t last_inode_check; ///< gmt64 timestamp of last rotation inode check
 } log_state_t;
 
-static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1} ;
+static log_state_t Log_State = {PTHREAD_MUTEX_INITIALIZER, TMP_ERR_FILE_SNBU, LOG_WARNING, 0, 1, -1, 0};
 
 static void
 sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
@@ -73,22 +76,40 @@ sge_do_log(uint32_t prog_number, const char *prog_or_thread_name, int thread_id,
    }
 
    if (prog_number == QMASTER || prog_number == EXECD || prog_number == SCHEDD || prog_number == SHADOWD) {
-      int fd = SGE_OPEN3(log_state_get_log_file(), O_WRONLY | O_APPEND | O_CREAT, 0666);
-      if (fd  >= 0) {
-         // initialize static dstring
-         DSTRING_STATIC(msg_dstr, 4 * MAX_STRING_SIZE);
+      // format the log line before acquiring the lock to minimise lock hold time
+      DSTRING_STATIC(msg_dstr, 4 * MAX_STRING_SIZE);
+      uint64_t now = sge_get_gmt64();
+      sge_ctime64(now, &msg_dstr, false, true);
+      const char *msg_str = sge_dstring_sprintf_append(&msg_dstr, "|%12.12s|%02d|%s|%c|%s\n", prog_or_thread_name, thread_id, unqualified_hostname, level, msg);
+      const ssize_t len = sge_dstring_strlen(&msg_dstr);
 
-         // write log message to dstring
-         sge_ctime64(sge_get_gmt64(), &msg_dstr, false, true);
-         const char *msg_str = sge_dstring_sprintf_append(&msg_dstr, "|%12.12s|%02d|%s|%c|%s\n", prog_or_thread_name, thread_id, unqualified_hostname, level, msg);
+      sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 
-         // write the buffer to file
-         ssize_t len = sge_dstring_strlen(&msg_dstr);
+      // throttled inode check: detect log rotation at most once every 5 seconds
+      if (Log_State.log_fd >= 0 && now - Log_State.last_inode_check > 5 * 1000000ULL) {
+         Log_State.last_inode_check = now;
+         struct stat st_fd{}, st_path{};
+         if (fstat(Log_State.log_fd, &st_fd) == 0 && stat(Log_State.log_file, &st_path) == 0 && st_fd.st_ino != st_path.st_ino) {
+            // log file was rotated — reopen against the new path
+            close(Log_State.log_fd);
+            Log_State.log_fd = -1;
+         }
+      }
+
+      // open once and keep open
+      if (Log_State.log_fd < 0) {
+         Log_State.log_fd = SGE_OPEN3(Log_State.log_file, O_WRONLY | O_APPEND | O_CREAT, 0666);
+         Log_State.last_inode_check = now;
+      }
+      const int fd = Log_State.log_fd;
+
+      sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
+
+      // write is outside the lock; O_APPEND makes individual write() calls atomic
+      if (fd >= 0) {
          if (write(fd, msg_str, len) != len) {
-            // write to stderr if logging failed
             fprintf(stderr, "can't log to file %s: %s\n", log_state_get_log_file(), sge_strerror(errno, &msg_dstr));
          }
-         close(fd);
       }
    }
 }
@@ -196,9 +217,14 @@ void log_state_set_log_level(uint32_t theLevel) {
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
-void log_state_set_log_file(const char *theFile) {
+void log_state_set_log_file(const char *file) {
    sge_mutex_lock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
-   Log_State.log_file = theFile;
+   // close the persistent fd so it is re-opened against the new path on next use
+   if (Log_State.log_fd >= 0) {
+      close(Log_State.log_fd);
+      Log_State.log_fd = -1;
+   }
+   Log_State.log_file = file;
    sge_mutex_unlock("Log_State_Lock", __func__, __LINE__, &Log_State.mutex);
 }
 
