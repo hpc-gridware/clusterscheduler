@@ -95,7 +95,16 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
                         "parent_role_list", SGE_OBJ_ROLE, 0, nullptr);
    }
 
-   // ---- RL_perm_list
+   // ---- RL_perm_list: validate syntax before applying
+   if (lGetPosViaElem(ep, RL_perm_list, SGE_NO_ABORT) >= 0) {
+      const char *perm_str = lGetString(ep, RL_perm_list);
+      if (perm_str != nullptr && strcmp(perm_str, "NONE") != 0) {
+         if (ocs::Role::PermRuleList rules; !ocs::Role::parse_perm_list(perm_str, rules, alpp)) {
+            // answer list already filled by parse_perm_list()
+            DRETURN(STATUS_EUNKNOWN);
+         }
+      }
+   }
    attr_mod_zerostr(ep, new_ep, RL_perm_list, "perm_list");
 
    DRETURN(0);

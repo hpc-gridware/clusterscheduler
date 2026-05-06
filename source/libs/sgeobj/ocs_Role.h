@@ -19,6 +19,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <string>
+#include <vector>
+
 #include "cull/cull.h"
 
 #include "sgeobj/cull/sge_role_RL_L.h"
@@ -26,6 +29,17 @@
 namespace ocs {
    class Role {
    public:
+      /** One parsed permission rule (six colon-separated characteristics). */
+      struct PermRule {
+         std::string source;           ///< source_of_request
+         std::string origin;           ///< origin_of_request
+         std::string operation;        ///< operation_type
+         std::string object_type;      ///< object_type
+         std::string object_key;       ///< object_key
+         std::string value_constraint; ///< object_value_constraint
+      };
+      using PermRuleList = std::vector<PermRule>;
+
       /**
        * Locate a Role by name in a role list.
        * @param role_list  The list to search.
@@ -51,6 +65,20 @@ namespace ocs {
        * exist in role_list. Does not abort startup.
        */
       static void check_integrity(const lList *role_list, const lList *userset_list, lList **answer_list);
+
+      /**
+       * Parse and structurally validate a perm_list string.
+       * Splits the comma-separated rule set into individual PermRule objects.
+       * Each rule must have exactly six colon-separated non-empty fields.
+       * The keyword "NONE" is accepted as an empty rule set.
+       * Semantic validation of individual field values (operation types, object
+       * types, etc.) is deferred to the rule engine.
+       * @param perm_list_str  The raw perm_list string from the role object.
+       * @param rules          Receives the parsed rules on success.
+       * @param answer_list    Receives error messages on failure.
+       * @return               True on success, false if the syntax is invalid.
+       */
+      static bool parse_perm_list(const char *perm_list_str, PermRuleList &rules, lList **answer_list);
 
       /**
        * Create a Role template element with default attribute values.

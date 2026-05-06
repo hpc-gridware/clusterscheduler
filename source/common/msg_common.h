@@ -1144,5 +1144,7 @@
 
 #define MSG_ROLE_INTEGRITY_USERSET_SS  _MESSAGE(60758, _("startup integrity: role " SFQ " references userset " SFQ " which does not exist"))
 #define MSG_ROLE_INTEGRITY_PARENT_SS   _MESSAGE(60759, _("startup integrity: role " SFQ " references parent role " SFQ " which does not exist"))
+#define MSG_ROLE_PERMLIST_NFIELDS_SI   _MESSAGE(60760, _("denied: perm_list rule " SFQ " has %d colon-separated fields (expected 6)"))
+#define MSG_ROLE_PERMLIST_EMPTYFIELD_SI _MESSAGE(60761, _("denied: perm_list rule " SFQ " has empty field %d"))
 
 // clang-format on
