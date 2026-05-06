@@ -109,5 +109,26 @@ namespace ocs {
        * @return      True if the rule matches the context.
        */
       static bool match_rule(const PermRule &rule, const MatchContext &ctx);
+
+      /**
+       * Check whether adding candidate_parent to role_name's parent_role_list would
+       * create a cycle in the role hierarchy.
+       * @param role_name        The role being modified.
+       * @param candidate_parent The proposed new parent.
+       * @param role_list        The master role list.
+       * @return                 True if a cycle would result.
+       */
+      static bool would_create_cycle(const char *role_name, const char *candidate_parent, const lList *role_list);
+
+      /**
+       * Transitively collect all PermRules from role_name and its ancestors.
+       * Rules are appended in DFS order: role's own rules first, then parent roles
+       * left-to-right, recursively. A visited set prevents duplicate entries when
+       * multiple inheritance paths converge on the same ancestor.
+       * @param role_name   Starting role.
+       * @param role_list   The master role list.
+       * @param rules       Receives the collected rules (appended, not replaced).
+       */
+      static void collect_perm_rules(const char *role_name, const lList *role_list, PermRuleList &rules);
    };
 }

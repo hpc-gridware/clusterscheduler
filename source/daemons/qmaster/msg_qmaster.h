@@ -701,5 +701,6 @@
 #define MSG_ROLE_SELF_REFERENCE_S              _MESSAGE(33988, _("denied: role " SFQ " cannot reference itself in parent_role_list"))
 #define MSG_ROLE_PARENT_DOESNOTEXIST_SS        _MESSAGE(33989, _("denied: role " SFQ " referenced in parent_role_list of role " SFQ " does not exist"))
 #define MSG_ROLE_STILL_REFERENCED_INPARENT_SS  _MESSAGE(33990, _("denied: role " SFQ " cannot be deleted: still referenced in parent_role_list of role " SFQ))
+#define MSG_ROLE_PARENT_CYCLE_SS               _MESSAGE(33991, _("denied: adding role " SFQ " as parent of role " SFQ " would create a cycle in the role hierarchy"))
 
 // clang-format on

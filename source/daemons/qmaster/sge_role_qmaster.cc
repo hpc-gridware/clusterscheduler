@@ -90,6 +90,11 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lListElem
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
+         if (ocs::Role::would_create_cycle(role_name, parent_name, master_role_list)) {
+            ERROR(MSG_ROLE_PARENT_CYCLE_SS, parent_name, role_name);
+            answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EUNKNOWN);
+         }
       }
       attr_mod_sub_list(alpp, new_ep, RL_parent_role_list, ST_name, ep, cmd, sub_command,
                         "parent_role_list", SGE_OBJ_ROLE, 0, nullptr);
