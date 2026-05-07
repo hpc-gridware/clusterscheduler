@@ -231,7 +231,17 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             dstring ds;
             sge_dstring_init(&ds, str_value, sizeof(str_value));
             sge_dstring_sprintf(&ds, "%.0f", dval);
-            DPRINTF("normalized time value from \"%s\" to \"%s\"\n",
+            DPRINTF("normalized time value from \"%s\" to \"%s\"\n", lGetString(this_elem, CE_stringval), str_value);
+            lSetString(this_elem, CE_stringval, str_value);
+         }
+
+         /* normalize memory values, so that the string value is based on bytes */
+         if (type == ocs::CEntry::Type::MEM && dval != DBL_MAX) {
+            char str_value[100];
+            dstring ds;
+            sge_dstring_init(&ds, str_value, sizeof(str_value));
+            sge_dstring_sprintf(&ds, "%.0f", dval);
+            DPRINTF("normalized memory value from \"%s\" to \"%s\"\n",
                     lGetString(this_elem, CE_stringval), str_value);
             lSetString(this_elem, CE_stringval, str_value);
          }

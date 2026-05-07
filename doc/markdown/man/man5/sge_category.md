@@ -36,6 +36,8 @@ Reference count. The number of jobs that are currently assigned to this category
 
 The category string. The string is assigned by the system and reflects the submit switches or other characteristics of a job that were present either when the job was submitted or when the job was modified. At any point in time one category string is unique in the system.
 
+Numeric resource request values are normalized before being included in the category string. Memory values are expressed in bytes and time values in seconds. This ensures that equivalent requests written in different notations — for example `mem_free=1024` and `mem_free=1K` (both 1024 bytes), or `h_rt=3600` and `h_rt=1:0:0` (both one hour) — are placed in the same category.
+
 Please note that the category strings may be different for different versions of xxQS_NAMExx. They also depend on other configuration parameters such as Resource Quota Sets, Access Lists or Projects.
 
 # SEE ALSO

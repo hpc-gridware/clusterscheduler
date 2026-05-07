@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cctype>
 #include <ctime>
+#include <string>
 #include <sys/time.h>
 
 #include "uti/sge_component.h"
@@ -33,6 +34,8 @@
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_Category.h"
+#include "sgeobj/ocs_CEntry.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_range.h"
 
@@ -379,6 +382,26 @@ static bool run_test(const data_entry_t *t, const char *expected)
    return ok;
 }
 
+// build a normalized category string for a single mem_free=<val> request
+static std::string build_mem_cat(const char *val) {
+   lList *req = lCreateList("r", CE_Type);
+   lListElem *e = lCreateElem(CE_Type);
+   lSetString(e, CE_name, "mem_free");
+   lSetString(e, CE_stringval, val);
+   lSetUlong(e, CE_valtype, static_cast<uint32_t>(ocs::CEntry::Type::MEM));
+   lSetUlong(e, CE_consumable, CONSUMABLE_NO);
+   lAppendElem(req, e);
+   lList *al = nullptr;
+   centry_fill_and_check(e, &al, false, false);
+   lFreeList(&al);
+   dstring cat = DSTRING_INIT;
+   sge_unparse_resource_list_dstring(&cat, req, "-scope global -hard -l");
+   std::string result(sge_dstring_get_string(&cat) ? sge_dstring_get_string(&cat) : "");
+   sge_dstring_free(&cat);
+   lFreeList(&req);
+   return result;
+}
+
 static int s_fail = 0;
 
 #define CHECK(id, label, expr) \
@@ -405,6 +428,14 @@ int main(int /*argc*/, char * /*argv*/[])
       snprintf(label, sizeof(label), "cat[%d]", tests[i].test_nr);
       CHECK(id++, label, run_test(&tests[i], result_category[i]));
    }
+
+   printf("\n--- memory normalization tests ---\n");
+   // T19: 1K and 1024 are the same byte count → identical category string
+   CHECK(id++, "mem_free=1K and mem_free=1024 produce identical category",
+         build_mem_cat("1K") == build_mem_cat("1024"));
+   // T20: 1k (1000 bytes) and 1K (1024 bytes) differ → distinct category strings
+   CHECK(id++, "mem_free=1k and mem_free=1K produce distinct categories",
+         build_mem_cat("1k") != build_mem_cat("1K"));
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
