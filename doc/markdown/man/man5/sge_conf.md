@@ -1354,92 +1354,94 @@ This value is a global configuration parameter only. It cannot be overwritten by
 
 ## qlogin_daemon
 
-This parameter specifies the mechanism that is to be started on the server side of a qlogin(1) request. Usually 
-this is the builtin mechanism. It's also possible to configure an external executable by specifying the full 
-qualified pathname, e.g. of the system's telnet daemon.
+Together with *qlogin_command*, *rlogin_daemon*, *rlogin_command*, *rsh_daemon*, and *rsh_command*, this
+parameter configures how xxqs_name_sxx establishes the terminal session for interactive jobs. Each use case
+has a server-side daemon and a client-side command:
 
-Changing *qlogin_daemon* will take immediate effect. The default value for *qlogin_daemon* is builtin.
+- qlogin(1) — interactive login session: *qlogin_daemon* / *qlogin_command*
+- qrsh(1) without a command — interactive shell: *rlogin_daemon* / *rlogin_command*
+- qrsh(1) with a command — remote execution: *rsh_daemon* / *rsh_command*
 
-The global configuration entry for this value may be overwritten by the execution host local configuration.
+All six parameters default to `builtin`, which uses the xxqs_name_sxx built-in interactive job support (IJS)
+mechanism. All changes take immediate effect. The global configuration entries may be overwritten by the
+execution host local configuration.
 
-Examples for the two allowed kinds of attributes are:  
+**Server-side daemons (qlogin_daemon, rlogin_daemon, rsh_daemon)**
 
-    qlogin_daemon builtin
+The daemon executable is invoked with a single connection on stdin/stdout. `/usr/sbin/sshd -i` satisfies this
+requirement and is the recommended external daemon when SSH-based transport is desired.
 
-or
+When using `sshd -i`, the OpenSSH server does not propagate the daemon process environment to the remote login
+shell. The shepherd sets multiple variables (e.g `QRSH_PORT`) in the daemon's environment before exec'ing it. 
+To make those variables visible in the remote shell, use a wrapper script with sshd's `SetEnv` directive 
+(requires OpenSSH 8.0 or later):
 
-    qlogin_daemon /usr/sbin/in.telnetd
+    #!/bin/sh
+    exec /usr/sbin/sshd -i -o "SetEnv QRSH_PORT=$QRSH_PORT"
+
+*rlogin_daemon* and *rsh_daemon* additionally accept `none`.
+
+**Client-side commands (qlogin_command, rlogin_command, rsh_command)**
+
+The calling convention differs between qlogin and qrsh:
+
+*rlogin_command* and *rsh_command* are invoked as `command -p port host [remote-command...]`, which matches the
+ssh(1) calling convention. `/usr/bin/ssh` can therefore be specified directly.
+
+*qlogin_command* is invoked as `command host port` (telnet(1) positional convention). SSH cannot be used
+directly because it expects the port via `-p` rather than as a positional argument. Use a wrapper script to
+reorder the arguments:
+
+    #!/bin/sh
+    HOST=$1; PORT=$2
+    exec /usr/bin/ssh -p "$PORT" "$HOST"
+
+*rlogin_command* and *rsh_command* additionally accept `none`.
+
+The TCP port that the qrsh(1) client binds to can be restricted to a specific range using the *port_range*
+parameter; see *port_range* below.
 
 ## qlogin_command
 
-This is the command to be executed on the client side of a qlogin(1) request. Usually this is the builtin 
-qlogin mechanism. It's also possible to configure an external mechanism, usually the absolute pathname of the 
-system's telnet client program. It is automatically started with the target host and port number as parameters.
-
-Changing *qlogin_command* will take immediate effect. The default value for *qlogin_command* is builtin.
-
-The global configuration entry for this value may be overwritten by the execution host local configuration.
-
-Examples for the two allowed kinds of attributes are:  
-
-    qlogin_command builtin  
-
-or  
-
-    qlogin_command /usr/bin/telnetd
+Client-side command for qlogin(1) sessions. Default: `builtin`. See *qlogin_daemon* above for details.
 
 ## rlogin_daemon
 
-This parameter specifies the mechanism that is to be started on the server side of a qrsh(1) request *without* a 
-command argument to be executed remotely. Usually this is the builtin mechanism. It's also possible to configure 
-an external executable by specifying the absolute pathname, e.g. of the system's rlogin daemon.
-
-Changing *rlogin_daemon* will take immediate effect. The default for *rlogin_daemon* is builtin.
-
-The global configuration entry for this value may be overwritten by the execution host local configuration.
-
-The allowed values are similar to the ones of the examples of *qlogin_daemon.*
+Server-side mechanism for qrsh(1) without a command argument. Default: `builtin`. See *qlogin_daemon* above for details.
 
 ## rlogin_command
 
-This is the mechanism to be executed on the client side of a qrsh(1) request *without* a command argument to be 
-executed remotely. Usually this is the builtin mechanism. If no value is given, a specialized xxQS_NAMExx 
-component is used. The command is automatically started with the target host and port number as parameters. 
-The xxQS_NAMExx rlogin client has been extended to accept and use the port number argument. You can only use 
-clients, such as *ssh*, which also understand this syntax.
-
-Changing *rlogin_command* will take immediate effect. The default value for *rlogin_command* is builtin.
-
-The global configuration entry for this value may be overwritten by the execution host local configuration.
-
-In addition to the examples of *qlogin_command* , this value is allowed: rsh_daemon none
+Client-side command for qrsh(1) without a command argument. Default: `builtin`. See *qlogin_daemon* above for details.
 
 ## rsh_daemon
 
-This parameter specifies the mechanism that is to be started on the server side of a qrsh(1) request *with* a 
-command argument to be executed remotely. Usually this is the builtin mechanism. If no value is given, a 
-specialized xxQS_NAMExx component is used.
-
-Changing *rsh_daemon* will take immediate effect. The default value for *rsh_daemon* is builtin.
-
-The global configuration entry for this value may be overwritten by the execution host local configuration.
-
-In addition to the examples of *qlogin_daemon*, this value is allowed: rsh_daemon none
+Server-side mechanism for qrsh(1) with a command argument. Default: `builtin`. See *qlogin_daemon* above for details.
 
 ## rsh_command
 
-This is the mechanism to be executed on the client side of a qrsh(1) request *with* a command argument to be 
-executed remotely. Usually this is the builtin mechanism. If no value is given, a specialized xxQS_NAMExx 
-component is used. The command is automatically started with the target host and port number as parameters 
-like required for telnet(1) plus the command with its arguments to be executed remotely. The xxQS_NAMExx 
-rsh client has been extended to accept and use the port number argument. You can only use clients, such as *ssh*,
-which also understand this syntax.
+Client-side command for qrsh(1) with a command argument. Default: `builtin`. See *qlogin_daemon* above for details.
 
-Changing *rsh_command* will take immediate effect. The default value for *rsh_command* is builtin.
+## port_range
 
-The global configuration entry for this value may be overwritten by the execution host local configuration.
+*port_range* restricts the TCP port numbers that the qrsh(1) client may bind to when
+waiting for the shepherd to connect back. It is a comma-separated list of range
+expressions of the form `n-m` or `n-m:s`, where `n`, `m`, and `s` are positive integers.
+`n` alone is equivalent to `n-n`. The optional step `s` causes only every s-th port in
+the range to be tried (e.g. `50100-50200:2` tries only even ports).
 
-In addition to the examples of *qlogin_command*, this value is allowed: rsh_command none
+When *port_range* is set, the qrsh client tries each port in the specified ranges
+sequentially and binds to the first free one. If no port in the range is available,
+qrsh exits with an error. When *port_range* is `NONE` or not configured, the operating
+system assigns a free ephemeral port automatically (equivalent to binding to port 0).
+
+This parameter applies to both the builtin IJS mode and the legacy ssh/rsh mode.
+
+Changing *port_range* takes immediate effect.
+
+Examples:
+
+    port_range  50100-50200
+    port_range  50100-50200:2,51000-51100
 
 ## delegated_file_staging
 

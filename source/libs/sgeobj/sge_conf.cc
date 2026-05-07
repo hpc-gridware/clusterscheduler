@@ -103,8 +103,9 @@ struct confel {                       /* cluster configuration parameters */
    char        *qmaster_params;
    char        *execd_params;
    char        *reporting_params;
-   char        *gid_range;           /* Range of additional group ids */
-   u_long32    zombie_jobs;          /* jobs to save after execution */
+   char        *gid_range;           ///< Range of additional group ids
+   u_long32    zombie_jobs;          ///< jobs to save after execution 
+   char        *port_range;          ///< Range of ports for qrsh client to bind to
    char        *qlogin_daemon;       /* eg /usr/sbin/in.telnetd */
    char        *qlogin_command;      /* eg telnet $HOST $PORT */
    char        *rsh_daemon;          /* eg /usr/sbin/in.rshd */
@@ -137,7 +138,7 @@ typedef struct confel sge_conf_type;
 static sge_conf_type Master_Config = {
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
-   nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
+   nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
    nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
    0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
 };
@@ -382,6 +383,7 @@ static tConfEntry conf_entries[] = {
  { "jsv_params",                 0, NONE_STR,                  1, nullptr},
  { "gid_range",                  1, NONE_STR,                  1, nullptr},
  { "finished_jobs",              0, FINISHED_JOBS,             1, nullptr},
+ { "port_range",                 0, NONE_STR,                  1, nullptr},
  { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
  { "qlogin_command",             1, NONE_STR,                  1, nullptr},
  { "rsh_daemon",                 1, NONE_STR,                  1, nullptr},
@@ -519,6 +521,7 @@ setConfFromCull(lList *lpCfg) {
    chg_conf_val(lpCfg, "min_uid", nullptr, &Master_Config.min_uid, TYPE_INT);
    chg_conf_val(lpCfg, "min_gid", nullptr, &Master_Config.min_gid, TYPE_INT);
    chg_conf_val(lpCfg, "gid_range", &Master_Config.gid_range, nullptr, 0);
+   chg_conf_val(lpCfg, "port_range", &Master_Config.port_range, nullptr, 0);
 
    if ((ep = lGetElemStr(lpCfg, CF_name, "user_lists"))) {
       lList *lp = nullptr;
@@ -1335,6 +1338,7 @@ void sge_show_conf()
    INFO(MSG_CONF_USING_US, Master_Config.min_gid, "min_gid");
    INFO(MSG_CONF_USING_US, Master_Config.min_uid, "min_uid");
    INFO(MSG_CONF_USING_SS, Master_Config.gid_range != nullptr ? Master_Config.gid_range : NONE_STR, "gid_range");
+   INFO(MSG_CONF_USING_SS, Master_Config.port_range != nullptr ? Master_Config.port_range : NONE_STR, "port_range");
    INFO(MSG_CONF_USING_US, Master_Config.load_report_time, "load_report_time");
    INFO(MSG_CONF_USING_SS, Master_Config.enforce_project != nullptr ? Master_Config.enforce_project : NONE_STR, "enforce_project");
    INFO(MSG_CONF_USING_SS, Master_Config.enforce_user != nullptr ? Master_Config.enforce_user : NONE_STR, "enforce_user");
@@ -1441,6 +1445,7 @@ static void clean_conf() {
    sge_free(&Master_Config.binding_params);
    sge_free(&Master_Config.jsv_params);
    sge_free(&Master_Config.gid_range);
+   sge_free(&Master_Config.port_range);
    sge_free(&Master_Config.qlogin_daemon);
    sge_free(&Master_Config.qlogin_command);
    sge_free(&Master_Config.rsh_daemon);
@@ -1907,6 +1912,19 @@ u_long32 mconf_get_zombie_jobs() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(zombie_jobs);
+}
+
+/* returned pointer needs to be freed */
+char* mconf_get_port_range() {
+   char* port_range = nullptr;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   port_range = sge_strdup(port_range, Master_Config.port_range);
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(port_range);
 }
 
 /* returned pointer needs to be freed */

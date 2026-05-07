@@ -56,6 +56,8 @@
 #include "sge_ijs_threads.h"
 #include "sge_client_ijs.h"
 #include "ijs/sge_ijs_lib.h"
+#include "sgeobj/sge_range.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 
 /* module variables */
 static char *g_hostname  = nullptr;
@@ -875,23 +877,49 @@ cleanup:
 *     sge_client_ijs/force_ijs_server_shutdown()
 *******************************************************************************/
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
-                     const char* username, COMM_HANDLE **phandle, dstring *p_err_msg)
+                     const char* username, const lList *port_range,
+                     COMM_HANDLE **phandle, dstring *p_err_msg)
 {
-   int     ret, ret_val = 0;
+   int  ret;
+   int  ret_val   = 0;
+   bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
 
    DENTER(TOP_LAYER);
-
-   /* we must copy the hostname here to a global variable, because the
-    * worker threads need it later.
-    * It gets freed in force_ijs_server_shutdown().
-    * TODO: Cleaner solution for this!
-    */
    DPRINTF("starting commlib server\n");
-   ret = comm_open_connection(true, communication_framework, COMM_SERVER, 0, COMM_CLIENT,
-                              hostname, username, phandle, p_err_msg);
-   if (ret != 0 || *phandle == nullptr) {
-      ret_val = 1;
+
+   if (!use_range) {
+      // OS-assigned port
+      ret = comm_open_connection(true, communication_framework, COMM_SERVER, 0, COMM_CLIENT,
+                                 hostname, username, phandle, p_err_msg);
+      if (ret != 0 || *phandle == nullptr) {
+         ret_val = 1;
+      }
    } else {
+      // iterate through port_range; bind to first available port
+      bool found = false;
+      for (const lListElem *rep = lFirst(port_range); rep && !found; rep = lNext(rep)) {
+         const uint32_t min  = lGetUlong(rep, RN_min);
+         const uint32_t max  = lGetUlong(rep, RN_max);
+         uint32_t step = lGetUlong(rep, RN_step);
+         if (step == 0) {
+            step = 1;
+         }
+         for (uint32_t candidate = min; candidate <= max && !found; candidate += step) {
+            *phandle = nullptr;
+            ret = comm_open_connection(true, communication_framework, COMM_SERVER,
+                                       static_cast<int>(candidate), COMM_CLIENT,
+                                       hostname, username, phandle, p_err_msg);
+            if (ret == 0 && *phandle != nullptr) {
+               found = true;
+            }
+         }
+      }
+      if (!found) {
+         ret_val = 1;
+      }
+   }
+
+   if (ret_val == 0) {
       ret = comm_set_connection_param(*phandle, HEARD_FROM_TIMEOUT, 0, p_err_msg);
       if (ret != 0) {
          ret_val = 2;

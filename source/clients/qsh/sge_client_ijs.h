@@ -35,6 +35,8 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include "cull/cull_list.h"
+
 #define COMM_SERVER "qrsh_ijs"
 #define COMM_CLIENT "shepherd_ijs"
 
@@ -43,7 +45,9 @@ void* tty_to_commlib(void *t_conf);
 void* commlib_to_tty(void *t_conf);
 
 int start_ijs_server(cl_framework_t communication_framework,
-                     const char *hostname, const char *username, COMM_HANDLE **phandle, dstring *p_err_msg);
+                     const char *hostname, const char *username,
+                     const lList *port_range,
+                     COMM_HANDLE **phandle, dstring *p_err_msg);
 
 int run_ijs_server(COMM_HANDLE *phandle, const char *remote_host,
    u_long32 job_id, int nostdin, int noshell, int is_rsh, int is_qlogin,
