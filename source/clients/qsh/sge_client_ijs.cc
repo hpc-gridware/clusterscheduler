@@ -453,8 +453,15 @@ void *tty_to_commlib(void *t_conf) {
                comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
-            // If we received something on the wakeup pipe, we shall exit.
-            // We will probably never get here as thread_testcancel() above will already terminate the thread.
+            // Drain the byte written by wakeup_tty_to_commlib_thread() so that select()
+            // does not keep returning immediately. Two callers write to this pipe:
+            //   1. commlib_to_tty (~line 625) when shepherd completes the REGISTER handshake
+            //      — g_client_connected is set but g_do_exit is still false at that point
+            //   2. run_ijs_server (~line 821) when it sets g_do_exit = true for shutdown
+            char wakeup_byte;
+            if (read(g_wakeup_pipe[0], &wakeup_byte, 1) < 0) {
+               DPRINTF("tty_to_commlib: read() from wakeup pipe failed: %s\n", strerror(errno));
+            }
             DPRINTF("tty_to_commlib: wakeup pipe was triggered\n");
             if (g_do_exit) {
                DPRINTF("tty_to_commlib: exit was requested\n");
