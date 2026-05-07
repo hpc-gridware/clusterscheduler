@@ -66,6 +66,7 @@
 #include "sgeobj/sge_var.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_job.h"
 
 #include "gdi/sge_qexec.h"
@@ -109,7 +110,7 @@
 /* module variables */
 static bool g_new_interactive_job_support = false;
 
-static int open_qrsh_socket(int *port);
+static int open_qrsh_socket(int *port, const lList *port_range);
 static int wait_for_qrsh_socket(int sock, int timeout);
 static char *read_from_qrsh_socket(int msgsock);
 static int get_remote_exit_code(int sock);
@@ -255,56 +256,90 @@ static void forward_signal(int sig)
 *     open_qrsh_socket -- create socket for messages to qrsh
 *
 *  SYNOPSIS
-*     static int open_qrsh_socket(int *port)
+*     static int open_qrsh_socket(int *port, const lList *port_range)
 *
 *  FUNCTION
-*     Creates a socket (server side) on any free port (assiged by the
-*     operating system), allows access of one client per time.
-*     If a serious error occurs, the program will exit.
+*     Creates a TCP server socket. When port_range is nullptr or empty the OS
+*     assigns a free ephemeral port (bind to port 0). When port_range is given
+*     the function iterates through the ranges sequentially — honouring the
+*     optional step size — and binds to the first port that is available.
+*     If no port can be bound the program exits.
 *
 *  INPUTS
-*     port - reference to port number
+*     port       - reference to port number; set to the bound port on success
+*     port_range - RN_Type list of port ranges, or nullptr for OS-assigned port
 *
 *  RESULT
-*     function returns the socket file descriptor,
-*     or 0, if an error occurred
-*     [port] - the port number of the socket is returned in the
-*              reference parameter
+*     socket file descriptor, or 0 if listen() failed
 *
 ****************************************************************************
 *
 */
-static int open_qrsh_socket(int *port) {
-   int sock;
+static int open_qrsh_socket(int *port, const lList *port_range) {
    struct sockaddr_in server;
    socklen_t length;
+   int sock = -1;
+   bool use_range = (port_range != nullptr && lGetNumberOfElem(port_range) > 0);
 
    DENTER(TOP_LAYER);
 
-   /* create socket */
-   sock = socket(AF_INET, SOCK_STREAM, 0);
-   if (sock == -1) {
-      ERROR(MSG_QSH_ERROROPENINGSTREAMSOCKET_S, strerror(errno));
-      sge_exit(1);
+   if (!use_range) {
+      // OS-assigned ephemeral port
+      sock = socket(AF_INET, SOCK_STREAM, 0);
+      if (sock == -1) {
+         ERROR(MSG_QSH_ERROROPENINGSTREAMSOCKET_S, strerror(errno));
+         sge_exit(1);
+      }
+      server.sin_family      = AF_INET;
+      server.sin_addr.s_addr = INADDR_ANY;
+      server.sin_port        = 0;
+      if (bind(sock, (struct sockaddr *) &server, sizeof server) == -1) {
+         ERROR(MSG_QSH_ERRORBINDINGSTREAMSOCKET_S, strerror(errno));
+         sge_exit(1);
+      }
+      length = sizeof server;
+      if (getsockname(sock, (struct sockaddr *)&server, &length) == -1) {
+         ERROR(MSG_QSH_ERRORGETTINGSOCKETNAME_S, strerror(errno));
+         sge_exit(1);
+      }
+      *port = ntohs(server.sin_port);
+   } else {
+      // iterate through port_range; open a fresh socket for each candidate and try
+      // to bind it — close and continue on failure, keep on first success.
+      // A fresh socket per attempt avoids Linux's EINVAL on a second bind() call
+      // on the same file descriptor.
+      // SO_REUSEADDR lets us bind to a port still in TIME_WAIT from a prior qrsh
+      // run; without it, rapid test repetition or back-to-back jobs can exhaust
+      // the configured range.
+      for (const lListElem *rep = lFirst(port_range); rep && sock == -1; rep = lNext(rep)) {
+         uint32_t min  = lGetUlong(rep, RN_min);
+         uint32_t max  = lGetUlong(rep, RN_max);
+         uint32_t step = lGetUlong(rep, RN_step);
+         if (step == 0) { step = 1; }
+         for (uint32_t candidate = min; candidate <= max && sock == -1; candidate += step) {
+            int try_sock = socket(AF_INET, SOCK_STREAM, 0);
+            if (try_sock == -1) {
+               continue;
+            }
+            int reuse = 1;
+            setsockopt(try_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+            server.sin_family      = AF_INET;
+            server.sin_addr.s_addr = INADDR_ANY;
+            server.sin_port        = htons(static_cast<uint16_t>(candidate));
+            if (bind(try_sock, (struct sockaddr *) &server, sizeof server) == 0) {
+               sock  = try_sock;
+               *port = static_cast<int>(candidate);
+            } else {
+               close(try_sock);
+            }
+         }
+      }
+      if (sock == -1) {
+         ERROR(MSG_QSH_ERRORBINDINGSTREAMSOCKET_S, "no free port found in configured port_range");
+         sge_exit(1);
+      }
    }
 
-   /* bind socket using wildcards */
-   server.sin_family = AF_INET;
-   server.sin_addr.s_addr = INADDR_ANY;
-   server.sin_port = 0;
-   if (bind(sock, (struct sockaddr *) &server, sizeof server) == -1) {
-      ERROR(MSG_QSH_ERRORBINDINGSTREAMSOCKET_S, strerror(errno));
-      sge_exit(1);
-   }
-
-   /* find out assigned port number and pass it to caller */
-   length = sizeof server;
-   if (getsockname(sock, (struct sockaddr *)&server, &length) == -1) {
-      ERROR(MSG_QSH_ERRORGETTINGSOCKETNAME_S, strerror(errno));
-      sge_exit(1);
-   }
-
-   *port = ntohs(server.sin_port);
    DPRINTF("qrsh will listen on port %d\n", *port);
 
    if (listen(sock, 1) == -1) {
@@ -1712,6 +1747,17 @@ int main(int argc, const char **argv)
    ** in the job environment variable QRSH_PORT, so the qrsh_starter or the
    ** shepherd can parse it and establish a connection.
    */
+
+   // fetch optional port_range; nullptr/NONE_STR means OS-assigned port in both modes
+   char *port_range_str = mconf_get_port_range();
+   lList *alp_pr = nullptr;
+   lList *port_range_list = nullptr;
+   if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
+      range_list_parse_from_string(&port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      lFreeList(&alp_pr);
+   }
+   sge_free(&port_range_str);
+
    if (!g_new_interactive_job_support) {
       /*
       ** open socket for qlogin communication and set host and port
@@ -1721,7 +1767,7 @@ int main(int argc, const char **argv)
       int my_port = 0;
       lList *envlp = nullptr;
 
-      sock = open_qrsh_socket(&my_port);
+      sock = open_qrsh_socket(&my_port, port_range_list);
       snprintf(buffer, sizeof(buffer), "%s:%d", qualified_hostname, my_port);
 
       if ((envlp = lGetListRW(job, JB_env_list)) == nullptr) {
@@ -1739,7 +1785,7 @@ int main(int argc, const char **argv)
       set_builtin_ijs_signals_and_handlers();
 
       /* then start the commlib server */
-      ret = start_ijs_server(communication_framework, qualified_hostname, username, &comm_handle, &err_msg);
+      ret = start_ijs_server(communication_framework, qualified_hostname, username, port_range_list, &comm_handle, &err_msg);
       if (ret != 0) {
          if (ret == 1) {
             ERROR(MSG_QSH_CREATINGCOMMLIBSERVER_S, sge_dstring_get_string(&err_msg));
@@ -1756,6 +1802,7 @@ int main(int argc, const char **argv)
       // They will be used in sge_qexecve().
       write_builtin_ijs_connection_data_to_job_object(qualified_hostname, comm_handle, job, opts_qrsh);
    }
+   lFreeList(&port_range_list);
 
    /*
    ** if environment QRSH_WRAPPER is set, pass it through environment
