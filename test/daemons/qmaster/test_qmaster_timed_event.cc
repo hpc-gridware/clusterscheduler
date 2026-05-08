@@ -1,278 +1,157 @@
-/*___INFO__MARK_BEGIN__*/
+/*___INFO__MARK_BEGIN_NEW__*/
 /*************************************************************************
  *
- *  The Contents of this file are made available subject to the terms of
- *  the Sun Industry Standards Source License Version 1.2
+ *  Copyright 2003 Sun Microsystems, Inc.
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
- *  Sun Microsystems Inc., March, 2001
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Sun Industry Standards Source License Version 1.2
- *  =================================================
- *  The contents of this file are subject to the Sun Industry Standards
- *  Source License Version 1.2 (the "License"); You may not use this file
- *  except in compliance with the License. You may obtain a copy of the
- *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- *
- *  Software provided under this License is provided on an "AS IS" basis,
- *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
- *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
- *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
- *  See the License for the specific provisions governing your rights and
- *  obligations concerning the Software.
- *
- *  The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- *
- *  Copyright: 2003 by Sun Microsystems, Inc.
- *
- *  All Rights Reserved.
- *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/
+/*___INFO__MARK_END_NEW__*/
 
 #include <cstdio>
-#include <unistd.h>
+#include <cstring>
 
+#include "uti/sge_component.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
+
+#include "sgeobj/cull/sge_all_listsL.h"
 
 #include "sge_qmaster_timed_event.h"
 
- 
-void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor);
-void signal_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
-void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
+static int s_fail = 0;
 
-static void test_delete_nonexistent_event();
-static void test_add_one_time_event_without_handler();
-static void test_delete_one_time_event();
-static void test_delete_multiple_one_time_events();
-static void test_one_time_event_delivery();
-static void test_multiple_one_time_events_delivery();
-static void test_recurring_event_delivery();
-static void test_add_earlier_one_time_event();
-static void test_add_earlier_recurring_event();
+#define CHECK(id, label, expr) \
+   do { \
+      if (!(expr)) { \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
+         ++s_fail; \
+      } else { \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
+      } \
+   } while (0)
 
-int main(int argc, char* argv[])
-{
+// handler stubs — event delivery requires sge_thread_timer, which is not started here
+void calendar_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void signal_resend_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+void job_resend_event_handler(te_event_t /*anEvent*/, monitoring_t * /*monitor*/) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
+int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_qmaster_timed_event");
-
+   component_set_daemonized(true);
    sge_prof_set_enabled(false);
-
+   lInit(nmv);
    te_init();
 
-   printf("%s: delete_nonexistent_event ----------------------------------\n", __func__);
-
-   test_delete_nonexistent_event();
-
-   printf("%s: add_one_time_event_without_hander -------------------------\n", __func__);
-
-   test_add_one_time_event_without_handler();
-
-   printf("%s: delete_one_time_event -------------------------------------\n", __func__);
-
-   test_delete_one_time_event();
-
-   printf("%s: delete_multiple_one_time_events ---------------------------\n", __func__);
-
-   test_delete_multiple_one_time_events();
-
-   printf("%s: one_time_event_delivery -----------------------------------\n", __func__);
-
-   test_one_time_event_delivery();
-
-   printf("%s: multiple_one_time_events_delivery -------------------------\n", __func__);
-
-   test_multiple_one_time_events_delivery();
-
-   printf("%s: recurring_event_delivery ----------------------------------\n", __func__);
-
-   test_recurring_event_delivery();
-
-   printf("%s: add_earlier_one_time_event --------------------------------\n", __func__);
-
-   test_add_earlier_one_time_event();
-
-   printf("%s: add_earlier_recurring_event -------------------------------\n", __func__);
-
-   test_add_earlier_recurring_event();
-
-   printf("%s: shutdown --------------------------------------------------\n", __func__);
-
-   te_shutdown();
-
-   DRETURN(0);
-} /* main() */
-
-void calendar_event_handler(te_event_t anEvent, monitoring_t *monitor)
-{
-   DENTER(TOP_LAYER);
-
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
-
-   DRETURN_VOID;
-} /* calendar_event_handler() */
-
-void signal_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
-{
-   DENTER(TOP_LAYER);
-
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
-
-   DRETURN_VOID;
-} /* signal_resend_event_handler() */
-
-void job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor)
-{
-   DENTER(TOP_LAYER);
-
-   DPRINTF("%s: time:" sge_u64 " when:" sge_u64 "\n", __func__, static_cast<uint64_t>(time(nullptr)), te_get_when(anEvent));
-
-   DRETURN_VOID;
-} /* job_resend_event_handler() */
-
-static void test_delete_nonexistent_event()
-{
-   te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "no-event");
-
-   sleep(2);
-}
-
-static void test_add_one_time_event_without_handler()
-{
-   te_event_t ev1;
-
-   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-1");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(3);
-
-   return;
-}
-
-static void test_delete_one_time_event()
-{
-   te_event_t ev1;
-   time_t when = time(nullptr) + 30;
-
-   ev1 = te_new_event(when, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-2");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(3);
-
-   te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "calendar_event-2");
-
-   sleep(2);
-
-   return;
-}
-
-static void test_delete_multiple_one_time_events()
-{
-   te_event_t ev1;
-   time_t when1, when2 = 0;
-
-   when1 = time(nullptr) + 10;
-   ev1 = te_new_event(when1, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   when1 = time(nullptr) + 20;
-   ev1 = te_new_event(when1, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   when2 = time(nullptr) + 30;
-   ev1 = te_new_event(when2, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-3");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(3);
-
-   te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "calendar_event-3");
-
-   sleep(10);
-
-   return;
-}
-
-static void test_one_time_event_delivery()
-{
-   te_event_t ev1;
-
    te_register_event_handler(calendar_event_handler, TYPE_CALENDAR_EVENT);
-   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-4");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(2);
-
-   return;
-}
-
-static void test_multiple_one_time_events_delivery()
-{
-   te_event_t ev1, ev2, ev3;
-
    te_register_event_handler(signal_resend_event_handler, TYPE_SIGNAL_RESEND_EVENT);
    te_register_event_handler(job_resend_event_handler, TYPE_JOB_RESEND_EVENT);
 
-   ev1 = te_new_event(time(nullptr), TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "calendar_event-5");
-   ev2 = te_new_event(time(nullptr), TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "signal-resend-event-1");
-   ev3 = te_new_event(time(nullptr), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-1");
+   // --- event creation and accessors ---
+   printf("\n--- event creation and accessors ---\n");
+   {
+      te_event_t ev = te_new_event(0, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 42, 43, "test-key");
+      CHECK(1, "te_new_event returns non-null", ev != nullptr);
+      CHECK(2, "te_get_type returns correct type", te_get_type(ev) == TYPE_CALENDAR_EVENT);
+      CHECK(3, "te_get_first_numeric_key returns 42", te_get_first_numeric_key(ev) == 42);
+      CHECK(4, "te_get_second_numeric_key returns 43", te_get_second_numeric_key(ev) == 43);
+      char *key = te_get_alphanumeric_key(ev);
+      CHECK(5, "te_get_alphanumeric_key returns test-key", key != nullptr && strcmp(key, "test-key") == 0);
+      sge_free(&key);
+      te_free_event(&ev);
+      CHECK(6, "te_free_event nulls the pointer", ev == nullptr);
+   }
 
-   te_add_event(ev1);
-   te_add_event(ev2);
-   te_add_event(ev3);
+   // --- delete from empty list ---
+   printf("\n--- delete from empty list ---\n");
+   CHECK(7, "te_delete_one_time_event on empty list returns 0",
+         te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "no-event") == 0);
 
-   te_free_event(&ev1);
-   te_free_event(&ev2);
-   te_free_event(&ev3);
+   // --- add and delete by key ---
+   printf("\n--- add and delete by key ---\n");
+   {
+      // single event: add then delete
+      te_event_t ev = te_new_event(0, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "ev-a");
+      te_add_event(ev);
+      te_free_event(&ev);
+      CHECK(8, "delete by key returns 1",
+            te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "ev-a") == 1);
+      CHECK(9, "second delete of same key returns 0",
+            te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "ev-a") == 0);
 
-   sleep(4);
+      // 3 events with same key: all deleted in one call
+      for (int i = 0; i < 3; i++) {
+         te_event_t e = te_new_event(0, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "ev-b");
+         te_add_event(e);
+         te_free_event(&e);
+      }
+      CHECK(10, "delete 3 events with same key returns 3",
+            te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "ev-b") == 3);
 
-   return;
-}
+      // 2 events with different keys: each deleted independently
+      te_event_t e1 = te_new_event(0, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "ev-c1");
+      te_event_t e2 = te_new_event(0, TYPE_CALENDAR_EVENT, ONE_TIME_EVENT, 0, 0, "ev-c2");
+      te_add_event(e1);
+      te_add_event(e2);
+      te_free_event(&e1);
+      te_free_event(&e2);
+      CHECK(11, "delete key-1 from two-event list returns 1",
+            te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "ev-c1") == 1);
+      CHECK(12, "delete key-2 returns 1 (remaining event gone)",
+            te_delete_one_time_event(TYPE_CALENDAR_EVENT, 0, 0, "ev-c2") == 1);
+   }
 
-static void test_recurring_event_delivery()
-{
-   te_event_t ev1;
+   // --- delete all of type ---
+   printf("\n--- delete all of type ---\n");
+   {
+      for (int i = 0; i < 3; i++) {
+         te_event_t e = te_new_event(0, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, nullptr);
+         te_add_event(e);
+         te_free_event(&e);
+      }
+      CHECK(13, "te_delete_all_one_time_events returns 3",
+            te_delete_all_one_time_events(TYPE_SIGNAL_RESEND_EVENT) == 3);
+      CHECK(14, "second call on now-empty type returns 0",
+            te_delete_all_one_time_events(TYPE_SIGNAL_RESEND_EVENT) == 0);
+   }
 
-   ev1 = te_new_event(20, TYPE_SIGNAL_RESEND_EVENT, RECURRING_EVENT, 0, 0, "signal-resend-event-2");
-   te_add_event(ev1);
-   te_free_event(&ev1);
+   // --- recurring events not deleted by one-time delete ---
+   printf("\n--- recurring events not deleted by one-time delete ---\n");
+   {
+      // RECURRING_EVENT events are excluded from te_delete_*_one_time_event by design
+      te_event_t ev = te_new_event(2 * 1000000, TYPE_JOB_RESEND_EVENT, RECURRING_EVENT, 0, 0, "rec-ev");
+      te_add_event(ev);
+      te_free_event(&ev);
+      CHECK(15, "te_delete_one_time_event does not delete recurring event",
+            te_delete_one_time_event(TYPE_JOB_RESEND_EVENT, 0, 0, "rec-ev") == 0);
+      CHECK(16, "te_delete_all_one_time_events does not delete recurring event",
+            te_delete_all_one_time_events(TYPE_JOB_RESEND_EVENT) == 0);
+   }
 
-   sleep(45);
-
-   return;
-}
-
-static void test_add_earlier_one_time_event()
-{
-   te_event_t ev1;
-
-   ev1 = te_new_event(time(nullptr), TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, "job-resend-event-2");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(20);
-
-   return;
-}
-
-static void test_add_earlier_recurring_event()
-{
-   te_event_t ev1;
-
-   ev1 = te_new_event(5, TYPE_JOB_RESEND_EVENT, RECURRING_EVENT, 0, 0, "job-resend-event-3");
-   te_add_event(ev1);
-   te_free_event(&ev1);
-
-   sleep(20);
-
-   return;
+   te_shutdown();
+   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
+   DRETURN(s_fail == 0 ? 0 : 1);
 }
