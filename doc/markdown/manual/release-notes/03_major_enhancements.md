@@ -48,6 +48,38 @@ The following status query commands have been converted to use stored procedures
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### X11 Forwarding for Interactive Jobs
+
+The builtin Interactive Job Support (IJS) mode now supports X11 forwarding for qrsh(1) and qlogin(1).
+When a user adds the `-X` flag, graphical applications launched inside the interactive session display on
+the user's local X server, regardless of which execution host the job runs on.
+
+**How it works**
+
+1. The qrsh(1) or qlogin(1) client reads the MIT-MAGIC-COOKIE-1 for the local display from the user's
+   Xauthority database and transmits it to the shepherd as part of the session setup.
+2. The shepherd creates a Unix-domain proxy display at `/tmp/.X11-unix/XN` on the execution host
+   (N >= 10, first available), writes a matching Xauthority entry for the proxy display into the job
+   owner's `~/.Xauthority`, and injects `DISPLAY=:N.0` into the job environment before the job starts.
+3. When an X client inside the job opens a connection to the proxy display, the shepherd relays the X11
+   protocol stream back through the commlib connection to the qrsh(1) or qlogin(1) client, which forwards
+   it to the real X server.
+
+The proxy display socket and the Xauthority entry are cleaned up automatically when the job ends.
+
+**Usage**
+
+    qrsh -X -b y xterm
+    qlogin -X
+
+If `DISPLAY` is not set in the submitting environment, qrsh(1) and qlogin(1) skip X11 setup and proceed
+normally without forwarding, so `-X` is safe to use even on headless submit hosts.
+
+X11 forwarding requires builtin IJS mode (`rsh_command builtin` / `qlogin_command builtin` in the global
+configuration). It is not available with the legacy ssh/rsh transport.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### Port Range for qrsh and qlogin
 
 When a user submits an interactive job via qrsh(1) or qlogin(1), the client binds a TCP listen socket and

@@ -1292,6 +1292,25 @@ represent the values *n* and *m* which have been provided with the `-pe` option.
 be expanded as value 9999999 in JSV scripts, and it represents the value infinity. (see `-jsv` option above
 or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -X
+
+Available for `qrsh` and `qlogin` only (builtin IJS mode).
+
+Enables X11 display forwarding for interactive sessions that use the builtin commlib
+transport (i.e. when `rsh_command` is set to `builtin` in the global configuration).
+
+When `-X` is specified, `qrsh` / `qlogin` extracts the MIT-MAGIC-COOKIE-1 authentication
+token for the local `$DISPLAY` from `xauth`, transmits it to the shepherd on the
+execution host over the encrypted commlib channel, and registers it there via `xauth`.
+The shepherd then creates a proxy X11 display socket (e.g. `:10.0`) on the execution host.
+X11 connections from the job are tunneled back to the submitting client's real X server.
+
+`-X` is silently ignored when the legacy ssh/rsh transport is used; for that case rely on
+`ssh -X` or `ssh -Y` in your `rsh_command` configuration.
+
+This parameter is not available in the JSV context. (see `-jsv` option above or find
+more information concerning JSV in xxqs_name_sxx_jsv(1))
+
 ## -pty y\[es\]\|n\[o\] 
 
 Available for `qrsh` and `qlogin` only.

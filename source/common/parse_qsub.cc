@@ -2277,6 +2277,14 @@ DTRACE;
          continue;
       }
 /*-----------------------------------------------------------------------------*/
+      /* "-X" — enable X11 forwarding for builtin IJS mode; handled by caller */
+
+      if(!strcmp("-X", *sp)) {
+         ep_opt = sge_add_noarg(pcmdline, x11_OPT, *sp, nullptr);
+         sp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
       /* "-huh?" */
 
       if (!strncmp("-", *sp, 1) && strcmp("--", *sp)) {

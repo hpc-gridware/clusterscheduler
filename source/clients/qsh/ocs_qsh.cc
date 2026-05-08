@@ -1400,6 +1400,7 @@ int main(int argc, const char **argv)
    int noshell = 0;
    ocs::Ternary pty_option = ocs::Ternary::Unset;
    ocs::Ternary suspend_remote_option = ocs::Ternary::Unset;
+   bool forward_x11 = false;
    const char *host = nullptr;
    char name[MAX_JOB_NAME + 1];
    const char *client_name = nullptr;
@@ -1527,6 +1528,12 @@ int main(int argc, const char **argv)
    while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-noshell"))) {
       lRemoveElem(opts_cmdline, &ep);
       noshell = 1;
+   }
+
+   /* parse -X (X11 forwarding, builtin IJS only) — mode check happens after get_client_name() */
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-X"))) {
+      lRemoveElem(opts_cmdline, &ep);
+      forward_x11 = true;
    }
 
    /* parse -suspend_remote <yes|no> */
@@ -1691,6 +1698,12 @@ int main(int argc, const char **argv)
       }
    }
 
+   // Validate -X after get_client_name() has resolved g_new_interactive_job_support.
+   if (forward_x11 && !g_new_interactive_job_support) {
+      ERROR(MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S, "-X");
+      sge_exit(EXIT_FAILURE);
+   }
+
    remove_unknown_opts(opts_cmdline, lGetUlong(job, JB_type), existing_job, true, is_qlogin, is_rsh, is_qsh);
    remove_unknown_opts(opts_defaults, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
    remove_unknown_opts(opts_scriptfile, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
@@ -1710,6 +1723,15 @@ int main(int argc, const char **argv)
    lFreeList(&opts_all);
    if (alp_error) {
       sge_exit(1);
+   }
+
+   // For X11 forwarding: remove the statically-forwarded DISPLAY (added by cull_parse_qsh_parameter
+   // from the user's DISPLAY env var) and inject SGE_X11_FORWARD=1 instead. The shepherd will
+   // create a local proxy display and inject the real DISPLAY into the job's environment.
+   if (forward_x11) {
+      lList *envlp = lGetListRW(job, JB_env_list);
+      lDelSubStr(job, VA_variable, "DISPLAY", JB_env_list);
+      var_list_set_string(&envlp, "SGE_X11_FORWARD", "1");
    }
 
    job_set_command_line(job, argc, argv);
@@ -1895,8 +1917,8 @@ int main(int argc, const char **argv)
 
          DPRINTF("starting IJS server\n");
          sge_dstring_sprintf(&err_msg, "<null>");
-         ret = run_ijs_server(comm_handle, host, nostdin, noshell,
-                              is_rsh, is_qlogin, pty_option, suspend_remote_option, &exit_status, &err_msg);
+         ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
+                              pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11);
          if (ret != 0) {
             ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
          }
@@ -2159,8 +2181,8 @@ int main(int argc, const char **argv)
 
                   /* run_ijs_server() loops until the client has disconnected */
                   sge_dstring_sprintf(&err_msg, "<null>");
-                  ret = run_ijs_server(comm_handle, host, nostdin, noshell,
-                                       is_rsh, is_qlogin, pty_option, suspend_remote_option, &exit_status, &err_msg);
+                  ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
+                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11);
                   if (ret != 0) {
                      ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
                   }
@@ -2398,7 +2420,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
             strcmp(cp, "-ac") && strcmp(cp, "-dc") && strcmp(cp, "-sc") && strcmp(cp, "-scope") &&
             strcmp(cp, "-S") && strcmp(cp, "-w") && strcmp(cp, "-js") && strcmp(cp, "-R") &&
             strcmp(cp, "-o") && strcmp(cp, "-e") && strcmp(cp, "-j") && strcmp(cp, "-wd") &&
-            strcmp(cp, "-jsv")
+            strcmp(cp, "-jsv") && strcmp(cp, "-X")
            ) {
             if (error) {
                ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);

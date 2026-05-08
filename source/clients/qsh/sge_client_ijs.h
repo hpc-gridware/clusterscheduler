@@ -53,7 +53,7 @@ int start_ijs_server(cl_framework_t communication_framework,
 int run_ijs_server(COMM_HANDLE *phandle, const char *remote_host,
    int nostdin, int noshell, int is_rsh, int is_qlogin,
    ocs::Ternary force_pty, ocs::Ternary suspend_remote, int *p_exit_status,
-   dstring *p_err_msg);
+   dstring *p_err_msg, bool forward_x11 = false);
 
 int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg);
 

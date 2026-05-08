@@ -42,6 +42,10 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <pwd.h>
 
 #include <termios.h>
 #if defined(DARWIN)
@@ -88,6 +92,15 @@ static int           g_job_pid             = 0;
 
 static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
+
+/* X11 forwarding state (set by commlib_to_pty on X11_AUTH_MSG, read by pty_to_commlib) */
+#define X11_MAX_CONNS  64
+static int              g_x11_listen_fd                  = -1;   ///< Unix socket accepting X11 from job
+static int              g_x11_client_fds[X11_MAX_CONNS]; ///< per-conn_id fd toward job X client (-1=unused)
+static int              g_x11_display_num                = -1;   ///< display number N for :N.0
+static int              g_x11_next_conn_id               = 0;    ///< round-robin conn_id allocator
+static char             g_x11_socket_path[108]           = "";   ///< path to /tmp/.X11-unix/XN (for cleanup)
+static pthread_mutex_t  g_x11_mutex                      = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * static functions
@@ -287,6 +300,138 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
    return ret;
 }
 
+/**
+ * @brief Create an X11 proxy display on the execution host.
+ *
+ * Sets up the server side of the X11 forwarding tunnel for the interactive job:
+ *
+ * 1. Finds a free display number N >= 10 and binds a Unix-domain listen
+ *    socket at /tmp/.X11-unix/XN (the proxy display).
+ * 2. Converts the 32-character hex MIT-MAGIC-COOKIE-1 into 16 binary bytes
+ *    and appends a FamilyWild Xau record to the job owner's ~/.Xauthority so
+ *    X clients can authenticate against the proxy display.
+ * 3. Appends "DISPLAY=:N.0" and "XAUTHORITY=<path>" to ./environment so the
+ *    job process inherits them via sge_set_environment().
+ *
+ * Must be called in the commlib_to_pty thread when X11_AUTH_MSG is received,
+ * BEFORE SETTINGS_CTRL_MSG unblocks the child — TCP ordering guarantees that
+ * the child sees DISPLAY in its environment before it runs the user's command.
+ * The listen fd is stored in module-level g_x11_listen_fd for use by
+ * pty_to_commlib when accepting incoming X11 connections.
+ *
+ * @param cookie_hex 32-character hex MIT-MAGIC-COOKIE-1 forwarded from the
+ *                   qrsh client via X11_AUTH_MSG.
+ * @return true on success; false if no free display number was found.
+ * @note MT-NOTE: not MT-safe (modifies g_x11_listen_fd, g_x11_display_num,
+ *       g_x11_socket_path).  Uses geteuid() — not getuid() — to resolve the
+ *       job owner's home directory; getuid() returns 0 in the shepherd parent
+ *       which runs setuid root.
+ */
+static bool setup_x11_forwarding(const char *cookie_hex) {
+   shepherd_trace("setup_x11_forwarding: starting with cookie_hex length %zu", strlen(cookie_hex));
+
+   // Ensure /tmp/.X11-unix exists
+   mkdir("/tmp/.X11-unix", 01777);
+
+   // Find a free display number and bind a Unix socket
+   bool found = false;
+   for (int n = 10; n < 100 && !found; n++) {
+      char sock_path[108];
+      snprintf(sock_path, sizeof(sock_path), "/tmp/.X11-unix/X%d", n);
+
+      struct sockaddr_un addr;
+      memset(&addr, 0, sizeof(addr));
+      addr.sun_family = AF_UNIX;
+      strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
+
+      int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (fd < 0) {
+         continue;
+      }
+      // Remove any stale socket from a previous run
+      unlink(sock_path);
+      if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0 &&
+          listen(fd, 16) == 0) {
+         chmod(sock_path, 0600);
+         g_x11_listen_fd  = fd;
+         g_x11_display_num = n;
+         snprintf(g_x11_socket_path, sizeof(g_x11_socket_path), "%s", sock_path);
+         found = true;
+         shepherd_trace("setup_x11_forwarding: bound display :%d on %s (fd=%d)", n, sock_path, fd);
+      } else {
+         close(fd);
+      }
+   }
+   if (!found) {
+      shepherd_trace("setup_x11_forwarding: no free display number found");
+      return false;
+   }
+
+   // Use euid (job owner), not uid (which is root in the shepherd parent process).
+   struct passwd *pw = getpwuid(geteuid());
+   const char *home = (pw != nullptr) ? pw->pw_dir : "/tmp";
+   char xauth_path[512];
+   snprintf(xauth_path, sizeof(xauth_path), "%s/.Xauthority", home);
+
+   // Convert 32-char hex cookie to 16 binary bytes and write an Xau entry directly.
+   // Avoids calling system()/xauth in a multithreaded context where waitpid races can deadlock.
+   uint8_t cookie_bin[16];
+   bool cookie_ok = true;
+   for (int ci = 0; ci < 16 && cookie_ok; ci++) {
+      unsigned int bval = 0;
+      if (sscanf(cookie_hex + 2 * ci, "%02x", &bval) != 1) {
+         cookie_ok = false;
+      }
+      cookie_bin[ci] = static_cast<uint8_t>(bval);
+   }
+   if (cookie_ok) {
+      // Append a FamilyWild Xau record — matches any host/display for this cookie.
+      FILE *xaf = fopen(xauth_path, "ab");
+      if (xaf != nullptr) {
+         const char *auth_name = "MIT-MAGIC-COOKIE-1";
+         char display_str[16];
+         snprintf(display_str, sizeof(display_str), "%d", g_x11_display_num);
+         uint16_t display_len = static_cast<uint16_t>(strlen(display_str));
+         uint16_t name_len    = static_cast<uint16_t>(strlen(auth_name));
+         // Xau big-endian helper
+         auto w16 = [&](uint16_t v) {
+            uint8_t b[2] = {static_cast<uint8_t>(v >> 8), static_cast<uint8_t>(v & 0xFF)};
+            fwrite(b, 1, 2, xaf);
+         };
+         w16(0xFFFF);        // FamilyWild
+         w16(0);             // address length = 0
+         w16(display_len);   // display number length
+         fwrite(display_str, 1, display_len, xaf);
+         w16(name_len);      // auth name length
+         fwrite(auth_name, 1, name_len, xaf);
+         w16(16);            // auth data length = 16 bytes
+         fwrite(cookie_bin, 1, 16, xaf);
+         fclose(xaf);
+         shepherd_trace("setup_x11_forwarding: wrote Xau entry to %s for display :%d",
+                        xauth_path, g_x11_display_num);
+      } else {
+         shepherd_trace("setup_x11_forwarding: cannot open %s for writing: %s",
+                        xauth_path, strerror(errno));
+      }
+   } else {
+      shepherd_trace("setup_x11_forwarding: cookie_hex parse failed");
+   }
+
+   // Append DISPLAY and XAUTHORITY to ./environment so the job picks them up.
+   FILE *fp = fopen("./environment", "a");
+   if (fp != nullptr) {
+      fprintf(fp, "DISPLAY=:%d.0\n", g_x11_display_num);
+      fprintf(fp, "XAUTHORITY=%s\n", xauth_path);
+      fclose(fp);
+      shepherd_trace("setup_x11_forwarding: appended DISPLAY=:%d.0 to ./environment",
+                     g_x11_display_num);
+   } else {
+      shepherd_trace("setup_x11_forwarding: could not open ./environment for appending");
+   }
+
+   return true;
+}
+
 /****** pty_to_commlib() *******************************************************
 *  NAME
 *     pty_to_commlib() -- pty_to_commlib thread entry point and main loop
@@ -346,6 +491,27 @@ static void* pty_to_commlib(void *t_conf)
       }
       fd_max = std::max(g_p_ijs_fds->pty_master, g_p_ijs_fds->pipe_out);
       fd_max = std::max(fd_max, g_p_ijs_fds->pipe_err);
+
+      // Add X11 listen socket and any active X11 client connection fds
+      int local_x11_client_fds[X11_MAX_CONNS];
+      pthread_mutex_lock(&g_x11_mutex);
+      int x11_listen = g_x11_listen_fd;
+      memcpy(local_x11_client_fds, g_x11_client_fds, sizeof(local_x11_client_fds));
+      pthread_mutex_unlock(&g_x11_mutex);
+      if (x11_listen >= 0) {
+         FD_SET(x11_listen, &read_fds);
+         if (x11_listen > fd_max) {
+            fd_max = x11_listen;
+         }
+      }
+      for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+         if (local_x11_client_fds[xi] >= 0) {
+            FD_SET(local_x11_client_fds[xi], &read_fds);
+            if (local_x11_client_fds[xi] > fd_max) {
+               fd_max = local_x11_client_fds[xi];
+            }
+         }
+      }
 
 #ifdef EXTENSIVE_TRACING
       shepherd_trace("pty_to_commlib: g_p_ijs_fds->pty_master = %d, "
@@ -474,6 +640,67 @@ static void* pty_to_commlib(void *t_conf)
                g_p_ijs_fds->pipe_to_child = -1;
             }
          }
+
+         // Handle new X11 connections from the job (accept on listen socket)
+         if (x11_listen >= 0 && FD_ISSET(x11_listen, &read_fds)) {
+            int new_fd = accept(x11_listen, nullptr, nullptr);
+            if (new_fd >= 0) {
+               // Find an unused conn_id (round-robin search)
+               int conn_id = -1;
+               pthread_mutex_lock(&g_x11_mutex);
+               for (int attempt = 0; attempt < X11_MAX_CONNS; attempt++) {
+                  int cid = (g_x11_next_conn_id + attempt) % X11_MAX_CONNS;
+                  if (g_x11_client_fds[cid] < 0) {
+                     g_x11_client_fds[cid] = new_fd;
+                     g_x11_next_conn_id = (cid + 1) % X11_MAX_CONNS;
+                     conn_id = cid;
+                     break;
+                  }
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (conn_id >= 0) {
+                  // Tell client about the new connection so it can connect to the real X server
+                  char open_msg[2];
+                  open_msg[0] = static_cast<char>((conn_id >> 8) & 0xFF);
+                  open_msg[1] = static_cast<char>(conn_id & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)open_msg, 2, X11_OPEN_MSG, &x11_err);
+                  shepherd_trace("pty_to_commlib: X11 connection accepted, conn_id %d fd %d", conn_id, new_fd);
+               } else {
+                  shepherd_trace("pty_to_commlib: X11_MAX_CONNS reached, refusing X11 connection");
+                  close(new_fd);
+               }
+            }
+         }
+
+         // Relay data from X11 job clients to the qrsh client (→ real X server)
+         static char x11_buf[2 + BUFSIZE];
+         for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+            if (local_x11_client_fds[xi] >= 0 && FD_ISSET(local_x11_client_fds[xi], &read_fds)) {
+               int nread = read(local_x11_client_fds[xi], x11_buf + 2, BUFSIZE - 1);
+               if (nread <= 0) {
+                  shepherd_trace("pty_to_commlib: X11 client conn %d closed by job", xi);
+                  x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                  x11_buf[1] = static_cast<char>(xi & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)x11_buf, 2, X11_CLOSE_MSG, &x11_err);
+                  pthread_mutex_lock(&g_x11_mutex);
+                  close(g_x11_client_fds[xi]);
+                  g_x11_client_fds[xi] = -1;
+                  pthread_mutex_unlock(&g_x11_mutex);
+               } else {
+                  x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                  x11_buf[1] = static_cast<char>(xi & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)x11_buf, static_cast<unsigned long>(nread + 2),
+                                     X11_DATA_MSG, &x11_err);
+               }
+            }
+         }
+
       } // At least one file handle was ready to read.
 
       /* Always send stderr buffer immediately */
@@ -529,6 +756,24 @@ static void* pty_to_commlib(void *t_conf)
 #endif
    sge_free(&stdout_buf);
    sge_free(&stderr_buf);
+
+   // Close X11 listen socket and all X11 client connections
+   pthread_mutex_lock(&g_x11_mutex);
+   if (g_x11_listen_fd >= 0) {
+      close(g_x11_listen_fd);
+      g_x11_listen_fd = -1;
+      if (g_x11_socket_path[0] != '\0') {
+         unlink(g_x11_socket_path);
+      }
+   }
+   for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+      if (g_x11_client_fds[xi] >= 0) {
+         close(g_x11_client_fds[xi]);
+         g_x11_client_fds[xi] = -1;
+      }
+   }
+   pthread_mutex_unlock(&g_x11_mutex);
+
    thread_func_cleanup(t_conf);
 
 /* TODO: This could cause race conditions in the main thread, replace with pthread_condition */
@@ -545,28 +790,21 @@ static void* pty_to_commlib(void *t_conf)
    return nullptr;
 }
 
-/****** commlib_to_pty() *******************************************************
-*  NAME
-*     commlib_to_pty() -- commlib_to_pty thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* commlib_to_pty(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the commlib_to_pty thread.
-*     Reads data from the commlib and writes it to the pty.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE:
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Entry point and main loop of the commlib_to_pty thread.
+ *
+ * Reads data from the commlib and writes it to the pty (stdin of the job).
+ * In addition to standard control messages (SETTINGS_CTRL_MSG,
+ * SUSPEND_CTRL_MSG, WINDOW_SIZE_CTRL_MSG), handles X11 forwarding:
+ * X11_AUTH_MSG triggers setup_x11_forwarding() to create the proxy display
+ * before the child is unblocked; X11_DATA_MSG relays X protocol bytes from
+ * the client's X server to the job's X client socket; X11_CLOSE_MSG tears
+ * down an X11 channel.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: not MT-safe (modifies shared shepherd state).
+ */
 static void* commlib_to_pty(void *t_conf)
 {
    recv_message_t       recv_mess;
@@ -780,6 +1018,70 @@ static void* commlib_to_pty(void *t_conf)
                }
                b_was_connected = 1;
                break;
+            case X11_AUTH_MSG: {
+               // Client sent the real MIT-MAGIC-COOKIE-1; set up X11 proxy display.
+               // Must arrive BEFORE SETTINGS_CTRL_MSG so DISPLAY is in ./environment
+               // when the child reads it (TCP ordering guarantees this).
+               if (recv_mess.cl_message->message_length < 2) {
+                  shepherd_trace("commlib_to_pty: X11_AUTH_MSG too short");
+                  break;
+               }
+               char cookie_hex[33];
+               unsigned long cookie_len = std::min(recv_mess.cl_message->message_length - 1,
+                                                   static_cast<unsigned long>(32));
+               memcpy(cookie_hex, recv_mess.data, cookie_len);
+               cookie_hex[cookie_len] = '\0';
+               shepherd_trace("commlib_to_pty: received X11_AUTH_MSG, setting up X11 forwarding");
+               if (!setup_x11_forwarding(cookie_hex)) {
+                  shepherd_trace("commlib_to_pty: X11 forwarding setup failed");
+               }
+               b_was_connected = 1;
+               break;
+            }
+            case X11_DATA_MSG: {
+               // Data from client's real X server toward the job's X client connection.
+               if (recv_mess.cl_message->message_length < 3) {
+                  shepherd_trace("commlib_to_pty: X11_DATA_MSG too short");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  shepherd_trace("commlib_to_pty: X11_DATA_MSG conn_id %d out of range", conn_id);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               int x11_cfd = g_x11_client_fds[conn_id];
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (x11_cfd >= 0) {
+                  int data_len = static_cast<int>(recv_mess.cl_message->message_length) - 3;
+                  sge_writenbytes(x11_cfd, recv_mess.data + 2, data_len);
+               }
+               b_was_connected = 1;
+               break;
+            }
+            case X11_CLOSE_MSG: {
+               // Client closed its connection to the real X server for this conn_id.
+               if (recv_mess.cl_message->message_length < 3) {
+                  shepherd_trace("commlib_to_pty: X11_CLOSE_MSG too short");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  shepherd_trace("commlib_to_pty: X11_CLOSE_MSG conn_id %d out of range", conn_id);
+                  break;
+               }
+               shepherd_trace("commlib_to_pty: X11_CLOSE_MSG conn_id %d", conn_id);
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_client_fds[conn_id] >= 0) {
+                  close(g_x11_client_fds[conn_id]);
+                  g_x11_client_fds[conn_id] = -1;
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               b_was_connected = 1;
+               break;
+            }
             default:
                shepherd_trace("commlib_to_pty: received unknown message");
                break;
@@ -836,6 +1138,15 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_hostname  = strdup(remote_host);
    g_p_ijs_fds = p_ijs_fds;
    g_job_pid   = job_pid;
+
+   // Initialize X11 forwarding state; setup happens lazily when X11_AUTH_MSG arrives.
+   g_x11_listen_fd   = -1;
+   g_x11_display_num = -1;
+   g_x11_next_conn_id = 0;
+   g_x11_socket_path[0] = '\0';
+   for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+      g_x11_client_fds[xi] = -1;
+   }
 
    /*
     * Initialize err_msg, so it's never nullptr.

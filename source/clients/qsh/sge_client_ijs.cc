@@ -40,8 +40,12 @@
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <cctype>
 
 #include <termios.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netdb.h>
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
@@ -87,6 +91,14 @@ static volatile sig_atomic_t received_broken_pipe_signal = 0;
 static volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 
 volatile sig_atomic_t received_signal = 0;
+
+/* X11 forwarding state — set by run_ijs_server before worker threads start */
+#define X11_MAX_CONNS 64
+static bool             g_forward_x11 = false;         ///< true when -X was given
+static char             g_x11_display[256] = "";       ///< client's DISPLAY (e.g. ":0.0")
+static char             g_x11_cookie_hex[33] = "";     ///< real MIT-MAGIC-COOKIE-1, pre-fetched before threads start
+static int              g_x11_fds[X11_MAX_CONNS];      ///< per-conn_id fd to real X server (-1 = unused)
+static pthread_mutex_t  g_x11_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /****** window_change_handler **************************************************
 *  NAME
@@ -314,6 +326,117 @@ static void client_check_window_change(COMM_HANDLE *handle)
    DRETURN_VOID;
 }
 
+/**
+ * @brief Retrieve the MIT-MAGIC-COOKIE-1 for a DISPLAY.
+ *
+ * Runs "xauth list <display>" and parses the output to extract the
+ * MIT-MAGIC-COOKIE-1.  The 32-character hex string is written into
+ * @p cookie_hex.  Must be called in the main thread before worker threads
+ * start to avoid popen()/waitpid() races with different SIGCHLD masks.
+ *
+ * @param display         X11 display string (e.g. ":0" or "host:10.0").
+ * @param cookie_hex      Caller-supplied buffer; must be at least 33 bytes.
+ * @param cookie_hex_size Size of @p cookie_hex in bytes.
+ * @return true if a 32-character MIT-MAGIC-COOKIE-1 was found and written;
+ *         false otherwise (xauth not installed, display not listed, or buffer
+ *         too small).
+ * @note MT-NOTE: not MT-safe (calls popen()).
+ */
+static bool x11_get_cookie(const char *display, char *cookie_hex, size_t cookie_hex_size) {
+   DENTER(TOP_LAYER);
+
+   char cmd[512];
+   snprintf(cmd, sizeof(cmd), "xauth list %.200s 2>/dev/null", display);
+   FILE *fp = popen(cmd, "r");
+   if (!fp) {
+      DRETURN(false);
+   }
+
+   bool found = false;
+   char line[512];
+   while (fgets(line, sizeof(line), fp)) {
+      const char *p = strstr(line, "MIT-MAGIC-COOKIE-1");
+      if (p != nullptr) {
+         p += strlen("MIT-MAGIC-COOKIE-1");
+         while (*p == ' ' || *p == '\t') {
+            p++;
+         }
+         size_t n = 0;
+         while (n < cookie_hex_size - 1 && isxdigit((unsigned char)p[n])) {
+            cookie_hex[n] = p[n];
+            n++;
+         }
+         cookie_hex[n] = '\0';
+         if (n == 32) {
+            found = true;
+            break;
+         }
+      }
+   }
+   pclose(fp);
+   DRETURN(found);
+}
+
+/**
+ * @brief Connect to the real X server identified by a display string.
+ *
+ * Supports both Unix-domain displays (":N[.S]" → /tmp/.X11-unix/XN) and
+ * TCP displays ("host:N[.S]" → port 6000+N).  Called by the tty_to_commlib
+ * thread when a new X11 connection arrives on the proxy socket (X11_OPEN_MSG
+ * from the shepherd).
+ *
+ * @param display X11 display string, e.g. ":0", ":0.0", or "myhost:1.0".
+ * @return Connected socket file descriptor, or -1 on failure.
+ * @note MT-NOTE: MT-safe.
+ */
+static int x11_connect_to_server(const char *display) {
+   DENTER(TOP_LAYER);
+
+   int fd = -1;
+   if (display[0] == ':') {
+      // Unix domain socket: /tmp/.X11-unix/XN
+      int display_num = atoi(display + 1);
+      struct sockaddr_un addr{};
+      memset(&addr, 0, sizeof(addr));
+      addr.sun_family = AF_UNIX;
+      snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/.X11-unix/X%d", display_num);
+      fd = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (fd >= 0 && connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+         close(fd);
+         fd = -1;
+      }
+   } else {
+      // TCP: host:N[.S] → port 6000+N
+      const char *colon = strrchr(display, ':');
+      if (colon != nullptr) {
+         char host[256] = "";
+         int host_len = static_cast<int>(colon - display);
+         if (host_len > 0 && host_len < static_cast<int>(sizeof(host))) {
+            memcpy(host, display, host_len);
+            host[host_len] = '\0';
+         } else {
+            snprintf(host, sizeof(host), "localhost");
+         }
+         int display_num = atoi(colon + 1);
+         char port_str[16];
+         snprintf(port_str, sizeof(port_str), "%d", 6000 + display_num);
+         struct addrinfo hints, *res = nullptr;
+         memset(&hints, 0, sizeof(hints));
+         hints.ai_family   = AF_UNSPEC;
+         hints.ai_socktype = SOCK_STREAM;
+         if (getaddrinfo(host, port_str, &hints, &res) == 0 && res != nullptr) {
+            fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+            if (fd >= 0 && connect(fd, res->ai_addr, res->ai_addrlen) != 0) {
+               close(fd);
+               fd = -1;
+            }
+            freeaddrinfo(res);
+         }
+      }
+   }
+   DRETURN(fd);
+}
+
 static void
 wakeup_tty_to_commlib_thread(const char *source) {
    DENTER(TOP_LAYER);
@@ -380,6 +503,24 @@ void *tty_to_commlib(void *t_conf) {
          /* wait for input on wakeup pipe */
          FD_SET(g_wakeup_pipe[0], &read_fds);
       }
+
+      // Snapshot X11 fds and add them to the fd_set so data from X clients reaches the job.
+      int local_x11_fds[X11_MAX_CONNS];
+      int fd_max = std::max(STDIN_FILENO, g_wakeup_pipe[0]);
+      if (g_forward_x11) {
+         pthread_mutex_lock(&g_x11_mutex);
+         memcpy(local_x11_fds, g_x11_fds, sizeof(local_x11_fds));
+         pthread_mutex_unlock(&g_x11_mutex);
+         for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+            if (local_x11_fds[xi] >= 0) {
+               FD_SET(local_x11_fds[xi], &read_fds);
+               if (local_x11_fds[xi] > fd_max) {
+                  fd_max = local_x11_fds[xi];
+               }
+            }
+         }
+      }
+
       struct timeval       timeout;
       timeout.tv_sec  = 1;
       timeout.tv_usec = 0;
@@ -401,7 +542,7 @@ void *tty_to_commlib(void *t_conf) {
       }
 
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
-      int ret = select(std::max(STDIN_FILENO, g_wakeup_pipe[0]) + 1, &read_fds, nullptr, nullptr, &timeout);
+      int ret = select(fd_max + 1, &read_fds, nullptr, nullptr, &timeout);
       DPRINTF("tty_to_commlib: select returned %d\n", ret);
 
       thread_testcancel(t_conf);
@@ -458,6 +599,7 @@ void *tty_to_commlib(void *t_conf) {
             //   1. commlib_to_tty (~line 625) when shepherd completes the REGISTER handshake
             //      — g_client_connected is set but g_do_exit is still false at that point
             //   2. run_ijs_server (~line 821) when it sets g_do_exit = true for shutdown
+            //   3. commlib_to_tty when a new X11 connection was opened (X11_OPEN_MSG)
             char wakeup_byte;
             if (read(g_wakeup_pipe[0], &wakeup_byte, 1) < 0) {
                DPRINTF("tty_to_commlib: read() from wakeup pipe failed: %s\n", strerror(errno));
@@ -468,6 +610,37 @@ void *tty_to_commlib(void *t_conf) {
                do_exit = true;
             }
          }
+
+         // relay data from X11 connections (real X server) back to shepherd
+         if (g_forward_x11) {
+            static char x11_buf[2 + BUFSIZE];
+            for (int xi = 0; xi < X11_MAX_CONNS && !do_exit; xi++) {
+               if (local_x11_fds[xi] >= 0 && FD_ISSET(local_x11_fds[xi], &read_fds)) {
+                  int nread = read(local_x11_fds[xi], x11_buf + 2, BUFSIZE - 1);
+                  if (nread <= 0) {
+                     // X server closed this connection
+                     DPRINTF("tty_to_commlib: X11 conn %d closed by X server\n", xi);
+                     x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                     x11_buf[1] = static_cast<char>(xi & 0xFF);
+                     comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                        (unsigned char *)x11_buf, 2, X11_CLOSE_MSG, &err_msg);
+                     pthread_mutex_lock(&g_x11_mutex);
+                     close(g_x11_fds[xi]);
+                     g_x11_fds[xi] = -1;
+                     pthread_mutex_unlock(&g_x11_mutex);
+                  } else {
+                     // relay X11 data to shepherd
+                     x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                     x11_buf[1] = static_cast<char>(xi & 0xFF);
+                     DPRINTF("tty_to_commlib: relaying %d bytes from X11 conn %d\n", nread, xi);
+                     comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                        (unsigned char *)x11_buf, static_cast<unsigned long>(nread + 2),
+                                        X11_DATA_MSG, &err_msg);
+                  }
+               }
+            }
+         }
+
          sge_dstring_free(&dbuf);
       } else {
          /*
@@ -499,28 +672,20 @@ void *tty_to_commlib(void *t_conf) {
    DRETURN(nullptr);
 }
 
-/****** commlib_to_tty() *******************************************************
-*  NAME
-*     commlib_to_tty() -- commlib_to_tty thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* commlib_to_tty(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the commlib_to_tty thread.
-*     Reads data from the commlib and writes it to the tty.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE: commlib_to_tty is MT-safe ?
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Entry point and main loop of the commlib_to_tty thread.
+ *
+ * Reads data from the commlib and writes it to the tty (stdout/stderr of the
+ * job).  Also handles X11 forwarding: on REGISTER_CTRL_MSG it sends the
+ * pre-fetched MIT-MAGIC-COOKIE-1 to the shepherd (X11_AUTH_MSG); on
+ * X11_OPEN_MSG it connects to the real X server and registers the channel; on
+ * X11_DATA_MSG it forwards X protocol bytes to the appropriate channel; on
+ * X11_CLOSE_MSG it tears down the corresponding X11 connection.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: MT-safe.
+ */
 void* commlib_to_tty(void *t_conf)
 {
    recv_message_t       recv_mess;
@@ -614,6 +779,16 @@ void* commlib_to_tty(void *t_conf)
                 * send_messages list of the connection, to the client.
                 */
                DPRINTF("commlib_to_tty: received register message!\n");
+               // Before sending SETTINGS_CTRL_MSG, send X11_AUTH_MSG if X11 forwarding is
+               // requested. TCP ordering guarantees that the shepherd receives X11_AUTH_MSG
+               // first and sets up the X11 proxy display before processing SETTINGS_CTRL_MSG.
+               // The cookie was pre-fetched in run_ijs_server() before threads started.
+               if (g_forward_x11 && g_x11_cookie_hex[0] != '\0') {
+                  DPRINTF("commlib_to_tty: sending X11_AUTH_MSG\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *)g_x11_cookie_hex, strlen(g_x11_cookie_hex) + 1,
+                                     X11_AUTH_MSG, &err_msg);
+               }
                /* Send the settings in response */
                snprintf(buf, sizeof(buf), "noshell = %d", g_noshell);
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
@@ -625,6 +800,84 @@ void* commlib_to_tty(void *t_conf)
                g_client_connected = true;
                wakeup_tty_to_commlib_thread("commlib_to_tty");
                break;
+            case X11_OPEN_MSG: {
+               // Shepherd accepted a new X11 connection from the job; open a matching
+               // connection to the real X server and record it under the given conn_id.
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               int x11_fd = x11_connect_to_server(g_x11_display);
+               DPRINTF("commlib_to_tty: X11_OPEN_MSG conn_id %d -> fd %d\n", conn_id, x11_fd);
+               if (x11_fd < 0) {
+                  // Cannot reach real X server — tell shepherd to close xterm's connection.
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG: cannot connect to X server, sending CLOSE\n");
+                  char close_buf[2];
+                  close_buf[0] = static_cast<char>((conn_id >> 8) & 0xFF);
+                  close_buf[1] = static_cast<char>(conn_id & 0xFF);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *)close_buf, 2, X11_CLOSE_MSG, &err_msg);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_fds[conn_id] >= 0) {
+                  close(g_x11_fds[conn_id]);
+               }
+               g_x11_fds[conn_id] = x11_fd;
+               pthread_mutex_unlock(&g_x11_mutex);
+               // Wake up tty_to_commlib so it picks up the new fd in its select loop.
+               wakeup_tty_to_commlib_thread("commlib_to_tty X11_OPEN");
+               break;
+            }
+            case X11_DATA_MSG: {
+               // Data from shepherd's X11 relay (job → real X server direction).
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               int fd = g_x11_fds[conn_id];
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (fd >= 0) {
+                  int data_len = static_cast<int>(recv_mess.cl_message->message_length) - 3;
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG conn_id %d, %d bytes\n", conn_id, data_len);
+                  sge_writenbytes(fd, recv_mess.data + 2, data_len);
+               }
+               break;
+            }
+            case X11_CLOSE_MSG: {
+               // Shepherd closed an X11 connection (job side closed).
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_CLOSE_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_CLOSE_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               DPRINTF("commlib_to_tty: X11_CLOSE_MSG conn_id %d\n", conn_id);
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_fds[conn_id] >= 0) {
+                  close(g_x11_fds[conn_id]);
+                  g_x11_fds[conn_id] = -1;
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               break;
+            }
             case UNREGISTER_CTRL_MSG:
                /* control message */
                /* the client wants to quit, as this is the last message the client
@@ -667,51 +920,40 @@ void* commlib_to_tty(void *t_conf)
    DRETURN(nullptr);
 }
 
-/****** run_ijs_server() *******************************************************
-*  NAME
-*     run_ijs_server() -- The servers main loop
-*
-*  SYNOPSIS
-*     int run_ijs_server(uint32_t job_id, int nostdin, int noshell,
-*                        int is_rsh, int is_qlogin, int force_pty,
-*                        int *p_exit_status)
-*
-*  FUNCTION
-*     The main loop of the commlib server, handling the data transfer from
-*     and to the client.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - Handle of the COMM server
-*     uint32_t job_id    - SGE job id of this job
-*     int nostdin        - The "-nostdin" switch
-*     int noshell        - The "-noshell" switch
-*     int is_rsh         - Is it a qrsh with commandline?
-*     int is_qlogin      - Is it a qlogin or qrsh without commandline?
-*     int suspend_remote - suspend_remote switch of qrsh
-*     int force_pty      - The user forced use of pty by the "-pty yes" switch
-*
-*  OUTPUTS
-*     int *p_exit_status - The exit status of qrsh_starter in case of
-*                          "qrsh <command>" or the exit status of the shell in
-*                          case of "qrsh <no command>"/"qlogin".
-*                          If the job was signalled, the exit code is 128+signal.
-*
-*  RESULT
-*     int - 0: Ok.
-*           1: Invalid parameter
-*           2: Log list not initialized
-*           3: Error setting terminal mode
-*           4: Can't create tty_to_commlib thread
-*           5: Can't create commlib_to_tty thread
-*           6: Error shutting down commlib connection
-*           7: Error resetting terminal mode
-*
-*  NOTES
-*     MT-NOTE: run_ijs_server is not MT-safe
-*******************************************************************************/
+/**
+ * @brief Main loop of the commlib IJS server.
+ *
+ * Handles data transfer between the qrsh/qlogin client and the shepherd of
+ * the interactive job.  Starts the tty_to_commlib and commlib_to_tty worker
+ * threads and waits for them to finish.  When @p forward_x11 is true, the
+ * MIT-MAGIC-COOKIE-1 is fetched in the main thread before the workers start
+ * and the threads handle the X11 forwarding protocol between the client's X
+ * server and the job's proxy display on the execution host.
+ *
+ * @param handle         Handle of the COMM server.
+ * @param remote_host    Hostname of the execution host.
+ * @param nostdin        Non-zero when the "-nostdin" flag was passed.
+ * @param noshell        Non-zero when the "-noshell" flag was passed.
+ * @param is_rsh         Non-zero for qrsh with a command line argument.
+ * @param is_qlogin      Non-zero for qlogin or qrsh without a command.
+ * @param force_pty      Ternary::Yes when the user forced pty via "-pty yes".
+ * @param suspend_remote Ternary::Yes to suspend the remote process on Ctrl-Z.
+ * @param forward_x11    If true, fetch the MIT-MAGIC-COOKIE-1 for $DISPLAY
+ *                       and enable X11 forwarding to the job.
+ * @param[out] p_exit_status Exit status of the remote command (128+signal if
+ *                           killed by a signal).
+ * @param[out] p_err_msg     Error description on failure.
+ * @return 0 on success; non-zero error code otherwise:
+ *         1 invalid parameter, 2 log list not initialized,
+ *         3 terminal mode error, 4 tty_to_commlib thread error,
+ *         5 commlib_to_tty thread error, 6 commlib shutdown error,
+ *         7 terminal mode reset error.
+ * @note MT-NOTE: not MT-safe.
+ */
 int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, int noshell,
                    int is_rsh, int is_qlogin, const ocs::Ternary force_pty,
-                   const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg)
+                   const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg,
+                   bool forward_x11)
 {
    int               ret = 0, ret_val = 0;
    THREAD_HANDLE     *pthread_tty_to_commlib = nullptr;
@@ -736,6 +978,32 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
    g_noshell = noshell;
    g_pid = getpid();
    g_is_rsh = is_rsh;
+
+   // Initialize X11 forwarding state before starting threads.
+   g_forward_x11 = forward_x11;
+   g_x11_cookie_hex[0] = '\0';
+   for (int i = 0; i < X11_MAX_CONNS; i++) {
+      g_x11_fds[i] = -1;
+   }
+   if (forward_x11) {
+      const char *display = getenv("DISPLAY");
+      if (display != nullptr) {
+         snprintf(g_x11_display, sizeof(g_x11_display), "%s", display);
+         // Fetch the cookie now, in the main thread, before worker threads start.
+         // This avoids popen() being called from a worker thread where SIGCHLD
+         // masks inherited from the parent may differ.
+         if (!x11_get_cookie(g_x11_display, g_x11_cookie_hex, sizeof(g_x11_cookie_hex))) {
+            g_x11_cookie_hex[0] = '\0';
+            fprintf(stderr, "Warning: X11 forwarding requested but xauth failed for DISPLAY=%s; forwarding disabled\n",
+                    g_x11_display);
+         }
+      } else {
+         g_x11_display[0] = '\0';
+         DPRINTF("run_ijs_server: -X given but DISPLAY is not set; X11 forwarding unavailable\n");
+      }
+   } else {
+      g_x11_display[0] = '\0';
+   }
 
    if (suspend_remote == ocs::Ternary::Unset || suspend_remote == ocs::Ternary::No) {
       g_suspend_remote = 0;
@@ -840,48 +1108,51 @@ cleanup:
 
    *p_exit_status = g_exit_status;
 
+   // Close any still-open X11 server connections.
+   if (g_forward_x11) {
+      pthread_mutex_lock(&g_x11_mutex);
+      for (int i = 0; i < X11_MAX_CONNS; i++) {
+         if (g_x11_fds[i] >= 0) {
+            close(g_x11_fds[i]);
+            g_x11_fds[i] = -1;
+         }
+      }
+      pthread_mutex_unlock(&g_x11_mutex);
+   }
+
    thread_cleanup_lib(&thread_lib_handle);
    DRETURN(ret_val);
 }
 
-/****** sge_client_ijs/start_ijs_server() **************************************
-*  NAME
-*     start_ijs_server() -- starts the commlib server for the builtin
-*                           interactive job support
-*
-*  SYNOPSIS
-*     int start_ijs_server(const char* username, int csp_mode,
-*                          COMM_HANDLE **phandle, dstring *p_err_msg)
-*
-*  FUNCTION
-*     Starts the commlib server for the commlib connection between the shepherd
-*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
-*     Over this connection the stdin/stdout/stderr input/output is transferred.
-*
-*  INPUTS
-*     bool csp_mode -        If false, the server uses unsecured communications,
-*                            otherwise it uses secured communictions.
-*     const char* username - The owner of the certificates that are used to
-*                            secure the connection.
-*                            Used only in CSP mode, otherwise ignored.
-*  OUTPUTS
-*     COMM_HANDLE **handle - Pointer to the COMM server handle.
-*                            Gets initialized in this function.
-*     dstring *p_err_msg -   Contains the error reason in case of error.
-*
-*  RESULT
-*     int - 0: OK
-*           1: Can't open connection
-*           2: Can't set connection parameters
-*
-*  NOTES
-*     MT-NOTE: start_builtin_ijs_server() is not MT safe
-*
-*  SEE ALSO
-*     sge_client_ijs/run_ijs_server()
-*     sge_client_ijs/stop_ijs_server()
-*     sge_client_ijs/force_ijs_server_shutdown()
-*******************************************************************************/
+/**
+ * @brief Start the commlib server for builtin interactive job support (IJS).
+ *
+ * Opens the commlib server endpoint used for the connection between the
+ * qrsh/qlogin client and the shepherd of the interactive job.  Over this
+ * connection stdin/stdout/stderr and X11 forwarding data are transferred.
+ *
+ * When @p port_range is nullptr or empty the OS assigns an ephemeral port.
+ * Otherwise the function iterates through the RN_Type range list (which may
+ * contain multiple min-max[:step] sub-ranges from the mconf @c port_range
+ * setting) and binds to the first available port, allowing administrators to
+ * restrict qrsh to a firewall-friendly port range.
+ *
+ * @param communication_framework Communication framework; controls whether
+ *                                 TLS (CSP) is used.
+ * @param hostname                 Hostname of the execution host the shepherd
+ *                                 will connect back to.
+ * @param username                 Owner of the TLS certificates; used only
+ *                                 when CSP mode is active, otherwise ignored.
+ * @param port_range               RN_Type CULL range list of ports to try, or
+ *                                 nullptr/empty for an OS-assigned ephemeral
+ *                                 port.  Supports N-M and N-M:S (step) syntax.
+ * @param[out] phandle             Receives the initialized COMM server handle.
+ * @param[out] p_err_msg           Error description on failure.
+ * @return 0 on success;
+ *         1 if no connection could be opened (no port available in range);
+ *         2 if connection parameters could not be set.
+ * @note MT-NOTE: not MT-safe.
+ */
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
                      const char* username, const lList *port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg)
