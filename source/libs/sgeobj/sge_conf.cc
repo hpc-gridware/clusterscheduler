@@ -1977,7 +1977,7 @@ char* mconf_get_jsv_url() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_url = sge_strdup(jsv_url, Master_Config.jsv_url);
-   sge_strip_white_space_at_eol(jsv_url);
+   sge_strip_trailing_blanks(jsv_url);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(jsv_url);
@@ -1991,7 +1991,7 @@ char* mconf_get_jsv_allowed_mod() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_allowed_mod = sge_strdup(jsv_allowed_mod, Master_Config.jsv_allowed_mod);
-   sge_strip_white_space_at_eol(jsv_allowed_mod);
+   sge_strip_trailing_blanks(jsv_allowed_mod);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(jsv_allowed_mod);
@@ -2003,7 +2003,7 @@ char* mconf_get_gdi_request_limits() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    char* gdi_request_limits = sge_strdup(nullptr, Master_Config.gdi_request_limits);
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   sge_strip_white_space_at_eol(gdi_request_limits);
+   sge_strip_trailing_blanks(gdi_request_limits);
    DRETURN(gdi_request_limits);
 }
 

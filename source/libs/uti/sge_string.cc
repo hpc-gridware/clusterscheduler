@@ -584,26 +584,15 @@ void sge_strip_blanks(char *str) {
    DRETURN_VOID;
 }
 
-/****** uti/string/sge_strip_white_space_at_eol() ******************************
-*  NAME
-*     sge_strip_white_space_at_eol() -- truncate white space at EOL 
-*
-*  SYNOPSIS
-*     void sge_strip_white_space_at_eol(char *str) 
-*
-*  FUNCTION
-*     Truncate white space from the end of the string 
-*
-*  INPUTS
-*     char *str - string to be modified 
-*
-*  RESULT
-*     void - NONE
-*
-*  NOTES
-*     MT-NOTE: sge_strip_white_space_at_eol() is MT safe 
-*******************************************************************************/
-void sge_strip_white_space_at_eol(char *str) {
+/**
+ * @brief Strip trailing spaces and tabs from a C string.
+ *
+ * Removes trailing ' ' and '\t' characters from @p str by writing '\0' over
+ * them. Newlines and other whitespace are not touched. MT-safe.
+ *
+ * @param str string to be modified (modified in place)
+ */
+void sge_strip_trailing_blanks(char *str) {
    DENTER(BASIS_LAYER);
 
    if (str != nullptr) {

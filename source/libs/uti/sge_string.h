@@ -80,7 +80,7 @@ int sge_patternnullcmp(const char *str, const char *pattern);
 
 void sge_strip_blanks(char *str);
 
-void sge_strip_white_space_at_eol(char *str);
+void sge_strip_trailing_blanks(char *str);
 
 void sge_strip_slash_at_eol(char *str);
 

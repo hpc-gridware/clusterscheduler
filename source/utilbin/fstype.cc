@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
          return 1;
       } else {
          bool found_line = false;
-         sge_strip_white_space_at_eol(argv[1]);
+         sge_strip_trailing_blanks(argv[1]);
          sge_strip_slash_at_eol(argv[1]);
 
          while (fgets(buffer, sizeof(buffer), fd) != nullptr) {

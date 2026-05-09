@@ -452,34 +452,34 @@ static void test_compress_slashes() {
 }
 
 // ---------------------------------------------------------------------------
-// sge_strip_white_space_at_eol  [T57–T59]
+// sge_strip_trailing_blanks  [T57–T59]
 //
-// sge_strip_white_space_at_eol() removes trailing space and tab characters
+// sge_strip_trailing_blanks() removes trailing space and tab characters
 // in-place.  Only ' ' and '\t' are stripped — it does NOT remove interior or
 // leading whitespace (contrast with sge_strip_blanks).
 // ---------------------------------------------------------------------------
 
 static void test_strip_white_space_at_eol() {
-   printf("\n--- sge_strip_white_space_at_eol ---\n");
+   printf("\n--- sge_strip_trailing_blanks ---\n");
 
    // T57: trailing spaces are removed
    {
       char buf[] = "hello   ";
-      sge_strip_white_space_at_eol(buf);
+      sge_strip_trailing_blanks(buf);
       CHECK(57, "trailing spaces removed", strcmp(buf, "hello") == 0);
    }
 
    // T58: trailing tab is removed
    {
       char buf[] = "hello\t\t";
-      sge_strip_white_space_at_eol(buf);
+      sge_strip_trailing_blanks(buf);
       CHECK(58, "trailing tabs removed", strcmp(buf, "hello") == 0);
    }
 
    // T59: leading spaces are NOT touched — only end-of-line whitespace is stripped
    {
       char buf[] = "  hello";
-      sge_strip_white_space_at_eol(buf);
+      sge_strip_trailing_blanks(buf);
       CHECK(59, "leading spaces not touched", strcmp(buf, "  hello") == 0);
    }
 }

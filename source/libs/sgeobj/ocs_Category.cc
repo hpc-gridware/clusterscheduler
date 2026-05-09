@@ -147,7 +147,7 @@ ocs::Category::build_string(dstring *category_str, lListElem *job,
    sge_unparse_ulong_option_dstring(category_str, job, lGetPosViaElem(job, JB_ar, SGE_NO_ABORT), "-ar");
 
    // remove the last white space that the last unparse function has written
-   sge_dstring_strip_white_space_at_eol(category_str);
+   sge_dstring_strip_trailing_blanks(category_str);
 
    // avoid null pointer as category string in case job has no specific requests
    if (sge_dstring_get_string(category_str) == nullptr) {
