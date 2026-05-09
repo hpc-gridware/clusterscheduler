@@ -33,12 +33,25 @@
 /*___INFO__MARK_END__*/
 
 #include <fnmatch.h>
+#include <cstdio>
 #include <cstdlib>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
 #include "uti/sge_stdio.h"
+
+static int s_fail = 0;
+
+#define CHECK(id, label, expr) \
+   do { \
+      if (!(expr)) { \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
+         ++s_fail; \
+      } else { \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
+      } \
+   } while (0)
 
 /* following is used in test_mt_support() */
 #define TEST_SL_MAX_THREADS 10
@@ -767,20 +780,241 @@ test_mt_support() {
    DRETURN(ret);
 }
 
-int main(int argc, char *argv[]) {
+static bool
+test_sge_sl_data() {
    bool ret = true;
+   sge_sl_list_t *list = nullptr;
+   void *data = nullptr;
 
+   DENTER(TOP_LAYER);
+
+   // sge_sl_data on populated list: forward → first, backward → last
+   ret = sge_sl_create(&list);
+   if (ret) {
+      ret &= sge_sl_insert(list, (void *)"a", SGE_SL_BACKWARD);
+      ret &= sge_sl_insert(list, (void *)"b", SGE_SL_BACKWARD);
+      ret &= sge_sl_insert(list, (void *)"c", SGE_SL_BACKWARD);
+   }
+   if (ret) {
+      sge_sl_data(list, &data, SGE_SL_FORWARD);
+      if (strcmp((char *)data, "a") != 0) {
+         fprintf(stderr, "Error: sge_sl_data(FORWARD) expected \"a\" but got \"%s\"\n", (char *)data);
+         ret = false;
+      }
+      sge_sl_data(list, &data, SGE_SL_BACKWARD);
+      if (strcmp((char *)data, "c") != 0) {
+         fprintf(stderr, "Error: sge_sl_data(BACKWARD) expected \"c\" but got \"%s\"\n", (char *)data);
+         ret = false;
+      }
+   }
+   sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+static bool
+test_sge_sl_data_empty() {
+   bool ret = true;
+   sge_sl_list_t *list = nullptr;
+   void *data = (void *)"sentinel";
+
+   DENTER(TOP_LAYER);
+
+   // sge_sl_data on empty list sets *data to nullptr
+   ret = sge_sl_create(&list);
+   if (ret) {
+      sge_sl_data(list, &data, SGE_SL_FORWARD);
+      if (data != nullptr) {
+         fprintf(stderr, "Error: sge_sl_data(FORWARD) on empty list should set data to nullptr\n");
+         ret = false;
+      }
+      data = (void *)"sentinel";
+      sge_sl_data(list, &data, SGE_SL_BACKWARD);
+      if (data != nullptr) {
+         fprintf(stderr, "Error: sge_sl_data(BACKWARD) on empty list should set data to nullptr\n");
+         ret = false;
+      }
+   }
+   sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+static bool
+test_for_each_sl_unlocked() {
+   bool ret = true;
+   sge_sl_list_t *list = nullptr;
+   int sum = 0;
+
+   DENTER(TOP_LAYER);
+
+   // for_each_sl (unlocked) iterates all elements exactly once
+   ret = sge_sl_create(&list);
+   if (ret) {
+      ret &= sge_sl_insert(list, (void *)"1", SGE_SL_BACKWARD);
+      ret &= sge_sl_insert(list, (void *)"2", SGE_SL_BACKWARD);
+      ret &= sge_sl_insert(list, (void *)"3", SGE_SL_BACKWARD);
+      ret &= sge_sl_insert(list, (void *)"4", SGE_SL_BACKWARD);
+   }
+   if (ret) {
+      sge_sl_elem_t *elem;
+      for_each_sl(elem, list) {
+         sum += atoi((char *)sge_sl_elem_data(elem));
+      }
+      if (sum != 10) {
+         fprintf(stderr, "Error: for_each_sl expected sum 10 but got %d\n", sum);
+         ret = false;
+      }
+   }
+   ret &= sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+static bool
+test_empty_list_edge_cases() {
+   bool ret = true;
+   sge_sl_list_t *list = nullptr;
+
+   DENTER(TOP_LAYER);
+
+   ret = sge_sl_create(&list);
+
+   // count of freshly created list is 0
+   if (ret && sge_sl_get_elem_count(list) != 0) {
+      fprintf(stderr, "Error: fresh list should have count 0, got %u\n", sge_sl_get_elem_count(list));
+      ret = false;
+   }
+
+   // elem_next on empty list: *elem stays nullptr, returns true
+   if (ret) {
+      sge_sl_elem_t *elem = nullptr;
+      bool next_ret = sge_sl_elem_next(list, &elem, SGE_SL_FORWARD);
+      if (!next_ret || elem != nullptr) {
+         fprintf(stderr, "Error: sge_sl_elem_next on empty list should return true with elem=nullptr\n");
+         ret = false;
+      }
+   }
+
+   // delete on empty list is a silent no-op and returns true
+   if (ret) {
+      bool del_ret = sge_sl_delete(list, nullptr, SGE_SL_FORWARD);
+      if (!del_ret || sge_sl_get_elem_count(list) != 0) {
+         fprintf(stderr, "Error: sge_sl_delete on empty list should return true with count still 0\n");
+         ret = false;
+      }
+   }
+
+   sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+static bool
+test_sge_sl_get_mutex() {
+   bool ret = true;
+   sge_sl_list_t *list = nullptr;
+
+   DENTER(TOP_LAYER);
+
+   ret = sge_sl_create(&list);
+   if (ret && sge_sl_get_mutex(list) == nullptr) {
+      fprintf(stderr, "Error: sge_sl_get_mutex should return non-null\n");
+      ret = false;
+   }
+   sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+static bool
+test_dechain_sole_element() {
+   bool ret = true;
+   sge_sl_list_t *list = nullptr;
+   sge_sl_elem_t *elem = nullptr;
+   void *data = (void *)"sentinel";
+
+   DENTER(TOP_LAYER);
+
+   // insert one element, dechain it → list becomes empty
+   ret = sge_sl_create(&list);
+   if (ret) {
+      ret &= sge_sl_insert(list, (void *)"x", SGE_SL_FORWARD);
+   }
+   if (ret) {
+      ret &= sge_sl_elem_next(list, &elem, SGE_SL_FORWARD);
+      ret &= sge_sl_dechain(list, elem);
+      sge_sl_elem_destroy(&elem, nullptr);
+   }
+   if (ret && sge_sl_get_elem_count(list) != 0) {
+      fprintf(stderr, "Error: count after dechain of sole element should be 0, got %u\n",
+              sge_sl_get_elem_count(list));
+      ret = false;
+   }
+   // sge_sl_data on now-empty list must return nullptr
+   if (ret) {
+      sge_sl_data(list, &data, SGE_SL_FORWARD);
+      if (data != nullptr) {
+         fprintf(stderr, "Error: sge_sl_data after dechain of sole element should be nullptr\n");
+         ret = false;
+      }
+   }
+   sge_sl_destroy(&list, nullptr);
+   DRETURN(ret);
+}
+
+int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sl");
-   ret &= test_create_insert_destroy();
-   ret &= test_create_append();
-   ret &= test_create_insort();
-   ret &= test_create_insert_sort();
-   ret &= test_search_forward_backward();
-   ret &= test_delete_forward_backward();
-   ret &= test_delete_search();
-   ret &= test_dechain_before_after();
-   ret &= test_for_each_ep();
-   ret &= test_mt_support();
-   DRETURN(ret ? 0 : 1);
+   int id = 1;
+
+   printf("\n--- insert and traverse ---\n");
+   // T01: prepend elements forward and verify forward/backward order and destroy sequence
+   CHECK(id, "insert forward: sequence and destroy order", test_create_insert_destroy()); id++;
+   // T02: append elements backward and verify forward/backward order
+   CHECK(id, "insert backward: sequence correct", test_create_append()); id++;
+   // T03: sorted insert keeps list in order
+   CHECK(id, "insert_search: sorted insert produces ordered list", test_create_insort()); id++;
+   // T04: bulk insert then sort produces ordered list
+   CHECK(id, "insert then sort: forward/backward order correct", test_create_insert_sort()); id++;
+
+   printf("\n--- search ---\n");
+   // T05: data_search and elem_search forward/backward with fnmatch comparator
+   CHECK(id, "search forward/backward with pattern comparator", test_search_forward_backward()); id++;
+
+   printf("\n--- delete ---\n");
+   // T06: sge_sl_delete from front and back leaves expected remainder
+   CHECK(id, "delete from front and back: remaining sequence correct", test_delete_forward_backward()); id++;
+   // T07: sge_sl_delete_search removes all elements matching pattern
+   CHECK(id, "delete_search by pattern: remaining sequence correct", test_delete_search()); id++;
+
+   printf("\n--- insert_before / append_after / dechain ---\n");
+   // T08: insert_before, append_after, dechain first/last/middle all update links correctly
+   CHECK(id, "insert_before / append_after / dechain: links correct", test_dechain_before_after()); id++;
+
+   printf("\n--- for_each ---\n");
+   // T09: for_each_sl_locked iterates all elements exactly once
+   CHECK(id, "for_each_sl_locked: sum of all elements correct", test_for_each_ep()); id++;
+   // T10: for_each_sl (unlocked) iterates all elements exactly once
+   CHECK(id, "for_each_sl (unlocked): sum of all elements correct", test_for_each_sl_unlocked()); id++;
+
+   printf("\n--- sge_sl_data ---\n");
+   // T11: sge_sl_data returns first and last data pointers from a populated list
+   CHECK(id, "sge_sl_data: forward=first, backward=last", test_sge_sl_data()); id++;
+   // T12: sge_sl_data on empty list sets *data to nullptr for both directions
+   CHECK(id, "sge_sl_data on empty list: yields nullptr", test_sge_sl_data_empty()); id++;
+
+   printf("\n--- empty list edge cases ---\n");
+   // T13: fresh list count=0; elem_next returns true with nullptr; delete is silent no-op
+   CHECK(id, "empty list: count=0, elem_next=true/nullptr, delete=true no-op", test_empty_list_edge_cases()); id++;
+
+   printf("\n--- sge_sl_get_mutex ---\n");
+   // T14: sge_sl_get_mutex returns non-null pointer
+   CHECK(id, "sge_sl_get_mutex returns non-null", test_sge_sl_get_mutex()); id++;
+
+   printf("\n--- sole-element dechain ---\n");
+   // T15: dechain the only element leaves count=0 and sge_sl_data returns nullptr
+   CHECK(id, "dechain sole element: count=0, data=nullptr", test_dechain_sole_element()); id++;
+
+   printf("\n--- multi-threaded concurrent operations ---\n");
+   // T16: 10 threads concurrently insert/delete/search without corruption
+   CHECK(id, "concurrent insert/delete/search: no corruption", test_mt_support()); id++;
+
+   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
+   DRETURN(s_fail == 0 ? 0 : 1);
 }
 
