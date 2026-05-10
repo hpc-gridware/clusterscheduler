@@ -102,6 +102,14 @@ static char             g_x11_cookie_hex[33] = "";     ///< real MIT-MAGIC-COOKI
 static int              g_x11_fds[X11_MAX_CONNS];      ///< per-conn_id fd to real X server (-1 = unused)
 static pthread_mutex_t  g_x11_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+// atexit wrapper: restores the terminal on exit()-based abnormal exits
+// (assert, std::terminate, direct exit() calls). terminal_leave_raw_mode()
+// is idempotent, so a double-call with the normal cleanup path is harmless.
+// SIGKILL cannot be caught; this handler does not run in that case.
+static void atexit_leave_raw_mode() {
+   terminal_leave_raw_mode();
+}
+
 /****** window_change_handler **************************************************
 *  NAME
 *     window_change_handler() -- handler for the window changed signal
@@ -685,7 +693,11 @@ void *tty_to_commlib(void *t_conf) {
           received_signal == SIGINT ||
           received_signal == SIGQUIT ||
           received_signal == SIGTERM) {
-         /* If we receive one of these signals, we must terminate */
+         // Restore terminal immediately so the user is not left in raw mode
+         // while run_ijs_server waits for a blocked commlib_to_tty thread (CS-982).
+         // terminal_leave_raw_mode() is idempotent; the cleanup block in
+         // run_ijs_server calls it again, which becomes a no-op.
+         terminal_leave_raw_mode();
          do_exit = true;
          continue;
       }
@@ -1191,6 +1203,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
          return 3;
       } else {
         g_raw_mode_state = 1;
+        atexit(atexit_leave_raw_mode);
       }
    }
 
