@@ -496,15 +496,23 @@ wakeup_tty_to_commlib_thread(const char *source) {
 *
 *  SEE ALSO
 *******************************************************************************/
+// Action codes returned by tty_escape_process() via *p_action.
+static constexpr int ESC_NONE          = 0; ///< no escape action; forward normally
+static constexpr int ESC_DISCONNECT    = 1; ///< E.  — disconnect and end job
+static constexpr int ESC_LOCAL_SUSPEND = 2; ///< E^Z — suspend client only (job keeps running)
+static constexpr int ESC_HELP          = 3; ///< E?  — print escape help to local terminal
+
 /**
  * @brief Filter SSH-style escape sequences from a TTY input buffer.
  *
  * Scans buf[0..len-1] byte by byte. escape_char is only treated as the escape
  * character when it immediately follows a newline/CR or at session start.
  * Recognised sequences (E = escape_char):
- *   E.   disconnect (sets *p_disconnect; caller stops forwarding)
- *   EE   send literal E
- *   EX   unrecognised: forward E and X unchanged
+ *   E.   disconnect (ESC_DISCONNECT)
+ *   E^Z  local suspend only — no commlib messages (ESC_LOCAL_SUSPEND)
+ *   E?   print escape help to local terminal (ESC_HELP)
+ *   EE   send literal E (forwarded, no action)
+ *   EX   unrecognised: forward E and X unchanged (no action)
  *
  * When escape_char == '\0', all bytes are forwarded unmodified (disabled).
  * Modifies buf in-place; returns the number of bytes to forward.
@@ -515,14 +523,14 @@ wakeup_tty_to_commlib_thread(const char *source) {
  * @param escape_char      Configured escape character; '\0' disables processing.
  * @param p_at_line_start  In/out: true when prev forwarded byte was '\n'/'\r' or session start.
  * @param p_pending_escape In/out: true when escape_char is pending at line start.
- * @param p_disconnect     Out: set to true when E. is detected.
+ * @param p_action         Out: ESC_* constant; ESC_NONE if no escape action was taken.
  * @return                 Number of bytes to forward from buf.
  */
 static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_char,
                                bool *p_at_line_start, bool *p_pending_escape,
-                               bool *p_disconnect)
+                               int *p_action)
 {
-   *p_disconnect = false;
+   *p_action = ESC_NONE;
    if (escape_char == '\0') {
       return len;
    }
@@ -532,7 +540,13 @@ static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_
       if (*p_pending_escape) {
          *p_pending_escape = false;
          if (c == '.') {
-            *p_disconnect = true;
+            *p_action = ESC_DISCONNECT;
+            return out;
+         } else if (c == '\x1a') {
+            *p_action = ESC_LOCAL_SUSPEND;
+            return out;
+         } else if (c == '?') {
+            *p_action = ESC_HELP;
             return out;
          } else if (c == escape_char) {
             buf[out++] = escape_char;        // EE -> forward single escape char
@@ -596,6 +610,35 @@ static bool tty_suspend_client(dstring *p_err_msg)
    comm_wait_for_all_messages_sent(g_comm_handle, p_err_msg);
    if (terminal_enter_raw_mode() != 0) {
       DPRINTF("tty_suspend_client: couldn't re-enter raw mode after resume\n");
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+/**
+ * @brief Suspend the IJS client locally without touching the remote job.
+ *
+ * Implements the ~^Z escape: restores the local terminal to cooked mode and
+ * stops the client process with SIGTSTP so the user gets their local shell back.
+ * On fg/SIGCONT the client re-enters raw mode and the session continues.
+ * Unlike tty_suspend_client(), no SUSPEND_CTRL_MSG or UNSUSPEND_CTRL_MSG is sent
+ * to the shepherd — the remote job keeps running throughout.
+ *
+ * @return true if raw mode was re-entered successfully; false if the loop should exit.
+ */
+static bool tty_local_suspend_client()
+{
+   DENTER(TOP_LAYER);
+   terminal_leave_raw_mode();
+   struct sigaction old_tstp{}, def_tstp{};
+   def_tstp.sa_handler = SIG_DFL;
+   sigaction(SIGTSTP, &def_tstp, &old_tstp);
+   raise(SIGTSTP);
+   // Execution resumes here after fg / SIGCONT.
+   received_signal = 0;
+   sigaction(SIGTSTP, &old_tstp, nullptr);
+   if (terminal_enter_raw_mode() != 0) {
+      DPRINTF("tty_local_suspend_client: couldn't re-enter raw mode after resume\n");
       DRETURN(false);
    }
    DRETURN(true);
@@ -723,17 +766,33 @@ void *tty_to_commlib(void *t_conf) {
                do_exit = true;
             } else {
                // filter escape sequences before forwarding to the remote shell
-               bool escape_disconnect = false;
+               int escape_action = ESC_NONE;
                int nforward = tty_escape_process(
                   (unsigned char *)pbuf, nread, (unsigned char)g_escape_char,
-                  &at_line_start, &pending_escape, &escape_disconnect);
-               if (escape_disconnect) {
-                  // escape+. detected: restore terminal immediately so the user gets their shell back
+                  &at_line_start, &pending_escape, &escape_action);
+               if (escape_action == ESC_DISCONNECT) {
+                  // E. detected: restore terminal immediately so the user gets their shell back
                   constexpr char disconnect_msg[] = "\r\n~.\r\n";
                   sge_writenbytes(STDOUT_FILENO, disconnect_msg, sizeof(disconnect_msg) - 1);
                   terminal_leave_raw_mode();
                   g_escape_disconnect = true;
                   do_exit = true;
+               } else if (escape_action == ESC_LOCAL_SUSPEND) {
+                  // E^Z: suspend client locally; remote job keeps running (no commlib messages)
+                  if (!tty_local_suspend_client()) {
+                     do_exit = true;
+                  }
+               } else if (escape_action == ESC_HELP) {
+                  // E?: print escape help to the local terminal; do not forward anything
+                  char e = g_escape_char;
+                  char help_msg[256];
+                  snprintf(help_msg, sizeof(help_msg),
+                     "\r\n%c. - terminate session\r\n"
+                     "%c^Z - suspend client locally (job keeps running)\r\n"
+                     "%c?  - this message\r\n"
+                     "%c%c  - send literal %c\r\n",
+                     e, e, e, e, e, e);
+                  sge_writenbytes(STDOUT_FILENO, help_msg, strlen(help_msg));
                } else if (nforward > 0) {
                   DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nforward);
                   if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
