@@ -258,6 +258,16 @@ void set_signal_handlers()
       sigaction(SIGTERM, &new_handler, nullptr);
    }
 
+   // SIGTSTP: handled in tty_to_commlib to suspend the client and restore the terminal.
+   // Covers external "kill -TSTP"; Ctrl+Z in raw mode is detected as 0x1a in the data stream.
+   sigaction(SIGTSTP, nullptr, &old_handler);
+   if (old_handler.sa_handler != SIG_IGN) {
+      new_handler.sa_handler = signal_handler;
+      sigaddset(&new_handler.sa_mask, SIGTSTP);
+      new_handler.sa_flags = SA_RESTART;
+      sigaction(SIGTSTP, &new_handler, nullptr);
+   }
+
    new_handler.sa_handler = window_change_handler;
    sigaddset(&new_handler.sa_mask, SIGWINCH);
    new_handler.sa_flags = SA_RESTART;
@@ -535,6 +545,54 @@ static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_
    return out;
 }
 
+/**
+ * @brief Suspend the IJS client and optionally the remote job.
+ *
+ * Restores the local terminal to cooked mode, stops the client process with
+ * SIGTSTP (using the default action so the process is actually stopped), and
+ * re-enters raw mode when the user types fg.
+ *
+ * SUSPEND_CTRL_MSG is sent to the shepherd only when g_suspend_remote is set
+ * (explicit SIGSTOP on the remote job, in addition to any PTY SIGTSTP already
+ * delivered).  UNSUSPEND_CTRL_MSG is always sent on resume so the remote job
+ * receives SIGCONT regardless of how it was stopped — SIGCONT to a running
+ * process is a no-op, so sending it unconditionally is safe.
+ *
+ * @param p_err_msg  dstring for commlib error output.
+ * @return           true if raw mode was re-entered successfully on resume;
+ *                   false if the I/O loop should exit.
+ */
+static bool tty_suspend_client(dstring *p_err_msg)
+{
+   DENTER(TOP_LAYER);
+   // optionally request explicit SIGSTOP on the remote job via shepherd
+   if (g_suspend_remote) {
+      comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                         (unsigned char *)" ", 1, SUSPEND_CTRL_MSG, p_err_msg);
+      comm_wait_for_all_messages_sent(g_comm_handle, p_err_msg);
+   }
+   terminal_leave_raw_mode();
+   // Temporarily reset SIGTSTP to SIG_DFL so raise() actually stops the process.
+   // Save the current handler so we can restore it after resuming.
+   struct sigaction old_tstp{}, def_tstp{};
+   def_tstp.sa_handler = SIG_DFL;
+   sigaction(SIGTSTP, &def_tstp, &old_tstp);
+   raise(SIGTSTP);
+   // Execution resumes here after fg / SIGCONT.
+   // Clear the SIGCONT that woke us; handled here, not by the SIGCONT check.
+   received_signal = 0;
+   sigaction(SIGTSTP, &old_tstp, nullptr);
+   // always send UNSUSPEND_CTRL_MSG to resume the remote job
+   comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                      (unsigned char *)" ", 1, UNSUSPEND_CTRL_MSG, p_err_msg);
+   comm_wait_for_all_messages_sent(g_comm_handle, p_err_msg);
+   if (terminal_enter_raw_mode() != 0) {
+      DPRINTF("tty_suspend_client: couldn't re-enter raw mode after resume\n");
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
 void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
@@ -602,6 +660,16 @@ void *tty_to_commlib(void *t_conf) {
          }
       }
 
+      // External SIGTSTP (e.g. kill -TSTP): suspend the client and resume when fg is typed.
+      // Ctrl+Z from the keyboard is detected as 0x1a in the data stream (see below).
+      if (received_signal == SIGTSTP) {
+         received_signal = 0;
+         if (!tty_suspend_client(&err_msg)) {
+            do_exit = true;
+            continue;
+         }
+      }
+
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
       int ret = select(fd_max + 1, &read_fds, nullptr, nullptr, &timeout);
       DPRINTF("tty_to_commlib: select returned %d\n", ret);
@@ -649,7 +717,7 @@ void *tty_to_commlib(void *t_conf) {
                   &at_line_start, &pending_escape, &escape_disconnect);
                if (escape_disconnect) {
                   // escape+. detected: restore terminal immediately so the user gets their shell back
-                  const char disconnect_msg[] = "\r\n~.\r\n";
+                  constexpr char disconnect_msg[] = "\r\n~.\r\n";
                   sge_writenbytes(STDOUT_FILENO, disconnect_msg, sizeof(disconnect_msg) - 1);
                   terminal_leave_raw_mode();
                   g_escape_disconnect = true;
@@ -659,13 +727,21 @@ void *tty_to_commlib(void *t_conf) {
                   if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
                      if (comm_write_message(g_comm_handle, g_hostname,
                                             COMM_CLIENT, 1, (unsigned char *) pbuf,
-                                            (unsigned long) nforward, STDIN_DATA_MSG, &err_msg) != (unsigned long) nforward) {
+                                            static_cast<unsigned long>(nforward), STDIN_DATA_MSG, &err_msg) != static_cast<unsigned long>(nforward)) {
                         DPRINTF("tty_to_commlib: couldn't write all data\n");
                      } else {
                         DPRINTF("tty_to_commlib: data successfully written\n");
                      }
                   }
                   comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+                  // Ctrl+Z (0x1a) was forwarded to the remote PTY; the remote PTY's ISIG
+                  // delivers SIGTSTP to the remote job. Now also suspend the client so the
+                  // user gets their local shell back. On fg, UNSUSPEND_CTRL_MSG resumes the job.
+                  if (memchr(pbuf, '\x1a', static_cast<size_t>(nforward)) != nullptr) {
+                     if (!tty_suspend_client(&err_msg)) {
+                        do_exit = true;
+                     }
+                  }
                }
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
