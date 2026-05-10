@@ -1082,6 +1082,14 @@ static void* commlib_to_pty(void *t_conf)
                b_was_connected = 1;
                break;
             }
+            case KEEPALIVE_MSG: {
+               shepherd_trace("commlib_to_pty: received KEEPALIVE, sending ACK");
+               unsigned char ack_buf[1] = {0};
+               comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                  ack_buf, 1, KEEPALIVE_ACK_MSG, &err_msg);
+               b_was_connected = 1;
+               break;
+            }
             default:
                shepherd_trace("commlib_to_pty: received unknown message");
                break;

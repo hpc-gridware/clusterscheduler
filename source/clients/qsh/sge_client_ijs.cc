@@ -35,6 +35,7 @@
 /*___INFO__MARK_END__*/
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <cstdio>
 #include <cerrno>
@@ -62,6 +63,7 @@
 #include "sge_ijs_threads.h"
 #include "sge_client_ijs.h"
 #include "ijs/sge_ijs_lib.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
@@ -80,6 +82,9 @@ static bool g_client_connected = false;  // set to true by commlib_to_tty thread
 static bool g_do_exit = false;           // set by the run_ijs_server (the parent thread) to tell the worker threads to shutdown
 static volatile bool g_escape_disconnect = false; ///< set by tty_to_commlib when escape+. is detected
 static char g_escape_char = '~';                  ///< configurable IJS escape char; '\0' = disabled
+static int g_keepalive_interval = 60;             ///< seconds between KEEPALIVE_MSGs; 0 = disabled
+static int g_keepalive_count    = 3;              ///< max consecutive unanswered keepalives before disconnect
+static std::atomic<int> g_keepalive_missed{0};    ///< consecutive unanswered keepalives (written from two threads)
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -603,6 +608,7 @@ void *tty_to_commlib(void *t_conf) {
    bool do_exit = false;
    bool at_line_start = true;   // true at session start; reset after each '\n' or '\r'
    bool pending_escape = false; // true when escape_char at line start is pending next char
+   time_t last_data_time = time(nullptr);  // idle timer for keepalive probes
    while (!do_exit) {
       // This thread should only start its processing once the commlib_to_tty thread received a
       // REGISTER_CTRL_MSG from the sge_shepherd and replied to it
@@ -689,6 +695,28 @@ void *tty_to_commlib(void *t_conf) {
          continue;
       }
 
+      // Send a keepalive probe when the session has been idle for g_keepalive_interval seconds.
+      if (g_keepalive_interval > 0 && g_client_connected) {
+         time_t now = time(nullptr);
+         if (now - last_data_time >= g_keepalive_interval) {
+            unsigned char kbuf[1] = {0};
+            comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                               kbuf, 1, KEEPALIVE_MSG, &err_msg);
+            // no comm_wait_for_all_messages_sent — do not block the probe loop
+            last_data_time = now;
+            if (++g_keepalive_missed > g_keepalive_count) {
+               constexpr char dead_msg[] =
+                  "\r\n[session timed out: no keepalive response from remote host]\r\n";
+               sge_writenbytes(STDOUT_FILENO, dead_msg, sizeof(dead_msg) - 1);
+               terminal_leave_raw_mode();
+               // Signal commlib_to_tty to exit so run_ijs_server can unblock its join.
+               g_escape_disconnect = true;
+               do_exit = true;
+               continue;
+            }
+         }
+      }
+
       if (ret > 0) {
          dstring dbuf = DSTRING_INIT;
 
@@ -749,6 +777,9 @@ void *tty_to_commlib(void *t_conf) {
                      }
                   }
                   comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+                  // Data flowing means the connection is alive; reset keepalive state.
+                  last_data_time = time(nullptr);
+                  g_keepalive_missed = 0;
                   // Ctrl+Z (0x1a) was forwarded to the remote PTY; the remote PTY's ISIG
                   // delivers SIGTSTP to the remote job. Now also suspend the client so the
                   // user gets their local shell back. On fg, UNSUSPEND_CTRL_MSG resumes the job.
@@ -1051,6 +1082,10 @@ void* commlib_to_tty(void *t_conf)
                pthread_mutex_unlock(&g_x11_mutex);
                break;
             }
+            case KEEPALIVE_ACK_MSG:
+               DPRINTF("commlib_to_tty: received KEEPALIVE_ACK\n");
+               g_keepalive_missed = 0;
+               break;
             case UNREGISTER_CTRL_MSG:
                /* control message */
                /* the client wants to quit, as this is the last message the client
@@ -1151,8 +1186,11 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
    g_noshell = noshell;
    g_pid = getpid();
    g_is_rsh = is_rsh;
-   g_escape_char = escape_char;
-   g_escape_disconnect = false;
+   g_escape_char        = escape_char;
+   g_escape_disconnect  = false;
+   g_keepalive_interval = mconf_get_ijs_keepalive_interval();
+   g_keepalive_count    = mconf_get_ijs_keepalive_count();
+   g_keepalive_missed   = 0;
 
    // Initialize X11 forwarding state before starting threads.
    g_forward_x11 = forward_x11;

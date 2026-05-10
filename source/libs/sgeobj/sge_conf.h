@@ -114,6 +114,8 @@ char* mconf_get_jsv_params();
 char* mconf_get_gid_range();
 char* mconf_get_port_range();
 char mconf_get_ijs_escape_char();
+int  mconf_get_ijs_keepalive_interval();
+int  mconf_get_ijs_keepalive_count();
 char* mconf_get_qlogin_daemon();
 char* mconf_get_qlogin_command();
 char* mconf_get_rsh_daemon();

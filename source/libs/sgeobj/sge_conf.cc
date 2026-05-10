@@ -155,7 +155,9 @@ static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
 static bool disable_secondary_ds = false;
-static char s_ijs_escape_char = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
+static char s_ijs_escape_char       = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
+static int  s_ijs_keepalive_interval = 60;  ///< seconds between IJS keepalive probes; 0 = disabled (qmaster_params ijs_keepalive_interval)
+static int  s_ijs_keepalive_count    = 3;   ///< max consecutive unanswered keepalives before disconnect (qmaster_params ijs_keepalive_count)
 
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
@@ -903,6 +905,19 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                } else {
                   s_ijs_escape_char = ijs_escape_char_val[0];
                }
+               continue;
+            }
+         }
+         {
+            std::string kv;
+            if (parse_string_param(s, "ijs_keepalive_interval", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_keepalive_interval = (v >= 0) ? v : 60;
+               continue;
+            }
+            if (parse_string_param(s, "ijs_keepalive_count", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_keepalive_count = (v > 0) ? v : 3;
                continue;
             }
          }
@@ -3127,6 +3142,24 @@ char mconf_get_ijs_escape_char() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_escape_char;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_keepalive_interval() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_keepalive_interval;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_keepalive_count() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_keepalive_count;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

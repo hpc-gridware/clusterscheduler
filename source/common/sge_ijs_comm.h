@@ -63,6 +63,8 @@
 #define X11_OPEN_MSG                 12  ///< shepherd→client: 2-byte big-endian conn_id (new X11 connection)
 #define X11_DATA_MSG                 13  ///< bidirectional: 2-byte big-endian conn_id followed by X11 data
 #define X11_CLOSE_MSG                14  ///< bidirectional: 2-byte big-endian conn_id (connection closed)
+#define KEEPALIVE_MSG                15  ///< client→shepherd: keepalive probe (are you there?)
+#define KEEPALIVE_ACK_MSG            16  ///< shepherd→client: keepalive acknowledgement (yes, I'm here)
 
 #define COMM_RETVAL_OK                    0
 #define COMM_INVALID_PARAMETER            1
