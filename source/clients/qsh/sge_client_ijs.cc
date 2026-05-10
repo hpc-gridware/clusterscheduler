@@ -102,37 +102,28 @@ static char             g_x11_cookie_hex[33] = "";     ///< real MIT-MAGIC-COOKI
 static int              g_x11_fds[X11_MAX_CONNS];      ///< per-conn_id fd to real X server (-1 = unused)
 static pthread_mutex_t  g_x11_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// atexit wrapper: restores the terminal on exit()-based abnormal exits
-// (assert, std::terminate, direct exit() calls). terminal_leave_raw_mode()
-// is idempotent, so a double-call with the normal cleanup path is harmless.
-// SIGKILL cannot be caught; this handler does not run in that case.
+/**
+ * @brief Restore the terminal on exit()-based abnormal exits.
+ *
+ * Registered with atexit() after terminal_enter_raw_mode() succeeds.
+ * Covers assert() failures, std::terminate(), and direct exit() calls.
+ * terminal_leave_raw_mode() is idempotent, so a double-call with the normal
+ * cleanup path in run_ijs_server() is harmless.
+ * SIGKILL cannot be caught; this handler does not run in that case.
+ */
 static void atexit_leave_raw_mode() {
    terminal_leave_raw_mode();
 }
 
-/****** window_change_handler **************************************************
-*  NAME
-*     window_change_handler() -- handler for the window changed signal
-*
-*  SYNOPSIS
-*     static void window_change_handler(int sig)
-*
-*  FUNCTION
-*     Signal handler for the window change signal (SIGWINCH).  This just sets a
-*     flag indicating that the window has changed.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*    MT-NOTE: window_change_handler() is not MT safe, because it uses
-*             received_window_change_signal
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Signal handler for SIGWINCH (window size changed).
+ *
+ * Sets a flag so the main loop in tty_to_commlib() sends the new window
+ * size to the shepherd on the next iteration.
+ *
+ * @param sig Signal number (SIGWINCH).
+ * @note MT-NOTE: not MT-safe; uses received_window_change_signal.
+ */
 static void window_change_handler(int sig)
 {
    /* Do not use DPRINTF in a signal handler! */
@@ -140,77 +131,43 @@ static void window_change_handler(int sig)
    signal(SIGWINCH, window_change_handler);
 }
 
-/****** broken_pipe_handler ****************************************************
-*  NAME
-*     broken_pipe_handler() -- handler for the broken pipe signal
-*
-*  SYNOPSIS
-*     static void broken_pipe_handler(int sig)
-*
-*  FUNCTION
-*     Handler for the SIGPIPE signal.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Signal handler for SIGPIPE (broken pipe).
+ *
+ * Sets a flag indicating that a broken pipe was detected.
+ *
+ * @param sig Signal number (SIGPIPE).
+ */
 static void broken_pipe_handler(int sig)
 {
    received_broken_pipe_signal = 1;
    signal(SIGPIPE, broken_pipe_handler);
 }
 
-/****** signal_handler() *******************************************************
-*  NAME
-*     signal_handler() -- handler for quit signals
-*
-*  SYNOPSIS
-*     static void signal_handler(int sig)
-*
-*  FUNCTION
-*     Handler for all signals that quit the program. These signals are trapped
-*     in order to restore the terminal modes.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Signal handler for quit signals (SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, SIGCONT).
+ *
+ * Records the received signal and sets quit_pending so the worker threads
+ * can detect it on the next loop iteration.  Terminal restoration is the
+ * caller's responsibility — this handler deliberately does not call
+ * terminal_leave_raw_mode() because tcsetattr() is not async-signal-safe.
+ *
+ * @param sig Signal number.
+ */
 void signal_handler(int sig)
 {
    received_signal = sig;
    quit_pending = 1;
 }
 
-/****** set_signal_handlers() **************************************************
-*  NAME
-*     set_signal_handlers() -- set all signal handlers
-*
-*  SYNOPSIS
-*     static void set_signal_handlers()
-*
-*  FUNCTION
-*     Sets all signal handlers. Doesn't overwrite SIG_IGN and therefore
-*     matches the behaviour of rsh.
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Install all signal handlers for the IJS client.
+ *
+ * Installs signal_handler() for SIGHUP, SIGINT, SIGCONT, SIGQUIT, SIGTERM,
+ * and SIGTSTP; window_change_handler() for SIGWINCH; and broken_pipe_handler()
+ * for SIGPIPE.  Existing SIG_IGN dispositions are never overwritten, matching
+ * the behaviour of rsh.
+ */
 void set_signal_handlers()
 {
    struct sigaction old_handler, new_handler;
@@ -287,33 +244,19 @@ void set_signal_handlers()
    sigaction(SIGPIPE, &new_handler, nullptr);
 }
 
-/****** client_check_window_change() *******************************************
-*  NAME
-*     client_check_window_change() -- check if window size was change and
-*                                     submit changes to pty
-*
-*  SYNOPSIS
-*     static void client_check_window_change(COMM_HANDLE *handle)
-*
-*  FUNCTION
-*     Checks if the window size of the terminal window was changed.
-*     If the size was changed, submits the new window size to the
-*     pty.
-*     The actual change is detected by a signal (on Unix), this function
-*     just checks the according flag.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - pointer to the commlib handle
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*     MT-NOTE: client_check_window_change() is MT-safe (see comment in code)
-*
-*  SEE ALSO
-*     window_change_handler()
-*******************************************************************************/
+/**
+ * @brief Send the new window size to the shepherd when SIGWINCH was received.
+ *
+ * Checks received_window_change_signal; if set, reads the current terminal
+ * dimensions via TIOCGWINSZ and forwards them to the shepherd as a
+ * WINDOW_SIZE_CTRL_MSG.  A dummy 60×80 message is sent when ioctl fails so
+ * the protocol exchange is always completed.
+ *
+ * @param handle Commlib handle used to send the WINDOW_SIZE_CTRL_MSG.
+ * @note MT-NOTE: MT-safe under a minor race — in the worst case the new
+ *       window size is sent twice.
+ * @see window_change_handler()
+ */
 static void client_check_window_change(COMM_HANDLE *handle)
 {
    struct winsize ws;
@@ -457,6 +400,15 @@ static int x11_connect_to_server(const char *display) {
    DRETURN(fd);
 }
 
+/**
+ * @brief Write a byte to the wakeup pipe to unblock tty_to_commlib's select().
+ *
+ * Used in two situations: once to signal that the shepherd has connected and
+ * the thread may start reading stdin (REGISTER_CTRL_MSG path), and again when
+ * g_do_exit is set by run_ijs_server() to trigger clean shutdown.
+ *
+ * @param source Caller name used in DPRINTF messages.
+ */
 static void
 wakeup_tty_to_commlib_thread(const char *source) {
    DENTER(TOP_LAYER);
@@ -474,28 +426,6 @@ wakeup_tty_to_commlib_thread(const char *source) {
    DRETURN_VOID;
 }
 
-/****** tty_to_commlib() *******************************************************
-*  NAME
-*     tty_to_commlib() -- tty_to_commlib thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* tty_to_commlib(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the tty_to_commlib thread.
-*     Reads data from the tty and writes it to the commlib.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE: tty_to_commlib is MT-safe ?
-*
-*  SEE ALSO
-*******************************************************************************/
 // Action codes returned by tty_escape_process() via *p_action.
 static constexpr int ESC_NONE          = 0; ///< no escape action; forward normally
 static constexpr int ESC_DISCONNECT    = 1; ///< E.  — disconnect and end job
@@ -644,6 +574,20 @@ static bool tty_local_suspend_client()
    DRETURN(true);
 }
 
+/**
+ * @brief Entry point and main loop of the tty_to_commlib thread.
+ *
+ * Reads data from the local terminal (stdin) and forwards it to the commlib
+ * connection to the shepherd.  Escape sequences are filtered via
+ * tty_escape_process() before forwarding: ESC_DISCONNECT exits immediately,
+ * ESC_LOCAL_SUSPEND suspends the client without touching the remote job, and
+ * ESC_HELP prints the escape reference to stdout.  Also relays data from local
+ * X11 connections back to the shepherd when X11 forwarding is active.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: MT-safe.
+ */
 void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
