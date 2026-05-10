@@ -908,8 +908,27 @@ setting *ENABLE_SUBMIT_LD_PRELOAD* to TRUE.
 In general the correct job environment should be set up in the job script or in a prolog, making the use of the 
 `-v` or `-V` option for this purpose unnecessary.
 
-Changing *qmaster_params* will take immediate effect, except *gdi_timeout*, *gdi_retries*, *cl_ping*, these will 
-take effect only for new connections. The default for *qmaster_params* is *NONE*.
+***ijs_escape_char***
+
+Sets the escape character used by the builtin IJS (Interactive Job Support) client during
+interactive sessions started with qlogin(1) or qrsh(1) without a command. When the escape
+character is typed at the very start of a line — immediately after a newline or carriage return,
+or at the very beginning of the session — followed by a dot (`.`), the client disconnects the
+session and causes the remote job to be terminated.
+
+The sequence *escape*`.` disconnects; the sequence *escape*`escape` sends a single literal
+escape character to the remote shell. Any other *escape*`X` pair is forwarded unchanged.
+
+The default value is `~`, matching the SSH convention. Set to `none` to disable escape
+processing entirely; in that case no character has special meaning and all input is forwarded
+verbatim to the remote shell.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changing *ijs_escape_char* takes effect for new sessions immediately.
+
+Example: `ijs_escape_char=|` makes `|.` (pipe-dot at line start) the disconnect sequence.
+
+Changing *qmaster_params* will take immediate effect. The default for *qmaster_params* is *NONE*.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
 

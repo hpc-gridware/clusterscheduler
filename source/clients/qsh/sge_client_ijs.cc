@@ -78,6 +78,8 @@ static COMM_HANDLE *g_comm_handle = nullptr;
 static int g_wakeup_pipe[2] = { -1, -1 }; // pipe to wake up worker thread */
 static bool g_client_connected = false;  // set to true by commlib_to_tty thread once the client (sge_shepherd) connected
 static bool g_do_exit = false;           // set by the run_ijs_server (the parent thread) to tell the worker threads to shutdown
+static volatile bool g_escape_disconnect = false; ///< set by tty_to_commlib when escape+. is detected
+static char g_escape_char = '~';                  ///< configurable IJS escape char; '\0' = disabled
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -476,6 +478,63 @@ wakeup_tty_to_commlib_thread(const char *source) {
 *
 *  SEE ALSO
 *******************************************************************************/
+/**
+ * @brief Filter SSH-style escape sequences from a TTY input buffer.
+ *
+ * Scans buf[0..len-1] byte by byte. escape_char is only treated as the escape
+ * character when it immediately follows a newline/CR or at session start.
+ * Recognised sequences (E = escape_char):
+ *   E.   disconnect (sets *p_disconnect; caller stops forwarding)
+ *   EE   send literal E
+ *   EX   unrecognised: forward E and X unchanged
+ *
+ * When escape_char == '\0', all bytes are forwarded unmodified (disabled).
+ * Modifies buf in-place; returns the number of bytes to forward.
+ * *p_at_line_start and *p_pending_escape must be preserved across calls.
+ *
+ * @param buf              Input/output buffer (modified in-place).
+ * @param len              Number of valid bytes in buf.
+ * @param escape_char      Configured escape character; '\0' disables processing.
+ * @param p_at_line_start  In/out: true when prev forwarded byte was '\n'/'\r' or session start.
+ * @param p_pending_escape In/out: true when escape_char is pending at line start.
+ * @param p_disconnect     Out: set to true when E. is detected.
+ * @return                 Number of bytes to forward from buf.
+ */
+static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_char,
+                               bool *p_at_line_start, bool *p_pending_escape,
+                               bool *p_disconnect)
+{
+   *p_disconnect = false;
+   if (escape_char == '\0') {
+      return len;
+   }
+   int out = 0;
+   for (int i = 0; i < len; i++) {
+      unsigned char c = buf[i];
+      if (*p_pending_escape) {
+         *p_pending_escape = false;
+         if (c == '.') {
+            *p_disconnect = true;
+            return out;
+         } else if (c == escape_char) {
+            buf[out++] = escape_char;        // EE -> forward single escape char
+            *p_at_line_start = false;
+         } else {
+            buf[out++] = escape_char;        // unrecognised EX -> forward both bytes
+            buf[out++] = c;
+            *p_at_line_start = (c == '\n' || c == '\r');
+         }
+      } else if (*p_at_line_start && c == escape_char) {
+         *p_pending_escape = true;           // hold escape char; next byte decides
+         *p_at_line_start = false;
+      } else {
+         buf[out++] = c;
+         *p_at_line_start = (c == '\n' || c == '\r');
+      }
+   }
+   return out;
+}
+
 void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
@@ -489,6 +548,8 @@ void *tty_to_commlib(void *t_conf) {
     * allocate working buffer
     */
    bool do_exit = false;
+   bool at_line_start = true;   // true at session start; reset after each '\n' or '\r'
+   bool pending_escape = false; // true when escape_char at line start is pending next char
    while (!do_exit) {
       // This thread should only start its processing once the commlib_to_tty thread received a
       // REGISTER_CTRL_MSG from the sge_shepherd and replied to it
@@ -581,17 +642,31 @@ void *tty_to_commlib(void *t_conf) {
             } else if (nread <= 0) {
                do_exit = true;
             } else {
-               DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
-               if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
-                  if (comm_write_message(g_comm_handle, g_hostname,
-                                         COMM_CLIENT, 1, (unsigned char *) pbuf,
-                                         (unsigned long) nread, STDIN_DATA_MSG, &err_msg) != (unsigned long) nread) {
-                     DPRINTF("tty_to_commlib: couldn't write all data\n");
-                  } else {
-                     DPRINTF("tty_to_commlib: data successfully written\n");
+               // filter escape sequences before forwarding to the remote shell
+               bool escape_disconnect = false;
+               int nforward = tty_escape_process(
+                  (unsigned char *)pbuf, nread, (unsigned char)g_escape_char,
+                  &at_line_start, &pending_escape, &escape_disconnect);
+               if (escape_disconnect) {
+                  // escape+. detected: restore terminal immediately so the user gets their shell back
+                  const char disconnect_msg[] = "\r\n~.\r\n";
+                  sge_writenbytes(STDOUT_FILENO, disconnect_msg, sizeof(disconnect_msg) - 1);
+                  terminal_leave_raw_mode();
+                  g_escape_disconnect = true;
+                  do_exit = true;
+               } else if (nforward > 0) {
+                  DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nforward);
+                  if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
+                     if (comm_write_message(g_comm_handle, g_hostname,
+                                            COMM_CLIENT, 1, (unsigned char *) pbuf,
+                                            (unsigned long) nforward, STDIN_DATA_MSG, &err_msg) != (unsigned long) nforward) {
+                        DPRINTF("tty_to_commlib: couldn't write all data\n");
+                     } else {
+                        DPRINTF("tty_to_commlib: data successfully written\n");
+                     }
                   }
+                  comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
                }
-               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
             // Drain the byte written by wakeup_tty_to_commlib_thread() so that select()
@@ -717,6 +792,13 @@ void* commlib_to_tty(void *t_conf)
       DPRINTF("commlib_to_tty: received a message\n");
 
       thread_testcancel(t_conf);
+
+      // exit if tty_to_commlib triggered an escape disconnect
+      if (g_escape_disconnect) {
+         DPRINTF("commlib_to_tty: escape disconnect requested, exiting\n");
+         do_exit = 1;
+         continue;
+      }
 
       if (received_signal == SIGHUP ||
           received_signal == SIGINT ||
@@ -953,7 +1035,7 @@ void* commlib_to_tty(void *t_conf)
 int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, int noshell,
                    int is_rsh, int is_qlogin, const ocs::Ternary force_pty,
                    const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg,
-                   bool forward_x11)
+                   bool forward_x11, char escape_char)
 {
    int               ret = 0, ret_val = 0;
    THREAD_HANDLE     *pthread_tty_to_commlib = nullptr;
@@ -978,6 +1060,8 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
    g_noshell = noshell;
    g_pid = getpid();
    g_is_rsh = is_rsh;
+   g_escape_char = escape_char;
+   g_escape_disconnect = false;
 
    // Initialize X11 forwarding state before starting threads.
    g_forward_x11 = forward_x11;

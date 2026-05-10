@@ -1772,6 +1772,8 @@ int main(int argc, const char **argv)
 
    // fetch optional port_range; nullptr/NONE_STR means OS-assigned port in both modes
    char *port_range_str = mconf_get_port_range();
+   // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
+   char ijs_escape_char = mconf_get_ijs_escape_char();
    lList *alp_pr = nullptr;
    lList *port_range_list = nullptr;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
@@ -1918,7 +1920,7 @@ int main(int argc, const char **argv)
          DPRINTF("starting IJS server\n");
          sge_dstring_sprintf(&err_msg, "<null>");
          ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
-                              pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11);
+                              pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11, ijs_escape_char);
          if (ret != 0) {
             ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
          }
@@ -2182,7 +2184,7 @@ int main(int argc, const char **argv)
                   /* run_ijs_server() loops until the client has disconnected */
                   sge_dstring_sprintf(&err_msg, "<null>");
                   ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
-                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11);
+                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11, ijs_escape_char);
                   if (ret != 0) {
                      ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
                   }

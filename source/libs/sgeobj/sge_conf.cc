@@ -155,6 +155,7 @@ static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
 static bool disable_secondary_ds = false;
+static char s_ijs_escape_char = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
 
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
@@ -893,6 +894,17 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
          if (parse_string_param(s, "GPERF_THREADS", gperf_threads)) {
             continue;
+         }
+         {
+            std::string ijs_escape_char_val;
+            if (parse_string_param(s, "ijs_escape_char", ijs_escape_char_val)) {
+               if (ijs_escape_char_val == "none" || ijs_escape_char_val.empty()) {
+                  s_ijs_escape_char = '\0';
+               } else {
+                  s_ijs_escape_char = ijs_escape_char_val[0];
+               }
+               continue;
+            }
          }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -3106,6 +3118,15 @@ std::string mconf_get_topology_file() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    std::string ret = Master_Config.topology_file;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+char mconf_get_ijs_escape_char() {
+   char ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_escape_char;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
