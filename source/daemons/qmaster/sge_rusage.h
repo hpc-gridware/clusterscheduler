@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -95,9 +95,9 @@ struct drusage {
    char *department; /* department of the job we report about */
    char *job_name; /* -N switch or script_file or "STDIN" */
    char *account;         /* accounting string see -A switch */
-   u_long32 failed;           /* != 0 -> this job failed, 
+   u_long32 failed;           /* != 0 -> this job failed,
                                  see states in execution_states.h */
-   u_long32 general_failure;  /* != 0 execd reports "can execute no job", 
+   u_long32 general_failure;  /* != 0 execd reports "can execute no job",
                                  also see above header */
    char *err_str;         /* error string if this job is canceled
                                  abnormaly */
@@ -146,26 +146,27 @@ struct drusage {
                                           architecture dependend usage
                                           information */
    lList *other_usage;
+   bool is_classic;  /* true if data was read from classic (colon-separated) accounting format */
 };
 
 typedef struct drusage sge_rusage_type;
 
-/* 
- * name of the usage record that will hold the time when the last intermediate 
- * record has been written 
+/*
+ * name of the usage record that will hold the time when the last intermediate
+ * record has been written
  */
 #define LAST_INTERMEDIATE "im_acct_time"
 
-/* 
- * time window in minutes after midnight in which intermediate usage will be 
+/*
+ * time window in minutes after midnight in which intermediate usage will be
  * written - we needn't do all the checks for intermediate usage reporting
  * at any time of the day.
  */
 #define INTERMEDIATE_ACCT_WINDOW 10
 
 /*
- * minimum runtime of a job in seconds as prerequisit for the writing of 
- * intermediate usage reporting - it's not worth writing an intermediate usage 
+ * minimum runtime of a job in seconds as prerequisit for the writing of
+ * intermediate usage reporting - it's not worth writing an intermediate usage
  * record for jobs that have started some seconds before midnight.
  */
 #define INTERMEDIATE_MIN_RUNTIME 60
