@@ -1349,6 +1349,48 @@ JSV behaviour is undefined if the use of old and new names is mixed within one J
 Find more information in the sections describing `-hard`, `-soft`, `-l` and `-scope`. (see `-jsv` option below or
 find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -reconnect *job_id*
+
+Available for `qrsh` and `qlogin` only. Cannot be combined with normal job-submission options;
+when `-reconnect` is given, the client does not submit a new job and instead reattaches to an
+existing running interactive job.
+
+Reconnects to a running interactive session that has lost its client connection. The caller
+must be the owner of the job referenced by *job_id*. Reconnects are only possible while the
+shepherd is inside the configured reconnect grace period — see *ijs_reconnect_timeout* in
+xxqs_name_sxx_conf(5). When the parameter is unset (or `0`, the default), the grace period is
+disabled and `-reconnect` will always fail with "job not in reconnect-wait state".
+
+The reconnect handshake is brokered by the qmaster: it validates ownership, issues a
+single-use token to the requesting client, and relays the new client's listen address and
+the token to the execd that runs the job. The waiting shepherd opens a fresh commlib
+connection back to the new client, presents the token, and on a match `SIGCONT`s the job
+and resumes the PTY bridge. From that point on, keystrokes and output flow to the new
+terminal; the original client is fully replaced.
+
+The reconnect uses TLS-protected commlib (since 9.1.0) and respects the configured
+*port_range*, so existing firewall rules continue to apply. Because the token is
+single-use, a second client attempting to reconnect to the same job in parallel is
+rejected.
+
+Example:
+
+    # Original session — terminal/laptop dies unexpectedly.
+    $ qrsh
+    Your interactive job 1234 has been successfully submitted
+    ... user is working in shell when the VPN drops ...
+
+    # Reconnect from any submit host owned by the same user, within the grace period.
+    $ qrsh -reconnect 1234
+    ... same shell, same working directory, same processes still running ...
+
+`qlogin -reconnect *job_id*` works the same way for sessions that were originally started
+with `qlogin`.
+
+This option only takes effect when the builtin IJS mode is configured (`rsh_command builtin`
+or `qlogin_command builtin` in the global configuration). It is not available with the
+legacy ssh/rsh transport.
+
 ## -R y\[es\]\|n\[o\]  
 
 Available for `qsub`, `qrsh`, `qsh`, `qlogin` and `qalter`.
