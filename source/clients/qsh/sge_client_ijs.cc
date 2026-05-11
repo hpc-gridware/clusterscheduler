@@ -281,7 +281,12 @@ static void client_check_window_change(COMM_HANDLE *handle)
        * submitted two times.
        */
       received_window_change_signal = 0;
-      if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0) {
+      // CS-2150: also fall back to the sane default when ioctl(TIOCGWINSZ) *succeeds* with
+      // ws_row==0 || ws_col==0. Linux openpty() initialises winsize to {0,0,0,0}, so headless
+      // invocations (Ansible, cron, CI runners) end up here with a zero-size pty even though
+      // ioctl returned 0. Propagating those zeros lands a 0x0 pty on the job side via
+      // TIOCSWINSZ, breaking any TUI app inside the session.
+      if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0 && ws.ws_row > 0 && ws.ws_col > 0) {
          DPRINTF("sending WINDOW_SIZE_CTRL_MSG with new window size: %d, %d, %d, %d to shepherd\n",
                  ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
 
@@ -289,7 +294,9 @@ static void client_check_window_change(COMM_HANDLE *handle)
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf),
                             WINDOW_SIZE_CTRL_MSG, &err_msg);
       } else {
-         DPRINTF("client_check_windows_change: ioctl() failed! sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n");
+         DPRINTF("client_check_windows_change: no usable winsize from ioctl (row=%d col=%d); "
+                 "sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n",
+                 ws.ws_row, ws.ws_col);
          snprintf(buf, sizeof(buf), "WS 60 80 480 640");
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf), WINDOW_SIZE_CTRL_MSG, &err_msg);
       }
