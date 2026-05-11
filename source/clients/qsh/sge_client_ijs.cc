@@ -1115,15 +1115,36 @@ void* commlib_to_tty(void *t_conf)
                   continue;
                }
                DPRINTF("commlib_to_tty: RECONNECT token matched -> accept\n");
+               // CS-2145: embed current PTY winsize in the ACCEPT payload so the shepherd
+               // applies TIOCSWINSZ before SIGCONT'ing the job. The new client almost always
+               // has different geometry than the original; without this, the job briefly resumes
+               // at the old size and any "fancy" output in that window is misformatted.
+               // Format mirrors the WINDOW_SIZE_CTRL_MSG body so the shepherd can reuse its parser.
+               struct winsize ws_reconnect;
+               char accept_buf[200];
+               int accept_len;
+               if (ioctl(fileno(stdin), TIOCGWINSZ, &ws_reconnect) >= 0
+                   && ws_reconnect.ws_row > 0 && ws_reconnect.ws_col > 0) {
+                  accept_len = snprintf(accept_buf, sizeof(accept_buf), "WS %d %d %d %d",
+                                        ws_reconnect.ws_row, ws_reconnect.ws_col,
+                                        ws_reconnect.ws_xpixel, ws_reconnect.ws_ypixel);
+                  DPRINTF("commlib_to_tty: sending RECONNECT_ACCEPT_MSG with winsize %d x %d\n",
+                          ws_reconnect.ws_row, ws_reconnect.ws_col);
+               } else {
+                  // Same fallback as client_check_window_change() in the no-tty case.
+                  accept_len = snprintf(accept_buf, sizeof(accept_buf), "WS 60 80 480 640");
+                  DPRINTF("commlib_to_tty: ioctl(TIOCGWINSZ) returned no usable size; "
+                          "sending RECONNECT_ACCEPT_MSG with fallback 60 x 80\n");
+               }
                comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
-                                  (unsigned char *) " ", 1,
+                                  (unsigned char *) accept_buf, accept_len,
                                   RECONNECT_ACCEPT_MSG, &err_msg);
                comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
                // Take over the session.  Unlike REGISTER_CTRL_MSG we do NOT send
                // X11_AUTH_MSG (X11 forwarding already set up at job start) or
                // SETTINGS_CTRL_MSG (shell already running with its noshell setting).
-               // tty_to_commlib's window-change check will send the current window
-               // size on its first iteration after wakeup.
+               // tty_to_commlib's window-change check will fire again on the next SIGWINCH;
+               // the winsize already shipped in ACCEPT covers the initial geometry.
                g_client_connected = true;
                wakeup_tty_to_commlib_thread("commlib_to_tty/reconnect");
                break;

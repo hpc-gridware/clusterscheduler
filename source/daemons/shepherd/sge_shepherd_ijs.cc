@@ -944,6 +944,24 @@ static bool attempt_reconnect_grace_period() {
 
       bool accepted = (rrc == COMM_RETVAL_OK && reply.type == RECONNECT_ACCEPT_MSG);
       const int reply_type = (rrc == COMM_RETVAL_OK) ? (int)reply.type : -1;
+
+      // CS-2145: parse the new client's PTY winsize from the ACCEPT payload so we can
+      // apply it before SIGCONT — the new client almost always has different geometry
+      // than the original and any output written between SIGCONT and the first SIGWINCH
+      // would be formatted for the wrong size.
+      struct winsize new_ws{};
+      bool got_new_ws = false;
+      if (accepted && reply.data != nullptr) {
+         int row = 0, col = 0, xpix = 0, ypix = 0;
+         if (sscanf((const char *) reply.data, "WS %d %d %d %d",
+                    &row, &col, &xpix, &ypix) == 4 && row > 0 && col > 0) {
+            new_ws.ws_row    = (unsigned short) row;
+            new_ws.ws_col    = (unsigned short) col;
+            new_ws.ws_xpixel = (unsigned short) xpix;
+            new_ws.ws_ypixel = (unsigned short) ypix;
+            got_new_ws = true;
+         }
+      }
       comm_free_message(&reply, &err_msg);
 
       if (!accepted) {
@@ -965,6 +983,19 @@ static bool attempt_reconnect_grace_period() {
       sge_free(&g_hostname);
       g_hostname = strdup(client_host);
       cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
+
+      // CS-2145: apply the new client's PTY winsize *before* SIGCONT so the job resumes
+      // with correct geometry. If the ACCEPT payload didn't carry usable dimensions
+      // (older client, ioctl failure), leave the PTY at the previous size — the next
+      // SIGWINCH from the new client will catch us up via the normal WINDOW_SIZE_CTRL_MSG
+      // path.
+      if (got_new_ws && g_p_ijs_fds != nullptr && g_p_ijs_fds->pty_master != -1) {
+         ioctl(g_p_ijs_fds->pty_master, TIOCSWINSZ, &new_ws);
+         shepherd_trace("commlib_to_pty: applied reconnect winsize %d x %d to PTY before SIGCONT",
+                        (int) new_ws.ws_row, (int) new_ws.ws_col);
+      } else {
+         shepherd_trace("commlib_to_pty: no usable winsize in ACCEPT payload; keeping previous PTY size");
+      }
 
       // SIGCONT thaws the systemd cgroup and resumes the job.
       shepherd_signal_job(g_job_pid, SIGCONT);
