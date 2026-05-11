@@ -69,6 +69,7 @@
 #include "sge_pe_qmaster.h"
 #include "evm/sge_queue_event_master.h"
 #include "sge_qmod_qmaster.h"
+#include "sge_reconnect_qmaster.h"
 #include "sge_job_qmaster.h"
 #include "sge_give_jobs.h"
 #include "symbols.h"
@@ -146,6 +147,50 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
       uint32_t id_action = lGetUlong(dep, ID_action);
 
       found = false;
+
+      // CS-2144: IJS session-reconnect path bypasses the qmod queue/job dispatch.
+      // The client encodes the request in ID_str as "<job_id>:<client_host>:<client_port>".
+      // On success an answer of STATUS_OK is added with text "RECONNECT_OK <token> <exec_host>",
+      // which the qrsh -reconnect client parses to obtain the rendezvous parameters.
+      if ((id_action & ~JOB_DO_ACTION) == QI_DO_RECONNECT) {
+         const char *spec = lGetString(dep, ID_str);
+         char spec_copy[1024];
+         snprintf(spec_copy, sizeof(spec_copy), "%s", spec != nullptr ? spec : "");
+
+         char *job_id_str = spec_copy;
+         char *host_str = strchr(job_id_str, ':');
+         char *port_str = nullptr;
+         if (host_str != nullptr) {
+            *host_str++ = '\0';
+            port_str = strchr(host_str, ':');
+            if (port_str != nullptr) {
+               *port_str++ = '\0';
+            }
+         }
+
+         if (host_str == nullptr || port_str == nullptr || *job_id_str == '\0' ||
+             *host_str == '\0' || *port_str == '\0') {
+            answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                                    "QI_DO_RECONNECT: malformed spec, expected <job_id>:<host>:<port>");
+            continue;
+         }
+
+         uint32_t reconnect_job_id = (uint32_t)strtoul(job_id_str, nullptr, 10);
+         int reconnect_port = (int)strtol(port_str, nullptr, 10);
+
+         char token[128] = {0};
+         char exec_host[CL_MAXHOSTNAMELEN] = {0};
+         if (qmaster_handle_reconnect_request(reconnect_job_id, packet->user,
+                                              host_str, reconnect_port,
+                                              token, sizeof(token),
+                                              exec_host, sizeof(exec_host),
+                                              &alp) == 0) {
+            answer_list_add_sprintf(&alp, STATUS_OK, ANSWER_QUALITY_INFO,
+                                    "RECONNECT_OK %s %s", token, exec_host);
+         }
+         // qmaster_handle_reconnect_request already populated alp on failure.
+         continue;
+      }
 
       if ((id_action & JOB_DO_ACTION) == 0) {
          qref_list_add(&qref_list, nullptr, lGetString(dep, ID_str));

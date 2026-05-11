@@ -33,6 +33,8 @@
 
 #include "cull/pack.h"
 
+#include "comm/lists/cl_errors.h"
+
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -115,10 +117,13 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    // Locate the job.
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+   INFO("qmaster_handle_reconnect_request: looking up job " sge_u32 " in master_job_list with %d entries",
+        job_id, lGetNumberOfElem(master_job_list));
    lListElem *jep = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    if (jep == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                              MSG_SGETEXT_DOESNOTEXIST_SS, "job", "(by id)");
+                              "job " sge_u32 " does not exist (master_job_list has %d entries)",
+                              job_id, lGetNumberOfElem(master_job_list));
       DRETURN(-1);
    }
 
@@ -240,7 +245,8 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
                &pb, &mid);
    clear_packbuffer(&pb);
 
-   if (rc != 0) {
+   // gdi_send_message_pb returns CL_RETVAL_OK (== 1000) on success, not 0.
+   if (rc != CL_RETVAL_OK) {
       ERROR("sge_qmaster_send_reconnect_prepare: gdi_send_message_pb to %s failed: %d", exec_host, rc);
       DRETURN(rc);
    }
