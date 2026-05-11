@@ -91,6 +91,8 @@ static THREAD_HANDLE g_thread_main;
 static int           g_raised_event        = 0;
 static int           g_job_pid             = 0;
 static int           g_ijs_reconnect_timeout = 0;   ///< grace period seconds before SIGKILL on unexpected disconnect; 0 = disabled
+static cl_framework_t g_ijs_framework      = CL_CT_TCP;   ///< commlib framework copied from parent_loop, needed for reconnect attempts
+static char          *g_job_owner          = nullptr;     ///< job owner copied from parent_loop, needed for commlib auth on reconnect
 
 static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
@@ -300,6 +302,60 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
    }
 
    return ret;
+}
+
+/**
+ * @brief Parse reconnect.info written by execd into host/port/token.
+ *
+ * Format (one key=value per line):
+ *   host=<hostname>
+ *   port=<integer>
+ *   token=<one-time token>
+ *
+ * @param path        Path to reconnect.info (relative to active_jobs/<jobid>).
+ * @param host        Output buffer for hostname.
+ * @param host_size   Size of host buffer.
+ * @param port        Output for parsed port number.
+ * @param token       Output buffer for token.
+ * @param token_size  Size of token buffer.
+ * @return 0 on success (all three fields parsed); -1 on missing field or I/O error.
+ */
+static int parse_reconnect_info(const char *path,
+                                char *host, size_t host_size,
+                                int *port,
+                                char *token, size_t token_size) {
+   FILE *fp = fopen(path, "r");
+   if (fp == nullptr) {
+      return -1;
+   }
+
+   bool have_host = false;
+   bool have_port = false;
+   bool have_token = false;
+   char line[512];
+
+   while (fgets(line, sizeof(line), fp) != nullptr) {
+      char *nl = strchr(line, '\n');
+      if (nl != nullptr) {
+         *nl = '\0';
+      }
+
+      if (strncmp(line, "host=", 5) == 0) {
+         strncpy(host, line + 5, host_size - 1);
+         host[host_size - 1] = '\0';
+         have_host = (strlen(host) > 0);
+      } else if (strncmp(line, "port=", 5) == 0) {
+         *port = atoi(line + 5);
+         have_port = (*port > 0);
+      } else if (strncmp(line, "token=", 6) == 0) {
+         strncpy(token, line + 6, token_size - 1);
+         token[token_size - 1] = '\0';
+         have_token = (strlen(token) > 0);
+      }
+   }
+
+   fclose(fp);
+   return (have_host && have_port && have_token) ? 0 : -1;
 }
 
 /**
@@ -1107,15 +1163,86 @@ static void* commlib_to_pty(void *t_conf)
    /*
     * TODO: Use SIGINT if qrsh client was quit with Ctrl-C
     */
-   // Reconnect grace period (CS-2118 stage 1): if configured, SIGSTOP the job and wait
-   // up to g_ijs_reconnect_timeout seconds before killing.  Stage 2 will replace the
-   // single sleep() with a per-second poll for a reconnect-info file written by execd.
+   // Reconnect grace period (CS-2118 + CS-2143): if configured, SIGSTOP the job and
+   // poll once per second for a reconnect.info file written by execd.  When the file
+   // appears with valid {host, port, token} contents, attempt to open a new commlib
+   // connection to the reconnecting client and send the handshake.  The full
+   // success path (waiting for RECONNECT_ACCEPT_MSG, re-spawning the worker threads
+   // on the new handle, SIGCONT) is CS-2144 (stage 3).  Until then a successful
+   // open + write still falls through to SIGKILL so existing failure paths are unchanged.
    if (g_ijs_reconnect_timeout > 0) {
-      shepherd_trace("commlib_to_pty: client disconnected, suspending job and waiting %d s for reconnect",
+      shepherd_trace("commlib_to_pty: client disconnected, suspending job and polling for reconnect (timeout=%d s)",
                      g_ijs_reconnect_timeout);
       shepherd_signal_job(g_job_pid, SIGSTOP);
-      sleep(g_ijs_reconnect_timeout);
+
+      const char *reconnect_info_path = "reconnect.info";
+      const time_t deadline = time(nullptr) + g_ijs_reconnect_timeout;
+
+      while (time(nullptr) < deadline) {
+         sleep(1);
+
+         struct stat st{};
+         if (stat(reconnect_info_path, &st) != 0) {
+            continue;
+         }
+
+         shepherd_trace("commlib_to_pty: reconnect.info appeared, parsing");
+
+         char client_host[256] = {0};
+         int  client_port      = 0;
+         char token[256]       = {0};
+         if (parse_reconnect_info(reconnect_info_path, client_host, sizeof(client_host),
+                                  &client_port, token, sizeof(token)) != 0) {
+            shepherd_trace("commlib_to_pty: reconnect.info malformed; unlinking and continuing to poll");
+            unlink(reconnect_info_path);
+            continue;
+         }
+
+         shepherd_trace("commlib_to_pty: attempting reconnect to %s:%d", client_host, client_port);
+
+         COMM_HANDLE *new_handle = nullptr;
+         DSTRING_STATIC(open_err, MAX_STRING_SIZE);
+         int orc = comm_open_connection(false, g_ijs_framework, COMM_CLIENT, client_port,
+                                        COMM_SERVER, client_host, g_job_owner,
+                                        &new_handle, &open_err);
+         if (orc != COMM_RETVAL_OK) {
+            shepherd_trace("commlib_to_pty: reconnect comm_open_connection failed: %s",
+                           sge_dstring_get_string(&open_err));
+            unlink(reconnect_info_path);
+            continue;
+         }
+
+         DSTRING_STATIC(send_err, MAX_STRING_SIZE);
+         int wrc = (int)comm_write_message(new_handle, client_host, COMM_SERVER, 1,
+                                           (unsigned char *)token, strlen(token) + 1,
+                                           RECONNECT_REQUEST_MSG, &send_err);
+         if (wrc <= 0) {
+            shepherd_trace("commlib_to_pty: reconnect comm_write_message failed: %s",
+                           sge_dstring_get_string(&send_err));
+            comm_shutdown_connection(new_handle, COMM_SERVER, client_host, &send_err);
+            unlink(reconnect_info_path);
+            continue;
+         }
+
+         shepherd_trace("commlib_to_pty: RECONNECT_REQUEST_MSG sent to %s:%d, awaiting ACK",
+                        client_host, client_port);
+
+         // TODO (CS-2144 stage 3): on RECONNECT_ACCEPT_MSG:
+         //   1. SIGCONT the job
+         //   2. swap g_comm_handle for new_handle
+         //   3. re-spawn pty_to_commlib and commlib_to_pty on the new handle
+         //   4. return success without falling through to SIGKILL
+         // For now: tear the new handle back down and let the grace period proceed.
+         shepherd_trace("commlib_to_pty: handshake-ack path is stage 3 (CS-2144); closing new handle and continuing");
+         comm_shutdown_connection(new_handle, COMM_SERVER, client_host, &send_err);
+         unlink(reconnect_info_path);
+      }
+
       shepherd_trace("commlib_to_pty: reconnect grace period expired, killing job");
+      // The systemd-backed shepherd_signal_job(SIGSTOP) freezes the entire cgroup; SIGKILL
+      // delivered to a frozen cgroup is queued but does not fire until the cgroup is
+      // thawed.  Always SIGCONT first so the queued SIGKILL can take effect.
+      shepherd_signal_job(g_job_pid, SIGCONT);
    }
    shepherd_signal_job(g_job_pid, SIGKILL);
 
@@ -1158,9 +1285,12 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_hostname  = strdup(remote_host);
    g_p_ijs_fds = p_ijs_fds;
    g_job_pid   = job_pid;
+   g_ijs_framework = communication_framework;
+   g_job_owner = strdup(job_owner);
 
    // Grace period before SIGKILL on unexpected client disconnect.  When > 0 the shepherd
-   // SIGSTOPs the job and waits for a reconnect (Stage 2) up to this many seconds before killing.
+   // SIGSTOPs the job and polls for a reconnect.info file written by execd up to this
+   // many seconds before killing.
    {
       const char *v = get_conf_val("ijs_reconnect_timeout");
       g_ijs_reconnect_timeout = (v != nullptr) ? atoi(v) : 0;
