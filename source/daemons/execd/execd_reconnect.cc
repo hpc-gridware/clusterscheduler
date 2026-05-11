@@ -29,6 +29,9 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_stdlib.h"
+
+#include "cull/pack.h"
 
 #include "execd_reconnect.h"
 
@@ -127,4 +130,39 @@ int execd_write_reconnect_info(uint32_t job_id, uint32_t ja_task_id, const char 
    INFO("execd_write_reconnect_info: wrote %s (host=%s port=%d, token redacted)",
         final_str, host, port);
    DRETURN(0);
+}
+
+int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
+   DENTER(TOP_LAYER);
+
+   uint32_t job_id     = 0;
+   uint32_t ja_task_id = 0;
+   char    *host       = nullptr;   // mallocs via unpackstr
+   uint32_t port       = 0;
+   char    *token      = nullptr;   // mallocs via unpackstr
+   uint32_t owner_uid  = 0;
+   uint32_t owner_gid  = 0;
+
+   if (unpackint(&(aMsg->buf), &job_id) != 0 ||
+       unpackint(&(aMsg->buf), &ja_task_id) != 0 ||
+       unpackstr(&(aMsg->buf), &host) != 0 ||
+       unpackint(&(aMsg->buf), &port) != 0 ||
+       unpackstr(&(aMsg->buf), &token) != 0 ||
+       unpackint(&(aMsg->buf), &owner_uid) != 0 ||
+       unpackint(&(aMsg->buf), &owner_gid) != 0) {
+      ERROR("do_reconnect_prepare: failed to unpack message");
+      sge_free(&host);
+      sge_free(&token);
+      DRETURN(-1);
+   }
+
+   // Stage 3 / CS-2144 will add a JWAITING_RECONNECT job state at qmaster level — at
+   // execd we just write the file and let the shepherd's polling loop pick it up.
+   int ret = execd_write_reconnect_info(job_id, ja_task_id, nullptr,
+                                        host, (int)port, token,
+                                        (uid_t)owner_uid, (gid_t)owner_gid);
+
+   sge_free(&host);
+   sge_free(&token);
+   DRETURN(ret);
 }

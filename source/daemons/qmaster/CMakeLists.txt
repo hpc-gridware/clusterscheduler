@@ -66,6 +66,7 @@ set(QMASTER_SOURCES
         sge_qmaster_threads.cc
         sge_qmaster_timed_event.cc
         sge_qmod_qmaster.cc
+        sge_reconnect_qmaster.cc
         sge_reporting_qmaster.cc
         sge_resource_quota_qmaster.cc
         sge_rusage.cc
