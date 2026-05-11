@@ -122,12 +122,12 @@ Two pieces work together:
   When the timeout expires without a reconnect, the job is killed as before. The default is `0` (disabled —
   pre-9.2.0 behaviour preserved).
 
-* **`qrsh -reconnect <job_id>` client mode.** A new client mode that asks qmaster to broker a reconnect to a
-  running job that the caller owns. qmaster validates ownership, generates a single-use token, relays the new
-  client's listen address and the token to the execd that runs the job, and returns the token to the client.
-  The waiting shepherd reads the relayed info, opens a fresh commlib connection back to the new client,
-  presents the token, and on a match `SIGCONT`s the job and resumes the PTY bridge. The original client is
-  fully replaced by the new one — keystrokes and output now flow to the new terminal.
+* **`-reconnect <job_id>` client mode** (qrsh and qlogin). A new client mode that asks qmaster to broker a
+  reconnect to a running job that the caller owns. qmaster validates ownership, generates a single-use token,
+  relays the new client's listen address and the token to the execd that runs the job, and returns the token
+  to the client. The waiting shepherd reads the relayed info, opens a fresh commlib connection back to the
+  new client, presents the token, and on a match `SIGCONT`s the job and resumes the PTY bridge. The original
+  client is fully replaced by the new one — keystrokes and output now flow to the new terminal.
 
 Example:
 

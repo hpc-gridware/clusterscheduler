@@ -971,8 +971,9 @@ This parameter is relevant only when *qlogin_command* is set to `builtin` (the d
 Changes take effect for jobs started after the configuration is updated.
 
 Within the grace window a new client may take over the session with `qrsh -reconnect &lt;job_id&gt;`
-from any submit host.  qmaster validates that the requester owns the job, brokers a one-time
-token to both sides, and the shepherd resumes the original session against the new client.
+or `qlogin -reconnect &lt;job_id&gt;` from any submit host.  qmaster validates that the requester
+owns the job, brokers a one-time token to both sides, and the shepherd resumes the original
+session against the new client.
 
 Example: `ijs_reconnect_timeout=300` gives a user five minutes to recover an interactive
 job after a VPN hiccup or laptop suspend before it is killed.

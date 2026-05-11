@@ -1571,10 +1571,13 @@ int main(int argc, const char **argv)
       communication_framework = CL_CT_TCP;
    }
 
-   // CS-2144: qrsh -reconnect <job_id> client mode.  Detected before normal arg parsing
-   // because it short-circuits the entire qsub-style flow — there is no job to submit,
-   // we just attach to an existing one.
-   if (is_rsh) {
+   // CS-2144: `qrsh -reconnect <job_id>` / `qlogin -reconnect <job_id>` client mode.
+   // Detected before normal arg parsing because it short-circuits the entire qsub-style
+   // flow — there is no job to submit, we just attach to an existing one.  The shepherd-
+   // side IJS protocol is identical whether the original session was qrsh or qlogin, so
+   // both clients accept -reconnect.  qsh (X-terminal style) is intentionally excluded:
+   // its xterm wrapping makes session takeover semantics non-trivial.
+   if (is_qlogin) {
       for (int i = 1; i < argc - 1; ++i) {
          if (strcmp(argv[i], "-reconnect") == 0) {
             int rc = do_qrsh_reconnect(argv[i + 1], communication_framework,
