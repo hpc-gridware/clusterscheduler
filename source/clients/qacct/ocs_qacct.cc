@@ -1386,10 +1386,12 @@ static void showjob(sge_rusage_type *dusage) {
       printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_TASKID, "undefined");
    }
 
-   if (dusage->pe_taskid != nullptr) {
-      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, dusage->pe_taskid);
-   } else {
-      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
+   if (!dusage->is_classic) {
+      if (dusage->pe_taskid != nullptr) {
+         printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, dusage->pe_taskid);
+      } else {
+         printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_PE_TASKID, NONE_STR);
+      }
    }
 
    if (dusage->ar != 0) {
@@ -1401,7 +1403,9 @@ static void showjob(sge_rusage_type *dusage) {
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_ACCOUNT, (dusage->account ? dusage->account : MSG_HISTORY_SHOWJOB_NULL ));
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_PRIORITY, dusage->priority);
    printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_QSUBTIME, sge_ctime64(dusage->submission_time, pdstr_buffer));
-   printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_SUBMITCMDLINE, dusage->submission_command_line);
+   if (!dusage->is_classic) {
+      printf(SHOWJOB_STRING,MSG_HISTORY_SHOWJOB_SUBMITCMDLINE, dusage->submission_command_line);
+   }
 
    if (dusage->start_time)
       printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_STARTTIME, sge_ctime64(dusage->start_time, pdstr_buffer));
@@ -2069,8 +2073,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-2);
    }
 
-   // we do not have wallclock but ru_wallclock
-   d->wallclock = d->ru_wallclock;
+   d->is_classic = true;
 
    /* ... */
    options->jobfound=1;
