@@ -20,7 +20,44 @@
 /*___INFO__MARK_END_NEW__*/
 
 #include <sys/types.h>
+#include <cstddef>
 #include <cstdint>
+
+#include "cull/cull_list.h"
+
+/**
+ * @brief Handle a client "prepare reconnect" request inside qmaster.
+ *
+ * Called from the qmaster GDI handler for the client's RECONNECT_PREPARE request
+ * (added by CS-2144 Commit 3).  Validates ownership and job state, generates a
+ * one-time hex token, looks up the exec host and owner UID/GID for the job,
+ * sends a TAG_RECONNECT_PREPARE message to that execd (which writes
+ * reconnect.info into the active_jobs spool dir for the shepherd to pick up),
+ * and returns the token + exec host back to the caller so the GDI response can
+ * carry them to the client.
+ *
+ * Stage-2 hardening note: this Commit accepts any running job that the requester
+ * owns.  A stricter "shepherd is actually waiting for a reconnect" check is
+ * deferred to a hardening pass — the ownership check is the security boundary.
+ *
+ * @param job_id              Job ID the client wants to reconnect to.
+ * @param requester_user      Username of the GDI request originator (`packet->user`).
+ * @param client_host         Hostname the shepherd should connect back to.
+ * @param client_port         TCP port the new client is listening on.
+ * @param out_token           Caller-allocated buffer for the generated token (hex, NUL-terminated).
+ * @param out_token_size      Size of out_token; must be >= 65 (64 hex chars + NUL).
+ * @param out_exec_host       Caller-allocated buffer for the exec hostname.
+ * @param out_exec_host_size  Size of out_exec_host buffer.
+ * @param answer_list         Standard error list; populated on validation/lookup failure.
+ * @return 0 on success; -1 on any validation, lookup, or send failure (answer_list filled).
+ */
+int qmaster_handle_reconnect_request(uint32_t job_id,
+                                     const char *requester_user,
+                                     const char *client_host,
+                                     int client_port,
+                                     char *out_token, size_t out_token_size,
+                                     char *out_exec_host, size_t out_exec_host_size,
+                                     lList **answer_list);
 
 /**
  * @brief Send a TAG_RECONNECT_PREPARE message from qmaster to the execd that runs a job.
