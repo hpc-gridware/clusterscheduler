@@ -1641,6 +1641,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
             fprintf(fp, "qrsh_control_port=%s\n", lGetString(elem, VA_value));
          }
 
+         fprintf(fp, "ijs_reconnect_timeout=%d\n", mconf_get_ijs_reconnect_timeout());
+
          snprintf(daemon, sizeof(daemon), "%s/utilbin/%s/", sge_root, arch);
 
          if(JOB_TYPE_IS_QLOGIN(jb_now)) {

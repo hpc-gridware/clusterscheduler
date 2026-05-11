@@ -61,6 +61,7 @@
 #include "uti/sge_io.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_signal.h"
+#include "uti/config_file.h"
 
 #include "sge_ijs_comm.h"
 #include "sge_ijs_threads.h"
@@ -89,6 +90,7 @@ static COMM_HANDLE   *g_comm_handle       = nullptr;
 static THREAD_HANDLE g_thread_main;
 static int           g_raised_event        = 0;
 static int           g_job_pid             = 0;
+static int           g_ijs_reconnect_timeout = 0;   ///< grace period seconds before SIGKILL on unexpected disconnect; 0 = disabled
 
 static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
@@ -1105,6 +1107,16 @@ static void* commlib_to_pty(void *t_conf)
    /*
     * TODO: Use SIGINT if qrsh client was quit with Ctrl-C
     */
+   // Reconnect grace period (CS-2118 stage 1): if configured, SIGSTOP the job and wait
+   // up to g_ijs_reconnect_timeout seconds before killing.  Stage 2 will replace the
+   // single sleep() with a per-second poll for a reconnect-info file written by execd.
+   if (g_ijs_reconnect_timeout > 0) {
+      shepherd_trace("commlib_to_pty: client disconnected, suspending job and waiting %d s for reconnect",
+                     g_ijs_reconnect_timeout);
+      shepherd_signal_job(g_job_pid, SIGSTOP);
+      sleep(g_ijs_reconnect_timeout);
+      shepherd_trace("commlib_to_pty: reconnect grace period expired, killing job");
+   }
    shepherd_signal_job(g_job_pid, SIGKILL);
 
 #ifdef EXTENSIVE_TRACING
@@ -1146,6 +1158,13 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_hostname  = strdup(remote_host);
    g_p_ijs_fds = p_ijs_fds;
    g_job_pid   = job_pid;
+
+   // Grace period before SIGKILL on unexpected client disconnect.  When > 0 the shepherd
+   // SIGSTOPs the job and waits for a reconnect (Stage 2) up to this many seconds before killing.
+   {
+      const char *v = get_conf_val("ijs_reconnect_timeout");
+      g_ijs_reconnect_timeout = (v != nullptr) ? atoi(v) : 0;
+   }
 
    // Initialize X11 forwarding state; setup happens lazily when X11_AUTH_MSG arrives.
    g_x11_listen_fd   = -1;

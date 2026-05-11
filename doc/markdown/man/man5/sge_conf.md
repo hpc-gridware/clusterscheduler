@@ -957,6 +957,28 @@ Changing *ijs_keepalive_count* takes effect for new sessions immediately.
 Example: `ijs_keepalive_interval=30 ijs_keepalive_count=3` declares a connection dead after
 approximately 120 seconds without an ACK (four probe intervals).
 
+***ijs_reconnect_timeout***
+
+Sets the grace period in seconds during which the shepherd will keep an interactive job
+(qlogin(1) or qrsh(1) without a command) alive after an unexpected loss of the client
+connection. Within this window the job is suspended with SIGSTOP and held; if no client
+reconnects before the timeout expires the job is killed normally with SIGKILL.
+
+A value of `0` disables the grace period entirely and preserves the historical behaviour
+of terminating the job immediately when the client disconnects. The default is `0`.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changes take effect for jobs started after the configuration is updated.
+
+The reconnect handshake itself is delivered by the *qrsh* `-reconnect` client mode in a
+subsequent release; until that ships, this parameter only postpones the kill — it does
+not yet allow re-attaching to a running session. Setting a non-zero timeout therefore
+extends the lifetime of orphaned jobs after a client crash; choose the value with this in
+mind.
+
+Example: `ijs_reconnect_timeout=300` gives a user five minutes to reconnect after a VPN
+hiccup or laptop suspend before the interactive job is killed.
+
 Changing *qmaster_params* will take immediate effect. The default for *qmaster_params* is *NONE*.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.

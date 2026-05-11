@@ -158,6 +158,7 @@ static bool disable_secondary_ds = false;
 static char s_ijs_escape_char       = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
 static int  s_ijs_keepalive_interval = 60;  ///< seconds between IJS keepalive probes; 0 = disabled (qmaster_params ijs_keepalive_interval)
 static int  s_ijs_keepalive_count    = 3;   ///< max consecutive unanswered keepalives before disconnect (qmaster_params ijs_keepalive_count)
+static int  s_ijs_reconnect_timeout  = 0;   ///< seconds shepherd waits for a reconnect before killing the job; 0 = disabled (qmaster_params ijs_reconnect_timeout)
 
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
@@ -918,6 +919,11 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             if (parse_string_param(s, "ijs_keepalive_count", kv)) {
                int v = atoi(kv.c_str());
                s_ijs_keepalive_count = (v > 0) ? v : 3;
+               continue;
+            }
+            if (parse_string_param(s, "ijs_reconnect_timeout", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_reconnect_timeout = (v >= 0) ? v : 0;
                continue;
             }
          }
@@ -3160,6 +3166,15 @@ int mconf_get_ijs_keepalive_count() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    ret = s_ijs_keepalive_count;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_reconnect_timeout() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_reconnect_timeout;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }
