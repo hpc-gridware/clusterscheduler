@@ -86,6 +86,10 @@ static int g_keepalive_interval = 60;             ///< seconds between KEEPALIVE
 static int g_keepalive_count    = 3;              ///< max consecutive unanswered keepalives before disconnect
 static std::atomic<int> g_keepalive_missed{0};    ///< consecutive unanswered keepalives (written from two threads)
 
+static const char *g_expected_reconnect_token = nullptr; ///< CS-2144: when non-null, commlib_to_tty
+                                                          ///< expects RECONNECT_REQUEST_MSG (not REGISTER_CTRL_MSG)
+                                                          ///< and validates the inbound token against this
+
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
  * Flag to indicate that we have received a window change signal which has
@@ -1086,6 +1090,44 @@ void* commlib_to_tty(void *t_conf)
                DPRINTF("commlib_to_tty: received KEEPALIVE_ACK\n");
                g_keepalive_missed = 0;
                break;
+            case RECONNECT_REQUEST_MSG: {
+               // CS-2144: shepherd's first message after a reconnect attempt is
+               // RECONNECT_REQUEST_MSG carrying the one-time token that qmaster handed
+               // to both sides.  Validate it, then either accept (the shell is already
+               // running on the shepherd side — we just take over the PTY bridge) or
+               // reject (shepherd will give up and let the grace period expire).
+               const char *token = recv_mess.data;
+               DPRINTF("commlib_to_tty: received RECONNECT_REQUEST_MSG\n");
+               if (g_expected_reconnect_token == nullptr) {
+                  DPRINTF("commlib_to_tty: RECONNECT_REQUEST_MSG outside reconnect mode -> reject\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *) " ", 1,
+                                     RECONNECT_REJECT_MSG, &err_msg);
+                  do_exit = 1;
+                  continue;
+               }
+               if (token == nullptr || strcmp(token, g_expected_reconnect_token) != 0) {
+                  DPRINTF("commlib_to_tty: RECONNECT token mismatch -> reject\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *) " ", 1,
+                                     RECONNECT_REJECT_MSG, &err_msg);
+                  do_exit = 1;
+                  continue;
+               }
+               DPRINTF("commlib_to_tty: RECONNECT token matched -> accept\n");
+               comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                  (unsigned char *) " ", 1,
+                                  RECONNECT_ACCEPT_MSG, &err_msg);
+               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+               // Take over the session.  Unlike REGISTER_CTRL_MSG we do NOT send
+               // X11_AUTH_MSG (X11 forwarding already set up at job start) or
+               // SETTINGS_CTRL_MSG (shell already running with its noshell setting).
+               // tty_to_commlib's window-change check will send the current window
+               // size on its first iteration after wakeup.
+               g_client_connected = true;
+               wakeup_tty_to_commlib_thread("commlib_to_tty/reconnect");
+               break;
+            }
             case UNREGISTER_CTRL_MSG:
                /* control message */
                /* the client wants to quit, as this is the last message the client
@@ -1367,6 +1409,10 @@ cleanup:
  *         2 if connection parameters could not be set.
  * @note MT-NOTE: not MT-safe.
  */
+void set_expected_reconnect_token(const char *token) {
+   g_expected_reconnect_token = token;
+}
+
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
                      const char* username, const lList *port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg)

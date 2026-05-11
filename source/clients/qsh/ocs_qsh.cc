@@ -1370,6 +1370,114 @@ void block_notification_signals()
    DRETURN_VOID;
 }
 
+/**
+ * @brief CS-2144: implement `qrsh -reconnect <job_id>` client mode.
+ *
+ * Sequence:
+ *   1. Build port_range_list from mconf.
+ *   2. Install builtin-IJS signal handlers (terminal raw-mode etc).
+ *   3. Start the IJS commlib server (passive listen socket on a port from port_range).
+ *   4. Send a GDI TRIGGER request with QI_DO_RECONNECT carrying <job_id>:<host>:<port>
+ *      to qmaster, which validates ownership, brokers a token, and relays to the
+ *      execd of the running job.
+ *   5. Parse the qmaster response — expect a single STATUS_OK answer "RECONNECT_OK <token> <exec_host>".
+ *   6. Tell sge_client_ijs to expect the token on the inbound handshake.
+ *   7. Enter run_ijs_server which waits for the shepherd to connect back, exchanges
+ *      RECONNECT_REQUEST_MSG / RECONNECT_ACCEPT_MSG, and resumes the PTY bridge.
+ *
+ * On any failure before run_ijs_server, returns non-zero so the caller can sge_exit.
+ */
+static int do_qrsh_reconnect(const char *job_id_str,
+                             cl_framework_t communication_framework,
+                             const char *qualified_hostname,
+                             const char *username) {
+   DENTER(TOP_LAYER);
+
+   // Build port_range_list from cluster config (same as the normal startup path).
+   char *port_range_str = mconf_get_port_range();
+   lList *alp_pr = nullptr;
+   lList *port_range_list = nullptr;
+   if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
+      range_list_parse_from_string(&port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      lFreeList(&alp_pr);
+   }
+   sge_free(&port_range_str);
+
+   set_builtin_ijs_signals_and_handlers();
+
+   COMM_HANDLE *comm_handle = nullptr;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
+   int rc = start_ijs_server(communication_framework, qualified_hostname, username,
+                             port_range_list, &comm_handle, &err_msg);
+   if (rc != 0 || comm_handle == nullptr) {
+      ERROR("qrsh -reconnect: failed to start IJS commlib server: %s",
+            sge_dstring_get_string(&err_msg));
+      lFreeList(&port_range_list);
+      DRETURN(1);
+   }
+   int my_port = comm_handle->service_port;
+   lFreeList(&port_range_list);
+
+   // GDI TRIGGER request encoding: <job_id>:<my_host>:<my_port> in ID_str.
+   char spec[1024];
+   snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
+
+   lList *ref_list = nullptr;
+   lListElem *idep = lAddElemStr(&ref_list, ID_str, spec, ID_Type);
+   lSetUlong(idep, ID_action, QI_DO_RECONNECT | JOB_DO_ACTION);
+   lSetUlong(idep, ID_force, 0);
+
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
+                                          ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
+
+   // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host>".
+   char token[128] = {0};
+   char exec_host[256] = {0};
+   bool ok = false;
+   for_each_ep_lv(aep, alp) {
+      const char *text = lGetString(aep, AN_text);
+      uint32_t status = lGetUlong(aep, AN_status);
+      if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
+         if (sscanf(text + 13, "%127s %255s", token, exec_host) == 2) {
+            ok = true;
+         }
+      } else if (status != STATUS_OK && text != nullptr) {
+         ERROR("qrsh -reconnect: %s", text);
+      }
+   }
+   lFreeList(&alp);
+   lFreeList(&ref_list);
+
+   if (!ok) {
+      ERROR("qrsh -reconnect: no RECONNECT_OK response from qmaster");
+      stop_ijs_server(&comm_handle, &err_msg);
+      DRETURN(1);
+   }
+
+   VERBOSE_LOG((stderr, "Reconnecting to job %s on host %s ...\n", job_id_str, exec_host));
+
+   // The shepherd's handshake on its way in will present this same token; the
+   // commlib_to_tty thread compares and accepts or rejects.
+   set_expected_reconnect_token(token);
+
+   int exit_status = 0;
+   sge_dstring_sprintf(&err_msg, "<null>");
+   // is_qlogin=1, is_rsh=0 → behaves like qlogin (PTY mode) for terminal setup; the
+   // shepherd already chose pty/no-pty for the original session and we just resume it.
+   rc = run_ijs_server(comm_handle, exec_host, /*nostdin=*/0, /*noshell=*/0,
+                       /*is_rsh=*/0, /*is_qlogin=*/1,
+                       ocs::Ternary::Unset, ocs::Ternary::Unset,
+                       &exit_status, &err_msg, /*forward_x11=*/false,
+                       mconf_get_ijs_escape_char());
+   if (rc != 0) {
+      ERROR("qrsh -reconnect: run_ijs_server failed: %s", sge_dstring_get_string(&err_msg));
+   }
+   set_expected_reconnect_token(nullptr);
+   stop_ijs_server(&comm_handle, &err_msg);
+
+   DRETURN(rc != 0 ? rc : exit_status);
+}
+
 int main(int argc, const char **argv)
 {
    DENTER_MAIN(TOP_LAYER, "qsh");
@@ -1461,6 +1569,19 @@ int main(int argc, const char **argv)
       communication_framework = CL_CT_SSL_TLS;
    } else {
       communication_framework = CL_CT_TCP;
+   }
+
+   // CS-2144: qrsh -reconnect <job_id> client mode.  Detected before normal arg parsing
+   // because it short-circuits the entire qsub-style flow — there is no job to submit,
+   // we just attach to an existing one.
+   if (is_rsh) {
+      for (int i = 1; i < argc - 1; ++i) {
+         if (strcmp(argv[i], "-reconnect") == 0) {
+            int rc = do_qrsh_reconnect(argv[i + 1], communication_framework,
+                                       qualified_hostname, username);
+            sge_exit(rc);
+         }
+      }
    }
 
    /*

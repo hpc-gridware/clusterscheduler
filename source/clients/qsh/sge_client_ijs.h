@@ -57,6 +57,20 @@ int run_ijs_server(COMM_HANDLE *phandle, const char *remote_host,
 
 int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg);
 
+/**
+ * @brief Switch run_ijs_server into reconnect mode (CS-2144).
+ *
+ * When set to a non-null token, commlib_to_tty expects the first inbound message
+ * from the shepherd to be RECONNECT_REQUEST_MSG carrying this exact token.  A match
+ * causes RECONNECT_ACCEPT_MSG to be sent and the session to be marked connected
+ * without re-issuing X11_AUTH_MSG/SETTINGS_CTRL_MSG (the shell is already running).
+ * A mismatch causes RECONNECT_REJECT_MSG to be sent and the session to be torn down.
+ *
+ * Pass nullptr to clear (default — normal qsub/qrsh fresh-session mode).
+ * The pointer must outlive run_ijs_server's invocation.
+ */
+void set_expected_reconnect_token(const char *token);
+
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,
    const char *this_component, dstring *err_msg);
 
