@@ -737,6 +737,12 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       gperf_name = GPERF_NAME_DEFAULT;
       gperf_threads = GPERF_THREADS_DEFAULT;
 
+      // reset IJS-related statics to defaults so that removing a token from qmaster_params reverts the setting
+      s_ijs_escape_char = '~';
+      s_ijs_keepalive_interval = 60;
+      s_ijs_keepalive_count = 3;
+      s_ijs_reconnect_timeout = 0;
+
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
             continue;
