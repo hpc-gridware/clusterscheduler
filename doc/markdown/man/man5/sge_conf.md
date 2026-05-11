@@ -970,14 +970,12 @@ of terminating the job immediately when the client disconnects. The default is `
 This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
 Changes take effect for jobs started after the configuration is updated.
 
-The reconnect handshake itself is delivered by the *qrsh* `-reconnect` client mode in a
-subsequent release; until that ships, this parameter only postpones the kill — it does
-not yet allow re-attaching to a running session. Setting a non-zero timeout therefore
-extends the lifetime of orphaned jobs after a client crash; choose the value with this in
-mind.
+Within the grace window a new client may take over the session with `qrsh -reconnect &lt;job_id&gt;`
+from any submit host.  qmaster validates that the requester owns the job, brokers a one-time
+token to both sides, and the shepherd resumes the original session against the new client.
 
-Example: `ijs_reconnect_timeout=300` gives a user five minutes to reconnect after a VPN
-hiccup or laptop suspend before the interactive job is killed.
+Example: `ijs_reconnect_timeout=300` gives a user five minutes to recover an interactive
+job after a VPN hiccup or laptop suspend before it is killed.
 
 Changing *qmaster_params* will take immediate effect. The default for *qmaster_params* is *NONE*.
 
