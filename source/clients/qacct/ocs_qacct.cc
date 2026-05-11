@@ -1442,7 +1442,9 @@ static void showjob(sge_rusage_type *dusage) {
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNVCSW,      dusage->ru_nvcsw);      /* voluntary context switches */
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_RUNIVCSW,     dusage->ru_nivcsw);     /* involuntary */
 
-   printf(SHOWJOB_FLOAT_3,    MSG_HISTORY_SHOWJOB_WALLCLOCK,   dusage->wallclock);
+   if (!dusage->is_classic) {
+      printf(SHOWJOB_FLOAT_3,    MSG_HISTORY_SHOWJOB_WALLCLOCK,   dusage->wallclock);
+   }
    printf(SHOWJOB_FLOAT_3,    MSG_HISTORY_SHOWJOB_CPU,         dusage->cpu);
    printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_MEM,         dusage->mem);
    printf(SHOWJOB_FLOAT_18_3, MSG_HISTORY_SHOWJOB_IO,          dusage->io);
@@ -1451,16 +1453,18 @@ static void showjob(sge_rusage_type *dusage) {
 
    printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXVMEM,      dusage->maxvmem);
 
-   printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
-   if (dusage->maxpss != DBL_MAX) {
-      printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXPSS,       dusage->maxpss);
-   }
+   if (!dusage->is_classic) {
+      printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXRSS,       dusage->maxrss);
+      if (dusage->maxpss != DBL_MAX) {
+         printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXPSS,       dusage->maxpss);
+      }
 
-   // print further usage values
-   if (dusage->other_usage != nullptr) {
-      const lListElem *ep;
-      for_each_ep(ep, dusage->other_usage) {
-         printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+      // print further usage values
+      if (dusage->other_usage != nullptr) {
+         const lListElem *ep;
+         for_each_ep(ep, dusage->other_usage) {
+            printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+         }
       }
    }
 
