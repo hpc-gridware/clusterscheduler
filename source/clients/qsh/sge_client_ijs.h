@@ -71,6 +71,20 @@ int stop_ijs_server(COMM_HANDLE **phandle, dstring *p_err_msg);
  */
 void set_expected_reconnect_token(const char *token);
 
+/**
+ * @brief Did run_ijs_server exit because the user pressed the ~. escape?
+ *
+ * Set during tty_to_commlib's processing of the ~. escape sequence (and also
+ * on keepalive-detected dead connections, which take the same disconnect-not-
+ * stdin-close path). Cleared at the start of each run_ijs_server invocation.
+ *
+ * Used by ocs_qsh.cc after run_ijs_server returns: when this returns true
+ * the user explicitly disconnected, so qrsh must NOT tell qmaster to delete
+ * the job — the shepherd's reconnect grace period (CS-2118 / CS-2155) keeps
+ * the job alive for `ijs_reconnect_timeout` seconds so the user can reattach.
+ */
+bool ijs_was_escape_disconnect();
+
 int force_ijs_server_shutdown(COMM_HANDLE **phandle,
    const char *this_component, dstring *err_msg);
 

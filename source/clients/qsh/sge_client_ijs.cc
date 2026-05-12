@@ -866,11 +866,25 @@ void *tty_to_commlib(void *t_conf) {
    } /* while (!do_exit) */
 
    /* Send STDIN_CLOSE_MSG to the shepherd. That causes the shepherd to close its filedescriptor, also. */
-   if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char *) " ",
-                      1, STDIN_CLOSE_MSG, &err_msg) != 1) {
-      DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
+   //
+   // CS-2155: when ~. was used, skip the clean STDIN_CLOSE_MSG so the shepherd sees an
+   // abnormal disconnect (send_buf failure) and falls into the reconnect grace period
+   // when ijs_reconnect_timeout > 0. Without this gate, ~. is indistinguishable from
+   // typing `exit` at the shell — both deliver a clean EOF to the job, the login shell
+   // exits, and the job ends, defeating the reconnect feature for its most natural
+   // entry point. With ijs_reconnect_timeout=0 the historical behaviour is preserved:
+   // the shepherd still kills the job when the connection drops (just via SIGKILL after
+   // the connection loss instead of via shell-EOF — invisible to the user).
+   if (!g_escape_disconnect) {
+      if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char *) " ",
+                         1, STDIN_CLOSE_MSG, &err_msg) != 1) {
+         DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
+      } else {
+         DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
+      }
    } else {
-      DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
+      DPRINTF("tty_to_commlib: ~. detected — skipping STDIN_CLOSE_MSG so the shepherd "
+              "treats this as an abnormal disconnect (reconnect grace path)\n");
    }
 
    /* clean up */
@@ -1439,6 +1453,10 @@ cleanup:
  */
 void set_expected_reconnect_token(const char *token) {
    g_expected_reconnect_token = token;
+}
+
+bool ijs_was_escape_disconnect() {
+   return g_escape_disconnect;
 }
 
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
