@@ -1776,17 +1776,12 @@ int main(int argc, const char **argv)
          JOB_TYPE_SET_BINARY(jb_type);
          lSetUlong(job, JB_type, jb_type);
 
-         /* CS-2153: `-b y` semantics are "run the command as a binary directly,
-          * no shell parsing." That implies execvp() of the user's argv, which is
-          * exactly what qrsh_starter's noshell branch does (line 762-767 of
-          * clients/qrsh_starter/ocs_qrsh_starter.cc). The default (noshell=0)
-          * branch joins the argv back into a single string with spaces and feeds
-          * it to `bash -c`, which then re-tokenizes by shell rules — destroying
-          * the original word boundaries whenever any single arg contains spaces
-          * or shell metacharacters. Force noshell on for binary jobs so the user
-          * gets execvp semantics as the man page promises.
+         /* CS-2153: argv word boundaries are preserved by qrsh_starter's
+          * shell-quoting in join_command(), so the `bash -c` path keeps spaces
+          * and shell metacharacters inside individual args intact while still
+          * giving the user PATH lookup, $VAR expansion, and the rest of normal
+          * shell semantics. Therefore we do NOT force noshell=1 here.
           */
-         noshell = 1;
       } else {
          DPRINTF("handling script submission\n");
 
