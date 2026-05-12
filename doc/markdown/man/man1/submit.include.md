@@ -1526,6 +1526,20 @@ defined JSV instances as parameter with the names *global_q_soft* and *global_l_
 Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -suspend_remote y\[es\]\|n\[o\]
+
+Available for `qrsh` and `qlogin` only.
+
+Controls whether pressing Ctrl+Z in an interactive session additionally delivers an explicit `SIGSTOP` to the whole remote job process tree.
+
+Without this option (default, `-suspend_remote no`), the raw Ctrl+Z byte (`0x1a`) is forwarded to the exec-side pseudo terminal, whose `ISIG` line discipline delivers `SIGTSTP` to the remote *foreground process group*. The interactive client then also raises `SIGTSTP` on itself, so the parent shell sees both ends paused; `fg` in that shell resumes them. This is sufficient for jobs whose work runs entirely in the foreground process group.
+
+With `-suspend_remote yes`, the interactive client *additionally* sends an explicit suspend control message to the shepherd, which delivers `SIGSTOP` to the entire job process tree — including children that detached from the foreground process group (daemonised helpers, MPI side-channel processes, etc.). The PTY's `ISIG` layer alone does not reach such children; the shepherd-driven `SIGSTOP` does.
+
+On resume (`fg`), `SIGCONT` is delivered to the whole job process tree regardless of the flag, so resuming works symmetrically in both modes.
+
+This parameter is not available in the JSV context. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
 ## -sync r|x|n (or y\[es\]\|n\[o\])  
 
 Available for `qsub`.
