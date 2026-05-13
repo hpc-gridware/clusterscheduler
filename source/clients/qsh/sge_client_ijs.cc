@@ -1296,7 +1296,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
          }
       } else {
          g_x11_display[0] = '\0';
-         DPRINTF("run_ijs_server: -X given but DISPLAY is not set; X11 forwarding unavailable\n");
+         fprintf(stderr, "Warning: X11 forwarding requested (-X) but DISPLAY is not set in the client environment; forwarding disabled.\n");
       }
    } else {
       g_x11_display[0] = '\0';
