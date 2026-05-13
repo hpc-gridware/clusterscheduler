@@ -68,6 +68,7 @@
 #define RECONNECT_REQUEST_MSG        17  ///< shepherd→client (reconnect): identity proof carrying the one-time token
 #define RECONNECT_ACCEPT_MSG         18  ///< client→shepherd: token validated, take over the session
 #define RECONNECT_REJECT_MSG         19  ///< client→shepherd: token mismatch — shepherd must give up and kill the job
+#define NOECHO_CTRL_MSG              20  ///< client→shepherd: disable ECHO on the slave PTY (sent when the client's local stdin is not a tty, so the shepherd's forwarded input is not echoed back into the job's output)
 
 #define COMM_RETVAL_OK                    0
 #define COMM_INVALID_PARAMETER            1

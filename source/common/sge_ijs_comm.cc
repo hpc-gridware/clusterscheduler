@@ -1295,6 +1295,7 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
             case RECONNECT_REQUEST_MSG:   // CS-2144
             case RECONNECT_ACCEPT_MSG:    // CS-2144
             case RECONNECT_REJECT_MSG:    // CS-2144
+            case NOECHO_CTRL_MSG:         // CS-1759
                DPRINTF("length of message: %d\n", (int)message->message_length);
                /* data message */
                recv_mess->type = message->message[0];

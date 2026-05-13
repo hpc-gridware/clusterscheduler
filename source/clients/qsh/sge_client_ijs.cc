@@ -1018,6 +1018,17 @@ void* commlib_to_tty(void *t_conf)
                                      (unsigned char *)g_x11_cookie_hex, strlen(g_x11_cookie_hex) + 1,
                                      X11_AUTH_MSG, &err_msg);
                }
+               // CS-1759: When our local stdin is not a tty (e.g. file redirect or pipe),
+               // the slave PTY's default ECHO would loop the shepherd's forwarded input back
+               // into the job's output stream — every input byte appears twice in the job's
+               // stdout (once as the line-discipline echo, once as the job's actual write).
+               // Tell the shepherd to disable ECHO on the slave before SETTINGS_CTRL_MSG
+               // triggers the child to start.  No-op on the shepherd side in pipe mode.
+               if (!isatty(STDIN_FILENO)) {
+                  DPRINTF("commlib_to_tty: stdin not a tty — sending NOECHO_CTRL_MSG\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *)" ", 1, NOECHO_CTRL_MSG, &err_msg);
+               }
                /* Send the settings in response */
                snprintf(buf, sizeof(buf), "noshell = %d", g_noshell);
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,

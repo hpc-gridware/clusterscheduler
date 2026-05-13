@@ -1202,11 +1202,27 @@ static void* commlib_to_pty(void *t_conf)
                break;
 
             case STDIN_CLOSE_MSG:
-               /* If we receive a STDIN_CLOSE_MSG we have to close the filedescriptor!
-                * This is needed for GE-3580
+               /* CS-1759: In PTY mode, closing the master here sends SIGHUP to the
+                * slave's session leader (the job).  Jobs that have not yet installed
+                * their SIGHUP trap (e.g. shell scripts where `trap '' HUP` is the
+                * first command) die with exit 129 before they can process the input
+                * we just delivered.  Writing EOT (0x04) to the master instead makes
+                * the slave's line discipline return EOF from read() cleanly — no
+                * SIGHUP — so the script drains its read loop and exits normally.
+                *
+                * In pipe mode (qrsh without -pty) the SIGHUP race does not apply,
+                * so keep the close-based behaviour required by GE-3580.
                 */
                shepherd_trace("commlib_to_pty: received stdin_close message");
-               SGE_CLOSE(fd_write);
+               if (g_p_ijs_fds->pty_master != -1) {
+                  const char eot = 0x04;
+                  if (write(fd_write, &eot, 1) != 1) {
+                     shepherd_trace("commlib_to_pty: failed to write EOT to pty master: %d, %s",
+                                    errno, strerror(errno));
+                  }
+               } else {
+                  SGE_CLOSE(fd_write);
+               }
                b_was_connected = 1;
                break;
 
@@ -1227,6 +1243,34 @@ static void* commlib_to_pty(void *t_conf)
                shepherd_trace("commlib_to_pty: received window size message, "
                   "changing window size");
                ioctl(fd_write, TIOCSWINSZ, &(recv_mess.ws));
+               b_was_connected = 1;
+               break;
+
+            case NOECHO_CTRL_MSG:
+               /* CS-1759: Client tells us its local stdin is not a tty (file
+                * redirect or pipe).  Disable ECHO on the slave PTY before the
+                * child starts; otherwise every byte we forward to the slave is
+                * echoed back through the master and the job's output stream
+                * receives the input twice (once as the echo, once as the job's
+                * actual stdout writes).  Sent by the client before
+                * SETTINGS_CTRL_MSG triggers the child, so this lands before
+                * any data is written to the slave.  In pipe mode pty_master
+                * is -1 and this is a no-op.
+                */
+               shepherd_trace("commlib_to_pty: received NOECHO message");
+               if (g_p_ijs_fds->pty_master != -1) {
+                  struct termios tio;
+                  if (tcgetattr(g_p_ijs_fds->pty_master, &tio) == 0) {
+                     tio.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+                     if (tcsetattr(g_p_ijs_fds->pty_master, TCSANOW, &tio) == -1) {
+                        shepherd_trace("commlib_to_pty: NOECHO tcsetattr failed: %d, %s",
+                                       errno, strerror(errno));
+                     }
+                  } else {
+                     shepherd_trace("commlib_to_pty: NOECHO tcgetattr failed: %d, %s",
+                                    errno, strerror(errno));
+                  }
+               }
                b_was_connected = 1;
                break;
             case SETTINGS_CTRL_MSG:
