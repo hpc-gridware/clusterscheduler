@@ -1776,11 +1776,12 @@ int main(int argc, const char **argv)
          JOB_TYPE_SET_BINARY(jb_type);
          lSetUlong(job, JB_type, jb_type);
 
-         /* CS-2153: argv word boundaries are preserved by qrsh_starter's
-          * shell-quoting in join_command(), so the `bash -c` path keeps spaces
-          * and shell metacharacters inside individual args intact while still
-          * giving the user PATH lookup, $VAR expansion, and the rest of normal
-          * shell semantics. Therefore we do NOT force noshell=1 here.
+         /* CS-2153 / Bug 1255: qrsh_starter's join_command() decides quoting
+          * heuristically — single-arg invocations (`qrsh 'echo $VAR'`) are
+          * plain-joined so $VAR expands; multi-arg invocations
+          * (`qrsh -b y /bin/sh -c "echo a; echo b"`) are shell-quoted so the
+          * argv boundaries survive bash's re-tokenisation.  No client-side
+          * signal needed.
           */
       } else {
          DPRINTF("handling script submission\n");

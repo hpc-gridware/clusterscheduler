@@ -616,8 +616,28 @@ static char *shell_quote(const char *arg) {
 }
 
 /**
- * @brief Join @p argv into a single command string suitable for `bash -c`,
- *        preserving each element's original boundaries via shell-quoting.
+ * @brief Join @p argv into a single command string suitable for `bash -c`.
+ *
+ * Two competing requirements that cannot both be satisfied by a single
+ * quoting scheme:
+ *
+ *  - CS-2153: when @p argc > 1 the user typically did
+ *    `qrsh -b y /bin/sh -c "echo a; echo b"`; the third argv element contains
+ *    shell metacharacters that must NOT be re-tokenised by bash.  We wrap
+ *    each element in POSIX-shell single quotes via shell_quote() so the
+ *    boundaries survive `bash -c`.
+ *
+ *  - Bug 1255: when @p argc == 1 the user typically wrote a single string
+ *    such as `qrsh 'echo $VAR'` and expects bash to expand `$VAR` on the
+ *    remote.  Wrapping the single argument in literal single quotes would
+ *    kill that expansion (bash would treat the whole thing as one literal
+ *    command name).  We plain-pass the single element so bash parses it
+ *    normally — the long-standing pre-CS-2153 behaviour.
+ *
+ * The argc==1 / argc>1 split is a heuristic, not a perfect signal: a single
+ * binary path containing a literal space (`qrsh "/path/with spaces.sh"`)
+ * still tokenises wrong under bash.  That edge case was also broken
+ * pre-CS-2153 and is far rarer than the shell-line case.
  *
  * @return Freshly allocated, NUL-terminated command string. Caller owns it.
  *   Returns nullptr on allocation failure.
@@ -627,21 +647,27 @@ static char *join_command(int argc, char **argv) {
       return nullptr;
    }
 
-   char **quoted = (char **)sge_malloc(argc * sizeof(char *));
-   if (quoted == nullptr) {
+   const bool quote_args = (argc > 1);
+
+   char **prepared = (char **)sge_malloc(argc * sizeof(char *));
+   if (prepared == nullptr) {
       return nullptr;
    }
    size_t length = 0;
    for (int i = 0; i < argc; i++) {
-      quoted[i] = shell_quote(argv[i]);
-      if (quoted[i] == nullptr) {
+      if (quote_args) {
+         prepared[i] = shell_quote(argv[i]);
+      } else {
+         prepared[i] = sge_strdup(nullptr, argv[i] != nullptr ? argv[i] : "");
+      }
+      if (prepared[i] == nullptr) {
          for (int j = 0; j < i; j++) {
-            sge_free(&quoted[j]);
+            sge_free(&prepared[j]);
          }
-         sge_free(&quoted);
+         sge_free(&prepared);
          return nullptr;
       }
-      length += strlen(quoted[i]);
+      length += strlen(prepared[i]);
    }
    /* (argc - 1) separating spaces plus a NUL terminator */
    length += argc;
@@ -649,22 +675,22 @@ static char *join_command(int argc, char **argv) {
    char *buffer = sge_malloc(length * sizeof(char));
    if (buffer == nullptr) {
       for (int i = 0; i < argc; i++) {
-         sge_free(&quoted[i]);
+         sge_free(&prepared[i]);
       }
-      sge_free(&quoted);
+      sge_free(&prepared);
       return nullptr;
    }
 
-   strcpy(buffer, quoted[0]);
+   strcpy(buffer, prepared[0]);
    for (int i = 1; i < argc; i++) {
       strcat(buffer, " ");
-      strcat(buffer, quoted[i]);
+      strcat(buffer, prepared[i]);
    }
 
    for (int i = 0; i < argc; i++) {
-      sge_free(&quoted[i]);
+      sge_free(&prepared[i]);
    }
-   sge_free(&quoted);
+   sge_free(&prepared);
 
    return buffer;
 }
