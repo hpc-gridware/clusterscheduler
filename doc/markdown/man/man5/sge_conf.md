@@ -1423,41 +1423,67 @@ has a server-side daemon and a client-side command:
 - qrsh(1) without a command — interactive shell: *rlogin_daemon* / *rlogin_command*
 - qrsh(1) with a command — remote execution: *rsh_daemon* / *rsh_command*
 
-All six parameters default to `builtin`, which uses the xxqs_name_sxx built-in interactive job support (IJS)
-mechanism. All changes take immediate effect. The global configuration entries may be overwritten by the
-execution host local configuration.
+All six parameters default to `builtin`, which selects the xxqs_name_sxx built-in interactive job support
+(IJS) mechanism. Changes take effect for newly submitted interactive jobs; sessions that are already running
+keep using whichever transport they started with.
+
+The global setting can be overridden per host (`qconf -mconf <hostname>`), but the host whose local
+configuration applies differs between the two sides:
+
+- **Daemon keys** (*qlogin_daemon*, *rlogin_daemon*, *rsh_daemon*) are read by the shepherd, so an override
+  on the **execution host** controls how the IJS connection is accepted.
+- **Command keys** (*qlogin_command*, *rlogin_command*, *rsh_command*) are read by the qrsh / qlogin
+  client once before scheduling, so an override on the **submit host** controls how the IJS connection
+  is initiated. The client does not re-resolve the configuration against the scheduled execution host's
+  per-host config.
+
+For an IJS session to complete, the *_command and the *_daemon chosen for the job must use compatible
+transports (both `builtin`, or matching external SSH/rsh setup). If they disagree, the IJS handshake
+never completes and the session hangs. Partitioning a cluster between transports therefore requires
+aligned per-host configuration on the submit AND execution hosts and scheduling discipline so that jobs
+from a given submit host only land on execution hosts sharing the same transport.
 
 **Server-side daemons (qlogin_daemon, rlogin_daemon, rsh_daemon)**
 
-The daemon executable is invoked with a single connection on stdin/stdout. `/usr/sbin/sshd -i` satisfies this
-requirement and is the recommended external daemon when SSH-based transport is desired.
+The daemon executable is invoked with a single connection on stdin/stdout (the listening socket is dup'd
+onto fd 0/1/2 by the shepherd before the exec). `/usr/sbin/sshd -i` satisfies this requirement and is the
+recommended external daemon for SSH-based transport.
 
-When using `sshd -i`, the OpenSSH server does not propagate the daemon process environment to the remote login
-shell. The shepherd sets multiple variables (e.g `QRSH_PORT`) in the daemon's environment before exec'ing it. 
-To make those variables visible in the remote shell, use a wrapper script with sshd's `SetEnv` directive 
-(requires OpenSSH 8.0 or later):
+When using `sshd -i`, the OpenSSH server does not propagate the daemon process environment to the remote
+login shell. The shepherd sets several variables (e.g. `QRSH_PORT`) in the daemon's environment before
+exec'ing it. To make those variables visible in the remote shell, use a wrapper script with sshd's
+`SetEnv` directive (requires OpenSSH 8.0 or later):
 
     #!/bin/sh
     exec /usr/sbin/sshd -i -o "SetEnv QRSH_PORT=$QRSH_PORT"
 
-*rlogin_daemon* and *rsh_daemon* additionally accept `none`.
+The daemon value must be either `builtin` or an absolute path to an executable; the shepherd rejects
+relative paths and non-executable files at job start. The literal value `none` is rejected by the same
+check — use `builtin` to disable external transport.
 
 **Client-side commands (qlogin_command, rlogin_command, rsh_command)**
 
 The calling convention differs between qlogin and qrsh:
 
-*rlogin_command* and *rsh_command* are invoked as `command -p port host [remote-command...]`, which matches the
-ssh(1) calling convention. `/usr/bin/ssh` can therefore be specified directly.
+*rlogin_command* and *rsh_command* are invoked as `command [-n] -p port host [remote-command...]`, which
+matches the ssh(1) calling convention. The `-n` flag is appended when the qrsh client closes stdin (e.g.
+for `qrsh -b y` without redirected stdin). `/usr/bin/ssh` can therefore be specified directly. For
+*rsh_command* the trailing `remote-command...` is always the fixed sequence `exec <utilbin>/qrsh_starter
+<job_dir> [noshell]`; the user's argv reaches the job through the `QRSH_COMMAND` environment variable,
+not through the rsh argv. For *rlogin_command* there is no trailing remote command.
 
 *qlogin_command* is invoked as `command host port` (telnet(1) positional convention). SSH cannot be used
-directly because it expects the port via `-p` rather than as a positional argument. Use a wrapper script to
-reorder the arguments:
+directly because it expects the port via `-p` rather than as a positional argument. Use a wrapper script
+to reorder the arguments:
 
     #!/bin/sh
     HOST=$1; PORT=$2
     exec /usr/bin/ssh -p "$PORT" "$HOST"
 
-*rlogin_command* and *rsh_command* additionally accept `none`.
+The literal value `none` is also accepted for *rlogin_command* and *rsh_command*: the client falls back to
+`<SGE_ROOT>/utilbin/<ARCH>/rsh` or `.../rlogin`. Those fallback binaries are no longer shipped, so `none`
+typically results in an exec failure at session start; prefer `builtin` or an absolute path to a real
+ssh-compatible client.
 
 The TCP port that the qrsh(1) client binds to can be restricted to a specific range using the *port_range*
 parameter; see *port_range* below.
