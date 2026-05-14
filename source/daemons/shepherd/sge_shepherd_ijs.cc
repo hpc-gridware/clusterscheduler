@@ -45,6 +45,8 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/file.h>
+#include <fcntl.h>
 #include <pwd.h>
 
 #include <termios.h>
@@ -391,6 +393,24 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
    // Ensure /tmp/.X11-unix exists
    mkdir("/tmp/.X11-unix", 01777);
 
+   // Serialize X11 proxy display setup across concurrent shepherds on the
+   // same exec host.  Without this lock, the search loop below races
+   // (CS-2187): two shepherds may both end up thinking they own the same
+   // N because the second's unlink() removes the first's just-bound entry
+   // and its bind() then succeeds at the now-free path.  Both jobs would
+   // see DISPLAY=:N.0 pointing at the same proxy socket — X11 traffic
+   // from one job would reach the other's X server.
+   int lock_fd = open("/tmp/.X11-unix-shepherd.lock", O_CREAT | O_RDWR, 0666);
+   if (lock_fd < 0) {
+      shepherd_trace("setup_x11_forwarding: cannot open lock file: %s", strerror(errno));
+      return false;
+   }
+   if (flock(lock_fd, LOCK_EX) != 0) {
+      shepherd_trace("setup_x11_forwarding: cannot acquire X11 setup lock: %s", strerror(errno));
+      close(lock_fd);
+      return false;
+   }
+
    // Find a free display number and bind a Unix socket
    bool found = false;
    for (int n = 10; n < 100 && !found; n++) {
@@ -406,10 +426,32 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
       if (fd < 0) {
          continue;
       }
-      // Remove any stale socket from a previous run
-      unlink(sock_path);
-      if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0 &&
-          listen(fd, 16) == 0) {
+
+      // Try bind WITHOUT unlinking first — succeeds iff the path is
+      // absent.  If a path exists, probe whether it has a live listener
+      // to distinguish another shepherd or real X server (which we must
+      // NOT hijack) from a stale socket left by a previous run (which
+      // is safe to remove and replace).
+      bool bound = (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0);
+      if (!bound) {
+         int probe_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+         if (probe_fd >= 0) {
+            int connected = connect(probe_fd, (struct sockaddr *)&addr, sizeof(addr));
+            close(probe_fd);
+            if (connected == 0) {
+               // Live listener owns this N — leave it alone, try N+1.
+               close(fd);
+               continue;
+            }
+         }
+         // Path exists but no live listener → stale.  Safe to remove
+         // and re-bind: the host-wide flock held above guarantees no
+         // other shepherd is concurrently in this section.
+         unlink(sock_path);
+         bound = (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0);
+      }
+
+      if (bound && listen(fd, 16) == 0) {
          chmod(sock_path, 0600);
          g_x11_listen_fd  = fd;
          g_x11_display_num = n;
@@ -420,6 +462,10 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
          close(fd);
       }
    }
+
+   flock(lock_fd, LOCK_UN);
+   close(lock_fd);
+
    if (!found) {
       shepherd_trace("setup_x11_forwarding: no free display number found");
       return false;
