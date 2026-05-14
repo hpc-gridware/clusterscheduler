@@ -106,6 +106,7 @@ static int              g_x11_client_fds[X11_MAX_CONNS]; ///< per-conn_id fd tow
 static int              g_x11_display_num                = -1;   ///< display number N for :N.0
 static int              g_x11_next_conn_id               = 0;    ///< round-robin conn_id allocator
 static char             g_x11_socket_path[108]           = "";   ///< path to /tmp/.X11-unix/XN (for cleanup)
+static char             g_x11_xauth_path[512]            = "";   ///< path to ~/.Xauthority (for cleanup)
 static pthread_mutex_t  g_x11_mutex                      = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -476,6 +477,9 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
    const char *home = (pw != nullptr) ? pw->pw_dir : "/tmp";
    char xauth_path[512];
    snprintf(xauth_path, sizeof(xauth_path), "%s/.Xauthority", home);
+   // Remember the path so cleanup_x11_xauth_entry() can find this entry
+   // again at session end (CS-2188).
+   snprintf(g_x11_xauth_path, sizeof(g_x11_xauth_path), "%s", xauth_path);
 
    // Convert 32-char hex cookie to 16 binary bytes and write an Xau entry directly.
    // Avoids calling system()/xauth in a multithreaded context where waitpid races can deadlock.
@@ -534,6 +538,142 @@ static bool setup_x11_forwarding(const char *cookie_hex) {
    }
 
    return true;
+}
+
+/**
+ * @brief Remove this session's Xau record from the user's ~/.Xauthority.
+ *
+ * Counterpart to the in-line Xau record append in setup_x11_forwarding()
+ * (CS-2188).  Reads ~/.Xauthority record by record, skips any whose
+ * display-number field equals g_x11_display_num, and atomically replaces
+ * the file via a temp + rename.  A per-file flock at
+ * `<.Xauthority>-shepherd.lock` serialises concurrent shepherd cleanups
+ * (and protects against a concurrent setup_x11_forwarding append in
+ * another shepherd for the same user).
+ *
+ * Direct file manipulation (rather than fork+exec'ing the xauth tool)
+ * to avoid the system()/waitpid race that the append-side code also
+ * avoids — see the comment block before the append in
+ * setup_x11_forwarding.
+ *
+ * No-op if no entry was ever written (g_x11_xauth_path is empty) or if
+ * the file is gone.
+ */
+static void cleanup_x11_xauth_entry() {
+   if (g_x11_xauth_path[0] == '\0' || g_x11_display_num < 0) {
+      return;
+   }
+
+   // Per-user flock so concurrent shepherd add/remove on the same
+   // .Xauthority don't lose each other's edits.
+   char lock_path[640];
+   snprintf(lock_path, sizeof(lock_path), "%s-shepherd.lock", g_x11_xauth_path);
+   int lock_fd = open(lock_path, O_CREAT | O_RDWR, 0600);
+   if (lock_fd < 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: cannot open lock %s: %s",
+                     lock_path, strerror(errno));
+      return;
+   }
+   if (flock(lock_fd, LOCK_EX) != 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: cannot acquire lock %s: %s",
+                     lock_path, strerror(errno));
+      close(lock_fd);
+      return;
+   }
+
+   FILE *src = fopen(g_x11_xauth_path, "rb");
+   if (src == nullptr) {
+      // No xauth file: nothing to clean.
+      flock(lock_fd, LOCK_UN);
+      close(lock_fd);
+      return;
+   }
+
+   char tmp_path[640];
+   snprintf(tmp_path, sizeof(tmp_path), "%s.shepherd.tmp", g_x11_xauth_path);
+   FILE *dst = fopen(tmp_path, "wb");
+   if (dst == nullptr) {
+      shepherd_trace("cleanup_x11_xauth_entry: cannot open temp file %s: %s",
+                     tmp_path, strerror(errno));
+      fclose(src);
+      flock(lock_fd, LOCK_UN);
+      close(lock_fd);
+      return;
+   }
+
+   char target_display_str[16];
+   snprintf(target_display_str, sizeof(target_display_str), "%d", g_x11_display_num);
+   size_t target_display_len = strlen(target_display_str);
+
+   auto read_u16 = [&](uint16_t *out) -> bool {
+      uint8_t b[2];
+      if (fread(b, 1, 2, src) != 2) return false;
+      *out = static_cast<uint16_t>((static_cast<uint16_t>(b[0]) << 8) | b[1]);
+      return true;
+   };
+   auto write_u16 = [&](uint16_t v) {
+      uint8_t b[2] = {static_cast<uint8_t>(v >> 8), static_cast<uint8_t>(v & 0xFF)};
+      fwrite(b, 1, 2, dst);
+   };
+
+   int removed = 0;
+   while (true) {
+      uint16_t family;
+      if (!read_u16(&family)) break;  // clean EOF
+      uint16_t addr_len;
+      if (!read_u16(&addr_len)) break;
+      char addr_buf[256];
+      size_t addr_n = std::min<size_t>(addr_len, sizeof(addr_buf));
+      if (fread(addr_buf, 1, addr_n, src) != addr_n) break;
+      uint16_t disp_len;
+      if (!read_u16(&disp_len)) break;
+      char disp_buf[16];
+      size_t disp_n = std::min<size_t>(disp_len, sizeof(disp_buf));
+      if (fread(disp_buf, 1, disp_n, src) != disp_n) break;
+      uint16_t name_len;
+      if (!read_u16(&name_len)) break;
+      char name_buf[64];
+      size_t name_n = std::min<size_t>(name_len, sizeof(name_buf));
+      if (fread(name_buf, 1, name_n, src) != name_n) break;
+      uint16_t data_len;
+      if (!read_u16(&data_len)) break;
+      char data_buf[256];
+      size_t data_n = std::min<size_t>(data_len, sizeof(data_buf));
+      if (fread(data_buf, 1, data_n, src) != data_n) break;
+
+      // Drop records whose display-number field matches our N.
+      if (disp_n == target_display_len &&
+          memcmp(disp_buf, target_display_str, target_display_len) == 0) {
+         removed++;
+         continue;
+      }
+
+      // Keep this record.
+      write_u16(family);
+      write_u16(addr_len);
+      fwrite(addr_buf, 1, addr_n, dst);
+      write_u16(disp_len);
+      fwrite(disp_buf, 1, disp_n, dst);
+      write_u16(name_len);
+      fwrite(name_buf, 1, name_n, dst);
+      write_u16(data_len);
+      fwrite(data_buf, 1, data_n, dst);
+   }
+
+   fclose(src);
+   fclose(dst);
+
+   if (rename(tmp_path, g_x11_xauth_path) != 0) {
+      shepherd_trace("cleanup_x11_xauth_entry: rename %s -> %s failed: %s",
+                     tmp_path, g_x11_xauth_path, strerror(errno));
+      unlink(tmp_path);
+   } else {
+      shepherd_trace("cleanup_x11_xauth_entry: removed %d xauth entry/entries for display :%d",
+                     removed, g_x11_display_num);
+   }
+
+   flock(lock_fd, LOCK_UN);
+   close(lock_fd);
 }
 
 /****** pty_to_commlib() *******************************************************
@@ -883,6 +1023,9 @@ static void* pty_to_commlib(void *t_conf)
       if (g_x11_socket_path[0] != '\0') {
          unlink(g_x11_socket_path);
       }
+      // CS-2188: also drop our entry from ~/.Xauthority so it doesn't
+      // accumulate across sessions.
+      cleanup_x11_xauth_entry();
    }
    for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
       if (g_x11_client_fds[xi] >= 0) {
@@ -1490,6 +1633,7 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_x11_display_num = -1;
    g_x11_next_conn_id = 0;
    g_x11_socket_path[0] = '\0';
+   g_x11_xauth_path[0]  = '\0';
    for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
       g_x11_client_fds[xi] = -1;
    }
