@@ -90,6 +90,11 @@ namespace ocs {
     * variables missing from the scaled usage list are silently skipped
     * (no `null` field).
     *
+    * If none of the configured variables have any data yet (e.g. right
+    * after job start, before the execd has produced its first usage
+    * report), no record is emitted at all — empty-`usage` records would
+    * clutter the reporting file without adding information.
+    *
     * @see ReportingFileWriter::create_online_usage_records()
     */
    bool
@@ -120,6 +125,31 @@ namespace ocs {
 
       // aggregation only applies to ja_task-level records
       const bool aggregate = (pe_task == nullptr) && aggregate_pe_tasks;
+
+      // Suppress empty-usage records: if none of the configured variables
+      // have data yet, do not emit anything.
+      bool any_data = false;
+      for (const auto &name : vars) {
+         if (lGetElemStr(primary_usage, UA_name, name.c_str()) != nullptr) {
+            any_data = true;
+            break;
+         }
+         if (aggregate) {
+            const lListElem *pe_task_iter;
+            for_each_ep(pe_task_iter, lGetList(ja_task, JAT_task_list)) {
+               if (lGetSubStr(pe_task_iter, UA_name, name.c_str(), PET_scaled_usage) != nullptr) {
+                  any_data = true;
+                  break;
+               }
+            }
+            if (any_data) {
+               break;
+            }
+         }
+      }
+      if (!any_data) {
+         DRETURN(true);
+      }
 
       rapidjson::StringBuffer stringBuffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
