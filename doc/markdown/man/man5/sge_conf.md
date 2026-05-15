@@ -1316,8 +1316,12 @@ shall be included in each record. The format is:
 
     <var>[|<var>[|...]]
 
-Variables are separated by `|`. The supported variables are: *cpu*, *mem*, *io*, *iow*, *ioops*, *vmem*,
-*maxvmem*, *rss*, *maxrss*, *pss*, *maxpss*, *smem*, *pmem*, *wallclock*.
+Variables are separated by `|`. There is no closed list of accepted names: any token that is a valid
+xxQS_NAMExx *complex_name* (see xxqs_name_sxx_types(1)) is accepted by the configuration parser.
+A record will carry only those configured variables that the execution daemon actually reports for
+the job — names the execd does not report are silently skipped. The set of variables reported by
+xxqs_name_sxx_execd(8) today includes *cpu*, *mem*, *io*, *iow*, *ioops*, *vmem*, *maxvmem*, *rss*,
+*maxrss*, *pss*, *maxpss*, *smem*, *pmem*, *wallclock*.
 
 Examples:
 
