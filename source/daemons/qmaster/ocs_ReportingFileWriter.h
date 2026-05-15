@@ -95,7 +95,7 @@ namespace ocs {
 
       static bool
       create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
-                                  lListElem *ja_task, lListElem *pe_task);
+                                  lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks);
 
       static bool
       is_online_usage_required();
@@ -154,7 +154,7 @@ namespace ocs {
 
       virtual bool
       create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                                 lListElem *ja_task, lListElem *pe_task) { return true; }
+                                 lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) { return true; }
 
       virtual bool
       create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) { return true; }

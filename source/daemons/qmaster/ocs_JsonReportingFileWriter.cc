@@ -82,17 +82,20 @@ namespace ocs {
     *
     * When pe_task is non-null the record carries that pe_task's scaled
     * usage and a pe_taskid field. When pe_task is null the record carries
-    * the ja_task's scaled usage (which may already be aggregated by the PE
-    * `accounting_summary` flag — that decision is made by the caller).
-    * Only the variables listed in `reporting_params=online_usage=...` are
-    * emitted under `usage`; variables missing from the scaled usage list
-    * are silently skipped (no `null` field).
+    * the ja_task's scaled usage; if aggregate_pe_tasks is set, scaled
+    * usage of every pe_task in `ja_task->JAT_task_list` is summed into the
+    * ja_task value (matching the convention used by sge_write_rusage when
+    * the PE has `accounting_summary` set). Only the variables listed in
+    * `reporting_params=online_usage=...` are emitted under `usage`;
+    * variables missing from the scaled usage list are silently skipped
+    * (no `null` field).
     *
     * @see ReportingFileWriter::create_online_usage_records()
     */
    bool
    JsonReportingFileWriter::create_online_usage_record(lList **answer_list, lListElem *job_report,
-                                                       lListElem *job, lListElem *ja_task, lListElem *pe_task) {
+                                                       lListElem *job, lListElem *ja_task, lListElem *pe_task,
+                                                       bool aggregate_pe_tasks) {
       DENTER(TOP_LAYER);
 
       if (job == nullptr || ja_task == nullptr) {
@@ -111,9 +114,12 @@ namespace ocs {
 
       // pe_task != nullptr: report scaled usage of the pe_task,
       // otherwise the (possibly aggregated) scaled usage on the ja_task
-      const lList *usage_list = (pe_task != nullptr)
-                                ? lGetList(pe_task, PET_scaled_usage)
-                                : lGetList(ja_task, JAT_scaled_usage_list);
+      const lList *primary_usage = (pe_task != nullptr)
+                                   ? lGetList(pe_task, PET_scaled_usage)
+                                   : lGetList(ja_task, JAT_scaled_usage_list);
+
+      // aggregation only applies to ja_task-level records
+      const bool aggregate = (pe_task == nullptr) && aggregate_pe_tasks;
 
       rapidjson::StringBuffer stringBuffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
@@ -131,9 +137,28 @@ namespace ocs {
       writer.Key("usage");
       writer.StartObject();
       for (const auto &name : vars) {
-         const lListElem *u = lGetElemStr(usage_list, UA_name, name.c_str());
+         double total = 0.0;
+         bool found_any = false;
+
+         const lListElem *u = lGetElemStr(primary_usage, UA_name, name.c_str());
          if (u != nullptr) {
-            write_json(writer, name.c_str(), lGetDouble(u, UA_value));
+            total = lGetDouble(u, UA_value);
+            found_any = true;
+         }
+
+         if (aggregate) {
+            const lListElem *pe_task_iter;
+            for_each_ep(pe_task_iter, lGetList(ja_task, JAT_task_list)) {
+               const lListElem *pu = lGetSubStr(pe_task_iter, UA_name, name.c_str(), PET_scaled_usage);
+               if (pu != nullptr) {
+                  total += lGetDouble(pu, UA_value);
+                  found_any = true;
+               }
+            }
+         }
+
+         if (found_any) {
+            write_json(writer, name.c_str(), total);
          }
       }
       writer.EndObject();

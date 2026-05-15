@@ -50,7 +50,7 @@ namespace ocs {
 
       bool
       create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
-                                 lListElem *ja_task, lListElem *pe_task) override;
+                                 lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) override;
 
       bool
       create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) override;

@@ -349,16 +349,20 @@ namespace ocs {
     * writer overrides this virtual; the classic reporting writer and the
     * accounting writers keep the no-op default.
     *
+    * `aggregate_pe_tasks` is honoured only when pe_task is null and signals
+    * that the writer should sum scaled usage across the ja_task's pe_tasks
+    * (the same convention `sge_write_rusage` follows for `accounting_summary`).
+    *
     * @see create_online_usage_record()
     * @see is_online_usage_required()
     */
    bool ReportingFileWriter::create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
-                                                         lListElem *ja_task, lListElem *pe_task) {
+                                                         lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) {
       bool ret = true;
 
       sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
       for (auto w: writers) {
-         if (w != nullptr && !w->create_online_usage_record(answer_list, job_report, job, ja_task, pe_task)) {
+         if (w != nullptr && !w->create_online_usage_record(answer_list, job_report, job, ja_task, pe_task, aggregate_pe_tasks)) {
             ret = false;
          }
       }

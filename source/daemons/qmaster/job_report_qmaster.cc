@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -43,6 +43,7 @@
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_host.h"
@@ -380,6 +381,32 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                            }
                            /* should never happen */
                            ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(lGetUlong(jatep, JAT_status)));
+                        }
+                     }
+
+                     /*
+                      * online_usage record: emit a JSONL snapshot of the scaled
+                      * usage on every job report from execd, gated by the
+                      * reporting_params=online_usage list. Honour the PE's
+                      * accounting_summary flag with the same convention as
+                      * sge_write_rusage / create_acct_records:
+                      *   - pe_task JR + accounting_summary TRUE  -> skip
+                      *     (aggregated record will be written on the master JR)
+                      *   - pe_task JR + accounting_summary FALSE -> per-pe_task
+                      *   - master  JR                            -> ja_task,
+                      *     summing pe_task usage when accounting_summary TRUE
+                      */
+                     if (ocs::ReportingFileWriter::is_online_usage_required()) {
+                        const bool do_accounting_summary =
+                                pe_do_accounting_summary(lGetObject(jatep, JAT_pe_object));
+                        if (pe_task_id_str != nullptr) {
+                           if (!do_accounting_summary) {
+                              ocs::ReportingFileWriter::create_online_usage_records(nullptr, jr, jep, jatep,
+                                                                                    petask, false);
+                           }
+                        } else {
+                           ocs::ReportingFileWriter::create_online_usage_records(nullptr, jr, jep, jatep,
+                                                                                 nullptr, do_accounting_summary);
                         }
                      }
 
