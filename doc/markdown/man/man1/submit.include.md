@@ -1358,8 +1358,9 @@ existing running interactive job.
 Reconnects to a running interactive session that has lost its client connection. The caller
 must be the owner of the job referenced by *job_id*. Reconnects are only possible while the
 shepherd is inside the configured reconnect grace period — see *ijs_reconnect_timeout* in
-xxqs_name_sxx_conf(5). When the parameter is unset (or `0`, the default), the grace period is
-disabled and `-reconnect` will always fail with "job not in reconnect-wait state".
+xxqs_name_sxx_conf(5) and the reconnect handshake description in xxqs_name_sxx_ijs(5). When
+the parameter is unset (or `0`, the default), the grace period is disabled and `-reconnect`
+will always fail with "job not in reconnect-wait state".
 
 The reconnect handshake is brokered by the qmaster: it validates ownership, issues a
 single-use token to the requesting client, and relays the new client's listen address and
@@ -2114,7 +2115,8 @@ xxQS_NAMExx master host file
 # SEE ALSO
 
 xxqs_name_sxx_intro(1), qconf(1), qdel(1), qhold(1), qmod(1), qrls(1), qstat(1), xxqs_name_sxx_accounting(5),
-xxqs_name_sxx_aliases(5), xxqs_name_sxx_conf(5), xxqs_name_sxx_request(5), xxqs_name_sxx_pe(5), xxqs_name_sxx_complex(5).
+xxqs_name_sxx_aliases(5), xxqs_name_sxx_conf(5), xxqs_name_sxx_ijs(5), xxqs_name_sxx_request(5), xxqs_name_sxx_pe(5),
+xxqs_name_sxx_complex(5).
 
 # COPYRIGHT
 

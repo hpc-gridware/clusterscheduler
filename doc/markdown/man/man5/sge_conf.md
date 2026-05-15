@@ -926,6 +926,9 @@ verbatim to the remote shell.
 This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
 Changing *ijs_escape_char* takes effect for new sessions immediately.
 
+See xxqs_name_sxx_ijs(5) for the role of this parameter in interactive job support and for
+the full IJS escape-sequence semantics.
+
 Example: `ijs_escape_char=|` makes `|.` (pipe-dot at line start) the disconnect sequence.
 
 ***ijs_keepalive_interval***
@@ -943,6 +946,9 @@ A value of `0` disables keepalive probing entirely. The default is `60`.
 This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
 Changing *ijs_keepalive_interval* takes effect for new sessions immediately.
 
+See xxqs_name_sxx_ijs(5) for how this parameter interacts with reconnect handling and the
+dead-connection detection path.
+
 ***ijs_keepalive_count***
 
 Sets the maximum number of consecutive unanswered keepalive probes before the builtin IJS client
@@ -953,6 +959,9 @@ The value must be greater than zero. The default is `3`.
 
 This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
 Changing *ijs_keepalive_count* takes effect for new sessions immediately.
+
+See xxqs_name_sxx_ijs(5) for how this parameter interacts with reconnect handling and the
+dead-connection detection path.
 
 Example: `ijs_keepalive_interval=30 ijs_keepalive_count=3` declares a connection dead after
 approximately 120 seconds without an ACK (four probe intervals).
@@ -974,6 +983,9 @@ Within the grace window a new client may take over the session with `qrsh -recon
 or `qlogin -reconnect &lt;job_id&gt;` from any submit host.  qmaster validates that the requester
 owns the job, brokers a one-time token to both sides, and the shepherd resumes the original
 session against the new client.
+
+See xxqs_name_sxx_ijs(5) for the reconnect handshake, grace-period semantics, and the
+operational trade-offs that inform the choice of value.
 
 Example: `ijs_reconnect_timeout=300` gives a user five minutes to recover an interactive
 job after a VPN hiccup or laptop suspend before it is killed.
@@ -1521,7 +1533,9 @@ sequentially and binds to the first free one. If no port in the range is availab
 qrsh exits with an error. When *port_range* is `NONE` or not configured, the operating
 system assigns a free ephemeral port automatically (equivalent to binding to port 0).
 
-This parameter applies to both the builtin IJS mode and the legacy ssh/rsh mode.
+This parameter applies to both the builtin IJS mode and the legacy ssh/rsh mode. See
+xxqs_name_sxx_ijs(5) for the connect-back model, NAT considerations, and how *port_range*
+governs the qrsh client listener.
 
 Changing *port_range* takes immediate effect.
 
@@ -1598,8 +1612,8 @@ Note: While this setting is being changed, no jobs are permitted to run. It is r
 # SEE ALSO
 
 xxqs_name_sxx_intro(1), csh(1), qconf(1), qsub(1), xxqs_name_sxx_jsv(1), rsh(1), sh(1), getpwnam(3), drmaa_attributes(3),
-xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_sched_conf(5), sge_types(1), xxqs_name_sxx_execd*(8), xxqs_name_sxx_qmaster(8),
-xxqs_name_sxx_shepherd*(8), cron(8), 
+xxqs_name_sxx_ijs(5), xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_sched_conf(5), sge_types(1), xxqs_name_sxx_execd*(8),
+xxqs_name_sxx_qmaster(8), xxqs_name_sxx_shepherd*(8), cron(8), 
 
 # COPYRIGHT
 
