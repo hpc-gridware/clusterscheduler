@@ -132,6 +132,85 @@ int execd_write_reconnect_info(uint32_t job_id, uint32_t ja_task_id, const char 
    DRETURN(0);
 }
 
+/**
+ * @brief CS-2206: (re)write the job's cert.pem with the reconnecting client's
+ *        TLS certificate before reconnect.info is published.
+ *
+ * Under TLS the shepherd authenticates the client's commlib server with the
+ * certificate in active_jobs/<job>.<task>/cert.pem, which execd wrote at job
+ * start from the ORIGINAL client.  A `qrsh -reconnect` client generated its own
+ * certificate, so cert.pem must be replaced with it (and made readable by the
+ * job owner, since the shepherd reads it as that user mid-job) or the reconnect
+ * TLS handshake fails.  Atomic write + chown + rename, mirroring
+ * execd_write_reconnect_info().  No-op when cred is empty (non-TLS mode).
+ *
+ * @return 0 on success or when there is nothing to do; -1 on I/O error.
+ */
+static int execd_write_reconnect_cert(uint32_t job_id, uint32_t ja_task_id,
+                                      const char *pe_task_id, const char *cred,
+                                      uid_t owner_uid, gid_t owner_gid) {
+   DENTER(TOP_LAYER);
+
+   if (cred == nullptr || *cred == '\0') {
+      DRETURN(0);   // non-TLS mode: nothing to write
+   }
+
+   DSTRING_STATIC(final_path, SGE_PATH_MAX);
+   DSTRING_STATIC(tmp_path, SGE_PATH_MAX);
+   sge_get_active_job_file_path(&final_path, job_id, ja_task_id, pe_task_id, "cert.pem");
+   sge_get_active_job_file_path(&tmp_path,   job_id, ja_task_id, pe_task_id, "cert.pem.tmp");
+   const char *final_str = sge_dstring_get_string(&final_path);
+   const char *tmp_str   = sge_dstring_get_string(&tmp_path);
+
+   unlink(tmp_str);
+   int fd = open(tmp_str, O_WRONLY | O_CREAT | O_EXCL, 0600);
+   if (fd < 0) {
+      ERROR("execd_write_reconnect_cert: open(%s) failed: %s", tmp_str, strerror(errno));
+      DRETURN(-1);
+   }
+
+   size_t len = strlen(cred);
+   ssize_t total = 0;
+   while ((size_t)total < len) {
+      ssize_t w = write(fd, cred + total, len - (size_t)total);
+      if (w < 0) {
+         if (errno == EINTR) {
+            continue;
+         }
+         ERROR("execd_write_reconnect_cert: write(%s) failed: %s", tmp_str, strerror(errno));
+         close(fd);
+         unlink(tmp_str);
+         DRETURN(-1);
+      }
+      total += w;
+   }
+   if (fsync(fd) != 0) {
+      ERROR("execd_write_reconnect_cert: fsync(%s) failed: %s", tmp_str, strerror(errno));
+      close(fd);
+      unlink(tmp_str);
+      DRETURN(-1);
+   }
+   close(fd);
+
+   // The shepherd reads cert.pem as the job owner during the reconnect grace
+   // period, so it must be owner-readable (execd runs as root).
+   if (chown(tmp_str, owner_uid, owner_gid) != 0) {
+      ERROR("execd_write_reconnect_cert: chown(%s, %d, %d) failed: %s",
+            tmp_str, (int)owner_uid, (int)owner_gid, strerror(errno));
+      unlink(tmp_str);
+      DRETURN(-1);
+   }
+   if (rename(tmp_str, final_str) != 0) {
+      ERROR("execd_write_reconnect_cert: rename(%s -> %s) failed: %s",
+            tmp_str, final_str, strerror(errno));
+      unlink(tmp_str);
+      DRETURN(-1);
+   }
+
+   INFO("execd_write_reconnect_cert: refreshed %s with reconnect client certificate", final_str);
+   DRETURN(0);
+}
+
 int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 
@@ -142,6 +221,7 @@ int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    char    *token      = nullptr;   // mallocs via unpackstr
    uint32_t owner_uid  = 0;
    uint32_t owner_gid  = 0;
+   char    *cred       = nullptr;   // mallocs via unpackstr (CS-2206)
 
    if (unpackint(&(aMsg->buf), &job_id) != 0 ||
        unpackint(&(aMsg->buf), &ja_task_id) != 0 ||
@@ -149,20 +229,30 @@ int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
        unpackint(&(aMsg->buf), &port) != 0 ||
        unpackstr(&(aMsg->buf), &token) != 0 ||
        unpackint(&(aMsg->buf), &owner_uid) != 0 ||
-       unpackint(&(aMsg->buf), &owner_gid) != 0) {
+       unpackint(&(aMsg->buf), &owner_gid) != 0 ||
+       unpackstr(&(aMsg->buf), &cred) != 0) {
       ERROR("do_reconnect_prepare: failed to unpack message");
       sge_free(&host);
       sge_free(&token);
+      sge_free(&cred);
       DRETURN(-1);
    }
 
-   // Stage 3 / CS-2144 will add a JWAITING_RECONNECT job state at qmaster level — at
-   // execd we just write the file and let the shepherd's polling loop pick it up.
-   int ret = execd_write_reconnect_info(job_id, ja_task_id, nullptr,
-                                        host, (int)port, token,
+   // CS-2206: refresh cert.pem with the reconnecting client's certificate
+   // BEFORE publishing reconnect.info, so the shepherd's poll loop only ever
+   // opens the reconnect connection once the matching cert is in place.
+   int ret = execd_write_reconnect_cert(job_id, ja_task_id, nullptr, cred,
                                         (uid_t)owner_uid, (gid_t)owner_gid);
+   if (ret == 0) {
+      // Stage 3 / CS-2144 will add a JWAITING_RECONNECT job state at qmaster level — at
+      // execd we just write the file and let the shepherd's polling loop pick it up.
+      ret = execd_write_reconnect_info(job_id, ja_task_id, nullptr,
+                                       host, (int)port, token,
+                                       (uid_t)owner_uid, (gid_t)owner_gid);
+   }
 
    sge_free(&host);
    sge_free(&token);
+   sge_free(&cred);
    DRETURN(ret);
 }

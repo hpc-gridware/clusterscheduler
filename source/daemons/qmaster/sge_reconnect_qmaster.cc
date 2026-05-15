@@ -102,6 +102,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *requester_user,
                                      const char *client_host,
                                      int client_port,
+                                     const char *client_cred,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
                                      lList **answer_list) {
@@ -190,7 +191,8 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
 
    int rc = sge_qmaster_send_reconnect_prepare(job_id, ja_task_id, out_exec_host,
                                                client_host, client_port,
-                                               out_token, owner_uid, owner_gid);
+                                               out_token, owner_uid, owner_gid,
+                                               client_cred);
    if (rc != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               "failed to relay reconnect request to execd %s (rc=%d)", out_exec_host, rc);
@@ -209,7 +211,8 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
                                        const char *exec_host,
                                        const char *client_host, int client_port,
                                        const char *token,
-                                       uid_t owner_uid, gid_t owner_gid) {
+                                       uid_t owner_uid, gid_t owner_gid,
+                                       const char *client_cred) {
    DENTER(TOP_LAYER);
 
    if (exec_host == nullptr || client_host == nullptr || token == nullptr || client_port <= 0) {
@@ -217,20 +220,25 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
       DRETURN(-1);
    }
 
+   // CS-2206: PEM certs are ~1-2 KB; start the buffer large enough (packbuffer
+   // also grows on demand, but avoid needless reallocs).
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
+   if (init_packbuffer(&pb, 4096) != PACK_SUCCESS) {
       ERROR("sge_qmaster_send_reconnect_prepare: init_packbuffer failed");
       DRETURN(-1);
    }
 
    // Order must match do_reconnect_prepare()'s unpacker exactly.
+   // client_cred is the CS-2206 reconnect TLS certificate; empty string when
+   // running without TLS so the wire format stays fixed.
    if (packint(&pb, job_id)                != PACK_SUCCESS ||
        packint(&pb, ja_task_id)            != PACK_SUCCESS ||
        packstr(&pb, client_host)           != PACK_SUCCESS ||
        packint(&pb, (uint32_t)client_port) != PACK_SUCCESS ||
        packstr(&pb, token)                 != PACK_SUCCESS ||
        packint(&pb, (uint32_t)owner_uid)   != PACK_SUCCESS ||
-       packint(&pb, (uint32_t)owner_gid)   != PACK_SUCCESS) {
+       packint(&pb, (uint32_t)owner_gid)   != PACK_SUCCESS ||
+       packstr(&pb, client_cred != nullptr ? client_cred : "") != PACK_SUCCESS) {
       ERROR("sge_qmaster_send_reconnect_prepare: pack failed");
       clear_packbuffer(&pb);
       DRETURN(-1);

@@ -1427,6 +1427,27 @@ static int do_qrsh_reconnect(const char *job_id_str,
    lSetUlong(idep, ID_action, QI_DO_RECONNECT | JOB_DO_ACTION);
    lSetUlong(idep, ID_force, 0);
 
+   // CS-2206: under TLS the shepherd authenticates the reconnecting client's
+   // commlib server with the certificate execd wrote to cert.pem at job start —
+   // which belongs to the ORIGINAL client.  This new client generated its own
+   // in-memory certificate, so we must ship it through the reconnect broker
+   // (qmaster -> execd -> cert.pem) or the TLS handshake fails and the job is
+   // killed at grace expiry.  Carried in ID_user_list (unused by
+   // QI_DO_RECONNECT) as a single ST_name element; absent in non-TLS mode.
+#if defined(OCS_WITH_OPENSSL)
+   if (comm_handle->ssl_server_context != nullptr) {
+      const char *cred = comm_handle->ssl_server_context->get_cert();
+      if (cred != nullptr) {
+         lList *cred_list = lCreateList("reconnect cred", ST_Type);
+         lListElem *cred_ep = lCreateElem(ST_Type);
+         lSetString(cred_ep, ST_name, cred);
+         lAppendElem(cred_list, cred_ep);
+         lSetList(idep, ID_user_list, cred_list);
+         sge_free(&cred);
+      }
+   }
+#endif
+
    lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                           ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
 

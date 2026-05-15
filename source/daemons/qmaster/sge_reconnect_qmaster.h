@@ -48,6 +48,10 @@
  * @param out_token_size      Size of out_token; must be >= 65 (64 hex chars + NUL).
  * @param out_exec_host       Caller-allocated buffer for the exec hostname.
  * @param out_exec_host_size  Size of out_exec_host buffer.
+ * @param client_cred         CS-2206: the reconnecting client's commlib-server TLS
+ *                            certificate (PEM), or nullptr in non-TLS mode.  Relayed
+ *                            to execd so it can refresh cert.pem before the shepherd
+ *                            opens the reconnect connection.
  * @param answer_list         Standard error list; populated on validation/lookup failure.
  * @return 0 on success; -1 on any validation, lookup, or send failure (answer_list filled).
  */
@@ -55,6 +59,7 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *requester_user,
                                      const char *client_host,
                                      int client_port,
+                                     const char *client_cred,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
                                      lList **answer_list);
@@ -76,6 +81,8 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
  *   token         (string, packstr)
  *   owner_uid     (uint32, packint)
  *   owner_gid     (uint32, packint)
+ *   client_cred   (string, packstr) - CS-2206: reconnect client's TLS cert (PEM),
+ *                 empty string in non-TLS mode
  *
  * The send is asynchronous (synchron=0); no reply is expected.  Errors at the commlib
  * layer are logged and returned to the caller.
@@ -88,10 +95,13 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
  * @param token         One-time reconnect token.
  * @param owner_uid     UID of the job owner.
  * @param owner_gid     GID of the job owner.
+ * @param client_cred   CS-2206: reconnecting client's commlib-server TLS cert (PEM),
+ *                       or nullptr/empty in non-TLS mode.
  * @return 0 on success; a commlib error code (>0) on send failure; -1 on packing failure.
  */
 int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
                                        const char *exec_host,
                                        const char *client_host, int client_port,
                                        const char *token,
-                                       uid_t owner_uid, gid_t owner_gid);
+                                       uid_t owner_uid, gid_t owner_gid,
+                                       const char *client_cred);

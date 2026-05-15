@@ -178,10 +178,19 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          uint32_t reconnect_job_id = (uint32_t)strtoul(job_id_str, nullptr, 10);
          int reconnect_port = (int)strtol(port_str, nullptr, 10);
 
+         // CS-2206: the reconnecting client's TLS cert (PEM) rides in
+         // ID_user_list as a single ST_name element (nullptr in non-TLS mode).
+         const char *reconnect_cred = nullptr;
+         const lListElem *cred_ep = lFirst(lGetList(dep, ID_user_list));
+         if (cred_ep != nullptr) {
+            reconnect_cred = lGetString(cred_ep, ST_name);
+         }
+
          char token[128] = {0};
          char exec_host[CL_MAXHOSTNAMELEN] = {0};
          if (qmaster_handle_reconnect_request(reconnect_job_id, packet->user,
                                               host_str, reconnect_port,
+                                              reconnect_cred,
                                               token, sizeof(token),
                                               exec_host, sizeof(exec_host),
                                               &alp) == 0) {
