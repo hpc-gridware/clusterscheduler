@@ -32,6 +32,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_usage.h"
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -74,6 +75,73 @@ namespace ocs {
       }
 
       DRETURN(ret);
+   }
+
+   /**
+    * Emit a single JSONL online_usage record for the running job.
+    *
+    * When pe_task is non-null the record carries that pe_task's scaled
+    * usage and a pe_taskid field. When pe_task is null the record carries
+    * the ja_task's scaled usage (which may already be aggregated by the PE
+    * `accounting_summary` flag — that decision is made by the caller).
+    * Only the variables listed in `reporting_params=online_usage=...` are
+    * emitted under `usage`; variables missing from the scaled usage list
+    * are silently skipped (no `null` field).
+    *
+    * @see ReportingFileWriter::create_online_usage_records()
+    */
+   bool
+   JsonReportingFileWriter::create_online_usage_record(lList **answer_list, lListElem *job_report,
+                                                       lListElem *job, lListElem *ja_task, lListElem *pe_task) {
+      DENTER(TOP_LAYER);
+
+      if (job == nullptr || ja_task == nullptr) {
+         DRETURN(true);
+      }
+
+      // take a snapshot of the configured variable names
+      std::vector<std::string> vars;
+      sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+      vars = online_usage_vars;
+      sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+      if (vars.empty()) {
+         DRETURN(true);
+      }
+
+      // pe_task != nullptr: report scaled usage of the pe_task,
+      // otherwise the (possibly aggregated) scaled usage on the ja_task
+      const lList *usage_list = (pe_task != nullptr)
+                                ? lGetList(pe_task, PET_scaled_usage)
+                                : lGetList(ja_task, JAT_scaled_usage_list);
+
+      rapidjson::StringBuffer stringBuffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
+
+      writer.StartObject();
+      write_json(writer, "time", sge_get_gmt64());
+      write_json(writer, "type", "online_usage");
+      write_json(writer, "job_number", lGetUlong(job, JB_job_number));
+      int task_number = job_is_array(job) ? (int) lGetUlong(ja_task, JAT_task_number) : 0;
+      write_json(writer, "task_number", task_number);
+      if (pe_task != nullptr) {
+         write_json(writer, "pe_taskid", lGetString(pe_task, PET_id));
+      }
+
+      writer.Key("usage");
+      writer.StartObject();
+      for (const auto &name : vars) {
+         const lListElem *u = lGetElemStr(usage_list, UA_name, name.c_str());
+         if (u != nullptr) {
+            write_json(writer, name.c_str(), lGetDouble(u, UA_value));
+         }
+      }
+      writer.EndObject();
+
+      writer.EndObject();
+      create_record(stringBuffer);
+
+      DRETURN(true);
    }
 
    void

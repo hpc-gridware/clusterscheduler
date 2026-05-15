@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024 HPC-Gridware GmbH
+ *  Copyright 2024,2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -47,6 +47,10 @@ namespace ocs {
       bool
       create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                          lListElem *ja_task, bool intermediate) override;
+
+      bool
+      create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
+                                 lListElem *ja_task, lListElem *pe_task) override;
 
       bool
       create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) override;

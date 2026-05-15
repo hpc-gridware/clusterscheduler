@@ -2816,6 +2816,15 @@ std::string mconf_get_usage_patterns() {
    DRETURN(ret);
 }
 
+/**
+ * Return the parsed online_usage variable names from the reporting_params.
+ *
+ * Set via `reporting_params=... online_usage=<var>[|<var>...]`.
+ * An empty vector means the feature is disabled and no online_usage
+ * records shall be written to the JSONL reporting file.
+ *
+ * @see merge_configuration()
+ */
 std::vector<std::string> mconf_get_online_usage_vars() {
    std::vector<std::string> ret;
 
