@@ -37,6 +37,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #ifdef LINUX
 #include <mcheck.h>
@@ -218,6 +219,7 @@ static bool old_reporting = false;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
 static std::string usage_patterns;
+static std::vector<std::string> online_usage_vars;
 
 // Binding specific parameters
 static bool is_binding_enabled = true;
@@ -1192,6 +1194,20 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
             continue;
          }
          if (parse_string_param(s, "usage_patterns", usage_patterns)) {
+            continue;
+         }
+         std::string online_usage_str;
+         if (parse_string_param(s, "online_usage", online_usage_str)) {
+            online_usage_vars.clear();
+            if (!online_usage_str.empty()) {
+               size_t start = 0;
+               size_t pos;
+               while ((pos = online_usage_str.find('|', start)) != std::string::npos) {
+                  online_usage_vars.emplace_back(online_usage_str.substr(start, pos - start));
+                  start = pos + 1;
+               }
+               online_usage_vars.emplace_back(online_usage_str.substr(start));
+            }
             continue;
          }
       }
@@ -2795,6 +2811,18 @@ std::string mconf_get_usage_patterns() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = usage_patterns;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+std::vector<std::string> mconf_get_online_usage_vars() {
+   std::vector<std::string> ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = online_usage_vars;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

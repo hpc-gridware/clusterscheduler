@@ -37,6 +37,7 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
@@ -186,6 +187,7 @@ bool mconf_get_old_reporting();
 int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
 std::string mconf_get_usage_patterns();
+std::vector<std::string> mconf_get_online_usage_vars();
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 bool mconf_get_enable_forced_qdel_if_unknown();
