@@ -173,6 +173,44 @@ fine-grained resource usage monitoring over time.
 
 For the contents and structure of the accounting records see xxqs_name_sxx_accounting(5).
 
+## online_usage
+
+Records of type online_usage are written for every job report that xxqs_name_sxx_qmaster(8) receives
+from xxqs_name_sxx_execd(8) for a running job, when *online_usage* in *reporting_params* has been
+configured with a non-empty list of usage variables (see xxqs_name_sxx_sge_conf(5)). They provide a
+continuous time series of scaled usage values per running job and are intended for live monitoring
+and for being consumed by a downstream database writer.
+
+For tightly-integrated parallel jobs, the granularity is driven by the parallel environment's
+*accounting_summary* attribute (see xxqs_name_sxx_sge_pe(5)):
+
+* `accounting_summary=TRUE` — one record per ja_task. Usage values are aggregated across all pe_tasks
+  of the ja_task — the same convention the *acct* record follows.
+* `accounting_summary=FALSE` — one record per pe_task and one for the master task.
+
+online_usage records have the following fields:
+
+* job_number  
+  The job number.
+
+* task_number  
+  The array task id. 0 for non-array jobs, otherwise the index of the array task.
+
+* pe_taskid  
+  The task id of a parallel sub-task. Present only when the record describes the usage of a single
+  pe_task. Absent when the record represents the master task or an aggregated ja_task-level record
+  for a PE with *accounting_summary=TRUE*.
+
+* usage  
+  A JSON object containing the usage variables configured in
+  `reporting_params=...online_usage=<var>[|<var>...]` that are present in the job report. Each entry
+  is the scaled usage value of one variable. Variables that are configured but not yet reported by
+  the execd are silently skipped (no `null` value is emitted). For the list of valid variable names
+  see the description of *online_usage* in xxqs_name_sxx_sge_conf(5).
+
+The online_usage record type is emitted only to the JSONL reporting file. The deprecated colon-separated
+reporting format does not carry online_usage records.
+
 ## queue
 
 Records of type queue contain state information for queues (queue instances). A queue record has the following fields:

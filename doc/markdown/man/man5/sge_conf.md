@@ -1307,6 +1307,36 @@ Examples:
     usage_patterns=gpu:nvidia.*|amd.*  
     usage_patterns=gpu:nvidia.*;power:power-*
 
+***online_usage***
+
+When set to a non-empty value, xxQS_NAMExx writes a continuous stream of *online_usage* records to the
+JSONL reporting file. One record is generated for every job report received by xxqs_name_sxx_qmaster(8)
+from xxqs_name_sxx_execd(8) for a running job. The value of this parameter selects which usage variables
+shall be included in each record. The format is:
+
+    <var>[|<var>[|...]]
+
+Variables are separated by `|`. The supported variables are: *cpu*, *mem*, *io*, *iow*, *ioops*, *vmem*,
+*maxvmem*, *rss*, *maxrss*, *pss*, *maxpss*, *smem*, *pmem*, *wallclock*.
+
+Examples:
+
+    online_usage=cpu|mem|maxvmem|wallclock
+    online_usage=cpu|mem|io|iow|ioops|vmem|rss|maxrss
+
+If the parameter is absent or set to an empty value, no *online_usage* records will be written. This
+is the default — the feature must be opted into explicitly.
+
+For tightly-integrated parallel jobs the granularity of *online_usage* records follows the same
+convention as the accounting record: if the parallel environment has *accounting_summary* set to
+*TRUE*, one record per ja_task is written and pe_task usage is aggregated into it; otherwise one
+record is written per pe_task (and one for the master task).
+
+*online_usage* records are written only to the new JSONL reporting file. The deprecated colon-separated
+reporting file (see *old_reporting*) does not carry *online_usage* records.
+
+See xxqs_name_sxx_reporting(5) for the *online_usage* record schema.
+
 ## finished_jobs
 
 Note: Deprecated, may be removed in future release. xxQS_NAMExx stores a certain number of *just finished* jobs to
