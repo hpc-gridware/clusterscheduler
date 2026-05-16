@@ -27,7 +27,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -895,7 +895,7 @@ static void  cl_dump_connection(cl_com_connection_t* connection) {   /* CR check
       } else {
          CL_LOG(CL_LOG_DEBUG,"handler pointer is set");
       }
-      
+
       CL_LOG_STR(CL_LOG_DEBUG,"framework_type:",cl_com_get_framework_type(connection)  );
       CL_LOG_STR(CL_LOG_DEBUG,"connection_type:", cl_com_get_connection_type(connection) );
       CL_LOG_STR(CL_LOG_DEBUG,"service_handler_flag:", cl_com_get_service_handler_flag(connection) );
@@ -903,7 +903,7 @@ static void  cl_dump_connection(cl_com_connection_t* connection) {   /* CR check
       CL_LOG_STR(CL_LOG_DEBUG,"data_read_flag:", cl_com_get_data_read_flag(connection) );
       CL_LOG_STR(CL_LOG_DEBUG,"connection_state:", cl_com_get_connection_state(connection) );
       CL_LOG_STR(CL_LOG_DEBUG,"data_flow_type:", cl_com_get_data_flow_type(connection) );
-   
+
       if (connection->com_private == nullptr) {
          CL_LOG(CL_LOG_DEBUG,"com_private is not set");
       } else {
@@ -1209,7 +1209,7 @@ const char *cl_com_get_data_flow_type(cl_com_connection_t *connection) {  /* CR 
 
 void cl_com_ignore_timeouts(bool flag) {
    /*
-    * ATTENTION: This function must be signal handler save!!! 
+    * ATTENTION: This function must be signal handler save!!!
     * DO NOT call functions which call lock functions !!!
     */
    cl_ingore_timeout = flag;
@@ -1229,8 +1229,8 @@ bool cl_com_get_ignore_timeouts_flag() {
 *     cl_com_open_connection() -- open a connection to a service handler
 *
 *  SYNOPSIS
-*     int cl_com_open_connection(cl_com_connection_t* connection, const char* 
-*     comp_host, const char* comp_name, int comp_id, int timeout) 
+*     int cl_com_open_connection(cl_com_connection_t* connection, const char*
+*     comp_host, const char* comp_name, int comp_id, int timeout)
 *
 *  FUNCTION
 *     This function is called to setup a connection to a service handler. The
@@ -1249,7 +1249,7 @@ bool cl_com_get_ignore_timeouts_flag() {
 *     int - CL_COMM_XXXX error value or CL_RETVAL_OK for no errors
 *
 *  SEE ALSO
-*     
+*
 *     cl_communication/cl_com_close_connection()
 *     cl_communication/cl_com_setup_tcp_connection()
 *******************************************************************************/
@@ -1325,7 +1325,7 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
       int tcp_port = 0;
       cl_xml_connection_autoclose_t autoclose = CL_CM_AC_UNDEFINED;
 
-      /* set connection autoclose mode 
+      /* set connection autoclose mode
          set connection connect port   */
       if ((retval = cl_com_connection_get_connect_port(connection, &connect_port)) != CL_RETVAL_OK) {
          return retval;
@@ -1418,7 +1418,7 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
 *     cl_com_close_connection() -- cleanup a connection
 *
 *  SYNOPSIS
-*     int cl_com_close_connection(cl_com_connection_t* connection) 
+*     int cl_com_close_connection(cl_com_connection_t* connection)
 *
 *  FUNCTION
 *     This wrapper function will call the correct cl_com_xxx_close_connection()
@@ -1426,7 +1426,7 @@ int cl_com_open_connection(cl_com_connection_t *connection, int timeout, cl_com_
 *     the memory for the connection->com_private pointer.
 *
 *  INPUTS
-*     cl_com_connection_t* connection - pointer to a cl_com_connection_t 
+*     cl_com_connection_t* connection - pointer to a cl_com_connection_t
 *                                       structure
 *
 *  RESULT
@@ -1901,8 +1901,7 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
             if (!is_static_buffer) {
                *host_dest = sge_malloc(sizeof(char) * (size + 1));
             }
-            sge_strlcpy(*host_dest, source, size);
-            (*host_dest)[size] = '\0';
+            sge_strlcpy(*host_dest, source, size + 1);
          } else {
             if (!is_static_buffer) {
                *host_dest = strdup(source);
@@ -1928,7 +1927,6 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
                }
 
                sge_strlcpy(*host_dest, source, hostlen);
-               (*host_dest)[hostlen] = '\0';
             } else {
                /* length = hostlength + domainlength + '.' */
                unsigned long length = hostlen + strlen(domain) + 1;
@@ -1960,7 +1958,6 @@ static int cl_com_dup_host(char **host_dest, const char *source, cl_host_resolve
             }
 
             sge_strlcpy(*host_dest, source, hostlen);
-            (*host_dest)[hostlen] = '\0';
          }
          retval = CL_RETVAL_OK;
       }
@@ -2217,12 +2214,12 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
             return CL_RETVAL_MALLOC;
          }
 
-         /* Problem: 
+         /* Problem:
           *
-          * copy_addr and he_copy will NOT contain any information 
+          * copy_addr and he_copy will NOT contain any information
           * ======================================================
-          * 
-          * Reason: Can't assume any IP addr or alias names 
+          *
+          * Reason: Can't assume any IP addr or alias names
           */
          return CL_RETVAL_OK;
       }
@@ -2268,10 +2265,10 @@ int cl_com_cached_gethostbyname(const char *unresolved_host, char **unique_hostn
 #if 0
    /* CR:
     *
-    * enable this code for 1:1 mapping or for virtual host mapping 
-    * (e.g. my_virtual_hostname real_host_name in alias file ) 
+    * enable this code for 1:1 mapping or for virtual host mapping
+    * (e.g. my_virtual_hostname real_host_name in alias file )
     *
-    * DO NOT FORGET TO ALSO ENABLE CODE IN cl_host_alias_list_append_host() 
+    * DO NOT FORGET TO ALSO ENABLE CODE IN cl_host_alias_list_append_host()
     */
 
    if ( cl_host_alias_list_get_local_resolved_name(ldata->host_alias_list,unresolved_host, &alias_name) == CL_RETVAL_OK) {
@@ -2998,9 +2995,9 @@ int cl_com_cached_gethostbyaddr(struct in_addr *addr, char **unique_hostname, st
 }
 
 #if CL_DO_COMMUNICATION_DEBUG
-/* cl_com_print_host_info - log a hostent struct 
-  
-   params: 
+/* cl_com_print_host_info - log a hostent struct
+
+   params:
 
    cl_com_hostent_t* hostent_p -> pointer to filled cl_com_hostent_t
 
@@ -3042,8 +3039,8 @@ int cl_com_print_host_info(cl_com_hostent_t *hostent_p ) {
 *     cl_com_connection_request_handler_setup() -- Setup service
 *
 *  SYNOPSIS
-*     int cl_com_connection_request_handler_setup(cl_com_connection_t* 
-*     connection) 
+*     int cl_com_connection_request_handler_setup(cl_com_connection_t*
+*     connection)
 *
 *  FUNCTION
 *     This function is used to setup a connection service handler. All service
@@ -3051,7 +3048,7 @@ int cl_com_print_host_info(cl_com_hostent_t *hostent_p ) {
 *     be used to call cl_com_connection_request_handler(). To shutdown the
 *     service a call to cl_com_connection_request_handler_cleanup() must be done.
 *
-*     This function is only a wrapper for the correct 
+*     This function is only a wrapper for the correct
 *     cl_com_xxx_connection_request_handler_setup() function of the selected
 *     framework.
 *
@@ -3118,13 +3115,13 @@ int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_
 *     cl_com_connection_request_handler() -- Get new incomming connections
 *
 *  SYNOPSIS
-*     int cl_com_connection_request_handler(cl_com_connection_t* connection, 
-*     cl_com_connection_t** new_connection, int timeout_val_sec, int 
-*     timeout_val_usec) 
+*     int cl_com_connection_request_handler(cl_com_connection_t* connection,
+*     cl_com_connection_t** new_connection, int timeout_val_sec, int
+*     timeout_val_usec)
 *
 *  FUNCTION
-*     This wrapper function will call the correct 
-*     cl_com_xxx_connection_request_handler() function for the selected 
+*     This wrapper function will call the correct
+*     cl_com_xxx_connection_request_handler() function for the selected
 *     framework.
 *
 *     It will create a new connection pointer and sets new_connection to the
@@ -3135,7 +3132,7 @@ int cl_com_connection_request_handler_setup(cl_com_connection_t *connection, cl_
 *     function.
 *
 *  INPUTS
-*     cl_com_connection_t* connection      - pointer to service connection 
+*     cl_com_connection_t* connection      - pointer to service connection
 *                                            struct. (Created with a call to
 *                                            cl_com_connection_request_handler_setup())
 *     cl_com_connection_t** new_connection - pointer to an address of a cl_com_connection_t
@@ -3217,11 +3214,11 @@ int cl_com_connection_request_handler(cl_com_connection_t *connection, cl_com_co
 *     cl_com_connection_request_handler_cleanup() -- cleanup service
 *
 *  SYNOPSIS
-*     int cl_com_connection_request_handler_cleanup(cl_com_connection_t* 
-*     connection) 
+*     int cl_com_connection_request_handler_cleanup(cl_com_connection_t*
+*     connection)
 *
 *  FUNCTION
-*     This wrapper function calls the correct 
+*     This wrapper function calls the correct
 *     cl_com_xxx_connection_request_handler_cleanup() function to shutdown a
 *     server connection.
 *
@@ -3266,11 +3263,11 @@ int cl_com_connection_request_handler_cleanup(cl_com_connection_t *connection) {
 *     cl_com_open_connection_request_handler() -- Check for incomming data
 *
 *  SYNOPSIS
-*     int cl_com_open_connection_request_handler(int framework_type, 
-*     cl_raw_list_t* connection_list, int timeout) 
+*     int cl_com_open_connection_request_handler(int framework_type,
+*     cl_raw_list_t* connection_list, int timeout)
 *
 *  FUNCTION
-*     This function is a wrapper for the correct 
+*     This function is a wrapper for the correct
 *     cl_com_xxx_open_connection_request_handler() function of the selected
 *     framework.
 *
@@ -3356,7 +3353,7 @@ int cl_com_open_connection_request_handler(cl_com_poll_t *poll_handle, cl_com_ha
 int cl_com_free_poll_array(cl_com_poll_t *poll_handle) {
    /*
     * This procedure releases the memory malloc()ed inside
-    * the specified cl_com_poll_t structure. 
+    * the specified cl_com_poll_t structure.
     */
    if (poll_handle == nullptr) {
       return CL_RETVAL_PARAMS;
@@ -3376,7 +3373,7 @@ int cl_com_free_poll_array(cl_com_poll_t *poll_handle) {
 
 int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_malloced_connections) {
 
-   /* 
+   /*
     * Free and re-malloc() the buffers of the specified poll_handle to the
     * so that nr_of_malloced_connections fit into the buffers.
     */
@@ -3406,7 +3403,7 @@ int cl_com_malloc_poll_array(cl_com_poll_t *poll_handle, unsigned long nr_of_mal
 /* If timeout is 0 then the function will return after one read try, the
    caller has to call this function again */
 
-/* return values CL_RETVAL_OK - connection is connected 
+/* return values CL_RETVAL_OK - connection is connected
                  CL_RETVAL_UNCOMPLETE_READ  - waiting for client data
                  CL_RETVAL_UNCOMPLETE_WRITE - could not send all data
 */
@@ -3544,7 +3541,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
             }
          }
 
-         /* 
+         /*
           * Since xml parsing will destroy specified buffer (putting string termination chars into)
           * we have to make a copy of the buffer if debug clients are connected.
           */
@@ -3988,7 +3985,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                   cl_com_connection_t *tmp_con = tmp_elem->connection;
                   tmp_con->check_endpoint_flag = true;
                   /*
-                   * delete the hash_id of the connection, otherwise the 
+                   * delete the hash_id of the connection, otherwise the
                    * current one would not have a hash key anymore
                    */
                   if (connection->remote != nullptr && connection->remote->hash_id != nullptr) {
@@ -4026,7 +4023,7 @@ int cl_com_connection_complete_request(cl_raw_list_t *connection_list, cl_connec
                   /*
                    * insert into hash
                    *
-                   * Incoming (accepted) connections are added to the hash when the 
+                   * Incoming (accepted) connections are added to the hash when the
                    * client endpoint name is resovled. Here the client is unique and
                    * we can create a hash key for the endpoint.
                    */
