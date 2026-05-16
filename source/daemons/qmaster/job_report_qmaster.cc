@@ -400,7 +400,7 @@ void process_job_report(lListElem *report, lListElem *hep, char *rhost, char *co
                         const bool do_accounting_summary =
                                 pe_do_accounting_summary(lGetObject(jatep, JAT_pe_object));
                         if (pe_task_id_str != nullptr) {
-                           if (!do_accounting_summary) {
+                           if (petask != nullptr && !do_accounting_summary) {
                               ocs::ReportingFileWriter::create_online_usage_records(nullptr, jr, jep, jatep,
                                                                                     petask, false);
                            }
