@@ -1370,6 +1370,114 @@ void block_notification_signals()
    DRETURN_VOID;
 }
 
+/**
+ * @brief CS-2144: implement `qrsh -reconnect <job_id>` client mode.
+ *
+ * Sequence:
+ *   1. Build port_range_list from mconf.
+ *   2. Install builtin-IJS signal handlers (terminal raw-mode etc).
+ *   3. Start the IJS commlib server (passive listen socket on a port from port_range).
+ *   4. Send a GDI TRIGGER request with QI_DO_RECONNECT carrying <job_id>:<host>:<port>
+ *      to qmaster, which validates ownership, brokers a token, and relays to the
+ *      execd of the running job.
+ *   5. Parse the qmaster response — expect a single STATUS_OK answer "RECONNECT_OK <token> <exec_host>".
+ *   6. Tell sge_client_ijs to expect the token on the inbound handshake.
+ *   7. Enter run_ijs_server which waits for the shepherd to connect back, exchanges
+ *      RECONNECT_REQUEST_MSG / RECONNECT_ACCEPT_MSG, and resumes the PTY bridge.
+ *
+ * On any failure before run_ijs_server, returns non-zero so the caller can sge_exit.
+ */
+static int do_qrsh_reconnect(const char *job_id_str,
+                             cl_framework_t communication_framework,
+                             const char *qualified_hostname,
+                             const char *username) {
+   DENTER(TOP_LAYER);
+
+   // Build port_range_list from cluster config (same as the normal startup path).
+   char *port_range_str = mconf_get_port_range();
+   lList *alp_pr = nullptr;
+   lList *port_range_list = nullptr;
+   if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
+      range_list_parse_from_string(&port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+      lFreeList(&alp_pr);
+   }
+   sge_free(&port_range_str);
+
+   set_builtin_ijs_signals_and_handlers();
+
+   COMM_HANDLE *comm_handle = nullptr;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
+   int rc = start_ijs_server(communication_framework, qualified_hostname, username,
+                             port_range_list, &comm_handle, &err_msg);
+   if (rc != 0 || comm_handle == nullptr) {
+      ERROR("qrsh -reconnect: failed to start IJS commlib server: %s",
+            sge_dstring_get_string(&err_msg));
+      lFreeList(&port_range_list);
+      DRETURN(1);
+   }
+   int my_port = comm_handle->service_port;
+   lFreeList(&port_range_list);
+
+   // GDI TRIGGER request encoding: <job_id>:<my_host>:<my_port> in ID_str.
+   char spec[1024];
+   snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
+
+   lList *ref_list = nullptr;
+   lListElem *idep = lAddElemStr(&ref_list, ID_str, spec, ID_Type);
+   lSetUlong(idep, ID_action, QI_DO_RECONNECT | JOB_DO_ACTION);
+   lSetUlong(idep, ID_force, 0);
+
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
+                                          ocs::gdi::SubCommand::NONE, &ref_list, nullptr, nullptr);
+
+   // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host>".
+   char token[128] = {0};
+   char exec_host[256] = {0};
+   bool ok = false;
+   for_each_ep_lv(aep, alp) {
+      const char *text = lGetString(aep, AN_text);
+      uint32_t status = lGetUlong(aep, AN_status);
+      if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
+         if (sscanf(text + 13, "%127s %255s", token, exec_host) == 2) {
+            ok = true;
+         }
+      } else if (status != STATUS_OK && text != nullptr) {
+         ERROR("qrsh -reconnect: %s", text);
+      }
+   }
+   lFreeList(&alp);
+   lFreeList(&ref_list);
+
+   if (!ok) {
+      ERROR("qrsh -reconnect: no RECONNECT_OK response from qmaster");
+      stop_ijs_server(&comm_handle, &err_msg);
+      DRETURN(1);
+   }
+
+   VERBOSE_LOG((stderr, "Reconnecting to job %s on host %s ...\n", job_id_str, exec_host));
+
+   // The shepherd's handshake on its way in will present this same token; the
+   // commlib_to_tty thread compares and accepts or rejects.
+   set_expected_reconnect_token(token);
+
+   int exit_status = 0;
+   sge_dstring_sprintf(&err_msg, "<null>");
+   // is_qlogin=1, is_rsh=0 → behaves like qlogin (PTY mode) for terminal setup; the
+   // shepherd already chose pty/no-pty for the original session and we just resume it.
+   rc = run_ijs_server(comm_handle, exec_host, /*nostdin=*/0, /*noshell=*/0,
+                       /*is_rsh=*/0, /*is_qlogin=*/1,
+                       ocs::Ternary::Unset, ocs::Ternary::Unset,
+                       &exit_status, &err_msg, /*forward_x11=*/false,
+                       mconf_get_ijs_escape_char());
+   if (rc != 0) {
+      ERROR("qrsh -reconnect: run_ijs_server failed: %s", sge_dstring_get_string(&err_msg));
+   }
+   set_expected_reconnect_token(nullptr);
+   stop_ijs_server(&comm_handle, &err_msg);
+
+   DRETURN(rc != 0 ? rc : exit_status);
+}
+
 int main(int argc, const char **argv)
 {
    DENTER_MAIN(TOP_LAYER, "qsh");
@@ -1400,6 +1508,7 @@ int main(int argc, const char **argv)
    int noshell = 0;
    ocs::Ternary pty_option = ocs::Ternary::Unset;
    ocs::Ternary suspend_remote_option = ocs::Ternary::Unset;
+   bool forward_x11 = false;
    const char *host = nullptr;
    char name[MAX_JOB_NAME + 1];
    const char *client_name = nullptr;
@@ -1460,6 +1569,22 @@ int main(int argc, const char **argv)
       communication_framework = CL_CT_SSL_TLS;
    } else {
       communication_framework = CL_CT_TCP;
+   }
+
+   // CS-2144: `qrsh -reconnect <job_id>` / `qlogin -reconnect <job_id>` client mode.
+   // Detected before normal arg parsing because it short-circuits the entire qsub-style
+   // flow — there is no job to submit, we just attach to an existing one.  The shepherd-
+   // side IJS protocol is identical whether the original session was qrsh or qlogin, so
+   // both clients accept -reconnect.  qsh (X-terminal style) is intentionally excluded:
+   // its xterm wrapping makes session takeover semantics non-trivial.
+   if (is_qlogin) {
+      for (int i = 1; i < argc - 1; ++i) {
+         if (strcmp(argv[i], "-reconnect") == 0) {
+            int rc = do_qrsh_reconnect(argv[i + 1], communication_framework,
+                                       qualified_hostname, username);
+            sge_exit(rc);
+         }
+      }
    }
 
    /*
@@ -1527,6 +1652,12 @@ int main(int argc, const char **argv)
    while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-noshell"))) {
       lRemoveElem(opts_cmdline, &ep);
       noshell = 1;
+   }
+
+   /* parse -X (X11 forwarding, builtin IJS only) — mode check happens after get_client_name() */
+   while ((ep = lGetElemStrRW(opts_cmdline, SPA_switch_val, "-X"))) {
+      lRemoveElem(opts_cmdline, &ep);
+      forward_x11 = true;
    }
 
    /* parse -suspend_remote <yes|no> */
@@ -1644,6 +1775,13 @@ int main(int argc, const char **argv)
 
          JOB_TYPE_SET_BINARY(jb_type);
          lSetUlong(job, JB_type, jb_type);
+
+         /* CS-2153: argv word boundaries are preserved by qrsh_starter's
+          * shell-quoting in join_command(), so the `bash -c` path keeps spaces
+          * and shell metacharacters inside individual args intact while still
+          * giving the user PATH lookup, $VAR expansion, and the rest of normal
+          * shell semantics. Therefore we do NOT force noshell=1 here.
+          */
       } else {
          DPRINTF("handling script submission\n");
 
@@ -1691,6 +1829,12 @@ int main(int argc, const char **argv)
       }
    }
 
+   // Validate -X after get_client_name() has resolved g_new_interactive_job_support.
+   if (forward_x11 && !g_new_interactive_job_support) {
+      ERROR(MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S, "-X");
+      sge_exit(EXIT_FAILURE);
+   }
+
    remove_unknown_opts(opts_cmdline, lGetUlong(job, JB_type), existing_job, true, is_qlogin, is_rsh, is_qsh);
    remove_unknown_opts(opts_defaults, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
    remove_unknown_opts(opts_scriptfile, lGetUlong(job, JB_type), existing_job, false, is_qlogin, is_rsh, is_qsh);
@@ -1710,6 +1854,15 @@ int main(int argc, const char **argv)
    lFreeList(&opts_all);
    if (alp_error) {
       sge_exit(1);
+   }
+
+   // For X11 forwarding: remove the statically-forwarded DISPLAY (added by cull_parse_qsh_parameter
+   // from the user's DISPLAY env var) and inject SGE_X11_FORWARD=1 instead. The shepherd will
+   // create a local proxy display and inject the real DISPLAY into the job's environment.
+   if (forward_x11) {
+      lList *envlp = lGetListRW(job, JB_env_list);
+      lDelSubStr(job, VA_variable, "DISPLAY", JB_env_list);
+      var_list_set_string(&envlp, "SGE_X11_FORWARD", "1");
    }
 
    job_set_command_line(job, argc, argv);
@@ -1750,6 +1903,8 @@ int main(int argc, const char **argv)
 
    // fetch optional port_range; nullptr/NONE_STR means OS-assigned port in both modes
    char *port_range_str = mconf_get_port_range();
+   // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
+   char ijs_escape_char = mconf_get_ijs_escape_char();
    lList *alp_pr = nullptr;
    lList *port_range_list = nullptr;
    if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
@@ -1895,8 +2050,8 @@ int main(int argc, const char **argv)
 
          DPRINTF("starting IJS server\n");
          sge_dstring_sprintf(&err_msg, "<null>");
-         ret = run_ijs_server(comm_handle, host, nostdin, noshell,
-                              is_rsh, is_qlogin, pty_option, suspend_remote_option, &exit_status, &err_msg);
+         ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
+                              pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11, ijs_escape_char);
          if (ret != 0) {
             ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
          }
@@ -2159,8 +2314,8 @@ int main(int argc, const char **argv)
 
                   /* run_ijs_server() loops until the client has disconnected */
                   sge_dstring_sprintf(&err_msg, "<null>");
-                  ret = run_ijs_server(comm_handle, host, nostdin, noshell,
-                                       is_rsh, is_qlogin, pty_option, suspend_remote_option, &exit_status, &err_msg);
+                  ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
+                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11, ijs_escape_char);
                   if (ret != 0) {
                      ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
                   }
@@ -2398,7 +2553,7 @@ static void remove_unknown_opts(lList *lp, uint32_t jb_now, int tightly_integrat
             strcmp(cp, "-ac") && strcmp(cp, "-dc") && strcmp(cp, "-sc") && strcmp(cp, "-scope") &&
             strcmp(cp, "-S") && strcmp(cp, "-w") && strcmp(cp, "-js") && strcmp(cp, "-R") &&
             strcmp(cp, "-o") && strcmp(cp, "-e") && strcmp(cp, "-j") && strcmp(cp, "-wd") &&
-            strcmp(cp, "-jsv")
+            strcmp(cp, "-jsv") && strcmp(cp, "-X")
            ) {
             if (error) {
                ERROR(MSG_ANSWER_UNKNOWNOPTIONX_S, cp);

@@ -42,6 +42,10 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <pwd.h>
 
 #include <termios.h>
 #if defined(DARWIN)
@@ -57,6 +61,7 @@
 #include "uti/sge_io.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_signal.h"
+#include "uti/config_file.h"
 
 #include "sge_ijs_comm.h"
 #include "sge_ijs_threads.h"
@@ -85,9 +90,21 @@ static COMM_HANDLE   *g_comm_handle       = nullptr;
 static THREAD_HANDLE g_thread_main;
 static int           g_raised_event        = 0;
 static int           g_job_pid             = 0;
+static int           g_ijs_reconnect_timeout = 0;   ///< grace period seconds before SIGKILL on unexpected disconnect; 0 = disabled
+static cl_framework_t g_ijs_framework      = CL_CT_TCP;   ///< commlib framework copied from parent_loop, needed for reconnect attempts
+static char          *g_job_owner          = nullptr;     ///< job owner copied from parent_loop, needed for commlib auth on reconnect
 
 static char          *g_hostname           = nullptr;
 extern int           received_signal; /* defined in shepherd.c */
+
+/* X11 forwarding state (set by commlib_to_pty on X11_AUTH_MSG, read by pty_to_commlib) */
+#define X11_MAX_CONNS  64
+static int              g_x11_listen_fd                  = -1;   ///< Unix socket accepting X11 from job
+static int              g_x11_client_fds[X11_MAX_CONNS]; ///< per-conn_id fd toward job X client (-1=unused)
+static int              g_x11_display_num                = -1;   ///< display number N for :N.0
+static int              g_x11_next_conn_id               = 0;    ///< round-robin conn_id allocator
+static char             g_x11_socket_path[108]           = "";   ///< path to /tmp/.X11-unix/XN (for cleanup)
+static pthread_mutex_t  g_x11_mutex                      = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * static functions
@@ -287,6 +304,192 @@ static int send_buf(char *pbuf, unsigned long buf_bytes, int message_type)
    return ret;
 }
 
+/**
+ * @brief Parse reconnect.info written by execd into host/port/token.
+ *
+ * Format (one key=value per line):
+ *   host=<hostname>
+ *   port=<integer>
+ *   token=<one-time token>
+ *
+ * @param path        Path to reconnect.info (relative to active_jobs/<jobid>).
+ * @param host        Output buffer for hostname.
+ * @param host_size   Size of host buffer.
+ * @param port        Output for parsed port number.
+ * @param token       Output buffer for token.
+ * @param token_size  Size of token buffer.
+ * @return 0 on success (all three fields parsed); -1 on missing field or I/O error.
+ */
+static int parse_reconnect_info(const char *path,
+                                char *host, size_t host_size,
+                                int *port,
+                                char *token, size_t token_size) {
+   FILE *fp = fopen(path, "r");
+   if (fp == nullptr) {
+      return -1;
+   }
+
+   bool have_host = false;
+   bool have_port = false;
+   bool have_token = false;
+   char line[512];
+
+   while (fgets(line, sizeof(line), fp) != nullptr) {
+      char *nl = strchr(line, '\n');
+      if (nl != nullptr) {
+         *nl = '\0';
+      }
+
+      if (strncmp(line, "host=", 5) == 0) {
+         strncpy(host, line + 5, host_size - 1);
+         host[host_size - 1] = '\0';
+         have_host = (strlen(host) > 0);
+      } else if (strncmp(line, "port=", 5) == 0) {
+         *port = atoi(line + 5);
+         have_port = (*port > 0);
+      } else if (strncmp(line, "token=", 6) == 0) {
+         strncpy(token, line + 6, token_size - 1);
+         token[token_size - 1] = '\0';
+         have_token = (strlen(token) > 0);
+      }
+   }
+
+   fclose(fp);
+   return (have_host && have_port && have_token) ? 0 : -1;
+}
+
+/**
+ * @brief Create an X11 proxy display on the execution host.
+ *
+ * Sets up the server side of the X11 forwarding tunnel for the interactive job:
+ *
+ * 1. Finds a free display number N >= 10 and binds a Unix-domain listen
+ *    socket at /tmp/.X11-unix/XN (the proxy display).
+ * 2. Converts the 32-character hex MIT-MAGIC-COOKIE-1 into 16 binary bytes
+ *    and appends a FamilyWild Xau record to the job owner's ~/.Xauthority so
+ *    X clients can authenticate against the proxy display.
+ * 3. Appends "DISPLAY=:N.0" and "XAUTHORITY=<path>" to ./environment so the
+ *    job process inherits them via sge_set_environment().
+ *
+ * Must be called in the commlib_to_pty thread when X11_AUTH_MSG is received,
+ * BEFORE SETTINGS_CTRL_MSG unblocks the child — TCP ordering guarantees that
+ * the child sees DISPLAY in its environment before it runs the user's command.
+ * The listen fd is stored in module-level g_x11_listen_fd for use by
+ * pty_to_commlib when accepting incoming X11 connections.
+ *
+ * @param cookie_hex 32-character hex MIT-MAGIC-COOKIE-1 forwarded from the
+ *                   qrsh client via X11_AUTH_MSG.
+ * @return true on success; false if no free display number was found.
+ * @note MT-NOTE: not MT-safe (modifies g_x11_listen_fd, g_x11_display_num,
+ *       g_x11_socket_path).  Uses geteuid() — not getuid() — to resolve the
+ *       job owner's home directory; getuid() returns 0 in the shepherd parent
+ *       which runs setuid root.
+ */
+static bool setup_x11_forwarding(const char *cookie_hex) {
+   shepherd_trace("setup_x11_forwarding: starting with cookie_hex length %zu", strlen(cookie_hex));
+
+   // Ensure /tmp/.X11-unix exists
+   mkdir("/tmp/.X11-unix", 01777);
+
+   // Find a free display number and bind a Unix socket
+   bool found = false;
+   for (int n = 10; n < 100 && !found; n++) {
+      char sock_path[108];
+      snprintf(sock_path, sizeof(sock_path), "/tmp/.X11-unix/X%d", n);
+
+      struct sockaddr_un addr;
+      memset(&addr, 0, sizeof(addr));
+      addr.sun_family = AF_UNIX;
+      strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
+
+      int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (fd < 0) {
+         continue;
+      }
+      // Remove any stale socket from a previous run
+      unlink(sock_path);
+      if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0 &&
+          listen(fd, 16) == 0) {
+         chmod(sock_path, 0600);
+         g_x11_listen_fd  = fd;
+         g_x11_display_num = n;
+         snprintf(g_x11_socket_path, sizeof(g_x11_socket_path), "%s", sock_path);
+         found = true;
+         shepherd_trace("setup_x11_forwarding: bound display :%d on %s (fd=%d)", n, sock_path, fd);
+      } else {
+         close(fd);
+      }
+   }
+   if (!found) {
+      shepherd_trace("setup_x11_forwarding: no free display number found");
+      return false;
+   }
+
+   // Use euid (job owner), not uid (which is root in the shepherd parent process).
+   struct passwd *pw = getpwuid(geteuid());
+   const char *home = (pw != nullptr) ? pw->pw_dir : "/tmp";
+   char xauth_path[512];
+   snprintf(xauth_path, sizeof(xauth_path), "%s/.Xauthority", home);
+
+   // Convert 32-char hex cookie to 16 binary bytes and write an Xau entry directly.
+   // Avoids calling system()/xauth in a multithreaded context where waitpid races can deadlock.
+   uint8_t cookie_bin[16];
+   bool cookie_ok = true;
+   for (int ci = 0; ci < 16 && cookie_ok; ci++) {
+      unsigned int bval = 0;
+      if (sscanf(cookie_hex + 2 * ci, "%02x", &bval) != 1) {
+         cookie_ok = false;
+      }
+      cookie_bin[ci] = static_cast<uint8_t>(bval);
+   }
+   if (cookie_ok) {
+      // Append a FamilyWild Xau record — matches any host/display for this cookie.
+      FILE *xaf = fopen(xauth_path, "ab");
+      if (xaf != nullptr) {
+         const char *auth_name = "MIT-MAGIC-COOKIE-1";
+         char display_str[16];
+         snprintf(display_str, sizeof(display_str), "%d", g_x11_display_num);
+         uint16_t display_len = static_cast<uint16_t>(strlen(display_str));
+         uint16_t name_len    = static_cast<uint16_t>(strlen(auth_name));
+         // Xau big-endian helper
+         auto w16 = [&](uint16_t v) {
+            uint8_t b[2] = {static_cast<uint8_t>(v >> 8), static_cast<uint8_t>(v & 0xFF)};
+            fwrite(b, 1, 2, xaf);
+         };
+         w16(0xFFFF);        // FamilyWild
+         w16(0);             // address length = 0
+         w16(display_len);   // display number length
+         fwrite(display_str, 1, display_len, xaf);
+         w16(name_len);      // auth name length
+         fwrite(auth_name, 1, name_len, xaf);
+         w16(16);            // auth data length = 16 bytes
+         fwrite(cookie_bin, 1, 16, xaf);
+         fclose(xaf);
+         shepherd_trace("setup_x11_forwarding: wrote Xau entry to %s for display :%d",
+                        xauth_path, g_x11_display_num);
+      } else {
+         shepherd_trace("setup_x11_forwarding: cannot open %s for writing: %s",
+                        xauth_path, strerror(errno));
+      }
+   } else {
+      shepherd_trace("setup_x11_forwarding: cookie_hex parse failed");
+   }
+
+   // Append DISPLAY and XAUTHORITY to ./environment so the job picks them up.
+   FILE *fp = fopen("./environment", "a");
+   if (fp != nullptr) {
+      fprintf(fp, "DISPLAY=:%d.0\n", g_x11_display_num);
+      fprintf(fp, "XAUTHORITY=%s\n", xauth_path);
+      fclose(fp);
+      shepherd_trace("setup_x11_forwarding: appended DISPLAY=:%d.0 to ./environment",
+                     g_x11_display_num);
+   } else {
+      shepherd_trace("setup_x11_forwarding: could not open ./environment for appending");
+   }
+
+   return true;
+}
+
 /****** pty_to_commlib() *******************************************************
 *  NAME
 *     pty_to_commlib() -- pty_to_commlib thread entry point and main loop
@@ -346,6 +549,27 @@ static void* pty_to_commlib(void *t_conf)
       }
       fd_max = std::max(g_p_ijs_fds->pty_master, g_p_ijs_fds->pipe_out);
       fd_max = std::max(fd_max, g_p_ijs_fds->pipe_err);
+
+      // Add X11 listen socket and any active X11 client connection fds
+      int local_x11_client_fds[X11_MAX_CONNS];
+      pthread_mutex_lock(&g_x11_mutex);
+      int x11_listen = g_x11_listen_fd;
+      memcpy(local_x11_client_fds, g_x11_client_fds, sizeof(local_x11_client_fds));
+      pthread_mutex_unlock(&g_x11_mutex);
+      if (x11_listen >= 0) {
+         FD_SET(x11_listen, &read_fds);
+         if (x11_listen > fd_max) {
+            fd_max = x11_listen;
+         }
+      }
+      for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+         if (local_x11_client_fds[xi] >= 0) {
+            FD_SET(local_x11_client_fds[xi], &read_fds);
+            if (local_x11_client_fds[xi] > fd_max) {
+               fd_max = local_x11_client_fds[xi];
+            }
+         }
+      }
 
 #ifdef EXTENSIVE_TRACING
       shepherd_trace("pty_to_commlib: g_p_ijs_fds->pty_master = %d, "
@@ -474,6 +698,67 @@ static void* pty_to_commlib(void *t_conf)
                g_p_ijs_fds->pipe_to_child = -1;
             }
          }
+
+         // Handle new X11 connections from the job (accept on listen socket)
+         if (x11_listen >= 0 && FD_ISSET(x11_listen, &read_fds)) {
+            int new_fd = accept(x11_listen, nullptr, nullptr);
+            if (new_fd >= 0) {
+               // Find an unused conn_id (round-robin search)
+               int conn_id = -1;
+               pthread_mutex_lock(&g_x11_mutex);
+               for (int attempt = 0; attempt < X11_MAX_CONNS; attempt++) {
+                  int cid = (g_x11_next_conn_id + attempt) % X11_MAX_CONNS;
+                  if (g_x11_client_fds[cid] < 0) {
+                     g_x11_client_fds[cid] = new_fd;
+                     g_x11_next_conn_id = (cid + 1) % X11_MAX_CONNS;
+                     conn_id = cid;
+                     break;
+                  }
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (conn_id >= 0) {
+                  // Tell client about the new connection so it can connect to the real X server
+                  char open_msg[2];
+                  open_msg[0] = static_cast<char>((conn_id >> 8) & 0xFF);
+                  open_msg[1] = static_cast<char>(conn_id & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)open_msg, 2, X11_OPEN_MSG, &x11_err);
+                  shepherd_trace("pty_to_commlib: X11 connection accepted, conn_id %d fd %d", conn_id, new_fd);
+               } else {
+                  shepherd_trace("pty_to_commlib: X11_MAX_CONNS reached, refusing X11 connection");
+                  close(new_fd);
+               }
+            }
+         }
+
+         // Relay data from X11 job clients to the qrsh client (→ real X server)
+         static char x11_buf[2 + BUFSIZE];
+         for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+            if (local_x11_client_fds[xi] >= 0 && FD_ISSET(local_x11_client_fds[xi], &read_fds)) {
+               int nread = read(local_x11_client_fds[xi], x11_buf + 2, BUFSIZE - 1);
+               if (nread <= 0) {
+                  shepherd_trace("pty_to_commlib: X11 client conn %d closed by job", xi);
+                  x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                  x11_buf[1] = static_cast<char>(xi & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)x11_buf, 2, X11_CLOSE_MSG, &x11_err);
+                  pthread_mutex_lock(&g_x11_mutex);
+                  close(g_x11_client_fds[xi]);
+                  g_x11_client_fds[xi] = -1;
+                  pthread_mutex_unlock(&g_x11_mutex);
+               } else {
+                  x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                  x11_buf[1] = static_cast<char>(xi & 0xFF);
+                  DSTRING_STATIC(x11_err, MAX_STRING_SIZE);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                     (unsigned char *)x11_buf, static_cast<unsigned long>(nread + 2),
+                                     X11_DATA_MSG, &x11_err);
+               }
+            }
+         }
+
       } // At least one file handle was ready to read.
 
       /* Always send stderr buffer immediately */
@@ -484,6 +769,14 @@ static void* pty_to_commlib(void *t_conf)
 #endif
          if (ret == 0) {
             stderr_bytes = 0;
+         } else if (g_ijs_reconnect_timeout > 0) {
+            // CS-2144: reconnect is enabled; the failure is most likely commlib_to_pty's
+            // counterpart detecting a client disconnect.  Preserve the buffered output and
+            // wait — commlib_to_pty's polling loop may swap g_comm_handle and the next
+            // send_buf will go through on the new connection.  If the grace period expires
+            // without a reconnect, the job will be SIGKILL'd and the PTY will close, which
+            // ends this thread via the normal STDOUT/STDERR closed path.
+            shepherd_trace("pty_to_commlib: stderr send_buf failed in reconnect window; preserving %d bytes", stderr_bytes);
          } else {
             shepherd_trace("pty_to_commlib: send_buf() returned %d " "-> exiting", ret);
             do_exit = 1;
@@ -501,8 +794,14 @@ static void* pty_to_commlib(void *t_conf)
          shepherd_trace("pty_to_commlib: sending %d bytes of stdout data", stdout_bytes);
 #endif
          ret = send_buf(stdout_buf, stdout_bytes, STDOUT_DATA_MSG);
-         stdout_bytes = 0;
-         if (ret != 0) {
+         if (ret == 0) {
+            stdout_bytes = 0;
+         } else if (g_ijs_reconnect_timeout > 0) {
+            // CS-2144: see matching comment in the stderr branch above — preserve the
+            // buffered output so the next send goes through after a successful reconnect.
+            shepherd_trace("pty_to_commlib: stdout send_buf failed in reconnect window; preserving %d bytes", stdout_bytes);
+         } else {
+            stdout_bytes = 0;
             shepherd_trace("pty_to_commlib: send_buf() failed -> exiting");
             do_exit = 1;
          }
@@ -529,6 +828,24 @@ static void* pty_to_commlib(void *t_conf)
 #endif
    sge_free(&stdout_buf);
    sge_free(&stderr_buf);
+
+   // Close X11 listen socket and all X11 client connections
+   pthread_mutex_lock(&g_x11_mutex);
+   if (g_x11_listen_fd >= 0) {
+      close(g_x11_listen_fd);
+      g_x11_listen_fd = -1;
+      if (g_x11_socket_path[0] != '\0') {
+         unlink(g_x11_socket_path);
+      }
+   }
+   for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+      if (g_x11_client_fds[xi] >= 0) {
+         close(g_x11_client_fds[xi]);
+         g_x11_client_fds[xi] = -1;
+      }
+   }
+   pthread_mutex_unlock(&g_x11_mutex);
+
    thread_func_cleanup(t_conf);
 
 /* TODO: This could cause race conditions in the main thread, replace with pthread_condition */
@@ -545,28 +862,172 @@ static void* pty_to_commlib(void *t_conf)
    return nullptr;
 }
 
-/****** commlib_to_pty() *******************************************************
-*  NAME
-*     commlib_to_pty() -- commlib_to_pty thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* commlib_to_pty(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the commlib_to_pty thread.
-*     Reads data from the commlib and writes it to the pty.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE:
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Run the IJS reconnect grace period: SIGSTOP the job, poll for reconnect.info,
+ * attempt the handshake when it appears, swap g_comm_handle on success.
+ *
+ * Called from commlib_to_pty after the inner receive loop detected a client disconnect.
+ * The polling loop runs at 1-second granularity for up to g_ijs_reconnect_timeout
+ * seconds.  When reconnect.info appears the helper parses {host, port, token}, opens a
+ * new commlib client connection to {host, port}, sends RECONNECT_REQUEST_MSG carrying
+ * the token, and waits up to 5 seconds on the new handle for RECONNECT_ACCEPT_MSG.
+ *
+ * On a successful handshake:
+ *   - the old g_comm_handle is shut down (it has been dead since the disconnect)
+ *   - g_comm_handle and g_hostname are swapped to the new client
+ *   - the job is SIGCONT'd (also thaws the cgroup that SIGSTOP froze)
+ *   - returns true; the caller re-enters the inner receive loop on the new handle.
+ *
+ * On expiry or any handshake failure: returns false; the caller falls through to the
+ * normal SIGCONT-then-SIGKILL path.
+ */
+static bool attempt_reconnect_grace_period() {
+   shepherd_trace("commlib_to_pty: client disconnected, suspending job and polling for reconnect (timeout=%d s)",
+                  g_ijs_reconnect_timeout);
+   shepherd_signal_job(g_job_pid, SIGSTOP);
+
+   const char *reconnect_info_path = "reconnect.info";
+   const time_t deadline = time(nullptr) + g_ijs_reconnect_timeout;
+   DSTRING_STATIC(err_msg, MAX_STRING_SIZE);
+
+   while (time(nullptr) < deadline) {
+      sleep(1);
+
+      struct stat st{};
+      if (stat(reconnect_info_path, &st) != 0) {
+         continue;
+      }
+
+      shepherd_trace("commlib_to_pty: reconnect.info appeared, parsing");
+
+      char client_host[256] = {0};
+      int  client_port      = 0;
+      char token[256]       = {0};
+      if (parse_reconnect_info(reconnect_info_path, client_host, sizeof(client_host),
+                               &client_port, token, sizeof(token)) != 0) {
+         shepherd_trace("commlib_to_pty: reconnect.info malformed; unlinking and continuing to poll");
+         unlink(reconnect_info_path);
+         continue;
+      }
+
+      shepherd_trace("commlib_to_pty: attempting reconnect to %s:%d", client_host, client_port);
+
+      COMM_HANDLE *new_handle = nullptr;
+      int orc = comm_open_connection(false, g_ijs_framework, COMM_CLIENT, client_port,
+                                     COMM_SERVER, client_host, g_job_owner,
+                                     &new_handle, &err_msg);
+      if (orc != COMM_RETVAL_OK) {
+         shepherd_trace("commlib_to_pty: reconnect comm_open_connection failed: %s",
+                        sge_dstring_get_string(&err_msg));
+         unlink(reconnect_info_path);
+         continue;
+      }
+
+      int wrc = (int)comm_write_message(new_handle, client_host, COMM_SERVER, 1,
+                                        (unsigned char *)token, strlen(token) + 1,
+                                        RECONNECT_REQUEST_MSG, &err_msg);
+      if (wrc <= 0) {
+         shepherd_trace("commlib_to_pty: reconnect comm_write_message failed: %s",
+                        sge_dstring_get_string(&err_msg));
+         comm_shutdown_connection(new_handle, COMM_SERVER, client_host, &err_msg);
+         unlink(reconnect_info_path);
+         continue;
+      }
+
+      shepherd_trace("commlib_to_pty: RECONNECT_REQUEST_MSG sent, awaiting ACK (5 s)");
+
+      cl_com_set_synchron_receive_timeout(new_handle, 5);
+      recv_message_t reply{};
+      reply.cl_message = nullptr;
+      reply.data       = nullptr;
+      int rrc = comm_recv_message(new_handle, &reply, &err_msg);
+
+      bool accepted = (rrc == COMM_RETVAL_OK && reply.type == RECONNECT_ACCEPT_MSG);
+      const int reply_type = (rrc == COMM_RETVAL_OK) ? (int)reply.type : -1;
+
+      // CS-2145: parse the new client's PTY winsize from the ACCEPT payload so we can
+      // apply it before SIGCONT — the new client almost always has different geometry
+      // than the original and any output written between SIGCONT and the first SIGWINCH
+      // would be formatted for the wrong size.
+      struct winsize new_ws{};
+      bool got_new_ws = false;
+      if (accepted && reply.data != nullptr) {
+         int row = 0, col = 0, xpix = 0, ypix = 0;
+         if (sscanf((const char *) reply.data, "WS %d %d %d %d",
+                    &row, &col, &xpix, &ypix) == 4 && row > 0 && col > 0) {
+            new_ws.ws_row    = (unsigned short) row;
+            new_ws.ws_col    = (unsigned short) col;
+            new_ws.ws_xpixel = (unsigned short) xpix;
+            new_ws.ws_ypixel = (unsigned short) ypix;
+            got_new_ws = true;
+         }
+      }
+      comm_free_message(&reply, &err_msg);
+
+      if (!accepted) {
+         shepherd_trace("commlib_to_pty: handshake failed (rc=%d, msg_type=%d); closing new handle",
+                        rrc, reply_type);
+         comm_shutdown_connection(new_handle, COMM_SERVER, client_host, &err_msg);
+         unlink(reconnect_info_path);
+         continue;
+      }
+
+      shepherd_trace("commlib_to_pty: RECONNECT_ACCEPT_MSG received from %s:%d, swapping handle and resuming job",
+                     client_host, client_port);
+      // Tear down OLD g_comm_handle.  The old client is gone; this connection has been
+      // dead since the disconnect that started the grace period.
+      DSTRING_STATIC(old_err, MAX_STRING_SIZE);
+      comm_shutdown_connection(g_comm_handle, COMM_SERVER, g_hostname, &old_err);
+
+      g_comm_handle = new_handle;
+      sge_free(&g_hostname);
+      g_hostname = strdup(client_host);
+      cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
+
+      // CS-2145: apply the new client's PTY winsize *before* SIGCONT so the job resumes
+      // with correct geometry. If the ACCEPT payload didn't carry usable dimensions
+      // (older client, ioctl failure), leave the PTY at the previous size — the next
+      // SIGWINCH from the new client will catch us up via the normal WINDOW_SIZE_CTRL_MSG
+      // path.
+      if (got_new_ws && g_p_ijs_fds != nullptr && g_p_ijs_fds->pty_master != -1) {
+         ioctl(g_p_ijs_fds->pty_master, TIOCSWINSZ, &new_ws);
+         shepherd_trace("commlib_to_pty: applied reconnect winsize %d x %d to PTY before SIGCONT",
+                        (int) new_ws.ws_row, (int) new_ws.ws_col);
+      } else {
+         shepherd_trace("commlib_to_pty: no usable winsize in ACCEPT payload; keeping previous PTY size");
+      }
+
+      // SIGCONT thaws the systemd cgroup and resumes the job.
+      shepherd_signal_job(g_job_pid, SIGCONT);
+
+      unlink(reconnect_info_path);
+      return true;
+   }
+
+   shepherd_trace("commlib_to_pty: reconnect grace period expired");
+   // SIGCONT to thaw the frozen cgroup so the caller's SIGKILL actually takes effect.
+   shepherd_signal_job(g_job_pid, SIGCONT);
+   return false;
+}
+
+/**
+ * @brief Entry point and main loop of the commlib_to_pty thread.
+ *
+ * Reads data from the commlib and writes it to the pty (stdin of the job).
+ * In addition to standard control messages (SETTINGS_CTRL_MSG, SUSPEND_CTRL_MSG,
+ * WINDOW_SIZE_CTRL_MSG), handles X11 forwarding: X11_AUTH_MSG triggers
+ * setup_x11_forwarding() to create the proxy display before the child is unblocked;
+ * X11_DATA_MSG relays X protocol bytes from the client's X server to the job's X
+ * client socket; X11_CLOSE_MSG tears down an X11 channel.
+ *
+ * Reconnect (CS-2143/CS-2144): the receive loop is wrapped in an outer loop so that
+ * on disconnect the function can enter attempt_reconnect_grace_period() and, on
+ * successful reconnect, re-enter the receive loop on the swapped g_comm_handle.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: not MT-safe (modifies shared shepherd state).
+ */
 static void* commlib_to_pty(void *t_conf)
 {
    recv_message_t       recv_mess;
@@ -589,9 +1050,16 @@ static void* commlib_to_pty(void *t_conf)
       shepherd_trace("commlib_to_pty: no valid handle for stdin available. Exiting!");
    }
 
-   // Set timeout for synchronous receiving of messages.
-   cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
+   // Outer loop: each iteration is one "lifetime" of the receive loop on a given
+   // commlib handle.  After a client disconnect we may enter the reconnect grace
+   // period; if a new client successfully completes the handshake, g_comm_handle is
+   // swapped and we re-enter the inner loop on the new connection.
+   while (true) {
+      // Set timeout for synchronous receiving of messages.  Re-applied each outer
+      // iteration because g_comm_handle may have been swapped by the reconnect helper.
+      cl_com_set_synchron_receive_timeout(g_comm_handle, 1);
 
+      do_exit = 0;
    while (do_exit == 0) {
       // We wait synchronously (blocking) for a message from commlib, timeout is 1s.
       recv_mess.cl_message = nullptr;
@@ -780,6 +1248,78 @@ static void* commlib_to_pty(void *t_conf)
                }
                b_was_connected = 1;
                break;
+            case X11_AUTH_MSG: {
+               // Client sent the real MIT-MAGIC-COOKIE-1; set up X11 proxy display.
+               // Must arrive BEFORE SETTINGS_CTRL_MSG so DISPLAY is in ./environment
+               // when the child reads it (TCP ordering guarantees this).
+               if (recv_mess.cl_message->message_length < 2) {
+                  shepherd_trace("commlib_to_pty: X11_AUTH_MSG too short");
+                  break;
+               }
+               char cookie_hex[33];
+               unsigned long cookie_len = std::min(recv_mess.cl_message->message_length - 1,
+                                                   static_cast<unsigned long>(32));
+               memcpy(cookie_hex, recv_mess.data, cookie_len);
+               cookie_hex[cookie_len] = '\0';
+               shepherd_trace("commlib_to_pty: received X11_AUTH_MSG, setting up X11 forwarding");
+               if (!setup_x11_forwarding(cookie_hex)) {
+                  shepherd_trace("commlib_to_pty: X11 forwarding setup failed");
+               }
+               b_was_connected = 1;
+               break;
+            }
+            case X11_DATA_MSG: {
+               // Data from client's real X server toward the job's X client connection.
+               if (recv_mess.cl_message->message_length < 3) {
+                  shepherd_trace("commlib_to_pty: X11_DATA_MSG too short");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  shepherd_trace("commlib_to_pty: X11_DATA_MSG conn_id %d out of range", conn_id);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               int x11_cfd = g_x11_client_fds[conn_id];
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (x11_cfd >= 0) {
+                  int data_len = static_cast<int>(recv_mess.cl_message->message_length) - 3;
+                  sge_writenbytes(x11_cfd, recv_mess.data + 2, data_len);
+               }
+               b_was_connected = 1;
+               break;
+            }
+            case X11_CLOSE_MSG: {
+               // Client closed its connection to the real X server for this conn_id.
+               if (recv_mess.cl_message->message_length < 3) {
+                  shepherd_trace("commlib_to_pty: X11_CLOSE_MSG too short");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  shepherd_trace("commlib_to_pty: X11_CLOSE_MSG conn_id %d out of range", conn_id);
+                  break;
+               }
+               shepherd_trace("commlib_to_pty: X11_CLOSE_MSG conn_id %d", conn_id);
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_client_fds[conn_id] >= 0) {
+                  close(g_x11_client_fds[conn_id]);
+                  g_x11_client_fds[conn_id] = -1;
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               b_was_connected = 1;
+               break;
+            }
+            case KEEPALIVE_MSG: {
+               shepherd_trace("commlib_to_pty: received KEEPALIVE, sending ACK");
+               unsigned char ack_buf[1] = {0};
+               comm_write_message(g_comm_handle, g_hostname, COMM_SERVER, 1,
+                                  ack_buf, 1, KEEPALIVE_ACK_MSG, &err_msg);
+               b_was_connected = 1;
+               break;
+            }
             default:
                shepherd_trace("commlib_to_pty: received unknown message");
                break;
@@ -788,10 +1328,18 @@ static void* commlib_to_pty(void *t_conf)
       comm_free_message(&recv_mess, &err_msg);
    }
    /*
-    * When we get here, likely the commlib connection was shut down
-    * from the other side. We have to kill the job here to wake up
-    * the main thread.
+    * When we get here, the inner receive loop exited.  Either the client disconnected
+    * or the thread was asked to shut down.  If reconnect is enabled and we just lost a
+    * client, run the grace-period helper; on success it swaps g_comm_handle and we
+    * re-enter the outer loop, otherwise we fall through to SIGKILL.
     */
+   if (g_ijs_reconnect_timeout > 0 && attempt_reconnect_grace_period()) {
+      b_was_connected = 1;   // handshake completed; treat the new connection as live
+      continue;              // back to the outer loop -> re-enter receive loop on new handle
+   }
+   break;
+   }   // end of outer while(true) reconnect-capable loop
+
    /*
     * TODO: Use SIGINT if qrsh client was quit with Ctrl-C
     */
@@ -836,6 +1384,25 @@ parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_ckpt
    g_hostname  = strdup(remote_host);
    g_p_ijs_fds = p_ijs_fds;
    g_job_pid   = job_pid;
+   g_ijs_framework = communication_framework;
+   g_job_owner = strdup(job_owner);
+
+   // Grace period before SIGKILL on unexpected client disconnect.  When > 0 the shepherd
+   // SIGSTOPs the job and polls for a reconnect.info file written by execd up to this
+   // many seconds before killing.
+   {
+      const char *v = get_conf_val("ijs_reconnect_timeout");
+      g_ijs_reconnect_timeout = (v != nullptr) ? atoi(v) : 0;
+   }
+
+   // Initialize X11 forwarding state; setup happens lazily when X11_AUTH_MSG arrives.
+   g_x11_listen_fd   = -1;
+   g_x11_display_num = -1;
+   g_x11_next_conn_id = 0;
+   g_x11_socket_path[0] = '\0';
+   for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+      g_x11_client_fds[xi] = -1;
+   }
 
    /*
     * Initialize err_msg, so it's never nullptr.

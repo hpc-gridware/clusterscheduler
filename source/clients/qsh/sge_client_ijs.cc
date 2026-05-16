@@ -35,13 +35,18 @@
 /*___INFO__MARK_END__*/
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <cstdio>
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <cctype>
 
 #include <termios.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netdb.h>
 #if defined(DARWIN)
 #  include <sys/ttycom.h>
 #  include <sys/ioctl.h>
@@ -58,6 +63,7 @@
 #include "sge_ijs_threads.h"
 #include "sge_client_ijs.h"
 #include "ijs/sge_ijs_lib.h"
+#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 
@@ -74,6 +80,15 @@ static COMM_HANDLE *g_comm_handle = nullptr;
 static int g_wakeup_pipe[2] = { -1, -1 }; // pipe to wake up worker thread */
 static bool g_client_connected = false;  // set to true by commlib_to_tty thread once the client (sge_shepherd) connected
 static bool g_do_exit = false;           // set by the run_ijs_server (the parent thread) to tell the worker threads to shutdown
+static volatile bool g_escape_disconnect = false; ///< set by tty_to_commlib when escape+. is detected
+static char g_escape_char = '~';                  ///< configurable IJS escape char; '\0' = disabled
+static int g_keepalive_interval = 60;             ///< seconds between KEEPALIVE_MSGs; 0 = disabled
+static int g_keepalive_count    = 3;              ///< max consecutive unanswered keepalives before disconnect
+static std::atomic<int> g_keepalive_missed{0};    ///< consecutive unanswered keepalives (written from two threads)
+
+static const char *g_expected_reconnect_token = nullptr; ///< CS-2144: when non-null, commlib_to_tty
+                                                          ///< expects RECONNECT_REQUEST_MSG (not REGISTER_CTRL_MSG)
+                                                          ///< and validates the inbound token against this
 
 /*
  * static volatile sig_atomic_t received_window_change_signal = 1;
@@ -88,29 +103,36 @@ static volatile sig_atomic_t quit_pending; /* Set non-zero to quit the loop. */
 
 volatile sig_atomic_t received_signal = 0;
 
-/****** window_change_handler **************************************************
-*  NAME
-*     window_change_handler() -- handler for the window changed signal
-*
-*  SYNOPSIS
-*     static void window_change_handler(int sig)
-*
-*  FUNCTION
-*     Signal handler for the window change signal (SIGWINCH).  This just sets a
-*     flag indicating that the window has changed.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*    MT-NOTE: window_change_handler() is not MT safe, because it uses
-*             received_window_change_signal
-*
-*  SEE ALSO
-*******************************************************************************/
+/* X11 forwarding state — set by run_ijs_server before worker threads start */
+#define X11_MAX_CONNS 64
+static bool             g_forward_x11 = false;         ///< true when -X was given
+static char             g_x11_display[256] = "";       ///< client's DISPLAY (e.g. ":0.0")
+static char             g_x11_cookie_hex[33] = "";     ///< real MIT-MAGIC-COOKIE-1, pre-fetched before threads start
+static int              g_x11_fds[X11_MAX_CONNS];      ///< per-conn_id fd to real X server (-1 = unused)
+static pthread_mutex_t  g_x11_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/**
+ * @brief Restore the terminal on exit()-based abnormal exits.
+ *
+ * Registered with atexit() after terminal_enter_raw_mode() succeeds.
+ * Covers assert() failures, std::terminate(), and direct exit() calls.
+ * terminal_leave_raw_mode() is idempotent, so a double-call with the normal
+ * cleanup path in run_ijs_server() is harmless.
+ * SIGKILL cannot be caught; this handler does not run in that case.
+ */
+static void atexit_leave_raw_mode() {
+   terminal_leave_raw_mode();
+}
+
+/**
+ * @brief Signal handler for SIGWINCH (window size changed).
+ *
+ * Sets a flag so the main loop in tty_to_commlib() sends the new window
+ * size to the shepherd on the next iteration.
+ *
+ * @param sig Signal number (SIGWINCH).
+ * @note MT-NOTE: not MT-safe; uses received_window_change_signal.
+ */
 static void window_change_handler(int sig)
 {
    /* Do not use DPRINTF in a signal handler! */
@@ -118,77 +140,43 @@ static void window_change_handler(int sig)
    signal(SIGWINCH, window_change_handler);
 }
 
-/****** broken_pipe_handler ****************************************************
-*  NAME
-*     broken_pipe_handler() -- handler for the broken pipe signal
-*
-*  SYNOPSIS
-*     static void broken_pipe_handler(int sig)
-*
-*  FUNCTION
-*     Handler for the SIGPIPE signal.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Signal handler for SIGPIPE (broken pipe).
+ *
+ * Sets a flag indicating that a broken pipe was detected.
+ *
+ * @param sig Signal number (SIGPIPE).
+ */
 static void broken_pipe_handler(int sig)
 {
    received_broken_pipe_signal = 1;
    signal(SIGPIPE, broken_pipe_handler);
 }
 
-/****** signal_handler() *******************************************************
-*  NAME
-*     signal_handler() -- handler for quit signals
-*
-*  SYNOPSIS
-*     static void signal_handler(int sig)
-*
-*  FUNCTION
-*     Handler for all signals that quit the program. These signals are trapped
-*     in order to restore the terminal modes.
-*
-*  INPUTS
-*     int sig - number of the received signal
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Signal handler for quit signals (SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGTSTP, SIGCONT).
+ *
+ * Records the received signal and sets quit_pending so the worker threads
+ * can detect it on the next loop iteration.  Terminal restoration is the
+ * caller's responsibility — this handler deliberately does not call
+ * terminal_leave_raw_mode() because tcsetattr() is not async-signal-safe.
+ *
+ * @param sig Signal number.
+ */
 void signal_handler(int sig)
 {
    received_signal = sig;
    quit_pending = 1;
 }
 
-/****** set_signal_handlers() **************************************************
-*  NAME
-*     set_signal_handlers() -- set all signal handlers
-*
-*  SYNOPSIS
-*     static void set_signal_handlers()
-*
-*  FUNCTION
-*     Sets all signal handlers. Doesn't overwrite SIG_IGN and therefore
-*     matches the behaviour of rsh.
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Install all signal handlers for the IJS client.
+ *
+ * Installs signal_handler() for SIGHUP, SIGINT, SIGCONT, SIGQUIT, SIGTERM,
+ * and SIGTSTP; window_change_handler() for SIGWINCH; and broken_pipe_handler()
+ * for SIGPIPE.  Existing SIG_IGN dispositions are never overwritten, matching
+ * the behaviour of rsh.
+ */
 void set_signal_handlers()
 {
    struct sigaction old_handler, new_handler;
@@ -244,6 +232,16 @@ void set_signal_handlers()
       sigaction(SIGTERM, &new_handler, nullptr);
    }
 
+   // SIGTSTP: handled in tty_to_commlib to suspend the client and restore the terminal.
+   // Covers external "kill -TSTP"; Ctrl+Z in raw mode is detected as 0x1a in the data stream.
+   sigaction(SIGTSTP, nullptr, &old_handler);
+   if (old_handler.sa_handler != SIG_IGN) {
+      new_handler.sa_handler = signal_handler;
+      sigaddset(&new_handler.sa_mask, SIGTSTP);
+      new_handler.sa_flags = SA_RESTART;
+      sigaction(SIGTSTP, &new_handler, nullptr);
+   }
+
    new_handler.sa_handler = window_change_handler;
    sigaddset(&new_handler.sa_mask, SIGWINCH);
    new_handler.sa_flags = SA_RESTART;
@@ -255,33 +253,19 @@ void set_signal_handlers()
    sigaction(SIGPIPE, &new_handler, nullptr);
 }
 
-/****** client_check_window_change() *******************************************
-*  NAME
-*     client_check_window_change() -- check if window size was change and
-*                                     submit changes to pty
-*
-*  SYNOPSIS
-*     static void client_check_window_change(COMM_HANDLE *handle)
-*
-*  FUNCTION
-*     Checks if the window size of the terminal window was changed.
-*     If the size was changed, submits the new window size to the
-*     pty.
-*     The actual change is detected by a signal (on Unix), this function
-*     just checks the according flag.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - pointer to the commlib handle
-*
-*  RESULT
-*     void - no result
-*
-*  NOTES
-*     MT-NOTE: client_check_window_change() is MT-safe (see comment in code)
-*
-*  SEE ALSO
-*     window_change_handler()
-*******************************************************************************/
+/**
+ * @brief Send the new window size to the shepherd when SIGWINCH was received.
+ *
+ * Checks received_window_change_signal; if set, reads the current terminal
+ * dimensions via TIOCGWINSZ and forwards them to the shepherd as a
+ * WINDOW_SIZE_CTRL_MSG.  A dummy 60×80 message is sent when ioctl fails so
+ * the protocol exchange is always completed.
+ *
+ * @param handle Commlib handle used to send the WINDOW_SIZE_CTRL_MSG.
+ * @note MT-NOTE: MT-safe under a minor race — in the worst case the new
+ *       window size is sent twice.
+ * @see window_change_handler()
+ */
 static void client_check_window_change(COMM_HANDLE *handle)
 {
    struct winsize ws;
@@ -297,7 +281,12 @@ static void client_check_window_change(COMM_HANDLE *handle)
        * submitted two times.
        */
       received_window_change_signal = 0;
-      if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0) {
+      // CS-2150: also fall back to the sane default when ioctl(TIOCGWINSZ) *succeeds* with
+      // ws_row==0 || ws_col==0. Linux openpty() initialises winsize to {0,0,0,0}, so headless
+      // invocations (Ansible, cron, CI runners) end up here with a zero-size pty even though
+      // ioctl returned 0. Propagating those zeros lands a 0x0 pty on the job side via
+      // TIOCSWINSZ, breaking any TUI app inside the session.
+      if (ioctl(fileno(stdin), TIOCGWINSZ, &ws) >= 0 && ws.ws_row > 0 && ws.ws_col > 0) {
          DPRINTF("sending WINDOW_SIZE_CTRL_MSG with new window size: %d, %d, %d, %d to shepherd\n",
                  ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
 
@@ -305,7 +294,9 @@ static void client_check_window_change(COMM_HANDLE *handle)
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf),
                             WINDOW_SIZE_CTRL_MSG, &err_msg);
       } else {
-         DPRINTF("client_check_windows_change: ioctl() failed! sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n");
+         DPRINTF("client_check_windows_change: no usable winsize from ioctl (row=%d col=%d); "
+                 "sending dummy WINDOW_SIZE_CTRL_MSG to fullfill protocol.\n",
+                 ws.ws_row, ws.ws_col);
          snprintf(buf, sizeof(buf), "WS 60 80 480 640");
          comm_write_message(handle, g_hostname, COMM_CLIENT, 1, (unsigned char*)buf, strlen(buf), WINDOW_SIZE_CTRL_MSG, &err_msg);
       }
@@ -314,6 +305,126 @@ static void client_check_window_change(COMM_HANDLE *handle)
    DRETURN_VOID;
 }
 
+/**
+ * @brief Retrieve the MIT-MAGIC-COOKIE-1 for a DISPLAY.
+ *
+ * Runs "xauth list <display>" and parses the output to extract the
+ * MIT-MAGIC-COOKIE-1.  The 32-character hex string is written into
+ * @p cookie_hex.  Must be called in the main thread before worker threads
+ * start to avoid popen()/waitpid() races with different SIGCHLD masks.
+ *
+ * @param display         X11 display string (e.g. ":0" or "host:10.0").
+ * @param cookie_hex      Caller-supplied buffer; must be at least 33 bytes.
+ * @param cookie_hex_size Size of @p cookie_hex in bytes.
+ * @return true if a 32-character MIT-MAGIC-COOKIE-1 was found and written;
+ *         false otherwise (xauth not installed, display not listed, or buffer
+ *         too small).
+ * @note MT-NOTE: not MT-safe (calls popen()).
+ */
+static bool x11_get_cookie(const char *display, char *cookie_hex, size_t cookie_hex_size) {
+   DENTER(TOP_LAYER);
+
+   char cmd[512];
+   snprintf(cmd, sizeof(cmd), "xauth list %.200s 2>/dev/null", display);
+   FILE *fp = popen(cmd, "r");
+   if (!fp) {
+      DRETURN(false);
+   }
+
+   bool found = false;
+   char line[512];
+   while (fgets(line, sizeof(line), fp)) {
+      const char *p = strstr(line, "MIT-MAGIC-COOKIE-1");
+      if (p != nullptr) {
+         p += strlen("MIT-MAGIC-COOKIE-1");
+         while (*p == ' ' || *p == '\t') {
+            p++;
+         }
+         size_t n = 0;
+         while (n < cookie_hex_size - 1 && isxdigit((unsigned char)p[n])) {
+            cookie_hex[n] = p[n];
+            n++;
+         }
+         cookie_hex[n] = '\0';
+         if (n == 32) {
+            found = true;
+            break;
+         }
+      }
+   }
+   pclose(fp);
+   DRETURN(found);
+}
+
+/**
+ * @brief Connect to the real X server identified by a display string.
+ *
+ * Supports both Unix-domain displays (":N[.S]" → /tmp/.X11-unix/XN) and
+ * TCP displays ("host:N[.S]" → port 6000+N).  Called by the tty_to_commlib
+ * thread when a new X11 connection arrives on the proxy socket (X11_OPEN_MSG
+ * from the shepherd).
+ *
+ * @param display X11 display string, e.g. ":0", ":0.0", or "myhost:1.0".
+ * @return Connected socket file descriptor, or -1 on failure.
+ * @note MT-NOTE: MT-safe.
+ */
+static int x11_connect_to_server(const char *display) {
+   DENTER(TOP_LAYER);
+
+   int fd = -1;
+   if (display[0] == ':') {
+      // Unix domain socket: /tmp/.X11-unix/XN
+      int display_num = atoi(display + 1);
+      struct sockaddr_un addr{};
+      memset(&addr, 0, sizeof(addr));
+      addr.sun_family = AF_UNIX;
+      snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/.X11-unix/X%d", display_num);
+      fd = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (fd >= 0 && connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+         close(fd);
+         fd = -1;
+      }
+   } else {
+      // TCP: host:N[.S] → port 6000+N
+      const char *colon = strrchr(display, ':');
+      if (colon != nullptr) {
+         char host[256] = "";
+         int host_len = static_cast<int>(colon - display);
+         if (host_len > 0 && host_len < static_cast<int>(sizeof(host))) {
+            memcpy(host, display, host_len);
+            host[host_len] = '\0';
+         } else {
+            snprintf(host, sizeof(host), "localhost");
+         }
+         int display_num = atoi(colon + 1);
+         char port_str[16];
+         snprintf(port_str, sizeof(port_str), "%d", 6000 + display_num);
+         struct addrinfo hints, *res = nullptr;
+         memset(&hints, 0, sizeof(hints));
+         hints.ai_family   = AF_UNSPEC;
+         hints.ai_socktype = SOCK_STREAM;
+         if (getaddrinfo(host, port_str, &hints, &res) == 0 && res != nullptr) {
+            fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+            if (fd >= 0 && connect(fd, res->ai_addr, res->ai_addrlen) != 0) {
+               close(fd);
+               fd = -1;
+            }
+            freeaddrinfo(res);
+         }
+      }
+   }
+   DRETURN(fd);
+}
+
+/**
+ * @brief Write a byte to the wakeup pipe to unblock tty_to_commlib's select().
+ *
+ * Used in two situations: once to signal that the shepherd has connected and
+ * the thread may start reading stdin (REGISTER_CTRL_MSG path), and again when
+ * g_do_exit is set by run_ijs_server() to trigger clean shutdown.
+ *
+ * @param source Caller name used in DPRINTF messages.
+ */
 static void
 wakeup_tty_to_commlib_thread(const char *source) {
    DENTER(TOP_LAYER);
@@ -331,28 +442,168 @@ wakeup_tty_to_commlib_thread(const char *source) {
    DRETURN_VOID;
 }
 
-/****** tty_to_commlib() *******************************************************
-*  NAME
-*     tty_to_commlib() -- tty_to_commlib thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* tty_to_commlib(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the tty_to_commlib thread.
-*     Reads data from the tty and writes it to the commlib.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE: tty_to_commlib is MT-safe ?
-*
-*  SEE ALSO
-*******************************************************************************/
+// Action codes returned by tty_escape_process() via *p_action.
+static constexpr int ESC_NONE          = 0; ///< no escape action; forward normally
+static constexpr int ESC_DISCONNECT    = 1; ///< E.  — disconnect and end job
+static constexpr int ESC_LOCAL_SUSPEND = 2; ///< E^Z — suspend client only (job keeps running)
+static constexpr int ESC_HELP          = 3; ///< E?  — print escape help to local terminal
+
+/**
+ * @brief Filter SSH-style escape sequences from a TTY input buffer.
+ *
+ * Scans buf[0..len-1] byte by byte. escape_char is only treated as the escape
+ * character when it immediately follows a newline/CR or at session start.
+ * Recognised sequences (E = escape_char):
+ *   E.   disconnect (ESC_DISCONNECT)
+ *   E^Z  local suspend only — no commlib messages (ESC_LOCAL_SUSPEND)
+ *   E?   print escape help to local terminal (ESC_HELP)
+ *   EE   send literal E (forwarded, no action)
+ *   EX   unrecognised: forward E and X unchanged (no action)
+ *
+ * When escape_char == '\0', all bytes are forwarded unmodified (disabled).
+ * Modifies buf in-place; returns the number of bytes to forward.
+ * *p_at_line_start and *p_pending_escape must be preserved across calls.
+ *
+ * @param buf              Input/output buffer (modified in-place).
+ * @param len              Number of valid bytes in buf.
+ * @param escape_char      Configured escape character; '\0' disables processing.
+ * @param p_at_line_start  In/out: true when prev forwarded byte was '\n'/'\r' or session start.
+ * @param p_pending_escape In/out: true when escape_char is pending at line start.
+ * @param p_action         Out: ESC_* constant; ESC_NONE if no escape action was taken.
+ * @return                 Number of bytes to forward from buf.
+ */
+static int tty_escape_process(unsigned char *buf, int len, unsigned char escape_char,
+                               bool *p_at_line_start, bool *p_pending_escape,
+                               int *p_action)
+{
+   *p_action = ESC_NONE;
+   if (escape_char == '\0') {
+      return len;
+   }
+   int out = 0;
+   for (int i = 0; i < len; i++) {
+      unsigned char c = buf[i];
+      if (*p_pending_escape) {
+         *p_pending_escape = false;
+         if (c == '.') {
+            *p_action = ESC_DISCONNECT;
+            return out;
+         } else if (c == '\x1a') {
+            *p_action = ESC_LOCAL_SUSPEND;
+            return out;
+         } else if (c == '?') {
+            *p_action = ESC_HELP;
+            return out;
+         } else if (c == escape_char) {
+            buf[out++] = escape_char;        // EE -> forward single escape char
+            *p_at_line_start = false;
+         } else {
+            buf[out++] = escape_char;        // unrecognised EX -> forward both bytes
+            buf[out++] = c;
+            *p_at_line_start = (c == '\n' || c == '\r');
+         }
+      } else if (*p_at_line_start && c == escape_char) {
+         *p_pending_escape = true;           // hold escape char; next byte decides
+         *p_at_line_start = false;
+      } else {
+         buf[out++] = c;
+         *p_at_line_start = (c == '\n' || c == '\r');
+      }
+   }
+   return out;
+}
+
+/**
+ * @brief Suspend the IJS client and optionally the remote job.
+ *
+ * Restores the local terminal to cooked mode, stops the client process with
+ * SIGTSTP (using the default action so the process is actually stopped), and
+ * re-enters raw mode when the user types fg.
+ *
+ * SUSPEND_CTRL_MSG is sent to the shepherd only when g_suspend_remote is set
+ * (explicit SIGSTOP on the remote job, in addition to any PTY SIGTSTP already
+ * delivered).  UNSUSPEND_CTRL_MSG is always sent on resume so the remote job
+ * receives SIGCONT regardless of how it was stopped — SIGCONT to a running
+ * process is a no-op, so sending it unconditionally is safe.
+ *
+ * @param p_err_msg  dstring for commlib error output.
+ * @return           true if raw mode was re-entered successfully on resume;
+ *                   false if the I/O loop should exit.
+ */
+static bool tty_suspend_client(dstring *p_err_msg)
+{
+   DENTER(TOP_LAYER);
+   // optionally request explicit SIGSTOP on the remote job via shepherd
+   if (g_suspend_remote) {
+      comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                         (unsigned char *)" ", 1, SUSPEND_CTRL_MSG, p_err_msg);
+      comm_wait_for_all_messages_sent(g_comm_handle, p_err_msg);
+   }
+   terminal_leave_raw_mode();
+   // Temporarily reset SIGTSTP to SIG_DFL so raise() actually stops the process.
+   // Save the current handler so we can restore it after resuming.
+   struct sigaction old_tstp{}, def_tstp{};
+   def_tstp.sa_handler = SIG_DFL;
+   sigaction(SIGTSTP, &def_tstp, &old_tstp);
+   raise(SIGTSTP);
+   // Execution resumes here after fg / SIGCONT.
+   // Clear the SIGCONT that woke us; handled here, not by the SIGCONT check.
+   received_signal = 0;
+   sigaction(SIGTSTP, &old_tstp, nullptr);
+   // always send UNSUSPEND_CTRL_MSG to resume the remote job
+   comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                      (unsigned char *)" ", 1, UNSUSPEND_CTRL_MSG, p_err_msg);
+   comm_wait_for_all_messages_sent(g_comm_handle, p_err_msg);
+   if (terminal_enter_raw_mode() != 0) {
+      DPRINTF("tty_suspend_client: couldn't re-enter raw mode after resume\n");
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+/**
+ * @brief Suspend the IJS client locally without touching the remote job.
+ *
+ * Implements the ~^Z escape: restores the local terminal to cooked mode and
+ * stops the client process with SIGTSTP so the user gets their local shell back.
+ * On fg/SIGCONT the client re-enters raw mode and the session continues.
+ * Unlike tty_suspend_client(), no SUSPEND_CTRL_MSG or UNSUSPEND_CTRL_MSG is sent
+ * to the shepherd — the remote job keeps running throughout.
+ *
+ * @return true if raw mode was re-entered successfully; false if the loop should exit.
+ */
+static bool tty_local_suspend_client()
+{
+   DENTER(TOP_LAYER);
+   terminal_leave_raw_mode();
+   struct sigaction old_tstp{}, def_tstp{};
+   def_tstp.sa_handler = SIG_DFL;
+   sigaction(SIGTSTP, &def_tstp, &old_tstp);
+   raise(SIGTSTP);
+   // Execution resumes here after fg / SIGCONT.
+   received_signal = 0;
+   sigaction(SIGTSTP, &old_tstp, nullptr);
+   if (terminal_enter_raw_mode() != 0) {
+      DPRINTF("tty_local_suspend_client: couldn't re-enter raw mode after resume\n");
+      DRETURN(false);
+   }
+   DRETURN(true);
+}
+
+/**
+ * @brief Entry point and main loop of the tty_to_commlib thread.
+ *
+ * Reads data from the local terminal (stdin) and forwards it to the commlib
+ * connection to the shepherd.  Escape sequences are filtered via
+ * tty_escape_process() before forwarding: ESC_DISCONNECT exits immediately,
+ * ESC_LOCAL_SUSPEND suspends the client without touching the remote job, and
+ * ESC_HELP prints the escape reference to stdout.  Also relays data from local
+ * X11 connections back to the shepherd when X11 forwarding is active.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: MT-safe.
+ */
 void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
@@ -366,6 +617,9 @@ void *tty_to_commlib(void *t_conf) {
     * allocate working buffer
     */
    bool do_exit = false;
+   bool at_line_start = true;   // true at session start; reset after each '\n' or '\r'
+   bool pending_escape = false; // true when escape_char at line start is pending next char
+   time_t last_data_time = time(nullptr);  // idle timer for keepalive probes
    while (!do_exit) {
       // This thread should only start its processing once the commlib_to_tty thread received a
       // REGISTER_CTRL_MSG from the sge_shepherd and replied to it
@@ -380,6 +634,24 @@ void *tty_to_commlib(void *t_conf) {
          /* wait for input on wakeup pipe */
          FD_SET(g_wakeup_pipe[0], &read_fds);
       }
+
+      // Snapshot X11 fds and add them to the fd_set so data from X clients reaches the job.
+      int local_x11_fds[X11_MAX_CONNS];
+      int fd_max = std::max(STDIN_FILENO, g_wakeup_pipe[0]);
+      if (g_forward_x11) {
+         pthread_mutex_lock(&g_x11_mutex);
+         memcpy(local_x11_fds, g_x11_fds, sizeof(local_x11_fds));
+         pthread_mutex_unlock(&g_x11_mutex);
+         for (int xi = 0; xi < X11_MAX_CONNS; xi++) {
+            if (local_x11_fds[xi] >= 0) {
+               FD_SET(local_x11_fds[xi], &read_fds);
+               if (local_x11_fds[xi] > fd_max) {
+                  fd_max = local_x11_fds[xi];
+               }
+            }
+         }
+      }
+
       struct timeval       timeout;
       timeout.tv_sec  = 1;
       timeout.tv_usec = 0;
@@ -400,8 +672,18 @@ void *tty_to_commlib(void *t_conf) {
          }
       }
 
+      // External SIGTSTP (e.g. kill -TSTP): suspend the client and resume when fg is typed.
+      // Ctrl+Z from the keyboard is detected as 0x1a in the data stream (see below).
+      if (received_signal == SIGTSTP) {
+         received_signal = 0;
+         if (!tty_suspend_client(&err_msg)) {
+            do_exit = true;
+            continue;
+         }
+      }
+
       DPRINTF("tty_to_commlib: Waiting in select() for data\n");
-      int ret = select(std::max(STDIN_FILENO, g_wakeup_pipe[0]) + 1, &read_fds, nullptr, nullptr, &timeout);
+      int ret = select(fd_max + 1, &read_fds, nullptr, nullptr, &timeout);
       DPRINTF("tty_to_commlib: select returned %d\n", ret);
 
       thread_testcancel(t_conf);
@@ -415,9 +697,35 @@ void *tty_to_commlib(void *t_conf) {
           received_signal == SIGINT ||
           received_signal == SIGQUIT ||
           received_signal == SIGTERM) {
-         /* If we receive one of these signals, we must terminate */
+         // Restore terminal immediately so the user is not left in raw mode
+         // while run_ijs_server waits for a blocked commlib_to_tty thread (CS-982).
+         // terminal_leave_raw_mode() is idempotent; the cleanup block in
+         // run_ijs_server calls it again, which becomes a no-op.
+         terminal_leave_raw_mode();
          do_exit = true;
          continue;
+      }
+
+      // Send a keepalive probe when the session has been idle for g_keepalive_interval seconds.
+      if (g_keepalive_interval > 0 && g_client_connected) {
+         time_t now = time(nullptr);
+         if (now - last_data_time >= g_keepalive_interval) {
+            unsigned char kbuf[1] = {0};
+            comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                               kbuf, 1, KEEPALIVE_MSG, &err_msg);
+            // no comm_wait_for_all_messages_sent — do not block the probe loop
+            last_data_time = now;
+            if (++g_keepalive_missed > g_keepalive_count) {
+               constexpr char dead_msg[] =
+                  "\r\n[session timed out: no keepalive response from remote host]\r\n";
+               sge_writenbytes(STDOUT_FILENO, dead_msg, sizeof(dead_msg) - 1);
+               terminal_leave_raw_mode();
+               // Signal commlib_to_tty to exit so run_ijs_server can unblock its join.
+               g_escape_disconnect = true;
+               do_exit = true;
+               continue;
+            }
+         }
       }
 
       if (ret > 0) {
@@ -440,27 +748,107 @@ void *tty_to_commlib(void *t_conf) {
             } else if (nread <= 0) {
                do_exit = true;
             } else {
-               DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nread);
-               if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
-                  if (comm_write_message(g_comm_handle, g_hostname,
-                                         COMM_CLIENT, 1, (unsigned char *) pbuf,
-                                         (unsigned long) nread, STDIN_DATA_MSG, &err_msg) != (unsigned long) nread) {
-                     DPRINTF("tty_to_commlib: couldn't write all data\n");
-                  } else {
-                     DPRINTF("tty_to_commlib: data successfully written\n");
+               // filter escape sequences before forwarding to the remote shell
+               int escape_action = ESC_NONE;
+               int nforward = tty_escape_process(
+                  (unsigned char *)pbuf, nread, (unsigned char)g_escape_char,
+                  &at_line_start, &pending_escape, &escape_action);
+               if (escape_action == ESC_DISCONNECT) {
+                  // E. detected: restore terminal immediately so the user gets their shell back
+                  constexpr char disconnect_msg[] = "\r\n~.\r\n";
+                  sge_writenbytes(STDOUT_FILENO, disconnect_msg, sizeof(disconnect_msg) - 1);
+                  terminal_leave_raw_mode();
+                  g_escape_disconnect = true;
+                  do_exit = true;
+               } else if (escape_action == ESC_LOCAL_SUSPEND) {
+                  // E^Z: suspend client locally; remote job keeps running (no commlib messages)
+                  if (!tty_local_suspend_client()) {
+                     do_exit = true;
+                  }
+               } else if (escape_action == ESC_HELP) {
+                  // E?: print escape help to the local terminal; do not forward anything
+                  char e = g_escape_char;
+                  char help_msg[256];
+                  snprintf(help_msg, sizeof(help_msg),
+                     "\r\n%c. - terminate session\r\n"
+                     "%c^Z - suspend client locally (job keeps running)\r\n"
+                     "%c?  - this message\r\n"
+                     "%c%c  - send literal %c\r\n",
+                     e, e, e, e, e, e);
+                  sge_writenbytes(STDOUT_FILENO, help_msg, strlen(help_msg));
+               } else if (nforward > 0) {
+                  DPRINTF("tty_to_commlib: writing to commlib: %d bytes\n", nforward);
+                  if (suspend_handler(g_comm_handle, g_hostname, g_is_rsh, g_suspend_remote, g_pid, &dbuf) == 1) {
+                     if (comm_write_message(g_comm_handle, g_hostname,
+                                            COMM_CLIENT, 1, (unsigned char *) pbuf,
+                                            static_cast<unsigned long>(nforward), STDIN_DATA_MSG, &err_msg) != static_cast<unsigned long>(nforward)) {
+                        DPRINTF("tty_to_commlib: couldn't write all data\n");
+                     } else {
+                        DPRINTF("tty_to_commlib: data successfully written\n");
+                     }
+                  }
+                  comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+                  // Data flowing means the connection is alive; reset keepalive state.
+                  last_data_time = time(nullptr);
+                  g_keepalive_missed = 0;
+                  // Ctrl+Z (0x1a) was forwarded to the remote PTY; the remote PTY's ISIG
+                  // delivers SIGTSTP to the remote job. Now also suspend the client so the
+                  // user gets their local shell back. On fg, UNSUSPEND_CTRL_MSG resumes the job.
+                  if (memchr(pbuf, '\x1a', static_cast<size_t>(nforward)) != nullptr) {
+                     if (!tty_suspend_client(&err_msg)) {
+                        do_exit = true;
+                     }
                   }
                }
-               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
-            // If we received something on the wakeup pipe, we shall exit.
-            // We will probably never get here as thread_testcancel() above will already terminate the thread.
+            // Drain the byte written by wakeup_tty_to_commlib_thread() so that select()
+            // does not keep returning immediately. Two callers write to this pipe:
+            //   1. commlib_to_tty (~line 625) when shepherd completes the REGISTER handshake
+            //      — g_client_connected is set but g_do_exit is still false at that point
+            //   2. run_ijs_server (~line 821) when it sets g_do_exit = true for shutdown
+            //   3. commlib_to_tty when a new X11 connection was opened (X11_OPEN_MSG)
+            char wakeup_byte;
+            if (read(g_wakeup_pipe[0], &wakeup_byte, 1) < 0) {
+               DPRINTF("tty_to_commlib: read() from wakeup pipe failed: %s\n", strerror(errno));
+            }
             DPRINTF("tty_to_commlib: wakeup pipe was triggered\n");
             if (g_do_exit) {
                DPRINTF("tty_to_commlib: exit was requested\n");
                do_exit = true;
             }
          }
+
+         // relay data from X11 connections (real X server) back to shepherd
+         if (g_forward_x11) {
+            static char x11_buf[2 + BUFSIZE];
+            for (int xi = 0; xi < X11_MAX_CONNS && !do_exit; xi++) {
+               if (local_x11_fds[xi] >= 0 && FD_ISSET(local_x11_fds[xi], &read_fds)) {
+                  int nread = read(local_x11_fds[xi], x11_buf + 2, BUFSIZE - 1);
+                  if (nread <= 0) {
+                     // X server closed this connection
+                     DPRINTF("tty_to_commlib: X11 conn %d closed by X server\n", xi);
+                     x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                     x11_buf[1] = static_cast<char>(xi & 0xFF);
+                     comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                        (unsigned char *)x11_buf, 2, X11_CLOSE_MSG, &err_msg);
+                     pthread_mutex_lock(&g_x11_mutex);
+                     close(g_x11_fds[xi]);
+                     g_x11_fds[xi] = -1;
+                     pthread_mutex_unlock(&g_x11_mutex);
+                  } else {
+                     // relay X11 data to shepherd
+                     x11_buf[0] = static_cast<char>((xi >> 8) & 0xFF);
+                     x11_buf[1] = static_cast<char>(xi & 0xFF);
+                     DPRINTF("tty_to_commlib: relaying %d bytes from X11 conn %d\n", nread, xi);
+                     comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                        (unsigned char *)x11_buf, static_cast<unsigned long>(nread + 2),
+                                        X11_DATA_MSG, &err_msg);
+                  }
+               }
+            }
+         }
+
          sge_dstring_free(&dbuf);
       } else {
          /*
@@ -478,11 +866,25 @@ void *tty_to_commlib(void *t_conf) {
    } /* while (!do_exit) */
 
    /* Send STDIN_CLOSE_MSG to the shepherd. That causes the shepherd to close its filedescriptor, also. */
-   if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char *) " ",
-                      1, STDIN_CLOSE_MSG, &err_msg) != 1) {
-      DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
+   //
+   // CS-2155: when ~. was used, skip the clean STDIN_CLOSE_MSG so the shepherd sees an
+   // abnormal disconnect (send_buf failure) and falls into the reconnect grace period
+   // when ijs_reconnect_timeout > 0. Without this gate, ~. is indistinguishable from
+   // typing `exit` at the shell — both deliver a clean EOF to the job, the login shell
+   // exits, and the job ends, defeating the reconnect feature for its most natural
+   // entry point. With ijs_reconnect_timeout=0 the historical behaviour is preserved:
+   // the shepherd still kills the job when the connection drops (just via SIGKILL after
+   // the connection loss instead of via shell-EOF — invisible to the user).
+   if (!g_escape_disconnect) {
+      if (comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1, (unsigned char *) " ",
+                         1, STDIN_CLOSE_MSG, &err_msg) != 1) {
+         DPRINTF("tty_to_commlib: couldn't write STDIN_CLOSE_MSG\n");
+      } else {
+         DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
+      }
    } else {
-      DPRINTF("tty_to_commlib: STDIN_CLOSE_MSG successfully written\n");
+      DPRINTF("tty_to_commlib: ~. detected — skipping STDIN_CLOSE_MSG so the shepherd "
+              "treats this as an abnormal disconnect (reconnect grace path)\n");
    }
 
    /* clean up */
@@ -492,28 +894,20 @@ void *tty_to_commlib(void *t_conf) {
    DRETURN(nullptr);
 }
 
-/****** commlib_to_tty() *******************************************************
-*  NAME
-*     commlib_to_tty() -- commlib_to_tty thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* commlib_to_tty(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the commlib_to_tty thread.
-*     Reads data from the commlib and writes it to the tty.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE: commlib_to_tty is MT-safe ?
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Entry point and main loop of the commlib_to_tty thread.
+ *
+ * Reads data from the commlib and writes it to the tty (stdout/stderr of the
+ * job).  Also handles X11 forwarding: on REGISTER_CTRL_MSG it sends the
+ * pre-fetched MIT-MAGIC-COOKIE-1 to the shepherd (X11_AUTH_MSG); on
+ * X11_OPEN_MSG it connects to the real X server and registers the channel; on
+ * X11_DATA_MSG it forwards X protocol bytes to the appropriate channel; on
+ * X11_CLOSE_MSG it tears down the corresponding X11 connection.
+ *
+ * @param t_conf Pointer to cl_thread_settings_t struct of the thread.
+ * @return Always nullptr.
+ * @note MT-NOTE: MT-safe.
+ */
 void* commlib_to_tty(void *t_conf)
 {
    recv_message_t       recv_mess;
@@ -545,6 +939,13 @@ void* commlib_to_tty(void *t_conf)
       DPRINTF("commlib_to_tty: received a message\n");
 
       thread_testcancel(t_conf);
+
+      // exit if tty_to_commlib triggered an escape disconnect
+      if (g_escape_disconnect) {
+         DPRINTF("commlib_to_tty: escape disconnect requested, exiting\n");
+         do_exit = 1;
+         continue;
+      }
 
       if (received_signal == SIGHUP ||
           received_signal == SIGINT ||
@@ -607,6 +1008,16 @@ void* commlib_to_tty(void *t_conf)
                 * send_messages list of the connection, to the client.
                 */
                DPRINTF("commlib_to_tty: received register message!\n");
+               // Before sending SETTINGS_CTRL_MSG, send X11_AUTH_MSG if X11 forwarding is
+               // requested. TCP ordering guarantees that the shepherd receives X11_AUTH_MSG
+               // first and sets up the X11 proxy display before processing SETTINGS_CTRL_MSG.
+               // The cookie was pre-fetched in run_ijs_server() before threads started.
+               if (g_forward_x11 && g_x11_cookie_hex[0] != '\0') {
+                  DPRINTF("commlib_to_tty: sending X11_AUTH_MSG\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *)g_x11_cookie_hex, strlen(g_x11_cookie_hex) + 1,
+                                     X11_AUTH_MSG, &err_msg);
+               }
                /* Send the settings in response */
                snprintf(buf, sizeof(buf), "noshell = %d", g_noshell);
                ret = (int)comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
@@ -618,6 +1029,147 @@ void* commlib_to_tty(void *t_conf)
                g_client_connected = true;
                wakeup_tty_to_commlib_thread("commlib_to_tty");
                break;
+            case X11_OPEN_MSG: {
+               // Shepherd accepted a new X11 connection from the job; open a matching
+               // connection to the real X server and record it under the given conn_id.
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               int x11_fd = x11_connect_to_server(g_x11_display);
+               DPRINTF("commlib_to_tty: X11_OPEN_MSG conn_id %d -> fd %d\n", conn_id, x11_fd);
+               if (x11_fd < 0) {
+                  // Cannot reach real X server — tell shepherd to close xterm's connection.
+                  DPRINTF("commlib_to_tty: X11_OPEN_MSG: cannot connect to X server, sending CLOSE\n");
+                  char close_buf[2];
+                  close_buf[0] = static_cast<char>((conn_id >> 8) & 0xFF);
+                  close_buf[1] = static_cast<char>(conn_id & 0xFF);
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *)close_buf, 2, X11_CLOSE_MSG, &err_msg);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_fds[conn_id] >= 0) {
+                  close(g_x11_fds[conn_id]);
+               }
+               g_x11_fds[conn_id] = x11_fd;
+               pthread_mutex_unlock(&g_x11_mutex);
+               // Wake up tty_to_commlib so it picks up the new fd in its select loop.
+               wakeup_tty_to_commlib_thread("commlib_to_tty X11_OPEN");
+               break;
+            }
+            case X11_DATA_MSG: {
+               // Data from shepherd's X11 relay (job → real X server direction).
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               pthread_mutex_lock(&g_x11_mutex);
+               int fd = g_x11_fds[conn_id];
+               pthread_mutex_unlock(&g_x11_mutex);
+               if (fd >= 0) {
+                  int data_len = static_cast<int>(recv_mess.cl_message->message_length) - 3;
+                  DPRINTF("commlib_to_tty: X11_DATA_MSG conn_id %d, %d bytes\n", conn_id, data_len);
+                  sge_writenbytes(fd, recv_mess.data + 2, data_len);
+               }
+               break;
+            }
+            case X11_CLOSE_MSG: {
+               // Shepherd closed an X11 connection (job side closed).
+               if (recv_mess.cl_message->message_length < 3) {
+                  DPRINTF("commlib_to_tty: X11_CLOSE_MSG too short\n");
+                  break;
+               }
+               int conn_id = (static_cast<unsigned char>(recv_mess.data[0]) << 8)
+                           | static_cast<unsigned char>(recv_mess.data[1]);
+               if (conn_id < 0 || conn_id >= X11_MAX_CONNS) {
+                  DPRINTF("commlib_to_tty: X11_CLOSE_MSG conn_id %d out of range\n", conn_id);
+                  break;
+               }
+               DPRINTF("commlib_to_tty: X11_CLOSE_MSG conn_id %d\n", conn_id);
+               pthread_mutex_lock(&g_x11_mutex);
+               if (g_x11_fds[conn_id] >= 0) {
+                  close(g_x11_fds[conn_id]);
+                  g_x11_fds[conn_id] = -1;
+               }
+               pthread_mutex_unlock(&g_x11_mutex);
+               break;
+            }
+            case KEEPALIVE_ACK_MSG:
+               DPRINTF("commlib_to_tty: received KEEPALIVE_ACK\n");
+               g_keepalive_missed = 0;
+               break;
+            case RECONNECT_REQUEST_MSG: {
+               // CS-2144: shepherd's first message after a reconnect attempt is
+               // RECONNECT_REQUEST_MSG carrying the one-time token that qmaster handed
+               // to both sides.  Validate it, then either accept (the shell is already
+               // running on the shepherd side — we just take over the PTY bridge) or
+               // reject (shepherd will give up and let the grace period expire).
+               const char *token = recv_mess.data;
+               DPRINTF("commlib_to_tty: received RECONNECT_REQUEST_MSG\n");
+               if (g_expected_reconnect_token == nullptr) {
+                  DPRINTF("commlib_to_tty: RECONNECT_REQUEST_MSG outside reconnect mode -> reject\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *) " ", 1,
+                                     RECONNECT_REJECT_MSG, &err_msg);
+                  do_exit = 1;
+                  continue;
+               }
+               if (token == nullptr || strcmp(token, g_expected_reconnect_token) != 0) {
+                  DPRINTF("commlib_to_tty: RECONNECT token mismatch -> reject\n");
+                  comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                     (unsigned char *) " ", 1,
+                                     RECONNECT_REJECT_MSG, &err_msg);
+                  do_exit = 1;
+                  continue;
+               }
+               DPRINTF("commlib_to_tty: RECONNECT token matched -> accept\n");
+               // CS-2145: embed current PTY winsize in the ACCEPT payload so the shepherd
+               // applies TIOCSWINSZ before SIGCONT'ing the job. The new client almost always
+               // has different geometry than the original; without this, the job briefly resumes
+               // at the old size and any "fancy" output in that window is misformatted.
+               // Format mirrors the WINDOW_SIZE_CTRL_MSG body so the shepherd can reuse its parser.
+               struct winsize ws_reconnect;
+               char accept_buf[200];
+               int accept_len;
+               if (ioctl(fileno(stdin), TIOCGWINSZ, &ws_reconnect) >= 0
+                   && ws_reconnect.ws_row > 0 && ws_reconnect.ws_col > 0) {
+                  accept_len = snprintf(accept_buf, sizeof(accept_buf), "WS %d %d %d %d",
+                                        ws_reconnect.ws_row, ws_reconnect.ws_col,
+                                        ws_reconnect.ws_xpixel, ws_reconnect.ws_ypixel);
+                  DPRINTF("commlib_to_tty: sending RECONNECT_ACCEPT_MSG with winsize %d x %d\n",
+                          ws_reconnect.ws_row, ws_reconnect.ws_col);
+               } else {
+                  // Same fallback as client_check_window_change() in the no-tty case.
+                  accept_len = snprintf(accept_buf, sizeof(accept_buf), "WS 60 80 480 640");
+                  DPRINTF("commlib_to_tty: ioctl(TIOCGWINSZ) returned no usable size; "
+                          "sending RECONNECT_ACCEPT_MSG with fallback 60 x 80\n");
+               }
+               comm_write_message(g_comm_handle, g_hostname, COMM_CLIENT, 1,
+                                  (unsigned char *) accept_buf, accept_len,
+                                  RECONNECT_ACCEPT_MSG, &err_msg);
+               comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
+               // Take over the session.  Unlike REGISTER_CTRL_MSG we do NOT send
+               // X11_AUTH_MSG (X11 forwarding already set up at job start) or
+               // SETTINGS_CTRL_MSG (shell already running with its noshell setting).
+               // tty_to_commlib's window-change check will fire again on the next SIGWINCH;
+               // the winsize already shipped in ACCEPT covers the initial geometry.
+               g_client_connected = true;
+               wakeup_tty_to_commlib_thread("commlib_to_tty/reconnect");
+               break;
+            }
             case UNREGISTER_CTRL_MSG:
                /* control message */
                /* the client wants to quit, as this is the last message the client
@@ -660,51 +1212,40 @@ void* commlib_to_tty(void *t_conf)
    DRETURN(nullptr);
 }
 
-/****** run_ijs_server() *******************************************************
-*  NAME
-*     run_ijs_server() -- The servers main loop
-*
-*  SYNOPSIS
-*     int run_ijs_server(uint32_t job_id, int nostdin, int noshell,
-*                        int is_rsh, int is_qlogin, int force_pty,
-*                        int *p_exit_status)
-*
-*  FUNCTION
-*     The main loop of the commlib server, handling the data transfer from
-*     and to the client.
-*
-*  INPUTS
-*     COMM_HANDLE *handle - Handle of the COMM server
-*     uint32_t job_id    - SGE job id of this job
-*     int nostdin        - The "-nostdin" switch
-*     int noshell        - The "-noshell" switch
-*     int is_rsh         - Is it a qrsh with commandline?
-*     int is_qlogin      - Is it a qlogin or qrsh without commandline?
-*     int suspend_remote - suspend_remote switch of qrsh
-*     int force_pty      - The user forced use of pty by the "-pty yes" switch
-*
-*  OUTPUTS
-*     int *p_exit_status - The exit status of qrsh_starter in case of
-*                          "qrsh <command>" or the exit status of the shell in
-*                          case of "qrsh <no command>"/"qlogin".
-*                          If the job was signalled, the exit code is 128+signal.
-*
-*  RESULT
-*     int - 0: Ok.
-*           1: Invalid parameter
-*           2: Log list not initialized
-*           3: Error setting terminal mode
-*           4: Can't create tty_to_commlib thread
-*           5: Can't create commlib_to_tty thread
-*           6: Error shutting down commlib connection
-*           7: Error resetting terminal mode
-*
-*  NOTES
-*     MT-NOTE: run_ijs_server is not MT-safe
-*******************************************************************************/
+/**
+ * @brief Main loop of the commlib IJS server.
+ *
+ * Handles data transfer between the qrsh/qlogin client and the shepherd of
+ * the interactive job.  Starts the tty_to_commlib and commlib_to_tty worker
+ * threads and waits for them to finish.  When @p forward_x11 is true, the
+ * MIT-MAGIC-COOKIE-1 is fetched in the main thread before the workers start
+ * and the threads handle the X11 forwarding protocol between the client's X
+ * server and the job's proxy display on the execution host.
+ *
+ * @param handle         Handle of the COMM server.
+ * @param remote_host    Hostname of the execution host.
+ * @param nostdin        Non-zero when the "-nostdin" flag was passed.
+ * @param noshell        Non-zero when the "-noshell" flag was passed.
+ * @param is_rsh         Non-zero for qrsh with a command line argument.
+ * @param is_qlogin      Non-zero for qlogin or qrsh without a command.
+ * @param force_pty      Ternary::Yes when the user forced pty via "-pty yes".
+ * @param suspend_remote Ternary::Yes to suspend the remote process on Ctrl-Z.
+ * @param forward_x11    If true, fetch the MIT-MAGIC-COOKIE-1 for $DISPLAY
+ *                       and enable X11 forwarding to the job.
+ * @param[out] p_exit_status Exit status of the remote command (128+signal if
+ *                           killed by a signal).
+ * @param[out] p_err_msg     Error description on failure.
+ * @return 0 on success; non-zero error code otherwise:
+ *         1 invalid parameter, 2 log list not initialized,
+ *         3 terminal mode error, 4 tty_to_commlib thread error,
+ *         5 commlib_to_tty thread error, 6 commlib shutdown error,
+ *         7 terminal mode reset error.
+ * @note MT-NOTE: not MT-safe.
+ */
 int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, int noshell,
                    int is_rsh, int is_qlogin, const ocs::Ternary force_pty,
-                   const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg)
+                   const ocs::Ternary suspend_remote, int *p_exit_status, dstring *p_err_msg,
+                   bool forward_x11, char escape_char)
 {
    int               ret = 0, ret_val = 0;
    THREAD_HANDLE     *pthread_tty_to_commlib = nullptr;
@@ -729,6 +1270,37 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
    g_noshell = noshell;
    g_pid = getpid();
    g_is_rsh = is_rsh;
+   g_escape_char        = escape_char;
+   g_escape_disconnect  = false;
+   g_keepalive_interval = mconf_get_ijs_keepalive_interval();
+   g_keepalive_count    = mconf_get_ijs_keepalive_count();
+   g_keepalive_missed   = 0;
+
+   // Initialize X11 forwarding state before starting threads.
+   g_forward_x11 = forward_x11;
+   g_x11_cookie_hex[0] = '\0';
+   for (int i = 0; i < X11_MAX_CONNS; i++) {
+      g_x11_fds[i] = -1;
+   }
+   if (forward_x11) {
+      const char *display = getenv("DISPLAY");
+      if (display != nullptr) {
+         snprintf(g_x11_display, sizeof(g_x11_display), "%s", display);
+         // Fetch the cookie now, in the main thread, before worker threads start.
+         // This avoids popen() being called from a worker thread where SIGCHLD
+         // masks inherited from the parent may differ.
+         if (!x11_get_cookie(g_x11_display, g_x11_cookie_hex, sizeof(g_x11_cookie_hex))) {
+            g_x11_cookie_hex[0] = '\0';
+            fprintf(stderr, "Warning: X11 forwarding requested but xauth failed for DISPLAY=%s; forwarding disabled\n",
+                    g_x11_display);
+         }
+      } else {
+         g_x11_display[0] = '\0';
+         DPRINTF("run_ijs_server: -X given but DISPLAY is not set; X11 forwarding unavailable\n");
+      }
+   } else {
+      g_x11_display[0] = '\0';
+   }
 
    if (suspend_remote == ocs::Ternary::Unset || suspend_remote == ocs::Ternary::No) {
       g_suspend_remote = 0;
@@ -756,6 +1328,7 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
          return 3;
       } else {
         g_raw_mode_state = 1;
+        atexit(atexit_leave_raw_mode);
       }
    }
 
@@ -833,48 +1406,59 @@ cleanup:
 
    *p_exit_status = g_exit_status;
 
+   // Close any still-open X11 server connections.
+   if (g_forward_x11) {
+      pthread_mutex_lock(&g_x11_mutex);
+      for (int i = 0; i < X11_MAX_CONNS; i++) {
+         if (g_x11_fds[i] >= 0) {
+            close(g_x11_fds[i]);
+            g_x11_fds[i] = -1;
+         }
+      }
+      pthread_mutex_unlock(&g_x11_mutex);
+   }
+
    thread_cleanup_lib(&thread_lib_handle);
    DRETURN(ret_val);
 }
 
-/****** sge_client_ijs/start_ijs_server() **************************************
-*  NAME
-*     start_ijs_server() -- starts the commlib server for the builtin
-*                           interactive job support
-*
-*  SYNOPSIS
-*     int start_ijs_server(const char* username, int csp_mode,
-*                          COMM_HANDLE **phandle, dstring *p_err_msg)
-*
-*  FUNCTION
-*     Starts the commlib server for the commlib connection between the shepherd
-*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
-*     Over this connection the stdin/stdout/stderr input/output is transferred.
-*
-*  INPUTS
-*     bool csp_mode -        If false, the server uses unsecured communications,
-*                            otherwise it uses secured communictions.
-*     const char* username - The owner of the certificates that are used to
-*                            secure the connection.
-*                            Used only in CSP mode, otherwise ignored.
-*  OUTPUTS
-*     COMM_HANDLE **handle - Pointer to the COMM server handle.
-*                            Gets initialized in this function.
-*     dstring *p_err_msg -   Contains the error reason in case of error.
-*
-*  RESULT
-*     int - 0: OK
-*           1: Can't open connection
-*           2: Can't set connection parameters
-*
-*  NOTES
-*     MT-NOTE: start_builtin_ijs_server() is not MT safe
-*
-*  SEE ALSO
-*     sge_client_ijs/run_ijs_server()
-*     sge_client_ijs/stop_ijs_server()
-*     sge_client_ijs/force_ijs_server_shutdown()
-*******************************************************************************/
+/**
+ * @brief Start the commlib server for builtin interactive job support (IJS).
+ *
+ * Opens the commlib server endpoint used for the connection between the
+ * qrsh/qlogin client and the shepherd of the interactive job.  Over this
+ * connection stdin/stdout/stderr and X11 forwarding data are transferred.
+ *
+ * When @p port_range is nullptr or empty the OS assigns an ephemeral port.
+ * Otherwise the function iterates through the RN_Type range list (which may
+ * contain multiple min-max[:step] sub-ranges from the mconf @c port_range
+ * setting) and binds to the first available port, allowing administrators to
+ * restrict qrsh to a firewall-friendly port range.
+ *
+ * @param communication_framework Communication framework; controls whether
+ *                                 TLS (CSP) is used.
+ * @param hostname                 Hostname of the execution host the shepherd
+ *                                 will connect back to.
+ * @param username                 Owner of the TLS certificates; used only
+ *                                 when CSP mode is active, otherwise ignored.
+ * @param port_range               RN_Type CULL range list of ports to try, or
+ *                                 nullptr/empty for an OS-assigned ephemeral
+ *                                 port.  Supports N-M and N-M:S (step) syntax.
+ * @param[out] phandle             Receives the initialized COMM server handle.
+ * @param[out] p_err_msg           Error description on failure.
+ * @return 0 on success;
+ *         1 if no connection could be opened (no port available in range);
+ *         2 if connection parameters could not be set.
+ * @note MT-NOTE: not MT-safe.
+ */
+void set_expected_reconnect_token(const char *token) {
+   g_expected_reconnect_token = token;
+}
+
+bool ijs_was_escape_disconnect() {
+   return g_escape_disconnect;
+}
+
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
                      const char* username, const lList *port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg)

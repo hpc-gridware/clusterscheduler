@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -38,6 +38,7 @@
 
 #include <sys/wait.h>
 
+#include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
@@ -57,6 +58,18 @@
 
 #define allow_delete_time_modification
 
+static int s_fail = 0;
+
+#define CHECK(id, label, expr) \
+   do { \
+      if (!(expr)) { \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
+         ++s_fail; \
+      } else { \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
+      } \
+   } while (0)
+
 static int diff(const char *file1, const char *file2);
 static int PE_test();
 static int CAL_test();
@@ -75,56 +88,65 @@ static int HGRP_test();
 static int CONF_test();
 static int RQS_test();
 static int AR_test();
+static int PE_minimal_test();
+static int CE_minimal_test();
+static int PE_zero_slots_test();
+static int PE_max_slots_test();
+static int CE_zero_values_test();
+static int CE_max_values_test();
+static int PE_spaces_test();
+static int CE_special_test();
+static int PE_empty_lists_test();
+static int PE_large_list_test();
 
 typedef int (*func)();
 
-/*
- * 
- */
 int main(int argc, char** argv)
 {
-   const func test_array[] = {
-                               PE_test,
-                               CAL_test,
-                               CK_test,
-                               STN_test,
-                               CE_test,
-                               CEL_test,
-                               UU_test,
-                               PR_test,
-                               EH_test,
-                               US_test,
-                               CQ_test,
-                               SC_test,
-                               QU_test,
-                               HGRP_test,
-                               CONF_test,                               
-                               AR_test,
-                               RQS_test,
-                               nullptr };
-
-   DENTER_MAIN(TOP_LAYER, "test_ff_cl");   
+   DENTER_MAIN(TOP_LAYER, "test_ff_cl");
 
    if (argc > 1) {
       int ret;
-
-      while((ret = spool_lex())) {
+      while ((ret = spool_lex())) {
          printf("line %3d: token %3d: %s\n", spool_line, ret, spool_text);
       }
-   }
-   else {
-      int i = 0;
-      lInit(nmv);
-
-      while (test_array[i] != nullptr) {
-         if (test_array[i]() != 0) {
-            sge_exit(1);
-         }
-         i++;
-      }
+      DRETURN(0);
    }
 
-   DRETURN_VOID(EXIT_SUCCESS);
+   component_set_daemonized(true);
+   lInit(nmv);
+
+   int id = 1;
+   CHECK(id, "PE: write-read-write round-trip produces identical output",   PE_test()   == 0); id++;
+   CHECK(id, "CAL: write-read-write round-trip produces identical output",  CAL_test()  == 0); id++;
+   CHECK(id, "CK: write-read-write round-trip produces identical output",   CK_test()   == 0); id++;
+   CHECK(id, "STN: write-read-write round-trip produces identical output",  STN_test()  == 0); id++;
+   CHECK(id, "CE: write-read-write round-trip produces identical output",   CE_test()   == 0); id++;
+   CHECK(id, "CEL: write-read-write round-trip produces identical output",  CEL_test()  == 0); id++;
+   CHECK(id, "UU: write-read-write round-trip produces identical output",   UU_test()   == 0); id++;
+   CHECK(id, "PR: write-read-write round-trip produces identical output",   PR_test()   == 0); id++;
+   CHECK(id, "EH: write-read-write round-trip produces identical output",   EH_test()   == 0); id++;
+   CHECK(id, "US: write-read-write round-trip produces identical output",   US_test()   == 0); id++;
+   CHECK(id, "CQ: write-read-write round-trip produces identical output",   CQ_test()   == 0); id++;
+   CHECK(id, "SC: write-read-write round-trip produces identical output",   SC_test()   == 0); id++;
+   CHECK(id, "QU: write-read-write round-trip produces identical output",   QU_test()   == 0); id++;
+   CHECK(id, "HGRP: write-read-write round-trip produces identical output", HGRP_test() == 0); id++;
+   CHECK(id, "CONF: write-read-write round-trip produces identical output", CONF_test() == 0); id++;
+   CHECK(id, "AR: write-read-write round-trip produces identical output",   AR_test()   == 0); id++;
+   CHECK(id, "RQS: write-read-write round-trip produces identical output",  RQS_test()  == 0); id++;
+   CHECK(id, "PE minimal: only name set, all other fields at default",           PE_minimal_test()      == 0); id++;
+   CHECK(id, "CE minimal: name, shortcut, and lowest valid enum values",          CE_minimal_test()      == 0); id++;
+   CHECK(id, "PE boundary: slots=0 round-trips correctly",                       PE_zero_slots_test()   == 0); id++;
+   CHECK(id, "PE boundary: slots=4294967295 (UINT32 max) round-trips correctly", PE_max_slots_test()    == 0); id++;
+   CHECK(id, "CE boundary: consumable=NO(0) and string fields at \"0\" round-trip", CE_zero_values_test()  == 0); id++;
+   CHECK(id, "CE boundary: large urgency_weight string round-trips correctly",   CE_max_values_test()   == 0); id++;
+   CHECK(id, "PE special chars: spaces in proc args round-trip correctly",       PE_spaces_test()       == 0); id++;
+   CHECK(id, "CE special chars: decimal and scientific notation in fields",      CE_special_test()      == 0); id++;
+   CHECK(id, "PE empty lists: explicitly empty user_list and xuser_list",        PE_empty_lists_test()  == 0); id++;
+   CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
+
+   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
+   DRETURN(s_fail == 0 ? 0 : 1);
 }
 
 static int PE_test()
@@ -260,7 +282,6 @@ static int PE_test()
    
    lSetList(ep, PE_xuser_list, lp);
 
-   printf("PE: spool\n");
    /* Write a PE file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        PE_fields,
@@ -308,7 +329,6 @@ static int CAL_test()
    lSetString(ep, CAL_year_calendar, "2004");
    lSetString(ep, CAL_week_calendar, "KW 05");
 
-   printf("CAL: spool\n");
    /* Write a CAL file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        CAL_fields,
@@ -365,7 +385,6 @@ static int CK_test()
    lSetUlong(ep, CK_job_pid, 1313);
    lSetString(ep, CK_clean_command, "clean_command");
    
-   printf("CK: spool\n");
    /* Write a CK file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        CK_fields,
@@ -473,7 +492,6 @@ static int STN_test() {
 
    fields = sge_build_STN_field_list(true, true);
    
-   printf("STN: spool\n");
    /* Write a STN file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        fields,
@@ -528,7 +546,6 @@ static int CE_test()
    lSetUlong(ep, CE_requestable, REQU_NO);
    lSetString(ep, CE_urgency_weight, "20");
    
-   printf("CE: spool\n");
    /* Write a CE file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        CE_fields,
@@ -600,7 +617,6 @@ static int CEL_test()
    
    spool_flatfile_align_list(&alp,(const lList *)lp, CE_fields, 0);
    
-   printf("CEL: spool\n");
    /* Write a CEL file using classic spooling */
    file1 = spool_flatfile_write_list(&alp, lp,
                                      CE_fields,
@@ -644,9 +660,9 @@ static int diff(const char *file1, const char *file2)
    SGE_ASSERT(argv != nullptr);
    const char *path = "/usr/bin/diff";
 
-   if(file1 == nullptr || file2 == nullptr) {
+   if (file1 == nullptr || file2 == nullptr) {
       printf("file pointer is <nullptr>\n");
-      sge_exit(1);
+      return 1;
    }
    
    if(!fork()) {
@@ -935,7 +951,6 @@ static int UU_test() {
    lp = buildDebitedUsageList();
    lSetList(user, UU_debited_job_usage, lp);
 
-   printf("UU: spool\n");
 
    fields = sge_build_UU_field_list(true);
 
@@ -1005,7 +1020,6 @@ static int PR_test() {
 
    fields = sge_build_PR_field_list(true);
 
-   printf("PR: spool\n");
    /* Write a PR file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, prj, false,
                                      fields,
@@ -1076,7 +1090,6 @@ static int US_test()
    
    lSetList(ep, US_entries, lp);
    
-   printf("US: NO ARGS\n");
    /* Write a US file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        US_fields,
@@ -1312,7 +1325,6 @@ static int EH_test()
 
    fields = sge_build_EH_field_list(true, false, false);
 
-   printf("EH: spool\n");
    /* Write a EH file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        fields,
@@ -2125,7 +2137,6 @@ static int CQ_test() {
 
    lSetList(ep, CQ_h_vmem, lp);
 
-   printf("CQ: No Args\n");   
    /* Write a CQ file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        CQ_fields,
@@ -2249,7 +2260,6 @@ static int SC_test()
    lSetUlong(ep, SC_max_reservation, 33.00);
    lSetString(ep, SC_default_duration, "default_duration");
 
-   printf("SC: No Args\n");   
    /* Write a SC file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
                                        SC_fields,
@@ -2302,7 +2312,6 @@ static int QU_test()
    lSetUlong64(ep, QU_pending_signal_delivery_time, 3000000);
    lSetUlong(ep, QU_version, 4);
 
-   printf("QU: No Args\n");   
 
    fields = sge_build_QU_field_list(false, true);
    
@@ -2357,7 +2366,6 @@ static int HGRP_test()
    lAddSubHost(ep, HR_name, "Test_Name3", HGRP_host_list, HR_Type);
    lAddSubHost(ep, HR_name, "Test_Name4", HGRP_host_list, HR_Type);
    
-   printf("HGRP: No Args\n");   
    
    /* Write a HGRP file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
@@ -2447,7 +2455,6 @@ static int CONF_test() {
    
    lSetList(ep, CONF_entries, lp);
    
-   printf("CONF: No Args\n");
 
    fields = sge_build_CONF_field_list(true);
    
@@ -2606,7 +2613,6 @@ static int RQS_test() {
    lSetList(ep, RQS_rule, lp1);
    lAppendElem(rqs_list, ep);
 
-   printf("RQRF: No Args\n");   
 
    /* Write a RQS file using classic spooling */
    file1 = spool_flatfile_write_list(&alp, rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, file1, false);
@@ -2695,7 +2701,6 @@ static int AR_test() {
    lAddSubStr(ep, ARA_name, "@userset2", AR_acl_list, ARA_Type);
 
   
-   printf("AR: No Args\n");   
    
    /* Write a AR file using classic spooling */
    file1 = spool_flatfile_write_object(&alp, ep, false,
@@ -2727,6 +2732,354 @@ static int AR_test() {
    sge_free(&file1);
    sge_free(&file2);
    
-   answer_list_output(&alp);   
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_minimal_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // only name set — all other fields remain at CULL defaults
+   lSetString(ep, PE_name, "minimal_pe");
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int CE_minimal_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(CE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // minimum valid CE: name + shortcut + lowest valid enum values; no defaultval or urgency_weight
+   lSetString(ep, CE_name, "minimal_ce");
+   lSetString(ep, CE_shortcut, "mc");
+   lSetUlong(ep, CE_valtype, 1);            // INT = first valid type (0 is not valid)
+   lSetUlong(ep, CE_relop, CMPLXEQ_OP);    // == = first valid relop
+   lSetUlong(ep, CE_requestable, REQU_NO);  // NO = first valid requestable
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                   CE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_zero_slots_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   lSetString(ep, PE_name, "zero_slots_pe");
+   lSetUlong(ep, PE_slots, 0);
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_max_slots_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   lSetString(ep, PE_name, "max_slots_pe");
+   lSetUlong(ep, PE_slots, 4294967295U);   ///< UINT32_MAX — stress-tests ulong serialization
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int CE_zero_values_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(CE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // enum fields at minimum valid values; consumable=0 (CONSUMABLE_NO is genuinely 0);
+   // string fields explicitly set to "0" — tests zero-valued numeric strings round-trip
+   lSetString(ep, CE_name, "zero_ce");
+   lSetString(ep, CE_shortcut, "zc");
+   lSetUlong(ep, CE_valtype, 1);            // INT (0 is not a valid type)
+   lSetUlong(ep, CE_relop, CMPLXEQ_OP);    // == (0 is not a valid relop)
+   lSetUlong(ep, CE_consumable, CONSUMABLE_NO);  // 0 = "NO" (valid)
+   lSetString(ep, CE_defaultval, "0");
+   lSetUlong(ep, CE_requestable, REQU_NO);  // 1 (0 is not a valid requestable)
+   lSetString(ep, CE_urgency_weight, "0");
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                   CE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int CE_max_values_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(CE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // large numeric string in urgency_weight — tests wide-value serialization
+   lSetString(ep, CE_name, "max_ce");
+   lSetString(ep, CE_shortcut, "m");
+   lSetUlong(ep, CE_valtype, 1);
+   lSetUlong(ep, CE_relop, 5);
+   lSetUlong(ep, CE_consumable, 1);
+   lSetString(ep, CE_defaultval, "1234567890");
+   lSetUlong(ep, CE_requestable, REQU_NO);
+   lSetString(ep, CE_urgency_weight, "1234567890");
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                   CE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_spaces_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // embedded spaces in proc args test token preservation across write/read
+   lSetString(ep, PE_name, "spaces_pe");
+   lSetUlong(ep, PE_slots, 4);
+   lSetString(ep, PE_start_proc_args, "/bin/sh -c start_script arg1 arg2");
+   lSetString(ep, PE_stop_proc_args, "/bin/sh -c stop_script arg1 arg2");
+   lSetString(ep, PE_allocation_rule, "$pe_slots");
+   lSetBool(ep, PE_control_slaves, true);
+   lSetBool(ep, PE_job_is_first_task, false);
+   lSetString(ep, PE_urgency_slots, "min");
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int CE_special_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(CE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // decimal and scientific notation strings test parser tolerance for unusual number formats
+   lSetString(ep, CE_name, "special_ce");
+   lSetString(ep, CE_shortcut, "sc");
+   lSetUlong(ep, CE_valtype, 1);
+   lSetUlong(ep, CE_relop, 5);
+   lSetUlong(ep, CE_consumable, 0);
+   lSetString(ep, CE_defaultval, "0.001");
+   lSetUlong(ep, CE_requestable, REQU_YES);
+   lSetString(ep, CE_urgency_weight, "1.5e2");
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                   CE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       CE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_empty_lists_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   // explicitly empty lists (not null) — verify they serialize identically to null lists
+   lSetString(ep, PE_name, "empty_lists_pe");
+   lSetUlong(ep, PE_slots, 1);
+   lSetList(ep, PE_user_list,  lCreateList("", US_Type));
+   lSetList(ep, PE_xuser_list, lCreateList("", US_Type));
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+static int PE_large_list_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   const char *file1 = nullptr;
+   const char *file2 = nullptr;
+
+   lSetString(ep, PE_name, "large_list_pe");
+   lSetUlong(ep, PE_slots, 10);
+
+   // 10-element user_list — verifies that list ordering and content survive round-trip
+   lList *lp = lCreateList("User_List", US_Type);
+   for (int i = 0; i < 10; i++) {
+      char name[32];
+      snprintf(name, sizeof(name), "user%02d", i);
+      lListElem *ep2 = lCreateElem(US_Type);
+      lSetString(ep2, US_name, name);
+      lSetUlong(ep2, US_fshare, i * 100);
+      lAppendElem(lp, ep2);
+   }
+   lSetList(ep, PE_user_list, lp);
+
+   file1 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file1, false);
+   lFreeElem(&ep);
+   ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
+                                   PE_fields, nullptr, true, &qconf_sfi,
+                                   SP_FORM_ASCII, nullptr, file1);
+   file2 = spool_flatfile_write_object(&alp, ep, false,
+                                       PE_fields, &qconf_sfi,
+                                       SP_DEST_TMP, SP_FORM_ASCII, file2, false);
+   lFreeElem(&ep);
+   int ret = diff(file1, file2);
+   sge_unlink(nullptr, file1);
+   sge_unlink(nullptr, file2);
+   sge_free(&file1);
+   sge_free(&file2);
+   answer_list_output(&alp);
    return ret;
 }

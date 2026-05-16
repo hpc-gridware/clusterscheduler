@@ -2240,10 +2240,6 @@ DTRACE;
 
       if(!strcmp("-suspend_remote", *sp)) {
          /* next field is "y|n" */
-# if !defined(UGE)
-         answer_list_add_sprintf(&answer, STATUS_ENOIMP, ANSWER_QUALITY_WARNING,
-                                 MSG_PARSE_FEATURENOTSUPPORTEDOS_S, "-suspend_remote");
-# endif
          sp++;
          if (!*sp) {
              answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
@@ -2273,6 +2269,14 @@ DTRACE;
 
       if(!strcmp("-noshell", *sp)) {
          ep_opt = sge_add_noarg(pcmdline, noshell_OPT, *sp, nullptr);
+         sp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-X" — enable X11 forwarding for builtin IJS mode; handled by caller */
+
+      if(!strcmp("-X", *sp)) {
+         ep_opt = sge_add_noarg(pcmdline, x11_OPT, *sp, nullptr);
          sp++;
          continue;
       }

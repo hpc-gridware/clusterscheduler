@@ -908,8 +908,77 @@ setting *ENABLE_SUBMIT_LD_PRELOAD* to TRUE.
 In general the correct job environment should be set up in the job script or in a prolog, making the use of the 
 `-v` or `-V` option for this purpose unnecessary.
 
-Changing *qmaster_params* will take immediate effect, except *gdi_timeout*, *gdi_retries*, *cl_ping*, these will 
-take effect only for new connections. The default for *qmaster_params* is *NONE*.
+***ijs_escape_char***
+
+Sets the escape character used by the builtin IJS (Interactive Job Support) client during
+interactive sessions started with qlogin(1) or qrsh(1) without a command. When the escape
+character is typed at the very start of a line — immediately after a newline or carriage return,
+or at the very beginning of the session — followed by a dot (`.`), the client disconnects the
+session and causes the remote job to be terminated.
+
+The sequence *escape*`.` disconnects; the sequence *escape*`escape` sends a single literal
+escape character to the remote shell. Any other *escape*`X` pair is forwarded unchanged.
+
+The default value is `~`, matching the SSH convention. Set to `none` to disable escape
+processing entirely; in that case no character has special meaning and all input is forwarded
+verbatim to the remote shell.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changing *ijs_escape_char* takes effect for new sessions immediately.
+
+Example: `ijs_escape_char=|` makes `|.` (pipe-dot at line start) the disconnect sequence.
+
+***ijs_keepalive_interval***
+
+Sets the idle interval in seconds between keepalive probes sent by the builtin IJS client during
+interactive sessions started with qlogin(1) or qrsh(1) without a command. When the session has
+carried no user input for this many seconds, the client sends a lightweight probe to the shepherd;
+the shepherd replies immediately. If the reply does not arrive before the next probe is due
+(see *ijs_keepalive_count*), the miss is counted. Once the miss count exceeds *ijs_keepalive_count*
+the client prints a timeout message, restores the terminal, and exits — equivalent to a manual
+`~.` disconnect.
+
+A value of `0` disables keepalive probing entirely. The default is `60`.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changing *ijs_keepalive_interval* takes effect for new sessions immediately.
+
+***ijs_keepalive_count***
+
+Sets the maximum number of consecutive unanswered keepalive probes before the builtin IJS client
+considers the connection dead and terminates the session. The effective dead-connection timeout
+is approximately `ijs_keepalive_interval * (ijs_keepalive_count + 1)` seconds.
+
+The value must be greater than zero. The default is `3`.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changing *ijs_keepalive_count* takes effect for new sessions immediately.
+
+Example: `ijs_keepalive_interval=30 ijs_keepalive_count=3` declares a connection dead after
+approximately 120 seconds without an ACK (four probe intervals).
+
+***ijs_reconnect_timeout***
+
+Sets the grace period in seconds during which the shepherd will keep an interactive job
+(qlogin(1) or qrsh(1) without a command) alive after an unexpected loss of the client
+connection. Within this window the job is suspended with SIGSTOP and held; if no client
+reconnects before the timeout expires the job is killed normally with SIGKILL.
+
+A value of `0` disables the grace period entirely and preserves the historical behaviour
+of terminating the job immediately when the client disconnects. The default is `0`.
+
+This parameter is relevant only when *qlogin_command* is set to `builtin` (the default).
+Changes take effect for jobs started after the configuration is updated.
+
+Within the grace window a new client may take over the session with `qrsh -reconnect &lt;job_id&gt;`
+or `qlogin -reconnect &lt;job_id&gt;` from any submit host.  qmaster validates that the requester
+owns the job, brokers a one-time token to both sides, and the shepherd resumes the original
+session against the new client.
+
+Example: `ijs_reconnect_timeout=300` gives a user five minutes to recover an interactive
+job after a VPN hiccup or laptop suspend before it is killed.
+
+Changing *qmaster_params* will take immediate effect. The default for *qmaster_params* is *NONE*.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
 

@@ -59,6 +59,15 @@
 #define SUSPEND_CTRL_MSG             8
 #define UNSUSPEND_CTRL_MSG           9
 #define STDIN_CLOSE_MSG              10
+#define X11_AUTH_MSG                 11  ///< client→shepherd: real MIT-MAGIC-COOKIE-1 hex string
+#define X11_OPEN_MSG                 12  ///< shepherd→client: 2-byte big-endian conn_id (new X11 connection)
+#define X11_DATA_MSG                 13  ///< bidirectional: 2-byte big-endian conn_id followed by X11 data
+#define X11_CLOSE_MSG                14  ///< bidirectional: 2-byte big-endian conn_id (connection closed)
+#define KEEPALIVE_MSG                15  ///< client→shepherd: keepalive probe (are you there?)
+#define KEEPALIVE_ACK_MSG            16  ///< shepherd→client: keepalive acknowledgement (yes, I'm here)
+#define RECONNECT_REQUEST_MSG        17  ///< shepherd→client (reconnect): identity proof carrying the one-time token
+#define RECONNECT_ACCEPT_MSG         18  ///< client→shepherd: token validated, take over the session
+#define RECONNECT_REJECT_MSG         19  ///< client→shepherd: token mismatch — shepherd must give up and kill the job
 
 #define COMM_RETVAL_OK                    0
 #define COMM_INVALID_PARAMETER            1

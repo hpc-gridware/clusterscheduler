@@ -569,54 +569,102 @@ static int split_command(char *command, char ***cmdargs) {
    return argc;
 }
 
-/****** Interactive/qrsh/join_command() ********************************************
-*  NAME
-*     join_command() -- join arguments to a single string
-*
-*  SYNOPSIS
-*     static char* join_command(int argc, char **argv)
-*
-*  FUNCTION
-*     Joins arguments given in an argument vector (string array) to a single
-*     character string where the arguments are separated by a single blank.
-*     This is used, to pass an argument vector as one argument to a call
-*     <shell> -c <commandline>.
-*
-*  INPUTS
-*     int argc    - argument count
-*     char **argv - argument vector
-*
-*  RESULT
-*     static char* - the resulting commandline or nullptr, if an error occurred.
-*
-*  SEE ALSO
-*     Interactive/qrsh/split_command()
-*
-*******************************************************************************/
-static char *join_command(int argc, char **argv) {
-   int i;
-   int length = 0;
-   char *buffer;
+/**
+ * @brief Wrap @p arg in POSIX-shell single quotes so it survives `bash -c`
+ *        re-tokenization as exactly one token.
+ *
+ * Single-quoting is fully literal in POSIX shells — every character (including
+ * spaces, $, `, ;, &, *, ", backslash) is taken verbatim — except for `'`
+ * itself, which cannot appear inside single quotes. We split the quoted run at
+ * each literal single quote and splice in `'\''` (close-quote, escaped-quote,
+ * re-open-quote), the standard idiom used by GNU `shquote`, Python's
+ * `shlex.quote`, etc.
+ *
+ * Worst-case length: every input char becomes `'\''` (4 chars), plus the
+ * outer opening/closing `'`, plus a NUL → 4n + 3.
+ *
+ * CS-2153: required so that `qrsh -b y` invocations whose argv contains spaces
+ * or shell metacharacters (e.g. `qrsh -b y /bin/sh -c "echo a; echo b"`)
+ * preserve the original word boundaries when join_command rebuilds the command
+ * string for `bash -c`.
+ *
+ * @return A freshly allocated, NUL-terminated buffer; caller must `sge_free` it.
+ *   Returns nullptr on allocation failure.
+ */
+static char *shell_quote(const char *arg) {
+   if (arg == nullptr) {
+      arg = "";
+   }
+   size_t in_len = strlen(arg);
+   char *buf = sge_malloc(4 * in_len + 3);
+   if (buf == nullptr) {
+      return nullptr;
+   }
+   char *p = buf;
+   *p++ = '\'';
+   for (const char *s = arg; *s != '\0'; s++) {
+      if (*s == '\'') {
+         /* end run, escape literal quote, restart run */
+         *p++ = '\''; *p++ = '\\'; *p++ = '\''; *p++ = '\'';
+      } else {
+         *p++ = *s;
+      }
+   }
+   *p++ = '\'';
+   *p = '\0';
+   return buf;
+}
 
-   /* calculate needed size */
-   for(i = 0; i < argc; i++) {
-      length += strlen(argv[i]);
+/**
+ * @brief Join @p argv into a single command string suitable for `bash -c`,
+ *        preserving each element's original boundaries via shell-quoting.
+ *
+ * @return Freshly allocated, NUL-terminated command string. Caller owns it.
+ *   Returns nullptr on allocation failure.
+ */
+static char *join_command(int argc, char **argv) {
+   if (argc <= 0) {
+      return nullptr;
    }
 
-   /* add spaces and \0 */
+   char **quoted = (char **)sge_malloc(argc * sizeof(char *));
+   if (quoted == nullptr) {
+      return nullptr;
+   }
+   size_t length = 0;
+   for (int i = 0; i < argc; i++) {
+      quoted[i] = shell_quote(argv[i]);
+      if (quoted[i] == nullptr) {
+         for (int j = 0; j < i; j++) {
+            sge_free(&quoted[j]);
+         }
+         sge_free(&quoted);
+         return nullptr;
+      }
+      length += strlen(quoted[i]);
+   }
+   /* (argc - 1) separating spaces plus a NUL terminator */
    length += argc;
 
-   buffer = sge_malloc(length * sizeof(char));
-
-   if(buffer == nullptr) {
-      return 0;
+   char *buffer = sge_malloc(length * sizeof(char));
+   if (buffer == nullptr) {
+      for (int i = 0; i < argc; i++) {
+         sge_free(&quoted[i]);
+      }
+      sge_free(&quoted);
+      return nullptr;
    }
 
-   strcpy(buffer, argv[0]);
-   for(i = 1; i < argc; i++) {
+   strcpy(buffer, quoted[0]);
+   for (int i = 1; i < argc; i++) {
       strcat(buffer, " ");
-      strcat(buffer, argv[i]);
+      strcat(buffer, quoted[i]);
    }
+
+   for (int i = 0; i < argc; i++) {
+      sge_free(&quoted[i]);
+   }
+   sge_free(&quoted);
 
    return buffer;
 }

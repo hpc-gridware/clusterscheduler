@@ -66,6 +66,7 @@
 #define QI_DO_RESCHEDULE               0x00080000
 #define QI_DO_CAL_DISABLE              0x00020000
 #define QI_DO_CAL_SUSPEND              0x00040000
+#define QI_DO_RECONNECT                0x08000000   ///< CS-2144: client GDI request for IJS session reconnect
 
 #ifdef __SGE_QINSTANCE_STATE_DEBUG__
 #  define QI_DO_SETERROR               0x00100000

@@ -56,7 +56,8 @@ namespace ocs::gdi {
          TAG_GET_NEW_CONF,
          TAG_TASK_EXIT,
          TAG_EVENT_CLIENT_EXIT,
-         TAG_FULL_LOAD_REPORT
+         TAG_FULL_LOAD_REPORT,
+         TAG_RECONNECT_PREPARE          ///< qmaster → execd: write reconnect.info into a job's active_jobs spool (CS-2143)
       #ifdef KERBEROS
          ,TAG_AUTH_FAILURE
       #endif

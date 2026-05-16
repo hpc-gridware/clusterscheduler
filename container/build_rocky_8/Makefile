@@ -19,7 +19,7 @@
 #___INFO__MARK_END_NEW__
 
 DOCKER_USER=hpcgridware
-IMAGE_VERSION=1.0
+IMAGE_VERSION=1.2
 IMAGE_NAME=clusterscheduler-image-rocky89
 CONTAINER_NAME=clusterscheduler-rocky89
 MOUNT_DIR=$(shell pwd)/../../..
@@ -28,7 +28,7 @@ BUILD_AND_TEST=/clusterscheduler/clusterscheduler/container/build_and_test.sh
 .PHONY: build
 build:
 	@echo "Building Docker image..."
-	docker build -t $(DOCKER_USER)/$(IMAGE_NAME) .
+	docker build --platform=linux/amd64 -t $(DOCKER_USER)/$(IMAGE_NAME) .
 	docker tag $(DOCKER_USER)/$(IMAGE_NAME) $(DOCKER_USER)/$(IMAGE_NAME):$(IMAGE_VERSION)
 	docker tag $(DOCKER_USER)/$(IMAGE_NAME) $(DOCKER_USER)/$(IMAGE_NAME):latest
 
@@ -44,16 +44,16 @@ interactive:
 	@echo "Build OCS: cmake -S /clusterscheduler/clusterscheduler"
 	@echo "Build GCS: cmake -S /clusterscheduler/clusterscheduler -DPROJECT_EXTENSIONS=/clusterscheduler/gcs-extensions"
 	@echo "           -DPROJECT_FEATURES=gcs-extensions"
-	docker run -it --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME):latest
+	docker run --platform=linux/amd64 -it --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME):latest
 
 .PHONY: ocs
 ocs:
-	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
+	docker run --platform=linux/amd64 --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
 	$(BUILD_AND_TEST) -bashrc -doc -pkg
 
 .PHONY: gcs
 gcs:
-	docker run --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
+	docker run --platform=linux/amd64 --rm --name $(CONTAINER_NAME) -v $(MOUNT_DIR):/clusterscheduler $(DOCKER_USER)/$(IMAGE_NAME) \
 	$(BUILD_AND_TEST) -bashrc -gcs -doc -pkg
 
 .PHONY: clean

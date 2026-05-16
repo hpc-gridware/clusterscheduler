@@ -109,7 +109,7 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, uint32_t number);
 
 bool sge_dstring_split(dstring *string, char character, dstring *before, dstring *after);
 
-void sge_dstring_strip_white_space_at_eol(dstring *string);
+void sge_dstring_strip_trailing_blanks(dstring *string);
 
 const char *sge_dstring_from_argv(dstring *dstr, int argc, const char *argv[],
                                   bool quote_whitespace, bool quote_patterns);

@@ -234,6 +234,7 @@ enum {
    nostdin_OPT,  /* nostdin option for qrsh, pass as -n option to rsh */
    noshell_OPT,  /* noshell option for qrsh, pass as noshell option to qrsh_starter */
    pty_OPT,      /* pty option for qrsh, start job in a pty */
+   x11_OPT,      /* X11 forwarding for builtin IJS mode (qrsh/qlogin) */
 
    /* add/set/delete/modify sge objects */
    mattr_OPT,     /* modify a sublist of an object */

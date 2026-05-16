@@ -712,24 +712,16 @@ void sge_dstring_init(dstring *sb, char *s, size_t size) {
    }
 }
 
-/****** uti/dstring/sge_dstring_ulong_to_binstring() **************************
-*  NAME
-*     sge_dstring_ulong_to_binstring() -- convert ulong into bin-string 
-*
-*  SYNOPSIS
-*     const char* 
-*     sge_dstring_ulong_to_binstring(dstring *sb, uint32_t number)
-*
-*  FUNCTION
-*     Convert ulong into bin-strin 
-*
-*  INPUTS
-*     dstring *sb     - dstring 
-*     uint32_t number - 32 bit ulong value
-*
-*  RESULT
-*     const char* - pointer to dstrings internal buffer
-*******************************************************************************/
+/**
+ * @brief Convert a uint32 to its binary string representation.
+ *
+ * Writes the binary representation of @p number into @p sb with no leading
+ * zeros (e.g. 5 → "101", 8 → "1000"). @p number == 0 produces an empty string.
+ *
+ * @param sb     dstring to receive the result
+ * @param number value to convert
+ * @return pointer to the dstring's internal buffer
+ */
 const char *sge_dstring_ulong_to_binstring(dstring *sb, uint32_t number) {
    char buffer[33] = "                              ";
    int i = 31;
@@ -748,31 +740,22 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, uint32_t number) {
    return sge_dstring_get_string(sb);
 }
 
-/****** uti/dstring/sge_dstring_split() ****************************************
-*  NAME
-*     sge_dstring_split() -- splits a string into two parts 
-*
-*  SYNOPSIS
-*     bool 
-*     sge_dstring_split(dstring *string, char character, 
-*                       dstring *before, dstring *after)
-*
-*  FUNCTION
-*     This functions tires to find the first occurence of "character"
-*     in "string". The characters before will be copied into "before"
-*     and the characters behind into "after" dstring.
-*
-*  INPUTS
-*     dstring *sb     - dstring 
-*     char character  - character
-*     dstring *before - characters before
-*     dstring *after  - characters after
-*
-*  RESULT
-*     error state
-*        true  - success
-*        false - error 
-*******************************************************************************/
+/**
+ * @brief Split a dstring at the first occurrence of a delimiter character.
+ *
+ * Finds the first occurrence of @p character in @p string. Characters before
+ * the delimiter are appended to @p before; characters after it are appended to
+ * @p after. If @p character is not found, @p before is left unchanged and the
+ * entire string is appended to @p after.
+ * Always returns true; the return value does not indicate whether the delimiter
+ * was found.
+ *
+ * @param string    source dstring
+ * @param character delimiter character to split on
+ * @param before    receives characters before the delimiter
+ * @param after     receives characters after the delimiter
+ * @return always true
+ */
 bool
 sge_dstring_split(dstring *string, char character, dstring *before, dstring *after) {
    bool ret = true;
@@ -793,26 +776,23 @@ sge_dstring_split(dstring *string, char character, dstring *before, dstring *aft
    DRETURN(ret);
 }
 
-/****** uti/dstring/sge_dstring_strip_white_space_at_eol() *********************
-*  NAME
-*     sge_dstring_strip_white_space_at_eol() -- as it says 
-*
-*  SYNOPSIS
-*     void sge_dstring_strip_white_space_at_eol(dstring *string)
-*
-*  FUNCTION
-*     removes whitespace at the end of the given "string".
-*
-*  INPUTS
-*     dstring *string - dstring 
-*******************************************************************************/
-void sge_dstring_strip_white_space_at_eol(dstring *string) {
+/**
+ * @brief Strip trailing spaces and tabs from a dstring.
+ *
+ * Removes trailing ' ' and '\t' characters from the dstring's raw buffer.
+ * Newlines and other whitespace are not touched. The dstring length field is
+ * not updated after stripping; use sge_dstring_get_string() rather than
+ * sge_dstring_strlen() to observe the result.
+ *
+ * @param string dstring to be modified
+ */
+void sge_dstring_strip_trailing_blanks(dstring *string) {
    DENTER(DSTRING_LAYER);
    if (string != nullptr) {
       char *s = string->s;
 
       if (s != nullptr) {
-         sge_strip_white_space_at_eol(s);
+         sge_strip_trailing_blanks(s);
       }
    }
    DRETURN_VOID;

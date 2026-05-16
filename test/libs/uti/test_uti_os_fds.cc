@@ -18,159 +18,143 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
-#include <filesystem>
-#include <iostream>
-#include <vector>
+#include <cstdio>
 #include <cstring>
+#include <filesystem>
+#include <vector>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "uti/sge_os.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-static bool
-close_stdin() {
-   bool ret = true;
+static int s_fail = 0;
 
-   // open some other file, to have something to close
-   int some_fd = open("/dev/null", O_WRONLY);
-   std::cout << "opened /dev/null: " << some_fd << std::endl;
+#define CHECK(id, label, expr) \
+   do { \
+      if (!(expr)) { \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
+         ++s_fail; \
+      } else { \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
+      } \
+   } while (0)
 
-   // Keep stdout and stderr open.
-   // And we cannot close stdin (will fail with "Bad file descriptor") - so keep it open as well
-   // but at least fill keep_open in non-lexical order.
+// Open /dev/null then close all fds except {stdin, stdout, stderr}; verify only those three remain.
+static void
+test_close_stdin(int *id) {
+   printf("\n--- close_all_fds keeps {stdin, stdout, stderr} ---\n");
+
+   // open something that sge_close_all_fds must close
+   int extra_fd = open("/dev/null", O_WRONLY);
+
    int keep_open[3]{STDOUT_FILENO, STDERR_FILENO, STDIN_FILENO};
    uint64_t start = sge_get_gmt64();
    sge_close_all_fds(keep_open, 3);
    uint64_t end = sge_get_gmt64();
-   std::cout << "close_stdin() took " << (end - start) << " µs" << std::endl;
+   printf("      sge_close_all_fds took %" PRIu64 " µs\n", end - start);
+   (void)extra_fd; // was closed by sge_close_all_fds
 
 #if defined(LINUX) || defined(SOLARIS)
    std::set open_fds = get_all_fds();
-   if (open_fds.size() != 3) {
-      std::cerr << "close_stdin(): expected 3 fds to be open, got " << open_fds.size() << ": ";
-      for (auto fd : open_fds) {
-         std::cerr << fd << " ";
-      }
-      std::cerr << std::endl;
-      ret = false;
-   } else {
-      if (open_fds.find(STDIN_FILENO) == open_fds.end()) {
-         std::cerr << "close_stdin(): expected stdin to be still open" << std::endl;
-         ret = false;
-      }
-      if (open_fds.find(STDOUT_FILENO) == open_fds.end()) {
-         std::cerr << "close_stdin(): expected stdout to be still open" << std::endl;
-         ret = false;
-      }
-      if (open_fds.find(STDERR_FILENO) == open_fds.end()) {
-         std::cerr << "close_stdin(): expected stderr to be still open" << std::endl;
-         ret = false;
-      }
-   }
+   CHECK(*id, "exactly 3 fds open after close_all_fds", open_fds.size() == 3); (*id)++;
+   CHECK(*id, "stdin still open", open_fds.find(STDIN_FILENO) != open_fds.end()); (*id)++;
+   CHECK(*id, "stdout still open", open_fds.find(STDOUT_FILENO) != open_fds.end()); (*id)++;
+   CHECK(*id, "stderr still open", open_fds.find(STDERR_FILENO) != open_fds.end()); (*id)++;
 #endif
-   return ret;
 }
 
-static bool
-close_many_fds(std::filesystem::path &test_dir, int num_fds) {
-   bool ret = true;
+// Open num_fds files in test_dir; keep every (num_fds/10)th one plus stdin/stdout/stderr.
+// Verify that the kept fds are still open after sge_close_all_fds.
+static void
+test_close_many_fds(int *id, const std::filesystem::path &test_dir, int num_fds) {
+   printf("\n--- close_all_fds with %d open fds ---\n", num_fds);
 
-   // Open a bunch of files in the test_dir.
-   // We keep open some 10 file descriptors + the standard ones.
-   // Store them in a vector.
-   std::vector<int> open_files;
-   open_files.push_back(STDIN_FILENO);
-   open_files.push_back(STDOUT_FILENO);
-   open_files.push_back(STDERR_FILENO);
-
+   std::vector<int> keep_list{STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
    int modulo = num_fds / 10;
+
    for (int i = 0; i < num_fds; ++i) {
       std::filesystem::path file_path = test_dir / std::to_string(i);
       int fd = open(file_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-      if (fd < 0) {
-         std::cerr << "close_many_fds(): failed to open " << file_path << ": " << strerror(errno) << std::endl;
-      } else {
-         std::cout << "opened " << file_path << ": " << fd << std::endl;
-         if (i % modulo == 0) {
-            std::cout << "keeping open " << fd << std::endl;
-            open_files.push_back(fd);
-         }
-
+      if (fd >= 0 && i % modulo == 0) {
+         keep_list.push_back(fd);
       }
    }
 
-   // keep_open array for close_all_fds() - leave enough space.
+   // sge_close_all_fds takes a raw array
    int keep_open[20];
-   int idx = 0;
-   for (auto fd : open_files) {
-      std::cout << "keeping open " << idx << ": " << fd << std::endl;
-      keep_open[idx++] = fd;
+   int keep_count = 0;
+   for (auto fd : keep_list) {
+      keep_open[keep_count++] = fd;
    }
 
    uint64_t start = sge_get_gmt64();
-   sge_close_all_fds(keep_open, idx);
+   sge_close_all_fds(keep_open, keep_count);
    uint64_t end = sge_get_gmt64();
-   std::cout << "close_many_fds() took " << (end - start) << " µs" << std::endl;
+   printf("      sge_close_all_fds took %" PRIu64 " µs\n", end - start);
 
 #if defined(LINUX) || defined(SOLARIS)
-   // Check what is still open via get_all_fds().
-   std::set still_open_fds = get_all_fds();
-
-   // Check if the fds to keep open are actually still open.
-   for (auto fd : open_files) {
-      if (still_open_fds.find(fd) == still_open_fds.end()) {
-         std::cerr << "close_many_fds(): expected fd " << fd << " to be still open" << std::endl;
-         ret = false;
+   std::set still_open = get_all_fds();
+   // T05: all fds in keep_list are still open
+   bool all_kept = true;
+   for (auto fd : keep_list) {
+      if (still_open.find(fd) == still_open.end()) {
+         all_kept = false;
       }
    }
+   CHECK(*id, "all kept fds still open after close_all_fds", all_kept); (*id)++;
+   // T06: no extra fds snuck in (exactly keep_count fds are open)
+   CHECK(*id, "no extra fds open after close_all_fds", still_open.size() == static_cast<size_t>(keep_count)); (*id)++;
 
-   // Close the kept open fds.
-   for (auto fd : still_open_fds) {
+   // close the kept non-standard fds
+   for (auto fd : still_open) {
       if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO) {
          close(fd);
       }
    }
 #else
-   // On other platforms we cannot check which file handles are actually still open.
-   // Close the ones we expect still to be open.
-   for (int i = 0; i < idx; ++i) {
+   // on other platforms we can only verify the call did not crash
+   CHECK(*id, "sge_close_all_fds completes without crash", true); (*id)++;
+   for (int i = 0; i < keep_count; ++i) {
       int fd = keep_open[i];
       if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO) {
          close(fd);
       }
    }
 #endif
-
-   return ret;
 }
 
 int main(int argc, char *argv[]) {
-   int ret = EXIT_SUCCESS;
+   DENTER_MAIN(TOP_LAYER, "test_uti_os_fds");
+   int id = 1;
 
-   std::cout << "maximum number of fds: " << sge_get_max_fd() << std::endl;
+   printf("\n--- sge_get_max_fd ---\n");
+   // T01: max fd is at least large enough to cover the standard file descriptors
+   CHECK(id, "sge_get_max_fd() > STDERR_FILENO", sge_get_max_fd() > STDERR_FILENO); id++;
 
+   // T02–T05: close_all_fds keeps only the specified fds
+   test_close_stdin(&id);
+
+   // create a temp directory for the many-fds test
+   std::filesystem::path test_dir;
    if (argc > 1) {
-      // If a path to a directory is given, then start a test opening many files
-      // and closing them with close_all_fds().
-      std::filesystem::path test_dir(argv[1]);
-      if (ret == EXIT_SUCCESS && !close_many_fds(test_dir, 1000)) {
-         ret = EXIT_FAILURE;
-      }
-
-      // @todo Should we ever implement just setting the FD_CLOEXEC flag on the fd instead of actually closing it,
-      //       then extend the test to do a fork()/exec() and check the open file descriptors of the child process.
-      //if (ret == EXIT_SUCCESS && !close_many_fds(test_dir, 100, true)) {
-      //   ret = EXIT_FAILURE;
-      //}
+      test_dir = std::filesystem::path(argv[1]);
    } else {
-      // Run a short test.
-      if (ret == EXIT_SUCCESS && !close_stdin()) {
-         ret = EXIT_FAILURE;
-      }
+      test_dir = std::filesystem::temp_directory_path() / "test_uti_os_fds";
+      std::filesystem::create_directories(test_dir);
    }
 
-   return ret;
+   // T05/T06 (Linux/Solaris) or T05 (other): close_all_fds with many open fds
+   test_close_many_fds(&id, test_dir, 1000);
+
+   if (argc <= 1) {
+      std::filesystem::remove_all(test_dir);
+   }
+
+   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
+   DRETURN(s_fail == 0 ? 0 : 1);
 }

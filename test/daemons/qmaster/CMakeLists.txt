@@ -44,6 +44,7 @@ add_executable(test_qmaster_calendar
       ../../../source/daemons/qmaster/sge_rusage.cc
       ../../../source/daemons/qmaster/sge_qinstance_qmaster.cc
       ../../../source/daemons/qmaster/sge_qmod_qmaster.cc
+      ../../../source/daemons/qmaster/sge_reconnect_qmaster.cc
       ../../../source/daemons/qmaster/sge_job_qmaster.cc
       ../../../source/daemons/qmaster/sge_give_jobs.cc
       ../../../source/daemons/qmaster/sge_subordinate_qmaster.cc

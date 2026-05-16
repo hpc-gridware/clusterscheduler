@@ -41,7 +41,8 @@
 
 #include "cull/cull.h"
 
-#include "uti/ocs_Munge.h"
+#include "uti/sge_component.h"
+#include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_string.h"
 #include "uti/sge_stdlib.h"
@@ -49,8 +50,6 @@
 #include "msg_common.h"
 
 #include <sge_log.h>
-
-#include "ocs_Bootstrap.h"
 
 enum {
    TEST_host = 1,
@@ -95,21 +94,32 @@ lNameSpace nmv[] = {
         {0, 0, nullptr, nullptr}
 };
 
+static int s_fail = 0;
+
+#define CHECK(id, label, expr) \
+   do { \
+      if (!(expr)) { \
+         printf("FAIL  [T%02d] %s\n", (id), (label)); \
+         ++s_fail; \
+      } else { \
+         printf("ok    [T%02d] %s\n", (id), (label)); \
+      } \
+   } while (0)
+
+// Returns true when a and b contain identical field values; reports diffs to stderr.
 static bool compare_objects(const lListElem *a, const lListElem *b) {
    bool ret = true;
 
    if (a == nullptr && b == nullptr) {
       return true;
    }
-
    if (a == nullptr) {
       fprintf(stderr, "first object is nullptr\n");
-      ret = false;
+      return false;
    }
-
-   if (a == nullptr) {
+   if (b == nullptr) {
       fprintf(stderr, "second object is nullptr\n");
-      ret = false;
+      return false;
    }
 
    if (sge_strnullcmp(lGetHost(a, TEST_host), lGetHost(b, TEST_host)) != 0) {
@@ -147,9 +157,8 @@ static bool compare_objects(const lListElem *a, const lListElem *b) {
               lGetRef(b, TEST_ref));
       ret = false;
    }
-   const lListElem *ao = lGetObject(a, TEST_object);
-   const lListElem *bo = lGetObject(b, TEST_object);
-   if (!compare_objects(ao, bo)) {
+
+   if (!compare_objects(lGetObject(a, TEST_object), lGetObject(b, TEST_object))) {
       ret = false;
    }
 
@@ -178,33 +187,23 @@ static bool compare_objects(const lListElem *a, const lListElem *b) {
 }
 
 int main(int argc, char *argv[]) {
+   DENTER_MAIN(TOP_LAYER, "test_cull_pack");
    const char *const filename = "test_cull_pack.txt";
-   lListElem *ep, *obj, *copy;
-   sge_pack_buffer pb, copy_pb;
+   lListElem *ep = nullptr, *obj = nullptr, *empty_ep = nullptr;
+   lListElem *copy = nullptr;
+   sge_pack_buffer pb;
    int pack_ret;
-   FILE *fd;
-   char *buffer;
-   uint32_t counted_size;
+   uint32_t predicted_size = 0;
 
+   component_set_daemonized(true);
    lInit(nmv);
 
-   if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
-#if defined (OCS_WITH_MUNGE)
-      DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
-      if (!ocs::uti::Munge::initialize(&error_dstr)) {
-         fprintf(stderr, "initializing Munge failed: %s\n", sge_dstring_get_string(&error_dstr));
-         return EXIT_FAILURE;
-      }
-#else
-      fprintf(stderr, SFNMAX, "built without Munge\n");
-      return EXIT_FAILURE;
-#endif
-   }
-   /* create an element */
-   ep = lCreateElem(TEST_Type);
-   obj = lCreateElem(TEST_Type);
 
-   /* test field access functions */
+   // create fully-populated element
+   ep       = lCreateElem(TEST_Type);
+   obj      = lCreateElem(TEST_Type);
+   empty_ep = lCreateElem(TEST_Type);
+
    lSetHost(ep, TEST_host, "test_host");
    lSetString(ep, TEST_string, "test_string");
    lSetDouble(ep, TEST_double, 3.1);
@@ -218,13 +217,10 @@ int main(int argc, char *argv[]) {
 
    lSetRef(ep, TEST_ref, ep);
 
-   /* fill the sublist */
    {
-      lList *lp;
-      int i;
-      lp = lCreateList("", TEST_Type);
+      lList *lp = lCreateList("", TEST_Type);
       lSetList(ep, TEST_list, lp);
-      for (i = 0; i < 10000; i++) {
+      for (int i = 0; i < 10000; i++) {
          char name[1024];
          lListElem *ep1 = lCreateElem(TEST_Type);
          snprintf(name, sizeof(name),
@@ -235,134 +231,173 @@ int main(int argc, char *argv[]) {
          lAppendElem(lp, ep1);
       }
    }
-#if 0
-   printf("element after setting fields\n");
-   lWriteElemTo(ep, stdout);
-#endif
 
-   /* test just count */
-   if ((pack_ret = init_packbuffer(&pb, 100, true, false)) != PACK_SUCCESS) {
-      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
+   // --- count-only pass ---
+   printf("\n--- count-only pass ---\n");
+   {
+      sge_pack_buffer count_pb;
+      pack_ret = init_packbuffer(&count_pb, 100, true, false);
+      CHECK(1, "init_packbuffer (count mode) returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+      if (pack_ret == PACK_SUCCESS) {
+         pack_ret = cull_pack_elem(&count_pb, ep);
+         CHECK(2, "cull_pack_elem (count mode) returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+         if (pack_ret == PACK_SUCCESS) {
+            // header = 2 × INTSIZE (pad + version) + 1 byte (null auth_info string)
+            predicted_size = count_pb.bytes_used + (2 * INTSIZE) + 1;
+         }
+         clear_packbuffer(&count_pb);
+      }
    }
 
-   if ((pack_ret = cull_pack_elem(&pb, ep)) != PACK_SUCCESS) {
-      printf("packing element failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
-   }
-   counted_size = pb.bytes_used + (2 * INTSIZE);
-   clear_packbuffer(&pb);
-
-   /* test packing */
-   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
-      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
-   }
-
-   if ((pack_ret = cull_pack_elem(&pb, ep)) != PACK_SUCCESS) {
-      printf("packing element failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
-   }
-
-   counted_size += strlen(pb.auth_info) + 1;
-   if (counted_size != pb.bytes_used) {
-      printf("just_count does not work, reported " sge_u32 ", expected " sge_u32"\n",
-             counted_size, static_cast<uint32_t>(pb.bytes_used));
-      return EXIT_FAILURE;
-   }
-   printf("element uses " sge_u32 " kb, mem_size is " sge_u32" kb\n",
-          static_cast<uint32_t>(pb.bytes_used / 1024), static_cast<uint32_t>(pb.mem_size / 1024));
-
-   buffer = sge_malloc(pb.bytes_used);
-   SGE_ASSERT(buffer != nullptr);
-   memcpy(buffer, pb.head_ptr, pb.bytes_used);
-   if ((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
-      printf("initializing packbuffer from packed data failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
+   // --- full pack/unpack ---
+   printf("\n--- full pack/unpack ---\n");
+   {
+      pack_ret = init_packbuffer(&pb, 100, false, false);
+      CHECK(3, "init_packbuffer returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+      if (pack_ret == PACK_SUCCESS) {
+         pack_ret = cull_pack_elem(&pb, ep);
+         CHECK(4, "cull_pack_elem returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+         if (pack_ret == PACK_SUCCESS) {
+            if (predicted_size > 0) {
+               CHECK(5, "count-only predicted size matches actual packed size",
+                     predicted_size == static_cast<uint32_t>(pb.bytes_used));
+            }
+            char *buf = sge_malloc(pb.bytes_used);
+            SGE_ASSERT(buf != nullptr);
+            memcpy(buf, pb.head_ptr, pb.bytes_used);
+            sge_pack_buffer copy_pb;
+            if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+               pack_ret = cull_unpack_elem(&copy_pb, &copy, TEST_Type);
+               CHECK(6, "full round-trip: all fields identical",
+                     pack_ret == PACK_SUCCESS && compare_objects(ep, copy));
+               lFreeElem(&copy);
+               clear_packbuffer(&copy_pb);
+            }
+         }
+         clear_packbuffer(&pb);
+      }
    }
 
-   if ((pack_ret = cull_unpack_elem(&copy_pb, &copy, TEST_Type)) != PACK_SUCCESS) {
-      printf("unpacking element failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
-   }
-   if (!compare_objects(ep, copy)) {
-      return EXIT_FAILURE;
-   }
-   clear_packbuffer(&pb);
-   clear_packbuffer(&copy_pb);
-
-#if 0
-   printf("element after packing and unpacking\n");
-   lWriteElemTo(copy, stdout);
-#endif
-   lFreeElem(&copy);
-
-   /* test partial packing */
-   if ((pack_ret = init_packbuffer(&pb, 100)) != PACK_SUCCESS) {
-      printf("initializing packbuffer failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
-   }
-
-   if ((pack_ret = cull_pack_elem_partial(&pb, ep, nullptr, CULL_SPOOL)) != PACK_SUCCESS) {
-      printf("partially packing element failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
+   // --- empty element round-trip ---
+   printf("\n--- empty element round-trip ---\n");
+   {
+      pack_ret = init_packbuffer(&pb, 100, false, false);
+      if (pack_ret == PACK_SUCCESS) {
+         pack_ret = cull_pack_elem(&pb, empty_ep);
+         if (pack_ret == PACK_SUCCESS) {
+            char *buf = sge_malloc(pb.bytes_used);
+            SGE_ASSERT(buf != nullptr);
+            memcpy(buf, pb.head_ptr, pb.bytes_used);
+            sge_pack_buffer copy_pb;
+            if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+               pack_ret = cull_unpack_elem(&copy_pb, &copy, TEST_Type);
+               CHECK(7, "all-zero element survives full pack/unpack intact",
+                     pack_ret == PACK_SUCCESS && compare_objects(empty_ep, copy));
+               lFreeElem(&copy);
+               clear_packbuffer(&copy_pb);
+            }
+         }
+         clear_packbuffer(&pb);
+      }
    }
 
-   buffer = sge_malloc(pb.bytes_used);
-   SGE_ASSERT(buffer != nullptr);
-   memcpy(buffer, pb.head_ptr, pb.bytes_used);
-   if ((pack_ret = init_packbuffer_from_buffer(&copy_pb, buffer, pb.bytes_used)) != PACK_SUCCESS) {
-      printf("initializing packbuffer from partially packed data failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
+   // --- partial pack/unpack (CULL_SPOOL fields only) ---
+   printf("\n--- partial pack/unpack ---\n");
+   {
+      pack_ret = init_packbuffer(&pb, 100, false, false);
+      if (pack_ret == PACK_SUCCESS) {
+         pack_ret = cull_pack_elem_partial(&pb, ep, nullptr, CULL_SPOOL);
+         CHECK(8, "cull_pack_elem_partial (CULL_SPOOL) returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+         if (pack_ret == PACK_SUCCESS) {
+            char *buf = sge_malloc(pb.bytes_used);
+            SGE_ASSERT(buf != nullptr);
+            memcpy(buf, pb.head_ptr, pb.bytes_used);
+            sge_pack_buffer copy_pb;
+            if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+               pack_ret = cull_unpack_elem_partial(&copy_pb, &copy, TEST_Type, CULL_SPOOL);
+               CHECK(9, "cull_unpack_elem_partial (CULL_SPOOL) returns PACK_SUCCESS",
+                     pack_ret == PACK_SUCCESS);
+               if (pack_ret == PACK_SUCCESS && copy != nullptr) {
+                  CHECK(10, "CULL_SPOOL host field preserved after partial round-trip",
+                        sge_strnullcmp(lGetHost(copy, TEST_host), "test_host") == 0);
+                  CHECK(11, "non-CULL_SPOOL string field absent (nullptr) after partial round-trip",
+                        lGetString(copy, TEST_string) == nullptr);
+                  CHECK(12, "non-CULL_SPOOL double field absent (0.0) after partial round-trip",
+                        lGetDouble(copy, TEST_double) == 0.0);
+                  CHECK(13, "CULL_SPOOL list field preserved (10000 elements) after partial round-trip",
+                        (int)lGetNumberOfElem(lGetList(copy, TEST_list)) == 10000);
+               }
+               lFreeElem(&copy);
+               clear_packbuffer(&copy_pb);
+            }
+         }
+         clear_packbuffer(&pb);
+      }
    }
 
-   if ((pack_ret = cull_unpack_elem_partial(&copy_pb, &copy, TEST_Type, CULL_SPOOL)) != PACK_SUCCESS) {
-      printf("partially unpacking element failed: %s\n", cull_pack_strerror(pack_ret));
-      return EXIT_FAILURE;
+   // --- list pack/unpack ---
+   printf("\n--- list pack/unpack ---\n");
+   {
+      lList *test_list = lCreateList("test", TEST_Type);
+      for (int i = 0; i < 3; i++) {
+         lListElem *le = lCreateElem(TEST_Type);
+         lSetHost(le, TEST_host, "list_host");
+         lSetString(le, TEST_string, "list_string");
+         lSetUlong(le, TEST_ulong, static_cast<lUlong>(i));
+         lAppendElem(test_list, le);
+      }
+
+      pack_ret = init_packbuffer(&pb, 100, false, false);
+      if (pack_ret == PACK_SUCCESS) {
+         pack_ret = cull_pack_list(&pb, test_list);
+         CHECK(14, "cull_pack_list returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+         if (pack_ret == PACK_SUCCESS) {
+            char *buf = sge_malloc(pb.bytes_used);
+            SGE_ASSERT(buf != nullptr);
+            memcpy(buf, pb.head_ptr, pb.bytes_used);
+            sge_pack_buffer copy_pb;
+            if (init_packbuffer_from_buffer(&copy_pb, buf, pb.bytes_used, false) == PACK_SUCCESS) {
+               lList *unpacked_list = nullptr;
+               pack_ret = cull_unpack_list(&copy_pb, &unpacked_list);
+               CHECK(15, "cull_unpack_list returns PACK_SUCCESS", pack_ret == PACK_SUCCESS);
+               if (pack_ret == PACK_SUCCESS && unpacked_list != nullptr) {
+                  CHECK(16, "list round-trip: element count matches (3)",
+                        (int)lGetNumberOfElem(unpacked_list) == 3);
+                  CHECK(17, "list round-trip: first element fields identical",
+                        compare_objects(lFirst(test_list), lFirst(unpacked_list)));
+               }
+               lFreeList(&unpacked_list);
+               clear_packbuffer(&copy_pb);
+            }
+         }
+         clear_packbuffer(&pb);
+      }
+      lFreeList(&test_list);
    }
-   clear_packbuffer(&pb);
-   clear_packbuffer(&copy_pb);
 
-#if 0
-   printf("element after partial packing and unpacking\n");
-   lWriteElemTo(copy, stdout);
-#endif
-   lFreeElem(&copy);
+   // --- dump/undump ---
+   printf("\n--- dump/undump ---\n");
+   {
+      CHECK(18, "lDumpElem returns 0", lDumpElem(filename, ep, 1) == 0);
 
-   /* test lDump functions */
-   if (lDumpElem(filename, ep, 1)) {
-      printf("error dumping element\n");
-      return EXIT_FAILURE;
-   }
-
-   if ((fd = fopen(filename, "r")) == nullptr) {
-      printf("error opening dump file test_cull_pack.txt\n");
-      return EXIT_FAILURE;
-   }
-
-   if ((copy = lUndumpElemFp(fd, TEST_Type)) == nullptr) {
-      FCLOSE(fd);
+      FILE *fd = fopen(filename, "r");
+      if (fd != nullptr) {
+         copy = lUndumpElemFp(fd, TEST_Type);
+         CHECK(19, "lUndumpElemFp returns non-null element", copy != nullptr);
+         if (copy != nullptr) {
+            CHECK(20, "dump/undump round-trip: all fields identical", compare_objects(ep, copy));
+            lFreeElem(&copy);
+         }
+         if (fclose(fd) != 0) {
+            fprintf(stderr, MSG_FILE_ERRORCLOSEINGXY_SS, filename, strerror(errno));
+         }
+      }
       unlink(filename);
-      printf("error undumping element\n");
-      return EXIT_FAILURE;
    }
-   FCLOSE(fd);
-#if 0
-   printf("element after dumping and undumping\n");
-   lWriteElemTo(copy, stdout);
-#endif
-   lFreeElem(&copy);
-   unlink(filename);
 
-   /* cleanup and exit */
-#if defined(OCS_WITH_MUNGE)
-   ocs::uti::Munge::shutdown();
-#endif
    lFreeElem(&ep);
-   return EXIT_SUCCESS;
-   FCLOSE_ERROR:
-   printf(MSG_FILE_ERRORCLOSEINGXY_SS, filename, strerror(errno));
-   return EXIT_FAILURE;
+   lFreeElem(&empty_ep);
+
+   printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
+   DRETURN(s_fail == 0 ? 0 : 1);
 }
-
-

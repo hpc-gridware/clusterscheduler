@@ -457,9 +457,9 @@ bool jsv_url_parse(dstring *jsv_url, lList **answer_list, dstring *type,
       sge_dstring_split(jsv_url, ':', type, &tmp);
       sge_dstring_split(&tmp, '@', user, path);
       sge_dstring_free(&tmp);
-      sge_dstring_strip_white_space_at_eol(type);
-      sge_dstring_strip_white_space_at_eol(user);
-      sge_dstring_strip_white_space_at_eol(path);
+      sge_dstring_strip_trailing_blanks(type);
+      sge_dstring_strip_trailing_blanks(user);
+      sge_dstring_strip_trailing_blanks(path);
       t = sge_dstring_get_string(type);
       u = sge_dstring_get_string(user);
       p = sge_dstring_get_string(path);

@@ -48,6 +48,38 @@ The following status query commands have been converted to use stored procedures
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### X11 Forwarding for Interactive Jobs
+
+The builtin Interactive Job Support (IJS) mode now supports X11 forwarding for qrsh(1) and qlogin(1).
+When a user adds the `-X` flag, graphical applications launched inside the interactive session display on
+the user's local X server, regardless of which execution host the job runs on.
+
+**How it works**
+
+1. The qrsh(1) or qlogin(1) client reads the MIT-MAGIC-COOKIE-1 for the local display from the user's
+   Xauthority database and transmits it to the shepherd as part of the session setup.
+2. The shepherd creates a Unix-domain proxy display at `/tmp/.X11-unix/XN` on the execution host
+   (N >= 10, first available), writes a matching Xauthority entry for the proxy display into the job
+   owner's `~/.Xauthority`, and injects `DISPLAY=:N.0` into the job environment before the job starts.
+3. When an X client inside the job opens a connection to the proxy display, the shepherd relays the X11
+   protocol stream back through the commlib connection to the qrsh(1) or qlogin(1) client, which forwards
+   it to the real X server.
+
+The proxy display socket and the Xauthority entry are cleaned up automatically when the job ends.
+
+**Usage**
+
+    qrsh -X -b y xterm
+    qlogin -X
+
+If `DISPLAY` is not set in the submitting environment, qrsh(1) and qlogin(1) skip X11 setup and proceed
+normally without forwarding, so `-X` is safe to use even on headless submit hosts.
+
+X11 forwarding requires builtin IJS mode (`rsh_command builtin` / `qlogin_command builtin` in the global
+configuration). It is not available with the legacy ssh/rsh transport.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### Port Range for qrsh and qlogin
 
 When a user submits an interactive job via qrsh(1) or qlogin(1), the client binds a TCP listen socket and
@@ -72,6 +104,51 @@ system assigns a free ephemeral port automatically, preserving the previous beha
 
 `port_range` applies to both the builtin IJS mode and the legacy ssh/rsh mode and can be set or changed with
 `qconf -mconf` without restarting any daemon.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
+### Reconnect to Running Interactive Sessions (qrsh -reconnect)
+
+Interactive jobs (`qrsh`, `qlogin`) historically died the moment the client connection dropped — a laptop
+suspend, VPN hiccup, or accidental terminal close meant the whole session was gone, including any
+long-running work inside it. The new reconnect feature lets the user pick the session back up from any submit
+host as long as the job is still alive.
+
+Two pieces work together:
+
+* **Grace period at the shepherd.** A new global configuration parameter `ijs_reconnect_timeout` in
+  `qmaster_params` declares how long (in seconds) the shepherd holds an interactive job alive after an
+  unexpected client disconnect. During this window the shepherd `SIGSTOP`s the job and polls for a reconnect.
+  When the timeout expires without a reconnect, the job is killed as before. The default is `0` (disabled —
+  pre-9.2.0 behaviour preserved).
+
+* **`-reconnect <job_id>` client mode** (qrsh and qlogin). A new client mode that asks qmaster to broker a
+  reconnect to a running job that the caller owns. qmaster validates ownership, generates a single-use token,
+  relays the new client's listen address and the token to the execd that runs the job, and returns the token
+  to the client. The waiting shepherd reads the relayed info, opens a fresh commlib connection back to the
+  new client, presents the token, and on a match `SIGCONT`s the job and resumes the PTY bridge. The original
+  client is fully replaced by the new one — keystrokes and output now flow to the new terminal.
+
+Example:
+
+    # Administrator: allow 5 minutes for users to recover from disconnects
+    qconf -mconf global   # qmaster_params: ijs_reconnect_timeout=300
+
+    # User on laptop:
+    $ qrsh                # job 1234 starts, user is working in shell ...
+    # ... VPN drops, terminal disappears ...
+
+    # User reconnects to office network and runs from any submit host:
+    $ qrsh -reconnect 1234
+    # ... same shell, same working directory, same processes still running ...
+
+The handshake uses a one-time token brokered by qmaster, so the reconnect request must come from the job
+owner; another user with the job id cannot hijack the session. commlib TLS (already used for IJS in 9.1.0)
+protects the wire. The original client's listen port and the reconnect client's listen port both use the
+configured `port_range`, so firewall rules established for the initial session continue to apply.
+
+The grace period uses systemd cgroup freeze when the systemd integration is active — the job is paused
+without losing any in-memory state, and resumes seamlessly on reconnect.
 
 (Available in Open and Gridware Cluster Scheduler.)
 

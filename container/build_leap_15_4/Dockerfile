@@ -53,6 +53,7 @@ RUN zypper --non-interactive install gzip && zypper clean --all
 RUN zypper --non-interactive install libtirpc-devel && zypper clean --all
 RUN zypper --non-interactive install rapidjson-devel && zypper clean --all
 RUN zypper --non-interactive install libdb-4_8 libdb-4_8-devel && zypper clean --all
+RUN zypper --non-interactive install libcurl-devel && zypper clean --all
 
 # there is no libudev.so
 RUN (cd /usr/lib64 ; ln -s libudev.so.1 libudev.so)

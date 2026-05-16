@@ -1444,6 +1444,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_pty_OPT, MSG_GDI_UTEXT_pty_OPT );
    }
 
+   if (VALID_OPT(x11_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_x11_OPT, MSG_GDI_UTEXT_x11_OPT );
+   }
+
    if (VALID_OPT(suspend_remote_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_suspend_remote_OPT, MSG_GDI_UTEXT_suspend_remote_OPT );
    }

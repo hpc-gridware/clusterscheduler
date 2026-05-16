@@ -1190,42 +1190,26 @@ int comm_wait_for_all_messages_sent(COMM_HANDLE *handle, dstring *err_msg)
    DRETURN(-retries);
 }
 
-/****** sge_ijs_comm/comm_recv_message() **************************************
-*  NAME
-*     comm_recv_message() -- Receives a message from the connection
-*
-*  SYNOPSIS
-*     int comm_recv_message(COMM_HANDLE *handle, bool b_synchron,
-*     recv_message_t *recv_mess, dstring *err_msg)
-*
-*  FUNCTION
-*     Receives a message from the connection.
-*
-*  INPUTS
-*     COMM_HANDLE *handle          - Handle of the connection.
-*     recv_message_t *recv_mess    - The message gets filled into this struct.
-*                                    The caller has to free buffers.
-*     dstring *err_msg             - Gets the error reason in case of error.
-*
-*  RESULT
-*     int - COMM_RETVAL_OK:
-*              A message was received.
-*
-*           COMM_GOT_TIMEOUT:
-*              'wait_seconds' have elapsed.
-*
-*           COMM_CANT_TRIGGER:
-*              err_msg contains the reason.
-*
-*           COMM_CANT_SEARCH_ENDPOINT:
-*              err_msg contains the reason.
-*
-*  NOTES
-*     MT-NOTE: comm_recv_message() is not MT safe
-*
-*  SEE ALSO
-*     communication/comm_send_message, communication/comm_free_message
-*******************************************************************************/
+/**
+ * @brief Receive and decode one message from the IJS commlib connection.
+ *
+ * Calls cl_commlib_receive_message() and decodes the first byte of the
+ * message body into recv_mess->type.  Handled types include all standard IJS
+ * control and data types (STDIN_DATA_MSG, STDOUT_DATA_MSG, STDERR_DATA_MSG,
+ * REGISTER_CTRL_MSG, UNREGISTER_CTRL_MSG, UNREGISTER_RESPONSE_CTRL_MSG,
+ * SETTINGS_CTRL_MSG, SUSPEND_CTRL_MSG, UNSUSPEND_CTRL_MSG, STDIN_CLOSE_MSG,
+ * WINDOW_SIZE_CTRL_MSG) as well as the X11 forwarding types (X11_AUTH_MSG,
+ * X11_OPEN_MSG, X11_DATA_MSG, X11_CLOSE_MSG).  Unrecognised types leave
+ * recv_mess->type and recv_mess->data undefined.
+ *
+ * @param handle    Handle of the commlib connection.
+ * @param recv_mess Output struct filled with the received message.  The caller
+ *                  must call comm_free_message() when done.
+ * @param err_msg   Set to the error description on failure.
+ * @return COMM_RETVAL_OK on success; COMM_GOT_TIMEOUT, COMM_CANT_TRIGGER,
+ *         COMM_CANT_SEARCH_ENDPOINT, or another COMM_* error code on failure.
+ * @note MT-NOTE: not MT-safe.
+ */
 int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *err_msg) {
    int  ret_val = COMM_RETVAL_OK;
    int  ret = 0;
@@ -1302,6 +1286,15 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
             case SUSPEND_CTRL_MSG:
             case UNSUSPEND_CTRL_MSG:
             case STDIN_CLOSE_MSG:
+            case X11_AUTH_MSG:
+            case X11_OPEN_MSG:
+            case X11_DATA_MSG:
+            case X11_CLOSE_MSG:
+            case KEEPALIVE_MSG:           // CS-2117
+            case KEEPALIVE_ACK_MSG:       // CS-2117
+            case RECONNECT_REQUEST_MSG:   // CS-2144
+            case RECONNECT_ACCEPT_MSG:    // CS-2144
+            case RECONNECT_REJECT_MSG:    // CS-2144
                DPRINTF("length of message: %d\n", (int)message->message_length);
                /* data message */
                recv_mess->type = message->message[0];

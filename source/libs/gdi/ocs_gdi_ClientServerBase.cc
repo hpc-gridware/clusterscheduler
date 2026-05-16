@@ -505,6 +505,7 @@ ocs::gdi::ClientServerBase::to_string(unsigned long tag_value) {
       case TAG_TASK_EXIT: return "TAG_TASK_EXIT";
       case TAG_FULL_LOAD_REPORT: return "TAG_FULL_LOAD_REPORT";
       case TAG_EVENT_CLIENT_EXIT: return "TAG_EVENT_CLIENT_EXIT";
+      case TAG_RECONNECT_PREPARE: return "TAG_RECONNECT_PREPARE";
       default:
          break;
    }

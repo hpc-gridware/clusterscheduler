@@ -155,6 +155,10 @@ static bool is_monitor_message = true;
 static bool use_qidle = false;
 static bool disable_reschedule = false;
 static bool disable_secondary_ds = false;
+static char s_ijs_escape_char       = '~'; ///< IJS disconnect escape char; '\0' = disabled (qmaster_params ijs_escape_char)
+static int  s_ijs_keepalive_interval = 60;  ///< seconds between IJS keepalive probes; 0 = disabled (qmaster_params ijs_keepalive_interval)
+static int  s_ijs_keepalive_count    = 3;   ///< max consecutive unanswered keepalives before disconnect (qmaster_params ijs_keepalive_count)
+static int  s_ijs_reconnect_timeout  = 0;   ///< seconds shepherd waits for a reconnect before killing the job; 0 = disabled (qmaster_params ijs_reconnect_timeout)
 
 #define DEFAULT_DISABLE_SECONDARY_DS_READER (false)
 static bool disable_secondary_ds_reader = DEFAULT_DISABLE_SECONDARY_DS_READER;
@@ -733,6 +737,12 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       gperf_name = GPERF_NAME_DEFAULT;
       gperf_threads = GPERF_THREADS_DEFAULT;
 
+      // reset IJS-related statics to defaults so that removing a token from qmaster_params reverts the setting
+      s_ijs_escape_char = '~';
+      s_ijs_keepalive_interval = 60;
+      s_ijs_keepalive_count = 3;
+      s_ijs_reconnect_timeout = 0;
+
       for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &forbid_reschedule)) {
             continue;
@@ -893,6 +903,35 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
          }
          if (parse_string_param(s, "GPERF_THREADS", gperf_threads)) {
             continue;
+         }
+         {
+            std::string ijs_escape_char_val;
+            if (parse_string_param(s, "ijs_escape_char", ijs_escape_char_val)) {
+               if (ijs_escape_char_val == "none" || ijs_escape_char_val.empty()) {
+                  s_ijs_escape_char = '\0';
+               } else {
+                  s_ijs_escape_char = ijs_escape_char_val[0];
+               }
+               continue;
+            }
+         }
+         {
+            std::string kv;
+            if (parse_string_param(s, "ijs_keepalive_interval", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_keepalive_interval = (v >= 0) ? v : 60;
+               continue;
+            }
+            if (parse_string_param(s, "ijs_keepalive_count", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_keepalive_count = (v > 0) ? v : 3;
+               continue;
+            }
+            if (parse_string_param(s, "ijs_reconnect_timeout", kv)) {
+               int v = atoi(kv.c_str());
+               s_ijs_reconnect_timeout = (v >= 0) ? v : 0;
+               continue;
+            }
          }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
@@ -1977,7 +2016,7 @@ char* mconf_get_jsv_url() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_url = sge_strdup(jsv_url, Master_Config.jsv_url);
-   sge_strip_white_space_at_eol(jsv_url);
+   sge_strip_trailing_blanks(jsv_url);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(jsv_url);
@@ -1991,7 +2030,7 @@ char* mconf_get_jsv_allowed_mod() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    jsv_allowed_mod = sge_strdup(jsv_allowed_mod, Master_Config.jsv_allowed_mod);
-   sge_strip_white_space_at_eol(jsv_allowed_mod);
+   sge_strip_trailing_blanks(jsv_allowed_mod);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(jsv_allowed_mod);
@@ -2003,7 +2042,7 @@ char* mconf_get_gdi_request_limits() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    char* gdi_request_limits = sge_strdup(nullptr, Master_Config.gdi_request_limits);
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   sge_strip_white_space_at_eol(gdi_request_limits);
+   sge_strip_trailing_blanks(gdi_request_limits);
    DRETURN(gdi_request_limits);
 }
 
@@ -3106,6 +3145,42 @@ std::string mconf_get_topology_file() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    std::string ret = Master_Config.topology_file;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+char mconf_get_ijs_escape_char() {
+   char ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_escape_char;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_keepalive_interval() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_keepalive_interval;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_keepalive_count() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_keepalive_count;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+int mconf_get_ijs_reconnect_timeout() {
+   int ret;
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   ret = s_ijs_reconnect_timeout;
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

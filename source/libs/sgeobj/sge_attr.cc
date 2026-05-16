@@ -760,7 +760,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
          /*
           * There might be white space at the end of each token.
           */
-         sge_strip_white_space_at_eol(token);
+         sge_strip_trailing_blanks(token);
          length = strlen(token);
 
          if (length >= 1) {
@@ -791,7 +791,7 @@ attr_list_parse_from_string(lList **this_list, lList **answer_list,
             /*
              * There might be space after a closing brace ']'
              */
-            sge_strip_white_space_at_eol(token);
+            sge_strip_trailing_blanks(token);
             length = strlen(token);
 
             /* 

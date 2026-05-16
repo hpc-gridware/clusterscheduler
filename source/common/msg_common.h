@@ -911,6 +911,9 @@
 #define MSG_GDI_USAGE_pty_OPT                            "[-pty y[es]|n[o]]"
 #define MSG_GDI_UTEXT_pty_OPT                            _MESSAGE(23511, _("start job in a pty"))
 
+#define MSG_GDI_USAGE_x11_OPT                           "[-X]"
+#define MSG_GDI_UTEXT_x11_OPT                           _MESSAGE(60762, _("enable X11 forwarding (builtin IJS mode only)"))
+
 #define MSG_GDI_UTEXT_now_qrsub_OPT_YN                   _MESSAGE(23512, _("consider only interactive queues"))
 
 #define MSG_GDI_USAGE_jsv_OPT_YN                         "[-jsv jsv_url]"
@@ -920,9 +923,7 @@
 #define MSG_GDI_UTEXT_sst_OPT                            _MESSAGE(23514, _("show a formated sharetree"))
 
 #define MSG_GDI_USAGE_suspend_remote_OPT                 "[-suspend_remote y[es]|n[o]]"
-#define MSG_GDI_UTEXT_suspend_remote_OPT                 _MESSAGE(23515, _("suspend qrsh client as also the process on execution host"))
-
-#define MSG_PARSE_FEATURENOTSUPPORTEDOS_S                _MESSAGE(23516, _("Unsupported: " SFQ " is not supported in the open source version"))
+#define MSG_GDI_UTEXT_suspend_remote_OPT                 _MESSAGE(23515, _("also suspend whole remote job tree on Ctrl+Z (extra SIGSTOP)"))
 
 #define MSG_GDI_USAGE_scope_OPT                          "[-scope scope_name]"
 #define MSG_GDI_UTEXT_scope_OPT                          _MESSAGE(23517, _("switch the request scope"))

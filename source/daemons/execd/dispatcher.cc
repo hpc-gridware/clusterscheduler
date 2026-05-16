@@ -61,6 +61,7 @@
 #include "execd_ticket.h"
 #include "job_report_execd.h"
 #include "execd_signal_queue.h"
+#include "execd_reconnect.h"
 #include "execd_kill_execd.h"
 #include "execd_get_new_conf.h"
 #include "execd_ck_to_do.h"
@@ -184,6 +185,9 @@ int sge_execd_process_messages() {
                         atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
                      }
                      break;
+                  case ocs::gdi::ClientServerBase::TAG_RECONNECT_PREPARE:
+                     do_reconnect_prepare(&msg);
+                  break;
                   case ocs::gdi::ClientServerBase::TAG_KILL_EXECD:
                      do_kill_execd(&msg);
 #if defined(SOLARIS)

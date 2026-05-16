@@ -51,7 +51,8 @@ RUN dnf install -y \
     && dnf clean all
 
 RUN dnf --enablerepo=devel install -y libtirpc-devel && dnf clean all
-RUN dnf --enablerepo=devel install -y doxygen && dnf clean all 
+RUN dnf install -y libcurl-devel && dnf clean all
+RUN dnf --enablerepo=devel install -y doxygen && dnf clean all
 
 # for cmake -DWITH_OS_3RDPARTY=ON
 # which does not work on Rocky-9 as there is no static libjemalloc

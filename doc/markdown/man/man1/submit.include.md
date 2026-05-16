@@ -1292,6 +1292,25 @@ represent the values *n* and *m* which have been provided with the `-pe` option.
 be expanded as value 9999999 in JSV scripts, and it represents the value infinity. (see `-jsv` option above
 or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
+## -X
+
+Available for `qrsh` and `qlogin` only (builtin IJS mode).
+
+Enables X11 display forwarding for interactive sessions that use the builtin commlib
+transport (i.e. when `rsh_command` is set to `builtin` in the global configuration).
+
+When `-X` is specified, `qrsh` / `qlogin` extracts the MIT-MAGIC-COOKIE-1 authentication
+token for the local `$DISPLAY` from `xauth`, transmits it to the shepherd on the
+execution host over the encrypted commlib channel, and registers it there via `xauth`.
+The shepherd then creates a proxy X11 display socket (e.g. `:10.0`) on the execution host.
+X11 connections from the job are tunneled back to the submitting client's real X server.
+
+`-X` is silently ignored when the legacy ssh/rsh transport is used; for that case rely on
+`ssh -X` or `ssh -Y` in your `rsh_command` configuration.
+
+This parameter is not available in the JSV context. (see `-jsv` option above or find
+more information concerning JSV in xxqs_name_sxx_jsv(1))
+
 ## -pty y\[es\]\|n\[o\] 
 
 Available for `qrsh` and `qlogin` only.
@@ -1329,6 +1348,48 @@ JSV behaviour is undefined if the use of old and new names is mixed within one J
 
 Find more information in the sections describing `-hard`, `-soft`, `-l` and `-scope`. (see `-jsv` option below or
 find more information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -reconnect *job_id*
+
+Available for `qrsh` and `qlogin` only. Cannot be combined with normal job-submission options;
+when `-reconnect` is given, the client does not submit a new job and instead reattaches to an
+existing running interactive job.
+
+Reconnects to a running interactive session that has lost its client connection. The caller
+must be the owner of the job referenced by *job_id*. Reconnects are only possible while the
+shepherd is inside the configured reconnect grace period — see *ijs_reconnect_timeout* in
+xxqs_name_sxx_conf(5). When the parameter is unset (or `0`, the default), the grace period is
+disabled and `-reconnect` will always fail with "job not in reconnect-wait state".
+
+The reconnect handshake is brokered by the qmaster: it validates ownership, issues a
+single-use token to the requesting client, and relays the new client's listen address and
+the token to the execd that runs the job. The waiting shepherd opens a fresh commlib
+connection back to the new client, presents the token, and on a match `SIGCONT`s the job
+and resumes the PTY bridge. From that point on, keystrokes and output flow to the new
+terminal; the original client is fully replaced.
+
+The reconnect uses TLS-protected commlib (since 9.1.0) and respects the configured
+*port_range*, so existing firewall rules continue to apply. Because the token is
+single-use, a second client attempting to reconnect to the same job in parallel is
+rejected.
+
+Example:
+
+    # Original session — terminal/laptop dies unexpectedly.
+    $ qrsh
+    Your interactive job 1234 has been successfully submitted
+    ... user is working in shell when the VPN drops ...
+
+    # Reconnect from any submit host owned by the same user, within the grace period.
+    $ qrsh -reconnect 1234
+    ... same shell, same working directory, same processes still running ...
+
+`qlogin -reconnect *job_id*` works the same way for sessions that were originally started
+with `qlogin`.
+
+This option only takes effect when the builtin IJS mode is configured (`rsh_command builtin`
+or `qlogin_command builtin` in the global configuration). It is not available with the
+legacy ssh/rsh transport.
 
 ## -R y\[es\]\|n\[o\]  
 
@@ -1464,6 +1525,20 @@ defined JSV instances as parameter with the names *global_q_soft* and *global_l_
 
 Find more information in the sections describing *-q*, *-l* and *-scope*. (see *-jsv* option below or find more
 information concerning JSV in xxqs_name_sxx_jsv(1))
+
+## -suspend_remote y\[es\]\|n\[o\]
+
+Available for `qrsh` and `qlogin` only.
+
+Controls whether pressing Ctrl+Z in an interactive session additionally delivers an explicit `SIGSTOP` to the whole remote job process tree.
+
+Without this option (default, `-suspend_remote no`), the raw Ctrl+Z byte (`0x1a`) is forwarded to the exec-side pseudo terminal, whose `ISIG` line discipline delivers `SIGTSTP` to the remote *foreground process group*. The interactive client then also raises `SIGTSTP` on itself, so the parent shell sees both ends paused; `fg` in that shell resumes them. This is sufficient for jobs whose work runs entirely in the foreground process group.
+
+With `-suspend_remote yes`, the interactive client *additionally* sends an explicit suspend control message to the shepherd, which delivers `SIGSTOP` to the entire job process tree — including children that detached from the foreground process group (daemonised helpers, MPI side-channel processes, etc.). The PTY's `ISIG` layer alone does not reach such children; the shepherd-driven `SIGSTOP` does.
+
+On resume (`fg`), `SIGCONT` is delivered to the whole job process tree regardless of the flag, so resuming works symmetrically in both modes.
+
+This parameter is not available in the JSV context. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 ## -sync r|x|n (or y\[es\]\|n\[o\])  
 
