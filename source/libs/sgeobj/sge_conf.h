@@ -188,6 +188,7 @@ int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
 std::string mconf_get_usage_patterns();
 std::vector<std::string> mconf_get_online_usage_vars();
+bool parse_online_usage_value(lList **answer_list, const char *value, std::vector<std::string> &out_vars);
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 bool mconf_get_enable_forced_qdel_if_unknown();
