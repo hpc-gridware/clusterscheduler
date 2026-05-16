@@ -954,6 +954,7 @@ int merge_configuration(lList **answer_list, u_long32 progid, const char *cell_r
       sharelog_time = 0;
       log_consumables = false;
       usage_patterns.clear();
+      online_usage_vars.clear();
       enable_addgrp_kill = false;
       strcpy(s_descriptors, "UNDEFINED");
       strcpy(h_descriptors, "UNDEFINED");
