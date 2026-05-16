@@ -54,6 +54,7 @@ namespace ocs {
    std::string ReportingFileWriter::reporting_params;
    std::string ReportingFileWriter::usage_patterns;
    std::vector<std::pair<std::string, std::string>> ReportingFileWriter::usage_pattern_list;
+   std::vector<std::string> ReportingFileWriter::online_usage_vars;
 
    // We have two mutexes to protec access to the writers and the configuration parameters.
    // Make sure to use the mutexes in the right order, i.e., always lock the writer_mutex before
@@ -273,6 +274,12 @@ namespace ocs {
          }
          sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
+         // online_usage variables
+         std::vector<std::string> new_online_usage_vars = mconf_get_online_usage_vars();
+         sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+         online_usage_vars = std::move(new_online_usage_vars);
+         sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
          // now configure all active Writers
          for (auto w: writers) {
             if (w != nullptr) {
@@ -333,6 +340,53 @@ namespace ocs {
       sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
 
       return ret;
+   }
+
+   /**
+    * Static wrapper: forward an online_usage event to every active writer.
+    *
+    * Each writer decides whether to emit a record. Only the JSON reporting
+    * writer overrides this virtual; the classic reporting writer and the
+    * accounting writers keep the no-op default.
+    *
+    * `aggregate_pe_tasks` is honoured only when pe_task is null and signals
+    * that the writer should sum scaled usage across the ja_task's pe_tasks
+    * (the same convention `sge_write_rusage` follows for `accounting_summary`).
+    *
+    * @see create_online_usage_record()
+    * @see is_online_usage_required()
+    */
+   bool ReportingFileWriter::create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
+                                                         lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) {
+      bool ret = true;
+
+      sge_mutex_lock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
+      for (auto w: writers) {
+         if (w != nullptr && !w->create_online_usage_record(answer_list, job_report, job, ja_task, pe_task, aggregate_pe_tasks)) {
+            ret = false;
+         }
+      }
+      sge_mutex_unlock(writer_mutex_name.c_str(), __func__, __LINE__, &writer_mutex);
+
+      return ret;
+   }
+
+   /**
+    * True iff `reporting_params=online_usage=...` is configured with at
+    * least one variable. Callers use this as a fast gate before invoking
+    * the dispatcher on every job report from sge_execd, so feature-off
+    * configurations pay only a single mutex'd vector-empty check per JR.
+    *
+    * @see create_online_usage_records()
+    */
+   bool ReportingFileWriter::is_online_usage_required() {
+      bool required;
+
+      sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+      required = !online_usage_vars.empty();
+      sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+      return required;
    }
 
    bool ReportingFileWriter::create_host_records(lList **answer_list, const lListElem *host, uint64_t report_time) {

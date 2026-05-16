@@ -34,6 +34,9 @@
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
+#include <cstdlib>
+#include <string>
+#include <vector>
 #include <unistd.h>
 #include <pwd.h>
 
@@ -477,6 +480,27 @@ check_config(lList **alpp, lListElem *conf) {
          if (strcasecmp(value, "infinity") == 0) {
             ERROR(MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+            DRETURN(STATUS_EEXIST);
+         }
+      } else if (!strcmp(name, "reporting_params")) {
+         // Validate parameters whose grammar we can fail-fast on. Today this
+         // covers only online_usage; other reporting_params tokens are
+         // sanity-checked at merge time in sge_conf.cc::merge_configuration().
+         struct saved_vars_s *context = nullptr;
+         bool rp_valid = true;
+         for (const char *s = sge_strtok_r(value, PARAMS_DELIMITER, &context);
+              rp_valid && s != nullptr;
+              s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &context)) {
+            std::string online_usage_str;
+            if (parse_string_param(s, "online_usage", online_usage_str)) {
+               std::vector<std::string> discard;
+               if (!parse_online_usage_value(alpp, online_usage_str.c_str(), discard)) {
+                  rp_valid = false;
+               }
+            }
+         }
+         sge_free_saved_vars(context);
+         if (!rp_valid) {
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "admin_user")) {

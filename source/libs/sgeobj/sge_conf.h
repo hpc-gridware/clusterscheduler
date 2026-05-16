@@ -1,33 +1,33 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2011-2012 Univa Corporation
  *
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
@@ -38,6 +38,7 @@
 #include <string>
 #include <tuple>
 #include <limits>
+#include <vector>
 
 #include "sgeobj/cull/sge_conf_CONF_L.h"
 #include "sgeobj/cull/sge_conf_CF_L.h"
@@ -191,6 +192,8 @@ bool mconf_get_old_reporting();
 int mconf_get_sharelog_time();
 int mconf_get_log_consumables();
 std::string mconf_get_usage_patterns();
+std::vector<std::string> mconf_get_online_usage_vars();
+bool parse_online_usage_value(lList **answer_list, const char *value, std::vector<std::string> &out_vars);
 bool mconf_get_enable_forced_qdel();
 bool mconf_get_enable_sup_grp_eval();
 void mconf_set_enable_sup_grp_eval(bool value);

@@ -1,21 +1,21 @@
 #pragma once
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
- *  
+ *
  *  Copyright 2024-2026 HPC-Gridware GmbH
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *  
+ *
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
@@ -60,6 +60,7 @@ namespace ocs {
       uint64_t config_flush_time;
       uint64_t next_flush_time;
       static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
+      static std::vector<std::string> online_usage_vars;
       static pthread_mutex_t config_mutex;
       static std::string config_mutex_name;
 
@@ -91,6 +92,13 @@ namespace ocs {
       static bool
       create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
                           lListElem *ja_task, bool intermediate);
+
+      static bool
+      create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
+                                  lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks);
+
+      static bool
+      is_online_usage_required();
 
       static bool
       create_host_records(lList **answer_list, const lListElem *host, uint64_t report_time);
@@ -143,6 +151,10 @@ namespace ocs {
       virtual bool
       create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                          lListElem *ja_task, bool intermediate) = 0;
+
+      virtual bool
+      create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
+                                 lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) { return true; }
 
       virtual bool
       create_host_record(lList **answer_list, const lListElem *host, uint64_t report_time) { return true; }

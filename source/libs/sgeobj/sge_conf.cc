@@ -37,6 +37,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #ifdef LINUX
 #include <mcheck.h>
@@ -63,6 +64,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
+#include "sgeobj/sge_utility.h"
 
 #include <cinttypes>
 
@@ -222,6 +224,7 @@ static bool old_reporting = false;
 static int sharelog_time          = 0;
 static bool log_consumables       = false;
 static std::string usage_patterns;
+static std::vector<std::string> online_usage_vars;
 
 // Binding specific parameters
 static bool is_binding_enabled = true;
@@ -989,6 +992,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       sharelog_time = 0;
       log_consumables = false;
       usage_patterns.clear();
+      online_usage_vars.clear();
       enable_addgrp_kill = false;
       strcpy(s_descriptors, "UNDEFINED");
       strcpy(h_descriptors, "UNDEFINED");
@@ -1230,6 +1234,19 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
             continue;
          }
          if (parse_string_param(s, "usage_patterns", usage_patterns)) {
+            continue;
+         }
+         std::string online_usage_str;
+         if (parse_string_param(s, "online_usage", online_usage_str)) {
+            // The pre-commit validator in qmaster's check_config rejects bad
+            // values before they reach us. Re-validate here as defence in
+            // depth (e.g. for spool data written before validation existed).
+            // On rejection, leave online_usage_vars unchanged.
+            std::vector<std::string> new_online_usage_vars;
+            if (parse_online_usage_value(answer_list, online_usage_str.c_str(),
+                                         new_online_usage_vars)) {
+               online_usage_vars = std::move(new_online_usage_vars);
+            }
             continue;
          }
       }
@@ -2835,6 +2852,76 @@ std::string mconf_get_usage_patterns() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = usage_patterns;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * Validate an online_usage value (the text after `online_usage=`).
+ *
+ * The value is a `|`-separated list of tokens. Each token must be a
+ * valid complex_name (= object_name) per sge_types(1); empty tokens are
+ * rejected. An empty whole value is the disabled case and is valid; it
+ * produces an empty `out_vars`.
+ *
+ * On success: returns true; `out_vars` holds the parsed tokens.
+ * On failure: returns false; explanatory entries are appended to
+ * `answer_list`; `out_vars` content is unspecified.
+ *
+ * Used both by check_config() in qmaster (pre-commit rejection of bad
+ * configurations from qconf -Mconf) and by merge_configuration()
+ * (parse-time defence in depth).
+ */
+bool
+parse_online_usage_value(lList **answer_list, const char *value,
+                         std::vector<std::string> &out_vars) {
+   out_vars.clear();
+   if (value == nullptr || *value == '\0') {
+      return true;
+   }
+   const char *start = value;
+   for (const char *p = value;; ++p) {
+      if (*p == '|' || *p == '\0') {
+         const size_t len = static_cast<size_t>(p - start);
+         if (len == 0) {
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                    MSG_CONF_INVALIDPARAM_EMPTYTOKEN_SS,
+                                    "reporting_params", "online_usage");
+            return false;
+         }
+         std::string token(start, len);
+         if (verify_str_key(answer_list, token.c_str(), MAX_VERIFY_STRING,
+                            "complex_name", KEY_TABLE) != STATUS_OK) {
+            // verify_str_key has already added a descriptive message.
+            return false;
+         }
+         out_vars.emplace_back(std::move(token));
+         if (*p == '\0') {
+            break;
+         }
+         start = p + 1;
+      }
+   }
+   return true;
+}
+
+/**
+ * Return the parsed online_usage variable names from the reporting_params.
+ *
+ * Set via `reporting_params=... online_usage=<var>[|<var>...]`.
+ * An empty vector means the feature is disabled and no online_usage
+ * records shall be written to the JSONL reporting file.
+ *
+ * @see merge_configuration()
+ */
+std::vector<std::string> mconf_get_online_usage_vars() {
+   std::vector<std::string> ret;
+
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   ret = online_usage_vars;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);

@@ -367,4 +367,6 @@
 #define MSG_OBJCONT_DUP_S         _MESSAGE(64557, _("Duplicate entry: " SFQ))
 #define MSG_OBJCONT_DUP_SS        _MESSAGE(64558, _("Duplicate entry " SFQ " in " SFQ))
 
+#define MSG_CONF_INVALIDPARAM_EMPTYTOKEN_SS  _MESSAGE(64559, _("invalid setting for " SFQ ", attribute " SFQ " - empty token between '|' separators (keeping previous value)"))
+
 // clang-format on

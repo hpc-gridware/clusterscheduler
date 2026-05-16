@@ -32,6 +32,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_str.h"
+#include "sgeobj/sge_usage.h"
 
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -74,6 +75,128 @@ namespace ocs {
       }
 
       DRETURN(ret);
+   }
+
+   /**
+    * Emit a single JSONL online_usage record for the running job.
+    *
+    * When pe_task is non-null the record carries that pe_task's scaled
+    * usage and a pe_taskid field. When pe_task is null the record carries
+    * the ja_task's scaled usage; if aggregate_pe_tasks is set, scaled
+    * usage of every pe_task in `ja_task->JAT_task_list` is summed into the
+    * ja_task value (matching the convention used by sge_write_rusage when
+    * the PE has `accounting_summary` set). Only the variables listed in
+    * `reporting_params=online_usage=...` are emitted under `usage`;
+    * variables missing from the scaled usage list are silently skipped
+    * (no `null` field).
+    *
+    * If none of the configured variables have any data yet (e.g. right
+    * after job start, before the execd has produced its first usage
+    * report), no record is emitted at all — empty-`usage` records would
+    * clutter the reporting file without adding information.
+    *
+    * @see ReportingFileWriter::create_online_usage_records()
+    */
+   bool
+   JsonReportingFileWriter::create_online_usage_record(lList **answer_list, lListElem *job_report,
+                                                       lListElem *job, lListElem *ja_task, lListElem *pe_task,
+                                                       bool aggregate_pe_tasks) {
+      DENTER(TOP_LAYER);
+
+      if (job == nullptr || ja_task == nullptr) {
+         DRETURN(true);
+      }
+
+      // take a snapshot of the configured variable names
+      std::vector<std::string> vars;
+      sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+      vars = online_usage_vars;
+      sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+      if (vars.empty()) {
+         DRETURN(true);
+      }
+
+      // pe_task != nullptr: report scaled usage of the pe_task,
+      // otherwise the (possibly aggregated) scaled usage on the ja_task
+      const lList *primary_usage = (pe_task != nullptr)
+                                   ? lGetList(pe_task, PET_scaled_usage)
+                                   : lGetList(ja_task, JAT_scaled_usage_list);
+
+      // aggregation only applies to ja_task-level records
+      const bool aggregate = (pe_task == nullptr) && aggregate_pe_tasks;
+
+      // Suppress empty-usage records: if none of the configured variables
+      // have data yet, do not emit anything.
+      bool any_data = false;
+      for (const auto &name : vars) {
+         if (lGetElemStr(primary_usage, UA_name, name.c_str()) != nullptr) {
+            any_data = true;
+            break;
+         }
+         if (aggregate) {
+            const lListElem *pe_task_iter;
+            for_each_ep(pe_task_iter, lGetList(ja_task, JAT_task_list)) {
+               if (lGetSubStr(pe_task_iter, UA_name, name.c_str(), PET_scaled_usage) != nullptr) {
+                  any_data = true;
+                  break;
+               }
+            }
+            if (any_data) {
+               break;
+            }
+         }
+      }
+      if (!any_data) {
+         DRETURN(true);
+      }
+
+      rapidjson::StringBuffer stringBuffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
+
+      writer.StartObject();
+      write_json(writer, "time", sge_get_gmt64());
+      write_json(writer, "type", "online_usage");
+      write_json(writer, "job_number", lGetUlong(job, JB_job_number));
+      int task_number = job_is_array(job) ? (int) lGetUlong(ja_task, JAT_task_number) : 0;
+      write_json(writer, "task_number", task_number);
+      if (pe_task != nullptr) {
+         write_json(writer, "pe_taskid", lGetString(pe_task, PET_id));
+      }
+
+      writer.Key("usage");
+      writer.StartObject();
+      for (const auto &name : vars) {
+         double total = 0.0;
+         bool found_any = false;
+
+         const lListElem *u = lGetElemStr(primary_usage, UA_name, name.c_str());
+         if (u != nullptr) {
+            total = lGetDouble(u, UA_value);
+            found_any = true;
+         }
+
+         if (aggregate) {
+            const lListElem *pe_task_iter;
+            for_each_ep(pe_task_iter, lGetList(ja_task, JAT_task_list)) {
+               const lListElem *pu = lGetSubStr(pe_task_iter, UA_name, name.c_str(), PET_scaled_usage);
+               if (pu != nullptr) {
+                  total += lGetDouble(pu, UA_value);
+                  found_any = true;
+               }
+            }
+         }
+
+         if (found_any) {
+            write_json(writer, name.c_str(), total);
+         }
+      }
+      writer.EndObject();
+
+      writer.EndObject();
+      create_record(stringBuffer);
+
+      DRETURN(true);
    }
 
    void
