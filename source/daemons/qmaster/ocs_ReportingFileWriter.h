@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *  
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ namespace ocs {
       u_long64 config_flush_time;
       u_long64 next_flush_time;
       static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
+      static std::vector<std::string> online_usage_vars;
       static pthread_mutex_t config_mutex;
       static std::string config_mutex_name;
 
@@ -91,6 +92,13 @@ namespace ocs {
       static bool
       create_acct_records(lList **answer_list, lListElem *job_report, lListElem *job,
                           lListElem *ja_task, bool intermediate);
+
+      static bool
+      create_online_usage_records(lList **answer_list, lListElem *job_report, lListElem *job,
+                                  lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks);
+
+      static bool
+      is_online_usage_required();
 
       static bool
       create_host_records(lList **answer_list, const lListElem *host, u_long64 report_time);
@@ -143,6 +151,10 @@ namespace ocs {
       virtual bool
       create_acct_record(lList **answer_list, lListElem *job_report, lListElem *job,
                          lListElem *ja_task, bool intermediate) = 0;
+
+      virtual bool
+      create_online_usage_record(lList **answer_list, lListElem *job_report, lListElem *job,
+                                 lListElem *ja_task, lListElem *pe_task, bool aggregate_pe_tasks) { return true; }
 
       virtual bool
       create_host_record(lList **answer_list, const lListElem *host, u_long64 report_time) { return true; }

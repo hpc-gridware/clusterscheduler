@@ -30,7 +30,7 @@
  *
  *   Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -366,5 +366,7 @@
 
 #define MSG_OBJCONT_DUP_S         _MESSAGE(64557, _("Duplicate entry: " SFQ))
 #define MSG_OBJCONT_DUP_SS        _MESSAGE(64558, _("Duplicate entry " SFQ " in " SFQ))
+
+#define MSG_CONF_INVALIDPARAM_EMPTYTOKEN_SS  _MESSAGE(64559, _("invalid setting for " SFQ ", attribute " SFQ " - empty token between '|' separators (keeping previous value)"))
 
 // clang-format on
