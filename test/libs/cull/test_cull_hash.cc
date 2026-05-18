@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -268,7 +268,7 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    lList *copy;
    lListElem *ep;
    struct timespec ts0, ts1;
-   int i, total_iterated;
+   int i;
 #ifdef MALLINFO
    struct mallinfo meminfo;
 #endif
@@ -315,14 +315,12 @@ static BenchTimes do_test(bool unique_hash, bool non_unique_hash,
    bt.lookup = elapsed(ts0, ts1);
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
-   total_iterated = 0;
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
       lListElem *next_ep;
       next_ep = lGetElemStrFirstRW(lp, NM_STRING, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
          next_ep = lGetElemStrNextRW(lp, NM_STRING, names[i], &iterator);
-         total_iterated++;
       }
    }
    clock_gettime(CLOCK_MONOTONIC, &ts1);
