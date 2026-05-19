@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -56,6 +56,7 @@
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_resource_utilization.h"
 #include "sgeobj/sge_utility.h"
+#include "sgeobj/sge_var.h"
 
 #include "msg_common.h"
 #include "sgeobj/msg_sgeobjlib.h"
@@ -822,4 +823,30 @@ ja_task_is_running(const lListElem *ja_task) {
       is_running = true;
    }
    return is_running;
+}
+
+/**
+ * Records who deleted a job array task in its JAT_joker list.
+ *
+ * The information is stored as a name/value pair keyed JAT_JOKER_DELETED_BY
+ * so it survives spooling and is available when the accounting record is
+ * written. An already existing entry is overwritten.
+ */
+void
+ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
+   lListElem *joker = lGetSubStrRW(ja_task, VA_variable, JAT_JOKER_DELETED_BY, JAT_joker);
+   if (joker == nullptr) {
+      joker = lAddSubStr(ja_task, VA_variable, JAT_JOKER_DELETED_BY, JAT_joker, VA_Type);
+   }
+   lSetString(joker, VA_value, deleted_by);
+}
+
+/**
+ * Returns the "who deleted the job" string stored in the JAT_joker list,
+ * or nullptr if the task was not deleted via this mechanism.
+ */
+const char *
+ja_task_get_deleted_by(const lListElem *ja_task) {
+   const lListElem *joker = lGetSubStr(ja_task, VA_variable, JAT_JOKER_DELETED_BY, JAT_joker);
+   return joker != nullptr ? lGetString(joker, VA_value) : nullptr;
 }

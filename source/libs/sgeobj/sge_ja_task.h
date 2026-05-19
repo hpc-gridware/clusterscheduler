@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -37,8 +37,15 @@
 
 #include "sgeobj/cull/sge_ja_task_JAT_L.h"
 
+/* Key under which the "who deleted the job" string is stored in JAT_joker */
+#define JAT_JOKER_DELETED_BY "deleted_by"
+
 lListElem *ja_task_search_pe_task(const lListElem *ja_task,
                                   const char *pe_task_id);
+
+void ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by);
+
+const char *ja_task_get_deleted_by(const lListElem *ja_task);
 
 void ja_task_list_print_to_string(const lList *ja_task_list,
                                   dstring *range_string);

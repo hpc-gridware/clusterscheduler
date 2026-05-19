@@ -1113,6 +1113,26 @@ void job_mark_job_as_deleted(lListElem *j, lListElem *t) {
    DRETURN_VOID;
 }
 
+/**
+ * Stores who deleted a job array task as "user@host" in its JAT_joker list.
+ *
+ * Called when a job is deleted by qdel or by qmaster master-limit enforcement
+ * so that the originator can later be added to the accounting record.
+ */
+void
+job_set_deleted_by(lListElem *ja_task, const char *user, const char *host) {
+   DENTER(TOP_LAYER);
+
+   if (ja_task != nullptr && user != nullptr && host != nullptr) {
+      DSTRING_STATIC(buffer, MAX_STRING_SIZE);
+
+      sge_dstring_sprintf(&buffer, "%s@%s", user, host);
+      ja_task_set_deleted_by(ja_task, sge_dstring_get_string(&buffer));
+   }
+
+   DRETURN_VOID;
+}
+
 /*-------------------------------------------------------------------------*/
 /* ocs::gdi::Client::sge_gdi_modify_job                                                    */
 /*    called in sge_c_gdi_mod                                              */
@@ -4114,6 +4134,9 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                ocs::ReportingFileWriter::create_job_logs(nullptr, sge_get_gmt64(), JL_DELETED,
                                                          packet->user, packet->host, nullptr, job,
                                                          tmp_task, nullptr, MSG_LOG_DELETED);
+
+               /* remember who deleted the job - added to the accounting record later */
+               job_set_deleted_by(tmp_task, packet->user, packet->host);
 
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);

@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -110,6 +110,9 @@ struct drusage {
    u_long64 start_time;
    u_long64 end_time;
    u_long32 exit_status;
+   const char *deleted_by;    /* "user@host" of the qdel request, "execd@host" or
+                                 "qmaster@host" if killed for exceeding a limit;
+                                 nullptr if the job was not deleted */
    u_long32 signal;
    double ru_wallclock;
    double ru_utime;      /* user time used */

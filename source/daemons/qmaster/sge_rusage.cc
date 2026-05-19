@@ -651,6 +651,15 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?
       write_json(*writer, "exit_status", exit_status);
 
+      // who deleted the job: a value stored in JAT_joker (qdel or qmaster
+      // master-limit enforcement) takes precedence over the job report value
+      // (job killed by sge_execd for exceeding a limit).
+      // @todo CS-2220: fall back to lGetString(jr, JR_deleted_by)
+      const char *deleted_by = ja_task_get_deleted_by(ja_task);
+      if (deleted_by != nullptr) {
+         write_json(*writer, "deleted_by", deleted_by);
+      }
+
       writer->Key("usage");
       writer->StartObject();
       writer->Key("rusage");
