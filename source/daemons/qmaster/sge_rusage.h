@@ -110,6 +110,9 @@ struct drusage {
    uint64_t start_time;
    uint64_t end_time;
    uint32_t exit_status;
+   const char *deleted_by;    /* "user@host" of the qdel request, "execd@host" or
+                                 "qmaster@host" if killed for exceeding a limit;
+                                 nullptr if the job was not deleted */
    uint32_t signal;
    double ru_wallclock;
    double ru_utime;      /* user time used */

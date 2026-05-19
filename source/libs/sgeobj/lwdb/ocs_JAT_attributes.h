@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ enum {
    JAT_ntix,
    JAT_wallclock_limit,
    JAT_message_list,
+   JAT_deleted_by,
    JAT_joker
 };
 
@@ -111,6 +112,7 @@ constexpr const int JAT_Type[] = {
    JAT_ntix,
    JAT_wallclock_limit,
    JAT_message_list,
+   JAT_deleted_by,
    JAT_joker,
    AttributeStatic::END_OF_ATTRIBUTES
 };
@@ -155,6 +157,7 @@ constexpr const int JAT_Type[] = {
    {JAT_ntix, "JAT_ntix", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_wallclock_limit, "JAT_wallclock_limit", AttributeStatic::UINT64, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {JAT_message_list, "JAT_message_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
+   {JAT_deleted_by, "JAT_deleted_by", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JAT_joker, "JAT_joker", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true} \
 
 } // end namespace

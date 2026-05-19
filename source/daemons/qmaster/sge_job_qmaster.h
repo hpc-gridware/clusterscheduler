@@ -122,6 +122,9 @@ get_rid_of_job_due_to_qdel(lListElem *j, lListElem *t, lList **answer_list, cons
 void
 job_mark_job_as_deleted(lListElem *j, lListElem *t);
 
+void
+job_set_deleted_by(lListElem *ja_task, const char *user, const char *host);
+
 bool
 spool_write_script(lList **answer_list, uint32_t jobid, const lListElem *jep);
 

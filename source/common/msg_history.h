@@ -68,6 +68,7 @@
 #define MSG_HISTORY_SHOWJOB_SLOTS            "slots"
 #define MSG_HISTORY_SHOWJOB_FAILED           "failed"
 #define MSG_HISTORY_SHOWJOB_EXITSTATUS       "exit_status"
+#define MSG_HISTORY_SHOWJOB_DELETED_BY       "deleted_by"
 #define MSG_HISTORY_SHOWJOB_RUWALLCLOCK      "ru_wallclock"
 #define MSG_HISTORY_SHOWJOB_RUUTIME          "ru_utime"
 #define MSG_HISTORY_SHOWJOB_RUSTIME          "ru_stime"

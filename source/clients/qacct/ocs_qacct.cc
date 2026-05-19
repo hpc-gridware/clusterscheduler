@@ -1417,6 +1417,9 @@ static void showjob(sge_rusage_type *dusage) {
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_SLOTS, dusage->slots);
    printf(SHOWJOB_U32_FAILED,MSG_HISTORY_SHOWJOB_FAILED, dusage->failed, (dusage->failed ? ":" : ""), get_sstate_description(dusage->failed));
    printf(SHOWJOB_U32_20,MSG_HISTORY_SHOWJOB_EXITSTATUS, dusage->exit_status);
+   if (!dusage->is_classic && dusage->deleted_by != nullptr) {
+      printf(SHOWJOB_STRING_20,MSG_HISTORY_SHOWJOB_DELETED_BY, dusage->deleted_by);
+   }
    printf(SHOWJOB_FLOAT_0,MSG_HISTORY_SHOWJOB_RUWALLCLOCK, dusage->ru_wallclock);
 
    printf(SHOWJOB_FLOAT_3,MSG_HISTORY_SHOWJOB_RUUTIME, dusage->ru_utime);    /* user time used */
@@ -2071,6 +2074,8 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    }
 
    d->is_classic = true;
+   /* deleted_by exists only in the JSONL accounting format */
+   d->deleted_by = nullptr;
 
    /* ... */
    options->jobfound=1;
@@ -2219,6 +2224,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
 
       d->failed = read_json(document, "failed", (uint32_t)0);
       d->exit_status = read_json(document, "exit_status", (uint32_t)0);
+      d->deleted_by = read_json(document, "deleted_by", nullptr);
 
       if (document.HasMember("usage")) {
          const rapidjson::Value &json_usage_list = document["usage"].GetObject();

@@ -819,3 +819,23 @@ ja_task_is_running(const lListElem *ja_task) {
    }
    return is_running;
 }
+
+/**
+ * Records who deleted a job array task in its JAT_deleted_by attribute.
+ *
+ * The information is stored so it survives spooling and is available when
+ * the accounting record is written. An already existing value is overwritten.
+ */
+void
+ja_task_set_deleted_by(lListElem *ja_task, const char *deleted_by) {
+   lSetString(ja_task, JAT_deleted_by, deleted_by);
+}
+
+/**
+ * Returns the "who deleted the job" string stored in JAT_deleted_by,
+ * or nullptr if the task was not deleted via this mechanism.
+ */
+const char *
+ja_task_get_deleted_by(const lListElem *ja_task) {
+   return lGetString(ja_task, JAT_deleted_by);
+}

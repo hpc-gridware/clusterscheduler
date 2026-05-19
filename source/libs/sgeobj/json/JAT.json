@@ -764,6 +764,27 @@
          ]
       },
       {
+         "name": "deleted_by",
+         "summary": "Deleted By",
+         "description": [
+            {
+               "line": "Name of the user who deleted the array task (e.g. via qdel),"
+            },
+            {
+               "line": "or the component which triggered the deletion (sge_qmaster, sge_execd)."
+            },
+            {
+               "line": "Used for accounting and reporting purposes."
+            }
+         ],
+         "type": "lStringT",
+         "flags": [
+            {
+               "name": "SPOOL_SUBLIST"
+            }
+         ]
+      },
+      {
          "name": "joker",
          "summary": "Joker",
          "description": [
