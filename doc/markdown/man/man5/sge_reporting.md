@@ -173,6 +173,11 @@ fine-grained resource usage monitoring over time.
 
 For the contents and structure of the accounting records see xxqs_name_sxx_accounting(5).
 
+When a job was deleted before it finished, the acct record additionally contains a *deleted_by*
+attribute holding `<user>@<host>` of the `qdel` request, or `execd@<host>` / `qmaster@<host>` when
+the job was killed for exceeding a resource limit. This attribute is emitted only to the JSONL
+reporting format.
+
 ## online_usage
 
 Records of type online_usage are written for every job report that xxqs_name_sxx_qmaster(8) receives
