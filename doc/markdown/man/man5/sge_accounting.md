@@ -46,6 +46,19 @@ The cpu time usage in seconds.
 
 The department which was assigned to the job.
 
+## *deleted_by*
+
+Information about who deleted the job, in the form `<user>@<host>`.
+
+When the job was deleted with the `qdel` command it contains the user and the host of the
+`qdel` request. When the job was killed because it exceeded a resource limit (e.g. `h_rt`) it
+contains `execd@<host>` if the limit was enforced by the execution daemon, or `qmaster@<host>`
+if it was enforced by the qmaster.
+
+The attribute is absent if the job was not deleted.
+
+(JSONL only)
+
 ## *end_time*
 
 End time (GMT unix time stamp, JSONL: in microseconds).
@@ -223,6 +236,7 @@ Values are contained in the following structure and order:
 * category
 * failed
 * exit_status
+* deleted_by (optional, present if the job was deleted)
 * usage - array containing all rusage values
    * rusage
    * ru_wallclock
