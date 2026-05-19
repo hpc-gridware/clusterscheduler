@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2026 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ enum {
    JR_wait_status,
    JR_flush,
    JR_no_send,
-   JR_delay_report
+   JR_delay_report,
+   JR_deleted_by
 };
 
 constexpr const int JR_Type[] = {
@@ -64,6 +65,7 @@ constexpr const int JR_Type[] = {
    JR_flush,
    JR_no_send,
    JR_delay_report,
+   JR_deleted_by,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -83,7 +85,8 @@ constexpr const int JR_Type[] = {
    {JR_wait_status, "JR_wait_status", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JR_flush, "JR_flush", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {JR_no_send, "JR_no_send", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {JR_delay_report, "JR_delay_report", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {JR_delay_report, "JR_delay_report", AttributeStatic::BOOL, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {JR_deleted_by, "JR_deleted_by", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

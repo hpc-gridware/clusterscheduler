@@ -654,8 +654,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       // who deleted the job: a value stored in JAT_joker (qdel or qmaster
       // master-limit enforcement) takes precedence over the job report value
       // (job killed by sge_execd for exceeding a limit).
-      // @todo CS-2220: fall back to lGetString(jr, JR_deleted_by)
       const char *deleted_by = ja_task_get_deleted_by(ja_task);
+      if (deleted_by == nullptr) {
+         deleted_by = lGetString(jr, JR_deleted_by);
+      }
       if (deleted_by != nullptr) {
          write_json(*writer, "deleted_by", deleted_by);
       }
