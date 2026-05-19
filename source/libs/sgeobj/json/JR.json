@@ -141,5 +141,13 @@
 				}],
 			"type":	"lBoolT",
 			"flags":	[]
+		}, {
+			"name":	"deleted_by",
+			"summary":	"Deleted By",
+			"description":	[{
+					"line":	"Who deleted the job. Set by sge_execd to execd@<hostname> when the job was killed for exceeding a resource limit."
+				}],
+			"type":	"lStringT",
+			"flags":	[]
 		}]
 }

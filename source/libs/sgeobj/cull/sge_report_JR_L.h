@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2023-2025 HPC-Gridware GmbH
+ *  Copyright 2023-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -82,6 +82,9 @@
 *    SGE_BOOL(JR_delay_report) - Delay Report
 *    Used in sge_execd: Delay sending of the job report. Used for qsub -sync/DRMAA jobs after a qmaster failover.
 *
+*    SGE_STRING(JR_deleted_by) - Deleted By
+*    Who deleted the job. Set by sge_execd to execd@<hostname> when the job was killed for exceeding a resource limit.
+*
 */
 
 enum {
@@ -100,7 +103,8 @@ enum {
    JR_wait_status,
    JR_flush,
    JR_no_send,
-   JR_delay_report
+   JR_delay_report,
+   JR_deleted_by
 };
 
 LISTDEF(JR_Type)
@@ -120,6 +124,7 @@ LISTDEF(JR_Type)
    SGE_BOOL(JR_flush, CULL_DEFAULT)
    SGE_BOOL(JR_no_send, CULL_DEFAULT)
    SGE_BOOL(JR_delay_report, CULL_DEFAULT)
+   SGE_STRING(JR_deleted_by, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(JRN)
@@ -139,6 +144,7 @@ NAMEDEF(JRN)
    NAME("JR_flush")
    NAME("JR_no_send")
    NAME("JR_delay_report")
+   NAME("JR_deleted_by")
 NAMEEND
 
 #define JR_SIZE sizeof(JRN)/sizeof(char *)

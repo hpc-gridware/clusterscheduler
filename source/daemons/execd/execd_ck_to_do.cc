@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -93,6 +93,22 @@ sge_kill_petasks(const lListElem *job, const lListElem *ja_task);
 
 static int sge_start_jobs();
 static int exec_job_or_task(lListElem *jep, lListElem *jatep, lListElem *petep);
+
+/**
+ * Records in the job report that sge_execd killed the job because it exceeded
+ * a resource limit (e.g. h_rt, h_cpu, h_vmem). The string is added to the
+ * accounting record as "execd@<hostname>" once the job report reaches
+ * sge_qmaster, unless a value set by qdel takes precedence.
+ */
+static void
+job_report_set_deleted_by_execd(u_long32 jobid, u_long32 jataskid) {
+   lListElem *jr = get_job_report(jobid, jataskid, nullptr);
+   if (jr != nullptr) {
+      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+      sge_dstring_sprintf(&dstr, "execd@%s", component_get_qualified_hostname());
+      lSetString(jr, JR_deleted_by, sge_dstring_get_string(&dstr));
+   }
+}
 
 #ifdef COMPILE_DC
 static void force_job_rlimit(const char* qualified_hostname);
@@ -239,6 +255,7 @@ force_job_rlimit_apply_limit(double usage, double limit, const char *limit_name,
          WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, limit_name,
                  lGetString(queue, QU_full_name), usage, limit);
          signal_job(jobid, jataskid, SGE_SIGKILL);
+         job_report_set_deleted_by_execd(jobid, jataskid);
       } else {
          WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, limit_name,
                  lGetString(queue, QU_full_name), usage, limit);
@@ -554,11 +571,13 @@ int do_ck_to_do(bool is_qmaster_down) {
                      sge_kill_petasks(jep, jatep);
                   }
                   if (lGetUlong(jatep, JAT_pid) != 0) {
-                     sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGKILL, 
+                     sge_kill(lGetUlong(jatep, JAT_pid), SGE_SIGKILL,
                               lGetUlong(jep, JB_job_number),
                               lGetUlong(jatep, JAT_task_number),
                               nullptr);
                   }
+                  job_report_set_deleted_by_execd(lGetUlong(jep, JB_job_number),
+                                                  lGetUlong(jatep, JAT_task_number));
                   lSetUlong64(jatep, JAT_pending_signal_delivery_time, now + sge_gmt32_to_gmt64(90));
                }    
                continue;
