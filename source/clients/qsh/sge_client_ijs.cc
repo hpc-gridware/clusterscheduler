@@ -451,9 +451,14 @@ void *tty_to_commlib(void *t_conf) {
                comm_wait_for_all_messages_sent(g_comm_handle, &err_msg);
             }
          } else if (FD_ISSET(g_wakeup_pipe[0], &read_fds)) {
-            // If we received something on the wakeup pipe, we shall exit.
-            // We will probably never get here as thread_testcancel() above will already terminate the thread.
-            DPRINTF("tty_to_commlib: wakeup pipe was triggered\n");
+            // Drain the wakeup byte(s) that select() flagged.  Without this read
+            // the byte stays in the pipe, every subsequent select() returns
+            // immediately, and the thread spins at 100 % CPU — followup to the
+            // CS-1759 cleanup that added the REGISTER-time wakeup write but no
+            // matching drain on the read end.
+            char drain[16];
+            ssize_t n = read(g_wakeup_pipe[0], drain, sizeof drain);
+            DPRINTF("tty_to_commlib: wakeup pipe was triggered (drained %d bytes)\n", (int)n);
             if (g_do_exit) {
                DPRINTF("tty_to_commlib: exit was requested\n");
                do_exit = true;
