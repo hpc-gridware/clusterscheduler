@@ -28,7 +28,7 @@
  *
  *  All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -51,11 +51,12 @@ skip_restarted_job(lListElem *host, lListElem *job_report, u_long32 job_number, 
 
 int
 reschedule_jobs(lListElem *ep, u_long32 force, lList **answer, monitoring_t *monitor,
-                bool is_manual, u_long64 gdi_session);
+                bool is_manual, const char *caller_user, const char *caller_host, u_long64 gdi_session);
 
 int
 reschedule_job(lListElem *jep, lListElem *jatep, lListElem *qep, u_long32 force,
-               lList **answer, monitoring_t *monitor, bool is_manual, u_long64 gdi_session);
+               lList **answer, monitoring_t *monitor, bool is_manual,
+               const char *caller_user, const char *caller_host, u_long64 gdi_session);
 
 lListElem *
 add_to_reschedule_unknown_list(lListElem *hostr, u_long32 job_number, u_long32 task_number,
