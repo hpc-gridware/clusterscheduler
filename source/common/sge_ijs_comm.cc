@@ -1300,6 +1300,7 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
             case SUSPEND_CTRL_MSG:
             case UNSUSPEND_CTRL_MSG:
             case STDIN_CLOSE_MSG:
+            case NOECHO_CTRL_MSG:         // CS-1759
                DPRINTF("length of message: %d\n", (int)message->message_length);
                /* data message */
                recv_mess->type = message->message[0];

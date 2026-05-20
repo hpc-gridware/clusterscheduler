@@ -59,6 +59,7 @@
 #define SUSPEND_CTRL_MSG             8
 #define UNSUSPEND_CTRL_MSG           9
 #define STDIN_CLOSE_MSG              10
+#define NOECHO_CTRL_MSG              11  ///< client→shepherd: disable ECHO on the slave PTY (sent when the client's local stdin is not a tty so the shepherd's forwarded input is not echoed back into the job's output) — CS-1759 backport from master, kept minimal (no other master-only message types)
 
 #define COMM_RETVAL_OK                    0
 #define COMM_INVALID_PARAMETER            1
