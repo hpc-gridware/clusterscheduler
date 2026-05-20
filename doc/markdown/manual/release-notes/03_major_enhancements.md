@@ -10,6 +10,25 @@ When you have an existing DBWriter installation, please ensure that at least Jav
 Edit the file `$SGE_ROOT/$SGE_CELL/common/sgedbwriter` and modify the line setting `JAVA_HOME` to point to the Java 11 (or higher) installation directory.   
 If you are doing a fresh installation, specify the Java 11 (or higher) installation directory when asked during the installation process.
 
+### Port Range for qrsh and qlogin
+
+When a user submits an interactive job via qrsh(1) or qlogin(1), the client binds a TCP listen socket and passes the port number to the shepherd, which connects back to it once the job starts. By default the operating system selects any free ephemeral port for this purpose. In environments with strict firewall rules between the submit host and the execution hosts — where only a specific port range is permitted through the firewall — this uncontrolled port selection prevents interactive jobs from working at all.
+
+A new global configuration parameter porti\_range addresses this by restricting the TCP ports that the qrsh(1) and qlogin(1) client may bind to. Administrators configure the same port range in both the scheduler and the firewall, ensuring that the connect-back port is always within the allowed range.
+
+The parameter accepts a comma-separated list of range expressions of the form n-m or n-m:s, where s is an optional step. For example:
+
+```
+port_range  50100-50200
+port_range  50100-50200:2,51000-51100
+```
+
+The client tries each port in the configured ranges sequentially and binds to the first available one. If no port is free the client exits with an error. When the parameter is NONE or not configured, the operating system assigns a free ephemeral port automatically, preserving the previous behaviour.
+
+porti\_range applies to both the builtin IJS mode and the legacy ssh/rsh mode and can be set or changed with qconf -mconf without restarting any daemon.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ## v9.1.0
 
 ### Advanced Binding Framework for Topology-Aware Job Placement
