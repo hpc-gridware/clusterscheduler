@@ -51,11 +51,12 @@ skip_restarted_job(lListElem *host, lListElem *job_report, uint32_t job_number, 
 
 int
 reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *monitor,
-                bool is_manual, uint64_t gdi_session);
+                bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 int
 reschedule_job(lListElem *jep, lListElem *jatep, lListElem *qep, uint32_t force,
-               lList **answer, monitoring_t *monitor, bool is_manual, uint64_t gdi_session);
+               lList **answer, monitoring_t *monitor, bool is_manual,
+               const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 lListElem *
 add_to_reschedule_unknown_list(lListElem *hostr, uint32_t job_number, uint32_t task_number,

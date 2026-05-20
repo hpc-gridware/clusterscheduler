@@ -70,8 +70,9 @@ printed. If neither a name nor an ID is given all jobs are enlisted. This option
 `qacct`. If activated, CPU times are no longer accumulated but the "raw" accounting information is printed in a 
 formatted form instead. Seexxqs_name_sxx_accounting(5) for an explanation of the displayed information.
 
-For a job that was deleted, the output additionally contains a `deleted_by` line identifying who deleted the
-job (see the *deleted_by* attribute in xxqs_name_sxx_accounting(5)).
+For a job that was deleted, killed for exceeding a resource limit, or whose run was
+rescheduled by qmaster or by `qmod -r`, the output additionally contains a `deleted_by`
+line identifying the actor (see the *deleted_by* attribute in xxqs_name_sxx_accounting(5)).
 
 ## -l *attr=val,...*  
 A resource requirement specification which must be met by the queues in which the jobs being accounted were 

@@ -48,14 +48,18 @@ The department which was assigned to the job.
 
 ## *deleted_by*
 
-Information about who deleted the job, in the form `<user>@<host>`.
+Information about who deleted (or terminated) the current run of the job, in the form
+`<user>@<host>`.
 
 When the job was deleted with the `qdel` command it contains the user and the host of the
 `qdel` request. When the job was killed because it exceeded a resource limit (e.g. `h_rt`) it
 contains `execd@<host>` if the limit was enforced by the execution daemon, or `qmaster@<host>`
-if it was enforced by the qmaster.
+if it was enforced by the qmaster. When the run was terminated because qmaster rescheduled
+the job (for example after a `reschedule_unknown` timeout fired on the execution host) it
+contains `qmaster@<master-host>`. When a run was rescheduled via `qmod -rj`/`qmod -rq` it
+contains the user and host that issued the `qmod` request.
 
-The attribute is absent if the job was not deleted.
+The attribute is absent if the job was not deleted or rescheduled.
 
 (JSONL only)
 
@@ -236,7 +240,7 @@ Values are contained in the following structure and order:
 * category
 * failed
 * exit_status
-* deleted_by (optional, present if the job was deleted)
+* deleted_by (optional, present if the job was deleted or rescheduled)
 * usage - array containing all rusage values
    * rusage
    * ru_wallclock

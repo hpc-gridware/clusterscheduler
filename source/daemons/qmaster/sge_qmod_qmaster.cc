@@ -644,7 +644,7 @@ qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList
       DRETURN(-1);
    }
 
-   reschedule_jobs(qep, force, answer, monitor, true, packet->gdi_session);
+   reschedule_jobs(qep, force, answer, monitor, true, packet->user, packet->host, packet->gdi_session);
 
    DRETURN(0);
 }
@@ -707,7 +707,7 @@ qmod_job_reschedule(ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem *
                     lList **answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   reschedule_job(jep, jatep, queueep, force, answer, monitor, true, packet->gdi_session);
+   reschedule_job(jep, jatep, queueep, force, answer, monitor, true, packet->user, packet->host, packet->gdi_session);
 
    DRETURN_VOID;
 }

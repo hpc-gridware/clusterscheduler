@@ -34,6 +34,8 @@
 #include <cstring>
 
 #include "uti/sge_bitfield.h"
+#include "uti/sge_component.h"
+#include "uti/sge_dstring.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
@@ -82,7 +84,7 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
 
 /****** qmaster/reschedule/reschedule_unknown_event() *************************
 *  NAME
-*     reschedule_unknown_event() -- event handler to reschedule jobs 
+*     reschedule_unknown_event() -- event handler to reschedule jobs
 *
 *  SYNOPSIS
 *     void reschedule_unknown_event(te_event_t anEvent)
@@ -92,17 +94,17 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
 *     jobs running on a specific host. These jobs will be put back into
 *     the list of pending jobs.
 *     The function is triggered by TYPE_RESCHEDULE_UNKNOWN_EVENT's.
-*     TYPE_RESCHEDULE_UNKNOWN_EVENT's occure when the configured 
-*     "reschedule_unknown" timout value rundown. The clock tiggering 
-*     this event handler will be wind up with a call of 
-*     reschedule_unknown_trigger() in following situations: 
+*     TYPE_RESCHEDULE_UNKNOWN_EVENT's occure when the configured
+*     "reschedule_unknown" timout value rundown. The clock tiggering
+*     this event handler will be wind up with a call of
+*     reschedule_unknown_trigger() in following situations:
 *
 *        - a execution host went in unknown state due to missing
 *          load reports
-*           * execd was shut down (qconf -ke) 
+*           * execd was shut down (qconf -ke)
 *           * execd died (kill or coredump)
 *           * network or host problems (machine crashed, cable problem ...)
-*        - qmaster startup (all execution hosts are in unknown state) 
+*        - qmaster startup (all execution hosts are in unknown state)
 *
 *  INPUTS
 *     sge_timed_event_t* - timed event
@@ -181,7 +183,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * unknown state and append the jobids/taskids into
     * a sublist of the exechost object
     */
-   reschedule_jobs(hep, 0, &answer_list, monitor, false, ocs::SessionManager::GDI_SESSION_NONE);
+   reschedule_jobs(hep, 0, &answer_list, monitor, false, nullptr, nullptr, ocs::SessionManager::GDI_SESSION_NONE);
    lFreeList(&answer_list);
 
    Error:
@@ -193,7 +195,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
 
 /****** qmaster/reschedule/reschedule_jobs() **********************************
 *  NAME
-*     reschedule_jobs() -- reschedule jobs junning in host/queue 
+*     reschedule_jobs() -- reschedule jobs junning in host/queue
 *
 *  SYNOPSIS
 *     int reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, bool is_manual)
@@ -205,18 +207,18 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
 *     jobs are applied.
 *
 *  INPUTS
-*     lListElem *ep  - host or queue (EH_Type or QU_Type) 
+*     lListElem *ep  - host or queue (EH_Type or QU_Type)
 *     uint32_t force - force the rescheduling of certain jobs (boolean)
 *     lList **answer - answer list (AN_Type)
 *     bool is_manual - indicator for manual (e.g. 'qmod -rj') or automatic
 *                      (e.g. execd goes down) rescheduling.
 *
 *  RESULT
-*     int - 0 on success; 1 if one of the parameters was invalid 
+*     int - 0 on success; 1 if one of the parameters was invalid
 *******************************************************************************/
 int
 reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *monitor,
-                bool is_manual, uint64_t gdi_session) {
+                bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    int ret = 1;
 
@@ -240,7 +242,7 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
       lListElem *next_jep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
       while ((jep = next_jep) != nullptr) {
          next_jep = lNextRW(jep);
-         reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual, gdi_session);
+         reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual, caller_user, caller_host, gdi_session);
       }
       ret = 0;
    }
@@ -250,28 +252,28 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
 
 /****** qmaster/reschedule/reschedule_job() ***********************************
 *  NAME
-*     reschedule_job() -- reschedule array tasks or jobs 
+*     reschedule_job() -- reschedule array tasks or jobs
 *
 *  SYNOPSIS
-*     int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep, 
+*     int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 *                        uint32_t force, lList **answer, bool is_manual)
 *
 *  FUNCTION
 *     This function is able to reschedule:
-*        (a) a job with all its array tasks running anywhere 
+*        (a) a job with all its array tasks running anywhere
 *           (jatep == nullptr && ep == nullptr)
-*        (b) one array task running anywhere 
+*        (b) one array task running anywhere
 *           (jatep != nullptr && ep == nullptr)
 *        (c) all tasks of a job running on a certain host/queue
 *           (jatep == nullptr && ep != nullptr)
 *        (d) one array task running on a certain host/queue
 *           (jatep != nullptr && ep != nullptr)
-*     Additionally to the conditions above jobs/tasks will only be 
-*     rescheduled if they fulfill following requirements: 
+*     Additionally to the conditions above jobs/tasks will only be
+*     rescheduled if they fulfill following requirements:
 *        (1) not pending
 *        (2) restartable ("rerun" of the queue is "true" or "qsub -r y")
 *        (3) not interactive (qsh, qlogin, qrsh)
-*        (4) ckpt job and "when" of ckpt-obj containes "r" flag 
+*        (4) ckpt job and "when" of ckpt-obj containes "r" flag
 *        (5) was not deleted previously (qdel)
 *     It is possible to force the rescheduling of jobs/tasks not fulfilling
 *     condition (2), (4) and (5) if the force parameter is 1.
@@ -281,7 +283,7 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
 *     lListElem *jatep - array task (JAT_Type or nullptr)
 *     lListElem *ep    - host or queue (EH_Type or QU_Type or nullptr)
 *     uint32_t force   - force rescheduling (boolean)
-*     lList **answer   - answer list (AN_Type) 
+*     lList **answer   - answer list (AN_Type)
 *     bool is_manual   - indicator for manual (e.g. 'qmod -rj') or automatic
 *                        (e.g. execd goes down) rescheduling
 *
@@ -289,7 +291,8 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
 *     int - 0 on success
 *******************************************************************************/
 int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
-                   uint32_t force, lList **answer, monitoring_t *monitor, bool is_manual, uint64_t gdi_session) {
+                   uint32_t force, lList **answer, monitoring_t *monitor, bool is_manual,
+                   const char *caller_user, const char *caller_host, uint64_t gdi_session) {
    lListElem *qep;               /* QU_Type */
    lListElem *hep;               /* EH_Type */
    lListElem *this_jatep;        /* JAT_Type */
@@ -378,11 +381,11 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
          const char *the_hostname = (hep != nullptr ? lGetHost(hep, EH_name) : nullptr);
 
          /*
-          * If RESCHEDULE_SLAVE is set then 
-          *    we have to check each granted queue because PE jobs should be 
+          * If RESCHEDULE_SLAVE is set then
+          *    we have to check each granted queue because PE jobs should be
           *    rescheduled also if only one PE slave task is running in that queue/host
           * otherwise
-          *    PE jobs will only be rescheduled when the master task is effected 
+          *    PE jobs will only be rescheduled when the master task is effected
           */
          if (mconf_get_enable_reschedule_slave()) {
             const lListElem *granted_q;
@@ -580,6 +583,22 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             lSetUlong(pseudo_jr, JR_failed, SSTATE_AGAIN);
             lSetString(pseudo_jr, JR_err_str, (char *) MSG_RU_JR_ERRSTR);
             lSetString(pseudo_jr, JR_queue_name, lGetString(first_granted_queue, JG_qname));
+
+            // Identify who terminated this run for the accounting record:
+            //   - manual qmod -r: <caller_user>@<caller_host>
+            //   - automatic (reschedule_unknown / host failure): qmaster@<master-host>
+            // Setting it on the pseudo_jr (and not on JAT_joker) confines the marker to this
+            // single acct write so it does not leak into the next run of the same ja_task.
+            {
+               DSTRING_STATIC(dstr_deleted_by, MAX_STRING_SIZE);
+               if (caller_user != nullptr && caller_host != nullptr) {
+                  sge_dstring_sprintf(&dstr_deleted_by, "%s@%s", caller_user, caller_host);
+               } else {
+                  sge_dstring_sprintf(&dstr_deleted_by, "qmaster@%s", component_get_qualified_hostname());
+               }
+               lSetString(pseudo_jr, JR_deleted_by, sge_dstring_get_string(&dstr_deleted_by));
+            }
+
             sge_job_exit(pseudo_jr, jep, this_jatep, monitor, gdi_session);
             lFreeElem(&pseudo_jr);
          }
@@ -591,10 +610,10 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 
 /****** qmaster/reschedule/add_to_reschedule_unknown_list() *******************
 *  NAME
-*     add_to_reschedule_unknown_list() -- add a job/task 
+*     add_to_reschedule_unknown_list() -- add a job/task
 *
 *  SYNOPSIS
-*     lListElem* add_to_reschedule_unknown_list(lListElem *host, 
+*     lListElem* add_to_reschedule_unknown_list(lListElem *host,
 *                                               uint32_t job_number,
 *                                               uint32_t task_number,
 *                                               uint32_t state)
@@ -609,7 +628,7 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
 *     which are in an undefined state (no reports arrive the master).
 *
 *  INPUTS
-*     lListElem *host      - host (EH_Type) where the jok/task was running 
+*     lListElem *host      - host (EH_Type) where the jok/task was running
 *     uint32_t job_number  - job id
 *     uint32_t task_number - task id
 *     uint32_t state       - state
@@ -644,20 +663,20 @@ add_to_reschedule_unknown_list(lListElem *host, uint32_t job_number, uint32_t ta
 
 /****** qmaster/reschedule/get_from_reschedule_unknown_list() *****************
 *  NAME
-*     get_from_reschedule_unknown_list() --  find an entry in a sublist 
+*     get_from_reschedule_unknown_list() --  find an entry in a sublist
 *
 *  SYNOPSIS
-*     lListElem* get_from_reschedule_unknown_list(lListElem *host, 
+*     lListElem* get_from_reschedule_unknown_list(lListElem *host,
 *                                                 uint32_t job_number,
 *                                                 uint32_t task_number)
 *
 *  FUNCTION
-*     This function tries to find an entry in the reschedule_unknown_list 
+*     This function tries to find an entry in the reschedule_unknown_list
 *     of a host.
-*      
+*
 *
 *  INPUTS
-*     lListElem *host      - host (EH_Type) 
+*     lListElem *host      - host (EH_Type)
 *     uint32_t job_number  - job id
 *     uint32_t task_number - task id
 *
@@ -678,16 +697,16 @@ get_from_reschedule_unknown_list(const lListElem *host, uint32_t job_number, uin
 
 /****** qmaster/reschedule/delete_from_reschedule_unknown_list() **************
 *  NAME
-*     delete_from_reschedule_unknown_list() -- delete a sublist entry 
+*     delete_from_reschedule_unknown_list() -- delete a sublist entry
 *
 *  SYNOPSIS
-*     void delete_from_reschedule_unknown_list(lListElem *host) 
+*     void delete_from_reschedule_unknown_list(lListElem *host)
 *
 *  FUNCTION
-*     Removes an entry of the reschedule_unknown_list of a host. 
+*     Removes an entry of the reschedule_unknown_list of a host.
 *
 *  INPUTS
-*     lListElem *host - host (EH_Type) 
+*     lListElem *host - host (EH_Type)
 *******************************************************************************/
 void
 delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
@@ -728,16 +747,16 @@ delete_from_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
 
 /****** qmaster/reschedule/update_reschedule_unknown_list() *******************
 *  NAME
-*     update_reschedule_unknown_list() -- check entries in sublist 
+*     update_reschedule_unknown_list() -- check entries in sublist
 *
 *  SYNOPSIS
-*     void update_reschedule_unknown_list(lListElem *host) 
+*     void update_reschedule_unknown_list(lListElem *host)
 *
 *  FUNCTION
-*     This function checks and changes the state field of the elements 
-*     contained in the reschedule_unknown_list of a host. The state field 
-*     containes information about the current protocol state between the 
-*     master and a execution daemon for a job/task.  
+*     This function checks and changes the state field of the elements
+*     contained in the reschedule_unknown_list of a host. The state field
+*     containes information about the current protocol state between the
+*     master and a execution daemon for a job/task.
 *
 *  INPUTS
 *     lListElem *host - host (EH_Type)
@@ -779,14 +798,14 @@ update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
 *
 *  FUNCTION
 *     This function is used within the master daemon at the place where
-*     job reports arrive from the execd's. The function returns an integer 
+*     job reports arrive from the execd's. The function returns an integer
 *     which indicates what to do with a job report and which steps are
 *     necessary to interfere in the protocol between master and execd.
 *     In following situation it is necessary to interfere in the protocol:
 *
 *     (1) job A was scheduled to host X
 *     (2) All queues of host X went into unknown state because
-*         of network problems. 
+*         of network problems.
 *     (3) automatic rescheduling mechanism decided to put the job A
 *         back into the list of pending jobs
 *     (4) job A was scheduled to host Y
@@ -794,19 +813,19 @@ update_reschedule_unknown_list(lListElem *host, uint64_t gdi_session) {
 *
 *     => now we have to ignore all reports from host X
 *     => kill the old instance of job A
-*     => make sure that no old stuff remains 
+*     => make sure that no old stuff remains
 *
 *  INPUTS
-*     lListElem *host       - host (EH_Type) 
-*     lListElem *job_report - job report (JR_Type) 
+*     lListElem *host       - host (EH_Type)
+*     lListElem *job_report - job report (JR_Type)
 *     uint32_t job_number   - job id
 *     uint32_t task_number  - array task id
 *
 *  RESULT
 *     uint32_t - what should we do?
-*         0 => process the job report 
+*         0 => process the job report
 *        >0 => skip the job report
-*              2 -> try to kill the job 
+*              2 -> try to kill the job
 *              3 -> send an ack to execd (job will be removed from filesystem)
 *
 *******************************************************************************/
@@ -842,21 +861,21 @@ skip_restarted_job(lListElem *host, lListElem *job_report, uint32_t job_number, 
 
 /****** qmaster/reschedule/update_reschedule_unknown_list_for_job() ***********
 *  NAME
-*     update_reschedule_unknown_list_for_job() -- check and change state 
+*     update_reschedule_unknown_list_for_job() -- check and change state
 *
 *  SYNOPSIS
-*     void update_reschedule_unknown_list_for_job(lListElem *host, 
+*     void update_reschedule_unknown_list_for_job(lListElem *host,
 *                                                 uint32_t job_number,
 *                                                 uint32_t task_number)
 *
 *  FUNCTION
-*     This function is used to keep the state field up to date which is 
+*     This function is used to keep the state field up to date which is
 *     contained in the reschedule_unknown_list entries. Only entries added for
 *     parallel jobs will be changed.
-*      
+*
 *
 *  INPUTS
-*     lListElem *host      - host (EH_Type) 
+*     lListElem *host      - host (EH_Type)
 *     uint32_t job_number  - job id
 *     uint32_t task_number - task id
 *******************************************************************************/
@@ -884,18 +903,18 @@ update_reschedule_unknown_list_for_job(lListElem *host, uint32_t job_number, uin
 
 /****** qmaster/reschedule/update_reschedule_unknown_timout_values() **********
 *  NAME
-*     update_reschedule_unknown_timout_values() -- change cached timeout value 
+*     update_reschedule_unknown_timout_values() -- change cached timeout value
 *
 *  SYNOPSIS
-*     void update_reschedule_unknown_timout_values(const char *config_name) 
+*     void update_reschedule_unknown_timout_values(const char *config_name)
 *
 *  FUNCTION
 *     This functions changes all reschedule unknown values cached within
 *     the exec host objects. 'config_name' may either be 'global' or
-*     the name of a local configuration. 
+*     the name of a local configuration.
 *
 *  INPUTS
-*     const char *config_name - configuration name 
+*     const char *config_name - configuration name
 *
 *  RESULT
 *     void - none
@@ -929,14 +948,14 @@ update_reschedule_unknown_timout_values(const char *config_name) {
 
 /****** qmaster/reschedule/update_reschedule_unknown_timeout() ****************
 *  NAME
-*     update_reschedule_unknown_timeout() -- Cache the timeout value in host 
+*     update_reschedule_unknown_timeout() -- Cache the timeout value in host
 *
 *  SYNOPSIS
-*     void update_reschedule_unknown_timeout(lListElem *host) 
+*     void update_reschedule_unknown_timeout(lListElem *host)
 *
 *  FUNCTION
-*     The Function copies the timout value of the global/local configuration 
-*     for a certain host within the exec host object.  
+*     The Function copies the timout value of the global/local configuration
+*     for a certain host within the exec host object.
 *
 *  INPUTS
 *     lListElem *host - exec host (EH_Type)
@@ -979,17 +998,17 @@ update_reschedule_unknown_timeout(lListElem *host) {
 
 /****** qmaster/reschedule/reschedule_unknown_timeout() ***********************
 *  NAME
-*     reschedule_unknown_timeout() -- return the time to wait before resch. 
+*     reschedule_unknown_timeout() -- return the time to wait before resch.
 *
 *  SYNOPSIS
 *     uint32_t reschedule_unknown_timeout(lListElem *hep)
 *
 *  FUNCTION
 *     This function returns the time to wait before rescheduling of
-*     jobs running in hep will be initiated.  
+*     jobs running in hep will be initiated.
 *
 *  INPUTS
-*     lListElem *hep - host (EH_Type) 
+*     lListElem *hep - host (EH_Type)
 *
 *  RESULT
 *     uint32_t - time in seconds
@@ -1031,10 +1050,10 @@ reschedule_unknown_timeout(lListElem *hep) {
 
 /****** qmaster/reschedule/reschedule_unknown_trigger() ***********************
 *  NAME
-*     reschedule_unknown_trigger() -- wind up timer for auto rescheduling 
+*     reschedule_unknown_trigger() -- wind up timer for auto rescheduling
 *
 *  SYNOPSIS
-*     void reschedule_unknown_trigger(lListElem *hep) 
+*     void reschedule_unknown_trigger(lListElem *hep)
 *
 *  FUNCTION
 *     This function winds up a timer used to trigger the automatic
@@ -1043,7 +1062,7 @@ reschedule_unknown_timeout(lListElem *hep) {
 *     plus some time added with the reschedule_add_additional_time() function
 *
 *  INPUTS
-*     lListElem *hep - host EH_Type 
+*     lListElem *hep - host EH_Type
 ******************************************************************************/
 void
 reschedule_unknown_trigger(lListElem *hep) {
@@ -1069,7 +1088,7 @@ reschedule_unknown_trigger(lListElem *hep) {
 
 /****** qmaster/reschedule/reschedule_add_additional_time() *******************
 *  NAME
-*     reschedule_add_additional_time() -- set additional time to wait before r. 
+*     reschedule_add_additional_time() -- set additional time to wait before r.
 *
 *  SYNOPSIS
 *     void reschedule_add_additional_time(uint32_t time)
@@ -1077,7 +1096,7 @@ reschedule_unknown_trigger(lListElem *hep) {
 *  FUNCTION
 *     This function sets a time value which will be added to the
 *     "reschedule_unknown" time. The master will wait this time after
-*     a host went into unknown state before it initiates rescheduling of jobs 
+*     a host went into unknown state before it initiates rescheduling of jobs
 *
 *  INPUTS
 *     uint32_t time - time in seconds
@@ -1126,4 +1145,4 @@ remove_from_reschedule_unknown_lists(uint32_t job_number, uint32_t task_number, 
 
    DRETURN_VOID;
 }
- 
+
