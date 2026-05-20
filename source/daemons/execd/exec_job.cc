@@ -1888,6 +1888,19 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       snprintf(err_str, err_length, MSG_FILE_CHDIR_SS, active_dir_buffer, strerror(errno));
       DRETURN(-2);
    }
+
+   /* CS-2226: create the per-job signal_pipe FIFO (job control signals) in the active job dir
+    * (cwd is now the active dir, same contract as the "signal" file). The
+    * execd writes ordered job-control-signal records here (SIGSTOP/suspend,
+    * SIGCONT/resume, arbitrary signals); the shepherd polls and
+    * forwards them in order - non-coalescing, unlike the truncating
+    * "signal"-file + SIGTTIN relay. Direct control signals
+    * (SIGKILL/SIGTSTP, SIGTTOU, SIGUSR1, SIGUSR2) are NOT routed here. Best-effort: on failure the execd falls back
+    * to the legacy signal path (back-compat / safety). */
+   if (mkfifo("signal_pipe", 0600) != 0 && errno != EEXIST) {
+      ERROR("mkfifo(signal_pipe) failed: %s - falling back to legacy signal path\n", strerror(errno));
+   }
+
    {
 
       /*

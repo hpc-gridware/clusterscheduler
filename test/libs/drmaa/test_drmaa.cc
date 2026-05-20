@@ -2367,7 +2367,7 @@ static int test(int *argc, char **argv[], int parse_args)
          }
   
          /* submit a job running long enough allowing it to be suspended and resumed */
-         if (!(jt = create_sleeper_job_template(30, 0, 0))) {
+         if (!(jt = create_sleeper_job_template(5, 0, 0))) {
             fprintf(stderr, "create_sleeper_job_template() failed\n");
             return 1;
          }
@@ -2409,6 +2409,14 @@ static int test(int *argc, char **argv[], int parse_args)
             return 1;
          }
          printf("verified suspend was done for job \"%s\"\n", jobid);
+
+         /* Workaround for CS-2226: on systemd cgroup-v2 job scopes a RESUME
+          * issued immediately after SUSPEND is lost (the resume races the
+          * shepherd's still-in-progress freeze_unit), leaving the job frozen
+          * until killed. This delay lets the shepherd finish the freeze and
+          * return to its wait loop before the resume. Remove once CS-2226
+          * is fixed. */
+         //sleep(3);
 
          /* drmaa_control() is used to resume the job */
          if ((drmaa_errno=drmaa_control(jobid, DRMAA_CONTROL_RESUME, diagnosis, 

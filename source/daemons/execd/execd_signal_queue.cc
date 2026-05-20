@@ -33,6 +33,7 @@
 /*___INFO__MARK_END__*/
 #include <cerrno>
 #include <cstring>
+#include <fcntl.h>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_log.h"
@@ -395,15 +396,75 @@ void sge_send_suspend_mail(uint32_t signal, lListElem *master_q, lListElem *jep,
    DRETURN_VOID;
 }
 
-/***********************************************************************
-   forward signal to shepherd
-
-   returns
-       0  on success
-       -2 if shepherd process is not (or no longer?) here
-       -1 in case of other problems
-*/
-
+/**
+ * @brief Forward a signal to a job via its shepherd (CS-2226).
+ *
+ * Two execd->shepherd transports exist:
+ *
+ *  - signal_pipe FIFO (per job, ordered, non-coalescing): the shepherd
+ *    poll()s it and feeds each record into its existing signal ring
+ *    buffer. Used for every signal that would otherwise go through the
+ *    legacy single "signal" file - i.e. SIGSTOP/suspend and any arbitrary
+ *    qsig signal (SIGTERM, SIGINT, SIGHUP, ...) - AND for SIGCONT/resume.
+ *    Reason: the legacy "signal"-file + SIGTTIN relay coalesces. The file
+ *    is truncate-rewritten and SIGTTIN is a non-queuing standard signal,
+ *    so a fast suspend->resume (or any rapid burst of file-mediated
+ *    signals) can collapse into a single delivery, leaving the job e.g.
+ *    frozen forever (the CS-2226 bug; made deterministic by the slow
+ *    systemd cgroup-v2 freeze_unit D-Bus call widening the race window).
+ *
+ *  - direct signal (out-of-band, unchanged): the dedicated control
+ *    signals keep their own real-signal delivery to the shepherd and are
+ *    deliberately NOT routed through the FIFO, so a wedged/full FIFO or a
+ *    stuck shepherd poll loop can never make a job unkillable or block
+ *    checkpoint/migration:
+ *        SIGKILL -> shepherd SIGTSTP  (terminate)
+ *        SIGXCPU -> shepherd SIGUSR2  (delivered to job as SIGXCPU)
+ *        SIGTTOU                       (checkpoint / migration initiation)
+ *        SIGUSR1                       (job notify)
+ *
+ * Shepherd-side mapping of what finally reaches the job (legacy table;
+ * still applies because the FIFO record carries the same post-mapping
+ * "sig" value the "signal" file would have held):
+ *
+ *      sent to shepherd     | shepherd delivers to the job
+ *      ---------------------|------------------------------------------
+ *      FIFO record / SIGTTIN| the signal number in the record/"signal"
+ *      SIGTTOU              | checkpoint/migration (shepherd knows it)
+ *      SIGUSR1              | SIGUSR1
+ *      SIGUSR2              | SIGXCPU
+ *      SIGCONT              | SIGCONT      (legacy fallback path only)
+ *      SIGTSTP              | SIGKILL
+ *
+ * FIFO use is additionally gated on pe_task_id == nullptr: the FIFO is
+ * per job-shepherd; per-pe-task signalling stays on the legacy path.
+ *
+ * Back-compat / fallback: if the FIFO is absent (ENOENT: old execd or
+ * mkfifo failed) or has no reader (ENXIO: old-kernel shepherd that
+ * dropped it / has not opened it yet) delivery falls through to the
+ * legacy "signal"-file + SIGTTIN relay (or, for SIGCONT, the legacy
+ * direct SIGCONT). On any other FIFO open error or a short write the
+ * execd is never blocked: it falls through to the shepherd-liveness
+ * check and the qmaster pending-signal/resend machinery retries.
+ *
+ * Shepherd gone / execd restarted: the shepherd holds the FIFO O_RDWR
+ * for the whole job, so once it exits there is no reader and the execd's
+ * O_WRONLY|O_NONBLOCK open returns ENXIO (POSIX; it does NOT block - that
+ * is why O_NONBLOCK is mandatory here). ENXIO -> legacy path -> kill()
+ * the now-dead shepherd -> ESRCH -> CheckShepherdStillRunning, i.e. a
+ * harmless no-op (a suspend/resume for an already-exited job is moot).
+ * qmaster stops resending once it receives the job's final exit report
+ * after the execd is back. A record written in the brief instant while
+ * the shepherd is still exiting may be discarded with the FIFO - that is
+ * acceptable best-effort at end-of-job.
+ *
+ * @param pid         shepherd pid to signal.
+ * @param sge_signal  SGE_SIG* signal to deliver to the job.
+ * @param job_id      job id (active-job dir / diagnostics).
+ * @param ja_task_id  array task id.
+ * @param pe_task_id  pe-task id, or nullptr for the job shepherd.
+ * @return  0 on success; -2 if the shepherd is gone; -1 on other errors.
+ */
 int sge_kill(int pid, uint32_t sge_signal, uint32_t job_id, uint32_t ja_task_id, const char *pe_task_id)
 {
    int sig;
@@ -454,6 +515,52 @@ int sge_kill(int pid, uint32_t sge_signal, uint32_t job_id, uint32_t ja_task_id,
    /* We now fwd SIGSTOP using file(SIGTTIN) rather than SIGWINCH, refer CR6623174 */
    default:
       direct_signal = 0;        /* communication has to be done via file */
+   }
+
+   /* CS-2226: route every file-mediated signal (SIGSTOP/suspend + any
+    * arbitrary signal: SIGTERM, SIGINT, ...) and SIGCONT/resume
+    * through the per-job, non-coalescing "signal_pipe" FIFO. The
+    * predicate excludes the dedicated direct control signals
+    * (SIGKILL->SIGTSTP, SIGXCPU->SIGUSR2, SIGTTOU, SIGUSR1), which keep
+    * their out-of-band direct delivery so a wedged FIFO can never make a
+    * job unkillable or block checkpoint/migration. FIFO is per
+    * job-shepherd (pe_task_id == nullptr). The record carries the same
+    * post-mapping "sig" value the legacy "signal" file would have held,
+    * so the shepherd dispatches it identically. ENOENT/ENXIO (no FIFO /
+    * no reader: old execd or old-kernel shepherd) or any write problem
+    * -> fall through to the legacy "signal"+SIGTTIN / direct path below;
+    * the execd is never blocked (qmaster resends). */
+   if (pe_task_id == nullptr && (!direct_signal || sge_signal == SGE_SIGCONT)) {
+      dstring ff = DSTRING_INIT;
+
+      sge_get_active_job_file_path(&ff, job_id, ja_task_id, nullptr, "signal_pipe");
+      int ffd = open(sge_dstring_get_string(&ff), O_WRONLY | O_NONBLOCK);
+      if (ffd >= 0) {
+         static unsigned long sr_seq = 0;
+         char rec[64];
+         int rl = snprintf(rec, sizeof(rec), "%lu %d\n", ++sr_seq, sig);
+         ssize_t wn = write(ffd, rec, (size_t)rl);
+         close(ffd);
+         sge_dstring_free(&ff);
+         if (wn == (ssize_t)rl) {
+            DPRINTF("queued %s via signal_pipe FIFO for job " SFN "\n", sge_sig2str(sge_signal),
+                    job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
+            DRETURN(0);
+         }
+         /* short/failed write (EAGAIN/EPIPE/...): do not block the execd -
+          * let the shepherd-liveness check + qmaster resend handle it. */
+         DPRINTF("signal_pipe FIFO write for job " SFN " failed - falling back\n",
+                 job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
+         goto CheckShepherdStillRunning;
+      } else if (errno != ENOENT && errno != ENXIO) {
+         /* unexpected open error: don't block - shepherd-liveness check +
+          * qmaster resend handle it. */
+         sge_dstring_free(&ff);
+         goto CheckShepherdStillRunning;
+      }
+      /* ENOENT (no FIFO) or ENXIO (no reader: old-kernel shepherd dropped
+       * it / not opened yet) -> legacy "signal"+SIGTTIN / direct path. */
+      sge_dstring_free(&ff);
    }
 
    DPRINTF("signalling job/task " SFN ", pid " pid_t_fmt " with %d\n",

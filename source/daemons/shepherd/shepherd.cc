@@ -42,6 +42,8 @@
 #include <pwd.h>
 #include <cerrno>
 #include <poll.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -127,6 +129,7 @@ int  g_noshell = 0;
 
 char shepherd_job_dir[2048];
 int  received_signal=0;  /* set by signal handler, when a signal arrives */
+int  g_sr_fifo_fd=-1;    ///< CS-2226: per-job signal_pipe FIFO read fd; carries job control signals (suspend/resume + arbitrary qsig signals); -1 = none/legacy
 
 
 /* module variables */
@@ -697,6 +700,20 @@ int main(int argc, char **argv)
    shepherd_state = SSTATE_BEFORE_PROLOG;
    if (getcwd(shepherd_job_dir, 2047) == nullptr) {
       shepherd_error(1, "can't read cwd - getcwd failed: %s", strerror(errno));
+   }
+
+   /* CS-2226: open the FIFO (created by execd in the
+    * active job dir == cwd). O_RDWR so poll() never reports EOF while no
+    * execd writer is attached; O_NONBLOCK for draining; O_CLOEXEC so the
+    * job child does not inherit it. Absent (old execd / mkfifo failed) ->
+    * fd stays -1 and the legacy signal path is used. The shepherd parent
+    * stays root for the job's lifetime, so there is no setuid/ownership
+    * issue with holding this fd. */
+   g_sr_fifo_fd = open("signal_pipe", O_RDWR | O_NONBLOCK | O_CLOEXEC);
+   if (g_sr_fifo_fd < 0 && errno != ENOENT) {
+      shepherd_trace("open(signal_pipe) failed: %s", strerror(errno));
+   } else {
+      shepherd_trace("opened signal_pipe successfully");
    }
 
    if (argc >= 2 && strcmp("-bg", argv[1]) == 0) {
@@ -2315,6 +2332,115 @@ static void handle_signals_and_methods(
    }
 }
 /*------------------------------------------------------------------------*/
+/**
+ * @brief Open a pidfd for the job child (CS-2226).
+ *
+ * A pidfd is a file descriptor that refers to a process and becomes
+ * readable (POLLIN) once that process terminates. It lets the shepherd
+ * wait for job exit via poll() instead of a blocking wait3().
+ *
+ * Required by the CS-2226 fix: the shepherd must learn about
+ * job control signals (suspend/resume + arbitrary qsig signals) by poll()ing the per-job "signal_pipe" FIFO (no coalescing signal doorbell is allowed), yet it must still detect job
+ * exit. The FIFO fd and this pidfd are placed in one poll() set, waking
+ * on either { FIFO data, job exit } with no busy-polling and no SIGCHLD
+ * handler. The pidfd is only the wake mechanism; reaping/accounting
+ * still go through wait3(WNOHANG) as before.
+ *
+ * Implementation: the raw syscall is used (not the glibc pidfd_open()
+ * wrapper, which only exists since glibc 2.36) so it builds against old
+ * libc. __NR_pidfd_open comes from <sys/syscall.h>; the #ifndef ... 434
+ * fallback covers tool-chains whose headers predate it (434 is the
+ * syscall number on the common architectures' generic table).
+ *
+ * @param p  pid of the (already forked, not yet reaped) job child.
+ * @return   a new fd (>= 0) on success; -1 if unavailable.
+ *
+ * @note Requires Linux >= 5.3. On older kernels (e.g. RHEL/CentOS 7,
+ *       kernel 3.10 - pidfd_open is not backported there) the syscall
+ *       returns -1/ENOSYS. The caller treats any -1 as "no FIFO support"
+ *       and reverts to the legacy blocking wait3() + "signal"+SIGTTIN
+ *       relay, i.e. exactly the pre-fix behaviour (no regression).
+ * @note Functionally moot there anyway: CS-2226 is a systemd cgroup-v2
+ *       scope freeze/thaw race; systems without it (CentOS 7: systemd
+ *       219, cgroup v1) use the classic kill(-pid) suspend/resume which
+ *       never had this race, so the FIFO path is intentionally not
+ *       engaged there.
+ * @note The hardcoded 434 fallback is safe in practice (on the relevant
+ *       old kernels that number is unallocated -> ENOSYS). It could be
+ *       made bullet-proof by also checking errno == ENOSYS, but that is
+ *       unnecessary since any -1 falls back to the legacy path.
+ * @note Non-Linux builds use the stub returning -1 (the feature targets
+ *       Linux / systemd cgroup-v2 only).
+ */
+#if defined(LINUX)
+#  ifndef __NR_pidfd_open
+#    define __NR_pidfd_open 434
+#  endif
+static int sr_pidfd_open(pid_t p) {
+   return (int)syscall(__NR_pidfd_open, p, 0);
+}
+#else
+static int sr_pidfd_open(pid_t) {
+   return -1;
+}
+#endif
+
+/**
+ * @brief Drain the per-job "signal_pipe" FIFO and enqueue its signals
+ *        (CS-2226).
+ *
+ * Reads all currently available records from the non-blocking FIFO
+ * (g_sr_fifo_fd) and, for each, enqueues the signal - in order - into
+ * the existing shepherd signal ring buffer via add_signal(). Records
+ * are "<seq> <signum>\n" as written by the execd. Because the FIFO is
+ * an ordered byte stream that is fully drained here, a suspend
+ * immediately followed by a resume cannot be coalesced/lost (the root
+ * CS-2226 defect of the old SIGTTIN + single "signal"-file relay).
+ *
+ * A partial trailing record (short read across a record boundary) is
+ * carried in a static buffer to the next call; overlong garbage with no
+ * newline is dropped to resync.
+ *
+ * @return number of signals enqueued into the ring buffer.
+ *
+ * @note Reuses the existing add_signal()/get_signal() ring buffer and
+ *       forward_signal_to_job() dispatch, so freeze/thaw, notify and
+ *       postponed-signal logic are unchanged - only the transport into
+ *       the ring buffer differs.
+ */
+static int sr_fifo_drain() {
+   static char carry[256];
+   static size_t clen = 0;
+   int enq = 0;
+   char rbuf[512];
+   ssize_t n;
+
+   while ((n = read(g_sr_fifo_fd, rbuf, sizeof(rbuf))) > 0) {
+      for (size_t i = 0; i < (size_t)n; i++) {
+         if (clen < sizeof(carry) - 1) {
+            carry[clen++] = rbuf[i];
+         }
+         if (rbuf[i] == '\n') {
+            unsigned long seq = 0;
+            int sig = 0;
+            carry[clen] = '\0';
+            if (sscanf(carry, "%lu %d", &seq, &sig) == 2 && sig > 0) {
+               if (add_signal(sig) == 0) {
+                  enq++;
+               } else {
+                  shepherd_trace("add_signal(%d) failed (ring full)", sig);
+               }
+            }
+            clen = 0;
+         } else if (clen >= sizeof(carry) - 1) {
+            /* overlong garbage with no newline - drop and resync */
+            clen = 0;
+         }
+      }
+   }
+   return enq;
+}
+
 int wait_my_child(
 int pid,                   /* pid of job */
 const char *childname,     /* "job", "pe_start", ...     */
@@ -2419,12 +2545,64 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       inArena = 0;
    }
 
+   /* CS-2226: if execd created the per-job signal_pipe FIFO, obtain a
+    * pidfd for the child so the wait loop can poll() the FIFO and child
+    * exit together. If pidfd is unavailable (old kernel) fall back to the
+    * legacy blocking wait3()/signal path for this job and drop the FIFO so
+    * execd uses the legacy "signal"+SIGTTIN relay (ENXIO -> legacy). */
+   int sr_pidfd = -1;
+   bool sr_use_fifo = false;
+   if (g_sr_fifo_fd >= 0) {
+      sr_pidfd = sr_pidfd_open(pid);
+      if (sr_pidfd >= 0) {
+         fcntl(sr_pidfd, F_SETFD, FD_CLOEXEC);
+         sr_use_fifo = true;
+      } else {
+         shepherd_trace("pidfd_open failed (%s) - legacy signal path", strerror(errno));
+         close(g_sr_fifo_fd);
+         g_sr_fifo_fd = -1;
+      }
+   }
+
    do {
       if (p_ckpt_info->interval != 0 && rest_ckpt_interval != 0) {
          alarm(rest_ckpt_interval);
       }
 
-      npid = wait3(&status, wait_options, rusage);
+      if (sr_use_fifo && job_pid > 0 && fd_pty_master == -1) {
+         /* CS-2226: event-wait on { FIFO data, job exit } - no coalescing
+          * signal doorbell. Other signals still EINTR poll() (SA_INTERRUPT)
+          * and are processed below exactly as in the legacy path. Once the
+          * job has exited (job_pid == 0) suspend/resume is moot, so we drop
+          * back to the legacy blocking wait3() to drain ckpt/ctrl children
+          * without busy-polling a reaped pidfd. */
+         struct pollfd sp[2];
+         sp[0].fd = g_sr_fifo_fd; sp[0].events = POLLIN; sp[0].revents = 0;
+         sp[1].fd = sr_pidfd;     sp[1].events = POLLIN; sp[1].revents = 0;
+
+         int pr = poll(sp, 2, -1);
+         if (pr > 0 && (sp[0].revents & POLLIN)) {
+            /* drain ordered records into the existing ring buffer and
+             * dispatch them via the existing path (freeze/thaw, notify,
+             * postponed-signal logic all unchanged). received_signal == 0
+             * here so forward_signal_to_job() just runs the get_signal()
+             * drain loop. alarm(0) mirrors handle_signals_and_methods(). */
+            int ra = alarm(0);
+            sr_fifo_drain();
+            forward_signal_to_job(pid, timeout, &postponed_signal, ra, ctrl_pid);
+         }
+         /* reap without blocking; pidfd readable => the job has exited */
+         npid = wait3(&status, wait_options | WNOHANG, rusage);
+         /* emulate the legacy "interrupted by signal" return so that
+          * handle_signals_and_methods() processes received_signal
+          * (SIGKILL / notify / SIGALRM / migration) just as in the
+          * blocking wait3() path */
+         if (npid == 0 && received_signal != 0) {
+            npid = -1;
+         }
+      } else {
+         npid = wait3(&status, wait_options, rusage);
+      }
 
       if (npid == -1) {
          DSTRING_STATIC(dstr, MAX_STRING_SIZE);
@@ -2577,6 +2755,17 @@ int fd_std_err             /* fd of stderr. -1 if not set */
             /* Remove WNOHANG from wait-options as we just have to wait for the end of the job */
             wait_options |= WNOHANG;
          }
+
+         /* CS-2226: pty jobs run the 10ms pty poll loop above (not the
+          * dedicated FIFO/pidfd poll path); drain the signal_pipe FIFO
+          * here so suspend/resume works for pty jobs too - ordered,
+          * non-coalescing, <=10ms latency. */
+         if (g_sr_fifo_fd >= 0) {
+            if (sr_fifo_drain() > 0) {
+               int ra = alarm(0);
+               forward_signal_to_job(pid, timeout, &postponed_signal, ra, ctrl_pid);
+            }
+         }
       }
 
       handle_signals_and_methods(
@@ -2614,6 +2803,14 @@ int fd_std_err             /* fd of stderr. -1 if not set */
    if (pty_fds != nullptr) {
       FREE(pty_fds);
    }
+
+   /* CS-2226: the pidfd is per child (per wait_my_child call); close it
+    * here. g_sr_fifo_fd is per job dir and is kept open across phases
+    * (prolog/job/epilog) until the shepherd process exits. */
+   if (sr_pidfd >= 0) {
+      close(sr_pidfd);
+   }
+
    return job_status;
 }
 

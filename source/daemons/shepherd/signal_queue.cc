@@ -41,7 +41,7 @@
 #include "signal_queue.h"
 #include "err_trace.h"
 
-#define SGE_MAXSIG 100
+#define SGE_MAXSIG 128
 
 /* ring buffer to queue signals */
 static int sig_queue[SGE_MAXSIG];
