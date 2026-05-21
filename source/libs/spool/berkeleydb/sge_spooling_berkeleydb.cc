@@ -30,7 +30,7 @@
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/                                   
+/*___INFO__MARK_END__*/
 
 #ifndef NO_SGE_COMPILE_DEBUG
 #define NO_SGE_COMPILE_DEBUG
@@ -81,7 +81,7 @@ const char *get_berkeleydb_spooling_method()
 }
 
 static bool
-spool_berkeleydb_option_func(lList **answer_list, lListElem *rule, 
+spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
                              const char *option);
 
 /****** spool/berkeleydb/spool_berkeleydb_create_context() ********************
@@ -89,12 +89,12 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
 *     spool_berkeleydb_create_context() -- create a berkeleydb spooling context
 *
 *  SYNOPSIS
-*     lListElem* 
+*     lListElem*
 *     spool_berkeleydb_create_context(lList **answer_list, const char *args)
 *
 *  FUNCTION
 *     Create a spooling context for the berkeleydb spooling.
-*     
+*
 *     Argv has as first (and currently only) parameter the Database URL.
 *
 *     It currently consists of the path to the database directory.
@@ -122,13 +122,13 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
       lListElem *rule, *type;
       bdb_info info;
       char *path   = nullptr;
-      
+
       /* create spooling context */
       context = spool_create_context(answer_list, "berkeleydb spooling");
-      
+
       /* create rule and type for all objects spooled in the spool dir */
-      rule = spool_context_create_rule(answer_list, context, 
-                                       "default rule", 
+      rule = spool_context_create_rule(answer_list, context,
+                                       "default rule",
                                        args,
                                        spool_berkeleydb_option_func,
                                        spool_berkeleydb_default_startup_func,
@@ -160,11 +160,11 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
 
 /****** spool/berkeleydb/spool_berkeleydb_default_startup_func() **************
 *  NAME
-*     spool_berkeleydb_default_startup_func() -- setup 
+*     spool_berkeleydb_default_startup_func() -- setup
 *
 *  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_default_startup_func(lList **answer_list, 
+*     bool
+*     spool_berkeleydb_default_startup_func(lList **answer_list,
 *                                         const char *args, bool check)
 *
 *  FUNCTION
@@ -182,14 +182,14 @@ spool_berkeleydb_create_context(lList **answer_list, const char *args)
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_startup_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_default_startup_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--BerkeleyDB-Spooling
 *     spool/spool_startup_context()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_startup_func(lList **answer_list, 
+spool_berkeleydb_default_startup_func(lList **answer_list,
                                       const lListElem *rule, bool check)
 {
    bool ret = true;
@@ -218,8 +218,8 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
 *     spool_berkeleydb_default_shutdown_func() -- shutdown spooling context
 *
 *  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_default_shutdown_func(lList **answer_list, 
+*     bool
+*     spool_berkeleydb_default_shutdown_func(lList **answer_list,
 *                                          lListElem *rule);
 *
 *  FUNCTION
@@ -237,14 +237,14 @@ spool_berkeleydb_default_startup_func(lList **answer_list,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_shutdown_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_default_shutdown_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--Spooling-BerkeleyDB
 *     spool/spool_shutdown_context()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_shutdown_func(lList **answer_list, 
+spool_berkeleydb_default_shutdown_func(lList **answer_list,
                                     const lListElem *rule)
 {
    bool ret = true;
@@ -256,8 +256,8 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
@@ -273,8 +273,8 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
 *     spool_berkeleydb_default_maintenance_func() -- maintain database
 *
 *  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_default_maintenance_func(lList **answer_list, 
+*     bool
+*     spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *                                    lListElem *rule
 *                                    const spooling_maintenance_command cmd,
 *                                    const char *args);
@@ -287,7 +287,7 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
 *  INPUTS
 *     lList **answer_list   - to return error messages
 *     const lListElem *rule - the rule containing data necessary for
-*                             the maintenance (e.g. path to the spool 
+*                             the maintenance (e.g. path to the spool
 *                             directory)
 *     const spooling_maintenance_command cmd - the command to execute
 *     const char *args      - arguments to the maintenance command
@@ -299,15 +299,15 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_maintenance_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_default_maintenance_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--Spooling-BerkeleyDB
 *     spool/spool_maintain_context()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_maintenance_func(lList **answer_list, 
-                                    const lListElem *rule, 
+spool_berkeleydb_default_maintenance_func(lList **answer_list,
+                                    const lListElem *rule,
                                     const spooling_maintenance_command cmd,
                                     const char *args)
 {
@@ -324,12 +324,12 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
          ret = spool_berkeleydb_open_database(answer_list, info, true);
          break;
       default:
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                 ANSWER_QUALITY_WARNING, 
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_WARNING,
                                  "unknown maintenance command %d\n", cmd);
          ret = false;
          break;
-         
+
    }
 
    DRETURN(ret);
@@ -340,13 +340,13 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *     spool_berkeleydb_trigger_func() -- do recurring tasks
 *
 *  SYNOPSIS
-*     bool 
+*     bool
 *     spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
-*                                   time_t trigger, time_t *next_trigger) 
+*                                   time_t trigger, time_t *next_trigger)
 *
 *  FUNCTION
 *     Does recurring tasks for the Berkeley DB.
-*     
+*
 *     In case of spooling to a local filesystem
 *     - regular checkpointing is done
 *     - a cleanup of the transaction log is done
@@ -361,7 +361,7 @@ spool_berkeleydb_default_maintenance_func(lList **answer_list,
 *     bool - true on success, else false
 *
 *  NOTES
-*     MT-NOTE: spool_berkeleydb_trigger_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--Spooling-BerkeleyDB
@@ -377,15 +377,15 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
 
       /* nothing can be done - but set new trigger!! */
       *next_trigger = trigger + sge_gmt32_to_gmt64(BERKELEYDB_MIN_INTERVAL);
-   } 
+   }
 
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
@@ -403,9 +403,9 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
 *     spool_berkeleydb_transaction_func() -- start or end a transaction
 *
 *  SYNOPSIS
-*     bool 
-*     spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule, 
-*                                       spooling_transaction_command cmd) 
+*     bool
+*     spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
+*                                       spooling_transaction_command cmd)
 *
 *  FUNCTION
 *     Starts or ends a transaction (depending on cmd).
@@ -421,13 +421,13 @@ spool_berkeleydb_trigger_func(lList **answer_list, const lListElem *rule,
 *     bool - true on success, else false
 *
 *  NOTES
-*     MT-NOTE: spool_berkeleydb_transaction_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--Spooling-BerkeleyDB
 *******************************************************************************/
 bool
-spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule, 
+spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
                                   spooling_transaction_command cmd)
 {
    bool ret = true;
@@ -438,8 +438,8 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_ERROR, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_ERROR,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
@@ -461,14 +461,14 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
             ret = spool_berkeleydb_end_transaction(answer_list, info, false);
             break;
          default:
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_ERROR,
                                     MSG_BERKELEY_TRANSACTIONEINVAL);
             ret = false;
             break;
       }
    }
-   
+
    DRETURN(ret);
 }
 
@@ -477,19 +477,19 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
 *     spool_berkeleydb_default_list_func() -- read lists through berkeleydb spooling
 *
 *  SYNOPSIS
-*     bool 
+*     bool
 *     spool_berkeleydb_default_list_func(
-*                                      lList **answer_list, 
-*                                      const lListElem *type, 
-*                                      const lListElem *rule, lList **list, 
-*                                      const sge_object_type object_type) 
+*                                      lList **answer_list,
+*                                      const lListElem *type,
+*                                      const lListElem *rule, lList **list,
+*                                      const sge_object_type object_type)
 *
 *  FUNCTION
 *
 *  INPUTS
 *     lList **answer_list - to return error messages
 *     const lListElem *type           - object type description
-*     const lListElem *rule           - rule to be used 
+*     const lListElem *rule           - rule to be used
 *     lList **list                    - target list
 *     const sge_object_type object_type - object type
 *
@@ -500,8 +500,8 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_list_func() is MT safe 
-*  
+*     MT-NOTE: spool_berkeleydb_default_list_func() is MT safe
+*
 *              The caller has to make sure, that locking for the list
 *              parameter is done correctly!
 *
@@ -510,9 +510,9 @@ spool_berkeleydb_transaction_func(lList **answer_list, const lListElem *rule,
 *     spool/spool_read_list()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_list_func(lList **answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, lList **list, 
+spool_berkeleydb_default_list_func(lList **answer_list,
+                                 const lListElem *type,
+                                 const lListElem *rule, lList **list,
                                  const sge_object_type object_type)
 {
    bool ret = true;
@@ -532,26 +532,26 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    table_name = object_type_get_name(object_type);
 
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
    }
-   
+
    if (descr == nullptr || list == nullptr ||
               table_name == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
-                              MSG_SPOOL_SPOOLINGOFXNOTSUPPORTED_S, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
+                              MSG_SPOOL_SPOOLINGOFXNOTSUPPORTED_S,
                               object_type_get_name(object_type));
       ret = false;
    }
-  
+
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
    }
-  
+
    if (ret) {
       /* if no transaction was opened from outside, open a new one */
 #if 0
@@ -571,14 +571,14 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 
       sge_dstring_init(&key_dstring, key_buffer, sizeof(key_buffer));
       key = sge_dstring_sprintf(&key_dstring, "%s:", table_name);
-                 
+
       if (ret) {
          switch (object_type) {
             case SGE_TYPE_QINSTANCE:
                break;
             case SGE_TYPE_CQUEUE:
                /* read all cluster queues */
-               ret = spool_berkeleydb_read_list(answer_list, info, 
+               ret = spool_berkeleydb_read_list(answer_list, info,
                                                 BDB_CONFIG_DB,
                                                 list, descr,
                                                 key);
@@ -632,7 +632,7 @@ spool_berkeleydb_default_list_func(lList **answer_list,
                               lList *pe_task_list = nullptr;
                               uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
                               key = sge_dstring_sprintf(&key_dstring, "%s:%10" sge_fuu32 ".%10" sge_fuu32 ".", pe_task_table, job_id, ja_task_id);
-                              
+
                               ret = spool_berkeleydb_read_list(answer_list, info, BDB_JOB_DB, &pe_task_list, PET_Type, key);
                               if (ret) {
                                  if (pe_task_list != nullptr) {
@@ -668,9 +668,9 @@ spool_berkeleydb_default_list_func(lList **answer_list,
    if (ret) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-      spooling_validate_func validate = 
+      spooling_validate_func validate =
          (spooling_validate_func)lGetRef(rule, SPR_validate_func);
-      spooling_validate_list_func validate_list = 
+      spooling_validate_list_func validate_list =
          (spooling_validate_list_func)lGetRef(rule, SPR_validate_list_func);
 #pragma GCC diagnostic pop
 
@@ -700,11 +700,11 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 *     spool_berkeleydb_default_read_func() -- read objects through berkeleydb spooling
 *
 *  SYNOPSIS
-*     lListElem* 
-*     spool_berkeleydb_default_read_func(lList **answer_list, 
-*                                      const lListElem *type, 
-*                                      const lListElem *rule, const char *key, 
-*                                      const sge_object_type object_type) 
+*     lListElem*
+*     spool_berkeleydb_default_read_func(lList **answer_list,
+*                                      const lListElem *type,
+*                                      const lListElem *rule, const char *key,
+*                                      const sge_object_type object_type)
 *
 *  FUNCTION
 *
@@ -722,16 +722,16 @@ spool_berkeleydb_default_list_func(lList **answer_list,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_read_func() is MT safe 
-*  
+*     MT-NOTE: spool_berkeleydb_default_read_func() is MT safe
+*
 *  SEE ALSO
 *     spool/berkeleydb/--BerkeleyDB-Spooling
 *     spool/spool_read_object()
 *******************************************************************************/
 lListElem *
-spool_berkeleydb_default_read_func(lList **answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, const char *key, 
+spool_berkeleydb_default_read_func(lList **answer_list,
+                                 const lListElem *type,
+                                 const lListElem *rule, const char *key,
                                  const sge_object_type object_type)
 {
    bool ret = true;
@@ -743,29 +743,29 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
    }
-   
+
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
    }
- 
+
    if (ret) {
       bdb_database database = BDB_CONFIG_DB;
 
       switch (object_type) {
          case SGE_TYPE_JOBSCRIPT:
             {
-               const char *exec_file; 
+               const char *exec_file;
                char *dup = strdup(key);
                char *db_key = jobscript_parse_key(dup, &exec_file);
                char *str;
                str = spool_berkeleydb_read_string(answer_list, info, BDB_JOB_DB,
-                                                  db_key);              
+                                                  db_key);
 
                if (str != nullptr) {
                   ep = lCreateElem(STU_Type);
@@ -792,7 +792,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
             if (ep != nullptr) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-               spooling_validate_func validate = 
+               spooling_validate_func validate =
                   (spooling_validate_func)(void *)lGetRef(rule, SPR_validate_func);
 #pragma GCC diagnostic pop
                bool local_ret = validate(answer_list, type, rule, ep, object_type);
@@ -809,7 +809,7 @@ spool_berkeleydb_default_read_func(lList **answer_list,
 }
 
 bool
-spool_berkeleydb_default_read_keys_func(lList **answer_list, 
+spool_berkeleydb_default_read_keys_func(lList **answer_list,
                                         const lListElem *rule,
                                         lList **list,
                                         const char *key)
@@ -872,12 +872,12 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
 *
 *  SYNOPSIS
 *     bool
-*     spool_berkeleydb_default_write_func(lList **answer_list, 
-*                                       const lListElem *type, 
-*                                       const lListElem *rule, 
-*                                       const lListElem *object, 
-*                                       const char *key, 
-*                                       const sge_object_type object_type) 
+*     spool_berkeleydb_default_write_func(lList **answer_list,
+*                                       const lListElem *type,
+*                                       const lListElem *rule,
+*                                       const lListElem *object,
+*                                       const char *key,
+*                                       const sge_object_type object_type)
 *
 *  FUNCTION
 *     Writes an object through the appropriate berkeleydb spooling functions.
@@ -897,18 +897,18 @@ spool_berkeleydb_default_read_keys_func(lList **answer_list,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_write_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_default_write_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--BerkeleyDB-Spooling
 *     spool/spool_delete_object()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_write_func(lList **answer_list, 
-                                  const lListElem *type, 
-                                  const lListElem *rule, 
-                                  const lListElem *object, 
-                                  const char *key, 
+spool_berkeleydb_default_write_func(lList **answer_list,
+                                  const lListElem *type,
+                                  const lListElem *rule,
+                                  const lListElem *object,
+                                  const char *key,
                                   const sge_object_type object_type)
 {
    bool ret = true;
@@ -922,16 +922,16 @@ spool_berkeleydb_default_write_func(lList **answer_list,
 
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
    }
-   
+
    if (key == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NULLVALUEASKEY,
                               lGetString(rule, SPR_url));
       ret = false;
@@ -940,7 +940,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
    }
- 
+
    if (ret) {
       /* if no transaction was opened from outside, open a new one */
       DB_TXN *txn = bdb_get_txn(info);
@@ -949,6 +949,14 @@ spool_berkeleydb_default_write_func(lList **answer_list,
          if (ret) {
             local_transaction = true;
          }
+      }
+
+      /* CS-1597: for exec hosts only static load values shall be spooled;
+       * strip the dynamic load values before writing and restore them afterwards
+       */
+      lList *backup_load_list = nullptr;
+      if (ret && object_type == SGE_TYPE_EXECHOST) {
+         backup_load_list = spool_exechost_strip_dynamic_load(object);
       }
 
       if (ret) {
@@ -960,7 +968,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
                   uint32_t job_id, ja_task_id;
                   char *pe_task_id;
                   char *dup = strdup(key);
-                  bool only_job; 
+                  bool only_job;
 
                   job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
@@ -982,19 +990,19 @@ spool_berkeleydb_default_write_func(lList **answer_list,
                break;
             case SGE_TYPE_JOBSCRIPT:
                {
-                  const char *exec_file;  
+                  const char *exec_file;
                   char *dup = strdup(key);
                   const char *db_key = jobscript_parse_key(dup, &exec_file);
                   const char *script = lGetString(object, JB_script_ptr);
                   /* switch script */
-                  ret = spool_berkeleydb_write_string(answer_list, info, 
+                  ret = spool_berkeleydb_write_string(answer_list, info,
                                                       BDB_JOB_DB,
-                                                      db_key, script); 
+                                                      db_key, script);
                   sge_free(&dup);
                }
                break;
             case SGE_TYPE_CQUEUE:
-               ret = spool_berkeleydb_write_cqueue(answer_list, info, 
+               ret = spool_berkeleydb_write_cqueue(answer_list, info,
                                                    object, key);
                break;
             default:
@@ -1003,19 +1011,24 @@ spool_berkeleydb_default_write_func(lList **answer_list,
                   char dbkey_buffer[MAX_STRING_SIZE];
                   const char *dbkey;
 
-                  sge_dstring_init(&dbkey_dstring, 
+                  sge_dstring_init(&dbkey_dstring,
                                    dbkey_buffer, sizeof(dbkey_buffer));
 
-                  dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s", 
+                  dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s",
                                               object_type_get_name(object_type),
                                               key);
 
-                  ret = spool_berkeleydb_write_object(answer_list, info, 
+                  ret = spool_berkeleydb_write_object(answer_list, info,
                                                       BDB_CONFIG_DB,
                                                       object, dbkey);
                }
                break;
          }
+      }
+
+      /* CS-1597: restore the dynamic load values that were stripped above */
+      if (object_type == SGE_TYPE_EXECHOST) {
+         spool_exechost_restore_load_list(object, &backup_load_list);
       }
 
       /* spooling is done, now end the transaction, if we have an own one */
@@ -1033,11 +1046,11 @@ spool_berkeleydb_default_write_func(lList **answer_list,
 *
 *  SYNOPSIS
 *     bool
-*     spool_berkeleydb_default_delete_func(lList **answer_list, 
-*                                        const lListElem *type, 
-*                                        const lListElem *rule, 
-*                                        const char *key, 
-*                                        const sge_object_type object_type) 
+*     spool_berkeleydb_default_delete_func(lList **answer_list,
+*                                        const lListElem *type,
+*                                        const lListElem *rule,
+*                                        const char *key,
+*                                        const sge_object_type object_type)
 *
 *  FUNCTION
 *     Deletes an object in the berkeleydb spooling.
@@ -1046,7 +1059,7 @@ spool_berkeleydb_default_write_func(lList **answer_list,
 *     lList **answer_list - to return error messages
 *     const lListElem *type           - object type description
 *     const lListElem *rule           - rule to use
-*     const char *key                 - unique key 
+*     const char *key                 - unique key
 *     const sge_object_type object_type - object type
 *
 *  RESULT
@@ -1056,17 +1069,17 @@ spool_berkeleydb_default_write_func(lList **answer_list,
 *     This function should not be called directly, it is called by the
 *     spooling framework.
 *
-*     MT-NOTE: spool_berkeleydb_default_delete_func() is MT safe 
+*     MT-NOTE: spool_berkeleydb_default_delete_func() is MT safe
 *
 *  SEE ALSO
 *     spool/berkeleydb/--BerkeleyDB-Spooling
 *     spool/spool_delete_object()
 *******************************************************************************/
 bool
-spool_berkeleydb_default_delete_func(lList **answer_list, 
-                                   const lListElem *type, 
+spool_berkeleydb_default_delete_func(lList **answer_list,
+                                   const lListElem *type,
                                    const lListElem *rule,
-                                   const char *key, 
+                                   const char *key,
                                    const sge_object_type object_type)
 {
    bool ret = true;
@@ -1083,8 +1096,8 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                              ANSWER_QUALITY_WARNING, 
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                              ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
                               lGetString(rule, SPR_url));
       ret = false;
@@ -1093,7 +1106,7 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
    if (ret) {
       ret = spool_berkeleydb_check_reopen_database(answer_list, info);
    }
- 
+
    if (ret) {
       DB_TXN *txn = bdb_get_txn(info);
       /* if no transaction was opened from outside, open a new one */
@@ -1116,24 +1129,24 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
                   uint32_t job_id, ja_task_id;
                   char *pe_task_id;
                   char *dup = strdup(key);
-                  bool only_job; 
+                  bool only_job;
 
                   job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
 
                   if (pe_task_id != nullptr) {
                      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32 ".%10" sge_fuu32 " %s",
                                                  job_id, ja_task_id, pe_task_id);
-                     ret = spool_berkeleydb_delete_pe_task(answer_list, info, 
+                     ret = spool_berkeleydb_delete_pe_task(answer_list, info,
                                                            dbkey, false);
                   } else if (ja_task_id != 0) {
                      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32 ".%10" sge_fuu32,
                                                  job_id, ja_task_id);
-                     ret = spool_berkeleydb_delete_ja_task(answer_list, info, 
+                     ret = spool_berkeleydb_delete_ja_task(answer_list, info,
                                                            dbkey, false);
                   } else {
                      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32,
                                                  job_id);
-                     ret = spool_berkeleydb_delete_job(answer_list, info, 
+                     ret = spool_berkeleydb_delete_job(answer_list, info,
                                                        dbkey, false);
                   }
                   sge_free(&dup);
@@ -1141,23 +1154,23 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
                break;
             case SGE_TYPE_JOBSCRIPT:
                {
-                  const char *exec_file; 
+                  const char *exec_file;
                   char *dup = strdup(key);
                   const char *db_key = jobscript_parse_key(dup, &exec_file);
-                  ret = spool_berkeleydb_delete_object(answer_list, info, 
-                                                    BDB_JOB_DB, 
-                                                    db_key, 
-                                                    false); 
+                  ret = spool_berkeleydb_delete_object(answer_list, info,
+                                                    BDB_JOB_DB,
+                                                    db_key,
+                                                    false);
                   sge_free(&dup);
-               }                            
-               break;               
+               }
+               break;
             default:
                table_name = object_type_get_name(object_type);
-               dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s", 
+               dbkey = sge_dstring_sprintf(&dbkey_dstring, "%s:%s",
                                            table_name,
                                            key);
 
-               ret = spool_berkeleydb_delete_object(answer_list, info, 
+               ret = spool_berkeleydb_delete_object(answer_list, info,
                                                     BDB_CONFIG_DB,
                                                     dbkey, false);
                break;
@@ -1167,15 +1180,15 @@ spool_berkeleydb_default_delete_func(lList **answer_list,
          if (local_transaction) {
             ret = spool_berkeleydb_end_transaction(answer_list, info, ret);
          }
-      }   
+      }
    }
 
    DRETURN(ret);
 }
 
 static bool
-spool_berkeleydb_option_func(lList **answer_list, lListElem *rule, 
-                             const char *option) 
+spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
+                             const char *option)
 {
    bool ret = true;
    const char *delimiter = ",; ";
@@ -1194,12 +1207,12 @@ spool_berkeleydb_option_func(lList **answer_list, lListElem *rule,
            token = sge_strtok_r(nullptr, delimiter, &context)) {
          if (parse_bool_param(token, "RECOVER", &recover)) {
             bdb_set_recover(info, recover);
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_INFO, 
+            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                    ANSWER_QUALITY_INFO,
                                     MSG_BERKELEY_SETOPTIONTO_SS,
                                     "RECOVER",
                                     recover ? TRUE_STR : FALSE_STR);
-            
+
             continue;
          }
       }

@@ -175,12 +175,12 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *     sge_event_spool() -- send event and spool
 *
 *  SYNOPSIS
-*     bool 
+*     bool
 *     sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event,
 *                     uint32_t intkey1, uint32_t intkey2, const char *strkey,
 *                     const char *strkey2, const char *session,
-*                     lListElem *object, lListElem *sub_object1, 
-*                     lListElem *sub_object2, bool send_event, bool spool) 
+*                     lListElem *object, lListElem *sub_object1,
+*                     lListElem *sub_object2, bool send_event, bool spool)
 *
 *  FUNCTION
 *     Spools (writes or deletes) an object.
@@ -205,17 +205,17 @@ spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor) {
 *     bool spool             - shall we spool or only send an event?
 *
 *  RESULT
-*     bool - true on success, 
-*            false on error. answer_list will contain an error description 
+*     bool - true on success,
+*            false on error. answer_list will contain an error description
 *  NOTES
 *     From an academic standpoint, the parameter spool shouldn't be needed.
-*     Whenever an object changes and a change event is created, the data 
+*     Whenever an object changes and a change event is created, the data
 *     basis should also be updated (spooled).
 *
 *  BUGS
 *
 *  SEE ALSO
-*     
+*
 *******************************************************************************/
 bool
 sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_t intkey1,
@@ -516,7 +516,7 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
 
       /* if spooling was requested and we have an object type to spool */
       if (spool && object_type != SGE_TYPE_ALL) {
-         /* use an own answer list for the low level spooling operation. 
+         /* use an own answer list for the low level spooling operation.
           * in case of error, generate a high level error message.
           */
          lList *spool_answer_list = nullptr;
@@ -524,41 +524,14 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
             ret = spool_delete_object(&spool_answer_list, spool_get_default_context(),
                                       object_type, key, true);
          } else {
-            lList *tmp_list = nullptr;
-
-            /* 
-             *  Only static load values should be spooled, therefore we modify
-             *  the host elem to spool
+            /*
+             * CS-1597: for exec hosts only static load values shall be spooled.
+             * The stripping of dynamic load values is done by the spooling
+             * write functions, so that it applies to every spooling path and
+             * not only to the ones going through sge_event_spool().
              */
-            switch (event) {
-               case sgeE_EXECHOST_LIST:
-               case sgeE_EXECHOST_ADD:
-               case sgeE_EXECHOST_MOD:
-                  tmp_list = lCreateList("", HL_Type);
-                  for_each_ep_lv(load_value, lGetList(object, EH_load_list)) {
-                     if (lGetBool(load_value, HL_is_static)) {
-                        lAppendElem(tmp_list, lCopyElem(load_value));
-                     }
-                  }
-                  lXchgList(object, EH_load_list, &tmp_list);
-                  break;
-               default:
-                  break;
-            }
-
             ret = spool_write_object(&spool_answer_list, spool_get_default_context(),
                                      element, key, object_type, true);
-
-            switch (event) {
-               case sgeE_EXECHOST_LIST:
-               case sgeE_EXECHOST_ADD:
-               case sgeE_EXECHOST_MOD:
-                  lXchgList(object, EH_load_list, &tmp_list);
-                  lFreeList(&tmp_list);
-                  break;
-               default:
-                  break;
-            }
          }
          /* output low level error messages */
          answer_list_output(&spool_answer_list);

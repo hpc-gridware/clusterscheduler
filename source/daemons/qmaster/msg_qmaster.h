@@ -173,7 +173,7 @@
 #define MSG_RU_CANCELED_S             _MESSAGE(33160, _("Due to a modification of the reschedule_unknown timeout rescheduling for host " SFN " was canceled."))
 
 /* CR: don't localize mail subject, until we send it in Mime format!
- *  The message definition is not l10n'ed (no _() macro used)!!!     
+ *  The message definition is not l10n'ed (no _() macro used)!!!
  */
 #define MSG_RU_MAILSUB_SS             "Pushed rescheduling of " SFN " " SFN
 
@@ -206,7 +206,7 @@
 #define MSG_NOTIFY_SHUTDOWN           _MESSAGE(33188, _("shutdown"))
 
 /* CR: don't localize mail subject, until we send it in Mime format!
- *  The message definition is not l10n'ed (no _() macro used)!!!     
+ *  The message definition is not l10n'ed (no _() macro used)!!!
  */
 #define MSG_MAIL_JOBKILLEDSUBJ_US     "Job " sge_u32 " (" SFN ") Killed"
 #define MSG_MAIL_ARSTARTEDSUBJ_US     "Advance Reservation " sge_u32 " (" SFN ") Started"
@@ -273,7 +273,7 @@
 #define MSG_JOB_UNABLE2FINDQOFJOB_S   _MESSAGE(33246, _("can't locate the queue " SFQ " associated with this job"))
 
 /* CR: don't localize mail subject, until we send it in Mime format!
- *  The message definition is not l10n'ed (no _() macro used)!!!     
+ *  The message definition is not l10n'ed (no _() macro used)!!!
  */
 #define MSG_MAIL_TASKKILLEDSUBJ_UUS   "Job-array task " sge_u32 "." sge_u32 " (" SFN ") Killed"
 
