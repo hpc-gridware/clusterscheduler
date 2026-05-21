@@ -28,10 +28,10 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
-/*___INFO__MARK_END__*/       
+/*___INFO__MARK_END__*/
 
 #include "uti/sge_dstring.h"
 
@@ -65,9 +65,9 @@
 *        bool strip_field_prefix;
 *        const struct spool_instr *sub_instr;
 *     } spool_instr_t;
-*     
+*
 *     extern const spool_instr_t spool_config_instr;
-*     
+*
 *     typedef struct spooling_field {
 *        int nm;
 *        int width;
@@ -76,7 +76,7 @@
 *        int (*read_func) (lListElem *ep, int nm, const char *buffer, lList **alp);
 *        int (*write_func) (const lListElem *ep, int nm, dstring *buffer, lList **alp);
 *     } spooling_field;
-*     
+*
 *  FUNCTION
 *     spooling_instr
 *     Describes how the fields to be spooled are selected.
@@ -92,7 +92,7 @@
 *     It contains the names and types of attributes to spool, information
 *     about field width (for formatted output), the attribute name that shall
 *     be used in output.
-*     For list fields, that shall be spooled, it contains an array of 
+*     For list fields, that shall be spooled, it contains an array of
 *     fields that shall be spooled in sublist objects.
 *
 *  NOTES
@@ -136,20 +136,26 @@ typedef struct spooling_field {
 } spooling_field;
 
 spooling_field *
-spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
+spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
                           const spool_instr_t *instr);
 
 spooling_field *
 spool_free_spooling_fields(spooling_field *fields);
 
 bool
-spool_default_validate_func(lList **answer_list, 
-                          const lListElem *type, 
+spool_default_validate_func(lList **answer_list,
+                          const lListElem *type,
                           const lListElem *rule,
                           lListElem *object,
                           const sge_object_type object_type);
 
 bool
-spool_default_validate_list_func(lList **answer_list, 
+spool_default_validate_list_func(lList **answer_list,
                           const lListElem *type, const lListElem *rule,
                           const sge_object_type object_type);
+
+lList *
+spool_exechost_strip_dynamic_load(const lListElem *object);
+
+void
+spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list);

@@ -29,7 +29,7 @@
  *
  *   Portions of this software are Copyright (c) 2011 Univa Corporation
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -123,18 +123,18 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *     spool_get_fields_to_spool() -- which fields are to be spooled
 *
 *  SYNOPSIS
-*     spooling_field * 
-*     spool_get_fields_to_spool(lList **answer_list, const lDescr *descr, 
-*                               const spool_instr_t *instr) 
+*     spooling_field *
+*     spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
+*                               const spool_instr_t *instr)
 *
 *  FUNCTION
 *     Returns an array of field descriptions (sge_spooling_field).
 *     Which fields have to be spooled is retrieved from the CULL object
 *     definition given in <descr> and the spooling instruction <instr>.
 *
-*     For each attribute the function checks if the attribute information 
-*     fulfils the selection given in <instr> (e.g. attribute property 
-*     CULL_SPOOL). 
+*     For each attribute the function checks if the attribute information
+*     fulfils the selection given in <instr> (e.g. attribute property
+*     CULL_SPOOL).
 *
 *     If <instr> contains an in struction for sublists, the function will
 *     try to figure out the CULL object definition for the sublists
@@ -146,7 +146,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *     const spool_instr_t *instr - spooing instructions to use
 *
 *  RESULT
-*     spooling_field * - an array of type spooling_field, or 
+*     spooling_field * - an array of type spooling_field, or
 *                        nullptr, if an error occurred, error messages are returned
 *                        in answer_list
 *
@@ -295,7 +295,7 @@ _spool_get_fields_to_spool(lList **answer_list, const lDescr *descr,
 *     spool_free_spooling_fields() -- free a spooling field array
 *
 *  SYNOPSIS
-*     spooling_field * spool_free_spooling_fields(spooling_field *fields) 
+*     spooling_field * spool_free_spooling_fields(spooling_field *fields)
 *
 *  FUNCTION
 *     Frees an array of spooling_field with all sublists and contained strings.
@@ -334,12 +334,12 @@ spool_free_spooling_fields(spooling_field *fields) {
 *
 *  SYNOPSIS
 *     bool
-*     spool_default_validate_func(lList **answer_list, 
-*                               const lListElem *type, 
-*                               const lListElem *rule, 
-*                               const lListElem *object, 
-*                               const char *key, 
-*                               const sge_object_type object_type) 
+*     spool_default_validate_func(lList **answer_list,
+*                               const lListElem *type,
+*                               const lListElem *rule,
+*                               const lListElem *object,
+*                               const char *key,
+*                               const sge_object_type object_type)
 *
 *  FUNCTION
 *     Verifies an object.
@@ -579,5 +579,60 @@ spool_default_validate_list_func(lList **answer_list,
    }
 
    DRETURN(ret);
+}
+
+/**
+ * Strips all dynamic (non-static) load values from the EH_load_list of an
+ * exec host object before it is spooled. Only static load values shall be
+ * persisted; dynamic load values are volatile and will be reported again by
+ * the execution daemon once it (re)connects.
+ *
+ * The dynamic load values are moved (not copied) out of the object's load
+ * list into a backup list which is returned to the caller. The caller has to
+ * restore them after the object has been written by passing the backup to
+ * spool_exechost_restore_load_list().
+ */
+lList *
+spool_exechost_strip_dynamic_load(const lListElem *object) {
+   DENTER(TOP_LAYER);
+
+   lList *load_list = lGetListRW(object, EH_load_list);
+   if (load_list == nullptr) {
+      DRETURN(nullptr);
+   }
+
+   // move the dynamic load values out of the object's load list into the backup list
+   lList *backup_load_list = nullptr;
+   lListElem *load_value, *next_load_value;
+   next_load_value = lFirstRW(load_list);
+   while ((load_value = next_load_value) != nullptr) {
+      next_load_value = lNextRW(load_value);
+      if (!lGetBool(load_value, HL_is_static)) {
+         lDechainElem(load_list, load_value);
+         if (backup_load_list == nullptr) {
+            backup_load_list = lCreateList(lGetListName(load_list), lGetListDescr(load_list));
+         }
+         lAppendElem(backup_load_list, load_value);
+      }
+   }
+
+   DRETURN(backup_load_list);
+}
+
+/**
+ * Restores the dynamic load values of an exec host object that were
+ * previously moved aside with spool_exechost_strip_dynamic_load(). The backup
+ * list is appended back to the object's EH_load_list and freed; the
+ * backup_load_list pointer is set to nullptr.
+ */
+void
+spool_exechost_restore_load_list(const lListElem *object, lList **backup_load_list) {
+   DENTER(TOP_LAYER);
+
+   if (backup_load_list != nullptr && *backup_load_list != nullptr) {
+      lAddList(lGetListRW(object, EH_load_list), backup_load_list);
+   }
+
+   DRETURN_VOID;
 }
 
