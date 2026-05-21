@@ -1485,7 +1485,7 @@ static bool read_manop(ocs::gdi::Target target) {
       descr = UM_Type;
       break;
 
-   case ocs::gdi::Target::SGE_UO_LIST:
+   case ocs::gdi::Target::UO_LIST:
       lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
       strcpy(filename, OP_FILE);
       key = UO_name;
