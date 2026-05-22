@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -52,7 +52,9 @@ namespace ocs {
       static lList *get_decay_list();
 
       static void decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
-                                      lList *decay_list, u_long seqno, u_long64 curr_time);
+                                      lList *decay_list, const lList *usage_weight_list, u_long seqno, u_long64 curr_time);
+
+      static bool strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list);
 
       static lList *build_usage_list(const char *name, lList *old_usage_list);
 

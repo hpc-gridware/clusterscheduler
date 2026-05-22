@@ -71,7 +71,9 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_Usage.h"
 
 #include "gdi/ocs_gdi_ClientBase.h"
 
@@ -138,31 +140,34 @@ static int
 remove_invalid_job_references(int user);
 
 static void
+remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list);
+
+static void
 debit_all_jobs_from_qs();
 
 
 /****** qmaster/setup_qmaster/sge_setup_qmaster() ******************************
 *  NAME
-*     sge_setup_qmaster() -- setup qmaster 
+*     sge_setup_qmaster() -- setup qmaster
 *
 *  SYNOPSIS
-*     int sge_setup_qmaster(char* anArgv[]) 
+*     int sge_setup_qmaster(char* anArgv[])
 *
 *  FUNCTION
 *     Process commandline arguments. Remove qmaster lock file. Write qmaster
 *     host to the 'act_qmaster' file. Initialize qmaster and reporting. Write
-*     qmaster PID file.  
+*     qmaster PID file.
 *
 *     NOTE: Before this function is invoked, qmaster must become admin user.
 *
 *  INPUTS
-*     char* anArgv[] - commandline argument vector 
+*     char* anArgv[] - commandline argument vector
 *
 *  RESULT
-*     0 - success 
+*     0 - success
 *
 *  NOTES
-*     MT-NOTE: sge_setup_qmaster() is NOT MT safe! 
+*     MT-NOTE: sge_setup_qmaster() is NOT MT safe!
 *     MT-NOTE:
 *     MT-NOTE: This function must be called exclusively, with the qmaster main
 *     MT-NOTE: thread being the *only* active thread. In other words, do not
@@ -209,7 +214,7 @@ sge_setup_qmaster(char *anArgv[]) {
 *     sge_qmaster_thread_init() -- Initialize a qmaster thread.
 *
 *  SYNOPSIS
-*     int sge_qmaster_thread_init(bool switch_to_admin_user) 
+*     int sge_qmaster_thread_init(bool switch_to_admin_user)
 *
 *  FUNCTION
 *     Subsume functions which need to be called immediately after thread
@@ -220,10 +225,10 @@ sge_setup_qmaster(char *anArgv[]) {
 *     bool switch_to_admin_user - become admin user if set to true
 *
 *  RESULT
-*     0 - success 
+*     0 - success
 *
 *  NOTES
-*     MT-NOTE: sge_qmaster_thread_init() is MT safe 
+*     MT-NOTE: sge_qmaster_thread_init() is MT safe
 *     MT-NOTE:
 *     MT-NOTE: sge_qmaster_thread_init() should be invoked at the beginning
 *     MT-NOTE: of a thread function.
@@ -276,20 +281,20 @@ sge_qmaster_thread_init(u_long32 prog_id, u_long32 thread_id, bool switch_to_adm
 *     sge_setup_job_resend() -- Setup job resend events.
 *
 *  SYNOPSIS
-*     void sge_setup_job_resend() 
+*     void sge_setup_job_resend()
 *
 *  FUNCTION
 *     Register a job resend event for each job or array task which does have a
 *     'JTRANSFERING' status.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: sge_setup_job_resend() is not MT safe 
+*     MT-NOTE: sge_setup_job_resend() is not MT safe
 *
 *******************************************************************************/
 void
@@ -341,7 +346,7 @@ sge_setup_job_resend() {
 *     sge_process_qmaster_cmdline() -- global available function for qmaster
 *
 *  SYNOPSIS
-*     void sge_process_qmaster_cmdline(char**anArgv) 
+*     void sge_process_qmaster_cmdline(char**anArgv)
 *
 *  FUNCTION
 *     This function simply calls the static function process_cmdline()
@@ -350,7 +355,7 @@ sge_setup_job_resend() {
 *     char**anArgv - command line arguments from main()
 *
 *  NOTES
-*     MT-NOTE: sge_process_qmaster_cmdline() is NOT MT safe 
+*     MT-NOTE: sge_process_qmaster_cmdline() is NOT MT safe
 *
 *  SEE ALSO
 *     qmaster/setup_qmaster/process_cmdline()
@@ -362,22 +367,22 @@ sge_process_qmaster_cmdline(char **anArgv) {
 
 /****** qmaster/setup_qmaster/process_cmdline() ********************************
 *  NAME
-*     process_cmdline() -- Handle command line arguments 
+*     process_cmdline() -- Handle command line arguments
 *
 *  SYNOPSIS
-*     static void process_cmdline(char **anArgv) 
+*     static void process_cmdline(char **anArgv)
 *
 *  FUNCTION
 *     Handle command line arguments. Parse argument vector and handle options.
 *
 *  INPUTS
-*     char **anArgv - pointer to agrument vector 
+*     char **anArgv - pointer to agrument vector
 *
 *  RESULT
 *     void - none
 *
 *  NOTES
-*     MT-NOTE: process_cmdline() is NOT MT safe. 
+*     MT-NOTE: process_cmdline() is NOT MT safe.
 *
 *******************************************************************************/
 static void
@@ -430,21 +435,21 @@ process_cmdline(char **anArgv) {
 *     parse_cmdline_qmaster() -- Parse command line arguments
 *
 *  SYNOPSIS
-*     static lList* parse_cmdline_qmaster(char **argv, lList **ppcmdline) 
+*     static lList* parse_cmdline_qmaster(char **argv, lList **ppcmdline)
 *
 *  FUNCTION
-*     Decompose argument vector. Handle options and option arguments. 
+*     Decompose argument vector. Handle options and option arguments.
 *
 *  INPUTS
-*     char **argv       - pointer to argument vector 
-*     lList **ppcmdline - pointer to lList pointer which does contain the 
-*                         command line arguments upon return. 
+*     char **argv       - pointer to argument vector
+*     lList **ppcmdline - pointer to lList pointer which does contain the
+*                         command line arguments upon return.
 *
 *  RESULT
-*     lList* - pointer to answer list 
+*     lList* - pointer to answer list
 *
 *  NOTES
-*     MT-NOTE: parse_cmdline_qmaster() is MT safe. 
+*     MT-NOTE: parse_cmdline_qmaster() is MT safe.
 *
 *******************************************************************************/
 static lList *
@@ -475,23 +480,23 @@ parse_cmdline_qmaster(char **argv, lList **ppcmdline) {
 
 /****** qmaster/setup_qmaster/parse_qmaster() **********************************
 *  NAME
-*     parse_qmaster() -- Process options. 
+*     parse_qmaster() -- Process options.
 *
 *  SYNOPSIS
-*     static lList* parse_qmaster(lList **ppcmdline, u_long32 *help) 
+*     static lList* parse_qmaster(lList **ppcmdline, u_long32 *help)
 *
 *  FUNCTION
-*     Process options 
+*     Process options
 *
 *  INPUTS
 *     lList **ppcmdline - list of options
 *     u_long32 *help    - flag is set upon return if help has been requested
 *
 *  RESULT
-*     lList* - answer list 
+*     lList* - answer list
 *
 *  NOTES
-*     MT-NOTE: parse_qmaster() is not MT safe. 
+*     MT-NOTE: parse_qmaster() is not MT safe.
 *
 *******************************************************************************/
 static lList *
@@ -501,7 +506,7 @@ parse_qmaster(lList **ppcmdline, u_long32 *help) {
 
    DENTER(TOP_LAYER);
 
-   /* Loop over all options. Only valid options can be in the 
+   /* Loop over all options. Only valid options can be in the
       ppcmdline list.
    */
    while (lGetNumberOfElem(*ppcmdline)) {
@@ -525,22 +530,22 @@ parse_qmaster(lList **ppcmdline, u_long32 *help) {
 
 /****** qmaster/setup_qmaster/qmaster_init() ***********************************
 *  NAME
-*     qmaster_init() -- Initialize qmaster 
+*     qmaster_init() -- Initialize qmaster
 *
 *  SYNOPSIS
-*     static void qmaster_init(char **anArgv) 
+*     static void qmaster_init(char **anArgv)
 *
 *  FUNCTION
-*     Initialize qmaster. Do general setup and communication setup. 
+*     Initialize qmaster. Do general setup and communication setup.
 *
 *  INPUTS
-*     char **anArgv - process argument vector 
+*     char **anArgv - process argument vector
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
-*     MT-NOTE: qmaster_init() is NOT MT safe. 
+*     MT-NOTE: qmaster_init() is NOT MT safe.
 *
 *******************************************************************************/
 static void
@@ -565,10 +570,10 @@ qmaster_init() {
 *     communication_setup() -- set up communication
 *
 *  SYNOPSIS
-*     static void communication_setup() 
+*     static void communication_setup()
 *
 *  FUNCTION
-*     Initialize qmaster communication. 
+*     Initialize qmaster communication.
 *
 *     This function will fail, if the configured qmaster port is already in
 *     use.
@@ -578,13 +583,13 @@ qmaster_init() {
 *     is a qmaster already running.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
-*     void - none 
+*     void - none
 *
 *  NOTES
-*     MT-NOTE: communication_setup() is NOT MT safe 
+*     MT-NOTE: communication_setup() is NOT MT safe
 *
 *******************************************************************************/
 static void
@@ -624,8 +629,8 @@ communication_setup() {
    if (com_handle) {
       unsigned long max_connections = 0;
 
-      /* 
-       * re-check file descriptor limits for qmaster 
+      /*
+       * re-check file descriptor limits for qmaster
        */
       getrlimit(RLIMIT_NOFILE, &qmaster_rlimits);
 
@@ -671,23 +676,23 @@ communication_setup() {
 
 /****** qmaster/setup_qmaster/is_qmaster_already_running() *********************
 *  NAME
-*     is_qmaster_already_running() -- is qmaster already running 
+*     is_qmaster_already_running() -- is qmaster already running
 *
 *  SYNOPSIS
-*     static bool is_qmaster_already_running() 
+*     static bool is_qmaster_already_running()
 *
 *  FUNCTION
 *     Check, whether there is running qmaster already.
 *
 *  INPUTS
-*     void - none 
+*     void - none
 *
 *  RESULT
-*     true  - running qmaster detected. 
+*     true  - running qmaster detected.
 *     false - otherwise
 *
 *  NOTES
-*     MT-NOTE: is_qmaster_already_running() is not MT safe 
+*     MT-NOTE: is_qmaster_already_running() is not MT safe
 *
 *  BUGS
 *     This function will only work, if the PID found in the qmaster PID file
@@ -755,10 +760,10 @@ sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *ho
 
 /****** qmaster/setup_qmaster/qmaster_lock_and_shutdown() ***************************
 *  NAME
-*     qmaster_lock_and_shutdown() -- Acquire qmaster lock file and shutdown 
+*     qmaster_lock_and_shutdown() -- Acquire qmaster lock file and shutdown
 *
 *  SYNOPSIS
-*     static void qmaster_lock_and_shutdown(int anExitValue) 
+*     static void qmaster_lock_and_shutdown(int anExitValue)
 *
 *  FUNCTION
 *     qmaster exit function. This version MUST NOT be used, if the current
@@ -766,16 +771,16 @@ sge_propagate_queue_suspension(lListElem *jep, dstring *cqueue_name, dstring *ho
 *     on finding the lock file in the spool directory.
 *
 *  INPUTS
-*     int anExitValue - exit value 
+*     int anExitValue - exit value
 *
 *  RESULT
 *     void - none
 *
 *  EXAMPLE
-*     ??? 
+*     ???
 *
 *  NOTES
-*     MT-NOTE: qmaster_lock_and_shutdown() is MT safe 
+*     MT-NOTE: qmaster_lock_and_shutdown() is MT safe
 *
 *******************************************************************************/
 static void
@@ -815,7 +820,7 @@ setup_qmaster() {
    config_errfunc = set_error;
 
    /*
-    * Initialize Master lists and hash tables, if necessary 
+    * Initialize Master lists and hash tables, if necessary
     */
    const lList **suser_list = ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
    if (*suser_list == nullptr) {
@@ -849,12 +854,12 @@ setup_qmaster() {
    answer_list_output(&answer_list);
 
    /*
-    * for release 6.2u5 the "job to core"- binding feature has been added 
+    * for release 6.2u5 the "job to core"- binding feature has been added
     * that needs some additional complex entries. We check here if those
     * entries exist and create them silently if they are not there. Only
     * this prevents from creating a update procedure.
     *
-    * TODO: As soon as there is a release where an update procedure is 
+    * TODO: As soon as there is a release where an update procedure is
     *       available we should put that code there and remove it here.
     */
    {
@@ -1007,7 +1012,7 @@ setup_qmaster() {
 
       /*
        * Update cluster queue configuration from pre-6.2u5 to 6.2u5, i.e. from
-       * cluster queues without slotwise suspend on subordinate to such with 
+       * cluster queues without slotwise suspend on subordinate to such with
        * slotwise ssos.
        */
       const lList *aso_list = lGetList(tmpqep, CQ_subordinate_list);
@@ -1126,7 +1131,7 @@ setup_qmaster() {
                                   nullptr, *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY),
                                   false, true, false);
 
-         /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not 
+         /* need to update JSUSPENDED_ON_SUBORDINATE since task spooling is not
             triggered upon queue un/-suspension */
          sge_propagate_queue_suspension(jep, &cqueue_name, &host_domain);
       }
@@ -1135,11 +1140,11 @@ setup_qmaster() {
    }
 
    /*
-      if the job is in state running 
-      we have to register each slot 
+      if the job is in state running
+      we have to register each slot
       in a queue, in the resource quota sets
-      and in the parallel 
-      environment if the job is a 
+      and in the parallel
+      environment if the job is a
       parallel one
    */
    debit_all_jobs_from_qs();
@@ -1180,6 +1185,19 @@ setup_qmaster() {
    sge_read_sched_configuration(spooling_context, &answer_list, ocs::SessionManager::GDI_SESSION_NONE);
    answer_list_output(&answer_list);
 
+   /*
+    * CS-1385: older versions booked all online usage attributes into the
+    * user/project usage lists. Now that the scheduler configuration (and
+    * with it the usage weights) is available, strip the irrelevant ones
+    * from objects that were spooled by such older versions.
+    */
+   {
+      lList *usage_weight_list = sconf_get_usage_weight_list();
+      remove_irrelevant_userprj_usage(true, usage_weight_list);
+      remove_irrelevant_userprj_usage(false, usage_weight_list);
+      lFreeList(&usage_weight_list);
+   }
+
    DPRINTF("share tree list-----------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
                    SGE_TYPE_SHARETREE);
@@ -1212,13 +1230,13 @@ setup_qmaster() {
 
 /****** setup_qmaster/remove_invalid_job_references() **************************
 *  NAME
-*     remove_invalid_job_references() -- ??? 
+*     remove_invalid_job_references() -- ???
 *
 *  SYNOPSIS
 *     static int remove_invalid_job_references(bool job_spooling, int user
 *
 *  FUNCTION
-*   get rid of still debited per job usage contained 
+*   get rid of still debited per job usage contained
 *   in user or project object if the job is no longer existing
 *
 *  INPUTS
@@ -1228,7 +1246,7 @@ setup_qmaster() {
 *     static int -  always 0
 *
 *  NOTES
-*     MT-NOTE: remove_invalid_job_references() is not MT safe 
+*     MT-NOTE: remove_invalid_job_references() is not MT safe
 *
 *******************************************************************************/
 static int
@@ -1281,6 +1299,65 @@ remove_invalid_job_references(int user) {
    }
 
    DRETURN(0);
+}
+
+/** @brief Strip irrelevant share tree usage from spooled user/project objects.
+ *
+ * Older versions accumulated all online usage attributes (vmem, rss, all
+ * ru_* and acct_* values, ...) into the user/project usage lists, which made
+ * those objects and their spool files grow huge (CS-1385). At startup this
+ * cleans up objects that were spooled by such older versions: it strips the
+ * UU_usage/UU_long_term_usage (including the per-project UU_project
+ * sub-lists) and PR_usage/PR_long_term_usage lists down to the attributes
+ * relevant for share tree usage, and re-spools the objects that changed.
+ * Once cleaned, later startups find nothing to do.
+ */
+static void
+remove_irrelevant_userprj_usage(bool user, const lList *usage_weight_list) {
+   const lListElem *up;
+   int object_key;
+   const lList *object_list;
+   sge_object_type object_type;
+
+   DENTER(TOP_LAYER);
+
+   if (user) {
+      object_key = UU_name;
+      object_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+      object_type = SGE_TYPE_USER;
+   } else {
+      object_key = PR_name;
+      object_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+      object_type = SGE_TYPE_PROJECT;
+   }
+
+   for_each_ep(up, object_list) {
+      bool changed = false;
+
+      if (user) {
+         changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(up, UU_usage), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(up, UU_long_term_usage), usage_weight_list);
+
+         /* usage of a user within a project is kept in the UU_project sub-list */
+         lListElem *upp;
+         for_each_rw(upp, lGetListRW(up, UU_project)) {
+            changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(upp, UPP_usage), usage_weight_list);
+            changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(upp, UPP_long_term_usage), usage_weight_list);
+         }
+      } else {
+         changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(up, PR_usage), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(lGetListRW(up, PR_long_term_usage), usage_weight_list);
+      }
+
+      if (changed) {
+         lList *answer_list = nullptr;
+         spool_write_object(&answer_list, spool_get_default_context(), up, lGetString(up, object_key), object_type,
+                            true);
+         answer_list_output(&answer_list);
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 static void debit_all_jobs_from_qs() {
