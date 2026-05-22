@@ -598,6 +598,7 @@ namespace ocs {
 
       write_json(writer, "ar_termination_time", report_time);
       write_json(writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
+      write_json(writer, "ar_number", lGetUlong(ar, AR_id));
       write_json(writer, "ar_qname", cqueue_name);
       write_json(writer, "ar_hostname", hostname);
       write_json(writer, "ar_slots", slots);
