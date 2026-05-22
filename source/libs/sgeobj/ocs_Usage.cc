@@ -155,6 +155,28 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
 }
 
 
+/** @brief Decide whether a usage attribute is relevant for share tree usage.
+ *
+ * A finished job reports the full set of online usage attributes (cpu, mem,
+ * io, iow, vmem, all ru_* and acct_* values, ...). Only a small subset of
+ * these is actually used in share tree usage calculations: the attributes
+ * cpu, mem and io (always, they are also the seeded defaults), any attribute
+ * for which the administrator configured a usage weight, and the synthetic
+ * finished_jobs counter. All other attributes must not be booked into the
+ * user/project usage lists - otherwise those objects (and their spooled
+ * representation) grow huge over time (see CS-1385).
+ */
+static bool
+usage_relevant_for_sharetree(const char *name, const lList *usage_weight_list) {
+   if (strcmp(name, USAGE_ATTR_CPU) == 0 ||
+       strcmp(name, USAGE_ATTR_MEM) == 0 ||
+       strcmp(name, USAGE_ATTR_IO) == 0 ||
+       strcmp(name, "finished_jobs") == 0) {
+      return true;
+   }
+   return usage_weight_list != nullptr && lGetElemStr(usage_weight_list, UA_name, name) != nullptr;
+}
+
 /*--------------------------------------------------------------------
  * decay_and_sum_usage - accumulates and decays usage in the correct
  * user and project objects for the specified job
@@ -162,7 +184,7 @@ ocs::Usage::decay_usage(const lList *usage_list, const lList *decay_list, const 
 
 void
 ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
-                    lList *decay_list, u_long seqno, uint64_t curr_time) {
+                    lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time) {
    lList *job_usage_list=nullptr,
          *old_usage_list=nullptr,
          *user_usage_list=nullptr,
@@ -305,6 +327,16 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
          const char *usage_name = lGetString(job_usage, UA_name);
 
          /*---------------------------------------------------------
+          * Only attributes relevant for share tree usage may be
+          * booked into the user/project usage lists. All other
+          * online usage attributes are ignored here (CS-1385).
+          *---------------------------------------------------------*/
+
+         if (!usage_relevant_for_sharetree(usage_name, usage_weight_list)) {
+            continue;
+         }
+
+         /*---------------------------------------------------------
           * Locate the corresponding usage element for the job
           * usage type in the node usage, old job usage, user usage,
           * and project usage.  If it does not exist, create a new
@@ -432,6 +464,32 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
 
 }
 
+
+/** @brief Remove usage attributes that are irrelevant for share tree usage.
+ *
+ * Older versions accumulated all online usage attributes (vmem, rss, all
+ * ru_* and acct_* values, ...) into the user/project usage lists, which made
+ * those objects and their spooled representation grow huge (CS-1385). This
+ * function strips a usage list down to the attributes that are actually
+ * relevant for share tree usage and returns true if at least one element was
+ * removed, so the caller can decide whether the owning object needs to be
+ * re-spooled. A nullptr usage_list is treated as an empty list.
+ */
+bool
+ocs::Usage::strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list) {
+   bool removed = false;
+
+   lListElem *next_usage = lFirstRW(usage_list);
+   lListElem *usage;
+   while ((usage = next_usage) != nullptr) {
+      next_usage = lNextRW(usage);
+      if (!usage_relevant_for_sharetree(lGetString(usage, UA_name), usage_weight_list)) {
+         lRemoveElem(usage_list, &usage);
+         removed = true;
+      }
+   }
+   return removed;
+}
 
 /*--------------------------------------------------------------------
  * build_usage_list - create a new usage list from an existing list
