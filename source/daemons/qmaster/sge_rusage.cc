@@ -645,7 +645,11 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
          write_json(*writer, "ar_submission_time", lGetUlong64(ar, AR_submission_time));
       }
 
-      write_json(*writer, "pe_taskid", pe_task_id);
+      // Match the classic reporting writer (none_string(pe_task_id) above),
+      // which emits the sentinel "NONE" when the record is not for a pe_task.
+      // The dbwriter uses j_pe_taskid as part of the sge_job primary key and
+      // user-defined SQL filters compare it against the literal 'NONE'.
+      write_json(*writer, "pe_taskid", pe_task_id != nullptr ? pe_task_id : NONE_STR);
       write_json(*writer, "category", category_str);
 
       write_json(*writer, "failed", lGetUlong(jr, JR_failed)); // @todo only when != 0?

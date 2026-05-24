@@ -160,9 +160,10 @@ namespace ocs {
       write_json(writer, "job_number", lGetUlong(job, JB_job_number));
       int task_number = job_is_array(job) ? (int) lGetUlong(ja_task, JAT_task_number) : 0;
       write_json(writer, "task_number", task_number);
-      if (pe_task != nullptr) {
-         write_json(writer, "pe_taskid", lGetString(pe_task, PET_id));
-      }
+      // Always emit pe_taskid so the JSONL record carries the full sge_job
+      // primary key; "NONE" is the classic-format sentinel for ja_task-level
+      // records (and for jobs without a parallel environment).
+      write_json(writer, "pe_taskid", pe_task != nullptr ? lGetString(pe_task, PET_id) : NONE_STR);
 
       writer.Key("usage");
       writer.StartObject();
@@ -224,9 +225,14 @@ namespace ocs {
 
          write_json(writer, "submission_time", lGetUlong64(job, JB_submission_time));
          write_json(writer, "job_number", lGetUlong(job, JB_job_number));
-         // according to man page the following two fields should be there, but are not / cannot
-         //write_json(writer, "task_number", );
-         //write_json(writer, "pe_taskid", );
+         // A new_job record describes the whole job, before any ja_task/pe_task
+         // exists. The dbwriter's sge_job primary key is
+         // (j_job_number, j_task_number, j_pe_taskid); emit the "whole job"
+         // sentinels (task_number = 0 -> normalized to -1 by JobManager, and
+         // pe_taskid = "NONE") so the row created here matches the later
+         // accounting record's primary key.
+         write_json(writer, "task_number", 0);
+         write_json(writer, "pe_taskid", NONE_STR);
          write_json(writer, "job_name", lGetString(job, JB_job_name));
          write_json(writer, "owner", lGetString(job, JB_owner));
          write_json(writer, "group", lGetString(job, JB_group));
@@ -299,7 +305,10 @@ namespace ocs {
          write_json(writer, "event", get_job_log_name(type));
          write_json(writer, "job_number", job_id);
          write_json(writer, "task_number", ja_task_id);
-         write_json(writer, "pe_taskid", pe_task_id);
+         // "NONE" is the sentinel the classic reporting writer emits when
+         // there is no pe_task; keep the JSON record on the same convention
+         // so the dbwriter's primary key matches across record types.
+         write_json(writer, "pe_taskid", pe_task_id != nullptr ? pe_task_id : NONE_STR);
          write_json(writer, "state", jstate);
          write_json(writer, "user", user);
          write_json(writer, "host", host);
