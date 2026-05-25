@@ -4452,7 +4452,7 @@ BootstrapGetValue()
    FileGetValue "$1/bootstrap" "$2"
 }
 
-#Helper to get values from preperties file
+#Helper to get values from properties file
 #See FileGetValue
 #  $1 - PATH to the properties file
 #  $2 - key: e.g: com.sun.grid.jgdi.management.jmxremote.port, etc.

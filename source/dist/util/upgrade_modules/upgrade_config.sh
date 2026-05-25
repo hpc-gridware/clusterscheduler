@@ -550,9 +550,18 @@ UpOrDowngradeTo902000() {
 
          # In global configuration
          if [ "$obj_name" = "global" ]; then
+            LogIt "I" "Modifying global configuration object $file"
 
             # Remove finished jobs (zombie jobs) attribute (deprecated and not used anymore)
             RemoveLineWithMatch "${file}" 'finished_jobs.*' ""
+            LogIt "I" "Removed finished_jobs"
+
+            # Port range attribute added in 9.1.2 but might still be missing if customer did not add it manually
+            port_range=$(GetAttrValue "${file}" "port_range")
+            if [ -z "$port_range" ]; then
+               ReplaceOrAddLine "${file}" 'port_range.*' "port_range NONE"
+               LogIt "I" "Added port_range"
+            fi
          fi
       done
    else

@@ -743,6 +743,7 @@ PrintConf()
    $ECHO "loglevel               log_warning"
    $ECHO "administrator_mail     $CFG_MAIL_ADDR"
    $ECHO "mail_tag               NONE"
+   $ECHO "port_range             NONE"
    if [ "$AFS" = true ]; then
       $ECHO "set_token_cmd          /path_to_token_cmd/set_token_cmd"
       $ECHO "pag_cmd                /usr/afsws/bin/pagsh"
