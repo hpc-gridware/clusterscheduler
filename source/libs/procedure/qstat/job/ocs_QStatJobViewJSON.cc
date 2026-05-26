@@ -1061,6 +1061,21 @@ void ocs::QStatJobViewJSON::report_ja_task_concurrency(std::ostream &os, const l
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewJSON::report_pending_tasks(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_ja_n_h_ids, SGE_NO_ABORT) < 0) {
+      DRETURN_VOID;
+   }
+   if (first_attribute) {
+      os << "\n";
+      first_attribute = false;
+   } else {
+      os << ",\n";
+   }
+   os << std::string(indent * 3, ' ') << "\"pending_tasks\": " << count_pending_tasks(job);
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem *job, int nm, const char *name) {
    DENTER(TOP_LAYER);
 

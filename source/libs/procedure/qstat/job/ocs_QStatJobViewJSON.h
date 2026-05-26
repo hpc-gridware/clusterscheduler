@@ -2,7 +2,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2026 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ namespace ocs {
       void report_department(std::ostream &os, const lListElem *job) override;
       void report_sync_options(std::ostream &os, const lListElem *job) override;
       void report_ja_structure(std::ostream &os, const lListElem *job) override;
+      void report_pending_tasks(std::ostream &os, const lListElem *job) override;
       void report_ja_task_concurrency(std::ostream &os, const lListElem *job) override;
       void report_ctx_list(std::ostream &os, const lListElem *job) override;
       void report_binding(std::ostream &os, const lListElem *job) override;

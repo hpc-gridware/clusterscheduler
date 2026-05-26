@@ -20,6 +20,7 @@
 
 #include <sstream>
 
+#include "uti/sge_bitfield.h"
 #include "uti/sge_rmon_macros.h"
 
 #include "cull/cull.h"
@@ -28,6 +29,7 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
+#include "sgeobj/sge_range.h"
 #include "sgeobj/sge_usage.h"
 
 #include "qstat/job/ocs_QStatJobViewBase.h"
@@ -134,6 +136,7 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    report_department(os, job);
    report_sync_options(os, job);
    report_ja_structure(os, job);
+   report_pending_tasks(os, job);
    report_ja_task_concurrency(os, job);
    report_ctx_list(os, job);
    report_binding(os, job);
@@ -167,6 +170,36 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
    report_schedd_job_info(os, ilp, job);
 
    DRETURN_VOID;
+}
+
+/** Count pending tasks of a job.
+ *
+ * Sums the range elements in the five JB_ja_*_h_ids hold lists and adds
+ * the number of enrolled ja_tasks in JB_ja_tasks whose JAT_status is JIDLE.
+ * Enrolled tasks that already have the JERROR bit set in JAT_state are
+ * excluded.
+ */
+uint32_t ocs::QStatJobViewBase::count_pending_tasks(const lListElem *job) {
+   uint32_t pending = 0;
+   const int range_fields[] = {
+      JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids
+   };
+
+   for (const int field : range_fields) {
+      if (lGetPosViaElem(job, field, SGE_NO_ABORT) >= 0) {
+         pending += range_list_get_number_of_ids(lGetList(job, field));
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
+      for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
+         if (lGetUlong(ja_task, JAT_status) == JIDLE && !ISSET(lGetUlong(ja_task, JAT_state), JERROR)) {
+            pending++;
+         }
+      }
+   }
+
+   return pending;
 }
 
 void ocs::QStatJobViewBase::accumulate_usage(const lListElem *task, Usage &usage) {

@@ -999,6 +999,14 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   if (lGetPosViaElem(job, JB_ja_n_h_ids, SGE_NO_ABORT) >= 0) {
+      os << std::format("{:<{}} {}", "pending_tasks:", left_width, count_pending_tasks(job)) << "\n";
+   }
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_ja_task_concurrency, SGE_NO_ABORT) >= 0) {

@@ -51,6 +51,7 @@ namespace ocs {
 
    protected:
       static void accumulate_usage(const lListElem *task, Usage &usage);
+      static uint32_t count_pending_tasks(const lListElem *job);
    public:
       explicit QStatJobViewBase(const ProcedureParameter &parameter) : ProcedureView(parameter) {};
       ~QStatJobViewBase() override = default;
@@ -121,6 +122,7 @@ namespace ocs {
       virtual void report_department(std::ostream &os, const lListElem *job) = 0;
       virtual void report_sync_options(std::ostream &os, const lListElem *job) = 0;
       virtual void report_ja_structure(std::ostream &os, const lListElem *job) = 0;
+      virtual void report_pending_tasks(std::ostream &os, const lListElem *job) = 0;
       virtual void report_ja_task_concurrency(std::ostream &os, const lListElem *job) = 0;
       virtual void report_ctx_list(std::ostream &os, const lListElem *job) = 0;
       virtual void report_binding(std::ostream &os, const lListElem *job) = 0;

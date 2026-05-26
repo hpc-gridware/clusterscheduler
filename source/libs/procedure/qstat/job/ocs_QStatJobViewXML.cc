@@ -396,6 +396,11 @@ void ocs::QStatJobViewXML::report_ja_task_concurrency(std::ostream &os, const lL
    DRETURN_VOID;
 }
 
+void ocs::QStatJobViewXML::report_pending_tasks(std::ostream &os, const lListElem *job) {
+   DENTER(TOP_LAYER);
+   DRETURN_VOID;
+}
+
 void ocs::QStatJobViewXML::report_ctx_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

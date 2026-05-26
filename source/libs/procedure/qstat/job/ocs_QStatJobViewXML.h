@@ -98,6 +98,7 @@ namespace ocs {
       void report_department(std::ostream &os, const lListElem *job) override;
       void report_sync_options(std::ostream &os, const lListElem *job) override;
       void report_ja_structure(std::ostream &os, const lListElem *job) override;
+      void report_pending_tasks(std::ostream &os, const lListElem *job) override;
       void report_ja_task_concurrency(std::ostream &os, const lListElem *job) override;
       void report_ctx_list(std::ostream &os, const lListElem *job) override;
       void report_binding(std::ostream &os, const lListElem *job) override;
