@@ -83,6 +83,37 @@ static void sge_show_y_n(int op, int how);
 static void show_ce_type_list(const lList *cel, const char *indent, const char *separator,
                               bool display_resource_contribution, const lList *centry_list, int slots);
 
+/** Count pending tasks of a job.
+ *
+ * Sums the range elements in the five JB_ja_*_h_ids hold lists and adds
+ * the number of enrolled ja_tasks in JB_ja_tasks whose JAT_status is JIDLE.
+ * Enrolled tasks that already have the JERROR bit set in JAT_state are
+ * excluded.
+ */
+static u_long32 count_pending_tasks(const lListElem *job) {
+   u_long32 pending = 0;
+   const int range_fields[] = {
+      JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids
+   };
+
+   for (int field : range_fields) {
+      if (lGetPosViaElem(job, field, SGE_NO_ABORT) >= 0) {
+         pending += range_list_get_number_of_ids(lGetList(job, field));
+      }
+   }
+
+   if (lGetPosViaElem(job, JB_ja_tasks, SGE_NO_ABORT) >= 0) {
+      const lListElem *ja_task;
+      for_each_ep(ja_task, lGetList(job, JB_ja_tasks)) {
+         if (lGetUlong(ja_task, JAT_status) == JIDLE && ! ISSET(lGetUlong(ja_task, JAT_state), JERROR)) {
+            pending++;
+         }
+      }
+   }
+
+   return pending;
+}
+
 void cull_show_job(const lListElem *job, int flags, bool show_binding) {
    DENTER(TOP_LAYER);
 
@@ -599,12 +630,16 @@ void cull_show_job(const lListElem *job, int flags, bool show_binding) {
       if (job_is_array(job)) {
          u_long32 start, end, step;
          job_get_submit_task_ids(job, &start, &end, &step);
-         printf("job-array tasks:   i              " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
+         printf("job-array tasks:                  " sge_u32 "-" sge_u32 ":" sge_u32 "\n", start, end, step);
          u_long32 task_concurrency = lGetUlong(job, JB_ja_task_concurrency);
          if (task_concurrency > 0) {
             printf("task_concurrency:                " sge_u32 "\n", task_concurrency);
          }
       }
+   }
+
+   if (lGetPosViaElem(job, JB_ja_n_h_ids, SGE_NO_ABORT) >= 0) {
+      printf("pending_tasks:                   " sge_u32 "\n", count_pending_tasks(job));
    }
 
    if (lGetPosViaElem(job, JB_context, SGE_NO_ABORT) >= 0)
