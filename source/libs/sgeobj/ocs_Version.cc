@@ -39,7 +39,7 @@
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 1
 #define OCS_VERSION_PATCH 2
-#define OCS_VERSION_SUFFIX "prealpha"
+#define OCS_VERSION_SUFFIX ""
 
 const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
          + std::to_string(OCS_VERSION_MINOR) + "." + std::to_string(OCS_VERSION_PATCH) + OCS_VERSION_SUFFIX};
