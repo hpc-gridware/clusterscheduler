@@ -327,8 +327,8 @@ if (WITH_PYTHON)
 
    # find the pybind11-stubgen tool that allows us to generate pyi-files
    # pyi-files are used by IDEs to provide type hints for the pybind11 module
-   #find_program(PYBIND11_STUBGEN pybind11-stubgen)
-   find_program(PYBIND11_STUBGEN stubgen)
+   find_program(PYBIND11_STUBGEN pybind11-stubgen)
+   #find_program(PYBIND11_STUBGEN stubgen)
    if (PYBIND11_STUBGEN)
       message(STATUS "Python stubgen to generate pyi: ${PYBIND11_STUBGEN}")
    endif()

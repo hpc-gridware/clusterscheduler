@@ -41,7 +41,7 @@
 # set -x
 
 SCRIPT_VERSION="9"
-SGE_VERSION="9.2.0"
+SGE_VERSION="9.2.0prealpha"
 
 #Reset PATH to a safe value
 #
