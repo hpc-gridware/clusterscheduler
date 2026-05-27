@@ -28,14 +28,24 @@ function(architecture_specific_settings)
 
    message(STATUS "We are on OS: ${OS_ID}; ${OS_VERSION}; ${OS_CODENAME}")
 
+   # Find the OCS source directory
+   # If we build from an umbrella CMakefile we have to add the clusterscheduler sub-dir
+   message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+   get_filename_component(_last_dir "${CMAKE_SOURCE_DIR}" NAME)
+   if(_last_dir STREQUAL "clusterscheduler")
+      set(OCS_SOURCE_DIR "${CMAKE_SOURCE_DIR}")
+   else()
+      set(OCS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/clusterscheduler")
+   endif()
+
    # Find the OCS architecture string
-   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/source/dist/util/arch OUTPUT_VARIABLE SGE_ARCH_RAW)
+   execute_process(COMMAND ${OCS_SOURCE_DIR}/source/dist/util/arch OUTPUT_VARIABLE SGE_ARCH_RAW)
    string(STRIP ${SGE_ARCH_RAW} SGE_ARCH)
    set(SGE_ARCH ${SGE_ARCH} PARENT_SCOPE)
    message(STATUS "Architecture: ${SGE_ARCH}")
 
    # Find build and compile architecture and target bits
-   set(SGE_COMPILE_ARCH_SCRIPT ${CMAKE_SOURCE_DIR}/source/scripts/compilearch)
+   set(SGE_COMPILE_ARCH_SCRIPT ${OCS_SOURCE_DIR}/source/scripts/compilearch)
    execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -b ${SGE_ARCH} OUTPUT_VARIABLE SGE_BUILDARCH_RAW)
    execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -c ${SGE_ARCH} OUTPUT_VARIABLE SGE_COMPILEARCH_RAW)
    execute_process(COMMAND ${SGE_COMPILE_ARCH_SCRIPT} -t ${SGE_ARCH} OUTPUT_VARIABLE SGE_TARGETBITS_RAW)
