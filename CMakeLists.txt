@@ -309,9 +309,17 @@ if (WITH_PYTHON)
    endif()
 
    # We need pybind11 (usually installed via 'pip install pybind11')
-   # Find the cmake directory of pybind so that find_package will work
-   execute_process(COMMAND python3 -m pybind11 --cmakedir OUTPUT_VARIABLE PYBIND11_CMAKE_DIR)
-   string(STRIP ${PYBIND11_CMAKE_DIR} pybind11_DIR)
+   # Find the cmake directory of pybind so that find_package will work.
+   # If the active python doesn't have pybind11, fall back to a system install.
+   execute_process(
+         COMMAND python3 -m pybind11 --cmakedir
+         OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+         OUTPUT_STRIP_TRAILING_WHITESPACE
+         RESULT_VARIABLE PYBIND11_CMAKE_DIR_RC
+         ERROR_QUIET)
+   if (PYBIND11_CMAKE_DIR_RC EQUAL 0 AND PYBIND11_CMAKE_DIR)
+      set(pybind11_DIR "${PYBIND11_CMAKE_DIR}")
+   endif()
    find_package(pybind11 REQUIRED)
    if (NOT pybind11_FOUND)
       message(FATAL_ERROR "pybind11 not found")
