@@ -73,6 +73,7 @@
 - [CS-1985](https://hpc-gridware.atlassian.net/browse/CS-1985) In accounting records add the information who deleted a job.
 - [CS-2014](https://hpc-gridware.atlassian.net/browse/CS-2014) normalize requests in the job category
 - [CS-2216](https://hpc-gridware.atlassian.net/browse/CS-2216) dbwriter: unify RecordManager construction for JobManager sub-managers
+- [CS-2254](https://hpc-gridware.atlassian.net/browse/CS-2254) Harden MCP analysis tools: efficiency, pattern truncation, rolling windows, ctx cancellation
 
 ### New Feature
 
