@@ -1,35 +1,35 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this code are Copyright 2011 Univa Inc.
- * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -241,17 +241,6 @@ centry_fill_and_check(lListElem *this_elem, lList **answer_list, bool allow_empt
             lSetString(this_elem, CE_stringval, str_value);
          }
 
-         /* normalize memory values, so that the string value is based on bytes */
-         if (type == TYPE_MEM && dval != DBL_MAX) {
-            char str_value[100];
-            dstring ds;
-            sge_dstring_init(&ds, str_value, sizeof(str_value));
-            sge_dstring_sprintf(&ds, "%.0f", dval);
-            DPRINTF("normalized memory value from \"%s\" to \"%s\"\n",
-                    lGetString(this_elem, CE_stringval), str_value);
-            lSetString(this_elem, CE_stringval, str_value);
-         }
-
          /* also the CE_defaultval must be parsable for numeric types */
          if ((s=lGetString(this_elem, CE_defaultval))
             && !parse_ulong_val(&dval, nullptr, type, s, tmp, sizeof(tmp)-1)) {
@@ -339,7 +328,7 @@ map_req2str(u_long32 op)
 *     map_consumable2str() -- map to consumable string
 *
 *  SYNOPSIS
-*     const char * map_consumable2str(u_long32 op) 
+*     const char * map_consumable2str(u_long32 op)
 *
 *  FUNCTION
 *     maps int representation of CONSUMABLE to string
@@ -351,7 +340,7 @@ map_req2str(u_long32 op)
 *     const char * - string representation of consumable definition
 *
 *  NOTES
-*     MT-NOTE: map_consumable2str() is not safe 
+*     MT-NOTE: map_consumable2str() is not safe
 *******************************************************************************/
 const char *map_consumable2str(u_long32 op) {
    static const char *opv[] = {
@@ -395,7 +384,7 @@ map_type2str(u_long32 type)
 
 /****** sgeobj/centry/centry_create() *****************************************
 *  NAME
-*     centry_create() -- Create a preinitialized centry element 
+*     centry_create() -- Create a preinitialized centry element
 *
 *  SYNOPSIS
 *     lListElem *
@@ -405,8 +394,8 @@ map_type2str(u_long32 type)
 *     Create a preinitialized centry element with the given "name".
 *
 *  INPUTS
-*     lList **answer_list  - AN_Type 
-*     const char *name     - full name 
+*     lList **answer_list  - AN_Type
+*     const char *name     - full name
 *
 *  RESULT
 *     lListElem * - CE_Type element
@@ -444,23 +433,23 @@ centry_create(lList **answer_list, const char *name) {
 *     centry_is_referenced() -- Is centry element referenced?
 *
 *  SYNOPSIS
-*     bool 
-*     centry_is_referenced(const lListElem *centry, 
-*                          lList **answer_list, 
-*                          const lList *master_cqueue_list, 
-*                          const lList *master_exechost_list, 
-*                          const lList *master_sconf_list) 
+*     bool
+*     centry_is_referenced(const lListElem *centry,
+*                          lList **answer_list,
+*                          const lList *master_cqueue_list,
+*                          const lList *master_exechost_list,
+*                          const lList *master_sconf_list)
 *
 *  FUNCTION
 *     Is the centry element referenced in a sublist of
-*     "master_queue_list", "master_exechost_list" or 
-*     "master_sconf_list". 
+*     "master_queue_list", "master_exechost_list" or
+*     "master_sconf_list".
 *
 *  INPUTS
-*     const lListElem *centry           - CE_Type 
-*     lList **answer_list               - AN_Type 
-*     const lList *master_cqueue_list   - CQ_Type 
-*     const lList *master_exechost_list - EH_Type 
+*     const lListElem *centry           - CE_Type
+*     lList **answer_list               - AN_Type
+*     const lList *master_cqueue_list   - CQ_Type
+*     const lList *master_exechost_list - EH_Type
 *
 *  RESULT
 *     bool - true or false
@@ -539,22 +528,22 @@ centry_is_referenced(const lListElem *centry, lList **answer_list,
 
 /****** sgeobj/centry/centry_print_resource_to_dstring() **********************
 *  NAME
-*     centry_print_resource_to_dstring() -- Print to dstring 
+*     centry_print_resource_to_dstring() -- Print to dstring
 *
 *  SYNOPSIS
-*     bool 
-*     centry_print_resource_to_dstring(const lListElem *this_elem, 
-*                                      dstring *string) 
+*     bool
+*     centry_print_resource_to_dstring(const lListElem *this_elem,
+*                                      dstring *string)
 *
 *  FUNCTION
 *     Print resource string (memory, time) to dstring.
 *
 *  INPUTS
-*     const lListElem *this_elem - CE_Type 
-*     dstring *string            - dynamic string 
+*     const lListElem *this_elem - CE_Type
+*     dstring *string            - dynamic string
 *
 *  RESULT
-*     bool - error state 
+*     bool - error state
 *        true  - success
 *        false - error
 *
@@ -587,20 +576,20 @@ centry_print_resource_to_dstring(const lListElem *this_elem, dstring *string) {
 
 /****** sgeobj/centry/centry_list_locate() ************************************
 *  NAME
-*     centry_list_locate() -- Find Centry element 
+*     centry_list_locate() -- Find Centry element
 *
 *  SYNOPSIS
-*     lListElem *centry_list_locate(const lList *this_list, const char *name) 
+*     lListElem *centry_list_locate(const lList *this_list, const char *name)
 *
 *  FUNCTION
-*     Find CEntry element with "name" in "this_list". 
+*     Find CEntry element with "name" in "this_list".
 *
 *  INPUTS
-*     const lList *this_list - CE_Type list 
-*     const char *name       - name of an CE_Type entry 
+*     const lList *this_list - CE_Type list
+*     const char *name       - name of an CE_Type entry
 *
 *  RESULT
-*     lListElem * - CE_Type element 
+*     lListElem * - CE_Type element
 *******************************************************************************/
 lListElem *
 centry_list_locate(const lList *this_list, const char *name) {
@@ -618,16 +607,16 @@ centry_list_locate(const lList *this_list, const char *name) {
 
 /****** sgeobj/centry/centry_list_sort() **************************************
 *  NAME
-*     centry_list_sort() -- Sort a CE_Type list 
+*     centry_list_sort() -- Sort a CE_Type list
 *
 *  SYNOPSIS
-*     bool centry_list_sort(lList *this_list) 
+*     bool centry_list_sort(lList *this_list)
 *
 *  FUNCTION
-*     Sort a CE_Type list 
+*     Sort a CE_Type list
 *
 *  INPUTS
-*     lList *this_list - CE_Type list 
+*     lList *this_list - CE_Type list
 *
 *  RESULT
 *     bool - error state
@@ -651,16 +640,16 @@ centry_list_sort(lList *this_list) {
 
 /****** sgeobj/centry/centry_list_init_double() *******************************
 *  NAME
-*     centry_list_init_double() -- Initialize double from string 
+*     centry_list_init_double() -- Initialize double from string
 *
 *  SYNOPSIS
-*     bool centry_list_init_double(lList *this_list) 
+*     bool centry_list_init_double(lList *this_list)
 *
 *  FUNCTION
-*     Initialize all double values contained in "this_list" 
+*     Initialize all double values contained in "this_list"
 *
 *  INPUTS
-*     lList *this_list - CE_Type list 
+*     lList *this_list - CE_Type list
 *
 *  RESULT
 *     bool - true
@@ -674,9 +663,9 @@ centry_list_init_double(lList *this_list) {
       lListElem *centry;
 
       for_each_rw (centry, this_list) {
-         double new_val = 0.0; /* 
-                                * parse_ulong_val will not set it for all 
-                                * data types! 
+         double new_val = 0.0; /*
+                                * parse_ulong_val will not set it for all
+                                * data types!
                                 */
          parse_ulong_val(&new_val, nullptr, lGetUlong(centry, CE_valtype),
                          lGetString(centry, CE_stringval), nullptr, 0);
@@ -949,7 +938,7 @@ centry_list_remove_duplicates(lList *this_list) {
 
 /****** sgeobj/centry/centry_elem_validate() **********************************
 *  NAME
-*     centry_elem_validate() -- validates a element and checks for duplicates 
+*     centry_elem_validate() -- validates a element and checks for duplicates
 *
 *  SYNOPSIS
 *     int centry_elem_validate(lListElem *centry,
@@ -957,11 +946,11 @@ centry_list_remove_duplicates(lList *this_list) {
 *                                  lList *answer_list)
 *
 *  FUNCTION
-*     Checks weather the configuration within the new centry is okay or not. 
-*     A centry is valid, when it satisfies the following rules:   
+*     Checks weather the configuration within the new centry is okay or not.
+*     A centry is valid, when it satisfies the following rules:
 *         name 	  : has to be unique
 *         Short cu  : has to be unique
-*         Type	     : every type from the list (string, host, cstring, int, 
+*         Type	     : every type from the list (string, host, cstring, int,
 *                                               double, boolean, memory, time)
 *         Consumable : can only be defined for: int, double, memory, time, RSMAP
 *
@@ -979,16 +968,16 @@ centry_list_remove_duplicates(lList *this_list) {
 *
 *     The type for build in attributes is not allowed to be changed!
 *
-*     When no centy list is passed in, the check for uniqie name and 
+*     When no centy list is passed in, the check for uniqie name and
 *     short cuts is skipt.
 *
 *  INPUTS
 *     lListElem *centry     - the centry list, which should be validated
-*     lList *centry_list    - if not null, the function checks, if the 
+*     lList *centry_list    - if not null, the function checks, if the
 *                             centry element is already in the list
 *     lList *answer_list    - contains the error messages
 *
-*  RESULT   
+*  RESULT
 *     bool  false - error (the anwer_list contains the error message)
 *           true - okay
 *
@@ -1223,7 +1212,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
       const lListElem *ce1 = centry_list_locate(centry_list, attrname);
       const lListElem *ce2 = centry_list_locate(centry_list, shortcut);
 
-      /* 
+      /*
        * if we already have a centry with this name or shortcut,
        * that is not the current centry -> cannot add/mod this one
        */
@@ -1246,12 +1235,12 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 *     centry_urgency_contribution() -- Compute urgency for a particular resource
 *
 *  SYNOPSIS
-*     double 
-*     centry_urgency_contribution(int slots, const char *name, double 
-*                                 value, const lListElem *centry) 
+*     double
+*     centry_urgency_contribution(int slots, const char *name, double
+*                                 value, const lListElem *centry)
 *
 *  FUNCTION
-*     The urgency contribution for a particular resource 'name' is determined 
+*     The urgency contribution for a particular resource 'name' is determined
 *     based on the 'slot' amount and using 'value' as per slot request. The
 *     urgency value in the 'centry' element is used.
 *
@@ -1262,7 +1251,7 @@ bool centry_elem_validate(lListElem *centry, const lList *centry_list,
 *     const lListElem *centry - The centry element (CE_Type)
 *
 *  RESULT
-*     double - The resulting urgency contribution 
+*     double - The resulting urgency contribution
 *
 *  NOTES
 *     MT-NOTES: centry_urgency_contribution() is MT safe
@@ -1384,7 +1373,7 @@ int ensure_attrib_available(lList **alpp, lListElem *ep, int nm, const lList *ma
             const char *fullname = lGetString(centry, CE_name);
 
             /*
-             * Replace shortcuts by the fullname silently 
+             * Replace shortcuts by the fullname silently
              */
             if (strcmp(fullname, name) != 0) {
                lSetString(attr, CE_name, fullname);
@@ -1436,11 +1425,11 @@ int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
 
 /****** sge_centry/validate_load_formula() ********************
 *  NAME
-*     validate_load_formula() 
+*     validate_load_formula()
 *
 *  SYNOPSIS
-*     bool validate_load_formula(lListElem *schedd_conf, lList 
-*     **answer_list, lList *centry_list, const char *name) 
+*     bool validate_load_formula(lListElem *schedd_conf, lList
+*     **answer_list, lList *centry_list, const char *name)
 *
 *  FUNCTION
 *     The function validates a load formula string.
@@ -1448,12 +1437,12 @@ int host_ensure_slots_are_defined(lListElem *ehost, u_long32 processors) {
 *  INPUTS
 *     const char *load_formula - string that should be a valid load formula
 *     lList **answer_list      - error messages
-*     lList *centry_list       - list of defined complex values 
+*     lList *centry_list       - list of defined complex values
 *     const char*              - name (used for error messages)
 *
 *  RESULT
 *     bool - true if valid
-*            false if unvalid 
+*            false if unvalid
 *
 * MT-NOTE: is MT-safe, works only on the passed in data
 *
@@ -1466,7 +1455,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
    /* Check for keyword 'none' */
    if (!strcasecmp(load_formula, "none")) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_NONE_NOT_ALLOWED_S, name);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, 
+      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX,
                       ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -1526,7 +1515,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
          /* multiple weighting factors? */
          if (end != nullptr) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MULTIPLEWEIGHTFACT_S, name);
-            answer_list_add(answer_list, SGE_EVENT, 
+            answer_list_add(answer_list, SGE_EVENT,
                             STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;
          }
@@ -1543,8 +1532,8 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
 *     load_formula_is_centry_referenced() -- search load formula for centry reference
 *
 *  SYNOPSIS
-*     bool load_formula_is_centry_referenced(const char *load_formula, const 
-*     lListElem *centry) 
+*     bool load_formula_is_centry_referenced(const char *load_formula, const
+*     lListElem *centry)
 *
 *  FUNCTION
 *     This function searches for a centry reference in the defined algebraic
@@ -1559,7 +1548,7 @@ bool validate_load_formula(const char *load_formula, lList **answer_list, const 
 *            false if not referenced
 *
 *  NOTES
-*     MT-NOTE: load_formula_is_centry_referenced() is MT safe 
+*     MT-NOTE: load_formula_is_centry_referenced() is MT safe
 *
 *******************************************************************************/
 bool load_formula_is_centry_referenced(const char *load_formula, const lListElem *centry) {
