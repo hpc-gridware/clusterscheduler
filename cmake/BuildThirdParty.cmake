@@ -51,6 +51,14 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                 if(SGE_ARCH STREQUAL "lx-riscv64")
                   set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types")
                 endif()
+                if(SGE_ARCH STREQUAL "lx-arm64")
+                  # BDB's mutex.m4 has no aarch64 case and falls back to
+                  # UNIX/fcntl mutexes, which were removed in BDB >= 4.8.
+                  # Force POSIX/pthreads mutexes instead.
+                  set(CUSTOM_DB_FLAGS "--with-mutex=POSIX/pthreads")
+                  # old BDB sources do not compile with modern GCC defaults
+                  set(CUSTOM_CFLAGS "CFLAGS=-Wno-implicit-int -Wno-incompatible-pointer-types")
+                endif()
                 list(APPEND 3rdparty_list 3rd_party_berkeleydb)
                 externalproject_add(
                         3rd_party_berkeleydb
@@ -63,6 +71,7 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         PATCH_COMMAND /bin/sh -c "cp ${PROJECT_AUTOMAKE_SRC} dist"
                         CONFIGURE_COMMAND dist/configure
                            --prefix ${3rdparty_install_path}
+                           ${CUSTOM_DB_FLAGS}
                            ${CUSTOM_CFLAGS}
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
@@ -96,8 +105,12 @@ function(build_third_party 3rdparty_build_path 3rdparty_install_path)
                         INSTALL_DIR ${3rdparty_install_path}
                         GIT_REPOSITORY https://github.com/jemalloc/jemalloc.git
                         GIT_TAG 5.3.0
+                        # --disable-cxx works around jemalloc 5.3.0's
+                        # src/jemalloc_cpp.cpp failing to build with libstdc++
+                        # >= GCC 13 ('__throw_bad_alloc' is not in std::).
+                        # Only jemalloc's C interface is used by GCS.
                         CONFIGURE_COMMAND ./autogen.sh --prefix ${3rdparty_install_path}
-                        --disable-shared --disable-initial-exec-tls
+                        --disable-shared --disable-initial-exec-tls --disable-cxx
                         BUILD_IN_SOURCE TRUE
                         BUILD_ALWAYS FALSE
                         BUILD_COMMAND make)
@@ -226,7 +239,7 @@ function(install_third_party_lib 3rdparty_install_path target_dir files)
         set(libname "${CMAKE_SHARED_LIBRARY_PREFIX}${file}${CMAKE_SHARED_LIBRARY_SUFFIX}")
         add_custom_command(
                 OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${libname}
-                COMMAND cp -a ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
+                COMMAND cp -a --no-preserve=xattr,context ${3rdparty_install_path}/lib/${libname} ${CMAKE_CURRENT_BINARY_DIR}
                 VERBATIM
         )
         message(STATUS "adding 3rdparty lib ${libname}")

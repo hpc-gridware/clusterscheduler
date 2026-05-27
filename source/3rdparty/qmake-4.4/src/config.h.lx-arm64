@@ -164,7 +164,7 @@
 
 /* Define to 1 if you have the declaration of `bsd_signal', and to 0 if you
    don't. */
-#define HAVE_DECL_BSD_SIGNAL 1
+#define HAVE_DECL_BSD_SIGNAL 0
 
 /* Define to 1 if you have the declaration of `dlerror', and to 0 if you
    don't. */
