@@ -736,6 +736,21 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
             evc->ec_mod_subscription_where(evc, sgeE_CATEGORY_MOD, what_el, where_el);
          }
          break;
+      case SGE_TYPE_PROCEDURE:
+         ret = SGE_EM_NOT_INITIALIZED;
+         break;
+      case SGE_TYPE_RL:
+         evc->ec_subscribe(evc, sgeE_RL_LIST);
+         evc->ec_subscribe(evc, sgeE_RL_ADD);
+         evc->ec_subscribe(evc, sgeE_RL_DEL);
+         evc->ec_subscribe(evc, sgeE_RL_MOD);
+         if (what_el && where_el) {
+            evc->ec_mod_subscription_where(evc, sgeE_RL_LIST, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_RL_ADD, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_RL_DEL, what_el, where_el);
+            evc->ec_mod_subscription_where(evc, sgeE_RL_MOD, what_el, where_el);
+         }
+         break;
       default:
          ret = SGE_EM_BAD_ARG;
          break;
@@ -959,7 +974,7 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_RQS_MOD);
          break;
       case SGE_TYPE_SUSER:
-            DRETURN(SGE_EM_NOT_INITIALIZED);
+         DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_AR:
          evc->ec_unsubscribe(evc, sgeE_AR_LIST);
          evc->ec_unsubscribe(evc, sgeE_AR_ADD);
@@ -967,12 +982,20 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_AR_MOD);
          break;
       case SGE_TYPE_JOBSCRIPT:
-            DRETURN(SGE_EM_NOT_INITIALIZED);
+         DRETURN(SGE_EM_NOT_INITIALIZED);
       case SGE_TYPE_CATEGORY:
          evc->ec_unsubscribe(evc, sgeE_CATEGORY_LIST);
          evc->ec_unsubscribe(evc, sgeE_CATEGORY_ADD);
          evc->ec_unsubscribe(evc, sgeE_CATEGORY_DEL);
          evc->ec_unsubscribe(evc, sgeE_CATEGORY_MOD);
+         break;
+      case SGE_TYPE_PROCEDURE:
+         DRETURN(SGE_EM_NOT_INITIALIZED);
+      case SGE_TYPE_RL:
+         evc->ec_unsubscribe(evc, sgeE_RL_LIST);
+         evc->ec_unsubscribe(evc, sgeE_RL_ADD);
+         evc->ec_unsubscribe(evc, sgeE_RL_DEL);
+         evc->ec_unsubscribe(evc, sgeE_RL_MOD);
          break;
      default:
          ERROR("received invalid event group %d", type);
