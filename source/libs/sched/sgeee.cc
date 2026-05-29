@@ -1242,7 +1242,6 @@ static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest){
 *
 *******************************************************************************/
 static void destribute_ftickets(lList *root, int dependent) {
-   lListElem *elem;
    sge_ref_list_t *current = nullptr;
    sge_ref_list_t *first = nullptr;
 
