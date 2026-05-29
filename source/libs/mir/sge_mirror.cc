@@ -48,6 +48,7 @@
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/cull/sge_all_listsL.h"
 
 #include "evc/msg_evclib.h"
 #include "mir/msg_mirlib.h"
@@ -70,6 +71,7 @@ typedef struct {
    sge_mirror_callback callback_default;  /* default mirroring function     */
    sge_mirror_callback callback_after;    /* callback after mirroring       */
    void *client_data;                      /* client data passed to callback */
+   bool filtered;                          /* subscribed with a where-filter -> local list is a subset */
 } mirror_description;
 
 static sge_mirror_error 
@@ -207,6 +209,7 @@ static void mir_state_init(mir_state_t* state)
       state->mirror_base[i].callback_after   = nullptr;
       state->mirror_base[i].callback_default = dev_mirror_base[i].callback_default;
       state->mirror_base[i].client_data       = nullptr;
+      state->mirror_base[i].filtered          = false;
    }
 }
 
@@ -230,6 +233,14 @@ static mirror_description *mir_get_mirror_base()
 {
    GET_SPECIFIC(mir_state_t, mir_state, mir_state_init, mir_state_key);
    return mir_state->mirror_base;
+}
+
+bool sge_mirror_type_is_partial(sge_object_type type)
+{
+   if (type < 0 || type >= SGE_TYPE_ALL) {
+      return false;
+   }
+   return mir_get_mirror_base()[type].filtered;
 }
 
 /*----------------------------*/
@@ -762,6 +773,7 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
       mirror_base[type].callback_before = callback_before;
       mirror_base[type].callback_after  = callback_after;
       mirror_base[type].client_data      = client_data;
+      mirror_base[type].filtered         = (where != nullptr);
    }
 
    lFreeElem(&where_el);
@@ -829,6 +841,7 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
    mirror_base[type].callback_before  = nullptr;
    mirror_base[type].callback_after   = nullptr;
    mirror_base[type].client_data       = nullptr;
+   mirror_base[type].filtered          = false;
 
    switch (type) {
       case SGE_TYPE_ADMINHOST:
@@ -1506,8 +1519,70 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, lList *event_list)
    return sge_mirror_process_event_list_(evc, event_list);
 }
 
-static sge_mirror_error 
-sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base, 
+/*
+ * On a partial (where-filtered) mirror, an event may reference an object
+ * hierarchy whose filterable root we deliberately did not replicate - e.g. a
+ * ja-task / pe-task / usage / finish event for another user's job, or a queue
+ * instance of a cqueue outside our filter. Such events are expected, not errors.
+ *
+ * Deciding this once - before any callback runs - lets us skip the whole event
+ * (before, default and after) silently and symmetrically, rather than having
+ * each default handler log "can't find parent" and each before-callback hit the
+ * same dead end. A full (unfiltered) mirror never skips, so its behaviour and its
+ * genuine "missing object" diagnostics are unchanged.
+ *
+ * The per-type hierarchy below maps each child/sub-object type to the filterable
+ * root whose presence it requires; add a line here to cover a new relationship.
+ */
+static bool
+mir_event_root_unmirrored(sge_object_type type, sge_event_action action, lListElem *event)
+{
+   sge_object_type root_type;
+   int root_key_nm;
+   bool key_is_string;
+
+   switch (type) {
+      case SGE_TYPE_JOB:
+      case SGE_TYPE_JATASK:
+      case SGE_TYPE_PETASK:
+         root_type = SGE_TYPE_JOB;
+         root_key_nm = JB_job_number;
+         key_is_string = false;
+         break;
+      case SGE_TYPE_CQUEUE:
+      case SGE_TYPE_QINSTANCE:
+         root_type = SGE_TYPE_CQUEUE;
+         root_key_nm = CQ_name;
+         key_is_string = true;
+         break;
+      default:
+         return false; /* no filterable root -> never skip */
+   }
+
+   /* Creating or (re-)listing the root object itself must always be processed. */
+   if (type == root_type && (action == SGE_EMA_ADD || action == SGE_EMA_LIST)) {
+      return false;
+   }
+
+   /* Only a deliberately partial (filtered) root list can legitimately lack it. */
+   if (!sge_mirror_type_is_partial(root_type)) {
+      return false;
+   }
+
+   const lList **rlistp = ocs::DataStore::get_master_list(root_type);
+   const lList *rlist = (rlistp != nullptr) ? *rlistp : nullptr;
+   if (rlist == nullptr) {
+      return true; /* nothing of the root type mirrored -> event targets an object we lack */
+   }
+
+   const lListElem *root = key_is_string
+       ? lGetElemStr(rlist, root_key_nm, lGetString(event, ET_strkey))
+       : lGetElemUlong(rlist, root_key_nm, lGetUlong(event, ET_intkey));
+   return root == nullptr;
+}
+
+static sge_mirror_error
+sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
                         sge_object_type type, sge_event_action action, lListElem *event)
 {
    sge_callback_result ret;
@@ -1534,6 +1609,14 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
       DPRINTF("\tEvent: %s intkey %d intkey2 %d strkey \"%s\" strkey2 \"%s\"\n", event_text(event, &buffer_wrapper), intkey, intkey2, strkey?strkey:"nullptr", strkey2?strkey2:"nullptr");
    }
 #endif
+
+   /* Skip events whose filtered-out hierarchy root we never mirrored, before any
+    * callback runs - keeps a partial mirror silent and symmetric (no before/
+    * default/after fires, no dirty key recorded). */
+   if (mir_event_root_unmirrored(type, action, event)) {
+      DPRINTF("ignoring %s: filtered-out parent not mirrored\n", event_text(event, &buffer_wrapper));
+      DRETURN(SGE_EM_OK);
+   }
 
    if (mirror_base[type].callback_before != nullptr) {
       ret = mirror_base[type].callback_before(evc, type, action, event, mirror_base[type].client_data);

@@ -178,6 +178,12 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type
 sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc,
                                         sge_object_type type);
 
+/* True if 'type' was subscribed with a where-filter, i.e. its local master list
+ * is an intentional subset. Handlers that look up a parent object (e.g. the job a
+ * ja-task belongs to) use this to tell a legitimate "not mirrored here" skip from
+ * a real "missing object" inconsistency. */
+bool sge_mirror_type_is_partial(sge_object_type type);
+
 /* Event Processing */
 
 sge_mirror_error
