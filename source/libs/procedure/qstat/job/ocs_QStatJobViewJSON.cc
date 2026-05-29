@@ -261,8 +261,8 @@ void ocs::QStatJobViewJSON::report_ownership(std::ostream &os, const lListElem *
    os << std::string(indent * 3, ' ') << "},\n";
    os << std::string(indent * 3, ' ') << "\"supplementary\": [\n";
    indent++;
-   const lList *grp_list = lGetList(job, JB_grp_list);
 #if defined(WITH_EXTENSIONS)
+   const lList *grp_list = lGetList(job, JB_grp_list);
    bool first = true;
    for_each_ep_lv(grp_elem, grp_list) {
       if (first) {
