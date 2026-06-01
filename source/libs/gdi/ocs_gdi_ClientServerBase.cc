@@ -38,6 +38,7 @@
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_unistd.h"
 
 #include "gdi/msg_gdilib.h"
 #include "gdi/sge_gdi_data.h"
@@ -573,6 +574,25 @@ ocs::gdi::ClientServerBase::gdi_setup_tls_config(bool needs_client, bool is_serv
       ocs::uti::OpenSSL::build_cert_path(server_cert_path, nullptr, local_host, comp_name);
       ocs::uti::OpenSSL::build_key_path(server_key_path, nullptr, local_host, local_port, comp_name);
    }
+
+   // If we need to act as a client to qmaster but the qmaster certificate file
+   // does not yet exist on disk, defer the client TLS setup. Commlib skips
+   // client context creation when the configured client cert path is empty
+   // (see cl_com_setup_ssl_framework() in cl_commlib.cc). The certificate will
+   // be loaded later by gdi_update_client_tls_config(), invoked from
+   // gdi_get_act_master_host() on each re-read of act_qmaster while the
+   // tls_client_cert_pending flag is set.
+   //
+   // Without this, prepare_enroll() fails when act_qmaster temporarily points
+   // to an unreachable / not-yet-installed master (e.g., during failover or
+   // initial install), and the 30-retry/30 s loop around prepare_enroll()
+   // exhausts itself before act_qmaster can be corrected (see CS-2258).
+   if (needs_client && !client_cert_path.empty() && !sge_is_file(client_cert_path.c_str())) {
+      WARNING(MSG_GDI_TLS_CLIENT_CERT_DEFERRED_S, client_cert_path.c_str());
+      client_cert_path.clear();
+      gdi_data_set_tls_client_cert_pending(true);
+   }
+
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
                                     client_cert_path.c_str(),
@@ -616,6 +636,21 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
    // update up a client ssl_config to pass cert path to commlib
    std::string client_cert_path;
    ocs::uti::OpenSSL::build_cert_path(client_cert_path, nullptr, master_host, to_cstr(QMASTER));
+
+   // If the new qmaster certificate file is not (yet) on disk, leave the
+   // current client TLS configuration untouched and report failure to the
+   // caller. The tls_client_cert_pending flag stays set, so the next re-read
+   // of act_qmaster will retry this update.
+   //
+   // We have to check here because cl_commlib_handle_update_ssl_client_context()
+   // always returns CL_RETVAL_OK (it only pushes an application error if
+   // context creation fails) — clearing the pending flag based on its return
+   // value would be a silent no-op when the file is still missing.
+   if (!sge_is_file(client_cert_path.c_str())) {
+      DPRINTF("qmaster client certificate file %s not yet available\n", client_cert_path.c_str());
+      DRETURN(CL_RETVAL_UNKNOWN);
+   }
+
    cl_ssl_setup_t *sec_ssl_setup_config = nullptr;
    int cl_ret = cl_com_create_ssl_setup(&sec_ssl_setup_config, CL_SSL_PEM_FILE, CL_SSL_TLS,
                                     client_cert_path.c_str(),
@@ -647,6 +682,10 @@ ocs::gdi::ClientServerBase::gdi_update_client_tls_config(lList **answer_list, co
                               0, 0, cl_get_error_text(cl_ret));
       DRETURN(cl_ret);
    }
+
+   // Cert is installed; if we were deferring it (see gdi_setup_tls_config), we
+   // are no longer pending.
+   gdi_data_set_tls_client_cert_pending(false);
 
    return CL_RETVAL_OK;
 }

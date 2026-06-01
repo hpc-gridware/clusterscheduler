@@ -58,6 +58,12 @@ typedef struct {
 
    char *master_host;
    uint64_t timestamp_qmaster_file;
+   // True when the qmaster client certificate could not be loaded during
+   // prepare_enroll() (typically because act_qmaster pointed to a host whose
+   // certificate file does not exist on disk). gdi_get_act_master_host() will
+   // retry the client TLS configuration on each re-read of act_qmaster as long
+   // as this flag is set.
+   bool tls_client_cert_pending;
    char *ssl_private_key;
    char *ssl_certificate;
 #ifdef SECURE
@@ -96,6 +102,7 @@ gdi_data_log_ts_parameter() {
    DPRINTF("GDI SHARED ===\n");
    DPRINTF("   master_host               >%s<\n", ts.master_host ? ts.master_host : "NA");
    DPRINTF("   timestamp_qmaster_file    >" sge_u64 "<\n", ts.timestamp_qmaster_file);
+   DPRINTF("   tls_client_cert_pending   >%s<\n", ts.tls_client_cert_pending ? "true" : "false");
    DRETURN_VOID;
 }
 
@@ -204,6 +211,26 @@ gdi_data_get_timestamp_qmaster_file() {
 void
 gdi_data_set_timestamp_qmaster_file(uint64_t timestamp_qmaster_file) {
    ts.timestamp_qmaster_file = timestamp_qmaster_file;
+}
+
+/**
+ * Returns true while the qmaster client TLS certificate has not yet been
+ * successfully loaded. Set by gdi_setup_tls_config() when the certificate
+ * file derived from act_qmaster does not exist on disk, and cleared by
+ * gdi_update_client_tls_config() once the cert is in place.
+ */
+bool
+gdi_data_get_tls_client_cert_pending() {
+   return ts.tls_client_cert_pending;
+}
+
+/**
+ * Records whether the qmaster client TLS certificate still needs to be
+ * loaded. See gdi_data_get_tls_client_cert_pending().
+ */
+void
+gdi_data_set_tls_client_cert_pending(bool tls_client_cert_pending) {
+   ts.tls_client_cert_pending = tls_client_cert_pending;
 }
 
 sge_error_class_t *
