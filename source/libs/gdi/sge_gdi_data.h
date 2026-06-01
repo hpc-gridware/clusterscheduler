@@ -67,6 +67,12 @@ gdi_data_get_last_commlib_error();
 void
 gdi_data_set_last_commlib_error(int last_commlib_error);
 
+bool
+gdi_data_get_tls_client_cert_pending();
+
+void
+gdi_data_set_tls_client_cert_pending(bool tls_client_cert_pending);
+
 #ifdef SECURE
 const char *
 gdi_data_get_ssl_private_key();

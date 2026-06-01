@@ -1001,14 +1001,28 @@ ocs::gdi::ClientBase::gdi_get_act_master_host(bool reread) {
             if (handle != nullptr) {
                bool master_host_changed = old_master_host != nullptr && strcmp(old_master_host, master_name) != 0;
                bool certificate_updated = cl_commlib_handle_ssl_client_context_refreshed(handle);
-               if (master_host_changed || certificate_updated) {
+               // Also retry while the client certificate is still pending —
+               // i.e. prepare_enroll() deferred client TLS setup because the
+               // cert file derived from act_qmaster did not yet exist on disk
+               // (see CS-2258 and gdi_setup_tls_config()).
+               bool client_cert_pending = gdi_data_get_tls_client_cert_pending();
+               if (master_host_changed || certificate_updated || client_cert_pending) {
                   lList *answer_list = nullptr;
                   int cl_ret = gdi_update_client_tls_config(&answer_list, master_name);
                   if (cl_ret != CL_RETVAL_OK) {
                      answer_list_output(&answer_list);
-                     DRETURN(nullptr);
+                     // While we are still waiting for the qmaster cert to
+                     // appear, do not fail the lookup just because the update
+                     // could not complete — the caller (e.g. gdi_wait_for_conf)
+                     // will retry on the next re-read of act_qmaster. Only
+                     // treat this as a hard failure when an already-working
+                     // TLS configuration breaks.
+                     if (!client_cert_pending) {
+                        DRETURN(nullptr);
+                     }
+                  } else {
+                     lFreeList(&answer_list);
                   }
-                  lFreeList(&answer_list);
                }
             }
    #else
