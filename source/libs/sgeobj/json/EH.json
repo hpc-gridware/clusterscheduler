@@ -424,21 +424,6 @@
          ]
       },
       {
-         "name": "num_running_jobs",
-         "summary": "number of running jobs",
-         "description": [
-            {
-               "line": "number of jobs running on a host - used by sge_host_mon @todo still used?"
-            }
-         ],
-         "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
          "name": "load_report_interval",
          "summary": "load report interval",
          "description": [

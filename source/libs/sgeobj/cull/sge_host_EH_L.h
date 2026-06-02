@@ -108,9 +108,6 @@
 *    SGE_LIST(EH_scaled_usage_pct_list) - scaled usage percentage
 *    scaled usage for jobs on a host - used by sge_host_mon @todo still used?
 *
-*    SGE_ULONG(EH_num_running_jobs) - number of running jobs
-*    number of jobs running on a host - used by sge_host_mon @todo still used?
-*
 *    SGE_ULONG(EH_load_report_interval) - load report interval
 *    used for caching from global/local configuration
 *
@@ -179,7 +176,6 @@ enum {
    EH_sge_load_pct,
    EH_scaled_usage_list,
    EH_scaled_usage_pct_list,
-   EH_num_running_jobs,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
@@ -217,7 +213,6 @@ LISTDEF(EH_Type)
    SGE_DOUBLE(EH_sge_load_pct, CULL_DEFAULT)
    SGE_LIST(EH_scaled_usage_list, UA_Type, CULL_DEFAULT)
    SGE_LIST(EH_scaled_usage_pct_list, UA_Type, CULL_DEFAULT)
-   SGE_ULONG(EH_num_running_jobs, CULL_DEFAULT)
    SGE_ULONG(EH_load_report_interval, CULL_DEFAULT)
    SGE_LIST(EH_resource_utilization, RUE_Type, CULL_DEFAULT)
    SGE_LIST(EH_cached_complexes, CE_Type, CULL_DEFAULT)
@@ -255,7 +250,6 @@ NAMEDEF(EHN)
    NAME("EH_sge_load_pct")
    NAME("EH_scaled_usage_list")
    NAME("EH_scaled_usage_pct_list")
-   NAME("EH_num_running_jobs")
    NAME("EH_load_report_interval")
    NAME("EH_resource_utilization")
    NAME("EH_cached_complexes")

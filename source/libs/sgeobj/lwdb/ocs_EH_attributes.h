@@ -51,7 +51,6 @@ enum {
    EH_sge_load_pct,
    EH_scaled_usage_list,
    EH_scaled_usage_pct_list,
-   EH_num_running_jobs,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
@@ -89,7 +88,6 @@ constexpr const int EH_Type[] = {
    EH_sge_load_pct,
    EH_scaled_usage_list,
    EH_scaled_usage_pct_list,
-   EH_num_running_jobs,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
@@ -128,7 +126,6 @@ constexpr const int EH_Type[] = {
    {EH_sge_load_pct, "EH_sge_load_pct", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_scaled_usage_list, "EH_scaled_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_scaled_usage_pct_list, "EH_scaled_usage_pct_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_num_running_jobs, "EH_num_running_jobs", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_load_report_interval, "EH_load_report_interval", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_resource_utilization, "EH_resource_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_cached_complexes, "EH_cached_complexes", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
