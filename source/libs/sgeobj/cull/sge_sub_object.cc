@@ -199,12 +199,6 @@ object_get_subtype(int nm)
       case EH_xprj:
          ret = PR_Type;
          break;
-      case EH_scaled_usage_list:
-         ret = UA_Type;
-         break;
-      case EH_scaled_usage_pct_list:
-         ret = UA_Type;
-         break;
       case EH_resource_utilization:
          ret = RUE_Type;
          break;

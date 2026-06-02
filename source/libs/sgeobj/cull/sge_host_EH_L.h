@@ -72,9 +72,6 @@
 *    SGE_DOUBLE(EH_sort_value) - sort value based on load
 *    sort value which is only used in the scheduler thread
 *
-*    SGE_ULONG(EH_reuse_me) - to be re-used
-*    @todo field can be reused or removed
-*
 *    SGE_ULONG(EH_tagged) - tagging of hosts
 *    used in scheduler to tag hosts
 *
@@ -89,10 +86,6 @@
 *    SGE_ULONG(EH_seq_no) - host sequence number
 *    suitability of this host for a job, scheduler only
 *
-*    SGE_STRING(EH_real_name) - real host name
-*    in case of pseudo host: real name
-*    @todo is this still used? Where?
-*
 *    SGE_ULONG(EH_sge_load) - SGEEE load
 *    calculated from load values, scheduler only
 *
@@ -101,12 +94,6 @@
 *
 *    SGE_DOUBLE(EH_sge_load_pct) - percentage of load
 *    percentage of total SGEEE tickets, scheduler only
-*
-*    SGE_LIST(EH_scaled_usage_list) - scaled usage
-*    scaled usage for jobs on a host - used by sge_host_mon @todo: still used?
-*
-*    SGE_LIST(EH_scaled_usage_pct_list) - scaled usage percentage
-*    scaled usage for jobs on a host - used by sge_host_mon @todo still used?
 *
 *    SGE_ULONG(EH_load_report_interval) - load report interval
 *    used for caching from global/local configuration
@@ -119,9 +106,6 @@
 *
 *    SGE_ULONG(EH_cache_version) - cache version
 *    used to decide whether QU_cached_complexes needs a refresh
-*
-*    SGE_ULONG(EH_master_host) - master host
-*    @todo no longer used, remove
 *
 *    SGE_ULONG(EH_reschedule_unknown) - timeout for rescheduling jobs
 *    used for caching from global/local conf; timout after which jobs will be rescheduled automatically
@@ -166,21 +150,16 @@ enum {
    EH_prj,
    EH_xprj,
    EH_sort_value,
-   EH_reuse_me,
    EH_tagged,
    EH_load_correction_factor,
    EH_seq_no,
-   EH_real_name,
    EH_sge_load,
    EH_sge_ticket_pct,
    EH_sge_load_pct,
-   EH_scaled_usage_list,
-   EH_scaled_usage_pct_list,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
    EH_cache_version,
-   EH_master_host,
    EH_reschedule_unknown,
    EH_reschedule_unknown_list,
    EH_report_seqno,
@@ -203,21 +182,16 @@ LISTDEF(EH_Type)
    SGE_LIST(EH_prj, PR_Type, CULL_SPOOL)
    SGE_LIST(EH_xprj, PR_Type, CULL_SPOOL)
    SGE_DOUBLE(EH_sort_value, CULL_DEFAULT)
-   SGE_ULONG(EH_reuse_me, CULL_DEFAULT)
    SGE_ULONG(EH_tagged, CULL_DEFAULT)
    SGE_ULONG(EH_load_correction_factor, CULL_DEFAULT)
    SGE_ULONG(EH_seq_no, CULL_DEFAULT)
-   SGE_STRING(EH_real_name, CULL_DEFAULT)
    SGE_ULONG(EH_sge_load, CULL_DEFAULT)
    SGE_DOUBLE(EH_sge_ticket_pct, CULL_DEFAULT)
    SGE_DOUBLE(EH_sge_load_pct, CULL_DEFAULT)
-   SGE_LIST(EH_scaled_usage_list, UA_Type, CULL_DEFAULT)
-   SGE_LIST(EH_scaled_usage_pct_list, UA_Type, CULL_DEFAULT)
    SGE_ULONG(EH_load_report_interval, CULL_DEFAULT)
    SGE_LIST(EH_resource_utilization, RUE_Type, CULL_DEFAULT)
    SGE_LIST(EH_cached_complexes, CE_Type, CULL_DEFAULT)
    SGE_ULONG(EH_cache_version, CULL_DEFAULT)
-   SGE_ULONG(EH_master_host, CULL_DEFAULT)
    SGE_ULONG(EH_reschedule_unknown, CULL_DEFAULT)
    SGE_LIST(EH_reschedule_unknown_list, RU_Type, CULL_DEFAULT)
    SGE_ULONG(EH_report_seqno, CULL_DEFAULT)
@@ -240,21 +214,16 @@ NAMEDEF(EHN)
    NAME("EH_prj")
    NAME("EH_xprj")
    NAME("EH_sort_value")
-   NAME("EH_reuse_me")
    NAME("EH_tagged")
    NAME("EH_load_correction_factor")
    NAME("EH_seq_no")
-   NAME("EH_real_name")
    NAME("EH_sge_load")
    NAME("EH_sge_ticket_pct")
    NAME("EH_sge_load_pct")
-   NAME("EH_scaled_usage_list")
-   NAME("EH_scaled_usage_pct_list")
    NAME("EH_load_report_interval")
    NAME("EH_resource_utilization")
    NAME("EH_cached_complexes")
    NAME("EH_cache_version")
-   NAME("EH_master_host")
    NAME("EH_reschedule_unknown")
    NAME("EH_reschedule_unknown_list")
    NAME("EH_report_seqno")

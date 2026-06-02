@@ -252,21 +252,6 @@
          ]
       },
       {
-         "name": "reuse_me",
-         "summary": "to be re-used",
-         "description": [
-            {
-               "line": "@todo field can be reused or removed"
-            }
-         ],
-         "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
          "name": "tagged",
          "summary": "tagging of hosts",
          "description": [
@@ -327,24 +312,6 @@
          ]
       },
       {
-         "name": "real_name",
-         "summary": "real host name",
-         "description": [
-            {
-               "line": "in case of pseudo host: real name"
-            },
-            {
-               "line": "@todo is this still used? Where?"
-            }
-         ],
-         "type": "lStringT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
          "name": "sge_load",
          "summary": "SGEEE load",
          "description": [
@@ -383,40 +350,6 @@
             }
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
-         "name": "scaled_usage_list",
-         "summary": "scaled usage",
-         "description": [
-            {
-               "line": "scaled usage for jobs on a host - used by sge_host_mon @todo: still used?"
-            }
-         ],
-         "type": "lListT",
-         "subClassName": "UA",
-         "subCullPrefix": "UA",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
-         "name": "scaled_usage_pct_list",
-         "summary": "scaled usage percentage",
-         "description": [
-            {
-               "line": "scaled usage for jobs on a host - used by sge_host_mon @todo still used?"
-            }
-         ],
-         "type": "lListT",
-         "subClassName": "UA",
-         "subCullPrefix": "UA",
          "flags": [
             {
                "name": "JGDI_HIDDEN"
@@ -478,21 +411,6 @@
          "description": [
             {
                "line": "used to decide whether QU_cached_complexes needs a refresh"
-            }
-         ],
-         "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
-      },
-      {
-         "name": "master_host",
-         "summary": "master host",
-         "description": [
-            {
-               "line": "@todo no longer used, remove"
             }
          ],
          "type": "lUlongT",

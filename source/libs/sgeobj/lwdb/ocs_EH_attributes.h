@@ -41,21 +41,16 @@ enum {
    EH_prj,
    EH_xprj,
    EH_sort_value,
-   EH_reuse_me,
    EH_tagged,
    EH_load_correction_factor,
    EH_seq_no,
-   EH_real_name,
    EH_sge_load,
    EH_sge_ticket_pct,
    EH_sge_load_pct,
-   EH_scaled_usage_list,
-   EH_scaled_usage_pct_list,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
    EH_cache_version,
-   EH_master_host,
    EH_reschedule_unknown,
    EH_reschedule_unknown_list,
    EH_report_seqno,
@@ -78,21 +73,16 @@ constexpr const int EH_Type[] = {
    EH_prj,
    EH_xprj,
    EH_sort_value,
-   EH_reuse_me,
    EH_tagged,
    EH_load_correction_factor,
    EH_seq_no,
-   EH_real_name,
    EH_sge_load,
    EH_sge_ticket_pct,
    EH_sge_load_pct,
-   EH_scaled_usage_list,
-   EH_scaled_usage_pct_list,
    EH_load_report_interval,
    EH_resource_utilization,
    EH_cached_complexes,
    EH_cache_version,
-   EH_master_host,
    EH_reschedule_unknown,
    EH_reschedule_unknown_list,
    EH_report_seqno,
@@ -116,21 +106,16 @@ constexpr const int EH_Type[] = {
    {EH_prj, "EH_prj", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {EH_xprj, "EH_xprj", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, true}, \
    {EH_sort_value, "EH_sort_value", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_reuse_me, "EH_reuse_me", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_tagged, "EH_tagged", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_load_correction_factor, "EH_load_correction_factor", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_seq_no, "EH_seq_no", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_real_name, "EH_real_name", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_sge_load, "EH_sge_load", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_sge_ticket_pct, "EH_sge_ticket_pct", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_sge_load_pct, "EH_sge_load_pct", AttributeStatic::DOUBLE, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_scaled_usage_list, "EH_scaled_usage_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_scaled_usage_pct_list, "EH_scaled_usage_pct_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_load_report_interval, "EH_load_report_interval", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_resource_utilization, "EH_resource_utilization", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_cached_complexes, "EH_cached_complexes", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_cache_version, "EH_cache_version", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
-   {EH_master_host, "EH_master_host", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_reschedule_unknown, "EH_reschedule_unknown", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_reschedule_unknown_list, "EH_reschedule_unknown_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EH_report_seqno, "EH_report_seqno", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
