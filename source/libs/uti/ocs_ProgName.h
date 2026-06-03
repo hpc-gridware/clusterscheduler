@@ -59,7 +59,8 @@
    X(QPING,         "qping")         \
    X(QQUOTA,        "qquota")        \
    X(SGE_SHARE_MON, "sge_share_mon") \
-   X(PYTHON_CLIENT, "python_client")
+   X(PYTHON_CLIENT, "python_client") \
+   X(QMON,          "qmon")
 
 enum ProgName {
 #define X(name, str) name,
