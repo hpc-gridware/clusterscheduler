@@ -1,5 +1,42 @@
 # Full List of Fixes
 
+## v9.0.13
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-1857](https://hpc-gridware.atlassian.net/browse/CS-1857) Add sharetree support to Qontrol
+- [CS-1969](https://hpc-gridware.atlassian.net/browse/CS-1969) Add copy / move operations in Qontrol Share Tree editor
+- [CS-2069](https://hpc-gridware.atlassian.net/browse/CS-2069) qontrol: add ETag/If-Match optimistic concurrency to queue configurations
+- [CS-2070](https://hpc-gridware.atlassian.net/browse/CS-2070) qontrol: add ETag/If-Match optimistic concurrency to global configuration (version-aware)
+- [CS-2071](https://hpc-gridware.atlassian.net/browse/CS-2071) qontrol: add ETag/If-Match optimistic concurrency to scheduler configuration
+- [CS-2072](https://hpc-gridware.atlassian.net/browse/CS-2072) qontrol: add ETag/If-Match optimistic concurrency to resource quota sets
+- [CS-2265](https://hpc-gridware.atlassian.net/browse/CS-2265) Improve forward compatibility in Qontrol to display unknown parameters in global / scheduler configuration
+
+### [CS-822](https://hpc-gridware.atlassian.net/browse/CS-822) Provide Support for AI Workloads
+
+- [CS-2209](https://hpc-gridware.atlassian.net/browse/CS-2209) Add host resource overview to cli qontrol mcp server
+
+### Bug
+
+- [CS-2157](https://hpc-gridware.atlassian.net/browse/CS-2157) Requests are rejected when hostname resolving is not consistent regarding short vs. long host names
+- [CS-2228](https://hpc-gridware.atlassian.net/browse/CS-2228) jdrmaa build on CentOS 8 creates jdrmaa.jar instead of jdrmaa-1.0.jar
+- [CS-2243](https://hpc-gridware.atlassian.net/browse/CS-2243) testsuite framework function wait_for_end_of_all_jobs only waits for jobs of the testsuite user
+
+### Improvement
+
+- [CS-1960](https://hpc-gridware.atlassian.net/browse/CS-1960) Add license aliasing / pooling feature description to admin guide
+- [CS-1961](https://hpc-gridware.atlassian.net/browse/CS-1961) Add license aliasing / pooling feature description to man page
+
+### New Feature
+
+- [CS-2146](https://hpc-gridware.atlassian.net/browse/CS-2146) qacct should not print keys (like submit cmd) without values when old accounting file is used
+- [CS-2260](https://hpc-gridware.atlassian.net/browse/CS-2260) Add a way that only licenses defined in alias file are added as GCS complexes
+
+### Task
+
+- [CS-1954](https://hpc-gridware.atlassian.net/browse/CS-1954) Add management of single users to User Management in Qontrol
+
+
 ## v9.0.12
 
 ### Improvement
