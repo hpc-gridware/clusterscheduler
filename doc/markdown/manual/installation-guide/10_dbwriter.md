@@ -6,6 +6,8 @@ It is available for Gridware Cluster Scheduler only.
 
 It was part of Sun Grid Engine (SGE) under the name ARCo (Accounting and Reporting Console).
 
+Two installation modes are supported: an *interactive* installation that walks you through every parameter, and an *automatic* installation driven by a configuration template - useful for unattended deployments and for automation.
+
 ## Prerequisites
 
 Before installing DBWriter make sure to have the following requirements met:
@@ -65,7 +67,7 @@ Best install from OS packages, e.g.,
 * `openjdk-8-jre` on Debian/Ubuntu
 * `java-1.8.0-openjdk` on CentOS/RHEL
 
-## Installation
+## Interactive Installation
 
 Source the xxQS_NAMExx environment script from the Gridware Cluster Scheduler installation directory.
 
@@ -486,6 +488,87 @@ Once reporting is enabled and data is processed, you should see output like the 
 22/04/2026 13:27:43|laptop-joga|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
 22/04/2026 13:27:43|laptop-joga|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
 ...
+```
+
+## Automatic Installation
+
+The automatic installation reads all configuration values from a template file and runs through the same installation steps as the interactive mode without prompting.
+
+It is useful for unattended deployments, for example as part of configuration management or in test pipelines.
+
+### Prerequisites
+
+The same prerequisites apply as for the interactive installation:
+
+* A reachable database server (PostgreSQL, MySQL, or Oracle).
+* Java 11 or higher on the DBWriter host.
+* The JDBC driver jar copied into `$SGE_ROOT/dbwriter/lib`.
+* A working qmaster installation - DBWriter shares its `$SGE_ROOT/$SGE_CELL/common/cluster_name` and `bootstrap` files.
+
+### Pick the matching template
+
+Three database-specific templates are shipped in `$SGE_ROOT/dbwriter/util/`:
+
+* `inst_dbwriter_template_postgres.conf`
+* `inst_dbwriter_template_oracle.conf`
+* `inst_dbwriter_template_mysql.conf`
+
+Each one carries database-specific defaults (port, schema, tablespace names, path to the dbwriter rules file). Copy the one that matches your database to a writable location and edit it.
+
+```bash
+cp $SGE_ROOT/dbwriter/util/inst_dbwriter_template_postgres.conf /tmp/dbwriter_auto.conf
+chmod 600 /tmp/dbwriter_auto.conf
+$EDITOR /tmp/dbwriter_auto.conf
+```
+
+### Configure the template
+
+Set every variable to a value that matches your environment. The installer aborts if a required value is missing or invalid, listing exactly which entry is wrong.
+
+| Variable | Description |
+| --- | --- |
+| `SGE_ROOT` | Absolute path to the Cluster Scheduler installation. |
+| `CELL_NAME` | Cell name below `SGE_ROOT` (typically `default`). |
+| `JAVA_HOME` | Path to a Java 11 (or newer) installation. |
+| `DB_TYPE` | `postgresql`, `oracle`, or `mysql`. The installer derives the JDBC driver from this value. |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` | Database server location and database name. The JDBC URL is built from these three values. |
+| `DB_USER` / `DB_PW` | Database user that owns the dbwriter tables and its password. |
+| `READ_USER` | Read-only database user used by reporting applications. Must differ from `DB_USER`. |
+| `READ_USER_PW` | Password for `READ_USER`. Required for Oracle (used to create synonyms), may be empty for PostgreSQL and MySQL. |
+| `DB_SCHEMA` | Database schema. `public` for PostgreSQL, the write user for Oracle, `n/a` for MySQL. |
+| `TABLESPACE` / `TABLESPACE_INDEX` | Tablespaces for tables and indexes. `n/a` for MySQL. |
+| `DBWRITER_INTERVAL` | Polling interval in seconds (default `60`). |
+| `SPOOL_DIR` | DBWriter spool directory (log files, pid file). |
+| `DBWRITER_CALCULATION_FILE` | Path to the derived-value rules file shipped with DBWriter for your database type. |
+| `DBWRITER_REPORTING_FILE` | JSONL reporting file produced by `sge_qmaster`. |
+| `DBWRITER_DEBUG` | One of `WARNING`, `INFO`, `CONFIG`, `FINE`, `FINER`, `FINEST`. |
+| `ADD_TO_RC` | `true` to register DBWriter as a system service (SMF on Solaris, systemd on Linux when available) so it starts at boot, `false` otherwise. |
+
+Since the file contains the database password, restrict its permissions (`chmod 600`) and delete it after the installation.
+
+### Run the installer
+
+As root in the `$SGE_ROOT/dbwriter` directory, pass the absolute path of your template to `-auto`:
+
+```bash
+cd $SGE_ROOT/dbwriter
+./inst_dbwriter -auto /tmp/dbwriter_auto.conf
+```
+
+The installer prints what it is doing - reading the template, validating it, setting up the database connection, installing or upgrading the database model, creating the startup script and the dbwriter configuration file, and (if `ADD_TO_RC="true"`) registering and starting the service. No prompts are issued and no screens are cleared.
+
+On success the last line of output is:
+
+```text
+Installation of dbwriter completed
+```
+
+On failure the installer exits with a non-zero exit code and prints a message describing the problem (missing or invalid template values, database connection failure, missing JDBC driver, etc.).
+
+Once the installation has succeeded, remove the template file - it still contains the cleartext database password:
+
+```bash
+rm /tmp/dbwriter_auto.conf
 ```
 
 ## Enable reporting in your Cluster Scheduler installation
