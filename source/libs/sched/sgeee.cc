@@ -3478,6 +3478,14 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
        * build update project usage order
        *-----------------------------------------------------------------*/
       if (lists->project_list) {
+         /* Only select projects whose usage actually changed since the last
+          * order generation - symmetric to user_where above. Without this
+          * filter every project is selected on every scheduler run, producing
+          * a redundant ORT_update_project_usage order and a PROJECT_MOD event
+          * per project per cycle even on a completely idle cluster (CS-2266).
+          * PR_usage_seqno is stamped (like UU_usage_seqno) only when usage is
+          * booked, so the empty-list guard below then skips quiet cycles. */
+         prj_where = lWhere("%T(%I > %u)", PR_Type, PR_usage_seqno, last_seqno);
          norders = lGetNumberOfElem(order_list);
          if ((up_list = lSelect("", lists->project_list, prj_where, prj_usage_what))) {
             if (lGetNumberOfElem(up_list)>0) {

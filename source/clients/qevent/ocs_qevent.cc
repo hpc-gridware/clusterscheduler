@@ -81,6 +81,7 @@ qevent_options *Global_qevent_options;
 static void qevent_show_usage();
 static void qevent_testsuite_mode(sge_evc_class_t *evc);
 static void qevent_subscribe_mode(sge_evc_class_t *evc);
+static void qevent_monitor_all_mode(sge_evc_class_t *evc);
 static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
@@ -326,11 +327,13 @@ static void qevent_show_usage() {
 
    fprintf(stdout,"qevent [-h|-help] -ts|-testsuite\n");
    fprintf(stdout,"qevent [-h|-help] -sm|-subscribe\n");
+   fprintf(stdout,"qevent [-h|-help] -am|-all\n");
    fprintf(stdout,"qevent [-h|-help] -trigger EVENT SCRIPT [ -trigger EVENT SCRIPT, ... ]\n\n");
 
    fprintf(stdout,"   -h,  -help             show usage\n");
    fprintf(stdout,"   -ts, -testsuite        run in testsuite mode\n");
    fprintf(stdout,"   -sm, -subscribe        run in subscribe mode\n");
+   fprintf(stdout,"   -am, -all              subscribe to and print all events\n");
    fprintf(stdout,"   -trigger EVENT SCRIPT  start SCRIPT (executable) when EVENT occurs\n");
    fprintf(stdout,"\n");
    fprintf(stdout,"SCRIPT - path to a executable shell script\n");
@@ -351,6 +354,7 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
    option_struct->help_option = 0;
    option_struct->testsuite_option = 0;
    option_struct->subscribe_option = 0;
+   option_struct->monitor_all_option = 0;
    option_struct->trigger_option_count =0;
 
    while (*(++argv)) {
@@ -364,6 +368,10 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
       }
       if (!strcmp("-sm", *argv) || !strcmp("-subscribe", *argv)) {
          option_struct->subscribe_option = 1;
+         continue;
+      }
+      if (!strcmp("-am", *argv) || !strcmp("-all", *argv)) {
+         option_struct->monitor_all_option = 1;
          continue;
       }
       if (!strcmp("-trigger", *argv)) {
@@ -508,6 +516,13 @@ int main(int argc, char *argv[])
    if (enabled_options.subscribe_option) {
       /* only for testsuite */
       qevent_subscribe_mode(evc);
+      sge_dstring_free(enabled_options.error_message);
+      sge_exit(0);
+   }
+
+   /* check for monitor-all option */
+   if (enabled_options.monitor_all_option) {
+      qevent_monitor_all_mode(evc);
       sge_dstring_free(enabled_options.error_message);
       sge_exit(0);
    }
@@ -738,6 +753,45 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
       }
       if (error == SGE_EM_TIMEOUT && !shut_me_down) {
          printf("error was SGE_EM_TIMEOUT\n");
+         sleep(10);
+         continue;
+      }
+   }
+
+   sge_mirror_shutdown(evc);
+   DRETURN_VOID;
+}
+
+/** @brief Subscribe to and print every event (diagnostic / testsuite mode).
+ *
+ * Subscribes to all event types (SGE_TYPE_ALL) and prints a one-line
+ * description of every received event via print_event(), e.g.
+ * "<n>. EVENT MOD PROJECT <name>" for a sgeE_PROJECT_MOD event. The function
+ * blocks and keeps processing events until the client is shut down.
+ *
+ * Unlike the testsuite mode (-ts) and subscribe mode (-sm), which only
+ * register for JOB and JATASK events, this mode makes every event type
+ * observable. It is used by the testsuite to watch event types that are
+ * otherwise invisible through qevent (e.g. PROJECT_MOD, see CS-2266).
+ *
+ * @param evc the enrolled event client to subscribe with and run
+ */
+static void qevent_monitor_all_mode(sge_evc_class_t *evc)
+{
+   DENTER(TOP_LAYER);
+
+   sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+   sge_mirror_subscribe(evc, SGE_TYPE_ALL, print_event, nullptr, nullptr, nullptr, nullptr);
+
+   // Deliver events quickly and flush PROJECT_MOD immediately, so that an
+   // observer (e.g. the testsuite) sees them within a scheduler interval
+   // instead of waiting for the default event delivery interval.
+   evc->ec_set_edtime(evc, 2);
+   evc->ec_set_flush(evc, sgeE_PROJECT_MOD, true, 1);
+
+   while (!shut_me_down) {
+      sge_mirror_error error = sge_mirror_process_events(evc);
+      if (error == SGE_EM_TIMEOUT && !shut_me_down) {
          sleep(10);
          continue;
       }
