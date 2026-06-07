@@ -38,6 +38,7 @@
 #include <cstdio>
 
 #include "cull/cull_list.h"
+#include "cull/cull_name.h"
 
 #define SGE_NO_ABORT    0
 #define SGE_DO_ABORT    1
@@ -61,13 +62,6 @@ int lCountDescr(const lDescr *dp);
 lDescr *lCopyDescr(const lDescr *dp);
 
 int lGetPosViaElem(const lListElem *element, int nm, int abort);
-
-void lInit(const lNameSpace *namev);
-
-const char *lNm2Str(int nm);
-
-int lStr2Nm(const char *str);
-int lStr2Nm(const char *str, const lNameSpace *ns);
 
 const char *lMt2Str(int mt);
 

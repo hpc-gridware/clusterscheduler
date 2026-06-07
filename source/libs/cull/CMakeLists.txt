@@ -28,6 +28,7 @@ set(LIBRARY_SOURCES
         cull_lerrno.cc
         cull_list.cc
         cull_multitype.cc
+        cull_name.cc
         cull_observe.cc
         cull_pack.cc
         cull_parse.cc
