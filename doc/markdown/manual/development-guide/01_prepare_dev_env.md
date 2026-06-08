@@ -55,6 +55,11 @@ Certain tests of the automated test environment require:
 * python3
 * ...
 
+Building the optional Python binding (the `ocs_bridge` module consumed by
+`gcs-python-api` and `gcs-qmon`) has its own prerequisites — a Python 3 interpreter
+with development headers and pybind11, optionally for several Python versions on one
+build host. See the chapter *Python Bindings and Build-Host Setup*.
+
 An IDE (e.g., Clion) is optional but might have addition prerequisites (e.g., rsync to support remote compilation). 
 
 If you want to use *CLion* as development environment on Linux or macOS and remote compile for FreeBSD, then
