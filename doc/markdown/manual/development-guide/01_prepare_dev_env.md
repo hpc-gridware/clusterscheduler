@@ -55,7 +55,7 @@ Certain tests of the automated test environment require:
 * python3
 * ...
 
-Building the optional Python binding (the `ocs_bridge` module consumed by
+Building the optional Python binding (the `bridge` module consumed by
 `gcs-python-api` and `gcs-qmon`) has its own prerequisites — a Python 3 interpreter
 with development headers and pybind11, optionally for several Python versions on one
 build host. See the chapter *Python Bindings and Build-Host Setup*.

@@ -1,6 +1,6 @@
 # Python Bindings and Build-Host Setup
 
-xxQS_NAMExx ships an optional Python binding, the `ocs_bridge` extension module,
+xxQS_NAMExx ships an optional Python binding, the `bridge` extension module,
 which exposes the event mirror and selected GDI operations to Python. It is built
 with [pybind11](https://pybind11.readthedocs.io/) as part of the GCS extensions
 build and is consumed by the `gcs-python-api` package (the importable `ocs`
@@ -15,7 +15,7 @@ GCS extensions are part of the build (see *Prepare the Build Configuration*,
 Add `-DWITH_PYTHON=ON` to the `cmake` configuration. The build then requires a
 Python 3 interpreter with its development headers and pybind11 (see below). The
 module is produced with the interpreter's native extension suffix, e.g.
-`ocs_bridge.cpython-313-x86_64-linux-gnu.so`, and installed under
+`bridge.cpython-313-x86_64-linux-gnu.so`, and installed under
 *\$SGE\_ROOT/lib/\<arch\>/python/ocs/*.
 
 ## Build Prerequisites
@@ -55,7 +55,7 @@ not cover the case where the binding must support several Python versions (see
 ## Why the Binding Is Python-Version-Specific
 
 pybind11 cannot be compiled against the Python *stable ABI* (abi3): it uses parts
-of the C-API that are excluded from the limited API. A given `ocs_bridge` module
+of the C-API that are excluded from the limited API. A given `bridge` module
 is therefore tied to one CPython *minor* (3.13, 3.14, ...). To serve several
 versions from one xxQS_NAMExx installation, the binding is **built once per
 minor**, and each artifact is named with that interpreter's extension suffix.
@@ -124,13 +124,13 @@ The build then produces one module per version into
 *\$SGE\_ROOT/lib/\<arch\>/python/ocs/*:
 
 ```
-ocs_bridge.cpython-313-x86_64-linux-gnu.so
-ocs_bridge.cpython-314-x86_64-linux-gnu.so
-ocs_bridge.cpython-315-x86_64-linux-gnu.so
+bridge.cpython-313-x86_64-linux-gnu.so
+bridge.cpython-314-x86_64-linux-gnu.so
+bridge.cpython-315-x86_64-linux-gnu.so
 ```
 
-`make ocs_bridge` builds all configured versions; each version also has its own
-target (`ocs_bridge_cpython-3XX-...`) for building individually.
+`make bridge` builds all configured versions; each version also has its own
+target (`bridge_cpython-3XX-...`) for building individually.
 
 The xxQS_NAMExx C++ libraries are version-independent and built once; only the
 small binding layer is recompiled per Python version, so the additional cost is
@@ -139,10 +139,10 @@ low.
 ## Import Resolution
 
 The `ocs` package (in `gcs-python-api`) adds *\$SGE\_ROOT/lib/\<arch\>/python/ocs/*
-to its import path at run time. CPython then selects the `ocs_bridge` file whose
-suffix matches the running interpreter, so `import ocs.ocs_bridge` resolves to the
+to its import path at run time. CPython then selects the `bridge` file whose
+suffix matches the running interpreter, so `import ocs.bridge` resolves to the
 build for the active Python version with no further configuration. For a
-single-version install a plain `ocs_bridge.so` symlink is provided as well, for
+single-version install a plain `bridge.so` symlink is provided as well, for
 backward compatibility.
 
 ## Allocator Note
