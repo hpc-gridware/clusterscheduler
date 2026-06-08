@@ -141,9 +141,7 @@ low.
 The `ocs` package (in `gcs-python-api`) adds *\$SGE\_ROOT/lib/\<arch\>/python/ocs/*
 to its import path at run time. CPython then selects the `bridge` file whose
 suffix matches the running interpreter, so `import ocs.bridge` resolves to the
-build for the active Python version with no further configuration. For a
-single-version install a plain `bridge.so` symlink is provided as well, for
-backward compatibility.
+build for the active Python version with no further configuration. Every build is suffix-tagged.
 
 ## Allocator Note
 
