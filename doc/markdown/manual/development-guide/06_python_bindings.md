@@ -62,6 +62,14 @@ minor**, and each artifact is named with that interpreter's extension suffix.
 CPython's import machinery then loads only the file matching the importing
 interpreter and ignores the rest, so all versions coexist in the same directory.
 
+### Supported Python versions
+
+The lowest supported minor is determined by pybind11: the bundled pybind11 (3.x)
+requires **Python 3.8 or newer** (pybind11 2.13 was the last to support Python
+3.7). Builds for 3.13, 3.14, and 3.15 are known to compile and import. Select the
+set of minors to build via `OCS_BRIDGE_PYTHONS` (see *Building for Several Python
+Versions*).
+
 ## Setting Up a Build Host for Multiple Python Versions
 
 To build for several minors, each interpreter (with its headers) must be present
