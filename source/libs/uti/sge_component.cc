@@ -672,6 +672,21 @@ void component_set_component_id(ProgName component_id) {
 }
 
 /**
+ * \brief Override the component name independently of the component id.
+ *
+ * component_set_component_id() forces the name to the ProgName's string. A
+ * client (e.g. the Python bridge) can use a generic ProgName for the protocol
+ * while presenting a custom commlib / qping identity by calling this afterwards,
+ * before enrolling.
+ *
+ * \param[in] component_name Component name to set.
+ */
+void component_set_component_name(const char *component_name) {
+   GET_SPECIFIC(sge_component_tl0_t, tl, component_tl0_init, sge_component_tl0_key);
+   set_component_name(tl, component_name);
+}
+
+/**
  * \brief Set the daemonized flag.
  *
  * \param[in] daemonized Daemonized flag to set.

@@ -791,7 +791,8 @@ ocs::gdi::ClientBase::setup(ProgName component_id, ThreadName thread_id, lList *
 }
 
 ocs::gdi::ErrorValue
-ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list) {
+ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list,
+                                       const char *display_name) {
    DENTER(TOP_LAYER);
 
    if (gdi_data_is_setup()) {
@@ -802,6 +803,13 @@ ocs::gdi::ClientBase::setup_and_enroll(ProgName component_id, ThreadName thread_
    ErrorValue ret = setup(component_id, thread_id, answer_list, false);
    if (ret != AE_OK) {
       DRETURN(ret);
+   }
+
+   // setup() forces the component name to the ProgName's string; an optional
+   // display_name overrides it (a custom commlib / qping identity) before the
+   // commlib handle is created in prepare_enroll().
+   if (display_name != nullptr && display_name[0] != '\0') {
+      component_set_component_name(display_name);
    }
 
    if (prepare_enroll(answer_list) != CL_RETVAL_OK) {

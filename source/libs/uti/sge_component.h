@@ -73,6 +73,9 @@ component_get_component_id();
 void
 component_set_component_id(ProgName component_id);
 
+void
+component_set_component_name(const char *component_name);
+
 bool
 component_is_daemonized();
 

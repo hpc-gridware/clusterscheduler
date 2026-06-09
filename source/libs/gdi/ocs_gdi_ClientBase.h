@@ -71,7 +71,8 @@ namespace ocs::gdi {
       // connect to qmaster
       static int prepare_enroll(lList **answer_list);
       static ErrorValue setup(ProgName component_id, ThreadName thread_id, lList **answer_list, bool is_qmaster_intern_client);
-      static ErrorValue setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list);
+      static ErrorValue setup_and_enroll(ProgName component_id, ThreadName thread_id, lList **answer_list,
+                                         const char *display_name = nullptr);
       static int shutdown();
    };
 }
