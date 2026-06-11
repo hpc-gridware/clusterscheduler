@@ -53,6 +53,7 @@
 #include "uti/sge_hostname.h"
 
 #include "sgeobj/sge_pe.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_answer.h"
@@ -276,12 +277,15 @@ qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * @param fields   spooling field list describing the file format
  * @param filename path to read, or "-" for stdin
  * @param validate optional object validator returning STATUS_OK on success, or nullptr
+ * @param sfi      flatfile spooling instruction (defaults to qconf_sfi; complex
+ *                 entries use qconf_ce_sfi - CS-2303)
  * @return the parsed object (caller owns) or nullptr on error
  */
 static lListElem *
 qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const char *filename,
-                       int (*validate)(const lListElem *, lList **))
+                       int (*validate)(const lListElem *, lList **),
+                       const spool_flatfile_instr *sfi = &qconf_sfi)
 {
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
@@ -291,7 +295,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
     * only closes the stream when it opened it itself, so passing stdin is safe. */
    bool from_stdin = (filename != nullptr && strcmp(filename, "-") == 0);
    lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields,
-                                              fields_out, true, &qconf_sfi,
+                                              fields_out, true, sfi,
                                               SP_FORM_ASCII,
                                               from_stdin ? stdin : nullptr,
                                               filename);
@@ -366,6 +370,7 @@ struct qconf_file_ctx {
    int n_ok;                  ///< files applied / names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
    int (*validate)(const lListElem *, lList **);  ///< optional object validator, or nullptr
+   const spool_flatfile_instr *sfi;  ///< flatfile spooling instruction (CS-2303: e.g. qconf_ce_sfi)
 };
 
 /**
@@ -381,7 +386,7 @@ static int
 qconf_apply_one(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -409,7 +414,7 @@ qconf_collect_name(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -443,7 +448,7 @@ static int
 qconf_collect_elem(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -466,14 +471,16 @@ qconf_collect_elem(const char *filepath, void *vctx)
  * @param name_nm  name attribute of the object
  * @param path     file or directory to apply
  * @param validate optional per-object validator returning STATUS_OK on success, or nullptr
+ * @param sfi      flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
  * @return the number of objects that failed
  */
 static int
 qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
                  int name_nm, const char *path,
-                 int (*validate)(const lListElem *, lList **))
+                 int (*validate)(const lListElem *, lList **),
+                 const spool_flatfile_instr *sfi = &qconf_sfi)
 {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate};
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate, sfi};
    bool is_dir = sge_is_directory(path);
 
    if (qconf_opt_strict) {
@@ -526,14 +533,16 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
  * @param fields  spooling field list describing the file format
  * @param name_nm name attribute of the object
  * @param path    file or directory naming the objects to delete
+ * @param sfi     flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
  * @return the number of objects that failed to be deleted
  */
 static int
 qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
-                  int name_nm, const char *path)
+                  int name_nm, const char *path,
+                  const spool_flatfile_instr *sfi = &qconf_sfi)
 {
    qconf_file_ctx ctx = {target, descr, fields, name_nm,
-                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr};
+                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
@@ -5387,92 +5396,241 @@ int sge_parse_qconf(char *argv[])
 
       /* "-mce centry"  */
       if (strcmp("-mce", *spp) == 0) {
-         lList *answer_list = nullptr;
+         lListElem *ce_src = nullptr;
 
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
-         centry_modify(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-         spp++;
-         continue;
-      }
 
-/*----------------------------------------------------------------------------*/
+         where = lWhere("%T( %I==%s )", CE_Type, CE_name, *spp);
+         what = lWhat("%T(ALL)", CE_Type);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CE_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
+         lFreeWhere(&where);
+         lFreeWhat(&what);
 
-      /* "-Mce filename"  */
-      if (strcmp("-Mce", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
-         qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         aep = lFirst(alp);
+         answer_exit_if_not_recoverable(aep);
+         if (answer_get_status(aep) != STATUS_OK) {
+            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+            lFreeList(&alp);
+            sge_parse_return = 1;
+            spp++;
+            continue;
          }
-         centry_modify_from_file(&answer_list, file);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+         lFreeList(&alp);
 
+         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+            ce_src = lDechainElem(lp, lFirstRW(lp));
+         } else {
+            /* CS-2303 C2: modifying a non-existent complex entry implicitly adds
+             * it — offer a generic template for editing instead of failing. */
+            ce_src = centry_create(&alp, *spp);
+         }
+         lFreeList(&lp);
+
+         filename = (char *)spool_flatfile_write_object(&alp, ce_src, false,
+                                              CE_fields, &qconf_ce_sfi,
+                                              SP_DEST_TMP, SP_FORM_ASCII,
+                                              nullptr, false);
+         lFreeElem(&ce_src);
+
+         if (answer_list_output(&alp)) {
+            if (filename != nullptr) {
+               unlink(filename);
+               sge_free(&filename);
+            }
+            sge_error_and_exit(nullptr);
+         }
+
+         status = sge_edit(filename, uid, gid);
+         if (status < 0) {
+            unlink(filename);
+            sge_free(&filename);
+            if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+               continue;
+            }
+         }
+
+         if (status > 0) {
+            unlink(filename);
+            sge_free(&filename);
+            if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
+               continue;
+            }
+         }
+
+         fields_out[0] = NoName;
+         ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                         CE_fields, fields_out, true, &qconf_ce_sfi,
+                                         SP_FORM_ASCII, nullptr, filename);
+         unlink(filename);
+         sge_free(&filename);
+
+         if (answer_list_output(&alp)) {
+            lFreeElem(&ep);
+         }
+
+         if (ep != nullptr) {
+            missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
+         }
+
+         if (missing_field != NoName) {
+            lFreeElem(&ep);
+            answer_list_output(&alp);
+            sge_parse_return = 1;
+         }
+
+         if (ep == nullptr) {
+            if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+               continue;
+            }
+         }
+
+         /* -mce editor path: CS-2303 C2 — upsert (add if it did not exist) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CE_LIST, CE_Type,
+                                                  CE_name, ep);
+         }
          spp++;
          continue;
       }
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-dce attribute "  */
-      if (strcmp("-dce", *spp) == 0) {
-         lList *answer_list = nullptr;
+      /* "-Mce fname|dir": CS-2303 C2/C3 — add/modify from a file or directory */
+      if (strcmp("-Mce", *spp) == 0) {
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
+                              CE_name, *spp, nullptr, &qconf_ce_sfi) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
 
+/*----------------------------------------------------------------------------*/
+
+      /* "-dce attribute[,attribute,...]"  */
+      if (strcmp("-dce", *spp) == 0) {
+         /* CS-2303 C4: accept a comma-separated list of complex entry names. */
          spp = sge_parser_get_next(spp);
          qconf_is_manager(username);
-         centry_delete(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+         lString2List(*spp, &lp, CE_Type, CE_name, ", ");
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CE_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         sge_parse_return |= show_answer_list(alp);
+         lFreeList(&alp);
+         lFreeList(&lp);
          spp++;
          continue;
       }
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-ace attribute"  */
+      /* "-Dce file|dir": CS-2303 C5 — delete the complex entry(s) named in the file(s) */
+      if (strcmp("-Dce", *spp) == 0) {
+         qconf_is_manager(username);
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
+                               CE_name, *spp, &qconf_ce_sfi) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+
+      /* "-ace [attribute]"  */
       if (strcmp("-ace", *spp) == 0) {
-         lList *answer_list = nullptr;
+         /* CS-2303 C1: the complex entry name is optional; template default. */
+         char *ce_name = (char *)"template";
 
          qconf_is_adminhost(qualified_hostname);
          qconf_is_manager(username);
 
-         spp = sge_parser_get_next(spp);
-         centry_add(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+         if (!sge_next_is_an_opt(spp)) {
+            spp = sge_parser_get_next(spp);
+            ce_name = *spp;
+         }
+
+         ep = centry_create(&alp, ce_name);
+         filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+                                              CE_fields, &qconf_ce_sfi,
+                                              SP_DEST_TMP, SP_FORM_ASCII,
+                                              nullptr, false);
+         lFreeElem(&ep);
+
+         if (answer_list_output(&alp)) {
+            if (filename != nullptr) {
+               unlink(filename);
+               sge_free(&filename);
+            }
+            sge_error_and_exit(nullptr);
+         }
+
+         status = sge_edit(filename, uid, gid);
+         if (status < 0) {
+            unlink(filename);
+            sge_free(&filename);
+            if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
+               continue;
+            }
+         }
+
+         if (status > 0) {
+            unlink(filename);
+            sge_free(&filename);
+            if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
+               continue;
+            }
+         }
+
+         fields_out[0] = NoName;
+         ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
+                                         CE_fields, fields_out, true, &qconf_ce_sfi,
+                                         SP_FORM_ASCII, nullptr, filename);
+         unlink(filename);
+         sge_free(&filename);
+
+         if (answer_list_output(&alp)) {
+            lFreeElem(&ep);
+         }
+
+         if (ep != nullptr) {
+            missing_field = spool_get_unprocessed_field(CE_fields, fields_out, &alp);
+         }
+
+         if (missing_field != NoName) {
+            lFreeElem(&ep);
+            answer_list_output(&alp);
+            sge_parse_return = 1;
+         }
+
+         if (ep == nullptr) {
+            if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
+               continue;
+            }
+         }
+
+         /* -ace editor path: CS-2303 C2 — upsert (modify if it already exists) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CE_LIST, CE_Type,
+                                                  CE_name, ep);
+         }
          spp++;
          continue;
       }
 
-      /* "-Ace filename"  */
+      /* "-Ace fname|dir": CS-2303 C2/C3 — add/modify from a file or directory */
       if (strcmp("-Ace", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_fields,
+                              CE_name, *spp, nullptr, &qconf_ce_sfi) != 0) {
+            sge_parse_return = 1;
          }
-
-         if (!centry_add_from_file(&answer_list, file)) {
-            sge_parse_return |= 1;
-         }
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
          spp++;
          continue;
       }

@@ -93,20 +93,23 @@ read as one calendar definition and added or modified, and a one-line summary of
 and failed is printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
 privileges.
 
-## -ace *ce_name*
+## -ace [*ce_name*]
 Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
 resources that can be requested by jobs. The different attributes define the characteristics of that resource and
 the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
 
 With the *ce_name* given in the option argument `qconf` will open a temporary file and start up an editor.
 After entering the resource definition and closing the editor the new complex entry is checked and registered with
-xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+xxqs_name_sxx_qmaster(8). The *ce_name* is optional; if it is omitted a generic template named `template` is
+offered for editing. If a complex entry of the given name already exists it is modified rather than rejected.
+Requires root/manager privileges.
 
-## -Ace *fname*
-Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
-resources that can be requested by jobs. The different attributes define the characteristics of that resource and
-the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
-The complex definition is taken from the file *fname*. Requires root/manager privileges.
+## -Ace *fname*|*dir*
+Adds or modifies one or more complex entries. Complex entries are used to define resources that can be requested by
+jobs (find more information in xxqs_name_sxx_complex(5)). If the argument is a file, the single entry it contains
+is added, or modified if an entry of that name already exists. If the argument is a directory, every (non-hidden)
+regular file in it is read as one complex-entry definition and added or modified, and a one-line summary is
+printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
 ## -ackpt [*ckpt_name*]
 Adds a checkpointing environment under the name *ckpt_name* to the list of checkpointing environments maintained
@@ -320,8 +323,15 @@ directory, every (non-hidden) regular file in it is processed and the deletion i
 it is carried out (use `-f` to skip the prompt, or `-dry` to preview). A calendar named in a file
 that no longer exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
-## -dce *ce_name*
-Deletes the specified complex fro the set of complex definitions from xxQS_NAMExx. Requires root/manager privileges. 
+## -dce *ce_name*,...
+Deletes the specified complex entry(s) from the set of complex definitions of xxQS_NAMExx. More than one may be
+deleted at once by giving a comma-separated list of names. Requires root/manager privileges.
+
+## -Dce *fname*|*dir*
+Deletes the complex entry(s) named in a file or in a directory of files. Each file is read and the entry named by
+its `name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is confirmed
+interactively unless `-f` is given, and `-dry` previews it. An entry named in a file that no longer exists is
+reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dckpt *ckpt_name*,...
 Deletes the specified checkpointing environment(s). More than one may be deleted at once by giving a
@@ -459,11 +469,14 @@ specified in xxqs_name_sxx_complex(5). Requires root or manager privilege.
 ## -mce *ce_name*
 Retrieves the current configuration for the specified complex entry, executes an editor
 and on exit it registers the new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_complex(5) for
-details on the complex entry configuration format. Requires root/manager privilege.
+details on the complex entry configuration format. If no complex entry of that name exists yet, a generic template
+is offered for editing and the entry is added on exit. Requires root/manager privilege.
 
-## -Mce *fname*
-Overwrite an existing complex entry with the definitions in *fname* (see xxqs_name_sxx_complex(5)).
-Requires root/manager privileges. 
+## -Mce *fname*|*dir*
+Adds or modifies one or more complex entries from a file or a directory of files (see xxqs_name_sxx_complex(5)). If
+the argument is a file, the single entry it contains is modified, or added if it does not yet exist. If the
+argument is a directory, every (non-hidden) regular file in it is processed and a one-line summary is printed. See
+also `-dry` and `-strict`. Requires root/manager privileges.
 
 ## -mckpt *ckpt_name*
 Retrieves the current configuration for the specified checkpointing environment, executes an editor

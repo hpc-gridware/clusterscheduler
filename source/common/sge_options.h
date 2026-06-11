@@ -294,6 +294,7 @@ enum {
    mce_OPT, /* mod ce object */
    Mce_OPT, /* mod ce object */
    dce_OPT, /* del ce object */
+   Dce_OPT, /* del ce objects from file/directory (CS-2303) */
    sce_OPT, /* show ce object */
    scel_OPT,/* show ce object list */
 
