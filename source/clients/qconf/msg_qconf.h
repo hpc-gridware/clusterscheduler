@@ -76,5 +76,18 @@
 
 #define MSG_ROLE_DOESNOTEXIST_S                       _MESSAGE(5253, _(SFQ " is not a role"))
 
+/* CS-2299: qconf add/modify/delete interface enhancements
+ * (directory input, upsert, name lists, -dry, -strict, idempotent delete) */
+#define MSG_QCONF_CANTOPENDIRECTORY_SS                _MESSAGE(5010, _("cannot open directory " SFQ ": " SFN))
+#define MSG_QCONF_DELSKIPPEDNOTEXIST_SS               _MESSAGE(5011, _(SFQ " does not exist - skipped (from file " SFN ")"))
+#define MSG_QCONF_STRICTNOTHINGAPPLIED_SI             _MESSAGE(5012, _(SFN ": %d file(s) failed to parse - nothing applied (-strict)"))
+#define MSG_QCONF_ADDMODSUMMARY_SII                   _MESSAGE(5013, _(SFN ": %d object(s) added/modified, %d failed"))
+#define MSG_QCONF_DELCOLLECTSUMMARY_SII               _MESSAGE(5014, _(SFN ": %d name(s) collected, %d file(s) failed"))
+#define MSG_QCONF_DRYRUNWOULDADD_S                    _MESSAGE(5015, _("[dry-run] would add " SFQ))
+#define MSG_QCONF_DRYRUNWOULDMODIFY_S                 _MESSAGE(5016, _("[dry-run] would modify " SFQ))
+#define MSG_QCONF_DRYRUNWOULDDELETE_S                 _MESSAGE(5017, _("[dry-run] would delete " SFQ))
+#define MSG_QCONF_CONFIRMDELETE_I                     _MESSAGE(5018, _("Delete %d object(s)? (y/n) "))
+#define MSG_QCONF_DELETEABORTED_I                     _MESSAGE(5019, _("aborted - %d object(s) not deleted"))
+
 // clang-format on
 

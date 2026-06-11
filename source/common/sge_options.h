@@ -217,6 +217,7 @@ enum {
    mcal_OPT,     /* modify calendar interactively */
    Mcal_OPT,     /* modify calendar from file */
    dcal_OPT,     /* remove calendar */
+   Dcal_OPT,     /* remove calendars listed in file/directory (CS-2299) */
    scal_OPT,     /* show calendar */
    scall_OPT,    /* show calendar list */
    w_OPT,        /* warn mode concerning verification of schedulability */

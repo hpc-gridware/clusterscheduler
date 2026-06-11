@@ -336,11 +336,11 @@
 #define MSG_GDI_USAGE_ac_OPT_CONTEXT_LIST                "[-ac context_list]"
 #define MSG_GDI_UTEXT_ac_OPT_CONTEXT_LIST                _MESSAGE(23292, _("add context variable(s)"))
 
-#define MSG_GDI_USAGE_acal_OPT_FNAME                     "[-acal calendar_name]"
-#define MSG_GDI_UTEXT_acal_OPT_FNAME                     _MESSAGE(23294, _("add a new calendar"))
+#define MSG_GDI_USAGE_acal_OPT_FNAME                     "[-acal [calendar_name]]"
+#define MSG_GDI_UTEXT_acal_OPT_FNAME                     _MESSAGE(23294, _("add a calendar"))
 
-#define MSG_GDI_USAGE_Acal_OPT_FNAME                     "[-Acal fname]"
-#define MSG_GDI_UTEXT_Acal_OPT_FNAME                     _MESSAGE(23295, _("add a new calendar from file"))
+#define MSG_GDI_USAGE_Acal_OPT_FNAME                     "[-Acal fname|dir]"
+#define MSG_GDI_UTEXT_Acal_OPT_FNAME                     _MESSAGE(23295, _("add calendar(s) from a file or a directory of files"))
 
 #define MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME                "[-ackpt ckpt_name]"
 #define MSG_GDI_UTEXT_ackpt_OPT_CKPT_NAME                _MESSAGE(23296, _("add a ckpt interface definition"))
@@ -447,8 +447,11 @@
 #define MSG_GDI_USAGE_dc_OPT_SIMPLE_COMPLEX_LIST         "[-dc simple_context_list]"
 #define MSG_GDI_UTEXT_dc_OPT_SIMPLE_COMPLEX_LIST         _MESSAGE(23331, _("delete context variable(s)"))
 
-#define MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME             "[-dcal calendar_name]"
-#define MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME             _MESSAGE(23332, _("delete calendar"))
+#define MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME             "[-dcal calendar_name_list]"
+#define MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME             _MESSAGE(23332, _("delete calendar(s)"))
+
+#define MSG_GDI_USAGE_Dcal_OPT_FNAME                     "[-Dcal fname|dir]"
+#define MSG_GDI_UTEXT_Dcal_OPT_FNAME                     _MESSAGE(23520, _("delete the calendar(s) named in a file or a directory of files"))
 
 #define MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME                "[-dckpt ckpt_name]"
 #define MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME                _MESSAGE(23333, _("delete ckpt interface definition"))
@@ -564,10 +567,10 @@
 #define MSG_GDI_UTEXT_Mc_OPT_COMPLEX_NAME_FNAME          _MESSAGE(23370, _("modify complex attributes from file"))
 
 #define MSG_GDI_USAGE_mcal_OPT_CALENDAR_NAME             "[-mcal calendar_name]"
-#define MSG_GDI_UTEXT_mcal_OPT_CALENDAR_NAME             _MESSAGE(23371, _("modify calendar"))
+#define MSG_GDI_UTEXT_mcal_OPT_CALENDAR_NAME             _MESSAGE(23371, _("modify a calendar"))
 
-#define MSG_GDI_USAGE_Mcal_OPT_FNAME                     "[-Mcal fname]"
-#define MSG_GDI_UTEXT_Mcal_OPT_FNAME                     _MESSAGE(23372, _("modify calendar from file"))
+#define MSG_GDI_USAGE_Mcal_OPT_FNAME                     "[-Mcal fname|dir]"
+#define MSG_GDI_UTEXT_Mcal_OPT_FNAME                     _MESSAGE(23372, _("modify calendar(s) from a file or a directory of files"))
 
 #define MSG_GDI_USAGE_Mckpt_OPT_FNAME                    "[-Mckpt fname]"
 #define MSG_GDI_UTEXT_Mckpt_OPT_FNAME                    _MESSAGE(23373, _("modify a ckpt interface definition from file"))
@@ -933,6 +936,14 @@
 
 #define MSG_GDI_USAGE_dept_OPT_DEPT_NAME                 "[-dept department_name]"
 #define MSG_GDI_UTEXT_dept_OPT_DEPT_NAME                 _MESSAGE(23519, _("set job's department"))
+
+/* CS-2299: cross-cutting modifiers for the qconf add/modify/delete operations */
+#define MSG_GDI_USAGE_DRYRUN_OPT                         "[-dry]"
+#define MSG_GDI_UTEXT_DRYRUN_OPT                         _MESSAGE(23521, _("show what would happen, change nothing"))
+#define MSG_GDI_USAGE_FORCE_OPT                          "[-f]"
+#define MSG_GDI_UTEXT_FORCE_OPT                          _MESSAGE(23522, _("skip the bulk-delete confirmation prompt"))
+#define MSG_GDI_USAGE_STRICT_OPT                         "[-strict]"
+#define MSG_GDI_UTEXT_STRICT_OPT                         _MESSAGE(23523, _("apply a directory only if all files are valid"))
 
 
 

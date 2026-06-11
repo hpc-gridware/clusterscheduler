@@ -33,9 +33,11 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <cstdlib>
+#include <cstdarg>
 #include <cerrno>
 #include <cctype>
 #include <fnmatch.h>
+#include <dirent.h>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_dstring.h"
@@ -139,6 +141,426 @@ static char **sge_parser_get_next(char **arg)
    DRETURN(++arg);
 }
 
+/* ===== CS-2298: shared helpers for qconf add/modify/delete enhancements =====
+ *
+ * These are object-agnostic (parameterised by the GDI target, the CULL
+ * descriptor, the object's spooling fields and its name attribute), so every
+ * per-object branch can reuse the same upsert / directory / file-delete logic.
+ */
+
+/* CS-2299 hardening flags, set by the argv pre-scan in sge_parse_qconf().
+ * They are global because every shared helper below consults them and the
+ * option loop processes switches left-to-right (a flag must take effect
+ * regardless of where on the command line it appears). */
+static bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
+static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
+static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
+
+/**
+ * @brief Print a message-catalogue line (plus newline) to stdout.
+ *
+ * Used for the always-visible informational output (batch summaries, dry-run
+ * previews). These are not errors or warnings, and LOG_INFO is suppressed at the
+ * default client log level, so they go to stdout like qconf's other normal
+ * output.
+ *
+ * @param fmt a MSG_* catalogue (printf-style) format string
+ * @param ... arguments for @p fmt
+ * @return none
+ */
+static void
+qconf_info_printf(const char *fmt, ...)
+{
+   va_list ap;
+   va_start(ap, fmt);
+   vprintf(fmt, ap);
+   va_end(ap);
+   printf("\n");
+}
+
+/**
+ * @brief Ask the user to confirm a prompt on the terminal (CS-2299 H6).
+ *
+ * @param prompt a MSG_* line to print, including its own "(y/n)" suffix
+ * @return true on an explicit yes; false on no, EOF or a non-tty stdin
+ */
+static bool
+qconf_confirm(const char *prompt)
+{
+   printf("%s", prompt);
+   fflush(stdout);
+   char buf[16];
+   if (fgets(buf, sizeof(buf), stdin) == nullptr) {
+      printf("\n");
+      return false;
+   }
+   return (buf[0] == 'y' || buf[0] == 'Y');
+}
+
+/**
+ * @brief Test whether an object of a given name already exists in qmaster.
+ *
+ * @param target  GDI target list to query (e.g. CAL_LIST)
+ * @param descr   CULL descriptor of the object type
+ * @param name_nm name attribute of the object (e.g. CAL_name)
+ * @param name    object name to look up
+ * @return true if an object of that name exists, false otherwise
+ */
+static bool
+qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+                    const char *name)
+{
+   lList *lp = nullptr;
+   lCondition *where = lWhere("%T(%I==%s)", descr, name_nm, name);
+   lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
+   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &lp, where, what);
+   lFreeWhere(&where);
+   lFreeWhat(&what);
+   bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
+   lFreeList(&lp);
+   lFreeList(&alp);
+   return exists;
+}
+
+/**
+ * @brief Send an object to qmaster with upsert semantics (CS-2298 C2).
+ *
+ * Issues a MOD when an object of the same name already exists, otherwise an ADD.
+ * Honours the -dry flag (reports the action and sends nothing). Consumes @p ep
+ * in every case.
+ *
+ * @param target  GDI target list (e.g. CAL_LIST)
+ * @param descr   CULL descriptor of the object type
+ * @param name_nm name attribute of the object
+ * @param ep      the object element to send; consumed (freed) by this call
+ * @return 0 on success, non-zero on error
+ */
+static int
+qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+                  lListElem *ep)
+{
+   const char *name = lGetString(ep, name_nm);
+   bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
+
+   if (qconf_opt_dry_run) {
+      /* CS-2299 H3: report the intended action without contacting qmaster. */
+      qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+                        name != nullptr ? name : "");
+      lFreeElem(&ep);
+      return 0;
+   }
+
+   ocs::gdi::Command cmd = exists ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
+
+   lList *lp = lCreateList("qconf upsert", descr);
+   lAppendElem(lp, ep);
+   lList *alp = ocs::gdi::Client::sge_gdi(target, cmd, ocs::gdi::SubCommand::NONE,
+                                          &lp, nullptr, nullptr);
+   int ret = show_answer_list(alp);
+   lFreeList(&alp);
+   lFreeList(&lp);
+   return ret;
+}
+
+/**
+ * @brief Read and validate a single object from an ASCII flatfile.
+ *
+ * A @p filename of "-" reads from stdin (CS-2299 H4). On any read or
+ * unprocessed-field error the answer list is shown and nullptr is returned.
+ *
+ * @param descr    CULL descriptor of the object type
+ * @param fields   spooling field list describing the file format
+ * @param filename path to read, or "-" for stdin
+ * @return the parsed object (caller owns) or nullptr on error
+ */
+static lListElem *
+qconf_read_object_file(const lDescr *descr, spooling_field *fields,
+                       const char *filename)
+{
+   lList *alp = nullptr;
+   int fields_out[MAX_NUM_FIELDS];
+   fields_out[0] = NoName;
+
+   /* CS-2299 H4: "-" reads the object from stdin. spool_flatfile_read_object()
+    * only closes the stream when it opened it itself, so passing stdin is safe. */
+   bool from_stdin = (filename != nullptr && strcmp(filename, "-") == 0);
+   lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields,
+                                              fields_out, true, &qconf_sfi,
+                                              SP_FORM_ASCII,
+                                              from_stdin ? stdin : nullptr,
+                                              filename);
+   if (answer_list_output(&alp)) {
+      lFreeElem(&ep);
+      return nullptr;
+   }
+   if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, &alp) != NoName) {
+      answer_list_output(&alp);
+      lFreeElem(&ep);
+      return nullptr;
+   }
+   lFreeList(&alp);
+   return ep;
+}
+
+/**
+ * @brief Apply a callback to a file, or to every file in a directory (CS-2298 C3/C5).
+ *
+ * When @p path is a regular file, @p per_file is invoked once for it. When it is
+ * a directory, @p per_file is invoked for every non-hidden regular file inside
+ * it (nested directories are skipped).
+ *
+ * @param path     file or directory to process
+ * @param per_file callback invoked as per_file(filepath, ctx), returning a failure count
+ * @param ctx      opaque context passed through to @p per_file
+ * @return the total number of failures (an opendir error counts as one)
+ */
+static int
+qconf_for_each_file(const char *path, int (*per_file)(const char *, void *), void *ctx)
+{
+   if (!sge_is_directory(path)) {
+      return per_file(path, ctx);
+   }
+
+   DIR *dir = opendir(path);
+   if (dir == nullptr) {
+      ERROR(MSG_QCONF_CANTOPENDIRECTORY_SS, path, strerror(errno));
+      return 1;
+   }
+   int failures = 0;
+   struct dirent *de;
+   while ((de = readdir(dir)) != nullptr) {
+      if (de->d_name[0] == '.') {
+         continue;   /* skip ., .. and hidden files */
+      }
+      dstring full = DSTRING_INIT;
+      sge_dstring_sprintf(&full, "%s/%s", path, de->d_name);
+      const char *fp = sge_dstring_get_string(&full);
+      if (!sge_is_directory(fp)) {   /* skip nested directories */
+         failures += per_file(fp, ctx);
+      }
+      sge_dstring_free(&full);
+   }
+   closedir(dir);
+   return failures;
+}
+
+/** @brief Context shared by the per-file callbacks driven by qconf_for_each_file(). */
+struct qconf_file_ctx {
+   ocs::gdi::Target target;   ///< GDI target list (e.g. CAL_LIST)
+   const lDescr *descr;       ///< CULL descriptor of the object type
+   spooling_field *fields;    ///< spooling field list describing the file format
+   int name_nm;               ///< name attribute of the object (e.g. CAL_name)
+   lList *names;              ///< delete path: collected name elements
+   lList *elems;              ///< -strict apply: parsed objects pending send (CS-2299 H2)
+   int n_ok;                  ///< files applied / names collected (CS-2299 H1)
+   int n_fail;                ///< files that failed (CS-2299 H1)
+};
+
+/**
+ * @brief Per-file callback: read one object and upsert it (CS-2298 C3).
+ *
+ * Updates the n_ok / n_fail counters in the context.
+ *
+ * @param filepath path of the object file to apply
+ * @param vctx     pointer to the qconf_file_ctx for this batch
+ * @return 0 on success, 1 on failure
+ */
+static int
+qconf_apply_one(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_file_ctx *>(vctx);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   if (ep == nullptr) {
+      ctx->n_fail++;
+      return 1;
+   }
+   if (qconf_send_upsert(ctx->target, ctx->descr, ctx->name_nm, ep) != 0) {
+      ctx->n_fail++;
+      return 1;
+   }
+   ctx->n_ok++;
+   return 0;
+}
+
+/**
+ * @brief Per-file callback: read one object and queue its name for deletion (CS-2298 C5).
+ *
+ * A name that no longer exists is reported and skipped rather than queued
+ * (CS-2299 H5). Updates the n_ok / n_fail counters in the context.
+ *
+ * @param filepath path of the object file to read
+ * @param vctx     pointer to the qconf_file_ctx for this batch
+ * @return 0 on success (including a skipped non-existent name), 1 on read failure
+ */
+static int
+qconf_collect_name(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_file_ctx *>(vctx);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   if (ep == nullptr) {
+      ctx->n_fail++;
+      return 1;
+   }
+   const char *name = lGetString(ep, ctx->name_nm);
+   if (name != nullptr) {
+      /* CS-2299 H5: deleting is idempotent — a name that no longer exists is a
+       * warning, not a batch failure, and is dropped from the delete request. */
+      if (qconf_object_exists(ctx->target, ctx->descr, ctx->name_nm, name)) {
+         lAddElemStr(&ctx->names, ctx->name_nm, name, ctx->descr);
+         ctx->n_ok++;
+      } else {
+         WARNING(MSG_QCONF_DELSKIPPEDNOTEXIST_SS, name, filepath);
+      }
+   }
+   lFreeElem(&ep);
+   return 0;
+}
+
+/**
+ * @brief Per-file callback: read one object and queue it for the -strict apply pass (CS-2299 H2).
+ *
+ * The parsed element is appended to ctx->elems for sending later, once the whole
+ * batch has been validated. Updates the n_fail counter on a read error.
+ *
+ * @param filepath path of the object file to read
+ * @param vctx     pointer to the qconf_file_ctx for this batch
+ * @return 0 on success, 1 on read failure
+ */
+static int
+qconf_collect_elem(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_file_ctx *>(vctx);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   if (ep == nullptr) {
+      ctx->n_fail++;
+      return 1;
+   }
+   lAppendElem(ctx->elems, ep);
+   return 0;
+}
+
+/**
+ * @brief Add or modify every object found at a path (file or directory) with
+ *        upsert semantics (CS-2298 C2+C3).
+ *
+ * With the -strict flag the whole batch is validated before anything is sent and
+ * nothing is applied if any file is invalid (CS-2299 H2). For a directory a
+ * one-line summary is printed (CS-2299 H1).
+ *
+ * @param target  GDI target list (e.g. CAL_LIST)
+ * @param descr   CULL descriptor of the object type
+ * @param fields  spooling field list describing the file format
+ * @param name_nm name attribute of the object
+ * @param path    file or directory to apply
+ * @return the number of objects that failed
+ */
+static int
+qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
+                 int name_nm, const char *path)
+{
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0};
+   bool is_dir = sge_is_directory(path);
+
+   if (qconf_opt_strict) {
+      /* CS-2299 H2 (-strict): parse every file before sending anything; if a
+       * single file is malformed the whole batch is rejected and nothing is
+       * applied. This is a client-side pre-apply gate, not a server-side
+       * transaction - once validation passes, a GDI failure partway through the
+       * apply pass can still leave earlier objects committed. */
+      ctx.elems = lCreateList("qconf apply", descr);
+      qconf_for_each_file(path, qconf_collect_elem, &ctx);
+      if (ctx.n_fail > 0) {
+         ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
+         lFreeList(&ctx.elems);
+         return ctx.n_fail;
+      }
+      lListElem *e;
+      while ((e = lFirstRW(ctx.elems)) != nullptr) {
+         lDechainElem(ctx.elems, e);
+         if (qconf_send_upsert(target, descr, name_nm, e) != 0) {
+            ctx.n_fail++;
+         } else {
+            ctx.n_ok++;
+         }
+      }
+      lFreeList(&ctx.elems);
+      if (is_dir) {
+         qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+      }
+      return ctx.n_fail;
+   }
+
+   qconf_for_each_file(path, qconf_apply_one, &ctx);
+   if (is_dir) {
+      /* CS-2299 H1: one summary line per directory batch. */
+      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+   }
+   return ctx.n_fail;
+}
+
+/**
+ * @brief Delete every object named in the file(s) at a path (file or directory) (CS-2298 C5).
+ *
+ * The name attribute is read from each file and the rest of the content is
+ * ignored. A directory expands to a bulk delete: it is confirmed interactively
+ * unless -f is given (CS-2299 H6), can be previewed with -dry (CS-2299 H3), and a
+ * name that no longer exists is skipped rather than failed (CS-2299 H5).
+ *
+ * @param target  GDI target list (e.g. CAL_LIST)
+ * @param descr   CULL descriptor of the object type
+ * @param fields  spooling field list describing the file format
+ * @param name_nm name attribute of the object
+ * @param path    file or directory naming the objects to delete
+ * @return the number of objects that failed to be deleted
+ */
+static int
+qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
+                  int name_nm, const char *path)
+{
+   qconf_file_ctx ctx = {target, descr, fields, name_nm,
+                         lCreateList("qconf del", descr), nullptr, 0, 0};
+   bool is_dir = sge_is_directory(path);
+   qconf_for_each_file(path, qconf_collect_name, &ctx);
+
+   if (is_dir) {
+      /* CS-2299 H1: report the read phase before the batch delete. */
+      qconf_info_printf(MSG_QCONF_DELCOLLECTSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+   }
+
+   int n_names = lGetNumberOfElem(ctx.names);
+   if (n_names > 0 && qconf_opt_dry_run) {
+      /* CS-2299 H3: list what would be deleted, contact no one. */
+      const lListElem *nep;
+      for_each_ep(nep, ctx.names) {
+         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(nep, name_nm));
+      }
+      lFreeList(&ctx.names);
+      return ctx.n_fail;
+   }
+   if (n_names > 0 && is_dir && !qconf_opt_force) {
+      /* CS-2299 H6: a directory expands to a bulk delete - confirm first. */
+      dstring p = DSTRING_INIT;
+      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n_names);
+      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      sge_dstring_free(&p);
+      if (!ok) {
+         WARNING(MSG_QCONF_DELETEABORTED_I, n_names);
+         lFreeList(&ctx.names);
+         return ctx.n_fail;
+      }
+   }
+   if (n_names > 0) {
+      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::DEL,
+                                             ocs::gdi::SubCommand::NONE, &ctx.names,
+                                             nullptr, nullptr);
+      ctx.n_fail += show_answer_list(alp);
+      lFreeList(&alp);
+   }
+   lFreeList(&ctx.names);
+   return ctx.n_fail;
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -184,6 +606,17 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-cb", *spp) == 0) {
          has_binding_param = true;
       }
+      /* CS-2299 hardening flags must take effect no matter where they appear,
+       * so they are detected here before the ordered option loop runs. */
+      if (strcmp("-dry", *spp) == 0) {
+         qconf_opt_dry_run = true;
+      }
+      if (strcmp("-f", *spp) == 0) {
+         qconf_opt_force = true;
+      }
+      if (strcmp("-strict", *spp) == 0) {
+         qconf_opt_strict = true;
+      }
       spp++;
    }
 
@@ -201,17 +634,34 @@ int sge_parse_qconf(char *argv[])
       }
 
 /*----------------------------------------------------------------------------*/
+      /* CS-2299 hardening flags: parsed in the pre-scan above, skip here. */
+
+      if (strcmp("-dry", *spp) == 0 ||
+          strcmp("-f", *spp) == 0 ||
+          strcmp("-strict", *spp) == 0) {
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
       /* "-acal cal-name" */
 
       if ((strcmp("-acal", *spp) == 0) ||
           (strcmp("-Acal", *spp) == 0)) {
          if (!strcmp("-acal", *spp)) {
+            /* CS-2299 C1: the calendar name is optional; when omitted a generic
+             * template named "template" is offered for editing (cf. -aq/-ahgrp). */
+            char *cal_name = (char *)"template";
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            spp = sge_parser_get_next(spp);
-           
+            if (!sge_next_is_an_opt(spp)) {
+               spp = sge_parser_get_next(spp);
+               cal_name = *spp;
+            }
+
             /* get a generic calendar */
-            ep = sge_generic_cal(*spp); 
+            ep = sge_generic_cal(cal_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CAL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
@@ -270,42 +720,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else { /* -Acal */
+         } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-           
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
-                                            CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
+                                 CAL_name, *spp) != 0) {
                sge_parse_return = 1;
             }
-            
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("cal to add", CAL_Type); 
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -acal editor path: CS-2299 C2 — upsert (modify if it already exists) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CAL_LIST, CAL_Type,
+                                                  CAL_name, ep);
+         }
 
          spp++;
          continue;
@@ -1513,16 +1942,27 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-dcal", *spp) == 0) {
          /* no adminhost/manager check needed here */
+         /* CS-2299 C4: accept a comma-separated list of calendar names. */
          spp = sge_parser_get_next(spp);
-         ep = lCreateElem(CAL_Type);
-         lSetString(ep, CAL_name, *spp);
-         lp = lCreateList("cal's to del", CAL_Type);
-         lAppendElem(lp, ep);
+         lString2List(*spp, &lp, CAL_Type, CAL_name, ", ");
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-Dcal file|dir": CS-2299 C5 — delete the calendar(s) named in the file(s) */
+
+      if (strcmp("-Dcal", *spp) == 0) {
+         /* no adminhost/manager check needed here */
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
+                               CAL_name, *spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -2059,6 +2499,8 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-mcal", *spp) == 0) ||
           (strcmp("-Mcal", *spp) == 0)) {
          if (!strcmp("-mcal", *spp)) {
+            lListElem *cal_src = nullptr;
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
@@ -2073,24 +2515,27 @@ int sge_parse_qconf(char *argv[])
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK) {
                fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+               lFreeList(&alp);
                sge_parse_return = 1;
                spp++;
                continue;
             }
             lFreeList(&alp);
 
-            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-               fprintf(stderr, MSG_CALENDAR_XISNOTACALENDAR_S, *spp);
-               fprintf(stderr, "\n");
-               lFreeList(&lp);
-               DRETURN(1);
+            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+               cal_src = lDechainElem(lp, lFirstRW(lp));
+            } else {
+               /* CS-2299 C2: modifying a non-existent calendar implicitly adds
+                * it — offer a generic template for editing instead of failing. */
+               cal_src = sge_generic_cal(*spp);
             }
+            lFreeList(&lp);
 
-            ep = lFirstRW(lp);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+            filename = (char *)spool_flatfile_write_object(&alp, cal_src, false,
                                                  CAL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
                                                  nullptr, false);
+            lFreeElem(&cal_src);
 
             if (answer_list_output(&alp)) {
                if (filename != nullptr) {
@@ -2099,8 +2544,6 @@ int sge_parse_qconf(char *argv[])
                }
                sge_error_and_exit(nullptr);
             }
-
-            lFreeList(&lp);
 
             /* edit this file */
             status = sge_edit(filename, uid, gid);
@@ -2145,41 +2588,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else {
+         } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
-                                            CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CAL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
+                                 CAL_name, *spp) != 0) {
                sge_parse_return = 1;
             }
-
-            if (ep == nullptr)
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("calendar to add", CAL_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -mcal editor path: CS-2299 C2 — upsert (add if it did not exist) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CAL_LIST, CAL_Type,
+                                                  CAL_name, ep);
+         }
 
          spp++;
          continue;

@@ -71,19 +71,27 @@ Similar to `-aattr` (see below) but takes specifications for the object attribut
 *fname* following the file format of the corresponding object (see xxqs_name_sxx_queue_conf(5) for the queue, 
 for example). Requires root/manager privileges.
 
-## -acal *calendar_name*
+## -acal [*calendar_name*]
 Adds a new calendar definition to the xxQS_NAMExx environment. Calendars are used in xxQS_NAMExx for defining
 availability and unavailability schedules of queues. The format of a calendar definition is described in
 xxqs_name_sxx_calendar_conf(5).
 
 With the calendar name given in the option argument `qconf` will open a temporary file and start up an editor.
 After entering the calendar definition and closing the editor the new calendar is checked and registered with
-xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+xxqs_name_sxx_qmaster(8). The *calendar_name* is optional; if it is omitted a generic template definition named
+`template` is offered for editing. If a calendar with the given name already exists it is modified rather than
+rejected. Requires root/manager privileges.
 
-## -Acal *fname*
-Adds a new calendar definition to the xxQS_NAMExx environment. Calendars are used in xxQS_NAMExx for defining
-availability and unavailability schedules of queues. The format of a calendar definition is described in
-xxqs_name_sxx_calendar_conf(5). The calendar definition is taken from the file *fname*. Requires root/manager privileges.
+## -Acal *fname*|*dir*
+Adds or modifies one or more calendar definitions in the xxQS_NAMExx environment. Calendars are used in
+xxQS_NAMExx for defining availability and unavailability schedules of queues. The format of a calendar definition
+is described in xxqs_name_sxx_calendar_conf(5).
+
+If the argument is a file, the single calendar definition contained in it is added; if a calendar of that name
+already exists it is modified instead. If the argument is a directory, every (non-hidden) regular file in it is
+read as one calendar definition and added or modified, and a one-line summary of the number of objects processed
+and failed is printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
+privileges.
 
 ## -ace *ce_name*
 Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
@@ -257,6 +265,18 @@ functionality. If *-cb* switch is not used then *-sep* will behave as in xxQS_NA
 
 Please note that this command-line switch will be removed from xxQS_NAMExx with the next major release.
 
+## -dry
+Modifier for the add, modify and delete operations. The requested actions are validated and reported (for example
+`[dry-run] would add "name"`) but nothing is sent to xxqs_name_sxx_qmaster(8). Useful for checking a directory of
+definitions before applying it.
+
+## -strict
+Modifier for the file/directory based add and modify operations (`-Acal`/`-Mcal` and the equivalents for other
+objects). When a directory is given, all files are read and validated first and the batch is applied only if every
+file is valid; if any file fails to parse, nothing is sent to xxqs_name_sxx_qmaster(8). This is a client-side
+pre-apply check, not a multi-object transaction: once validation passes, a failure while sending an already
+validated batch can still leave earlier objects applied.
+
 ## -clearusage
 Clears all user and project usage from the share tree. All usage will be initialized back to zero.
 
@@ -276,7 +296,15 @@ the file format of the corresponding object (see xxqs_name_sxx_queue_conf(5) for
 Requires root/manager privileges.
 
 ## -dcal *calendar_name*,...
-Deletes the specified calendar definition from xxQS_NAMExx. Requires root/manager privileges.
+Deletes the specified calendar definition(s) from xxQS_NAMExx. More than one calendar may be deleted at once by
+giving a comma-separated list of calendar names. Requires root/manager privileges.
+
+## -Dcal *fname*|*dir*
+Deletes the calendar definition(s) named in a file or in a directory of files. Each file is read and the calendar
+named by its `calendar_name` field is deleted; the rest of the file content is ignored. If the argument is a
+directory, every (non-hidden) regular file in it is processed and the deletion is confirmed interactively before
+it is carried out (use `-f` to skip the prompt, or `-dry` to preview). A calendar named in a file
+that no longer exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dce *ce_name*
 Deletes the specified complex fro the set of complex definitions from xxQS_NAMExx. Requires root/manager privileges. 
@@ -343,6 +371,10 @@ Deletes one or more access control lists (ACLs) from the system. Requires root/m
 
 ## -duser
 Deletes the specified user(s) from the list of registered users. Requires root/manager privileges.
+
+## -f
+Modifier for the delete operations. Suppresses the interactive confirmation prompt that a directory based delete
+(`-Dcal *dir*` and the equivalents for other objects) otherwise shows before removing multiple objects.
 
 ## -help
 Prints a listing of all options.
@@ -412,11 +444,15 @@ privileges.
 ## -mcal *calendar_name*
 The specified calendar definition (see xxqs_name_sxx_calendar_conf(5)) is retrieved, an editor is executed
 and the changed calendar definition is registered with xxqs_name_sxx_qmaster(8) upon exit of the editor.
-Requires root/manager privilege.
+If no calendar of that name exists yet, a generic template is offered for editing and the calendar is added on
+exit. Requires root/manager privilege.
 
-## -Mcal *fname*
-Overwrites the calendar definition as specified in *fname*. The argument file must comply to the format described in
-xxqs_name_sxx_calendar_conf(5). Requires root or manager privilege.
+## -Mcal *fname*|*dir*
+Adds or modifies one or more calendar definitions from a file or a directory of files. If the argument is a file,
+the single calendar it contains is modified, or added if it does not yet exist. If the argument is a directory,
+every (non-hidden) regular file in it is processed and a one-line summary is printed. The argument file(s) must
+comply to the format described in xxqs_name_sxx_calendar_conf(5). See also `-dry` and `-strict`.
+Requires root or manager privilege.
 
 ## -mconf \[*host*,... \| **global**\]
 The configuration for the specified host is retrieved, an editor is executed and the changed configuration is
@@ -743,6 +779,12 @@ being selected in that run. Requires root/manager privileges.
 **Note** The reasons for job requirements being invalid with respect to resource availability of queues are 
 displayed using the format as described for the `qstat` *-F* option (see description of
 **Full Format** in section **OUTPUT FORMATS** of the qstat(1) manual page.
+
+# EXIT STATUS
+`qconf` exits with status 0 on success and a non-zero status on error. For the file/directory based add, modify and
+delete operations the exit status reflects the number of failed objects: when a directory contains files that fail
+to be applied (or, with `-strict`, when any file in the batch is invalid), `qconf` reports the failures and exits
+non-zero while still having applied the objects that succeeded (unless `-strict` prevented the whole batch).
 
 # ENVIRONMENTAL VARIABLES
 

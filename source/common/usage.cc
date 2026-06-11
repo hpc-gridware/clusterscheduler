@@ -556,6 +556,17 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME , MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME );
    }
 
+   if (VALID_OPT(Dcal_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dcal_OPT_FNAME, MSG_GDI_UTEXT_Dcal_OPT_FNAME);
+   }
+
+   /* CS-2299: cross-cutting modifiers for the qconf add/modify/delete operations */
+   if (prog_number == QCONF) {
+      PRINTITD(MSG_GDI_USAGE_DRYRUN_OPT, MSG_GDI_UTEXT_DRYRUN_OPT);
+      PRINTITD(MSG_GDI_USAGE_FORCE_OPT, MSG_GDI_UTEXT_FORCE_OPT);
+      PRINTITD(MSG_GDI_USAGE_STRICT_OPT, MSG_GDI_UTEXT_STRICT_OPT);
+   }
+
    if (VALID_OPT(dce_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dce_OPT_NAME , MSG_GDI_UTEXT_dce_OPT_NAME);
    }
