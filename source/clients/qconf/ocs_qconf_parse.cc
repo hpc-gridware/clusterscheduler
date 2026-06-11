@@ -267,16 +267,21 @@ qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * @brief Read and validate a single object from an ASCII flatfile.
  *
  * A @p filename of "-" reads from stdin (CS-2299 H4). On any read or
- * unprocessed-field error the answer list is shown and nullptr is returned.
+ * unprocessed-field error the answer list is shown and nullptr is returned. When
+ * @p validate is non-null it is run on the parsed object and a non-STATUS_OK
+ * result is treated the same way (so -strict catches semantic errors during the
+ * validation pass, before anything is sent).
  *
  * @param descr    CULL descriptor of the object type
  * @param fields   spooling field list describing the file format
  * @param filename path to read, or "-" for stdin
+ * @param validate optional object validator returning STATUS_OK on success, or nullptr
  * @return the parsed object (caller owns) or nullptr on error
  */
 static lListElem *
 qconf_read_object_file(const lDescr *descr, spooling_field *fields,
-                       const char *filename)
+                       const char *filename,
+                       int (*validate)(const lListElem *, lList **))
 {
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
@@ -295,6 +300,11 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
       return nullptr;
    }
    if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, &alp) != NoName) {
+      answer_list_output(&alp);
+      lFreeElem(&ep);
+      return nullptr;
+   }
+   if (ep != nullptr && validate != nullptr && validate(ep, &alp) != STATUS_OK) {
       answer_list_output(&alp);
       lFreeElem(&ep);
       return nullptr;
@@ -355,6 +365,7 @@ struct qconf_file_ctx {
    lList *elems;              ///< -strict apply: parsed objects pending send (CS-2299 H2)
    int n_ok;                  ///< files applied / names collected (CS-2299 H1)
    int n_fail;                ///< files that failed (CS-2299 H1)
+   int (*validate)(const lListElem *, lList **);  ///< optional object validator, or nullptr
 };
 
 /**
@@ -370,7 +381,7 @@ static int
 qconf_apply_one(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -397,7 +408,8 @@ static int
 qconf_collect_name(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   /* deletion only needs the name, so no object validator is applied here */
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -431,7 +443,7 @@ static int
 qconf_collect_elem(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -448,18 +460,20 @@ qconf_collect_elem(const char *filepath, void *vctx)
  * nothing is applied if any file is invalid (CS-2299 H2). For a directory a
  * one-line summary is printed (CS-2299 H1).
  *
- * @param target  GDI target list (e.g. CAL_LIST)
- * @param descr   CULL descriptor of the object type
- * @param fields  spooling field list describing the file format
- * @param name_nm name attribute of the object
- * @param path    file or directory to apply
+ * @param target   GDI target list (e.g. CAL_LIST)
+ * @param descr    CULL descriptor of the object type
+ * @param fields   spooling field list describing the file format
+ * @param name_nm  name attribute of the object
+ * @param path     file or directory to apply
+ * @param validate optional per-object validator returning STATUS_OK on success, or nullptr
  * @return the number of objects that failed
  */
 static int
 qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
-                 int name_nm, const char *path)
+                 int name_nm, const char *path,
+                 int (*validate)(const lListElem *, lList **))
 {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0};
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate};
    bool is_dir = sge_is_directory(path);
 
    if (qconf_opt_strict) {
@@ -519,7 +533,7 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
                   int name_nm, const char *path)
 {
    qconf_file_ctx ctx = {target, descr, fields, name_nm,
-                         lCreateList("qconf del", descr), nullptr, 0, 0};
+                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
@@ -723,7 +737,7 @@ int sge_parse_qconf(char *argv[])
          } else { /* -Acal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
-                                 CAL_name, *spp) != 0) {
+                                 CAL_name, *spp, nullptr) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -747,16 +761,24 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Ackpt", *spp) == 0)) {
 
          if (!strcmp("-ackpt", *spp)) {
+            /* CS-2300 C1: the checkpoint name is optional; when omitted a generic
+             * template named "template" is offered for editing. */
+            char *ckpt_name = (char *)"template";
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            spp = sge_parser_get_next(spp);
+            if (!sge_next_is_an_opt(spp)) {
+               spp = sge_parser_get_next(spp);
+               ckpt_name = *spp;
+            }
 
             /* get a generic ckpt configuration */
-            ep = sge_generic_ckpt(*spp);
+            ep = sge_generic_ckpt(ckpt_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CK_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
                                                  nullptr, false);
+            lFreeElem(&ep);
             if (answer_list_output(&alp)) {
                if (filename != nullptr) {
                   unlink(filename);
@@ -765,22 +787,22 @@ int sge_parse_qconf(char *argv[])
                sge_error_and_exit(nullptr);
             }
 
-            lFreeElem(&ep);
-
             /* edit this file */
             status = sge_edit(filename, uid, gid);
             if (status < 0) {
                unlink(filename);
                sge_free(&filename);
-               if (sge_error_and_exit(MSG_PARSE_EDITFAILED))
+               if (sge_error_and_exit(MSG_PARSE_EDITFAILED)) {
                   continue;
+               }
             }
 
             if (status > 0) {
                unlink(filename);
                sge_free(&filename);
-               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED))
+               if (sge_error_and_exit(MSG_FILE_FILEUNCHANGED)) {
                   continue;
+               }
             }
 
             /* read it in again */
@@ -816,50 +838,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else { /* -Ackpt */
+         } else { /* -Ackpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
-                                            CK_fields, fields_out,  true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
+                                 CK_name, *spp, ckpt_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("CKPT list to add", CK_Type);
-         lAppendElem(lp, ep);
-
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -ackpt editor path: CS-2300 C2 — upsert (modify if it already exists) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CK_LIST, CK_Type,
+                                                  CK_name, ep);
+         }
 
          spp++;
          continue;
@@ -1971,17 +1964,27 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-dckpt", *spp) == 0) {
          /* no adminhost/manager check needed here */
+         /* CS-2300 C4: accept a comma-separated list of checkpoint names. */
          spp = sge_parser_get_next(spp);
-
-         ep = lCreateElem(CK_Type);
-         lSetString(ep, CK_name, *spp);
-         lp = lCreateList("ckpt interfaces to del", CK_Type);
-         lAppendElem(lp, ep);
+         lString2List(*spp, &lp, CK_Type, CK_name, ", ");
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+
+      /* "-Dckpt file|dir": CS-2300 C5 — delete the checkpoint(s) named in the file(s) */
+      if (strcmp("-Dckpt", *spp) == 0) {
+         /* no adminhost/manager check needed here */
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
+                               CK_name, *spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -2591,7 +2594,7 @@ int sge_parse_qconf(char *argv[])
          } else { /* -Mcal: CS-2299 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
             if (qconf_apply_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_fields,
-                                 CAL_name, *spp) != 0) {
+                                 CAL_name, *spp, nullptr) != 0) {
                sge_parse_return = 1;
             }
             spp++;
@@ -2637,11 +2640,13 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-mckpt", *spp) == 0) ||
           (strcmp("-Mckpt", *spp) == 0)) {
          if (strcmp("-mckpt", *spp) == 0) {
+            lListElem *ckpt_src = nullptr;
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
 
-            /* get last version of this pe from qmaster */
+            /* get last version of this checkpoint object from qmaster */
             where = lWhere("%T( %I==%s )", CK_Type, CK_name, *spp);
             what = lWhat("%T(ALL)", CK_Type);
             alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
@@ -2652,24 +2657,27 @@ int sge_parse_qconf(char *argv[])
             answer_exit_if_not_recoverable(aep);
             if (answer_get_status(aep) != STATUS_OK) {
                fprintf(stderr, "%s\n", lGetString(aep, AN_text));
+               lFreeList(&alp);
                sge_parse_return = 1;
                spp++;
                continue;
             }
             lFreeList(&alp);
 
-            if (lp == nullptr || lGetNumberOfElem(lp) == 0 ) {
-               fprintf(stderr, MSG_CKPT_XISNOTCHKPINTERFACEDEF_S, *spp);
-               fprintf(stderr, "\n");
-               lFreeList(&lp);
-               DRETURN(1);
+            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+               ckpt_src = lDechainElem(lp, lFirstRW(lp));
+            } else {
+               /* CS-2300 C2: modifying a non-existent checkpoint implicitly adds
+                * it — offer a generic template for editing instead of failing. */
+               ckpt_src = sge_generic_ckpt(*spp);
             }
+            lFreeList(&lp);
 
-            ep = lFirstRW(lp);
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+            filename = (char *)spool_flatfile_write_object(&alp, ckpt_src, false,
                                                  CK_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
                                                  nullptr, false);
+            lFreeElem(&ckpt_src);
 
             if (answer_list_output(&alp)) {
                if (filename != nullptr) {
@@ -2678,8 +2686,6 @@ int sge_parse_qconf(char *argv[])
                }
                sge_error_and_exit(nullptr);
             }
-
-            lFreeList(&lp);
 
             /* edit this file */
             status = sge_edit(filename, uid, gid);
@@ -2730,49 +2736,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else {
+         } else { /* -Mckpt: CS-2300 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
-                                            CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(CK_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_fields,
+                                 CK_name, *spp, ckpt_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && (ckpt_validate(ep, &alp) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("CKPT list to add", CK_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CK_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -mckpt editor path: CS-2300 C2 — upsert (add if it did not exist) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::CK_LIST, CK_Type,
+                                                  CK_name, ep);
+         }
 
          spp++;
          continue;

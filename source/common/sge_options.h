@@ -199,6 +199,7 @@ enum {
    ackpt_OPT,    /* add ckpt element */
    Ackpt_OPT,    /* add ckpt element from file */
    dckpt_OPT,    /* delete ckpt element */
+   Dckpt_OPT,    /* delete ckpt elements listed in file/directory (CS-2300) */
    mckpt_OPT,    /* modify ckpt element */
    Mckpt_OPT,    /* modify ckpt element from file */
    sckpt_OPT,    /* show ckpt element */

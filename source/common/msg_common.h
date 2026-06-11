@@ -342,11 +342,11 @@
 #define MSG_GDI_USAGE_Acal_OPT_FNAME                     "[-Acal fname|dir]"
 #define MSG_GDI_UTEXT_Acal_OPT_FNAME                     _MESSAGE(23295, _("add calendar(s) from a file or a directory of files"))
 
-#define MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME                "[-ackpt ckpt_name]"
+#define MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME                "[-ackpt [ckpt_name]]"
 #define MSG_GDI_UTEXT_ackpt_OPT_CKPT_NAME                _MESSAGE(23296, _("add a ckpt interface definition"))
 
-#define MSG_GDI_USAGE_Ackpt_OPT_FNAME                    "[-Ackpt fname]"
-#define MSG_GDI_UTEXT_Ackpt_OPT_FNAME                    _MESSAGE(23297, _("add a ckpt interface definition from file"))
+#define MSG_GDI_USAGE_Ackpt_OPT_FNAME                    "[-Ackpt fname|dir]"
+#define MSG_GDI_UTEXT_Ackpt_OPT_FNAME                    _MESSAGE(23297, _("add ckpt interface(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_aconf_OPT_HOST_LIST                "[-aconf host_list]"
 #define MSG_GDI_UTEXT_aconf_OPT_HOST_LIST                _MESSAGE(23298, _("add configurations"))
@@ -453,8 +453,11 @@
 #define MSG_GDI_USAGE_Dcal_OPT_FNAME                     "[-Dcal fname|dir]"
 #define MSG_GDI_UTEXT_Dcal_OPT_FNAME                     _MESSAGE(23520, _("delete the calendar(s) named in a file or a directory of files"))
 
-#define MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME                "[-dckpt ckpt_name]"
-#define MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME                _MESSAGE(23333, _("delete ckpt interface definition"))
+#define MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME                "[-dckpt ckpt_name_list]"
+#define MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME                _MESSAGE(23333, _("delete ckpt interface definition(s)"))
+
+#define MSG_GDI_USAGE_Dckpt_OPT_FNAME                    "[-Dckpt fname|dir]"
+#define MSG_GDI_UTEXT_Dckpt_OPT_FNAME                    _MESSAGE(23524, _("delete ckpt interface(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_dconf_OPT_HOST_LIST                "[-dconf host_list]"
 #define MSG_GDI_UTEXT_dconf_OPT_HOST_LIST                _MESSAGE(23334, _("delete local configurations"))
@@ -561,7 +564,7 @@
 #define MSG_GDI_UTEXT_mc_OPT_COMPLEX                     _MESSAGE(23368, _("modify complex attributes"))
 
 #define MSG_GDI_USAGE_mckpt_OPT_CKPT_NAME                "[-mckpt ckpt_name]"
-#define MSG_GDI_UTEXT_mckpt_OPT_CKPT_NAME                _MESSAGE(23369, _("modify a ckpt interface definition"))
+#define MSG_GDI_UTEXT_mckpt_OPT_CKPT_NAME                _MESSAGE(23369, _("modify a ckpt interface (adds it if missing)"))
 
 #define MSG_GDI_USAGE_Mc_OPT_COMPLEX_NAME_FNAME          "[-Mc fname]"
 #define MSG_GDI_UTEXT_Mc_OPT_COMPLEX_NAME_FNAME          _MESSAGE(23370, _("modify complex attributes from file"))
@@ -572,8 +575,8 @@
 #define MSG_GDI_USAGE_Mcal_OPT_FNAME                     "[-Mcal fname|dir]"
 #define MSG_GDI_UTEXT_Mcal_OPT_FNAME                     _MESSAGE(23372, _("modify calendar(s) from a file or a directory of files"))
 
-#define MSG_GDI_USAGE_Mckpt_OPT_FNAME                    "[-Mckpt fname]"
-#define MSG_GDI_UTEXT_Mckpt_OPT_FNAME                    _MESSAGE(23373, _("modify a ckpt interface definition from file"))
+#define MSG_GDI_USAGE_Mckpt_OPT_FNAME                    "[-Mckpt fname|dir]"
+#define MSG_GDI_UTEXT_Mckpt_OPT_FNAME                    _MESSAGE(23373, _("modify ckpt interface(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mconf_OPT_HOSTLISTORGLOBAL         "[-mconf [host_list|global]]"
 #define MSG_GDI_UTEXT_mconf_OPT_HOSTLISTORGLOBAL         _MESSAGE(23374, _("modify configurations"))

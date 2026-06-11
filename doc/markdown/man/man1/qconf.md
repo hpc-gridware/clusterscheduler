@@ -108,17 +108,22 @@ resources that can be requested by jobs. The different attributes define the cha
 the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
 The complex definition is taken from the file *fname*. Requires root/manager privileges.
 
-## -ackpt *ckpt_name*
+## -ackpt [*ckpt_name*]
 Adds a checkpointing environment under the name *ckpt_name* to the list of checkpointing environments maintained
 by xxQS_NAMExx and to be usable to submit checkpointing jobs (see xxqs_name_sxx_checkpoint(5) for details on
 the format of a checkpointing environment definition). `qconf` retrieves a default checkpointing environment
 configuration and executes an editor to allow you to customize the checkpointing environment configuration. Upon
-exit from the editor, the checkpointing environment is registered with xxqs_name_sxx_qmaster(8).
+exit from the editor, the checkpointing environment is registered with xxqs_name_sxx_qmaster(8). The *ckpt_name*
+is optional; if it is omitted a generic template definition named `template` is offered for editing. If a
+checkpointing environment of the given name already exists it is modified rather than rejected.
 Requires root/manager privileges.
 
-## -Ackpt *fname*
-Add the checkpointing environment as defined in *fname* (see xxqs_name_sxx_checkpoint(5)) to the list of supported
-checkpointing environments. Requires root/manager privileges.
+## -Ackpt *fname*|*dir*
+Adds or modifies one or more checkpointing environments (see xxqs_name_sxx_checkpoint(5)). If the argument is a
+file, the single definition it contains is added, or modified if a checkpointing environment of that name already
+exists. If the argument is a directory, every (non-hidden) regular file in it is read as one definition and added
+or modified, and a one-line summary is printed. See also `-dry`, `-strict` and the EXIT STATUS section.
+Requires root/manager privileges.
 
 ## -aconf *host*, ...
 Successively adds configurations (see xxqs_name_sxx_conf(5)) For the hosts in the comma separated *host* list.
@@ -309,8 +314,15 @@ that no longer exists is reported and skipped rather than treated as an error. R
 ## -dce *ce_name*
 Deletes the specified complex fro the set of complex definitions from xxQS_NAMExx. Requires root/manager privileges. 
 
-## -dckpt *ckpt_name*
-Deletes the specified checkpointing environment. Requires root/manager privileges.
+## -dckpt *ckpt_name*,...
+Deletes the specified checkpointing environment(s). More than one may be deleted at once by giving a
+comma-separated list of names. Requires root/manager privileges.
+
+## -Dckpt *fname*|*dir*
+Deletes the checkpointing environment(s) named in a file or in a directory of files. Each file is read and the
+environment named by its `ckpt_name` field is deleted; the rest of the file content is ignored. A directory is a
+bulk delete: it is confirmed interactively unless `-f` is given, and `-dry` previews it. An environment named in a
+file that no longer exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dconf *host*,...
 The local configuration entries for the specified hosts are deleted from the configuration list.
@@ -434,12 +446,14 @@ Requires root/manager privileges.
 ## -mckpt *ckpt_name*
 Retrieves the current configuration for the specified checkpointing environment, executes an editor
 and registers the new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_checkpoint(5) for
-details on the checkpointing environment configuration format. Requires root/manager privilege.
+details on the checkpointing environment configuration format. If no checkpointing environment of that name exists
+yet, a generic template is offered for editing and the environment is added on exit. Requires root/manager privilege.
 
-## -Mckpt *fname*
-Overwrite an existing checkpointing environment with the definitions in *fname* (see xxqs_name_sxx_checkpoint(5)).
-The name attribute in *fname* has to match an existing checkpointing environment. Requires root/manager
-privileges.
+## -Mckpt *fname*|*dir*
+Adds or modifies one or more checkpointing environments from a file or a directory of files (see
+xxqs_name_sxx_checkpoint(5)). If the argument is a file, the single environment it contains is modified, or added
+if it does not yet exist. If the argument is a directory, every (non-hidden) regular file in it is processed and a
+one-line summary is printed. See also `-dry` and `-strict`. Requires root/manager privileges.
 
 ## -mcal *calendar_name*
 The specified calendar definition (see xxqs_name_sxx_calendar_conf(5)) is retrieved, an editor is executed

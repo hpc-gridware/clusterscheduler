@@ -575,6 +575,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME , MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME );
    }
 
+   if (VALID_OPT(Dckpt_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dckpt_OPT_FNAME, MSG_GDI_UTEXT_Dckpt_OPT_FNAME);
+   }
+
    if (VALID_OPT(dconf_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dconf_OPT_HOST_LIST , MSG_GDI_UTEXT_dconf_OPT_HOST_LIST );
    }
