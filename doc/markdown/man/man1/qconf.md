@@ -217,15 +217,19 @@ Upon exit from the editor, the RQS is registered with xxqs_name_sxx_qmaster(8). 
 Add the resource quota set (RQS) defined in the file named *fname* to the xxQS_NAMExx cluster. Requires
 root/manager privileges.
 
-## -arole *role_name*
+## -arole [*role_name*]
 Adds a new role description under the name *role_name* to the list of roles maintained by xxQS_NAMExx.
 `Qconf` retrieves a default role configuration and executes an editor to allow you to customize the role
 configuration. Upon exit from the editor, the role is registered with xxqs_name_sxx_qmaster(8). Refer to
-xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privileges.
+xxqs_name_sxx_role(5) for details on the role configuration format. The *role_name* is optional; if it is omitted
+a generic template named `template` is offered for editing. If a role of the given name already exists it is
+modified rather than rejected. Requires root/manager privileges.
 
-## -Arole *fname*
-Add the role defined in the file named *fname* to the xxQS_NAMExx cluster. Refer to
-xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privileges.
+## -Arole *fname*|*dir*
+Adds or modifies one or more roles (refer to xxqs_name_sxx_role(5)). If the argument is a file, the single role it
+contains is added, or modified if a role of that name already exists. If the argument is a directory, every
+(non-hidden) regular file in it is read as one role definition and added or modified, and a one-line summary is
+printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
 ## -as *hostname*, ...
 Add hosts *hostname* to the list of hosts allowed to submit xxQS_NAMExx jobs and control their behavior only.
@@ -370,9 +374,15 @@ Removes the specified queue(s). Active jobs will be allowed to run to completion
 ## -drqs *rqs_name_list*
 Deletes the specified resource quota sets (RQS). Requires root/manager privileges.
 
-## -drole *role_name*
-Deletes the specified role. Deletion is refused if the role is still referenced as a parent by another
-role. Requires root/manager privileges.
+## -drole *role_name*,...
+Deletes the specified role(s). More than one may be deleted at once by giving a comma-separated list of names.
+Deletion is refused if a role is still referenced as a parent by another role. Requires root/manager privileges.
+
+## -Drole *fname*|*dir*
+Deletes the role(s) named in a file or in a directory of files. Each file is read and the role named by its `name`
+field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is confirmed
+interactively unless `-f` is given, and `-dry` previews it. A role named in a file that no longer exists is
+reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -ds host_name,... \<delete submit host>
 Deletes hosts from the xxQS_NAMExx submit host list. Requires root or
@@ -547,12 +557,14 @@ Refer to xxqs_name_sxx_queue_conf(5) for details on the queue configuration form
 ## -mrole *role_name*
 Retrieves the current configuration for the specified role, executes an editor and registers the new
 configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_role(5) for details on the
-role configuration format. Requires root/manager privilege.
+role configuration format. If no role of that name exists yet, a generic template is offered for editing and the
+role is added on exit. Requires root/manager privilege.
 
-## -Mrole *fname*
-Modifies a role configuration. Same as `-mrole` (see above) but instead of invoking an editor to modify
-the role configuration the file *fname* is considered to contain a changed configuration. Refer to
-xxqs_name_sxx_role(5) for details on the role configuration format. Requires root/manager privilege.
+## -Mrole *fname*|*dir*
+Adds or modifies one or more roles from a file or a directory of files. If the argument is a file, the single role
+it contains is modified, or added if it does not yet exist. If the argument is a directory, every (non-hidden)
+regular file in it is processed and a one-line summary is printed. Refer to xxqs_name_sxx_role(5) for details on
+the role configuration format. See also `-dry` and `-strict`. Requires root/manager privilege.
 
 ## -mrqs \[*rqs_name*\]
 Retrieves the resource quota set (RQS) configuration defined in *rqs_name*, or if *rqs_name* is not given,

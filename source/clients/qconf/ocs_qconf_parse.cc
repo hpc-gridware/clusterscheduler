@@ -592,6 +592,23 @@ qconf_pe_validate(const lListElem *ep, lList **alpp)
    return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
 }
 
+/**
+ * @brief Validate-hook adapter for roles (CS-2302).
+ *
+ * ocs::Role::validate() returns a bool and takes a startup flag the generic
+ * validate hook does not; this wrapper maps it to the hook's status convention,
+ * fixing startup to false as the editor paths do.
+ *
+ * @param ep   the parsed role object to validate
+ * @param alpp answer list to receive validation messages
+ * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
+ */
+static int
+qconf_role_validate(const lListElem *ep, lList **alpp)
+{
+   return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -1070,12 +1087,19 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-arole", *spp) == 0) ||
           (strcmp("-Arole", *spp) == 0)) {
          if (!strcmp("-arole", *spp)) {
+            /* CS-2302 C1: the role name is optional; when omitted a generic
+             * template named "template" is offered for editing. */
+            char *role_name = (char *)"template";
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            spp = sge_parser_get_next(spp);
+            if (!sge_next_is_an_opt(spp)) {
+               spp = sge_parser_get_next(spp);
+               role_name = *spp;
+            }
 
             ep = ocs::Role::create_template();
-            lSetString(ep, RL_name, *spp);
+            lSetString(ep, RL_name, role_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  RL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
@@ -1128,7 +1152,7 @@ int sge_parse_qconf(char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+            if ((ep != nullptr) && (qconf_role_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -1139,48 +1163,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else { /* -Arole */
+         } else { /* -Arole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
-                                            RL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
+                                 RL_name, *spp, qconf_role_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         lp = lCreateList("role list to add", RL_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -arole editor path: CS-2302 C2 — upsert (modify if it already exists) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::RL_LIST, RL_Type,
+                                                  RL_name, ep);
+         }
 
          spp++;
          continue;
@@ -2016,17 +2013,25 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-drole role_name" */
       if (strcmp("-drole", *spp) == 0) {
+         /* CS-2302 C4: accept a comma-separated list of role names. */
          spp = sge_parser_get_next(spp);
-
-         ep = lCreateElem(RL_Type);
-         lSetString(ep, RL_name, *spp);
-         lp = lCreateList("roles to del", RL_Type);
-         lAppendElem(lp, ep);
+         lString2List(*spp, &lp, RL_Type, RL_name, ", ");
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+/*----------------------------------------------------------------------------*/
+      /* "-Drole file|dir": CS-2302 C5 — delete the role(s) named in the file(s) */
+      if (strcmp("-Drole", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
+                               RL_name, *spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -2884,6 +2889,8 @@ int sge_parse_qconf(char *argv[])
       if ((strcmp("-mrole", *spp) == 0) ||
           (strcmp("-Mrole", *spp) == 0)) {
          if (!strcmp("-mrole", *spp)) {
+            lListElem *role_src = nullptr;
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
@@ -2905,20 +2912,21 @@ int sge_parse_qconf(char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-               fprintf(stderr, MSG_ROLE_DOESNOTEXIST_S, *spp);
-               fprintf(stderr, "\n");
-               lFreeList(&lp);
-               DRETURN(1);
+            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+               role_src = lDechainElem(lp, lFirstRW(lp));
+            } else {
+               /* CS-2302 C2: modifying a non-existent role implicitly adds it —
+                * offer a generic template for editing instead of failing. */
+               role_src = ocs::Role::create_template();
+               lSetString(role_src, RL_name, *spp);
             }
+            lFreeList(&lp);
 
-            ep = lFirstRW(lp);
-
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+            filename = (char *)spool_flatfile_write_object(&alp, role_src, false,
                                                  RL_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
                                                  nullptr, false);
-            lFreeList(&lp);
+            lFreeElem(&role_src);
 
             if (answer_list_output(&alp)) {
                if (filename != nullptr) {
@@ -2967,7 +2975,7 @@ int sge_parse_qconf(char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
+            if ((ep != nullptr) && (qconf_role_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -2978,49 +2986,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else { /* -Mrole */
+         } else { /* -Mrole: CS-2302 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
-                                            RL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(RL_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_fields,
+                                 RL_name, *spp, qconf_role_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && !ocs::Role::validate(ep, &alp, false)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         lp = lCreateList("role list to mod", RL_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RL_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -mrole editor path: CS-2302 C2 — upsert (add if it did not exist) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::RL_LIST, RL_Type,
+                                                  RL_name, ep);
+         }
 
          spp++;
          continue;

@@ -1143,6 +1143,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_drole_OPT, MSG_GDI_UTEXT_drole_OPT);
    }
 
+   if (VALID_OPT(Drole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Drole_OPT, MSG_GDI_UTEXT_Drole_OPT);
+   }
+
    if (VALID_OPT(mrole_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_mrole_OPT, MSG_GDI_UTEXT_mrole_OPT);
    }

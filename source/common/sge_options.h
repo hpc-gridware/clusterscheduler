@@ -321,6 +321,7 @@ enum {
    arole_OPT,   ///< add role interactively
    Arole_OPT,   ///< add role from file
    drole_OPT,   ///< delete role
+   Drole_OPT,   ///< delete roles listed in file/directory (CS-2302)
    mrole_OPT,   ///< modify role interactively
    Mrole_OPT,   ///< modify role from file
    srole_OPT,   ///< show role
