@@ -146,6 +146,7 @@ enum {
    ap_OPT, /* add pe object */
    mp_OPT, /* mod pe object */
    dp_OPT, /* del pe object */
+   Dp_OPT, /* del pe objects from file/directory (CS-2301) */
    sp_OPT, /* show pe object */
    spl_OPT, /* show pe object list */
    sconfl_OPT,  /* show list of local configurations */

@@ -627,6 +627,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dp_OPT_PE_NAME, MSG_GDI_UTEXT_dp_OPT_PE_NAME );
    }
 
+   if (VALID_OPT(Dp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dp_OPT_FNAME, MSG_GDI_UTEXT_Dp_OPT_FNAME);
+   }
+
    if (VALID_OPT(dprj_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dprj_OPT_PROJECT, MSG_GDI_UTEXT_dprj_OPT_PROJECT );
       MARK(OA_PROJECT_LIST);

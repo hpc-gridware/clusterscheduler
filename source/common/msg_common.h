@@ -369,11 +369,11 @@
 #define MSG_GDI_USAGE_ao_OPT_USER_LIST                   "[-ao user_list]"
 #define MSG_GDI_UTEXT_ao_OPT_USER_LIST                   _MESSAGE(23304, _("add user to operator list"))
 
-#define MSG_GDI_USAGE_ap_OPT_PE_NAME                     "[-ap pe-name]"
-#define MSG_GDI_UTEXT_ap_OPT_PE_NAME                     _MESSAGE(23305, _("add a new parallel environment"))
+#define MSG_GDI_USAGE_ap_OPT_PE_NAME                     "[-ap [pe-name]]"
+#define MSG_GDI_UTEXT_ap_OPT_PE_NAME                     _MESSAGE(23305, _("add a parallel environment"))
 
-#define MSG_GDI_USAGE_Ap_OPT_FNAME                       "[-Ap fname]"
-#define MSG_GDI_UTEXT_Ap_OPT_FNAME                       _MESSAGE(23306, _("add a new parallel environment from file"))
+#define MSG_GDI_USAGE_Ap_OPT_FNAME                       "[-Ap fname|dir]"
+#define MSG_GDI_UTEXT_Ap_OPT_FNAME                       _MESSAGE(23306, _("add PE(s) from a file or a directory"))
 
 #define MSG_GDI_USAGE_aq_OPT_Q_TEMPLATE                  "[-aq [queue_name]]"
 #define MSG_GDI_UTEXT_aq_OPT_Q_TEMPLATE                  _MESSAGE(23307, _("add a new cluster queue"))
@@ -480,8 +480,11 @@
 #define MSG_GDI_USAGE_do_OPT_USER_LIST                   "[-do user_list]"
 #define MSG_GDI_UTEXT_do_OPT_USER_LIST                   _MESSAGE(23340, _("delete user from operator list"))
 
-#define MSG_GDI_USAGE_dp_OPT_PE_NAME                     "[-dp pe-name]"
-#define MSG_GDI_UTEXT_dp_OPT_PE_NAME                     _MESSAGE(23341, _("delete parallel environment"))
+#define MSG_GDI_USAGE_dp_OPT_PE_NAME                     "[-dp pe-name_list]"
+#define MSG_GDI_UTEXT_dp_OPT_PE_NAME                     _MESSAGE(23341, _("delete parallel environment(s)"))
+
+#define MSG_GDI_USAGE_Dp_OPT_FNAME                       "[-Dp fname|dir]"
+#define MSG_GDI_UTEXT_Dp_OPT_FNAME                       _MESSAGE(23525, _("delete PE(s) named in a file or a directory"))
 
 #define MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST              "[-dq destin_id_list]"
 #define MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST              _MESSAGE(23342, _("delete queue"))
@@ -594,10 +597,10 @@
 #define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec server from file"))
 
 #define MSG_GDI_USAGE_mp_OPT_PE_NAME                     "[-mp pe-name]"
-#define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment"))
+#define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment (adds it if missing)"))
 
-#define MSG_GDI_USAGE_Mp_OPT_FNAME                       "[-Mp fname]"
-#define MSG_GDI_UTEXT_Mp_OPT_FNAME                       _MESSAGE(23380, _("modify a parallel environment from file"))
+#define MSG_GDI_USAGE_Mp_OPT_FNAME                       "[-Mp fname|dir]"
+#define MSG_GDI_UTEXT_Mp_OPT_FNAME                       _MESSAGE(23380, _("modify PE(s) from a file or a directory"))
 
 #define MSG_GDI_USAGE_mq_OPT_QUEUE                       "[-mq queue]"
 #define MSG_GDI_UTEXT_mq_OPT_QUEUE                       _MESSAGE(23381, _("modify a queue"))

@@ -575,6 +575,23 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
    return ctx.n_fail;
 }
 
+/**
+ * @brief Validate-hook adapter for parallel environments (CS-2301).
+ *
+ * pe_validate() takes two extra arguments (a startup flag and the master userset
+ * list) that the generic validate hook does not; this wrapper fixes them to the
+ * values the qconf client uses (0 / nullptr), matching the editor paths.
+ *
+ * @param ep   the parsed PE object to validate
+ * @param alpp answer list to receive validation messages
+ * @return STATUS_OK on success, another status on failure
+ */
+static int
+qconf_pe_validate(const lListElem *ep, lList **alpp)
+{
+   return pe_validate(const_cast<lListElem *>(ep), alpp, 0, nullptr);
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -1268,12 +1285,19 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Ap", *spp) == 0)) {
 
          if (!strcmp("-ap", *spp)) {
+            /* CS-2301 C1: the PE name is optional; when omitted a generic
+             * template named "template" is offered for editing. */
+            char *pe_name = (char *)"template";
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-            spp = sge_parser_get_next(spp);
+            if (!sge_next_is_an_opt(spp)) {
+               spp = sge_parser_get_next(spp);
+               pe_name = *spp;
+            }
 
             /* get a generic parallel environment */
-            ep = pe_create_template(*spp);
+            ep = pe_create_template(pe_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
@@ -1328,7 +1352,7 @@ int sge_parse_qconf(char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
+            if ((ep != nullptr) && (qconf_pe_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -1339,49 +1363,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else { /* -Ap */
+         } else { /* -Ap: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
-                                            PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
+                                 PE_name, *spp, qconf_pe_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("PE list to add", PE_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -ap editor path: CS-2301 C2 — upsert (modify if it already exists) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PE_LIST, PE_Type,
+                                                  PE_name, ep);
+         }
 
          spp++;
          continue;
@@ -2088,18 +2084,26 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-dp", *spp) == 0) {
          /* no adminhost/manager check needed here */
-
+         /* CS-2301 C4: accept a comma-separated list of PE names. */
          spp = sge_parser_get_next(spp);
-
-         ep = lCreateElem(PE_Type);
-         lSetString(ep, PE_name, *spp);
-         lp = lCreateList("pe's to del", PE_Type);
-         lAppendElem(lp, ep);
+         lString2List(*spp, &lp, PE_Type, PE_name, ", ");
          alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
          sge_parse_return |= show_answer_list(alp);
          lFreeList(&alp);
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+      /* "-Dp file|dir": CS-2301 C5 — delete the PE(s) named in the file(s) */
+      if (strcmp("-Dp", *spp) == 0) {
+         /* no adminhost/manager check needed here */
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
+                               PE_name, *spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -3071,6 +3075,8 @@ int sge_parse_qconf(char *argv[])
           (strcmp("-Mp", *spp) == 0)) {
 
          if (!strcmp("-mp", *spp)) {
+            lListElem *pe_src = nullptr;
+
             qconf_is_manager_on_admin_host(username, qualified_hostname);
 
             spp = sge_parser_get_next(spp);
@@ -3093,21 +3099,21 @@ int sge_parse_qconf(char *argv[])
             }
             lFreeList(&alp);
 
-            if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-               fprintf(stderr, MSG_PARALLEL_XNOTAPARALLELEVIRONMENT_S, *spp);
-               fprintf(stderr, "\n");
-               lFreeList(&lp);
-               DRETURN(1);
+            if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+               pe_src = lDechainElem(lp, lFirstRW(lp));
+            } else {
+               /* CS-2301 C2: modifying a non-existent PE implicitly adds it —
+                * offer a generic template for editing instead of failing. */
+               pe_src = pe_create_template(*spp);
             }
-
-            ep = lFirstRW(lp);
+            lFreeList(&lp);
 
             /* write pe to temp file */
-            filename = (char *)spool_flatfile_write_object(&alp, ep, false,
+            filename = (char *)spool_flatfile_write_object(&alp, pe_src, false,
                                                  PE_fields, &qconf_sfi,
                                                  SP_DEST_TMP, SP_FORM_ASCII,
                                                  nullptr, false);
-            lFreeList(&lp);
+            lFreeElem(&pe_src);
 
             if (answer_list_output(&alp)) {
                if (filename != nullptr) {
@@ -3157,7 +3163,7 @@ int sge_parse_qconf(char *argv[])
                sge_parse_return = 1;
             }
 
-            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
+            if ((ep != nullptr) && (qconf_pe_validate(ep, &alp) != STATUS_OK)) {
                lFreeElem(&ep);
                answer_list_output(&alp);
                sge_parse_return = 1;
@@ -3168,50 +3174,21 @@ int sge_parse_qconf(char *argv[])
                   continue;
                }
             }
-         } else {
+         } else { /* -Mp: CS-2301 C3 — accept a file OR a directory, upsert each */
             spp = sge_parser_get_next(spp);
-
-            fields_out[0] = NoName;
-            ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
-                                            PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
-
-            if (answer_list_output(&alp)) {
-               lFreeElem(&ep);
-            }
-
-            if (ep != nullptr) {
-               missing_field = spool_get_unprocessed_field(PE_fields, fields_out, &alp);
-            }
-
-            if (missing_field != NoName) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
+            if (qconf_apply_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_fields,
+                                 PE_name, *spp, qconf_pe_validate) != 0) {
                sge_parse_return = 1;
             }
-
-            if ((ep != nullptr) && (pe_validate(ep, &alp, 0, nullptr) != STATUS_OK)) {
-               lFreeElem(&ep);
-               answer_list_output(&alp);
-               sge_parse_return = 1;
-            }
-
-            if (ep == nullptr) {
-               if (sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE)) {
-                  continue;
-               }
-            }
+            spp++;
+            continue;
          }
 
-         /* send it to qmaster */
-         lp = lCreateList("PE list to add", PE_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PE_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* -mp editor path: CS-2301 C2 — upsert (add if it did not exist) */
+         if (ep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PE_LIST, PE_Type,
+                                                  PE_name, ep);
+         }
 
          spp++;
          continue;

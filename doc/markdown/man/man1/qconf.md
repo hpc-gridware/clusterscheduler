@@ -173,15 +173,20 @@ Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager 
 ## -ao *user*,...
 Adds the indicated users to the xxQS_NAMExx operator list. Requires root/manager privileges.
 
-## -ap *pe_name*
+## -ap [*pe_name*]
 Adds a new parallel environment (PE) description under the name *pe_name* to the list of parallel environments
 maintained by xxQS_NAMExx and to be usable to submit parallel jobs (see xxqs_name_sxx_pe(5) for details
 on the format of a PE definition. `Qconf` retrieves a default PE configuration and executes an editor
 to allow you to customize the PE configuration. Upon exit from the editor, the PE is registered with
-xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+xxqs_name_sxx_qmaster(8). The *pe_name* is optional; if it is omitted a generic template named `template` is
+offered for editing. If a PE of the given name already exists it is modified rather than rejected.
+Requires root/manager privileges.
 
-## -Ap *fname*
-Add the parallel environment (PE) defined in *fname* to the xxQS_NAMExx cluster. Requires root/manager privileges.
+## -Ap *fname*|*dir*
+Adds or modifies one or more parallel environments (see xxqs_name_sxx_pe(5)). If the argument is a file, the single
+PE it contains is added, or modified if a PE of that name already exists. If the argument is a directory, every
+(non-hidden) regular file in it is read as one PE definition and added or modified, and a one-line summary is
+printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
 ## -aprj
 Adds a project description to the list of registered projects (see xxqs_name_sxx_project(5)). `Qconf` retrieves
@@ -346,8 +351,15 @@ from the manager list. Requires root/manager privileges.
 Deletes operators from the operator list. It is not possible to delete the admin user or the user root
 from the operator list. Requires root or manager privileges.
 
-## -dp *pe_name*
-Deletes the specified parallel environment (PE). Requires root/manager privileges.
+## -dp *pe_name*,...
+Deletes the specified parallel environment(s) (PE). More than one may be deleted at once by giving a
+comma-separated list of names. Requires root/manager privileges.
+
+## -Dp *fname*|*dir*
+Deletes the parallel environment(s) named in a file or in a directory of files. Each file is read and the PE named
+by its `pe_name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
+confirmed interactively unless `-f` is given, and `-dry` previews it. A PE named in a file that no longer exists is
+reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dprj *project*,...
 Deletes the specified project(s). Requires root/manager privileges.
@@ -502,12 +514,14 @@ file format of *fname* must comply to the format specified in xxqs_name_sxx_host
 ## -mp *pe_name*
 Retrieves the current configuration for the specified parallel environment (PE), executes an editor
 indicated by the EDITOR environment variable) configuration with the xxqs_name_sxx_qmaster(8). Refer to
-xxqs_name_sxx_pe(5) for details on the PE configuration format. Requires root/manager privilege.
+xxqs_name_sxx_pe(5) for details on the PE configuration format. If no PE of that name exists yet, a generic
+template is offered for editing and the PE is added on exit. Requires root/manager privilege.
 
-## -Mp *fname*
-Modifies a parallel environment. Same as `-mp` (see below) but instead of invoking an editor to modify
-the PE configuration the file *fname* is considered to contain a changed configuration. Refer to
-xxqs_name_sxx_pe(5) for details on the PE configuration format. Requires root/manager privilege.
+## -Mp *fname*|*dir*
+Adds or modifies one or more parallel environments from a file or a directory of files. If the argument is a file,
+the single PE it contains is modified, or added if it does not yet exist. If the argument is a directory, every
+(non-hidden) regular file in it is processed and a one-line summary is printed. Refer to xxqs_name_sxx_pe(5) for
+details on the PE configuration format. See also `-dry` and `-strict`. Requires root/manager privilege.
 
 ## -mprj *project*
 Data for the specific project is retrieved (see xxqs_name_sxx_project(5)) and an editor is invoked
