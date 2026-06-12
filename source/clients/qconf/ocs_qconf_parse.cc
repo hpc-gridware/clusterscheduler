@@ -198,6 +198,25 @@ qconf_confirm(const char *prompt)
    return (buf[0] == 'y' || buf[0] == 'Y');
 }
 
+/** @brief True if the name attribute @a name_nm of @a descr is a host field
+ *  (lHostT) rather than a plain string (CS-2304: e.g. EH_name). */
+static bool
+qconf_name_is_host(const lDescr *descr, int name_nm)
+{
+   return lGetType(descr, name_nm) == lHostT;
+}
+
+/** @brief Read an object's name attribute as a string, whether it is a plain
+ *  string field or a host field (CS-2304). */
+static const char *
+qconf_get_name(const lListElem *ep, int name_nm)
+{
+   if (lGetType(lGetElemDescr(ep), name_nm) == lHostT) {
+      return lGetHost(ep, name_nm);
+   }
+   return lGetString(ep, name_nm);
+}
+
 /**
  * @brief Test whether an object of a given name already exists in qmaster.
  *
@@ -212,7 +231,10 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
                     const char *name)
 {
    lList *lp = nullptr;
-   lCondition *where = lWhere("%T(%I==%s)", descr, name_nm, name);
+   /* CS-2304: host fields need a host comparison (%Ih), not a string one. */
+   lCondition *where = qconf_name_is_host(descr, name_nm)
+      ? lWhere("%T(%Ih=%s)", descr, name_nm, name)
+      : lWhere("%T(%I==%s)", descr, name_nm, name);
    lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
    lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
                                           ocs::gdi::SubCommand::NONE, &lp, where, what);
@@ -241,7 +263,7 @@ static int
 qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
                   lListElem *ep)
 {
-   const char *name = lGetString(ep, name_nm);
+   const char *name = qconf_get_name(ep, name_nm);
    bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
 
    if (qconf_opt_dry_run) {
@@ -285,7 +307,8 @@ static lListElem *
 qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const char *filename,
                        int (*validate)(const lListElem *, lList **),
-                       const spool_flatfile_instr *sfi = &qconf_sfi)
+                       const spool_flatfile_instr *sfi = &qconf_sfi,
+                       int (*prepare)(lListElem *, lList **) = nullptr)
 {
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
@@ -304,6 +327,13 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
       return nullptr;
    }
    if (ep != nullptr && spool_get_unprocessed_field(fields, fields_out, &alp) != NoName) {
+      answer_list_output(&alp);
+      lFreeElem(&ep);
+      return nullptr;
+   }
+   /* CS-2304: optional transform of the parsed object (e.g. resolve a hostname)
+    * before the name is used for the existence check / send. */
+   if (ep != nullptr && prepare != nullptr && prepare(ep, &alp) != STATUS_OK) {
       answer_list_output(&alp);
       lFreeElem(&ep);
       return nullptr;
@@ -371,6 +401,7 @@ struct qconf_file_ctx {
    int n_fail;                ///< files that failed (CS-2299 H1)
    int (*validate)(const lListElem *, lList **);  ///< optional object validator, or nullptr
    const spool_flatfile_instr *sfi;  ///< flatfile spooling instruction (CS-2303: e.g. qconf_ce_sfi)
+   int (*prepare)(lListElem *, lList **);  ///< optional transform, e.g. resolve hostname (CS-2304)
 };
 
 /**
@@ -386,7 +417,7 @@ static int
 qconf_apply_one(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -414,17 +445,22 @@ qconf_collect_name(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi, ctx->prepare);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
    }
-   const char *name = lGetString(ep, ctx->name_nm);
+   const char *name = qconf_get_name(ep, ctx->name_nm);
    if (name != nullptr) {
       /* CS-2299 H5: deleting is idempotent — a name that no longer exists is a
        * warning, not a batch failure, and is dropped from the delete request. */
       if (qconf_object_exists(ctx->target, ctx->descr, ctx->name_nm, name)) {
-         lAddElemStr(&ctx->names, ctx->name_nm, name, ctx->descr);
+         /* CS-2304: host fields must be added with lAddElemHost, not lAddElemStr. */
+         if (qconf_name_is_host(ctx->descr, ctx->name_nm)) {
+            lAddElemHost(&ctx->names, ctx->name_nm, name, ctx->descr);
+         } else {
+            lAddElemStr(&ctx->names, ctx->name_nm, name, ctx->descr);
+         }
          ctx->n_ok++;
       } else {
          WARNING(MSG_QCONF_DELSKIPPEDNOTEXIST_SS, name, filepath);
@@ -448,7 +484,7 @@ static int
 qconf_collect_elem(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -472,15 +508,18 @@ qconf_collect_elem(const char *filepath, void *vctx)
  * @param path     file or directory to apply
  * @param validate optional per-object validator returning STATUS_OK on success, or nullptr
  * @param sfi      flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
+ * @param prepare  optional transform run on each object after read (e.g. resolve
+ *                 a hostname), or nullptr - CS-2304
  * @return the number of objects that failed
  */
 static int
 qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
                  int name_nm, const char *path,
                  int (*validate)(const lListElem *, lList **),
-                 const spool_flatfile_instr *sfi = &qconf_sfi)
+                 const spool_flatfile_instr *sfi = &qconf_sfi,
+                 int (*prepare)(lListElem *, lList **) = nullptr)
 {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate, sfi};
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate, sfi, prepare};
    bool is_dir = sge_is_directory(path);
 
    if (qconf_opt_strict) {
@@ -534,15 +573,18 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
  * @param name_nm name attribute of the object
  * @param path    file or directory naming the objects to delete
  * @param sfi     flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
+ * @param prepare optional transform run on each object after read (e.g. resolve
+ *                a hostname), or nullptr - CS-2304
  * @return the number of objects that failed to be deleted
  */
 static int
 qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
                   int name_nm, const char *path,
-                  const spool_flatfile_instr *sfi = &qconf_sfi)
+                  const spool_flatfile_instr *sfi = &qconf_sfi,
+                  int (*prepare)(lListElem *, lList **) = nullptr)
 {
    qconf_file_ctx ctx = {target, descr, fields, name_nm,
-                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi};
+                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi, prepare};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
@@ -556,7 +598,7 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
       /* CS-2299 H3: list what would be deleted, contact no one. */
       const lListElem *nep;
       for_each_ep(nep, ctx.names) {
-         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(nep, name_nm));
+         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, qconf_get_name(nep, name_nm));
       }
       lFreeList(&ctx.names);
       return ctx.n_fail;
@@ -616,6 +658,28 @@ static int
 qconf_role_validate(const lListElem *ep, lList **alpp)
 {
    return ocs::Role::validate(ep, alpp, false) ? STATUS_OK : STATUS_ESEMANTIC;
+}
+
+/**
+ * @brief Prepare-hook adapter for exec hosts (CS-2304): resolve the host name.
+ *
+ * Exec host objects must carry a resolved (canonical) host name before the name
+ * is used for the upsert existence-check and the GDI send; this transform
+ * resolves EH_name in place, matching what the interactive -ae/-Ae paths do.
+ *
+ * @param ep   the parsed exec host object (modified in place)
+ * @param alpp answer list to receive a message on resolution failure
+ * @return STATUS_OK on success, STATUS_ESEMANTIC if the host cannot be resolved
+ */
+static int
+qconf_eh_resolve(lListElem *ep, lList **alpp)
+{
+   if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
+      answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                              MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
+      return STATUS_ESEMANTIC;
+   }
+   return STATUS_OK;
 }
 
 /*------------------------------------------------------------*/
@@ -1019,57 +1083,17 @@ int sge_parse_qconf(char *argv[])
       }
 
 /*-----------------------------------------------------------------------------*/
-      /* "-Ae fname" */
+      /* "-Ae fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
       if (strcmp("-Ae", *spp) == 0) {
          spooling_field *fields = sge_build_EH_field_list(false, false, false);
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-
-         /* read file */
-         lp = lCreateList("exechosts to add", EH_Type);
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
-                                         fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, nullptr, *spp);
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
-         sge_free(&fields);
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         if (qconf_apply_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
+                              EH_name, *spp, nullptr, &qconf_sfi, qconf_eh_resolve) != 0) {
             sge_parse_return = 1;
          }
-
-         if (!ep) {
-            fprintf(stderr, "%s\n", MSG_ANSWER_INVALIDFORMAT);
-            DRETURN(1);
-         }
-         lAppendElem(lp, ep);
-
-         /* test host name */
-         switch (sge_resolve_host(ep, EH_name)) {
-         case CL_RETVAL_OK:
-            break;
-         default:
-            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
-            fprintf(stderr, "\n");
-            lFreeElem(&ep);
-            DRETURN(1);
-         }
-
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer_list(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_free(&fields);
 
          spp++;
          continue;
@@ -2006,6 +2030,21 @@ int sge_parse_qconf(char *argv[])
       }
 /*-----------------------------------------------------------------------------*/
 
+      /* "-De file|dir": CS-2304 C5 — delete the exec host(s) named in the file(s) */
+      if (strcmp("-De", *spp) == 0) {
+         spooling_field *fields = sge_build_EH_field_list(false, false, false);
+         /* no adminhost/manager check needed here */
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
+                               EH_name, *spp, &qconf_sfi, qconf_eh_resolve) != 0) {
+            sge_parse_return = 1;
+         }
+         sge_free(&fields);
+         spp++;
+         continue;
+      }
+/*-----------------------------------------------------------------------------*/
+
       /* "-dh server_name[,server_name,...]" */
       if (strcmp("-dh", *spp) == 0) {
          /* no adminhost/manager check needed here */
@@ -2775,57 +2814,18 @@ int sge_parse_qconf(char *argv[])
       }
 
 /*----------------------------------------------------------------------------*/
-      /* "-Me fname" */
+      /* "-Me fname|dir": CS-2304 C2/C3 — add/modify exec host(s) from a file or directory */
       if (strcmp("-Me", *spp) == 0) {
          spooling_field *fields = sge_build_EH_field_list(false, false, false);
 
          /* no adminhost/manager check needed here */
 
          spp = sge_parser_get_next(spp);
-
-         /* read file */
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
-                                         fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, nullptr, *spp);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
+         if (qconf_apply_path(ocs::gdi::Target::EH_LIST, EH_Type, fields,
+                              EH_name, *spp, nullptr, &qconf_sfi, qconf_eh_resolve) != 0) {
+            sge_parse_return = 1;
          }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
          sge_free(&fields);
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
-            sge_parse_return = 1;
-         }
-
-         if (ep == nullptr) {
-            fprintf(stderr, "%s\n", MSG_ANSWER_INVALIDFORMAT);
-            DRETURN(1);
-         }
-
-         /* test host name */
-         if (sge_resolve_host(ep, EH_name) != CL_RETVAL_OK) {
-            fprintf(stderr, MSG_SGETEXT_CANTRESOLVEHOST_S, lGetHost(ep, EH_name));
-            fprintf(stderr, "\n");
-            lFreeElem(&ep);
-            sge_parse_return = 1;
-            DRETURN(1);
-         }
-
-         lp = lCreateList("exechosts to change", EH_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EH_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-
-         sge_parse_return |= show_answer(alp);
-         lFreeList(&alp);
-         lFreeList(&lp);
 
          spp++;
          continue;

@@ -151,9 +151,13 @@ host from xxqs_name_sxx_qmaster(8) or a generic template otherwise. The template
 described in xxqs_name_sxx_host_conf(5). When the changes are saved in the editor and the editor is quit them the new
 execution host is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
 
-## -Ae *fname*
-Add the execution host defined in *fname* to the xxQS_NAMExx cluster. The format of the execution host specification
-is described in xxqs_name_sxx_host_conf(5). Requires root/manager privileges.
+## -Ae *fname*|*dir*
+Adds or modifies one or more execution hosts. If the argument is a file, the single execution host it defines is
+added, or modified if a host of that name already exists. If the argument is a directory, every (non-hidden)
+regular file in it is read as one execution host specification and added or modified, and a one-line summary is
+printed. Each host name is resolved before it is applied. The format of the execution host specification is
+described in xxqs_name_sxx_host_conf(5). See also `-dry`, `-strict` and the EXIT STATUS section. Requires
+root/manager privileges.
 
 ## -ah *hostname*,...
 Adds hosts *hostname* to the xxQS_NAMExx trusted host list. A host must be in this list to execute administrative
@@ -348,7 +352,14 @@ The local configuration entries for the specified hosts are deleted from the con
 Requires root/manager privilege.
 
 ## -de *host_name*,...
-Deletes hosts from the xxQS_NAMExx execution host list. Requires root|manager privileges.
+Deletes one or more hosts from the xxQS_NAMExx execution host list. More than one may be deleted at once by giving
+a comma-separated list of host names. Requires root|manager privileges.
+
+## -De *fname*|*dir*
+Deletes the execution host(s) named in a file or in a directory of files. Each file is read and the host named by
+its `hostname` field is resolved and deleted; the rest of the file content is ignored. A directory is a bulk
+delete: it is confirmed interactively unless `-f` is given, and `-dry` previews it. A host named in a file that is
+no longer an execution host is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dh *host_name*,...
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which xxqs_name_sxx_qmaster(8) is currently
@@ -519,9 +530,12 @@ Retrieves the current configuration for the specified execution host, executes a
 configuration with xxqs_name_sxx_qmaster(8) upon exit from the editor. The format of the execution host
 configuration is described in xxqs_name_sxx_host_conf(5). Requires root/manager privilege.
 
-## -Me *fname*
-Overwrites the execution host configuration for the specified host with the contents of *fname*, which must
-comply to the format defines in xxqs_name_sxx_host_conf(5). Requires root or manager privilege.
+## -Me *fname*|*dir*
+Adds or modifies one or more execution hosts from a file or a directory of files. If the argument is a file, the
+single host it defines is modified, or added if it does not yet exist. If the argument is a directory, every
+(non-hidden) regular file in it is processed and a one-line summary is printed. Each host name is resolved before
+it is applied. The argument file(s) must comply to the format defined in xxqs_name_sxx_host_conf(5). See also
+`-dry` and `-strict`. Requires root or manager privilege.
 
 ## -mhgrp *group*
 The host group entries for the host group specified in *group* are retrieved and an editor is invoked for modifying

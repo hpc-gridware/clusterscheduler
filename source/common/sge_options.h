@@ -133,6 +133,7 @@ enum {
 
    as_OPT,
    de_OPT,
+   De_OPT, /* del exec hosts from file/directory (CS-2304) */
    ds_OPT,
    Mc_OPT,
    me_OPT,

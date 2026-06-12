@@ -357,8 +357,10 @@
 #define MSG_GDI_USAGE_ae_OPT_EXEC_SERVER_TEMPLATE        "[-ae [exec_server_template]]"
 #define MSG_GDI_UTEXT_ae_OPT_EXEC_SERVER_TEMPLATE        _MESSAGE(23300, _("add an exec host using a template"))
 
-#define MSG_GDI_USAGE_Ae_OPT_FNAME                       "[-Ae fname]"
-#define MSG_GDI_UTEXT_Ae_OPT_FNAME                       _MESSAGE(23301, _("add an exec host from file"))
+#define MSG_GDI_USAGE_Ae_OPT_FNAME                       "[-Ae fname|dir]"
+#define MSG_GDI_UTEXT_Ae_OPT_FNAME                       _MESSAGE(23301, _("add exec host(s) from a file or directory"))
+#define MSG_GDI_USAGE_De_OPT_FNAME                       "[-De fname|dir]"
+#define MSG_GDI_UTEXT_De_OPT_FNAME                       _MESSAGE(60765, _("delete exec host(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_ah_OPT_HOSTNAME                    "[-ah hostname_list]"
 #define MSG_GDI_UTEXT_ah_OPT_HOSTNAME                    _MESSAGE(23302, _("add an administrative host"))
@@ -463,7 +465,7 @@
 #define MSG_GDI_UTEXT_dconf_OPT_HOST_LIST                _MESSAGE(23334, _("delete local configurations"))
 
 #define MSG_GDI_USAGE_de_OPT_HOST_LIST                   "[-de host_list]"
-#define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host"))
+#define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host(s)"))
 
 #define MSG_GDI_USAGE_display_OPT_DISPLAY                "[-display display]"
 #define MSG_GDI_UTEXT_display_OPT_DISPLAY                _MESSAGE(23336, _("set DISPLAY variable inside interactive job (not available for qrsh without command)"))
@@ -593,8 +595,8 @@
 #define MSG_GDI_USAGE_me_OPT_SERVER                      "[-me server]"
 #define MSG_GDI_UTEXT_me_OPT_SERVER                      _MESSAGE(23377, _("modify exec server"))
 
-#define MSG_GDI_USAGE_Me_OPT_FNAME                       "[-Me fname]"
-#define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec server from file"))
+#define MSG_GDI_USAGE_Me_OPT_FNAME                       "[-Me fname|dir]"
+#define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec host(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mp_OPT_PE_NAME                     "[-mp pe-name]"
 #define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment (adds it if missing)"))
