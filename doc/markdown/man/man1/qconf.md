@@ -170,9 +170,12 @@ Adds a new host group with the name specified in *group*. This command invokes a
 make required changes. After the editor is quit the new host group entry is registered. Requires
 root/manager privileges.
 
-## -Ahgrp *fname*
-Add the host group configuration defined in *fname*. The file format of *fname* must comply to the format specified
-in xxqs_name_sxx_hostgroup(5). Requires root/manager privileges.
+## -Ahgrp *fname*|*dir*
+Adds or modifies one or more host group configurations. If the argument is a file, the single host group it defines
+is added, or modified if a host group of that name already exists. If the argument is a directory, every
+(non-hidden) regular file in it is read as one host group definition and added or modified, and a one-line summary
+is printed. The file format must comply to xxqs_name_sxx_hostgroup(5). See also `-dry`, `-strict` and the EXIT
+STATUS section. Requires root/manager privileges.
 
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
@@ -368,8 +371,15 @@ no longer an execution host is reported and skipped rather than treated as an er
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which xxqs_name_sxx_qmaster(8) is currently
 running cannot be removed from the list of administrative hosts. Requires root/manager privileges.
 
-## -dhgrp *group*
-Deletes host group configuration with the name specified with *group*. Requires root/manager privileges.
+## -dhgrp *group*,...
+Deletes the host group configuration(s) with the name(s) specified. More than one may be deleted at once by giving
+a comma-separated list of host group names. Requires root/manager privileges.
+
+## -Dhgrp *fname*|*dir*
+Deletes the host group(s) named in a file or in a directory of files. Each file is read and the host group named by
+its `group_name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
+confirmed interactively unless `-f` is given, and `-dry` previews it. A host group named in a file that no longer
+exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dm *user*\[,*user*,...\]
 Deletes managers from the manager list. It is not possible to delete the admin user or the user root
@@ -553,10 +563,11 @@ the host group configuration. By closing the editor, the modified data is regist
 The format of the host group configuration is described in xxqs_name_sxx_hostgroup(5). Requires
 root/manager privilege.
 
-## -Mhgrp *fname*
-Allows changing of host group configuration with a single command. All host group configuration entries contained
-in *fname* will be applied. Configuration entries not contained in *fname* will be deleted. The
-file format of *fname* must comply to the format specified in xxqs_name_sxx_hostgroup(5).
+## -Mhgrp *fname*|*dir*
+Adds or modifies one or more host group configurations from a file or a directory of files. If the argument is a
+file, the single host group it contains is modified, or added if it does not yet exist. If the argument is a
+directory, every (non-hidden) regular file in it is processed and a one-line summary is printed. The file format
+must comply to xxqs_name_sxx_hostgroup(5). See also `-dry` and `-strict`. Requires root/manager privilege.
 
 ## -mp *pe_name*
 Retrieves the current configuration for the specified parallel environment (PE), executes an editor

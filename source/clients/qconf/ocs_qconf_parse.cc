@@ -5693,22 +5693,14 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 
-      /* "-Mhgrp user filename" */
+      /* "-Mhgrp fname|dir": CS-2306 C2/C3 — add/modify host group(s) from a file or directory */
       if (strcmp("-Mhgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         hgroup_modify_from_file(&answer_list, file);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
+                              HGRP_name, *spp, nullptr) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -5737,36 +5729,40 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 
-      /* "-Ahgrp file"  */
+      /* "-Ahgrp fname|dir": CS-2306 C2/C3 — add/modify host group(s) from a file or directory */
       if (strcmp("-Ahgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         hgroup_add_from_file(&answer_list, file);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
+                              HGRP_name, *spp, nullptr) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+
+      /* "-dhgrp group,..." : CS-2306 C4 — comma-separated list of host groups */
+      if (strcmp("-dhgrp", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         qconf_is_manager(username);
+         parse_name_list_to_cull("host groups to del", &lp, HGRP_Type, HGRP_name, *spp);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::HGRP_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         sge_parse_return |= show_answer_list(alp);
+         lFreeList(&alp);
+         lFreeList(&lp);
 
          spp++;
          continue;
       }
 
-      /* "-dhgrp group "  */
-      if (strcmp("-dhgrp", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
+      /* "-Dhgrp file|dir": CS-2306 C5 — delete the host group(s) named in the file(s) */
+      if (strcmp("-Dhgrp", *spp) == 0) {
          qconf_is_manager(username);
-         hgroup_delete(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_fields,
+                               HGRP_name, *spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }

@@ -769,17 +769,20 @@
 #define MSG_GDI_USAGE_ahgrp_OPT                          "[-ahgrp group]"
 #define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry"))
 
-#define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp file]"
-#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file"))
+#define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp fname|dir]"
+#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add host group(s) from a file or directory"))
 
-#define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group]"
-#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry"))
+#define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group_list]"
+#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry(s)"))
+
+#define MSG_GDI_USAGE_Dhgrp_OPT                          "[-Dhgrp fname|dir]"
+#define MSG_GDI_UTEXT_Dhgrp_OPT                          _MESSAGE(60767, _("delete host group(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_mhgrp_OPT                          "[-mhgrp group]"
 #define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry"))
 
-#define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file]"
-#define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file"))
+#define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file|dir]"
+#define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file or directory"))
 
 #define MSG_GDI_USAGE_su_OPT_LISTNAME_LIST               "[-su listname_list]"
 #define MSG_GDI_UTEXT_su_OPT_LISTNAME_LIST               _MESSAGE(23448, _("show the given userset list" ))

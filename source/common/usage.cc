@@ -611,6 +611,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dhgrp_OPT, MSG_GDI_UTEXT_dhgrp_OPT);
    }
 
+   if (VALID_OPT(Dhgrp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dhgrp_OPT, MSG_GDI_UTEXT_Dhgrp_OPT);
+   }
+
    if (VALID_OPT(dl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dl_OPT_DATE_TIME , MSG_GDI_UTEXT_dl_OPT_DATE_TIME );
       MARK(OA_DATE_TIME);

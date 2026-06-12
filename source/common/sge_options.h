@@ -257,6 +257,7 @@ enum {
    ahgrp_OPT,    /* add new host group entry */
    Ahgrp_OPT,    /* add new host group entry from file */
    dhgrp_OPT,    /* delete host group entry  */
+   Dhgrp_OPT,    /* delete host groups from file/directory (CS-2306) */
    mhgrp_OPT,    /* modify host group entry */
    shgrp_OPT,    /* show host group entry */
    shgrp_tree_OPT,        /* show host group entry as tree*/
