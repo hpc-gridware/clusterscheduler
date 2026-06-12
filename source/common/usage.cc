@@ -690,7 +690,11 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dul_OPT_LISTNAME_LIST , MSG_GDI_UTEXT_dul_OPT_LISTNAME_LIST );
       MARK(OA_LISTNAME_LIST);
    }
-   
+
+   if (VALID_OPT(Du_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Du_OPT, MSG_GDI_UTEXT_Du_OPT);
+   }
+
    if (VALID_OPT(dus_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_DUSER_USER, MSG_GDI_UTEXT_DUSER_USER );
       MARK(OA_USER_LIST);

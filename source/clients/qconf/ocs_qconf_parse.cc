@@ -712,6 +712,23 @@ qconf_cq_verify(const lListElem *ep, lList **alpp)
       ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
+/**
+ * @brief Validate-hook adapter for usersets (CS-2310).
+ *
+ * userset_validate_entries() is what the interactive -Au/-Mu paths run before
+ * ADD/MOD; it takes a non-const element, so this wrapper const-casts to fit the
+ * generic validate hook signature.
+ *
+ * @param ep   the parsed userset object to validate
+ * @param alpp answer list to receive validation messages
+ * @return STATUS_OK on success, another status on failure
+ */
+static int
+qconf_us_validate(const lListElem *ep, lList **alpp)
+{
+   return userset_validate_entries(const_cast<lListElem *>(ep), alpp);
+}
+
 /* ===== CS-2307: resource quota set helpers =================================
  * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
  * applied with SET_ALL), so they get their own helpers rather than the
@@ -4109,166 +4126,47 @@ int sge_parse_qconf(char *argv[])
       /* "-Mu fname" */
 
       if (strcmp("-Mu", *spp) == 0) {
-         char* file = nullptr;
-         const char* usersetname = nullptr;
-         lList *acl = nullptr;
-
-         /* no adminhost/manager check needed here */
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-
-
-         /* get userset from file */
-         ep = nullptr;
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
-                                         US_fields, fields_out, true, &qconf_param_sfi,
-                                         SP_FORM_ASCII, nullptr, file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset.
+          * The userset uses the static US_fields, the param sfi and the
+          * userset entry validator. */
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
+                              US_name, *spp, qconf_us_validate, &qconf_param_sfi) != 0) {
             sge_parse_return = 1;
          }
 
-         if ((ep != nullptr) &&
-            (userset_validate_entries(ep, &alp) != STATUS_OK)) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
-            sge_parse_return = 1;
-         }
-
-         if (ep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
-         }
-         usersetname = lGetString(ep, US_name);
-
-         /* get userset from qmaster */
-         where = lWhere("%T( %I==%s )", US_Type, US_name, usersetname);
-         what = lWhat("%T(ALL)", US_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeElem(&ep);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, usersetname);
-            fprintf(stderr, "\n");
-            fflush(stdout);
-            fflush(stderr);
-            lFreeList(&alp);
-            lFreeElem(&ep);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-         lFreeList(&alp);
-         lFreeList(&lp);
-
-         acl = lCreateList("modified usersetlist", US_Type);
-         lAppendElem(acl, ep);
-
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&acl);
-            DRETURN(1);
-         }
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         lFreeList(&alp);
-         lFreeList(&acl);
          spp++;
          continue;
       }
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-Au fname" */
+      /* "-Au fname|dir" */
 
       if (strcmp("-Au", *spp) == 0) {
-         lList *acl = nullptr;
-         char* file = nullptr;
-
-         /* no adminhost/manager check needed here */
-
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-
-
-         /* get userset  */
-         ep = nullptr;
-         fields_out[0] = NoName;
-         ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
-                                         US_fields, fields_out,  true,
-                                         &qconf_param_sfi,
-                                         SP_FORM_ASCII, nullptr, file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(US_fields, fields_out, &alp);
-         }
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         /* CS-2310 C2+C3: accept a file OR a directory, upsert each userset. */
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
+                              US_name, *spp, qconf_us_validate, &qconf_param_sfi) != 0) {
             sge_parse_return = 1;
          }
 
-         if ((ep != nullptr) && (userset_validate_entries(ep, &alp) != STATUS_OK)) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+
+      /* "-Du file|dir": CS-2310 C5 — delete the userset(s) named in the file(s) */
+
+      if (strcmp("-Du", *spp) == 0) {
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::US_LIST, US_Type, US_fields,
+                               US_name, *spp, &qconf_param_sfi) != 0) {
             sge_parse_return = 1;
          }
 
-         if (ep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
-         }
-
-         acl = lCreateList("usersetlist list to add", US_Type);
-         lAppendElem(acl,ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::US_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &acl, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&acl);
-            DRETURN(1);
-         }
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         lFreeList(&alp);
-         lFreeList(&acl);
          spp++;
          continue;
       }

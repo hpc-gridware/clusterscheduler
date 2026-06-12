@@ -112,6 +112,7 @@ enum {
    dq_OPT,
    Dq_OPT, /* del cqueue objects from file/directory (CS-2305) */
    du_OPT,
+   Du_OPT, /* del userset objects from file/directory (CS-2310) */
    ke_OPT,
 
    mc_OPT,

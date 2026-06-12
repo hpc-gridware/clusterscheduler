@@ -277,9 +277,11 @@ master process at the same time.
 Adds users to xxQS_NAMExx access control lists (ACL). Those lists are used for object usage authentication.
 Requires root/manager/operator privileges.
 
-## -Au *fname*
+## -Au *fname*|*dir*
 Add the user access list (ACL) defined in *fname** to xxQS_NAMExx. User lists are used for queue usage authentication.
-Requires root/manager/operator privileges.
+If the argument is a directory, one userset per (non-hidden) regular file in it is added; a userset that already
+exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
+root/manager/operator privileges.
 
 ## -auser \[*name*\]
 Adds a user to the list of registered users (see xxqs_name_sxx_user*(5)). This command invokes an editor
@@ -465,6 +467,12 @@ root/manager/operator privileges.
 
 ## -dul *acl_name*,...
 Deletes one or more access control lists (ACLs) from the system. Requires root/manager/operator privileges.
+
+## -Du *fname*|*dir*
+Deletes the userset(s) (access control lists) named in a file or in a directory of files. Each file is read and the
+userset named in it is deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and
+`-dry` previews it. A userset named in a file that no longer exists is reported and skipped rather than treated as
+an error. Requires root/manager/operator privileges.
 
 ## -duser *user_list*
 Deletes the specified user(s) from the list of registered users. More than one may be deleted at once by giving a
@@ -686,11 +694,14 @@ file fname. Requires root/manager privileges.
 
 ## -mu *acl_name*
 Retrieves the current configuration for the specified user access list, executes an editor and registers the new
-configuration with the xxqs_name_sxx_qmaster(8). Requires root/manager privilege.
+configuration with the xxqs_name_sxx_qmaster(8). If the userset does not exist it is created rather than rejected.
+Requires root/manager privilege.
 
-## -Mu *fname*
-Takes the user access list (ACL) defined in *fname* to overwrite any existing ACL with the same name.
-See xxqs_name_sxx_access_list(5) for information on the ACL configuration format. Requires root or manager privilege.
+## -Mu *fname*|*dir*
+Takes the user access list (ACL) defined in *fname* to overwrite any existing ACL with the same name; a userset
+that does not yet exist is created instead. If the argument is a directory, one userset per (non-hidden) regular
+file in it is modified. See xxqs_name_sxx_access_list(5) for information on the ACL configuration format. See also
+`-dry`, `-strict` and the EXIT STATUS section. Requires root or manager privilege.
 
 ## -muser *user*
 Data for the specific user is retrieved (see xxqs_name_sxx_user(5)) and an editor is invoked for modifying the

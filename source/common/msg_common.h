@@ -397,8 +397,8 @@
 #define MSG_GDI_USAGE_au_OPT_USER_LIST_LISTNAME_LIST     "[-au user_list listname_list]"
 #define MSG_GDI_UTEXT_au_OPT_USER_LIST_LISTNAME_LIST     _MESSAGE(23312, _("add user(s) to userset list(s)"))
 
-#define MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST               "[-Au fname]"
-#define MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST               _MESSAGE(23313, _("add userset from file"))
+#define MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST               "[-Au fname|dir]"
+#define MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST               _MESSAGE(23313, _("add userset from file or directory"))
 
 #define MSG_GDI_USAGE_AUSER                              "[-auser [name]]"
 #define MSG_GDI_UTEXT_AUSER                              _MESSAGE(23314, _("add user"))
@@ -507,6 +507,9 @@
 
 #define MSG_GDI_USAGE_dul_OPT_LISTNAME_LIST              "[-dul listname_list]"
 #define MSG_GDI_UTEXT_dul_OPT_LISTNAME_LIST              _MESSAGE(23347, _("delete userset list(s) completely"))
+
+#define MSG_GDI_USAGE_Du_OPT                             "[-Du fname|dir]"
+#define MSG_GDI_UTEXT_Du_OPT                             _MESSAGE(60771, _("delete userset(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_DUSER_USER                         "[-duser user_list]"
 #define MSG_GDI_UTEXT_DUSER_USER                         _MESSAGE(23348, _("delete user(s)"))
@@ -621,8 +624,8 @@
 #define MSG_GDI_USAGE_mu_OPT_LISTNAME_LIST               "[-mu listname_list]"
 #define MSG_GDI_UTEXT_mu_OPT_LISTNAME_LIST               _MESSAGE(23384, _("modify the given userset list"))
 
-#define MSG_GDI_USAGE_Mu_OPT_LISTNAME_LIST               "[-Mu fname]"
-#define MSG_GDI_UTEXT_Mu_OPT_LISTNAME_LIST               _MESSAGE(23385, _("modify userset from file"))
+#define MSG_GDI_USAGE_Mu_OPT_LISTNAME_LIST               "[-Mu fname|dir]"
+#define MSG_GDI_UTEXT_Mu_OPT_LISTNAME_LIST               _MESSAGE(23385, _("modify userset from file or directory"))
 
 #define MSG_GDI_USAGE_muser_OPT_USER                     "[-muser user]"
 #define MSG_GDI_UTEXT_muser_OPT_USER                     _MESSAGE(23386, _("modify a user"))
