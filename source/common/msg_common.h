@@ -379,6 +379,8 @@
 
 #define MSG_GDI_USAGE_aq_OPT_Q_TEMPLATE                  "[-aq [queue_name]]"
 #define MSG_GDI_UTEXT_aq_OPT_Q_TEMPLATE                  _MESSAGE(23307, _("add a new cluster queue"))
+#define MSG_GDI_USAGE_Dq_OPT_FNAME                       "[-Dq fname|dir]"
+#define MSG_GDI_UTEXT_Dq_OPT_FNAME                       _MESSAGE(60766, _("delete cluster queue(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_as_OPT_HOSTNAME                    "[-as hostname_list]"
 #define MSG_GDI_UTEXT_as_OPT_HOSTNAME                    _MESSAGE(23308, _("add a submit host"))
@@ -416,8 +418,8 @@
 #define MSG_GDI_USAGE_A_OPT_ACCOUNT_STRING               "[-A account_string]"
 #define MSG_GDI_UTEXT_A_OPT_ACCOUNT_STRING               _MESSAGE(23319, _("account string in accounting record"))
 
-#define MSG_GDI_USAGE_Aq_OPT_FNAME                       "[-Aq fname]"
-#define MSG_GDI_UTEXT_Aq_OPT_FNAME                       _MESSAGE(23320, _("add a queue from file"))
+#define MSG_GDI_USAGE_Aq_OPT_FNAME                       "[-Aq fname|dir]"
+#define MSG_GDI_UTEXT_Aq_OPT_FNAME                       _MESSAGE(23320, _("add queue(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_c_OPT_CKPT_SELECTOR                "[-c ckpt_selector]"
 #define MSG_GDI_UTEXT_c_OPT_CKPT_SELECTOR                _MESSAGE(23321, _("define type of checkpointing for job"))
@@ -488,8 +490,8 @@
 #define MSG_GDI_USAGE_Dp_OPT_FNAME                       "[-Dp fname|dir]"
 #define MSG_GDI_UTEXT_Dp_OPT_FNAME                       _MESSAGE(23525, _("delete PE(s) named in a file or a directory"))
 
-#define MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST              "[-dq destin_id_list]"
-#define MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST              _MESSAGE(23342, _("delete queue"))
+#define MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST              "[-dq cqueue_list]"
+#define MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST              _MESSAGE(23342, _("delete cluster queue(s)"))
 
 #define MSG_GDI_USAGE_ds_OPT_HOST_LIST                   "[-ds host_list]"
 #define MSG_GDI_UTEXT_ds_OPT_HOST_LIST                   _MESSAGE(23343, _("delete submit host"))
@@ -607,8 +609,8 @@
 #define MSG_GDI_USAGE_mq_OPT_QUEUE                       "[-mq queue]"
 #define MSG_GDI_UTEXT_mq_OPT_QUEUE                       _MESSAGE(23381, _("modify a queue"))
 
-#define MSG_GDI_USAGE_Mq_OPT_FNAME                       "[-Mq fname]"
-#define MSG_GDI_UTEXT_Mq_OPT_FNAME                       _MESSAGE(23382, _("modify a queue from file"))
+#define MSG_GDI_USAGE_Mq_OPT_FNAME                       "[-Mq fname|dir]"
+#define MSG_GDI_UTEXT_Mq_OPT_FNAME                       _MESSAGE(23382, _("modify queue(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mu_OPT_LISTNAME_LIST               "[-mu listname_list]"
 #define MSG_GDI_UTEXT_mu_OPT_LISTNAME_LIST               _MESSAGE(23384, _("modify the given userset list"))

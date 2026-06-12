@@ -211,8 +211,11 @@ to allow you to customize the cluster queue configuration. Upon exit from the ed
 xxqs_name_sxx_qmaster(8). A minimal configuration requires only that the queue name and queue hostlist be set.
 Requires root/manager privileges.
 
-## -Aq *fname*
-Add the queue defined in *fname* to the xxQS_NAMExx cluster. Requires root/manager privileges.
+## -Aq *fname*|*dir*
+Adds or modifies one or more cluster queues. If the argument is a file, the single queue it defines is added, or
+modified if a queue of that name already exists. If the argument is a directory, every (non-hidden) regular file in
+it is read as one queue definition and added or modified, and a one-line summary is printed. See also `-dry`,
+`-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
 ## -arqs \[*rqs_name*\]
 Adds a resource quota set (RQS) description under the names *rqs_name* to the list of quota sets maintained
@@ -390,7 +393,14 @@ reported and skipped rather than treated as an error. Requires root/manager priv
 Deletes the specified project(s). Requires root/manager privileges.
 
 ## -dq *queue_name*,...
-Removes the specified queue(s). Active jobs will be allowed to run to completion. Requires root/manager privileges.
+Removes the specified cluster queue(s). More than one may be deleted at once by giving a comma-separated list of
+names. Active jobs will be allowed to run to completion. Requires root/manager privileges.
+
+## -Dq *fname*|*dir*
+Deletes the cluster queue(s) named in a file or in a directory of files. Each file is read and the queue named by
+its `qname` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
+confirmed interactively unless `-f` is given, and `-dry` previews it. A queue named in a file that no longer exists
+is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -drqs *rqs_name_list*
 Deletes the specified resource quota sets (RQS). Requires root/manager privileges.
@@ -576,10 +586,12 @@ Retrieves the current configuration for the specified cluster queue, executes an
 new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_queue_conf(5) for details on
 the queue configuration format. Requires root/manager privilege.
 
-## -Mq *fname*
-Modifies a queue configuration. Same as `-mq` (see below) but instead of invoking an editor to modify
-the queue configuration the file *fname* is considered to contain a changed configuration.
-Refer to xxqs_name_sxx_queue_conf(5) for details on the queue configuration format. Requires root/manager privilege.
+## -Mq *fname*|*dir*
+Adds or modifies one or more cluster queues from a file or a directory of files. If the argument is a file, the
+single queue it contains is modified, or added if it does not yet exist. If the argument is a directory, every
+(non-hidden) regular file in it is processed and a one-line summary is printed. Refer to
+xxqs_name_sxx_queue_conf(5) for details on the queue configuration format. See also `-dry` and `-strict`.
+Requires root/manager privilege.
 
 ## -mrole *role_name*
 Retrieves the current configuration for the specified role, executes an editor and registers the new

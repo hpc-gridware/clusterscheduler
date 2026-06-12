@@ -257,11 +257,12 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
  * @param descr   CULL descriptor of the object type
  * @param name_nm name attribute of the object
  * @param ep      the object element to send; consumed (freed) by this call
+ * @param sub_cmd GDI sub-command (defaults to NONE; cqueue uses SET_ALL - CS-2305)
  * @return 0 on success, non-zero on error
  */
 static int
 qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
-                  lListElem *ep)
+                  lListElem *ep, ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE)
 {
    const char *name = qconf_get_name(ep, name_nm);
    bool exists = (name != nullptr && qconf_object_exists(target, descr, name_nm, name));
@@ -278,7 +279,7 @@ qconf_send_upsert(ocs::gdi::Target target, const lDescr *descr, int name_nm,
 
    lList *lp = lCreateList("qconf upsert", descr);
    lAppendElem(lp, ep);
-   lList *alp = ocs::gdi::Client::sge_gdi(target, cmd, ocs::gdi::SubCommand::NONE,
+   lList *alp = ocs::gdi::Client::sge_gdi(target, cmd, sub_cmd,
                                           &lp, nullptr, nullptr);
    int ret = show_answer_list(alp);
    lFreeList(&alp);
@@ -308,7 +309,8 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
                        const char *filename,
                        int (*validate)(const lListElem *, lList **),
                        const spool_flatfile_instr *sfi = &qconf_sfi,
-                       int (*prepare)(lListElem *, lList **) = nullptr)
+                       int (*prepare)(lListElem *, lList **) = nullptr,
+                       bool parse_values = true)
 {
    lList *alp = nullptr;
    int fields_out[MAX_NUM_FIELDS];
@@ -318,7 +320,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
     * only closes the stream when it opened it itself, so passing stdin is safe. */
    bool from_stdin = (filename != nullptr && strcmp(filename, "-") == 0);
    lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields,
-                                              fields_out, true, sfi,
+                                              fields_out, parse_values, sfi,
                                               SP_FORM_ASCII,
                                               from_stdin ? stdin : nullptr,
                                               filename);
@@ -402,6 +404,8 @@ struct qconf_file_ctx {
    int (*validate)(const lListElem *, lList **);  ///< optional object validator, or nullptr
    const spool_flatfile_instr *sfi;  ///< flatfile spooling instruction (CS-2303: e.g. qconf_ce_sfi)
    int (*prepare)(lListElem *, lList **);  ///< optional transform, e.g. resolve hostname (CS-2304)
+   bool parse_values;         ///< spool_flatfile_read_object parse_values flag (CS-2305: cqueue uses false)
+   ocs::gdi::SubCommand sub_cmd;  ///< GDI sub-command for ADD/MOD (CS-2305: cqueue uses SET_ALL)
 };
 
 /**
@@ -417,12 +421,12 @@ static int
 qconf_apply_one(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
    }
-   if (qconf_send_upsert(ctx->target, ctx->descr, ctx->name_nm, ep) != 0) {
+   if (qconf_send_upsert(ctx->target, ctx->descr, ctx->name_nm, ep, ctx->sub_cmd) != 0) {
       ctx->n_fail++;
       return 1;
    }
@@ -445,7 +449,7 @@ qconf_collect_name(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
    /* deletion only needs the name, so no object validator is applied here */
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi, ctx->prepare);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, nullptr, ctx->sfi, ctx->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -484,7 +488,7 @@ static int
 qconf_collect_elem(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
-   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare);
+   lListElem *ep = qconf_read_object_file(ctx->descr, ctx->fields, filepath, ctx->validate, ctx->sfi, ctx->prepare, ctx->parse_values);
    if (ep == nullptr) {
       ctx->n_fail++;
       return 1;
@@ -510,6 +514,8 @@ qconf_collect_elem(const char *filepath, void *vctx)
  * @param sfi      flatfile spooling instruction (defaults to qconf_sfi - CS-2303)
  * @param prepare  optional transform run on each object after read (e.g. resolve
  *                 a hostname), or nullptr - CS-2304
+ * @param sub_cmd  GDI sub-command for ADD/MOD (defaults to NONE; cqueue SET_ALL - CS-2305)
+ * @param parse_values spool read parse_values flag (defaults to true; cqueue false - CS-2305)
  * @return the number of objects that failed
  */
 static int
@@ -517,9 +523,12 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
                  int name_nm, const char *path,
                  int (*validate)(const lListElem *, lList **),
                  const spool_flatfile_instr *sfi = &qconf_sfi,
-                 int (*prepare)(lListElem *, lList **) = nullptr)
+                 int (*prepare)(lListElem *, lList **) = nullptr,
+                 ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE,
+                 bool parse_values = true)
 {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0, validate, sfi, prepare};
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0,
+                         validate, sfi, prepare, parse_values, sub_cmd};
    bool is_dir = sge_is_directory(path);
 
    if (qconf_opt_strict) {
@@ -538,7 +547,7 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
       lListElem *e;
       while ((e = lFirstRW(ctx.elems)) != nullptr) {
          lDechainElem(ctx.elems, e);
-         if (qconf_send_upsert(target, descr, name_nm, e) != 0) {
+         if (qconf_send_upsert(target, descr, name_nm, e, ctx.sub_cmd) != 0) {
             ctx.n_fail++;
          } else {
             ctx.n_ok++;
@@ -581,10 +590,12 @@ static int
 qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *fields,
                   int name_nm, const char *path,
                   const spool_flatfile_instr *sfi = &qconf_sfi,
-                  int (*prepare)(lListElem *, lList **) = nullptr)
+                  int (*prepare)(lListElem *, lList **) = nullptr,
+                  bool parse_values = true)
 {
    qconf_file_ctx ctx = {target, descr, fields, name_nm,
-                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi, prepare};
+                         lCreateList("qconf del", descr), nullptr, 0, 0, nullptr, sfi, prepare,
+                         parse_values, ocs::gdi::SubCommand::NONE};
    bool is_dir = sge_is_directory(path);
    qconf_for_each_file(path, qconf_collect_name, &ctx);
 
@@ -680,6 +691,25 @@ qconf_eh_resolve(lListElem *ep, lList **alpp)
       return STATUS_ESEMANTIC;
    }
    return STATUS_OK;
+}
+
+/**
+ * @brief Validate-hook adapter for cluster queues (CS-2305).
+ *
+ * cqueue attribute verification (cqueue_verify_attributes) is what the cqueue
+ * GDI wrapper runs before ADD/MOD; this maps it to the hook's status convention.
+ *
+ * @param ep   the parsed cluster queue object to verify
+ * @param alpp answer list to receive verification messages
+ * @return STATUS_OK on success, STATUS_ESEMANTIC on failure
+ */
+static int
+qconf_cq_verify(const lListElem *ep, lList **alpp)
+{
+   lListElem *e = const_cast<lListElem *>(ep);
+   return cqueue_verify_attributes(e, alpp, e, false, nullptr, nullptr, nullptr, nullptr,
+                                   nullptr, nullptr, nullptr, nullptr)
+      ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
 /*------------------------------------------------------------*/
@@ -5809,22 +5839,15 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 
-      /* "-Mq filename"  */
+      /* "-Mq fname|dir": CS-2305 C2/C3 — add/modify cqueue(s) from a file or directory */
       if (strcmp("-Mq", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
+                              CQ_name, *spp, qconf_cq_verify, &qconf_sfi, nullptr,
+                              ocs::gdi::SubCommand::SET_ALL, false) != 0) {
+            sge_parse_return = 1;
          }
-         cqueue_modify_from_file(&answer_list, file);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
          spp++;
          continue;
       }
@@ -5847,40 +5870,41 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 
-      /* "-Aq filename"  */
+      /* "-Aq fname|dir": CS-2305 C2/C3 — add/modify cqueue(s) from a file or directory */
       if (strcmp("-Aq", *spp) == 0) {
-         lList *answer_list = nullptr;
-         char* file = nullptr;
-
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
+                              CQ_name, *spp, qconf_cq_verify, &qconf_sfi, nullptr,
+                              ocs::gdi::SubCommand::SET_ALL, false) != 0) {
+            sge_parse_return = 1;
          }
+         spp++;
+         continue;
+      }
 
-         if (!cqueue_add_from_file(&answer_list, file)) {
-            sge_parse_return |= 1;
-         }
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
+      /* "-dq cqueue,..." : CS-2305 C4 — comma-separated list of cqueue names */
+      if (strcmp("-dq", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         lString2List(*spp, &lp, CQ_Type, CQ_name, ", ");
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::DEL, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
+         sge_parse_return |= show_answer_list(alp);
+         lFreeList(&alp);
+         lFreeList(&lp);
 
          spp++;
          continue;
       }
 
-      /* "-dq cqueue"  */
-      if (strcmp("-dq", *spp) == 0) {
-         lList *answer_list = nullptr;
-
-         spp = sge_parser_get_next(spp);
-
+      /* "-Dq file|dir": CS-2305 C5 — delete the cqueue(s) named in the file(s) */
+      if (strcmp("-Dq", *spp) == 0) {
          qconf_is_manager_on_admin_host(username, qualified_hostname);
-         cqueue_delete(&answer_list, *spp);
-         sge_parse_return |= show_answer(answer_list);
-         lFreeList(&answer_list);
-
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
+                               CQ_name, *spp, &qconf_sfi, nullptr, false) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }

@@ -110,6 +110,7 @@ enum {
    dm_OPT,
    do_OPT,
    dq_OPT,
+   Dq_OPT, /* del cqueue objects from file/directory (CS-2305) */
    du_OPT,
    ke_OPT,
 

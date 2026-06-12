@@ -645,9 +645,13 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    }
 
    if (VALID_OPT(dq_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST, 
+      PRINTITD(MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST,
          MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST);
       MARK(OA_DESTIN_ID_LIST);
+   }
+
+   if (VALID_OPT(Dq_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dq_OPT_FNAME, MSG_GDI_UTEXT_Dq_OPT_FNAME);
    }
 
    if (VALID_OPT(ds_OPT, prog_number)) {
