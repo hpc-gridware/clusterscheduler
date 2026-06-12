@@ -77,6 +77,7 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "gdi/ocs_gdi_Client.h"
+#include "gdi/ocs_gdi_Request.h"
 
 #include "sge.h"
 #include "sge_options.h"
@@ -247,6 +248,78 @@ qconf_object_exists(ocs::gdi::Target target, const lDescr *descr, int name_nm,
 }
 
 /**
+ * @brief GET the names of every object of a type in one request (CS-2315).
+ *
+ * The batched apply path uses a single bulk name query to decide ADD vs MOD for
+ * a whole directory, instead of one existence GET per object. The returned list
+ * holds name-only elements (the @p name_nm field); the caller owns it.
+ *
+ * @param target  GDI target list (e.g. CAL_LIST)
+ * @param descr   CULL descriptor of the object type
+ * @param name_nm name attribute of the object
+ * @return a (possibly empty) list of name-only elements, or nullptr on error
+ */
+static lList *
+qconf_get_name_list(ocs::gdi::Target target, const lDescr *descr, int name_nm)
+{
+   lList *lp = nullptr;
+   lEnumeration *what = lWhat("%T(%I)", descr, name_nm);
+   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
+   lFreeWhat(&what);
+   lFreeList(&alp);
+   return lp;
+}
+
+/**
+ * @brief Whether @p name is present in a name list (CS-2315).
+ *
+ * Host-typed name fields are compared with the host comparison, plain ones with
+ * a string comparison - mirroring qconf_object_exists().
+ *
+ * @param names   list of name-only elements (from qconf_get_name_list)
+ * @param descr   CULL descriptor of the object type
+ * @param name_nm name attribute of the object
+ * @param name    name to look for
+ * @return true if the list contains an element with that name
+ */
+static bool
+qconf_name_in_list(const lList *names, const lDescr *descr, int name_nm, const char *name)
+{
+   if (names == nullptr || name == nullptr) {
+      return false;
+   }
+   return qconf_name_is_host(descr, name_nm)
+      ? (lGetElemHost(names, name_nm, name) != nullptr)
+      : (lGetElemStr(names, name_nm, name) != nullptr);
+}
+
+/**
+ * @brief Count the non-OK answers in an answer list (CS-2315).
+ *
+ * qmaster appends one answer per processed element, so the number of error
+ * answers is the number of objects that failed in a batched ADD/MOD.
+ *
+ * @param alp answer list returned by a (multi-)request
+ * @return the number of answers whose status is not STATUS_OK
+ */
+static int
+qconf_count_failures(const lList *alp)
+{
+   int n = 0;
+   const lListElem *aep;
+   for_each_ep(aep, alp) {
+      if (lGetUlong(aep, AN_quality) == ANSWER_QUALITY_END) {
+         continue;
+      }
+      if (lGetUlong(aep, AN_status) != STATUS_OK) {
+         n++;
+      }
+   }
+   return n;
+}
+
+/**
  * @brief Send an object to qmaster with upsert semantics (CS-2298 C2).
  *
  * Issues a MOD when an object of the same name already exists, otherwise an ADD.
@@ -413,11 +486,15 @@ struct qconf_file_ctx {
  *
  * Updates the n_ok / n_fail counters in the context.
  *
+ * @note Superseded by the batched qconf_apply_path() (CS-2315), which collects
+ *       all objects and sends them in one GDI multi-request rather than one
+ *       send per file. Kept for reference / possible reuse.
+ *
  * @param filepath path of the object file to apply
  * @param vctx     pointer to the qconf_file_ctx for this batch
  * @return 0 on success, 1 on failure
  */
-static int
+[[maybe_unused]] static int
 qconf_apply_one(const char *filepath, void *vctx)
 {
    auto *ctx = static_cast<qconf_file_ctx *>(vctx);
@@ -501,9 +578,18 @@ qconf_collect_elem(const char *filepath, void *vctx)
  * @brief Add or modify every object found at a path (file or directory) with
  *        upsert semantics (CS-2298 C2+C3).
  *
+ * CS-2315: the whole batch contacts qmaster a constant number of times instead
+ * of once per object. Every file is read (and prepared/validated) into one list;
+ * a single bulk name GET decides ADD vs MOD per object; and the adds and mods are
+ * sent as one GDI multi-request (one connection, qmaster processes each element
+ * individually and returns all answers in one reply). So a directory of N objects
+ * costs ~2 contacts (1 GET + 1 multi-request) rather than 2N.
+ *
  * With the -strict flag the whole batch is validated before anything is sent and
  * nothing is applied if any file is invalid (CS-2299 H2). For a directory a
- * one-line summary is printed (CS-2299 H1).
+ * one-line summary is printed (CS-2299 H1). This is a client-side pre-apply gate,
+ * not a server-side transaction: qmaster still commits each element separately, so
+ * a partial failure can leave some objects applied.
  *
  * @param target   GDI target list (e.g. CAL_LIST)
  * @param descr    CULL descriptor of the object type
@@ -527,45 +613,112 @@ qconf_apply_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *f
                  ocs::gdi::SubCommand sub_cmd = ocs::gdi::SubCommand::NONE,
                  bool parse_values = true)
 {
-   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr, nullptr, 0, 0,
-                         validate, sfi, prepare, parse_values, sub_cmd};
    bool is_dir = sge_is_directory(path);
 
-   if (qconf_opt_strict) {
-      /* CS-2299 H2 (-strict): parse every file before sending anything; if a
-       * single file is malformed the whole batch is rejected and nothing is
-       * applied. This is a client-side pre-apply gate, not a server-side
-       * transaction - once validation passes, a GDI failure partway through the
-       * apply pass can still leave earlier objects committed. */
-      ctx.elems = lCreateList("qconf apply", descr);
-      qconf_for_each_file(path, qconf_collect_elem, &ctx);
-      if (ctx.n_fail > 0) {
-         ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
-         lFreeList(&ctx.elems);
-         return ctx.n_fail;
-      }
-      lListElem *e;
-      while ((e = lFirstRW(ctx.elems)) != nullptr) {
-         lDechainElem(ctx.elems, e);
-         if (qconf_send_upsert(target, descr, name_nm, e, ctx.sub_cmd) != 0) {
-            ctx.n_fail++;
-         } else {
-            ctx.n_ok++;
-         }
-      }
+   /* 1. Read every file (running prepare/validate per object) into one list. */
+   qconf_file_ctx ctx = {target, descr, fields, name_nm, nullptr,
+                         lCreateList("qconf apply", descr), 0, 0,
+                         validate, sfi, prepare, parse_values, sub_cmd};
+   qconf_for_each_file(path, qconf_collect_elem, &ctx);
+   int n_read_fail = ctx.n_fail;   /* files that did not parse (skipped) */
+
+   /* CS-2299 H2 (-strict): a single malformed file rejects the whole batch. */
+   if (qconf_opt_strict && n_read_fail > 0) {
+      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, n_read_fail);
       lFreeList(&ctx.elems);
-      if (is_dir) {
-         qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
-      }
-      return ctx.n_fail;
+      return n_read_fail;
    }
 
-   qconf_for_each_file(path, qconf_apply_one, &ctx);
+   /* 2. One bulk name GET, then partition the parsed objects into add vs mod. */
+   lList *existing = qconf_get_name_list(target, descr, name_nm);
+   lList *add_list = lCreateList("qconf add", descr);
+   lList *mod_list = lCreateList("qconf mod", descr);
+   int n_dry = 0;
+   lListElem *e;
+   while ((e = lFirstRW(ctx.elems)) != nullptr) {
+      lDechainElem(ctx.elems, e);
+      const char *name = qconf_get_name(e, name_nm);
+      bool exists = qconf_name_in_list(existing, descr, name_nm, name);
+      if (qconf_opt_dry_run) {
+         /* CS-2299 H3: report the intended action, contact no one. */
+         qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+                           name != nullptr ? name : "");
+         lFreeElem(&e);
+         n_dry++;
+      } else {
+         lAppendElem(exists ? mod_list : add_list, e);
+      }
+   }
+   lFreeList(&existing);
+   lFreeList(&ctx.elems);
+
+   if (qconf_opt_dry_run) {
+      if (is_dir) {
+         qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_dry, n_read_fail);
+      }
+      lFreeList(&add_list);
+      lFreeList(&mod_list);
+      return n_read_fail;
+   }
+
+   /* 3. Send the mods and adds as one GDI multi-request (one connection). The
+    * lists are consumed by request() (do_copy = false steals the pointer). */
+   int n_mod = lGetNumberOfElem(mod_list);
+   int n_add = lGetNumberOfElem(add_list);
+   int n_send = n_mod + n_add;
+   int remaining = (n_mod > 0 ? 1 : 0) + (n_add > 0 ? 1 : 0);
+   ocs::gdi::Request gdi_multi{};
+   lList *send_alp = nullptr;
+   int mod_id = -1, add_id = -1;
+
+   if (n_mod > 0) {
+      ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
+      mod_id = gdi_multi.request(&send_alp, mode, target, ocs::gdi::Command::MOD, sub_cmd,
+                                 &mod_list, nullptr, nullptr, false);
+      if (mode == ocs::gdi::Mode::SEND) {
+         gdi_multi.wait();
+      }
+   }
+   if (n_add > 0) {
+      ocs::gdi::Mode mode = (--remaining > 0) ? ocs::gdi::Mode::RECORD : ocs::gdi::Mode::SEND;
+      add_id = gdi_multi.request(&send_alp, mode, target, ocs::gdi::Command::ADD, sub_cmd,
+                                 &add_list, nullptr, nullptr, false);
+      if (mode == ocs::gdi::Mode::SEND) {
+         gdi_multi.wait();
+      }
+   }
+
+   /* 4. Collect every per-element answer into one list, report it, count failures. */
+   lList *result_alp = nullptr;
+   if (n_mod > 0) {
+      lList *resp = nullptr;
+      gdi_multi.get_response(&resp, ocs::gdi::Command::MOD, sub_cmd, target, mod_id, nullptr);
+      answer_list_append_list(&result_alp, &resp);
+   }
+   if (n_add > 0) {
+      lList *resp = nullptr;
+      gdi_multi.get_response(&resp, ocs::gdi::Command::ADD, sub_cmd, target, add_id, nullptr);
+      answer_list_append_list(&result_alp, &resp);
+   }
+   answer_list_append_list(&result_alp, &send_alp);
+
+   int n_send_fail = qconf_count_failures(result_alp);
+   if (n_send_fail > n_send) {
+      /* a transport-level failure can yield more answers than elements */
+      n_send_fail = n_send;
+   }
+   show_answer_list(result_alp);
+   lFreeList(&result_alp);
+   lFreeList(&add_list);   /* no-op: consumed by request() */
+   lFreeList(&mod_list);
+
+   int n_ok = n_send - n_send_fail;
+   int n_fail = n_read_fail + n_send_fail;
    if (is_dir) {
       /* CS-2299 H1: one summary line per directory batch. */
-      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, n_fail);
    }
-   return ctx.n_fail;
+   return n_fail;
 }
 
 /**
