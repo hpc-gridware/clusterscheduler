@@ -198,15 +198,18 @@ PE it contains is added, or modified if a PE of that name already exists. If the
 (non-hidden) regular file in it is read as one PE definition and added or modified, and a one-line summary is
 printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
-## -aprj
+## -aprj \[*name*\]
 Adds a project description to the list of registered projects (see xxqs_name_sxx_project(5)). `Qconf` retrieves
 a template project configuration and executes an editor to allow you to customize the new project.
-Upon exit from the editor, the specified project is registered with xxqs_name_sxx_qmaster(8). Requires
-root/manager privileges.
+Upon exit from the editor, the specified project is registered with xxqs_name_sxx_qmaster(8). The *name* is
+optional; if it is given it pre-fills the template's name field. If a project of the given name already exists it
+is modified rather than rejected. Requires root/manager privileges.
 
-## -Aprj *fname*
+## -Aprj *fname*|*dir*
 Adds the project description defined in *fname* to the list of registered projects (see xxqs_name_sxx_project(5)).
-Requires root/manager privileges.
+If the argument is a directory, one project per (non-hidden) regular file in it is added; a project that already
+exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
+privileges.
 
 ## -aq \[*queue_name*\]
 `Qconf` retrieves the default cluster queue configuration (see xxqs_name_sxx_queue_conf(5)) and executes an editor
@@ -405,7 +408,14 @@ confirmed interactively unless `-f` is given, and `-dry` previews it. A PE named
 reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dprj *project*,...
-Deletes the specified project(s). Requires root/manager privileges.
+Deletes the specified project(s). More than one may be deleted at once by giving a comma-separated list of names.
+Requires root/manager privileges.
+
+## -Dprj *fname*|*dir*
+Deletes the project(s) named in a file or in a directory of files. Each file is read and the project named in it is
+deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry` previews it. A
+project named in a file that no longer exists is reported and skipped rather than treated as an error. Requires
+root/manager privileges.
 
 ## -dq *queue_name*,...
 Removes the specified cluster queue(s). More than one may be deleted at once by giving a comma-separated list of
@@ -602,14 +612,16 @@ details on the PE configuration format. See also `-dry` and `-strict`. Requires 
 
 ## -mprj *project*
 Data for the specific project is retrieved (see xxqs_name_sxx_project(5)) and an editor is invoked
-for modifying the project definition. Upon exiting the editor, the modified data is registered.
+for modifying the project definition. Upon exiting the editor, the modified data is registered. If the project does
+not exist it is created from a template pre-filled with the given name rather than rejected.
 Requires root/manager privileges.
 
-## -Mprj *fname*
+## -Mprj *fname*|*dir*
 Modifies a project configuration. Same as `-mprj` (see below) but instead of invoking an editor to
 modify the project configuration the file *fname* is considered to contain a changed configuration.
-Refer to xxqs_name_sxx_project*(5) for details on the project configuration format.
-Requires root/manager privilege.
+If the argument is a directory, one project per (non-hidden) regular file in it is modified; a project that does
+not yet exist is created instead. Refer to xxqs_name_sxx_project*(5) for details on the project configuration
+format. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privilege.
 
 ## -mq *queuename*
 Retrieves the current configuration for the specified cluster queue, executes an editor and registers the

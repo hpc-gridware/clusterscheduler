@@ -1635,22 +1635,29 @@ int sge_parse_qconf(char *argv[])
       /* "-aprj" */
 
       if (strcmp("-aprj", *spp) == 0) {
+         /* CS-2309 C1: the project name is optional; when omitted a generic
+          * template named "template" is offered for editing (cf. -auser). */
+         const char *prj_name = "template";
+
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         /* get a template for editing */
+         if (!sge_next_is_an_opt(spp)) {
+            spp = sge_parser_get_next(spp);
+            prj_name = *spp;
+         }
+
+         /* get a template for editing, pre-filled with the requested name */
          ep = getPrjTemplate();
+         lSetString(ep, PR_name, prj_name);
 
          newep = edit_project(ep, uid, gid);
          lFreeElem(&ep);
 
-         /* send it to qmaster */
-         lp = lCreateList("Project list to add", PR_Type);
-         lAppendElem(lp, newep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* CS-2309 C2: upsert (modify if the project already exists) */
+         if (newep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PR_LIST, PR_Type,
+                                                  PR_name, newep);
+         }
 
          spp++;
          continue;
@@ -1684,60 +1691,17 @@ int sge_parse_qconf(char *argv[])
       /* "-Aprj" */
 
       if (strcmp("-Aprj", *spp) == 0) {
-         char* file = nullptr;
-         spooling_field *fields = nullptr;
+         /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
+         spooling_field *fields = sge_build_PR_field_list(false);
 
          /* no adminhost/manager check needed here */
 
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
+                              PR_name, *spp, nullptr) != 0) {
+            sge_parse_return = 1;
          }
-
-
-         /* get project  */
-         ep = nullptr;
-         fields_out[0] = NoName;
-         fields = sge_build_PR_field_list(false);
-         ep = spool_flatfile_read_object(&alp, PR_Type, nullptr, fields, fields_out,
-                                          true, &qconf_sfi, SP_FORM_ASCII, nullptr,
-                                          file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
          sge_free(&fields);
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
-         }
-
-         if (ep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
-         }
-
-         /* send it to qmaster */
-         lp = lCreateList("Project list to add", PR_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-         if (answer_get_status(aep) != STATUS_OK) {
-            lFreeList(&alp);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-         lFreeList(&alp);
-         lFreeList(&lp);
 
          spp++;
          continue;
@@ -4369,6 +4333,8 @@ int sge_parse_qconf(char *argv[])
       /* "-mprj projectname" */
 
       if (strcmp("-mprj", *spp) == 0) {
+         lListElem *prj_src = nullptr;
+
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
@@ -4391,27 +4357,25 @@ int sge_parse_qconf(char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, *spp);
-            fprintf(stderr, "\n");
-            lFreeList(&lp);
-            continue;
+         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+            prj_src = lDechainElem(lp, lFirstRW(lp));
+         } else {
+            /* CS-2309 C2: modifying a non-existent project implicitly adds it —
+             * offer a template pre-filled with the name instead of failing. */
+            prj_src = getPrjTemplate();
+            lSetString(prj_src, PR_name, *spp);
          }
-         lFreeList(&alp);
-         ep = lFirstRW(lp);
+         lFreeList(&lp);
 
          /* edit project */
-         newep = edit_project(ep, uid, gid);
+         newep = edit_project(prj_src, uid, gid);
+         lFreeElem(&prj_src);
 
-         /* send it to qmaster */
-         lFreeList(&lp);
-         lp = lCreateList("Project list to modify", PR_Type);
-         lAppendElem(lp, newep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         /* CS-2309 C2: upsert (add if it did not exist) */
+         if (newep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::PR_LIST, PR_Type,
+                                                  PR_name, newep);
+         }
 
          spp++;
          continue;
@@ -4465,90 +4429,36 @@ int sge_parse_qconf(char *argv[])
       /* "-Mprj file" */
 
       if (strcmp("-Mprj", *spp) == 0) {
-         char* file = nullptr;
-         const char* projectname = nullptr;
-         spooling_field *fields = nullptr;
+         /* CS-2309 C2+C3: accept a file OR a directory, upsert each project. */
+         spooling_field *fields = sge_build_PR_field_list(false);
 
          /* no adminhost/manager check needed here */
 
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-            if (!sge_is_file(*spp)) {
-               sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-            }
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-
-         /* get project from file */
-         newep = nullptr;
-         fields_out[0] = NoName;
-         fields = sge_build_PR_field_list(false);
-         newep = spool_flatfile_read_object(&alp, PR_Type, nullptr,
-                                         fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, nullptr, file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&newep);
-         }
-
-         if (newep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
-         sge_free(&fields);
-
-         if (missing_field != NoName) {
-            lFreeElem(&newep);
-            answer_list_output(&alp);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
+                              PR_name, *spp, nullptr) != 0) {
             sge_parse_return = 1;
          }
+         sge_free(&fields);
 
-         if (newep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
+         spp++;
+         continue;
+      }
+
+/*-----------------------------------------------------------------------------*/
+
+      /* "-Dprj file|dir": CS-2309 C5 — delete the project(s) named in the file(s) */
+
+      if (strcmp("-Dprj", *spp) == 0) {
+         spooling_field *fields = sge_build_PR_field_list(false);
+
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::PR_LIST, PR_Type, fields,
+                               PR_name, *spp) != 0) {
+            sge_parse_return = 1;
          }
-
-         projectname = lGetString(newep, PR_name);
-
-         /* get project */
-         where = lWhere("%T( %I==%s )", PR_Type, PR_name, projectname);
-         what = lWhat("%T(ALL)", PR_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeElem(&newep);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_PROJECT_XISNOKNWOWNPROJECT_S, projectname);
-            fprintf(stderr, "\n");
-            fflush(stdout);
-            fflush(stderr);
-            lFreeList(&lp);
-            lFreeList(&alp);
-            lFreeElem(&newep);
-            DRETURN(1);
-         }
-         lFreeList(&alp);
-         lFreeList(&lp);
-
-         /* send it to qmaster */
-         lp = lCreateList("Project list to modify", PR_Type);
-         lAppendElem(lp, newep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::PR_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         sge_parse_return |= show_answer_list(alp);
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_free(&fields);
 
          spp++;
          continue;

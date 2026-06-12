@@ -183,6 +183,7 @@ enum {
    Mprj_OPT,     /* SGE modify project from file */
    mprj_OPT,     /* SGE modify project */
    dprj_OPT,     /* SGE delete project */
+   Dprj_OPT,     /* SGE delete projects from file/directory (CS-2309) */
    sprj_OPT,     /* SGE show project */
    sprjl_OPT,    /* SGE show project list */
    mstree_OPT,   /* SGE modify sharetree */

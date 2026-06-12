@@ -406,14 +406,14 @@
 #define MSG_GDI_USAGE_Auser                              "[-Auser fname|dir]"
 #define MSG_GDI_UTEXT_Auser                              _MESSAGE(23315, _("add user from file or directory"))
 
-#define MSG_GDI_USAGE_APRJ                               "[-aprj]"
+#define MSG_GDI_USAGE_APRJ                               "[-aprj [name]]"
 #define MSG_GDI_UTEXT_APRJ                               _MESSAGE(23316, _("add project"))
 
-#define MSG_GDI_USAGE_Aprj                               "[-Aprj fname]"
-#define MSG_GDI_UTEXT_Aprj                               _MESSAGE(23317, _("add project from file"))
+#define MSG_GDI_USAGE_Aprj                               "[-Aprj fname|dir]"
+#define MSG_GDI_UTEXT_Aprj                               _MESSAGE(23317, _("add project from file or directory"))
 
-#define MSG_GDI_USAGE_Mprj_OPT_PROJECT                   "[-Mprj fname]"
-#define MSG_GDI_UTEXT_Mprj_OPT_PROJECT                   _MESSAGE(23318, _("modify project from file"))
+#define MSG_GDI_USAGE_Mprj_OPT_PROJECT                   "[-Mprj fname|dir]"
+#define MSG_GDI_UTEXT_Mprj_OPT_PROJECT                   _MESSAGE(23318, _("modify project from file or directory"))
 
 #define MSG_GDI_USAGE_A_OPT_ACCOUNT_STRING               "[-A account_string]"
 #define MSG_GDI_UTEXT_A_OPT_ACCOUNT_STRING               _MESSAGE(23319, _("account string in accounting record"))
@@ -516,6 +516,9 @@
 
 #define MSG_GDI_USAGE_dprj_OPT_PROJECT                   "[-dprj project_list]"
 #define MSG_GDI_UTEXT_dprj_OPT_PROJECT                   _MESSAGE(23349, _("delete project"))
+
+#define MSG_GDI_USAGE_Dprj_OPT                           "[-Dprj fname|dir]"
+#define MSG_GDI_UTEXT_Dprj_OPT                           _MESSAGE(60770, _("delete project(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_e_OPT                              "[-e]"
 #define MSG_GDI_UTEXT_e_OPT                              _MESSAGE(23350, _("enable"))
