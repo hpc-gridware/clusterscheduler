@@ -712,6 +712,169 @@ qconf_cq_verify(const lListElem *ep, lList **alpp)
       ? STATUS_OK : STATUS_ESEMANTIC;
 }
 
+/* ===== CS-2307: resource quota set helpers =================================
+ * RQS files hold a *list* of rule sets (read with spool_flatfile_read_list and
+ * applied with SET_ALL), so they get their own helpers rather than the
+ * single-object qconf_apply_path/qconf_delete_path above. The directory case
+ * reuses qconf_for_each_file and emits the same catalogue messages/flags. */
+
+/** @brief Context for qconf_rqs_collect: the merged RQS list + read-failure count. */
+struct qconf_rqs_ctx {
+   lList *all;   ///< merged RQS_Type list collected from every file
+   int n_fail;   ///< files that failed to read
+};
+
+/** @brief qconf_for_each_file callback: read one file's resource quota sets and
+ *  move them into the merged list (CS-2307). */
+static int
+qconf_rqs_collect(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_rqs_ctx *>(vctx);
+   lList *alp = nullptr;
+   lList *l = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
+                                       &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filepath);
+   if (answer_list_output(&alp) || l == nullptr) {
+      lFreeList(&l);
+      ctx->n_fail++;
+      return 1;
+   }
+   lListElem *e;
+   while ((e = lFirstRW(l)) != nullptr) {
+      lDechainElem(l, e);
+      lAppendElem(ctx->all, e);
+   }
+   lFreeList(&l);
+   return 0;
+}
+
+/**
+ * @brief Add or modify the resource quota set(s) defined at @a path (CS-2307).
+ *
+ * A single file keeps the existing (possibly multi-rule-set) behaviour. A
+ * directory merges every file's rule sets into one SET_ALL request; if any file
+ * fails to parse nothing is applied (whole-list semantics are inherently strict).
+ * Honours -dry and prints a one-line summary.
+ *
+ * @param path file or directory to apply
+ * @param cmd  ocs::gdi::Command::ADD or MOD
+ * @param name optional rqs-name list for the single-file -Mrqs form, or nullptr
+ * @return 0 on success, non-zero on failure
+ */
+static int
+qconf_rqs_apply(const char *path, ocs::gdi::Command cmd, const char *name)
+{
+   bool is_dir = sge_is_directory(path);
+
+   /* preserve the existing single-file behaviour verbatim (only when actually
+    * sending - a -dry single file falls through to the report path below) */
+   if (!is_dir && !qconf_opt_dry_run) {
+      lList *alp = nullptr;
+      bool ok = (cmd == ocs::gdi::Command::ADD)
+         ? rqs_add_from_file(&alp, path)
+         : rqs_modify_from_file(&alp, path, name);
+      int ret = show_answer_list(alp);
+      lFreeList(&alp);
+      return (ok && ret == 0) ? 0 : 1;
+   }
+
+   qconf_rqs_ctx ctx = {lCreateList("rqs", RQS_Type), 0};
+   qconf_for_each_file(path, qconf_rqs_collect, &ctx);
+
+   if (ctx.n_fail > 0) {
+      ERROR(MSG_QCONF_STRICTNOTHINGAPPLIED_SI, path, ctx.n_fail);
+      lFreeList(&ctx.all);
+      return ctx.n_fail;
+   }
+
+   int n_ok = lGetNumberOfElem(ctx.all);
+   if (qconf_opt_dry_run) {
+      const lListElem *r;
+      for_each_ep(r, ctx.all) {
+         qconf_info_printf(cmd == ocs::gdi::Command::ADD ? MSG_QCONF_DRYRUNWOULDADD_S
+                                                         : MSG_QCONF_DRYRUNWOULDMODIFY_S,
+                           lGetString(r, RQS_name));
+      }
+      lFreeList(&ctx.all);
+      return 0;
+   }
+
+   int ret = 0;
+   if (n_ok > 0) {
+      lList *alp = nullptr;
+      rqs_add_del_mod_via_gdi(ctx.all, &alp, cmd, ocs::gdi::SubCommand::SET_ALL);
+      ret += show_answer_list(alp);
+      lFreeList(&alp);
+   }
+   if (is_dir) {
+      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, n_ok, 0);
+   }
+   lFreeList(&ctx.all);
+   return ret;
+}
+
+/**
+ * @brief Delete the resource quota set(s) named in the file(s) at @a path (CS-2307 C5).
+ *
+ * Reads every rule set named in the file/dir; a name that no longer exists is
+ * reported and skipped (idempotent). A directory delete is confirmed unless -f,
+ * and -dry previews it.
+ *
+ * @param path file or directory naming the rule sets to delete
+ * @return 0 on success, non-zero on failure
+ */
+static int
+qconf_rqs_delete(const char *path)
+{
+   qconf_rqs_ctx ctx = {lCreateList("rqs", RQS_Type), 0};
+   bool is_dir = sge_is_directory(path);
+   qconf_for_each_file(path, qconf_rqs_collect, &ctx);
+   int ret = ctx.n_fail;
+
+   /* keep only the names that still exist (idempotent delete) */
+   lList *del = lCreateList("rqs del", RQS_Type);
+   const lListElem *r;
+   for_each_ep(r, ctx.all) {
+      const char *nm = lGetString(r, RQS_name);
+      if (qconf_object_exists(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name, nm)) {
+         lAddElemStr(&del, RQS_name, nm, RQS_Type);
+      } else {
+         WARNING(MSG_QCONF_DELSKIPPEDNOTEXIST_SS, nm, path);
+      }
+   }
+   lFreeList(&ctx.all);
+
+   int n = lGetNumberOfElem(del);
+   if (n > 0 && qconf_opt_dry_run) {
+      for_each_ep(r, del) {
+         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetString(r, RQS_name));
+      }
+      lFreeList(&del);
+      return ret;
+   }
+   if (n > 0 && is_dir && !qconf_opt_force) {
+      dstring p = DSTRING_INIT;
+      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
+      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      sge_dstring_free(&p);
+      if (!ok) {
+         WARNING(MSG_QCONF_DELETEABORTED_I, n);
+         lFreeList(&del);
+         return ret;
+      }
+   }
+   if (n > 0) {
+      /* rqs_add_del_mod_via_gdi() only sends ADD/MOD/REPLACE (it gates the GDI
+       * call on the verify result, which is skipped for DEL); delete via a
+       * direct GDI call, exactly like the "-drqs" name-list path does. */
+      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::RQS_LIST, ocs::gdi::Command::DEL,
+                                             ocs::gdi::SubCommand::NONE, &del, nullptr, nullptr);
+      ret += show_answer_list(alp);
+      lFreeList(&alp);
+   }
+   lFreeList(&del);
+   return ret;
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -1273,7 +1436,8 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 /*-----------------------------------------------------------------------------*/
-      /* "-Arqs fname" */
+      /* "-Arqs fname|dir": CS-2307 C3 — a single (multi-rule-set) file as before,
+       * or a directory whose files together define the rule sets to add */
       if (strcmp("-Arqs", *spp) == 0) {
          const char *file = nullptr;
 
@@ -1285,19 +1449,9 @@ int sge_parse_qconf(char *argv[])
          }
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         rqs_add_from_file(&alp, file);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            DRETURN(1);
-         } else {
-            fprintf(stdout, "%s\n", lGetString(aep, AN_text));
+         if (qconf_rqs_apply(file, ocs::gdi::Command::ADD, nullptr) != 0) {
+            sge_parse_return = 1;
          }
-         lFreeList(&alp);
 
          spp++;
          continue;
@@ -2125,6 +2279,17 @@ int sge_parse_qconf(char *argv[])
          lFreeList(&alp);
          lFreeList(&lp);
 
+         spp++;
+         continue;
+      }
+/*----------------------------------------------------------------------------*/
+      /* "-Drqs file|dir": CS-2307 C5 — delete the rule set(s) named in the file(s) */
+      if (strcmp("-Drqs", *spp) == 0) {
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_rqs_delete(*spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -3063,7 +3228,8 @@ int sge_parse_qconf(char *argv[])
          continue;
       }
 /*-----------------------------------------------------------------------------*/
-      /* "-Mrqs fname [rqs_name,...]" */
+      /* "-Mrqs fname|dir [rqs_name,...]": CS-2307 C3 — a single file (optionally
+       * limited to the named rule sets) as before, or a directory of files */
       if (strcmp("-Mrqs", *spp) == 0) {
          const char *file = nullptr;
          const char *name = nullptr;
@@ -3081,8 +3247,9 @@ int sge_parse_qconf(char *argv[])
             name = *spp;
          }
 
-         rqs_modify_from_file(&alp, file, name);
-         sge_parse_return |= show_answer_list(alp);
+         if (qconf_rqs_apply(file, ocs::gdi::Command::MOD, name) != 0) {
+            sge_parse_return = 1;
+         }
 
          spp++;
          continue;

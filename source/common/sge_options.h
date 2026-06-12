@@ -280,6 +280,7 @@ enum {
    mrqs_OPT,     /* modfiy resource quota set */
    Mrqs_OPT,     /* modify resource quota set from file */
    drqs_OPT,     /* delete resource quota set */
+   Drqs_OPT,     /* delete resource quota sets from file/directory (CS-2307) */
    ar_OPT,       /* advanced resservation option */
    he_OPT,       /* error handling for qrsub */
    explain_OPT,  /* explain error in qrstat */

@@ -625,6 +625,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       MARK(OA_RQS_LIST);
    }
 
+   if (VALID_OPT(Drqs_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Drqs_OPT, MSG_GDI_UTEXT_Drqs_OPT);
+   }
+
    if (VALID_OPT(dm_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dm_OPT_USER_LIST , MSG_GDI_UTEXT_dm_OPT_USER_LIST );
       MARK(OA_USER_LIST);

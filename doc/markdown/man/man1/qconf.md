@@ -226,9 +226,11 @@ by xxQS_NAMExx (see xxqs_name_sxx_resource_quota(5) for details on the format of
 retrieves a default RQS configuration and executes and editor to allow you to customize the RQS configuration.
 Upon exit from the editor, the RQS is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
 
-## -Arqs *fname*
-Add the resource quota set (RQS) defined in the file named *fname* to the xxQS_NAMExx cluster. Requires
-root/manager privileges.
+## -Arqs *fname*|*dir*
+Adds the resource quota set(s) (RQS) defined in *fname* to the xxQS_NAMExx cluster; a single file may contain
+several rule sets. If the argument is a directory, the rule sets from every (non-hidden) regular file in it are
+collected and added together in one request; if any file fails to parse nothing is applied. See also `-dry` and the
+EXIT STATUS section. Requires root/manager privileges.
 
 ## -arole [*role_name*]
 Adds a new role description under the name *role_name* to the list of roles maintained by xxQS_NAMExx.
@@ -413,7 +415,14 @@ confirmed interactively unless `-f` is given, and `-dry` previews it. A queue na
 is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -drqs *rqs_name_list*
-Deletes the specified resource quota sets (RQS). Requires root/manager privileges.
+Deletes the specified resource quota sets (RQS). More than one may be deleted at once by giving a comma-separated
+list of names. Requires root/manager privileges.
+
+## -Drqs *fname*|*dir*
+Deletes the resource quota set(s) named in a file or in a directory of files. Each file is read and the rule set(s)
+named in it are deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry`
+previews it. A rule set named in a file that no longer exists is reported and skipped rather than treated as an
+error. Requires root/manager privileges.
 
 ## -drole *role_name*,...
 Deletes the specified role(s). More than one may be deleted at once by giving a comma-separated list of names.
@@ -622,12 +631,13 @@ retrieves all resource quota sets, executes an editor and registers the new conf
 xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format.
 Requires root/manager privilege.
 
-## -Mrqs *fname* \[*mrqs_name*\]
-Modifies a resource quota set (RQS) configuration. Same as `-mrqs` (see below) but instead of invoking an editor to
-modify the RQS configuration, the file *fname* is considered to contain a changed configuration. The name of the rule
-set in *fname* must be the same as rqs_name. If *rqs_name* is not set, all rule sets are
-overwritten by the rule sets in *fname* Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration
-format. Requires root/manager privilege.
+## -Mrqs *fname*|*dir* \[*mrqs_name*\]
+Modifies a resource quota set (RQS) configuration from a file or a directory of files. Same as `-mrqs` (see below)
+but instead of invoking an editor the configuration is taken from *fname*. The name of the rule set in *fname* must
+be the same as rqs_name. If *rqs_name* is not set, all rule sets are overwritten by the rule sets in *fname*. If the
+argument is a directory, the rule sets from every (non-hidden) regular file in it are collected and applied
+together (the optional *mrqs_name* does not apply to a directory). See also `-dry`. Refer to
+xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format. Requires root/manager privilege.
 
 ## -msconf
 The current scheduler configuration (see xxqs_name_sxx_sched_conf(5)) is retrieved, an editor is executed

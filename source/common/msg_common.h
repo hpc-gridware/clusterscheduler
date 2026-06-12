@@ -1028,14 +1028,16 @@
 #define MSG_GDI_UTEXT_srqsl_OPT           _MESSAGE(60617, _("show resource quota set list"))
 #define MSG_GDI_USAGE_arqs_OPT            "[-arqs [rqs_list]]"
 #define MSG_GDI_UTEXT_arqs_OPT            _MESSAGE(60618, _("add resource quota set(s)"))
-#define MSG_GDI_USAGE_Arqs_OPT            "[-Arqs fname]"
-#define MSG_GDI_UTEXT_Arqs_OPT            _MESSAGE(60619, _("add resource quota set(s) from file"))
+#define MSG_GDI_USAGE_Arqs_OPT            "[-Arqs fname|dir]"
+#define MSG_GDI_UTEXT_Arqs_OPT            _MESSAGE(60619, _("add resource quota set(s) from a file or directory"))
 #define MSG_GDI_USAGE_drqs_OPT            "[-drqs rqs_list]"
 #define MSG_GDI_UTEXT_drqs_OPT            _MESSAGE(60620, _("delete resource quota set(s)"))
+#define MSG_GDI_USAGE_Drqs_OPT            "[-Drqs fname|dir]"
+#define MSG_GDI_UTEXT_Drqs_OPT            _MESSAGE(60768, _("delete resource quota set(s) named in a file or directory"))
 #define MSG_GDI_USAGE_mrqs_OPT            "[-mrqs [rqs_list]]"
 #define MSG_GDI_UTEXT_mrqs_OPT            _MESSAGE(60621, _("modify resource quota set(s)"))
-#define MSG_GDI_USAGE_Mrqs_OPT            "[-Mrqs fname [rqs_list]]"
-#define MSG_GDI_UTEXT_Mrqs_OPT            _MESSAGE(60622, _("modify resource quota set(s) from file"))
+#define MSG_GDI_USAGE_Mrqs_OPT            "[-Mrqs fname|dir [rqs_list]]"
+#define MSG_GDI_UTEXT_Mrqs_OPT            _MESSAGE(60622, _("modify resource quota set(s) from a file or directory"))
 #define MSG_OBJ_NAME_MISSING              _MESSAGE(60623, _("Object name missing in request"))
 
 #define MSG_GDI_USAGE_wd_OPT              "[-wd working_directory]"
