@@ -157,7 +157,7 @@ static char **sge_parser_get_next(char **arg)
 static bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
 static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
 static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
-static spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  /* CS-2313a (-fmt): plain|json */
+spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  /* CS-2313a (-fmt): plain|json (see ocs_qconf_parse.h) */
 
 /**
  * @brief Print a message-catalogue line (plus newline) to stdout.
@@ -1227,6 +1227,46 @@ qconf_sharetree_exists()
    bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
    lFreeList(&lp);
    return exists;
+}
+
+/**
+ * @brief Fill complex-value sublists with their CULL type/numeric value (CS-2313a).
+ *
+ * The raw complex_values / threshold entries stored on an exec host or queue carry
+ * only a name + string value (CE_valtype is NONE). To emit native JSON numbers
+ * (slots -> 32, h_vmem -> bytes, h_rt -> seconds) the writer needs CE_valtype and
+ * CE_doubleval, which centry_list_fill_request() derives from the centry
+ * definitions - the same fill qstat performs before display.
+ *
+ * Runs only for -fmt json (ASCII output uses CE_stringval and is unaffected), is
+ * best-effort (unresolved entries keep their string value), and mutates only the
+ * throwaway in-memory object that is about to be serialized.
+ *
+ * @param obj       the object whose complex sublists should be filled (modified)
+ * @param ce_fields the CE_Type sublist field ids to fill (e.g. EH_consumable_config_list)
+ * @param n_fields  number of entries in @p ce_fields
+ */
+void
+qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields)
+{
+   if (qconf_opt_format != SP_FORM_JSON || obj == nullptr) {
+      return;
+   }
+   lList *alp = nullptr;
+   lList *master_centry_list = centry_list_get_via_gdi(&alp);
+   lFreeList(&alp);
+   if (master_centry_list == nullptr) {
+      return;
+   }
+   for (int i = 0; i < n_fields; i++) {
+      lList *sub = lGetListRW(obj, ce_fields[i]);
+      if (sub != nullptr && lGetNumberOfElem(sub) > 0) {
+         lList *fill_alp = nullptr;
+         centry_list_fill_request(sub, &fill_alp, master_centry_list, true, true, true);
+         lFreeList(&fill_alp);
+      }
+   }
+   lFreeList(&master_centry_list);
 }
 
 /*------------------------------------------------------------*/
@@ -4956,7 +4996,7 @@ int sge_parse_qconf(char *argv[])
          ep = lFirstRW(lp);
          filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                              CK_fields, &qconf_sfi,
-                                             SP_DEST_STDOUT, SP_FORM_ASCII,
+                                             SP_DEST_STDOUT, qconf_opt_format,
                                              nullptr, false);
          sge_free(&filename_stdout);
          lFreeList(&lp);
@@ -5109,8 +5149,11 @@ int sge_parse_qconf(char *argv[])
 
          {
             spooling_field *fields = sge_build_EH_field_list(false, true, false);
+            /* CS-2313a: type complex_values numerically for -fmt json */
+            static const int eh_ce_fields[] = { EH_consumable_config_list };
+            qconf_json_fill_complex(ep, eh_ce_fields, 1);
             filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                        SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
+                                        SP_DEST_STDOUT, qconf_opt_format, nullptr,
                                         false);
             lFreeList(&lp);
             sge_free(&fields);
@@ -5240,7 +5283,7 @@ int sge_parse_qconf(char *argv[])
 
          filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                               RL_fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, SP_FORM_ASCII,
+                                              SP_DEST_STDOUT, qconf_opt_format,
                                               nullptr, false);
          lFreeList(&lp);
          sge_free(&filename_stdout);
@@ -5297,7 +5340,7 @@ int sge_parse_qconf(char *argv[])
          {
             filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, SP_FORM_ASCII,
+                                                 SP_DEST_STDOUT, qconf_opt_format,
                                                  nullptr, false);
             lFreeList(&lp);
             sge_free(&filename_stdout);
@@ -5362,7 +5405,7 @@ int sge_parse_qconf(char *argv[])
 
          filename_stdout = spool_flatfile_write_object(&alp, lFirst(lp), false, SC_fields,
                                      &qconf_comma_sfi, SP_DEST_STDOUT,
-                                     SP_FORM_ASCII, nullptr, false);
+                                     qconf_opt_format, nullptr, false);
 
          sge_free(&filename_stdout);
          if (answer_list_output(&alp)) {
@@ -5511,7 +5554,7 @@ int sge_parse_qconf(char *argv[])
          fields = sge_build_STN_field_list(false, true);
          filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
                                      &qconf_name_value_list_sfi,
-                                     SP_DEST_STDOUT, SP_FORM_ASCII,
+                                     SP_DEST_STDOUT, qconf_opt_format,
                                      nullptr, false);
          sge_free(&fields);
          sge_free(&filename_stdout);
@@ -6234,7 +6277,7 @@ int sge_parse_qconf(char *argv[])
             /* print to stdout */
             fields = sge_build_UU_field_list(false);
             filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_param_sfi,
-                                                 SP_DEST_STDOUT, SP_FORM_ASCII,
+                                                 SP_DEST_STDOUT, qconf_opt_format,
                                                  nullptr, false);
             lFreeList(&lp);
             lFreeList(&alp);
@@ -6288,7 +6331,7 @@ int sge_parse_qconf(char *argv[])
          /* print to stdout */
          fields = sge_build_PR_field_list(false);
          filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, SP_FORM_ASCII,
+                                              SP_DEST_STDOUT, qconf_opt_format,
                                               nullptr, false);
          lFreeList(&alp);
          lFreeList(&lp);
@@ -7287,7 +7330,7 @@ static int print_acl(lList *arglp) {
          }
 
          filename_stdout = spool_flatfile_write_object(&alp, ep, false, US_fields, &qconf_param_sfi,
-                                     SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
+                                     SP_DEST_STDOUT, qconf_opt_format, nullptr,
                                      false);
          lFreeList(&alp);
          sge_free(&filename_stdout);
@@ -7455,7 +7498,7 @@ static int print_config(const char *config_name) {
 
       fields = sge_build_CONF_field_list(false);
       filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
-                                  SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
+                                  SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
       sge_free(&fields);
       sge_free(&filename_stdout);
 

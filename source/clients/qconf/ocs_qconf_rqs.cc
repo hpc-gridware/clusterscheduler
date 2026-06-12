@@ -49,6 +49,7 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "ocs_qconf_rqs.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
@@ -101,7 +102,7 @@ rqs_show(lList **answer_list, const char *name)
       const char* filename;
       filename = spool_flatfile_write_list(answer_list, rqs_list, RQS_fields, 
                                         &qconf_rqs_sfi,
-                                        SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
+                                        SP_DEST_STDOUT, qconf_opt_format, nullptr,
                                         false);
       sge_free(&filename);
    }

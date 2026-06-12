@@ -34,7 +34,17 @@
 /*___INFO__MARK_END__*/
 
 #include "spool/sge_spooling_utilities.h"
+#include "spool/flatfile/sge_flatfile.h"   /* CS-2313a: spool_flatfile_format */
 #include "sgeobj/sge_daemonize.h"
+
+/* CS-2313a: the -fmt selected serialization format (plain|json), shared with the
+ * bespoke show paths in ocs_qconf_{cqueue,centry,rqs}.cc. */
+extern spool_flatfile_format qconf_opt_format;
+
+/* CS-2313a: fill the CE_valtype/CE_doubleval of an object's complex-value sublists
+ * (e.g. QU_consumable_config_list, QU_load_thresholds) from the centry definitions
+ * so the JSON writer can emit native numbers. No-op unless -fmt json. */
+void qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields);
 
 typedef struct object_info_entry {
    ocs::gdi::Target target;

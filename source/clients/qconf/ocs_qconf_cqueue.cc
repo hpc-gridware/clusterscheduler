@@ -61,6 +61,7 @@
 #include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_qconf_cqueue.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_qconf.h"
 #include "ocs_Pattern.h"
 
@@ -599,12 +600,18 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                               fprintf(stdout, "\n");
                            }
                            
+                           /* CS-2313a: type complex_values/thresholds for -fmt json */
+                           {
+                              static const int qu_ce[] = {QU_consumable_config_list,
+                                                          QU_load_thresholds, QU_suspend_thresholds};
+                              qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
+                           }
                            filename_stdout = spool_flatfile_write_object(
                                                        answer_list, qinstance,
                                                        false, fields,
                                                        &qconf_sfi,
                                                        SP_DEST_STDOUT,
-                                                       SP_FORM_ASCII, nullptr,
+                                                       qconf_opt_format, nullptr,
                                                        false);
                            sge_free(&fields);
                            sge_free(&filename_stdout);
@@ -659,11 +666,17 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                               fprintf(stdout, "\n");
                            }
 
+                           /* CS-2313a: type complex_values/thresholds for -fmt json */
+                           {
+                              static const int qu_ce[] = {QU_consumable_config_list,
+                                                          QU_load_thresholds, QU_suspend_thresholds};
+                              qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
+                           }
                            filename = spool_flatfile_write_object(answer_list, qinstance,
                                                                   false, fields,
                                                                   &qconf_sfi,
                                                                   SP_DEST_STDOUT,
-                                                                  SP_FORM_ASCII, nullptr,
+                                                                  qconf_opt_format, nullptr,
                                                                   false);
                            sge_free(&fields);
                            sge_free(&filename);
@@ -695,7 +708,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 
                      outname = spool_flatfile_write_object(answer_list, cqueue, 
                                                  false, CQ_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, SP_FORM_ASCII, 
+                                                 SP_DEST_STDOUT, qconf_opt_format, 
                                                  nullptr, false);
                      sge_free(&outname);
                            
@@ -728,7 +741,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
       DTRACE;
       ret &= cqueue_set_template_attributes(cqueue, answer_list);
       filename = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
-                                             &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII,
+                                             &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format,
                                              nullptr, false);
                            
       sge_free(&filename);
