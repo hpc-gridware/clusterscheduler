@@ -498,6 +498,14 @@ root/manager privileges.
 Modifier for the delete operations. Suppresses the interactive confirmation prompt that a directory based delete
 (`-Dcal *dir*` and the equivalents for other objects) otherwise shows before removing multiple objects.
 
+## -fmt *plain*|*json*
+Selects the serialization format for the show (`-s*`) and file based add/modify (`-A*`/`-M*`) operations.
+`plain` (the default) is the traditional flatfile ASCII format. `json` emits/reads a structured JSON
+representation driven by the same object field definitions, with values typed natively (numbers, booleans,
+nested arrays) and complex-attribute values normalized (memory in bytes, time in seconds). The interactive
+editor based operations (`-m*`) always use the plain format. This modifier may appear anywhere on the command
+line.
+
 ## -help
 Prints a listing of all options.
 

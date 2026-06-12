@@ -157,6 +157,7 @@ static char **sge_parser_get_next(char **arg)
 static bool qconf_opt_dry_run = false;   /* H3 (-dry):    validate/report, do not send */
 static bool qconf_opt_force = false;     /* H6 (-f):      skip the bulk-delete prompt */
 static bool qconf_opt_strict = false;    /* H2 (-strict): apply nothing unless all files valid */
+static spool_flatfile_format qconf_opt_format = SP_FORM_ASCII;  /* CS-2313a (-fmt): plain|json */
 
 /**
  * @brief Print a message-catalogue line (plus newline) to stdout.
@@ -1284,6 +1285,24 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-strict", *spp) == 0) {
          qconf_opt_strict = true;
       }
+      /* CS-2313a: -fmt plain|json selects the output/input serialization format
+       * for the show, add-from-file and modify-from-file operations. Pre-scanned
+       * so it applies regardless of position. */
+      if (strcmp("-fmt", *spp) == 0) {
+         const char *val = *(spp + 1);
+         if (val == nullptr) {
+            fprintf(stderr, "%s\n", MSG_GDI_USAGE_Fmt_OPT);
+            DRETURN(1);
+         } else if (strcmp(val, "plain") == 0) {
+            qconf_opt_format = SP_FORM_ASCII;
+         } else if (strcmp(val, "json") == 0) {
+            qconf_opt_format = SP_FORM_JSON;
+         } else {
+            fprintf(stderr, MSG_QCONF_UNKNOWNFMT_S, val);
+            fprintf(stderr, "\n");
+            DRETURN(1);
+         }
+      }
       spp++;
    }
 
@@ -1306,6 +1325,16 @@ int sge_parse_qconf(char *argv[])
       if (strcmp("-dry", *spp) == 0 ||
           strcmp("-f", *spp) == 0 ||
           strcmp("-strict", *spp) == 0) {
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      /* CS-2313a: -fmt plain|json — parsed in the pre-scan above; skip it and
+       * its value here. */
+
+      if (strcmp("-fmt", *spp) == 0) {
+         spp = sge_parser_get_next(spp);   /* consume the format value */
          spp++;
          continue;
       }
@@ -4771,7 +4800,7 @@ int sge_parse_qconf(char *argv[])
          ep = lFirstRW(lp);
          filename_stdout = spool_flatfile_write_object(&alp, ep, false,
                                               CAL_fields, &qconf_sfi,
-                                              SP_DEST_STDOUT, SP_FORM_ASCII,
+                                              SP_DEST_STDOUT, qconf_opt_format,
                                               nullptr, false);
          sge_free(&filename_stdout);
          lFreeList(&lp);

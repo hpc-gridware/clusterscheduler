@@ -469,6 +469,9 @@
 #define MSG_GDI_USAGE_Dconf_OPT                          "[-Dconf fname|dir]"
 #define MSG_GDI_UTEXT_Dconf_OPT                          _MESSAGE(60772, _("delete local configuration(s) named by a file or directory"))
 
+#define MSG_GDI_USAGE_Fmt_OPT                            "[-fmt plain|json]"
+#define MSG_GDI_UTEXT_Fmt_OPT                            _MESSAGE(60773, _("output/input format for -s*/-A*/-M* (default plain)"))
+
 #define MSG_GDI_USAGE_de_OPT_HOST_LIST                   "[-de host_list]"
 #define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host(s)"))
 

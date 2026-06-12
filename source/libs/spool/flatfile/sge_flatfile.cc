@@ -59,12 +59,15 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge.h"
+#include "uti/ocs_JsonUtil.h"   /* CS-2313a: rapidjson Writer + write_json helpers */
+#include <rapidjson/prettywriter.h>   /* CS-2313a: indented (pretty) JSON output */
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/config.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_feature.h"
+#include "sgeobj/sge_object.h"   /* CS-2313a: object_get_type/_name for the JSON $id */
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -575,10 +578,30 @@ spool_flatfile_write_object_fields(lList **answer_list, const lListElem *object,
                                    bool root);
 
 static bool
-spool_flatfile_write_list_fields(lList **answer_list, const lList *list, 
-                                 dstring *buffer, 
+spool_flatfile_write_list_fields(lList **answer_list, const lList *list,
+                                 dstring *buffer,
                                  const spool_flatfile_instr *instr,
                                  const spooling_field *fields, bool recurse, const char *list_name);
+
+/* CS-2313a: generic JSON serialization of an object / list, driven by the same
+ * spooling_field descriptors the ASCII walker uses. */
+static bool
+spool_flatfile_write_object_members_json(lList **answer_list, const lListElem *object,
+                                         rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                         const spooling_field *fields);
+static bool
+spool_flatfile_write_object_fields_json(lList **answer_list, const lListElem *object,
+                                        rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                        const spooling_field *fields);
+static bool
+spool_flatfile_write_list_fields_json(lList **answer_list, const lList *list,
+                                      rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                      const spooling_field *fields);
+static void
+spool_flatfile_write_json_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                   const lListElem *object);
+static const char *
+spool_flatfile_json_typename(const lListElem *object, dstring *out);
 #ifdef USE_FOPEN
 static FILE *
 spool_flatfile_open_file(lList **answer_list,
@@ -884,14 +907,42 @@ spool_flatfile_write_list(lList **answer_list,
          data_len = sge_dstring_strlen(&char_buffer);
 
          break;
+      case SP_FORM_JSON: {
+         /* CS-2313a: the list wrapped in a document with the $schema/$id envelope
+          * and the objects under a key named after the (lowercase) object type. */
+         rapidjson::StringBuffer sb;
+         rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+         writer.SetIndent(' ', 3);
+         const lListElem *first = lFirst(list);
+         dstring key = DSTRING_INIT;
+         writer.StartObject();
+         if (first != nullptr) {
+            spool_flatfile_write_json_envelope(writer, first);
+            writer.Key(spool_flatfile_json_typename(first, &key));
+         } else {
+            writer.Key("objects");
+         }
+         bool ok = spool_flatfile_write_list_fields_json(answer_list, list, writer, fields);
+         writer.EndObject();
+         sge_dstring_free(&key);
+         if (ok) {
+            sge_dstring_append(&char_buffer, sb.GetString());
+            sge_dstring_append_char(&char_buffer, '\n');
+            data     = sge_dstring_get_string(&char_buffer);
+            data_len = sge_dstring_strlen(&char_buffer);
+         } else {
+            sge_dstring_clear(&char_buffer);
+         }
+         break;
+      }
       case SP_FORM_XML:
       case SP_FORM_CULL:
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                 ANSWER_QUALITY_ERROR, 
-                                 MSG_NOTYETIMPLEMENTED_S, 
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
+                                 MSG_NOTYETIMPLEMENTED_S,
                                  "XML and CULL spooling");
          break;
-   }      
+   }
 
    if (data == nullptr || data_len == 0) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -914,6 +965,167 @@ spool_flatfile_write_list(lList **answer_list,
    }
 
    DRETURN(result);
+}
+
+/* CS-2313a: write one object as a JSON object, keyed by the spooling_field
+ * names and typed from the CULL field types. Scalars become native JSON values
+ * (numbers/bool/string); sublists recurse into JSON arrays of objects. Per-entry
+ * complex-value typing (CE_valtype -> bytes/seconds) and ISO timestamps are added
+ * in later increments; this covers scalars + generic sublist recursion. */
+/* lowercase object type name (e.g. "CALENDAR" -> "calendar") into @p out;
+ * used for the JSON $id and the list wrapper key. */
+static const char *
+spool_flatfile_json_typename(const lListElem *object, dstring *out)
+{
+   const char *type_name = object_get_name(object_get_type(object));
+   sge_dstring_clear(out);
+   for (const char *c = type_name; c != nullptr && *c != '\0'; c++) {
+      sge_dstring_append_char(out, (char)tolower((unsigned char)*c));
+   }
+   return sge_dstring_get_string(out);
+}
+
+/* CS-2313a: emit the "$schema"/"$id" members of the top-level document, mirroring
+ * qstat's convention. The $id is derived from the object's type name. */
+static void
+spool_flatfile_write_json_envelope(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                   const lListElem *object)
+{
+   writer.Key("$schema");
+   writer.String("https://json-schema.org/draft/2020-12/schema");
+
+   dstring name = DSTRING_INIT;
+   dstring id = DSTRING_INIT;
+   sge_dstring_sprintf(&id,
+      "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/"
+      "source/dist/util/resources/json-schemas/v9.2/ocs-qconf-%s.schema.json",
+      spool_flatfile_json_typename(object, &name));
+   writer.Key("$id");
+   writer.String(sge_dstring_get_string(&id));
+   sge_dstring_free(&id);
+   sge_dstring_free(&name);
+}
+
+/* CS-2313a: emit the "key": value members of one object (no surrounding braces),
+ * keyed by the spooling_field names and typed from the CULL field types. Scalars
+ * become native JSON values; sublists recurse into JSON arrays of objects. Per-entry
+ * complex-value typing (CE_valtype -> bytes/seconds) and ISO timestamps come in
+ * later increments; this covers scalars + generic sublist recursion. */
+static bool
+spool_flatfile_write_object_members_json(lList **answer_list, const lListElem *object,
+                                         rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                         const spooling_field *fields)
+{
+   DENTER(FLATFILE_LAYER);
+
+   SGE_CHECK_POINTER_FALSE(object, answer_list);
+   SGE_CHECK_POINTER_FALSE(fields, answer_list);
+
+   const lDescr *descr = lGetElemDescr(object);
+
+   for (int i = 0; fields[i].nm != NoName; i++) {
+      const int nm = fields[i].nm;
+      const char *name = fields[i].name;
+
+      /* JSON needs a key; structural/unnamed fields are skipped */
+      if (name == nullptr) {
+         continue;
+      }
+      const int pos = lGetPosInDescr(descr, nm);
+      if (pos < 0) {
+         continue;
+      }
+
+      switch (lGetPosType(descr, pos)) {
+         case lDoubleT:
+            writer.Key(name);
+            writer.Double(lGetPosDouble(object, pos));
+            break;
+         case lUlongT:
+            writer.Key(name);
+            writer.Uint64(lGetPosUlong(object, pos));
+            break;
+         case lUlong64T:
+            writer.Key(name);
+            writer.Uint64(lGetPosUlong64(object, pos));
+            break;
+         case lLongT:
+            writer.Key(name);
+            writer.Int64(lGetPosLong(object, pos));
+            break;
+         case lIntT:
+            writer.Key(name);
+            writer.Int(lGetPosInt(object, pos));
+            break;
+         case lBoolT:
+            writer.Key(name);
+            writer.Bool(lGetPosBool(object, pos));
+            break;
+         case lStringT: {
+            const char *s = lGetPosString(object, pos);
+            writer.Key(name);
+            s != nullptr ? writer.String(s) : writer.Null();
+            break;
+         }
+         case lHostT: {
+            const char *s = lGetPosHost(object, pos);
+            writer.Key(name);
+            s != nullptr ? writer.String(s) : writer.Null();
+            break;
+         }
+         case lListT: {
+            writer.Key(name);
+            const lList *sub_list = lGetPosList(object, pos);
+            const spooling_field *sub_fields = fields[i].sub_fields;
+            if (sub_list == nullptr || lGetNumberOfElem(sub_list) == 0 || sub_fields == nullptr) {
+               writer.StartArray();
+               writer.EndArray();
+            } else if (!spool_flatfile_write_list_fields_json(answer_list, sub_list, writer,
+                                                              sub_fields)) {
+               DRETURN(false);
+            }
+            break;
+         }
+         default:
+            writer.Key(name);
+            writer.Null();
+            break;
+      }
+   }
+
+   DRETURN(true);
+}
+
+/* one object as a braced JSON object (no envelope); used for list/sublist elements */
+static bool
+spool_flatfile_write_object_fields_json(lList **answer_list, const lListElem *object,
+                                        rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                        const spooling_field *fields)
+{
+   writer.StartObject();
+   bool ok = spool_flatfile_write_object_members_json(answer_list, object, writer, fields);
+   writer.EndObject();
+   return ok;
+}
+
+/* a list of objects as a JSON array */
+static bool
+spool_flatfile_write_list_fields_json(lList **answer_list, const lList *list,
+                                      rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer,
+                                      const spooling_field *fields)
+{
+   DENTER(FLATFILE_LAYER);
+
+   writer.StartArray();
+   const lListElem *ep;
+   for_each_ep(ep, list) {
+      if (!spool_flatfile_write_object_fields_json(answer_list, ep, writer, fields)) {
+         DRETURN(false);
+      }
+   }
+   writer.EndArray();
+
+   DRETURN(true);
 }
 
 /****** spool/flatfile/spool_flatfile_write_object() ********************
@@ -1024,12 +1236,31 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
          data_len = sge_dstring_strlen(&char_buffer);
 
          break;
+      case SP_FORM_JSON: {
+         /* CS-2313a: one object as a JSON document with the $schema/$id envelope. */
+         rapidjson::StringBuffer sb;
+         rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+         writer.SetIndent(' ', 3);
+         writer.StartObject();
+         spool_flatfile_write_json_envelope(writer, object);
+         bool ok = spool_flatfile_write_object_members_json(answer_list, object, writer, fields_in);
+         writer.EndObject();
+         if (ok) {
+            sge_dstring_append(&char_buffer, sb.GetString());
+            sge_dstring_append_char(&char_buffer, '\n');
+            data     = sge_dstring_get_string(&char_buffer);
+            data_len = sge_dstring_strlen(&char_buffer);
+         } else {
+            sge_dstring_clear(&char_buffer);
+         }
+         break;
+      }
       case SP_FORM_XML:
       case SP_FORM_CULL:
-         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR, "not yet implemented");
          break;
-   }      
+   }
 
    if (data_len == 0) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 

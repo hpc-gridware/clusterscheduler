@@ -79,7 +79,8 @@ typedef enum {
 typedef enum {
    SP_FORM_ASCII,
    SP_FORM_XML,
-   SP_FORM_CULL
+   SP_FORM_CULL,
+   SP_FORM_JSON      /* CS-2313a: structured JSON output/input (qconf -fmt json) */
 } spool_flatfile_format;
 
 /*

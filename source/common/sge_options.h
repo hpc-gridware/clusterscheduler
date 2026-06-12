@@ -155,6 +155,7 @@ enum {
    sconfl_OPT,  /* show list of local configurations */
    dconf_OPT,   /* delete local configuration */
    Dconf_OPT,   /* delete local configuration(s) from file/directory (CS-2311) */
+   Fmt_OPT,     /* -fmt plain|json: output/input serialization format (CS-2313a) */
    starthist_OPT,  /* flush history */
 
    Mq_OPT,
