@@ -1602,33 +1602,31 @@ int sge_parse_qconf(char *argv[])
       /* "-auser" */
 
       if (strcmp("-auser", *spp) == 0) {
+         /* CS-2308 C1: the user name is optional; when omitted a generic
+          * template named "template" is offered for editing (cf. -acal). */
+         const char *user_name = "template";
+
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
-         /* get a template for editing */
+         if (!sge_next_is_an_opt(spp)) {
+            spp = sge_parser_get_next(spp);
+            user_name = *spp;
+         }
+
+         /* get a template for editing, pre-filled with the requested name */
          ep = getUserTemplate();
+         lSetString(ep, UU_name, user_name);
 
          newep = edit_user(ep, uid, gid);
          lFreeElem(&ep);
 
-         /* send it to qmaster */
-         lp = lCreateList("User list to add", UU_Type);
-         lAppendElem(lp, newep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            DRETURN(1);
-         } else {
-            fprintf(stdout, "%s\n", lGetString(aep, AN_text));
+         /* CS-2308 C2: upsert (modify if the user already exists) */
+         if (newep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::UU_LIST, UU_Type,
+                                                  UU_name, newep);
          }
 
          spp++;
-         lFreeList(&alp);
-         lFreeList(&lp);
-
          continue;
       }
 
@@ -1663,63 +1661,18 @@ int sge_parse_qconf(char *argv[])
       /* "-Auser" */
 
       if (strcmp("-Auser", *spp) == 0) {
-         char* file = nullptr;
-         spooling_field *fields = nullptr;
+         /* CS-2308 C2+C3: accept a file OR a directory, upsert each user.
+          * The user object uses a dynamically built field list. */
+         spooling_field *fields = sge_build_UU_field_list(false);
 
          /* no adminhost/manager check needed here */
 
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
-         }
-
-
-         /* get project  */
-         ep = nullptr;
-         fields_out[0] = NoName;
-         fields = sge_build_UU_field_list(false);
-         ep = spool_flatfile_read_object(&alp, UU_Type, nullptr, fields, fields_out,
-                                          true, &qconf_sfi, SP_FORM_ASCII, nullptr,
-                                          file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&ep);
-         }
-
-         if (ep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
-         sge_free(&fields);
-
-         if (missing_field != NoName) {
-            lFreeElem(&ep);
-            answer_list_output(&alp);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
+                              UU_name, *spp, nullptr) != 0) {
             sge_parse_return = 1;
          }
-
-         if (ep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
-         }
-
-         /* send it to qmaster */
-         lp = lCreateList("User to add", UU_Type);
-         lAppendElem(lp, ep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeList(&lp);
-            DRETURN(1);
-         } else {
-            fprintf(stdout, "%s\n", lGetString(aep, AN_text));
-         }
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_free(&fields);
 
          spp++;
          continue;
@@ -4362,6 +4315,8 @@ int sge_parse_qconf(char *argv[])
       /* "-muser username" */
 
       if (strcmp("-muser", *spp) == 0) {
+         lListElem *user_src = nullptr;
+
          qconf_is_manager_on_admin_host(username, qualified_hostname);
 
          spp = sge_parser_get_next(spp);
@@ -4385,44 +4340,25 @@ int sge_parse_qconf(char *argv[])
          }
          lFreeList(&alp);
 
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, *spp);
-            fprintf(stderr, "\n");
-            spp++;
-            lFreeList(&lp);
-            continue;
+         if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+            user_src = lDechainElem(lp, lFirstRW(lp));
+         } else {
+            /* CS-2308 C2: modifying a non-existent user implicitly adds it —
+             * offer a template pre-filled with the name instead of failing. */
+            user_src = getUserTemplate();
+            lSetString(user_src, UU_name, *spp);
          }
-         ep = lFirstRW(lp);
+         lFreeList(&lp);
 
          /* edit user */
-         newep = edit_user(ep, uid, gid);
+         newep = edit_user(user_src, uid, gid);
+         lFreeElem(&user_src);
 
-         /* if the user name has changed, we need to print an error message */
-         if (newep == nullptr || strcmp(lGetString(ep, UU_name), lGetString(newep, UU_name)) != 0) {
-            fprintf(stderr, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, lGetString(ep, UU_name), lGetString(newep, UU_name));
-            fprintf(stderr, "\n");
-            lFreeElem(&newep);
-            lFreeList(&lp);
-            DRETURN(1);
-         } else {
-            lFreeList(&lp);
-            /* send it to qmaster */
-            lp = lCreateList("User list to modify", UU_Type);
-            lAppendElem(lp, newep);
-            alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-            aep = lFirst(alp);
-            answer_exit_if_not_recoverable(aep);
-            if (answer_get_status(aep) != STATUS_OK) {
-               fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-               lFreeList(&alp);
-               lFreeList(&lp);
-               DRETURN(1);
-            } else {
-               fprintf(stdout, "%s\n", lGetString(aep, AN_text));
-            }
+         /* CS-2308 C2: upsert (add if it did not exist) */
+         if (newep != nullptr) {
+            sge_parse_return |= qconf_send_upsert(ocs::gdi::Target::UU_LIST, UU_Type,
+                                                  UU_name, newep);
          }
-         lFreeList(&alp);
-         lFreeList(&lp);
 
          spp++;
          continue;
@@ -4486,98 +4422,39 @@ int sge_parse_qconf(char *argv[])
 
 /*----------------------------------------------------------------------------*/
 
-      /* "-Muser file" */
+      /* "-Muser file|dir" */
 
       if (strcmp("-Muser", *spp) == 0) {
-         char* file = nullptr;
-         const char* uname = nullptr;
-         spooling_field *fields = nullptr;
+         /* CS-2308 C2+C3: accept a file OR a directory, upsert each user. */
+         spooling_field *fields = sge_build_UU_field_list(false);
 
          /* no adminhost/manager check needed here */
 
-         if (!sge_next_is_an_opt(spp)) {
-            spp = sge_parser_get_next(spp);
-            file = *spp;
-         } else {
-            sge_error_and_exit(MSG_FILE_NOFILEARGUMENTGIVEN);
+         spp = sge_parser_get_next(spp);
+         if (qconf_apply_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
+                              UU_name, *spp, nullptr) != 0) {
+            sge_parse_return = 1;
          }
-
-         /* get user from file */
-         newep = nullptr;
-         fields_out[0] = NoName;
-         fields = sge_build_UU_field_list(false);
-         newep = spool_flatfile_read_object(&alp, UU_Type, nullptr,
-                                         fields, fields_out, true, &qconf_sfi,
-                                         SP_FORM_ASCII, nullptr, file);
-
-         if (answer_list_output(&alp)) {
-            lFreeElem(&newep);
-         }
-
-         if (newep != nullptr) {
-            missing_field = spool_get_unprocessed_field(fields, fields_out, &alp);
-         }
-
          sge_free(&fields);
 
-         if (missing_field != NoName) {
-            lFreeElem(&newep);
-            answer_list_output(&alp);
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+
+      /* "-Duser file|dir": CS-2308 C5 — delete the user(s) named in the file(s) */
+
+      if (strcmp("-Duser", *spp) == 0) {
+         spooling_field *fields = sge_build_UU_field_list(false);
+
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_delete_path(ocs::gdi::Target::UU_LIST, UU_Type, fields,
+                               UU_name, *spp) != 0) {
+            sge_parse_return = 1;
          }
-
-         if (newep == nullptr) {
-            sge_error_and_exit(MSG_FILE_ERRORREADINGINFILE);
-         }
-
-         uname = lGetString(newep, UU_name);
-
-         /* get user */
-         where = lWhere("%T( %I==%s )", UU_Type, UU_name, uname);
-         what = lWhat("%T(ALL)", UU_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE, &lp, where, what);
-         lFreeWhere(&where);
-         lFreeWhat(&what);
-
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-            fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-            lFreeList(&alp);
-            lFreeElem(&newep);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-
-         if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
-            fprintf(stderr, MSG_USER_XISNOKNOWNUSER_S, uname);
-            fprintf(stderr, "\n");
-            fflush(stdout);
-            fflush(stderr);
-            lFreeList(&alp);
-            lFreeElem(&newep);
-            lFreeList(&lp);
-            DRETURN(1);
-         }
-         lFreeList(&alp);
-
-         /* send it to qmaster */
-         lFreeList(&lp);
-         lp = lCreateList("User list to modify", UU_Type);
-         lAppendElem(lp, newep);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::UU_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &lp, nullptr, nullptr);
-         aep = lFirst(alp);
-         answer_exit_if_not_recoverable(aep);
-         if (answer_get_status(aep) != STATUS_OK) {
-           fprintf(stderr, "%s\n", lGetString(aep, AN_text));
-           lFreeList(&alp);
-           lFreeList(&lp);
-           DRETURN(1);
-         } else {
-           fprintf(stdout, "%s\n", lGetString(aep, AN_text));
-         }
-
-         lFreeList(&alp);
-         lFreeList(&lp);
+         sge_free(&fields);
 
          spp++;
          continue;

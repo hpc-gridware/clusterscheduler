@@ -174,6 +174,7 @@ enum {
    mus_OPT,     /* SGE modify user */
    Mus_OPT,     /* SGE modify user from file */
    dus_OPT,     /* SGE delete user */
+   Dus_OPT,     /* SGE delete users from file/directory (CS-2308) */
    sus_OPT,     /* SGE show user */
 
    susl_OPT,    /* SGE show user list */

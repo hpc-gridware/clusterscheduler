@@ -400,11 +400,11 @@
 #define MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST               "[-Au fname]"
 #define MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST               _MESSAGE(23313, _("add userset from file"))
 
-#define MSG_GDI_USAGE_AUSER                              "[-auser]"
+#define MSG_GDI_USAGE_AUSER                              "[-auser [name]]"
 #define MSG_GDI_UTEXT_AUSER                              _MESSAGE(23314, _("add user"))
 
-#define MSG_GDI_USAGE_Auser                              "[-Auser fname]"
-#define MSG_GDI_UTEXT_Auser                              _MESSAGE(23315, _("add user from file"))
+#define MSG_GDI_USAGE_Auser                              "[-Auser fname|dir]"
+#define MSG_GDI_UTEXT_Auser                              _MESSAGE(23315, _("add user from file or directory"))
 
 #define MSG_GDI_USAGE_APRJ                               "[-aprj]"
 #define MSG_GDI_UTEXT_APRJ                               _MESSAGE(23316, _("add project"))
@@ -510,6 +510,9 @@
 
 #define MSG_GDI_USAGE_DUSER_USER                         "[-duser user_list]"
 #define MSG_GDI_UTEXT_DUSER_USER                         _MESSAGE(23348, _("delete user(s)"))
+
+#define MSG_GDI_USAGE_Duser_OPT                          "[-Duser fname|dir]"
+#define MSG_GDI_UTEXT_Duser_OPT                          _MESSAGE(60769, _("delete user(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_dprj_OPT_PROJECT                   "[-dprj project_list]"
 #define MSG_GDI_UTEXT_dprj_OPT_PROJECT                   _MESSAGE(23349, _("delete project"))
@@ -621,8 +624,8 @@
 #define MSG_GDI_USAGE_muser_OPT_USER                     "[-muser user]"
 #define MSG_GDI_UTEXT_muser_OPT_USER                     _MESSAGE(23386, _("modify a user"))
 
-#define MSG_GDI_USAGE_Muser_OPT_USER                     "[-Muser fname]"
-#define MSG_GDI_UTEXT_Muser_OPT_USER                     _MESSAGE(23387, _("modify a user from file"))
+#define MSG_GDI_USAGE_Muser_OPT_USER                     "[-Muser fname|dir]"
+#define MSG_GDI_UTEXT_Muser_OPT_USER                     _MESSAGE(23387, _("modify a user from file or directory"))
 
 #define MSG_GDI_USAGE_mprj_OPT_PROJECT                   "[-mprj project]"
 #define MSG_GDI_UTEXT_mprj_OPT_PROJECT                   _MESSAGE(23388, _("modify a project"))

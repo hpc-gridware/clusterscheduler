@@ -692,6 +692,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       MARK(OA_USER_LIST);
    }
 
+   if (VALID_OPT(Dus_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Duser_OPT, MSG_GDI_UTEXT_Duser_OPT);
+   }
+
 
    if (VALID_OPT(e_OPT, prog_number)) {
       if (prog_number == QMOD) {

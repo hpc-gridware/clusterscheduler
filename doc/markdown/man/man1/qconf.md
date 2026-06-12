@@ -278,14 +278,17 @@ Requires root/manager/operator privileges.
 Add the user access list (ACL) defined in *fname** to xxQS_NAMExx. User lists are used for queue usage authentication.
 Requires root/manager/operator privileges.
 
-## -auser
+## -auser \[*name*\]
 Adds a user to the list of registered users (see xxqs_name_sxx_user*(5)). This command invokes an editor
-for showing a template user. The new user is registered after changing the entry and exiting the editor. Requires
-root/manager privileges.
+for showing a template user. The new user is registered after changing the entry and exiting the editor. The
+*name* is optional; if it is given it pre-fills the template's name field. If a user of the given name already
+exists it is modified rather than rejected. Requires root/manager privileges.
 
-## -Auser *fname*
+## -Auser *fname*|*dir*
 Add the user defined in *fname* to the xxQS_NAMExx cluster. The format of the user specification is described
-in xxqs_name_sxx_user(5). Requires root/manager privileges.
+in xxqs_name_sxx_user(5). If the argument is a directory, one user per (non-hidden) regular file in it is added;
+a user that already exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
+root/manager privileges.
 
 ## -cb
 This parameter can be used since xxQS_NAMExx version 6.2u5 in combination with the command line switch `-sep`.
@@ -453,8 +456,15 @@ root/manager/operator privileges.
 ## -dul *acl_name*,...
 Deletes one or more access control lists (ACLs) from the system. Requires root/manager/operator privileges.
 
-## -duser
-Deletes the specified user(s) from the list of registered users. Requires root/manager privileges.
+## -duser *user_list*
+Deletes the specified user(s) from the list of registered users. More than one may be deleted at once by giving a
+comma-separated list of names. Requires root/manager privileges.
+
+## -Duser *fname*|*dir*
+Deletes the user(s) named in a file or in a directory of files. Each file is read and the user named in it is
+deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry` previews it. A user
+named in a file that no longer exists is reported and skipped rather than treated as an error. Requires
+root/manager privileges.
 
 ## -f
 Modifier for the delete operations. Suppresses the interactive confirmation prompt that a directory based delete
@@ -670,14 +680,17 @@ configuration with the xxqs_name_sxx_qmaster(8). Requires root/manager privilege
 Takes the user access list (ACL) defined in *fname* to overwrite any existing ACL with the same name.
 See xxqs_name_sxx_access_list(5) for information on the ACL configuration format. Requires root or manager privilege.
 
-## -muser user
+## -muser *user*
 Data for the specific user is retrieved (see xxqs_name_sxx_user(5)) and an editor is invoked for modifying the
-user definition. Upon exiting the editor, the modified data is registered at xxqs_name_sxx_qmaster(8). Requires
+user definition. Upon exiting the editor, the modified data is registered at xxqs_name_sxx_qmaster(8). If the user
+does not exist it is created from a template pre-filled with the given name rather than rejected. Requires
 root/manager privilege.
 
-## -Muser *fname*
+## -Muser *fname*|*dir*
 Modify the user defined in *fname* in the xxQS_NAMExx cluster. The format of the user specification is described in
-xxqs_name_sxx_user(5). Requires root/manager privileges.
+xxqs_name_sxx_user(5). If the argument is a directory, one user per (non-hidden) regular file in it is modified; a
+user that does not yet exist is created instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
+root/manager privileges.
 
 ## -purge *queue* *attr_nm*,... *obj_spec*  
 
