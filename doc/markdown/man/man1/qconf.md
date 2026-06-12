@@ -264,11 +264,13 @@ of specified shares. Requires root/manager privileges.
 ## -astree
 Adds the definition of a share tree to the system (see xxqs_name_sxx_share_tree(5)). A template share tree is
 retrieved and an editor is invoked for modifying the share tree definition. Upon exiting the editor, the
-modified data is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+modified data is registered with xxqs_name_sxx_qmaster(8). The share tree is a singleton: if one already exists it
+is modified rather than rejected (`-astree` and `-mstree` are interchangeable). Requires root/manager privileges.
 
 ## -Astree *fname*
-Adds the definition of a share tree to the system (see xxqs_name_sxx_share_tree(5)) from the file *fname*.
-Requires root or manager privileges.
+Adds the definition of a share tree to the system (see xxqs_name_sxx_share_tree(5)) from the file *fname*. If a
+share tree already exists it is modified instead (`-Astree` and `-Mstree` are interchangeable). Requires root or
+manager privileges.
 
 ## -at *thread_name*
 Activates an additional thread in the xxqs_name_sxx_qmaster(8) process. *thread_name* might be only *'scheduler'*.
@@ -697,11 +699,13 @@ the share tree. The node is set to the number of specified *shares*. Requires ro
 ## -mstree
 Modifies the definition of the share tree (see xxqs_name_sxx_share_tree(5)). The present share tree is retrieved
 and an editor is invoked for modifying the share tree definition. Upon exiting the editor, the modified data
-is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
+is registered with xxqs_name_sxx_qmaster(8). If no share tree exists yet it is created rather than rejected
+(`-mstree` and `-astree` are interchangeable). Requires root/manager privileges.
 
 ## -Mstree *fname*
 Modifies the definition of the share tree (see xxqs_name_sxx_share_tree(5)). The modified sharetree is read from
-file fname. Requires root/manager privileges.
+file fname. If no share tree exists yet it is created instead (`-Mstree` and `-Astree` are interchangeable).
+Requires root/manager privileges.
 
 ## -mu *acl_name*
 Retrieves the current configuration for the specified user access list, executes an editor and registers the new

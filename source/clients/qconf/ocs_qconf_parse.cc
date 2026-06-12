@@ -1051,6 +1051,30 @@ qconf_conf_delete_path(const char *path)
    return ret;
 }
 
+/**
+ * @brief Whether a share tree currently exists (CS-2312 C2 upsert probe).
+ *
+ * The share tree is a singleton stored as a (possibly empty) list of nodes, so
+ * "exists" means the STN_LIST GET returns at least one node. Used to choose
+ * between a GDI ADD (no tree yet) and MOD (replace the existing tree) so that
+ * -astree/-Astree and -mstree/-Mstree become interchangeable upserts.
+ *
+ * @return true if a share tree is configured, false otherwise
+ */
+static bool
+qconf_sharetree_exists()
+{
+   lList *lp = nullptr;
+   lEnumeration *what = lWhat("%T(%I)", STN_Type, STN_id);
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
+   lFreeWhat(&what);
+   lFreeList(&alp);
+   bool exists = (lp != nullptr && lGetNumberOfElem(lp) > 0);
+   lFreeList(&lp);
+   return exists;
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -1978,8 +2002,14 @@ int sge_parse_qconf(char *argv[])
          newlp = lCreateList("sharetree add", STN_Type);
          lAppendElem(newlp, ep);
 
+         /* CS-2312 C2: the share tree is a singleton - add and modify are the
+          * same upsert. Use MOD when a tree already exists, ADD otherwise, so
+          * -astree/-Astree no longer fail when a tree is already configured. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST,
+                                         qconf_sharetree_exists() ? ocs::gdi::Command::MOD
+                                                                  : ocs::gdi::Command::ADD,
+                                         ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
          lFreeWhat(&what);
 
          ep = lFirstRW(alp);
@@ -4241,8 +4271,13 @@ int sge_parse_qconf(char *argv[])
          newlp = lCreateList("sharetree modify", STN_Type);
          lAppendElem(newlp, ep);
 
+         /* CS-2312 C2: singleton upsert - ADD when no tree exists yet, MOD
+          * otherwise, so -mstree/-Mstree no longer fail when none is configured. */
          what = lWhat("%T(ALL)", STN_Type);
-         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
+         alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::STN_LIST,
+                                         qconf_sharetree_exists() ? ocs::gdi::Command::MOD
+                                                                  : ocs::gdi::Command::ADD,
+                                         ocs::gdi::SubCommand::NONE, &newlp, nullptr, what);
          lFreeWhat(&what);
          ep = lFirstRW(alp);
          answer_exit_if_not_recoverable(ep);
