@@ -892,6 +892,165 @@ qconf_rqs_delete(const char *path)
    return ret;
 }
 
+/* ===== CS-2311: cluster/host configuration helpers ========================
+ * The config object keys on the host name, which is the file *basename* (not a
+ * field inside the file), and -Aconf/-Mconf already accept a comma-separated
+ * file list. So config gets its own file/dir helpers (like RQS) rather than the
+ * field-name-based qconf_apply_path/qconf_delete_path. add_modify_config() and
+ * delete_config() are forward-declared at the top of this file. */
+
+/** @brief Resolve the host key of a config file: its basename, host-resolved
+ *         in place into @p host_ep (EH_name). Returns the resolved host name. */
+static const char *
+qconf_conf_host_of(const char *filepath, lListElem *host_ep)
+{
+   const char *slash = strrchr(filepath, '/');
+   const char *base = slash != nullptr ? slash + 1 : filepath;
+   lSetHost(host_ep, EH_name, base);
+   sge_resolve_host(host_ep, EH_name);   /* best-effort, like -Aconf/-dconf */
+   return lGetHost(host_ep, EH_name);
+}
+
+/** @brief Context for the config apply/delete per-file callbacks. */
+struct qconf_conf_ctx {
+   uint32_t flags;   ///< add_modify_config() flags (apply path only)
+   lList *hosts;     ///< delete path: collected CONF_name host elements
+   int n_ok;         ///< files applied / hosts collected (CS-2299 H1)
+   int n_fail;       ///< files that failed
+};
+
+/**
+ * @brief Per-file apply callback: upsert one host config (CS-2311 C2+C3).
+ *
+ * The host key is the file basename; the file content is the configuration.
+ *
+ * @param filepath path of the config file to apply
+ * @param vctx     pointer to the qconf_conf_ctx for this batch
+ * @return 0 on success, 1 on failure
+ */
+static int
+qconf_conf_apply_one(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
+   lListElem *host_ep = lCreateElem(EH_Type);
+   const char *hostname = qconf_conf_host_of(filepath, host_ep);
+
+   /* CS-2299 H3: add_modify_config() always contacts qmaster, so the -dry
+    * preview is handled here - report the intended action and send nothing. */
+   if (qconf_opt_dry_run) {
+      bool exists = qconf_object_exists(ocs::gdi::Target::CONF_LIST, CONF_Type,
+                                        CONF_name, hostname);
+      qconf_info_printf(exists ? MSG_QCONF_DRYRUNWOULDMODIFY_S : MSG_QCONF_DRYRUNWOULDADD_S,
+                        hostname);
+      lFreeElem(&host_ep);
+      ctx->n_ok++;
+      return 0;
+   }
+
+   int ret = add_modify_config(hostname, filepath, ctx->flags);
+   lFreeElem(&host_ep);
+   if (ret != 0) {
+      ctx->n_fail++;
+      return 1;
+   }
+   ctx->n_ok++;
+   return 0;
+}
+
+/**
+ * @brief Apply one config file or a whole directory of them (CS-2311 C3).
+ *
+ * Each file is upserted (add_modify_config flag 3); the host is the basename.
+ * A directory prints the H1 one-line summary.
+ *
+ * @param path  config file or directory of config files
+ * @return the number of files that failed
+ */
+static int
+qconf_conf_apply_path(const char *path)
+{
+   qconf_conf_ctx ctx = {3 /* modify if exists, add if not */, nullptr, 0, 0};
+   bool is_dir = sge_is_directory(path);
+   qconf_for_each_file(path, qconf_conf_apply_one, &ctx);
+   if (is_dir) {
+      qconf_info_printf(MSG_QCONF_ADDMODSUMMARY_SII, path, ctx.n_ok, ctx.n_fail);
+   }
+   return ctx.n_fail;
+}
+
+/**
+ * @brief Per-file delete callback: queue one host config for deletion (CS-2311 C5).
+ *
+ * The host key is the file basename. A config that no longer exists is reported
+ * and skipped rather than queued (CS-2299 H5).
+ *
+ * @param filepath path of the config file naming the host
+ * @param vctx     pointer to the qconf_conf_ctx for this batch
+ * @return 0 always (a skipped non-existent host is not a failure)
+ */
+static int
+qconf_conf_collect_host(const char *filepath, void *vctx)
+{
+   auto *ctx = static_cast<qconf_conf_ctx *>(vctx);
+   lListElem *host_ep = lCreateElem(EH_Type);
+   const char *hostname = qconf_conf_host_of(filepath, host_ep);
+   if (qconf_object_exists(ocs::gdi::Target::CONF_LIST, CONF_Type, CONF_name, hostname)) {
+      lAddElemHost(&ctx->hosts, CONF_name, hostname, CONF_Type);
+      ctx->n_ok++;
+   } else {
+      WARNING(MSG_QCONF_DELSKIPPEDNOTEXIST_SS, hostname, filepath);
+   }
+   lFreeElem(&host_ep);
+   return 0;
+}
+
+/**
+ * @brief Delete every host config named by the file(s) at a path (CS-2311 C5).
+ *
+ * Honours -dry (preview), -f (skip the directory confirm) and is idempotent
+ * (a host whose config no longer exists is skipped, not failed).
+ *
+ * @param path  config file or directory naming the host configs to delete
+ * @return the number of configs that failed to be deleted
+ */
+static int
+qconf_conf_delete_path(const char *path)
+{
+   qconf_conf_ctx ctx = {0, lCreateList("conf del", CONF_Type), 0, 0};
+   bool is_dir = sge_is_directory(path);
+   qconf_for_each_file(path, qconf_conf_collect_host, &ctx);
+
+   int n = lGetNumberOfElem(ctx.hosts);
+   if (n > 0 && qconf_opt_dry_run) {
+      const lListElem *e;
+      for_each_ep(e, ctx.hosts) {
+         qconf_info_printf(MSG_QCONF_DRYRUNWOULDDELETE_S, lGetHost(e, CONF_name));
+      }
+      lFreeList(&ctx.hosts);
+      return 0;
+   }
+   if (n > 0 && is_dir && !qconf_opt_force) {
+      dstring p = DSTRING_INIT;
+      sge_dstring_sprintf(&p, MSG_QCONF_CONFIRMDELETE_I, n);
+      bool ok = qconf_confirm(sge_dstring_get_string(&p));
+      sge_dstring_free(&p);
+      if (!ok) {
+         WARNING(MSG_QCONF_DELETEABORTED_I, n);
+         lFreeList(&ctx.hosts);
+         return 0;
+      }
+   }
+   int ret = 0;
+   const lListElem *e;
+   for_each_ep(e, ctx.hosts) {
+      if (delete_config(lGetHost(e, CONF_name)) != 0) {
+         ret++;
+      }
+   }
+   lFreeList(&ctx.hosts);
+   return ret;
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -4495,15 +4654,20 @@ int sge_parse_qconf(char *argv[])
             if (!first) {
                fprintf(stdout, "\n");
             }
+            first = 0;
 
-            /*
-            ** it would be uncomfortable if you could only give files in .
-            */
-            if ((action == ACTION_Aconf || action == ACTION_Mconf) && cp && strrchr(cp, '/')) {
-               lSetHost(host_ep, EH_name, strrchr(cp, '/') + 1);
-            } else {
-               lSetHost(host_ep, EH_name, cp);
+            /* CS-2311 C2+C3: -Aconf/-Mconf take a file OR a directory; the host
+             * key is the file basename and each is upserted (flag 3). The basename
+             * resolution happens per file inside qconf_conf_apply_path(). */
+            if (action == ACTION_Aconf || action == ACTION_Mconf) {
+               if (qconf_conf_apply_path(cp) != 0) {
+                  sge_parse_return = 1;
+               }
+               continue;
             }
+
+            /* -sconf/-aconf/-mconf: cp is a host name */
+            lSetHost(host_ep, EH_name, cp);
 
             switch ((ret=sge_resolve_host(host_ep, EH_name))) {
             case CL_RETVAL_OK:
@@ -4515,8 +4679,6 @@ int sge_parse_qconf(char *argv[])
             }
             hostname = lGetHost(host_ep, EH_name);
 
-            first = 0;
-
             if (ret != CL_RETVAL_OK && (action == ACTION_sconf || action == ACTION_aconf) ) {
                sge_parse_return = 1;
                continue;
@@ -4526,20 +4688,10 @@ int sge_parse_qconf(char *argv[])
                if (print_config(hostname) != 0) {
                   sge_parse_return = 1;
                }
-            } else if (action == ACTION_aconf) {
-               if (add_modify_config(hostname, nullptr, 1) != 0) {
-                  sge_parse_return = 1;
-               }
-            } else if (action == ACTION_mconf) {
-               if (add_modify_config(hostname, nullptr, 0) != 0) {
-                  sge_parse_return = 1;
-               }
-            } else if (action == ACTION_Aconf) {
-               if (add_modify_config(hostname, cp, 1) != 0) {
-                  sge_parse_return = 1;
-               }
-            } else if (action == ACTION_Mconf) {
-               if (add_modify_config(hostname, cp, 2) != 0) {
+            } else if (action == ACTION_aconf || action == ACTION_mconf) {
+               /* CS-2311 C2: -aconf/-mconf both upsert (add if missing, modify
+                * if present) via the editor (flag 3). */
+               if (add_modify_config(hostname, nullptr, 3) != 0) {
                   sge_parse_return = 1;
                }
             }
@@ -4667,6 +4819,19 @@ int sge_parse_qconf(char *argv[])
             sge_parse_return = 1;
          }
 
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      /* "-Dconf file|dir": CS-2311 C5 — delete the host config(s) named by the
+       * file(s); the host key is the file basename. */
+      if (strcmp("-Dconf", *spp) == 0) {
+         qconf_is_manager_on_admin_host(username, qualified_hostname);
+         spp = sge_parser_get_next(spp);
+         if (qconf_conf_delete_path(*spp) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }

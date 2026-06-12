@@ -587,6 +587,10 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_dconf_OPT_HOST_LIST , MSG_GDI_UTEXT_dconf_OPT_HOST_LIST );
    }
 
+   if (VALID_OPT(Dconf_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Dconf_OPT, MSG_GDI_UTEXT_Dconf_OPT);
+   }
+
    if (VALID_OPT(de_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_de_OPT_HOST_LIST , MSG_GDI_UTEXT_de_OPT_HOST_LIST );
    }

@@ -351,8 +351,8 @@
 #define MSG_GDI_USAGE_aconf_OPT_HOST_LIST                "[-aconf host_list]"
 #define MSG_GDI_UTEXT_aconf_OPT_HOST_LIST                _MESSAGE(23298, _("add configurations"))
 
-#define MSG_GDI_USAGE_Aconf_OPT_FILE_LIST                "[-Aconf file_list]"
-#define MSG_GDI_UTEXT_Aconf_OPT_FILE_LIST                _MESSAGE(23299, _("add configurations from file_list"))
+#define MSG_GDI_USAGE_Aconf_OPT_FILE_LIST                "[-Aconf file_list|dir]"
+#define MSG_GDI_UTEXT_Aconf_OPT_FILE_LIST                _MESSAGE(23299, _("add configurations from file_list or directory"))
 
 #define MSG_GDI_USAGE_ae_OPT_EXEC_SERVER_TEMPLATE        "[-ae [exec_server_template]]"
 #define MSG_GDI_UTEXT_ae_OPT_EXEC_SERVER_TEMPLATE        _MESSAGE(23300, _("add an exec host using a template"))
@@ -465,6 +465,9 @@
 
 #define MSG_GDI_USAGE_dconf_OPT_HOST_LIST                "[-dconf host_list]"
 #define MSG_GDI_UTEXT_dconf_OPT_HOST_LIST                _MESSAGE(23334, _("delete local configurations"))
+
+#define MSG_GDI_USAGE_Dconf_OPT                          "[-Dconf fname|dir]"
+#define MSG_GDI_UTEXT_Dconf_OPT                          _MESSAGE(60772, _("delete local configuration(s) named by a file or directory"))
 
 #define MSG_GDI_USAGE_de_OPT_HOST_LIST                   "[-de host_list]"
 #define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host(s)"))
@@ -597,8 +600,8 @@
 #define MSG_GDI_USAGE_mconf_OPT_HOSTLISTORGLOBAL         "[-mconf [host_list|global]]"
 #define MSG_GDI_UTEXT_mconf_OPT_HOSTLISTORGLOBAL         _MESSAGE(23374, _("modify configurations"))
 
-#define MSG_GDI_USAGE_Mconf_OPT_FILE_LIST                "[-Mconf file_list]"
-#define MSG_GDI_UTEXT_Mconf_OPT_FILE_LIST                _MESSAGE(23375, _("modify configurations from file_list"))
+#define MSG_GDI_USAGE_Mconf_OPT_FILE_LIST                "[-Mconf file_list|dir]"
+#define MSG_GDI_UTEXT_Mconf_OPT_FILE_LIST                _MESSAGE(23375, _("modify configurations from file_list or directory"))
 
 #define MSG_GDI_USAGE_msconf_OPT                         "[-msconf]"
 #define MSG_GDI_UTEXT_msconf_OPT                         _MESSAGE(23376, _("modify scheduler configuration"))

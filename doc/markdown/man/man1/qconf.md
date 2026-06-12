@@ -131,13 +131,15 @@ Requires root/manager privileges.
 ## -aconf *host*, ...
 Successively adds configurations (see xxqs_name_sxx_conf(5)) For the hosts in the comma separated *host* list.
 For each *host*, an editor is invoked and the configuration for the host can be entered. The configuration is
-registered with xxqs_name_sxx_qmaster(8) after saving the file and quitting the editor. Requires root/manager
-privileges.
+registered with xxqs_name_sxx_qmaster(8) after saving the file and quitting the editor. If a configuration for the
+host already exists it is modified rather than rejected. Requires root/manager privileges.
 
-## -Aconf *fname_list*
+## -Aconf *fname_list*|*dir*
 Add the configurations (see xxqs_name_sxx_conf(5)) specified in the files enlisted in the comma separated
-*fname_list*. The configuration is added for the host that is identical to the file name. Requires root/manager
-privileges.
+*fname_list*. The configuration is added for the host that is identical to the file name (its basename); a
+configuration that already exists is modified instead. An entry in the list may also be a directory, in which case
+every (non-hidden) regular file in it is applied the same way (basename = host). See also `-dry` and the EXIT
+STATUS section. Requires root/manager privileges.
 
 ## -ae \[*host_template*\]
 Adds a host to the list of xxQS_NAMExx execution hosts. If a queue is configured on a host this host is
@@ -367,6 +369,12 @@ file that no longer exists is reported and skipped rather than treated as an err
 The local configuration entries for the specified hosts are deleted from the configuration list.
 Requires root/manager privilege.
 
+## -Dconf *fname*|*dir*
+Deletes the local configuration entries for the host(s) named by a file or by a directory of files; the host key is
+the file basename (matching the `-Aconf`/`-Mconf` convention). A directory is a bulk delete confirmed interactively
+unless `-f` is given, and `-dry` previews it. A host whose configuration no longer exists is reported and skipped
+rather than treated as an error. Requires root/manager privilege.
+
 ## -de *host_name*,...
 Deletes one or more hosts from the xxQS_NAMExx execution host list. More than one may be deleted at once by giving
 a comma-separated list of host names. Requires root|manager privileges.
@@ -574,13 +582,16 @@ Requires root or manager privilege.
 ## -mconf \[*host*,... \| **global**\]
 The configuration for the specified host is retrieved, an editor is executed and the changed configuration is
 registered with xxqs_name_sxx_qmaster(8) upon exit of the editor. If the optional host argument is omitted or if
-the special host name **global** is specified, the global configuration is modified. The format of the
-configuration is described in xxqs_name_sxx_conf(5). Requires root/manager privilege.
+the special host name **global** is specified, the global configuration is modified. If a configuration for the
+host does not yet exist it is created rather than rejected. The format of the configuration is described in
+xxqs_name_sxx_conf(5). Requires root/manager privilege.
 
-## -Mconf *fname_list*
+## -Mconf *fname_list*|*dir*
 Modify the configurations (see xxqs_name_sxx_conf(5)) specified in the files enlisted in the comma separated
-*fname_list*. The configuration is modified for the host that is identical to the file name. Requires
-root/manager privileges.
+*fname_list*. The configuration is modified for the host that is identical to the file name (its basename); a
+configuration that does not yet exist is created instead. An entry in the list may also be a directory, in which
+case every (non-hidden) regular file in it is applied the same way (basename = host). See also `-dry` and the EXIT
+STATUS section. Requires root/manager privileges.
 
 ## -me *hostname*
 Retrieves the current configuration for the specified execution host, executes an editor and registers the changed

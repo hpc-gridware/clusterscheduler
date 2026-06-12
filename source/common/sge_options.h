@@ -154,6 +154,7 @@ enum {
    spl_OPT, /* show pe object list */
    sconfl_OPT,  /* show list of local configurations */
    dconf_OPT,   /* delete local configuration */
+   Dconf_OPT,   /* delete local configuration(s) from file/directory (CS-2311) */
    starthist_OPT,  /* flush history */
 
    Mq_OPT,
