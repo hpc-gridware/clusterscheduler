@@ -31,6 +31,7 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "ocs_qconf_Category.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_qconf.h"
 
 bool ocs::CategoryQconf::show_list(lList **answer_list) {
@@ -41,7 +42,7 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
       spool_flatfile_align_list(answer_list, (const lList *) cat_list, CAT_fields, 3);
 
       const char *filename = spool_flatfile_write_list(answer_list, cat_list, CAT_fields, &qconf_cat_list_sfi,
-                                                       SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
+                                                       SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
       sge_free(&filename);
       lFreeList(&cat_list);
 
@@ -60,7 +61,7 @@ bool ocs::CategoryQconf::show(lList **answer_list, uint32_t id) {
    lListElem *centry = get_via_gdi(answer_list, id);
    if (centry != nullptr) {
       const char *filename = spool_flatfile_write_object(answer_list, centry, false, CAT_fields, &qconf_cat_sfi, SP_DEST_STDOUT,
-                                                         SP_FORM_ASCII, nullptr, false);
+                                                         qconf_opt_format, nullptr, false);
       sge_free(&filename);
       lFreeElem(&centry);
       if (answer_list_has_error(answer_list)) {

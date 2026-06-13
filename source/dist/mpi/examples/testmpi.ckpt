@@ -19,10 +19,10 @@
 #___INFO__MARK_END_NEW__
 ckpt_name          testmpi.ckpt
 interface          application-level
-ckpt_command       none
+ckpt_command       NONE
 migr_command       $sge_root/mpi/examples/testmpi-migr.sh
-restart_command    none
-clean_command      none
+restart_command    NONE
+clean_command      NONE
 ckpt_dir           /tmp
-signal             none
+signal             NONE
 when               xs

@@ -472,6 +472,8 @@
 #define MSG_GDI_USAGE_Fmt_OPT                            "[-fmt plain|json]"
 #define MSG_GDI_UTEXT_Fmt_OPT                            _MESSAGE(60773, _("output/input format for -s*/-A*/-M* (default plain)"))
 
+#define MSG_FLATFILE_INVALIDJSON                         _MESSAGE(60774, _("invalid JSON input"))
+
 #define MSG_GDI_USAGE_de_OPT_HOST_LIST                   "[-de host_list]"
 #define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host(s)"))
 

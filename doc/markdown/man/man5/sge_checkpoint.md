@@ -72,20 +72,24 @@ The type of checkpointing to be used. Currently, the following types are valid:
 ## *ckpt_command*
 
 A command-line type command string to be executed by xxQS_NAMExx in order to initiate a checkpoint.
+Set to NONE if no such command is required, which is the default.
 
 ## *migr_command*
 
 A command-line type command string to be executed by xxQS_NAMExx during a migration of a checkpointing job from 
 one host to another.
+Set to NONE if no such command is required, which is the default.
 
 ## *restart_command*
 
 A command-line type command string to be executed by xxQS_NAMExx when restarting a previously checkpointed application.
+Set to NONE if no such command is required, which is the default.
 
 ## *clean_command*
 
 A command-line type command string to be executed by xxQS_NAMExx in order to cleanup after a checkpointed 
 application has finished.
+Set to NONE if no such command is required, which is the default.
 
 ## *ckpt_dir*
 
@@ -96,6 +100,7 @@ A file system location to which checkpoints of potentially considerable size sho
 A Unix signal to be sent to a job by xxQS_NAMExx to initiate a checkpoint generation. The value for this field can 
 either be a symbolic name from the list produced by the `-l` option of the kill(1) command or an integer number 
 which must be a valid signal on the systems used for checkpointing.
+Set to NONE if no signal shall be sent, which is the default.
 
 ## *when*
 

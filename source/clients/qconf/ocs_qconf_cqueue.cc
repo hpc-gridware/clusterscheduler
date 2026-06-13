@@ -62,6 +62,7 @@
 
 #include "ocs_qconf_cqueue.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
+#include "ocs_qconf_centry.h"  /* CS-2313a: centry_list_get_via_gdi */
 #include "msg_qconf.h"
 #include "ocs_Pattern.h"
 
@@ -128,6 +129,46 @@ cqueue_get_via_gdi(lList **answer_list, const char *name)
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief Type the values inside the cqueue per-host complex override lists (CS-2313a).
+ *
+ * For -fmt json, types the values inside complex_values, load_thresholds, and
+ * suspend_thresholds. Each override entry's value is a CE_Type list; resolving its
+ * types from the master complex list lets the JSON writer emit typed numbers (e.g.
+ * np_load_avg as a double) instead of strings. Mutates only the throwaway object about
+ * to be shown.
+ *
+ * @param cqueue  the (throwaway) cqueue element to be shown
+ */
+static void
+cqueue_json_type_complex_overrides(lListElem *cqueue)
+{
+   if (qconf_opt_format != SP_FORM_JSON || cqueue == nullptr) {
+      return;
+   }
+   static const int override_fields[] = {
+      CQ_consumable_config_list, CQ_load_thresholds, CQ_suspend_thresholds
+   };
+   lList *alp = nullptr;
+   lList *master_centry_list = centry_list_get_via_gdi(&alp);
+   lFreeList(&alp);
+   if (master_centry_list == nullptr) {
+      return;
+   }
+   for (int i = 0; i < 3; i++) {
+      lList *override_list = lGetListRW(cqueue, override_fields[i]);
+      for (lListElem *entry = lFirstRW(override_list); entry != nullptr; entry = lNextRW(entry)) {
+         lList *ce_list = lGetListRW(entry, ACELIST_value);
+         if (ce_list != nullptr && lGetNumberOfElem(ce_list) > 0) {
+            lList *fill_alp = nullptr;
+            centry_list_fill_request(ce_list, &fill_alp, master_centry_list, true, true, true);
+            lFreeList(&fill_alp);
+         }
+      }
+   }
+   lFreeList(&master_centry_list);
 }
 
 static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
@@ -407,7 +448,7 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
@@ -476,7 +517,7 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
@@ -706,9 +747,10 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                         fprintf(stdout, "\n");
                      }
 
-                     outname = spool_flatfile_write_object(answer_list, cqueue, 
+                     cqueue_json_type_complex_overrides(const_cast<lListElem *>(cqueue));
+                     outname = spool_flatfile_write_object(answer_list, cqueue,
                                                  false, CQ_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, qconf_opt_format, 
+                                                 SP_DEST_STDOUT, qconf_opt_format,
                                                  nullptr, false);
                      sge_free(&outname);
                            
@@ -740,6 +782,7 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 
       DTRACE;
       ret &= cqueue_set_template_attributes(cqueue, answer_list);
+      cqueue_json_type_complex_overrides(cqueue);
       filename = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
                                              &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format,
                                              nullptr, false);

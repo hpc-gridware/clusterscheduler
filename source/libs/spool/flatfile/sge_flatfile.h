@@ -156,8 +156,9 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             bool is_root, const spooling_field *fields,
                             const spool_flatfile_instr *instr,
                             const spool_flatfile_destination destination,
-                            const spool_flatfile_format format, 
-                            const char *filepath, bool print_header);
+                            const spool_flatfile_format format,
+                            const char *filepath, bool print_header,
+                            const char *json_type_name = nullptr);
 
 const char *
 spool_flatfile_write_list(lList **answer_list,

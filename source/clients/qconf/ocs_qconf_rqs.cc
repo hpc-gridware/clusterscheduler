@@ -352,7 +352,7 @@ rqs_add_from_file(lList **answer_list, const char *filename) {
       lList *rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
-      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filename);
+      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, qconf_opt_format, nullptr, filename);
       if (!answer_list_has_error(answer_list)) {
          ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::SET_ALL);
       }
@@ -545,7 +545,7 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
       /* fields_out field does not work for rqs because of duplicate entry */
       rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
                                           nullptr, true, &qconf_rqs_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
       if (rqs_list != nullptr) {
 
          if (name != nullptr && strlen(name) > 0 ) {

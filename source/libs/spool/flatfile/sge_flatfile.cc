@@ -972,8 +972,9 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
                             bool is_root, const spooling_field *fields_in,
                             const spool_flatfile_instr *instr,
                             const spool_flatfile_destination destination,
-                            const spool_flatfile_format format, 
-                            const char *filepath, bool print_header)
+                            const spool_flatfile_format format,
+                            const char *filepath, bool print_header,
+                            const char *json_type_name)
 {
    dstring char_buffer = DSTRING_INIT;
    const char *result = nullptr;
@@ -1035,15 +1036,22 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
          data_len = sge_dstring_strlen(&char_buffer);
 
          break;
-      case SP_FORM_JSON:
-         /* CS-2313a: delegate to the JSON module (libs/spool/json) */
-         if (spool_json_write_object(answer_list, object, fields_in, &char_buffer)) {
+      case SP_FORM_JSON: {
+         /* CS-2313a: delegate to the JSON module (libs/spool/json). An explicit
+          * json_type_name overrides the content-derived $id type for objects whose
+          * type cannot be resolved by content (EH shares its name field with AH;
+          * SC has no primary key). */
+         const bool ok = json_type_name != nullptr
+            ? spool_json_write_typed_object(answer_list, object, fields_in, json_type_name, &char_buffer)
+            : spool_json_write_object(answer_list, object, fields_in, &char_buffer);
+         if (ok) {
             data     = sge_dstring_get_string(&char_buffer);
             data_len = sge_dstring_strlen(&char_buffer);
          } else {
             sge_dstring_clear(&char_buffer);
          }
          break;
+      }
       case SP_FORM_XML:
       case SP_FORM_CULL:
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
@@ -1717,6 +1725,38 @@ spool_flatfile_read_object(lList **answer_list, const lDescr *descr,
       file_opened = true;
    }
 
+   /* CS-2313a: JSON input is parsed by libspooljson, not the flatfile scanner. */
+   if (format == SP_FORM_JSON) {
+      if (fields == nullptr) {
+         my_fields = spool_get_fields_to_spool(answer_list, descr, instr->spool_instr);
+         if (my_fields == nullptr) {
+            if (file_opened) {
+               fclose(file);
+            }
+            DRETURN(nullptr);
+         }
+         fields = my_fields;
+      }
+
+      dstring json = DSTRING_INIT;
+      char chunk[4097];
+      size_t n;
+      while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
+         chunk[n] = '\0';
+         sge_dstring_append(&json, chunk);
+      }
+      object = spool_json_read_object(answer_list, descr, fields, fields_out,
+                                      sge_dstring_get_string(&json));
+      sge_dstring_free(&json);
+      if (my_fields != nullptr) {
+         spool_free_spooling_fields(my_fields);
+      }
+      if (file_opened) {
+         fclose(file);
+      }
+      DRETURN(object);
+   }
+
    /* initialize scanner */
    token = spool_scanner_initialize(file);
 
@@ -2338,6 +2378,38 @@ spool_flatfile_read_list(lList **answer_list, const lDescr *descr,
       }
 
       file_opened = true;
+   }
+
+   /* CS-2313a: JSON input is parsed by libspooljson, not the flatfile scanner. */
+   if (format == SP_FORM_JSON) {
+      if (fields == nullptr) {
+         my_fields = spool_get_fields_to_spool(answer_list, descr, instr->spool_instr);
+         if (my_fields == nullptr) {
+            if (file_opened) {
+               fclose(file);
+            }
+            DRETURN(nullptr);
+         }
+         fields = my_fields;
+      }
+
+      dstring json = DSTRING_INIT;
+      char chunk[4097];
+      size_t n;
+      while ((n = fread(chunk, 1, sizeof(chunk) - 1, file)) > 0) {
+         chunk[n] = '\0';
+         sge_dstring_append(&json, chunk);
+      }
+      list = spool_json_read_list(answer_list, descr, fields, fields_out,
+                                  sge_dstring_get_string(&json));
+      sge_dstring_free(&json);
+      if (my_fields != nullptr) {
+         spool_free_spooling_fields(my_fields);
+      }
+      if (file_opened) {
+         fclose(file);
+      }
+      DRETURN(list);
    }
 
    /* initialize scanner */

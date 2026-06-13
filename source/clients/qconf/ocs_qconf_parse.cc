@@ -51,6 +51,7 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 #include "uti/sge_hostname.h"
+#include "uti/sge_parse_num_par.h"   /* CS-2313a: parse_ulong_val for typed load values */
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_centry.h"
@@ -74,6 +75,7 @@
 #include "sgeobj/sge_utility.h"
 
 #include "spool/flatfile/sge_flatfile.h"
+#include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: ocs_json_value_format_opt, name-list writer */
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "gdi/ocs_gdi_Client.h"
@@ -395,7 +397,7 @@ qconf_read_object_file(const lDescr *descr, spooling_field *fields,
    bool from_stdin = (filename != nullptr && strcmp(filename, "-") == 0);
    lListElem *ep = spool_flatfile_read_object(&alp, descr, nullptr, fields,
                                               fields_out, parse_values, sfi,
-                                              SP_FORM_ASCII,
+                                              qconf_opt_format,
                                               from_stdin ? stdin : nullptr,
                                               filename);
    if (answer_list_output(&alp)) {
@@ -903,7 +905,7 @@ qconf_rqs_collect(const char *filepath, void *vctx)
    auto *ctx = static_cast<qconf_rqs_ctx *>(vctx);
    lList *alp = nullptr;
    lList *l = spool_flatfile_read_list(&alp, RQS_Type, RQS_fields, nullptr, true,
-                                       &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filepath);
+                                       &qconf_rqs_sfi, qconf_opt_format, nullptr, filepath);
    if (answer_list_output(&alp) || l == nullptr) {
       lFreeList(&l);
       ctx->n_fail++;
@@ -1269,6 +1271,74 @@ qconf_json_fill_complex(lListElem *obj, const int *ce_fields, int n_fields)
    lFreeList(&master_centry_list);
 }
 
+/**
+ * @brief Render an exec host's load_values typed by their complex definition (CS-2313a).
+ *
+ * For -fmt json, values such as mem_total are rendered as bytes, num_proc as an
+ * integer, np_load_avg as a double, ... instead of as raw strings. HL_Type load values
+ * carry no type, so we build a CE_Type list (name + string value), resolve each entry's
+ * type from the master complex list (tolerant of load names that are not defined
+ * complexes), parse numeric values into CE_doubleval, and swap the typed CE list into
+ * the load-list field. The generic JSON writer then renders it via its typed
+ * complex-value path; unmatched or string-typed loads keep their string value. Runs
+ * only for -fmt json and mutates only the throwaway object about to be shown.
+ *
+ * @param host          the (throwaway) exec host element to be shown
+ * @param load_list_nm  CULL field id of the load-value list (e.g. EH_load_list)
+ */
+static void
+qconf_json_type_load_values(lListElem *host, int load_list_nm)
+{
+   if (qconf_opt_format != SP_FORM_JSON || host == nullptr) {
+      return;
+   }
+   const lList *hl = lGetList(host, load_list_nm);
+   if (hl == nullptr || lGetNumberOfElem(hl) == 0) {
+      return;
+   }
+   lList *alp = nullptr;
+   lList *master_centry_list = centry_list_get_via_gdi(&alp);
+   lFreeList(&alp);
+   if (master_centry_list == nullptr) {
+      return;
+   }
+
+   lList *ce_list = lCreateList("load_values", CE_Type);
+   const lListElem *hlep;
+   for_each_ep(hlep, hl) {
+      lListElem *ce = lCreateElem(CE_Type);
+      lSetString(ce, CE_name, lGetString(hlep, HL_name));
+      lSetString(ce, CE_stringval, lGetString(hlep, HL_value));
+      lAppendElem(ce_list, ce);
+   }
+
+   /* fill CE_valtype from the complex definitions (skips unknown load names) */
+   centry_list_fill_config(ce_list, master_centry_list);
+
+   /* parse numeric values into CE_doubleval so the writer emits native numbers */
+   for (lListElem *ce = lFirstRW(ce_list); ce != nullptr; ce = lNextRW(ce)) {
+      const auto type = static_cast<ocs::CEntry::Type>(lGetUlong(ce, CE_valtype));
+      const char *s = lGetString(ce, CE_stringval);
+      double dval = 0.0;
+      switch (type) {
+         case ocs::CEntry::Type::INT:
+         case ocs::CEntry::Type::TIME:
+         case ocs::CEntry::Type::MEM:
+         case ocs::CEntry::Type::DOUBLE:
+         case ocs::CEntry::Type::BOOL:
+            if (s != nullptr && parse_ulong_val(&dval, nullptr, type, s, nullptr, 0)) {
+               lSetDouble(ce, CE_doubleval, dval);
+            }
+            break;
+         default:
+            break;   /* string-like / unmatched -> writer emits CE_stringval */
+      }
+   }
+
+   lSetList(host, load_list_nm, ce_list);
+   lFreeList(&master_centry_list);
+}
+
 /*------------------------------------------------------------*/
 int sge_parse_qconf(char *argv[])
 {
@@ -1343,6 +1413,21 @@ int sge_parse_qconf(char *argv[])
             DRETURN(1);
          }
       }
+      /* CS-2313a: -fmtval compact|numeric selects how TIME/MEM values are rendered in
+       * JSON output - compact unit/colon strings (default) vs numeric seconds/bytes.
+       * Pre-scanned, position-independent like -fmt. */
+      if (strcmp("-fmtval", *spp) == 0) {
+         const char *val = *(spp + 1);
+         if (val != nullptr && strcmp(val, "compact") == 0) {
+            ocs_json_value_format_opt = OCS_JSON_VALUES_COMPACT;
+         } else if (val != nullptr && strcmp(val, "numeric") == 0) {
+            ocs_json_value_format_opt = OCS_JSON_VALUES_NUMERIC;
+         } else {
+            fprintf(stderr, MSG_QCONF_UNKNOWNFMT_S, val != nullptr ? val : "");
+            fprintf(stderr, "\n");
+            DRETURN(1);
+         }
+      }
       spp++;
    }
 
@@ -1375,6 +1460,16 @@ int sge_parse_qconf(char *argv[])
 
       if (strcmp("-fmt", *spp) == 0) {
          spp = sge_parser_get_next(spp);   /* consume the format value */
+         spp++;
+         continue;
+      }
+
+/*----------------------------------------------------------------------------*/
+      /* CS-2313a: -fmtval compact|numeric — parsed in the pre-scan above; skip it and
+       * its value here. */
+
+      if (strcmp("-fmtval", *spp) == 0) {
+         spp = sge_parser_get_next(spp);   /* consume the value */
          spp++;
          continue;
       }
@@ -2174,7 +2269,11 @@ int sge_parse_qconf(char *argv[])
 
             lFreeList(&lp);
          } else { /* -Astree */
-            spooling_field *fields = sge_build_STN_field_list(false, true);
+            /* JSON uses the nested-tree field list (childnodes are full child
+             * objects); ASCII uses the flat id-referenced list */
+            spooling_field *fields = (qconf_opt_format == SP_FORM_JSON)
+                                     ? sge_build_STN_json_field_list()
+                                     : sge_build_STN_field_list(false, true);
 
             spp = sge_parser_get_next(spp);
 
@@ -2182,10 +2281,16 @@ int sge_parse_qconf(char *argv[])
             ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                             fields, fields_out, true,
                                             &qconf_name_value_list_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
+                                            qconf_opt_format, nullptr, *spp);
 
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
+            }
+
+            /* the nested JSON form carries no node ids -> assign them (as the flat
+             * ASCII reader implicitly does) so the tree is well-formed for GDI */
+            if (ep != nullptr && qconf_opt_format == SP_FORM_JSON) {
+               id_sharetree(&alp, ep, 0, nullptr);
             }
 
             if (ep != nullptr) {
@@ -4322,7 +4427,7 @@ int sge_parse_qconf(char *argv[])
          fields_out[0] = NoName;
          ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
                                          SC_fields, fields_out, true, &qconf_comma_sfi,
-                                         SP_FORM_ASCII, nullptr, *spp);
+                                         qconf_opt_format, nullptr, *spp);
 
          if (answer_list_output(&alp)) {
             lFreeElem(&ep);
@@ -4451,7 +4556,7 @@ int sge_parse_qconf(char *argv[])
             ep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                             fields, fields_out, true,
                                             &qconf_name_value_list_sfi,
-                                            SP_FORM_ASCII, nullptr, *spp);
+                                            qconf_opt_format, nullptr, *spp);
 
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
@@ -5152,9 +5257,12 @@ int sge_parse_qconf(char *argv[])
             /* CS-2313a: type complex_values numerically for -fmt json */
             static const int eh_ce_fields[] = { EH_consumable_config_list };
             qconf_json_fill_complex(ep, eh_ce_fields, 1);
+            qconf_json_type_load_values(ep, EH_load_list);
+            /* EH shares its name field with AH, so the JSON $id type must be set
+             * explicitly (content resolution would yield "adminhost") */
             filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
                                         SP_DEST_STDOUT, qconf_opt_format, nullptr,
-                                        false);
+                                        false, "exechost");
             lFreeList(&lp);
             sge_free(&fields);
             sge_free(&filename_stdout);
@@ -5403,9 +5511,11 @@ int sge_parse_qconf(char *argv[])
          }
          lFreeList(&alp);
 
+         /* SC has no primary key, so the JSON $id type must be set explicitly
+          * (content resolution would yield "petask") */
          filename_stdout = spool_flatfile_write_object(&alp, lFirst(lp), false, SC_fields,
                                      &qconf_comma_sfi, SP_DEST_STDOUT,
-                                     qconf_opt_format, nullptr, false);
+                                     qconf_opt_format, nullptr, false, "sched_conf");
 
          sge_free(&filename_stdout);
          if (answer_list_output(&alp)) {
@@ -5551,13 +5661,24 @@ int sge_parse_qconf(char *argv[])
             continue;
          }
 
-         fields = sge_build_STN_field_list(false, true);
-         filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
-                                     &qconf_name_value_list_sfi,
-                                     SP_DEST_STDOUT, qconf_opt_format,
-                                     nullptr, false);
-         sge_free(&fields);
-         sge_free(&filename_stdout);
+         if (qconf_opt_format == SP_FORM_JSON) {
+            /* the share tree is a tree, not a flat object: render it as a nested
+             * JSON document (childnodes -> array of full child nodes, recursively) */
+            spooling_field *json_fields = sge_build_STN_json_field_list();
+            dstring out = DSTRING_INIT;
+            spool_json_write_typed_object(&alp, ep, json_fields, "sharetree", &out);
+            printf("%s", sge_dstring_get_string(&out));
+            sge_dstring_free(&out);
+            sge_free(&json_fields);
+         } else {
+            fields = sge_build_STN_field_list(false, true);
+            filename_stdout = spool_flatfile_write_object(&alp, ep, true, fields,
+                                        &qconf_name_value_list_sfi,
+                                        SP_DEST_STDOUT, qconf_opt_format,
+                                        nullptr, false);
+            sge_free(&fields);
+            sge_free(&filename_stdout);
+         }
          sge_parse_return |= show_answer_list(alp);
          if (sge_parse_return) {
             sge_error_and_exit(nullptr);
@@ -7077,7 +7198,14 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
       DRETURN(false);
    }
 
-   if (lGetNumberOfElem(lp) > 0) {
+   /* CS-2313a: -fmt json renders the name list as a JSON array (in the $schema/$id
+    * envelope); ASCII prints one name per line. */
+   if (qconf_opt_format == SP_FORM_JSON) {
+      dstring out = DSTRING_INIT;
+      spool_json_write_name_list(&alp, lp, keynm, &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (lGetNumberOfElem(lp) > 0) {
       for_each_rw_lv (ep, lp) {
          const char *line = nullptr;
          pos = lGetPosInDescr(type, keynm);
@@ -7085,18 +7213,16 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
          switch(dataType) {
             case lStringT:
                line = lGetString(ep, keynm);
-               if (line && line[0] != COMMENT_CHAR) {
-                  printf("%s\n", lGetString(ep, keynm));
-               }
                break;
             case lHostT:
-                line = lGetHost(ep, keynm);
-               if (line && line[0] != COMMENT_CHAR) {
-                  printf("%s\n", lGetHost(ep, keynm));
-               }
+               line = lGetHost(ep, keynm);
                break;
             default:
                DPRINTF("show_object_list: unexpected data type\n");
+               break;
+         }
+         if (line != nullptr && line[0] != COMMENT_CHAR) {
+            printf("%s\n", line);
          }
       }
    } else {
@@ -7128,7 +7254,18 @@ show_thread_list() {
       DRETURN(-1);
    }
 
-   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+   if (qconf_opt_format == SP_FORM_JSON) {
+      /* CS-2313a: render the thread pools as a JSON array of { pool, size } objects */
+      static spooling_field st_fields[] = {
+         { ST_name, 0, "pool", false, nullptr, false, nullptr, nullptr, nullptr },
+         { ST_id,   0, "size", false, nullptr, false, nullptr, nullptr, nullptr },
+         { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
+      };
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list(&alp, lp, st_fields, "thread_pools", &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
       printf("%-15s %s\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
       printf("--------------------\n");
       for_each_ep_lv(ep, lp) {
@@ -7161,9 +7298,24 @@ static int show_eventclients()
       DRETURN(-1);
    }
 
-   if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
+   if (lp != nullptr) {
       lPSortList(lp, "%I+", EV_id);
+   }
 
+   if (qconf_opt_format == SP_FORM_JSON) {
+      /* CS-2313a: render the event clients as a JSON array of { id, name, host }
+       * objects (an empty list still yields the enveloped empty array) */
+      static spooling_field ev_fields[] = {
+         { EV_id,   0, "id",   false, nullptr, false, nullptr, nullptr, nullptr },
+         { EV_name, 0, "name", false, nullptr, false, nullptr, nullptr, nullptr },
+         { EV_host, 0, "host", false, nullptr, false, nullptr, nullptr, nullptr },
+         { NoName,  0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr }
+      };
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list(&alp, lp, ev_fields, "event_clients", &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (lp != nullptr && lGetNumberOfElem(lp) > 0) {
       printf("%8s %-15s %-25s\n",MSG_TABLE_EV_ID, MSG_TABLE_EV_NAME, MSG_TABLE_HOST);
       printf("--------------------------------------------------\n");
       for_each_ep_lv(ep, lp) {
@@ -7494,7 +7646,10 @@ static int print_config(const char *config_name) {
          lFreeList(&lp);
          DRETURN(1);
       }
-      printf("#%s:\n", cfn);
+      /* CS-2313a: the "#name:" header is an ASCII-format comment; omit it for JSON */
+      if (qconf_opt_format != SP_FORM_JSON) {
+         printf("#%s:\n", cfn);
+      }
 
       fields = sge_build_CONF_field_list(false);
       filename_stdout = spool_flatfile_write_object(&alp, ep, false, fields, &qconf_sfi,
@@ -7671,7 +7826,7 @@ static int add_modify_config(const char *cfn, const char *filename, uint32_t fla
       fields = sge_build_CONF_field_list(false);
       ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
                                       fields, fields_out, false, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
 
       if (answer_list_output(&alp)) {
          lFreeElem(&ep);
@@ -7885,7 +8040,7 @@ static int qconf_modify_attribute(lList **alpp, int from_file, char ***spp,
       DTRACE;
       *epp = spool_flatfile_read_object(alpp, info_entry->cull_descriptor,
                                         nullptr, info_entry->fields, fields,
-                                        true, info_entry->instr, SP_FORM_ASCII,
+                                        true, info_entry->instr, qconf_opt_format,
                                         nullptr, **spp);
             
       if (answer_list_output(alpp)) {

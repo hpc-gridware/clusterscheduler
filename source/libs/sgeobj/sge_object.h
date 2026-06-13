@@ -170,6 +170,11 @@ object_get_primary_key(const lDescr *descr);
 const char *
 object_get_name(const lDescr *descr);
 
+/* CS-2313a: type name of an object identified by content (covers all registered
+ * types and GDI-transported elements; see sge_object.cc). */
+const char *
+object_get_type_name(const lListElem *object);
+
 const char *
 object_get_name_prefix(const lDescr *descr, dstring *buffer);
 

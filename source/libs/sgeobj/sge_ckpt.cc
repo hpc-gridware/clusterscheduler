@@ -396,13 +396,13 @@ lListElem* sge_generic_ckpt(char *ckpt_name)
       lSetString(ep, CK_name, "template");
 
    lSetString(ep, CK_interface, "userdefined");
-   lSetString(ep, CK_ckpt_command, "none");
-   lSetString(ep, CK_migr_command, "none");
-   lSetString(ep, CK_rest_command, "none");
-   lSetString(ep, CK_clean_command, "none");
+   lSetString(ep, CK_ckpt_command, NONE_STR);
+   lSetString(ep, CK_migr_command, NONE_STR);
+   lSetString(ep, CK_rest_command, NONE_STR);
+   lSetString(ep, CK_clean_command, NONE_STR);
    lSetString(ep, CK_ckpt_dir, "/tmp");
    lSetString(ep, CK_when, "sx");
-   lSetString(ep, CK_signal, "none");
+   lSetString(ep, CK_signal, NONE_STR);
    lSetUlong(ep, CK_job_pid, 0);
 
    DRETURN(ep);

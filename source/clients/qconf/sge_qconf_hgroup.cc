@@ -49,6 +49,7 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sge_qconf_hgroup.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_common.h"
 #include "msg_qconf.h"
 
@@ -266,7 +267,7 @@ hgroup_add_from_file(lList **answer_list, const char *filename) {
       fields_out[0] = NoName;
       hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
 
       if (answer_list_output (answer_list)) {
          lFreeElem(&hgroup);
@@ -331,7 +332,7 @@ hgroup_modify_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&hgroup);
@@ -390,7 +391,7 @@ hgroup_show(lList **answer_list, const char *name)
    
       if (hgroup != nullptr) {
          const char *filename;
-         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
+         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
       
          sge_free(&filename);
          lFreeElem(&hgroup);
