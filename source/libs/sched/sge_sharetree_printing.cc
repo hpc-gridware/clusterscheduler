@@ -225,7 +225,15 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const lListElem *n
       }
 
       current_time = sge_get_gmt64();
-      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) : 0;
+      /* CS-1239: previously this only read UU_usage_time_stamp, so project
+       * leaves (which match a project but no user) always showed usage_time=0.
+       * Fall back to PR_usage_time_stamp when the leaf maps to a project,
+       * so the displayed timestamp reflects the actual usage age regardless
+       * of whether the node is a user, a project, or a UPP leaf (where the
+       * user UU stamp wins because it's set by worker booking on every
+       * project-job finish too). */
+      time_stamp = user != nullptr ? lGetUlong64(user, UU_usage_time_stamp) :
+                   project != nullptr ? lGetUlong64(project, PR_usage_time_stamp) : 0;
 
       /*
        * we want to name the Root node simply /, instead of /Root 
