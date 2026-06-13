@@ -809,6 +809,14 @@ Sets the time interval for spooling the sharetree usage. The default is set to 0
 colon-separated string or seconds. There is no setting to turn the sharetree spooling off. (e.g. 
 STREE_SPOOL_INTERVAL=00:02:00)
 
+***STREE_TICK_INTERVAL***
+
+Sets the cadence at which share-tree usage is decayed and the resulting share-tree state is republished to
+clients such as the scheduler and *sge_share_mon*. The value is given in seconds or as a colon-separated time
+string. The valid range is 1 to 300 seconds; values above the upper bound are clamped on use, and values
+\<= 0 are rejected with a warning and reset to the default. The default value is 5 seconds. Changes take
+effect within seconds. (e.g. STREE_TICK_INTERVAL=00:00:30)
+
 ***MAX_JOB_DELETION_TIME***
 
 Sets the value of how long the qmaster will spend deleting jobs. After this time, the qmaster will continue with 

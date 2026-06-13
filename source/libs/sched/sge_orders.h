@@ -38,8 +38,7 @@
 
 typedef struct {
    lList *configOrderList;   /* Type: ORT_unsuspend_on_threshold, ORT_suspend_on_threshold */
-   lList *pendingOrderList;  /* Type: ORT_tickets, ORT_ptickets, ORT_remove_job, ORT_update_user_usage, 
-                                      ORT_update_project_usage, ORT_share_tree, ORT_sched_conf */
+   lList *pendingOrderList;  /* Type: ORT_tickets, ORT_ptickets, ORT_sched_conf */
    lList *jobStartOrderList; /* Type: ORT_remove_immediate_job, job start orders, job info orders */
    lList *sentOrderList;     /* already send job start orders, need to get a correct order 
                                 amount for the profiling. It is also needed for a warring
@@ -55,8 +54,6 @@ lList *sge_add_schedd_info(lList *or_list, int *global_mes_count, int *job_mes_c
 
 lList *sge_create_orders(lList *or_list, uint32_t type, const lListElem *job, const lListElem *ja_task,
                          const lList *queue_list, bool update_execd);
-
-lList *create_delete_job_orders(lList *finished_jobs, lList *order_list);
 
 lList *sge_join_orders(order_t *orders);
 int sge_GetNumberOfOrders(order_t *orders); 

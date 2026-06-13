@@ -37,7 +37,6 @@
 *      - ORT_start_job
 *      - ORT_tickets
 *      - ORT_ptickets
-*      - ORT_remove_job
 *      - ORT_...
 *
 *    SGE_ULONG(OR_job_number) - Job Number
@@ -63,10 +62,7 @@
 *    SGE_LIST(OR_joker) - Order Specific Data
 *    Sublist with order specific data, depending on the order type:
 *      - ORT_start_job:              empty
-*      - ORT_remove_job:             empty
 *      - ORT_tickets:                reduced job element
-*      - ORT_update_*_usage:         reduced user or project object
-*      - ORT_share_tree:             reduced share tree root node
 *      - ORT_remove_immediate_job:   empty
 *      - ORT_job_schedd_info:        scheduler messages (SME_Type)
 *      - ORT_ptickets:               reduced job element

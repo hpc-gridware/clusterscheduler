@@ -78,6 +78,7 @@
 #include "spool/sge_spooling.h"
 
 #include "ocs_CategoryQmaster.h"
+#include "ocs_FinishedJob.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
 #include <cinttypes>
@@ -669,6 +670,11 @@ sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lLis
       lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_scaled_usage_list));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
+      /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves the
+       * ja_task in JFINISHED without removing it. See ocs_FinishedJob.h and
+       * sge_job_exit() case 7 for the canonical pattern. */
+      sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
+      sge_commit_job(jep, jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
    lFreeElem(&jr);
 }
@@ -1288,7 +1294,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          answer_list_output(&answer_list);
          break;
 
-      case COMMIT_ST_DEBITED_EE: /* triggered by ORT_remove_job */
+      case COMMIT_ST_DEBITED_EE: /* CS-1239: chained from sge_book_finished_job_usage in sge_job_exit */
       case COMMIT_ST_NO_RESOURCES: /* triggered by ORT_remove_immediate_job */
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, jr, jep, jatep, nullptr,
                                   (mode == COMMIT_ST_DEBITED_EE) ? MSG_LOG_DELSGE : MSG_LOG_DELIMMEDIATE);

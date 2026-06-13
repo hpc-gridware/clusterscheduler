@@ -25,9 +25,6 @@
                "line": "  - ORT_ptickets"
             },
             {
-               "line": "  - ORT_remove_job"
-            },
-            {
                "line": "  - ORT_..."
             }
          ],
@@ -121,16 +118,7 @@
                "line": "  - ORT_start_job:              empty"
             },
             {
-               "line": "  - ORT_remove_job:             empty"
-            },
-            {
                "line": "  - ORT_tickets:                reduced job element"
-            },
-            {
-               "line": "  - ORT_update_*_usage:         reduced user or project object"
-            },
-            {
-               "line": "  - ORT_share_tree:             reduced share tree root node"
             },
             {
                "line": "  - ORT_remove_immediate_job:   empty"

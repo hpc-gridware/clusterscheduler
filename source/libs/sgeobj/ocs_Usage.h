@@ -54,6 +54,15 @@ namespace ocs {
       static void decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
                                       lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time);
 
+      /** Sum a finished job's scaled usage into UU_usage / PR_usage / UPP_usage
+       *  without applying decay. Used by the worker-thread booking path
+       *  introduced in CS-1239: decay is moved to a periodic Timed Event Thread
+       *  task, and only the additive part of decay_and_sum_usage runs at finish
+       *  time. usage_time_stamp is left untouched; the TET decay task owns it.
+       */
+      static void sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
+                            const lList *usage_weight_list);
+
       static bool strip_irrelevant_usage(lList *usage_list, const lList *usage_weight_list);
 
       static lList *build_usage_list(const char *name, lList *old_usage_list);

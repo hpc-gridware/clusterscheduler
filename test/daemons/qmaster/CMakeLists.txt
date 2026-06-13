@@ -30,6 +30,8 @@ add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 add_executable(test_qmaster_calendar
       test_qmaster_calendar.cc
         ../../../source/daemons/qmaster/ocs_CategoryQmaster.cc
+        ../../../source/daemons/qmaster/ocs_FinishedJob.cc
+        ../../../source/daemons/qmaster/ocs_SharetreeUsage.cc
         ../../../source/daemons/qmaster/ocs_ReportingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_BaseAccountingFileWriter.cc
         ../../../source/daemons/qmaster/ocs_BaseReportingFileWriter.cc

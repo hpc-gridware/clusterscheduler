@@ -157,9 +157,6 @@ subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what)
 
    set_job_flushing(evc);
 
-   /* for some reason we flush sharetree changes */
-   evc->ec_set_flush(evc, sgeE_NEW_SHARETREE, true, 0);
-
    /* configuration changes and trigger should have immediate effevc->ect */
    evc->ec_set_flush(evc, sgeE_SCHED_CONF, true, 0);
    evc->ec_set_flush(evc, sgeE_SCHEDDMONITOR, true, 0);

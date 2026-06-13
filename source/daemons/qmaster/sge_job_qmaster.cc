@@ -113,6 +113,7 @@
 #include "symbols.h"
 #include "mail.h"
 #include "sge_cqueue_qmaster.h"
+#include "ocs_FinishedJob.h"
 #include "sge_give_jobs.h"
 #include "sge_qmod_qmaster.h"
 #include "evm/sge_event_master.h"
@@ -1032,6 +1033,11 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
       if (force) {
          /* 3: JOB_FINISH reports aborted */
          sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
+         /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves the
+          * ja_task in JFINISHED without removing it. See ocs_FinishedJob.h and
+          * sge_job_exit() case 7 for the canonical pattern. */
+         sge_book_finished_job_usage(j, t, monitor, gdi_session);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
          cancel_job_resend(job_number, task_number);
          j = nullptr;
 
@@ -1062,6 +1068,11 @@ void get_rid_of_job_due_to_qdel(lListElem *j,
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, nullptr, j, t, nullptr,
                                   MSG_LOG_DELFORCED);
          sge_commit_job(j, t, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
+         /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves the
+          * ja_task in JFINISHED without removing it. See ocs_FinishedJob.h and
+          * sge_job_exit() case 7 for the canonical pattern. */
+         sge_book_finished_job_usage(j, t, monitor, gdi_session);
+         sge_commit_job(j, t, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
          cancel_job_resend(job_number, task_number);
          lFreeElem(&dummy_jr);
          j = nullptr;
@@ -4132,6 +4143,16 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                } else {
                   // @todo: spool_job = 1 = COMMIT_NO_SPOOLING = 0x0001
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
+                                 monitor, packet->gdi_session);
+                  /* CS-1239: COMMIT_ST_FINISHED_FAILED_EE only sets JFINISHED + emits events; it does
+                   * NOT bury the ja_task (sge_bury_job is in the COMMIT_ST_DEBITED_EE branch).
+                   * Pre-CS-1239 the scheduler-side ORT_remove_job order completed the deletion
+                   * roundtrip and triggered the bury. With CS-1239 the order is gone, so the
+                   * worker thread must chain the booking + bury inline - same pattern as
+                   * sge_job_exit() case 7 in job_exit.cc. Without this an Eqw / never-ran job
+                   * deleted via qdel stays in JFINISHED forever (still visible in qstat). */
+                  sge_book_finished_job_usage(job, tmp_task, monitor, packet->gdi_session);
+                  sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
                                  monitor, packet->gdi_session);
                   showmessage = 1;
                   if (!*alltasks && showmessage) {

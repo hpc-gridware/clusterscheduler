@@ -338,18 +338,6 @@ sge_c_gdi_process_in_worker(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
             case ORT_ptickets:
                sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_ptickets");
                break;
-            case ORT_remove_job:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_remove_job");
-               break;
-            case ORT_update_project_usage:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_update_project_usage");
-               break;
-            case ORT_update_user_usage:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_update_user_usage");
-               break;
-            case ORT_share_tree:
-               sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_share_tree");
-               break;
             case ORT_remove_immediate_job:
                sge_dstring_sprintf_append(&target_dstr, " %s", "ORT_remove_immediate_job");
                break;

@@ -60,8 +60,10 @@
 
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "sgeobj/cull/sge_usage_UA_L.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
@@ -70,6 +72,13 @@
 
 #define SGE_BIN "bin"
 #define STREESPOOLTIMEDEF 240
+
+/* CS-1239: STREE_TICK_INTERVAL bounds (seconds) for the periodic share-tree
+ * decay + republish tick driven from the Timed Event Thread. Values outside
+ * [MIN, MAX] are clamped at read time. */
+#define STREE_TICK_INTERVAL_DEF 5
+#define STREE_TICK_INTERVAL_MIN 1
+#define STREE_TICK_INTERVAL_MAX 300
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
 lList *Execd_Config_List = nullptr;
@@ -254,6 +263,11 @@ static int scheduler_timeout = 0;
  * projects are spooled, when the qmaster goes down.
  */
 static int spool_time = STREESPOOLTIMEDEF;
+
+/* CS-1239: STREE_TICK_INTERVAL qmaster_param - seconds between periodic
+ * decay ticks driven from the Timed Event Thread. See
+ * mconf_get_sharetree_tick_interval(). */
+static int sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
 
 // Maximum time in milliseconds to wait before update of secondary DS is enforced
 #define DEFAULT_DS_DEVIATION (1000)
@@ -710,6 +724,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       do_authentication = true;
       is_monitor_message = true;
       spool_time = STREESPOOLTIMEDEF;
+      sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
       max_ds_deviation = DEFAULT_DS_DEVIATION;
       use_qidle = false;
       disable_reschedule = false;
@@ -774,6 +789,19 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                                        MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "STREE_SPOOL_INTERVAL",
                                        STREESPOOLTIMEDEF);
                spool_time = STREESPOOLTIMEDEF;
+            }
+            continue;
+         }
+         /* CS-1239: STREE_TICK_INTERVAL = seconds between share-tree decay
+          * ticks. Out-of-range values (<= 0) reject + warn + fall back to
+          * the default. Values above the upper bound are clamped silently
+          * at read time in mconf_get_sharetree_tick_interval(). */
+         if (parse_int_param(s, "STREE_TICK_INTERVAL", &sharetree_tick_interval, ocs::CEntry::Type::TIME)) {
+            if (sharetree_tick_interval <= 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "STREE_TICK_INTERVAL",
+                                       STREE_TICK_INTERVAL_DEF);
+               sharetree_tick_interval = STREE_TICK_INTERVAL_DEF;
             }
             continue;
          }
@@ -2693,6 +2721,27 @@ int mconf_get_spool_time() {
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
+}
+
+/* CS-1239: share-tree decay tick interval in seconds, as used by the
+ * Timed Event Thread decay task. Returns the configured qmaster_params
+ * STREE_TICK_INTERVAL value, clamped into
+ * [STREE_TICK_INTERVAL_MIN, STREE_TICK_INTERVAL_MAX]. The configured
+ * value defaults to STREE_TICK_INTERVAL_DEF if not set. */
+int mconf_get_sharetree_tick_interval() {
+   DENTER(BASIS_LAYER);
+
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+   int value = sharetree_tick_interval;
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   if (value < STREE_TICK_INTERVAL_MIN) {
+      value = STREE_TICK_INTERVAL_MIN;
+   } else if (value > STREE_TICK_INTERVAL_MAX) {
+      value = STREE_TICK_INTERVAL_MAX;
+   }
+
+   DRETURN(value);
 }
 
 int mconf_get_max_ds_deviation() {

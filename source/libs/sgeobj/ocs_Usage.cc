@@ -67,8 +67,17 @@
 void
 ocs::Usage::calculate_decay_constant(const double halftime, double *decay_rate, double *decay_constant) {
    if (halftime < 0) {
-      *decay_rate = 1.0;
-      *decay_constant = 0;
+      /* Sentinel "no decay" (used for the "finished_jobs" counter by
+       * get_decay_list when no halflife_decay_list is configured).
+       * Previously this branch set decay_constant=0 which meant
+       * pow(0, interval)=0 in decay_usage and zeroed the counter every
+       * tick - the "finished_jobs" PR_usage entry could never accumulate
+       * and sge_sort_pending_job_nodes' job_count denominator stayed at
+       * 0 + pending_position, starving leaves with many pending jobs.
+       * decay_constant=1.0 means pow(1, x)=1, leaving the value
+       * untouched - the intended "no decay" semantics for the sentinel. */
+      *decay_rate = 0;
+      *decay_constant = 1.0;
    } else if (halftime == 0) {
       *decay_rate = 0;
       *decay_constant = 1.0;
@@ -120,7 +129,17 @@ ocs::Usage::get_decay_list() {
          add_decay_element(&decay_list, lGetDouble(ep, UA_value), lGetString(ep, UA_name));
       }
    } else {
-      // @todo: what is the purpose of this?
+      /* The "finished_jobs" counter is summed into UU_/PR_/UPP_ from each
+       * finished ja_task (see sge_book_finished_job_usage). It is read by
+       * the pending-priority formula in sge_sort_pending_job_nodes
+       * (sgeee.cc) as the historical-throughput denominator that keeps
+       * leaves with many finished jobs from being out-prioritized by
+       * leaves with fewer pending. We seed it with the "no decay"
+       * sentinel (halftime < 0 in calculate_decay_constant -> decay
+       * constant 1.0) so the counter is a stable count, not a decayed
+       * weight. If the admin configures halflife_decay_list explicitly,
+       * they are expected to provide their own "finished_jobs" entry
+       * with the decay they want. */
       add_decay_element(&decay_list, -1, "finished_jobs");
    }
    lFreeList(&halflife_decay_list);
@@ -178,13 +197,15 @@ usage_relevant_for_sharetree(const char *name, const lList *usage_weight_list) {
 }
 
 /*--------------------------------------------------------------------
- * decay_and_sum_usage - accumulates and decays usage in the correct
- * user and project objects for the specified job
+ * book_user_project_usage - shared body of decay_and_sum_usage and
+ * sum_usage. The decay step is gated by do_decay so the worker-thread
+ * booking path (CS-1239) can sum the finished job's usage without
+ * applying decay; decay is then done by a periodic TET task.
  *--------------------------------------------------------------------*/
-
-void
-ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *node, lListElem *user, lListElem *project,
-                    lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time) {
+static void
+book_user_project_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
+                        lList *decay_list, const lList *usage_weight_list, u_long seqno, uint64_t curr_time,
+                        bool do_decay) {
    lList *job_usage_list=nullptr,
          *old_usage_list=nullptr,
          *user_usage_list=nullptr,
@@ -194,7 +215,7 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
    lListElem *userprj = nullptr;
    int obj_debited_job_usage = PR_debited_job_usage;
 
-   if (!node && !user && !project) {
+   if (!user && !project) {
       return;
    }
 
@@ -210,12 +231,14 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
     * Decay the usage for the associated user and project
     *-------------------------------------------------------------*/
 
-   if (user) {
-      ocs::UserProject::decay_userprj_usage(user, true, decay_list, seqno, curr_time);
-   }
+   if (do_decay) {
+      if (user) {
+         ocs::UserProject::decay_userprj_usage(user, true, decay_list, seqno, curr_time);
+      }
 
-   if (project) {
-      ocs::UserProject::decay_userprj_usage(project, false, decay_list, seqno, curr_time);
+      if (project) {
+         ocs::UserProject::decay_userprj_usage(project, false, decay_list, seqno, curr_time);
+      }
    }
 
    /*-------------------------------------------------------------
@@ -258,7 +281,7 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
    }
 
    if (!old_usage_list) {
-      old_usage_list = build_usage_list("old_usage_list", nullptr);
+      old_usage_list = ocs::Usage::build_usage_list("old_usage_list", nullptr);
    }
 
    if (user) {
@@ -278,24 +301,24 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
             upp = lAddElemStr(&upp_list, UPP_name, project_name, UPP_Type);
          user_long_term_usage_list = lGetListRW(upp, UPP_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = build_usage_list("upp_long_term_usage_list", nullptr);
+            user_long_term_usage_list = ocs::Usage::build_usage_list("upp_long_term_usage_list", nullptr);
             lSetList(upp, UPP_long_term_usage, user_long_term_usage_list);
          }
          user_usage_list = lGetListRW(upp, UPP_usage);
          if (!user_usage_list) {
-            user_usage_list = build_usage_list("upp_usage_list", nullptr);
+            user_usage_list = ocs::Usage::build_usage_list("upp_usage_list", nullptr);
             lSetList(upp, UPP_usage, user_usage_list);
          }
 
       } else {
          user_long_term_usage_list = lGetListRW(user, UU_long_term_usage);
          if (!user_long_term_usage_list) {
-            user_long_term_usage_list = build_usage_list("user_long_term_usage_list", nullptr);
+            user_long_term_usage_list = ocs::Usage::build_usage_list("user_long_term_usage_list", nullptr);
             lSetList(user, UU_long_term_usage, user_long_term_usage_list);
          }
          user_usage_list = lGetListRW(user, UU_usage);
          if (!user_usage_list) {
-            user_usage_list = build_usage_list("user_usage_list", nullptr);
+            user_usage_list = ocs::Usage::build_usage_list("user_usage_list", nullptr);
             lSetList(user, UU_usage, user_usage_list);
          }
       }
@@ -304,12 +327,12 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
    if (project) {
       project_long_term_usage_list = lGetListRW(project, PR_long_term_usage);
       if (!project_long_term_usage_list) {
-         project_long_term_usage_list = build_usage_list("project_long_term_usage_list", nullptr);
+         project_long_term_usage_list = ocs::Usage::build_usage_list("project_long_term_usage_list", nullptr);
          lSetList(project, PR_long_term_usage, project_long_term_usage_list);
       }
       project_usage_list = lGetListRW(project, PR_usage);
       if (!project_usage_list) {
-         project_usage_list = build_usage_list("project_usage_list", nullptr);
+         project_usage_list = ocs::Usage::build_usage_list("project_usage_list", nullptr);
          lSetList(project, PR_usage, project_usage_list);
       }
    }
@@ -344,43 +367,43 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
           *---------------------------------------------------------*/
 
          if (old_usage_list) {
-            old_usage = get_usage(old_usage_list, usage_name);
+            old_usage = ocs::Usage::get_usage(old_usage_list, usage_name);
             if (!old_usage) {
-               old_usage = create_usage_elem(usage_name);
+               old_usage = ocs::Usage::create_usage_elem(usage_name);
                lAppendElem(old_usage_list, old_usage);
             }
          }
 
          if (user_usage_list) {
-            user_usage = get_usage(user_usage_list, usage_name);
+            user_usage = ocs::Usage::get_usage(user_usage_list, usage_name);
             if (!user_usage) {
-               user_usage = create_usage_elem(usage_name);
+               user_usage = ocs::Usage::create_usage_elem(usage_name);
                lAppendElem(user_usage_list, user_usage);
             }
          }
 
          if (user_long_term_usage_list) {
-            user_long_term_usage = get_usage(user_long_term_usage_list,
+            user_long_term_usage = ocs::Usage::get_usage(user_long_term_usage_list,
                                                        usage_name);
             if (!user_long_term_usage) {
-               user_long_term_usage = create_usage_elem(usage_name);
+               user_long_term_usage = ocs::Usage::create_usage_elem(usage_name);
                lAppendElem(user_long_term_usage_list, user_long_term_usage);
             }
          }
 
          if (project_usage_list) {
-            project_usage = get_usage(project_usage_list, usage_name);
+            project_usage = ocs::Usage::get_usage(project_usage_list, usage_name);
             if (!project_usage) {
-               project_usage = create_usage_elem(usage_name);
+               project_usage = ocs::Usage::create_usage_elem(usage_name);
                lAppendElem(project_usage_list, project_usage);
             }
          }
 
          if (project_long_term_usage_list) {
             project_long_term_usage =
-                  get_usage(project_long_term_usage_list, usage_name);
+                  ocs::Usage::get_usage(project_long_term_usage_list, usage_name);
             if (!project_long_term_usage) {
-               project_long_term_usage = create_usage_elem(usage_name);
+               project_long_term_usage = ocs::Usage::create_usage_elem(usage_name);
                lAppendElem(project_long_term_usage_list,
 			   project_long_term_usage);
             }
@@ -462,6 +485,24 @@ ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem *n
       lFreeList(&job_usage_list);
    }
 
+}
+
+/*--------------------------------------------------------------------
+ * decay_and_sum_usage - accumulates and decays usage in the correct
+ * user and project objects for the specified job
+ *--------------------------------------------------------------------*/
+
+void
+ocs::Usage::decay_and_sum_usage(lListElem *job, lListElem *ja_task, lListElem * /* node */, lListElem *user,
+                                lListElem *project, lList *decay_list, const lList *usage_weight_list, u_long seqno,
+                                uint64_t curr_time) {
+   book_user_project_usage(job, ja_task, user, project, decay_list, usage_weight_list, seqno, curr_time, true);
+}
+
+void
+ocs::Usage::sum_usage(lListElem *job, lListElem *ja_task, lListElem *user, lListElem *project,
+                      const lList *usage_weight_list) {
+   book_user_project_usage(job, ja_task, user, project, nullptr, usage_weight_list, 0, 0, false);
 }
 
 

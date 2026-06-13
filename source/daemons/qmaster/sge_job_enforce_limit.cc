@@ -58,6 +58,7 @@
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_conf.h"
 
+#include "ocs_FinishedJob.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_qmaster_timed_event.h"
 #include "sge_job_enforce_limit.h"
@@ -462,6 +463,12 @@ sge_job_enfoce_limit_handler(te_event_t event, monitoring_t *monitor) {
                    */
                   sge_commit_job(job, ja_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, ocs::SessionManager::GDI_SESSION_NONE);
+                  /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves
+                   * the ja_task in JFINISHED without removing it. See ocs_FinishedJob.h
+                   * and sge_job_exit() case 7 for the canonical pattern. */
+                  sge_book_finished_job_usage(job, ja_task, monitor, ocs::SessionManager::GDI_SESSION_NONE);
+                  sge_commit_job(job, ja_task, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
+                                 monitor, ocs::SessionManager::GDI_SESSION_NONE);
                   job = nullptr;
                   ja_task = nullptr;
 

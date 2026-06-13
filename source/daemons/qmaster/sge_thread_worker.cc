@@ -61,6 +61,7 @@
 #include "comm/cl_commlib.h"
 
 #include <cinttypes>
+#include "ocs_SharetreeUsage.h"
 #include "setup_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_reporting_qmaster.h"
@@ -161,6 +162,12 @@ sge_worker_terminate() {
       sge_store_job_number(nullptr, nullptr);
       sge_store_ar_id(nullptr, nullptr);
       DPRINTF("job/ar counter were made persistent\n");
+      /* CS-1239: drain anything the periodic TET flush did not get to yet.
+       * sge_userprj_spool below then re-spools the full master lists; the
+       * overlap is intentional and harmless - this hook is the canonical
+       * dirty-FIFO drain that survives if sge_userprj_spool is later
+       * dropped (CS-1239 step 8 / follow-ups). */
+      ocs::SharetreeUsage::spool_all(ocs::SessionManager::GDI_SESSION_NONE);
       sge_userprj_spool(ocs::SessionManager::GDI_SESSION_NONE); /* spool the latest usage */
       DPRINTF("final job and user/project spooling has been triggered\n");
    }

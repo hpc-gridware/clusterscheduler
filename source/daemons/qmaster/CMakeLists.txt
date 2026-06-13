@@ -27,6 +27,8 @@ set(QMASTER_SOURCES
         ocs_BaseAccountingFileWriter.cc
         ocs_BaseReportingFileWriter.cc
         ocs_CategoryQmaster.cc
+        ocs_FinishedJob.cc
+        ocs_SharetreeUsage.cc
         ocs_JsonAccountingFileWriter.cc
         ocs_JsonReportingFileWriter.cc
         ocs_MirrorReaderDataStore.cc
