@@ -1423,7 +1423,7 @@ int sge_parse_qconf(char *argv[])
          } else if (val != nullptr && strcmp(val, "numeric") == 0) {
             ocs_json_value_format_opt = OCS_JSON_VALUES_NUMERIC;
          } else {
-            fprintf(stderr, MSG_QCONF_UNKNOWNFMT_S, val != nullptr ? val : "");
+            fprintf(stderr, MSG_QCONF_UNKNOWNFMTVAL_S, val != nullptr ? val : "");
             fprintf(stderr, "\n");
             DRETURN(1);
          }

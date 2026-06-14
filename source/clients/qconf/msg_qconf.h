@@ -89,6 +89,7 @@
 #define MSG_QCONF_CONFIRMDELETE_I                     _MESSAGE(5018, _("Delete %d object(s)? (y/n) "))
 #define MSG_QCONF_DELETEABORTED_I                     _MESSAGE(5019, _("aborted - %d object(s) not deleted"))
 #define MSG_QCONF_UNKNOWNFMT_S                        _MESSAGE(5020, _("unknown -fmt value " SFQ " (expected plain|json)"))
+#define MSG_QCONF_UNKNOWNFMTVAL_S                     _MESSAGE(5254, _("unknown -fmtval value " SFQ " (expected compact|numeric)"))
 
 // clang-format on
 

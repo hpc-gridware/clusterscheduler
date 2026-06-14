@@ -589,6 +589,7 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(Fmt_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_Fmt_OPT, MSG_GDI_UTEXT_Fmt_OPT);
+      PRINTITD(MSG_GDI_USAGE_FmtVal_OPT, MSG_GDI_UTEXT_FmtVal_OPT);
    }
 
    if (VALID_OPT(Dconf_OPT, prog_number)) {

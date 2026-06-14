@@ -502,9 +502,17 @@ Modifier for the delete operations. Suppresses the interactive confirmation prom
 Selects the serialization format for the show (`-s*`) and file based add/modify (`-A*`/`-M*`) operations.
 `plain` (the default) is the traditional flatfile ASCII format. `json` emits/reads a structured JSON
 representation driven by the same object field definitions, with values typed natively (numbers, booleans,
-nested arrays) and complex-attribute values normalized (memory in bytes, time in seconds). The interactive
-editor based operations (`-m*`) always use the plain format. This modifier may appear anywhere on the command
-line.
+nested arrays). How memory and time valued attributes are rendered is controlled by `-fmtval` (see below).
+The interactive editor based operations (`-m*`) always use the plain format. This modifier may appear
+anywhere on the command line.
+
+## -fmtval *compact*|*numeric*
+Controls how memory and time valued attributes are rendered in `-fmt json` output (it has no effect on the
+plain format). `compact` (the default) keeps the human readable unit and colon notation also used by the plain
+format, for example `1.5G` for a memory value and `0:5:0` for a time value. `numeric` renders the same values
+as plain numbers in their base unit, that is bytes for memory and seconds for time. An unlimited value is
+always emitted as the string `INFINITY`. On input, both forms (as well as a native number) are accepted
+regardless of this setting. This modifier may appear anywhere on the command line.
 
 ## -help
 Prints a listing of all options.
