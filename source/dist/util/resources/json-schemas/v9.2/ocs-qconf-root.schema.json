@@ -1,0 +1,138 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-root.schema.json",
+   "title": "OCS/GCS qconf schema",
+   "description": "Root schema for the JSON produced by qconf -fmt json. A qconf document describes exactly one object or list type; the concrete type is identified by its '$id' member, which points at the matching per-type schema. Each branch below selects a type by its '$id' and then validates the document against that type's schema.",
+   "type": "object",
+   "required": [
+      "$id"
+   ],
+   "oneOf": [
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-complex_entry\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-complex_entry.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-config\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-config.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-sched_conf\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-sched_conf.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-exechost\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-exechost.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-cqueue\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-cqueue.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-pe\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-pe.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-ckpt\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-ckpt.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-calendar\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-calendar.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-hostgroup\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-hostgroup.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-userset\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-userset.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-user\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-user.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-project\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-project.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-rqs\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-rqs.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-role\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-role.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-sharetree\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-sharetree.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-manager\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-manager.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-operator\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-operator.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-adminhost\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-adminhost.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-submithost\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-submithost.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-thread_pools\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-thread_pools.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-event_clients\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-event_clients.schema.json"}
+         ]
+      }
+   ]
+}

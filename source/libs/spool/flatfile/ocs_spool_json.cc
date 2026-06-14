@@ -523,11 +523,17 @@ spool_json_write_bitfield_array(rapidjson::PrettyWriter<rapidjson::StringBuffer>
  * enum value, so the order must match the STT_* constants in sgeobj/sge_sharetree.h. */
 static const char *const sharetree_node_types[] = { "USER", "PROJECT", nullptr };
 
+/* scheduler queue sort method SC_queue_sort_method (QSM_LOAD=0, QSM_SEQNUM=1); the table
+ * is indexed by the enum value and matches the tokens of write_SC_queue_sort_method. */
+static const char *const sched_queue_sort_methods[] = { "load", "seqno", nullptr };
+
 /**
  * @brief Name table for a single-valued enum field rendered as a symbolic token.
  *
  * Unlike a bitfield (an array of set-bit names), this is a plain enum whose value is an
- * index into the table (e.g. STN_type 0 -> "USER", 1 -> "PROJECT").
+ * index into the table (e.g. STN_type 0 -> "USER", 1 -> "PROJECT"). The flatfile (ASCII)
+ * writer renders these via per-field write functions; JSON bypasses those, so the
+ * mapping is mirrored here to keep the symbolic form (and round-trip) consistent.
  *
  * @param nm  CULL field id
  * @return the value-name table for the field, or nullptr if not such an enum
@@ -538,6 +544,8 @@ spool_json_enum_names(int nm)
    switch (nm) {
       case STN_type:
          return sharetree_node_types;
+      case SC_queue_sort_method:
+         return sched_queue_sort_methods;
       default:
          return nullptr;
    }

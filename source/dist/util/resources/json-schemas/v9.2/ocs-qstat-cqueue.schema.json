@@ -4,7 +4,9 @@
    "title": "OCS/GCS qstat group schema",
    "description": "Schema describing qstat group output (-g c). Fields after 'manual_intervention' are only present with -ext switch.",
    "type": "object",
-   "required": ["queues"],
+   "required": [
+      "queues"
+   ],
    "additionalProperties": true,
    "properties": {
       "queues": {

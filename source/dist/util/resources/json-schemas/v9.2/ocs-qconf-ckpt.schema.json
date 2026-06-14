@@ -1,0 +1,57 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-ckpt.schema.json",
+   "title": "OCS/GCS qconf checkpointing environment schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sckpt / -Mckpt: a checkpointing interface definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "ckpt_name",
+      "interface",
+      "ckpt_command",
+      "migr_command",
+      "restart_command",
+      "clean_command",
+      "ckpt_dir",
+      "signal",
+      "when"
+   ],
+   "properties": {
+      "ckpt_name": {
+         "type": "string",
+         "description": "Checkpointing environment name."
+      },
+      "interface": {
+         "type": "string",
+         "description": "Checkpointing interface (e.g. userdefined, application-level, cpr, ...)."
+      },
+      "ckpt_command": {
+         "type": "string",
+         "description": "Command to initiate a checkpoint, or the empty string for NONE."
+      },
+      "migr_command": {
+         "type": "string",
+         "description": "Command to migrate a job, or the empty string for NONE."
+      },
+      "restart_command": {
+         "type": "string",
+         "description": "Command to restart a checkpointed job, or the empty string for NONE."
+      },
+      "clean_command": {
+         "type": "string",
+         "description": "Command to clean up after a checkpointed job, or the empty string for NONE."
+      },
+      "ckpt_dir": {
+         "type": "string",
+         "description": "Directory to which checkpoints are written."
+      },
+      "signal": {
+         "type": "string",
+         "description": "Signal sent to initiate a checkpoint, or the empty string for NONE."
+      },
+      "when": {
+         "type": "string",
+         "description": "When checkpoints are generated, a combination of the letters s, m, x, r."
+      }
+   }
+}

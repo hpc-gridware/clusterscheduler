@@ -1,0 +1,40 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-event_clients.schema.json",
+   "title": "OCS/GCS qconf event client list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -secl: the registered event clients.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "event_clients"
+   ],
+   "properties": {
+      "event_clients": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+               "id",
+               "name",
+               "host"
+            ],
+            "properties": {
+               "id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Event client id."
+               },
+               "name": {
+                  "type": "string",
+                  "description": "Event client name (e.g. scheduler, mirror-N)."
+               },
+               "host": {
+                  "type": "string",
+                  "description": "Host on which the event client runs."
+               }
+            }
+         }
+      }
+   }
+}

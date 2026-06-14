@@ -1,0 +1,39 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-project.schema.json",
+   "title": "OCS/GCS qconf project schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sprj / -Mprj: a project definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "name",
+      "oticket",
+      "fshare",
+      "acl",
+      "xacl"
+   ],
+   "properties": {
+      "name": {
+         "type": "string",
+         "description": "Project name."
+      },
+      "oticket": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Override tickets assigned to the project."
+      },
+      "fshare": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Functional share assigned to the project."
+      },
+      "acl": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists granting access to the project."
+      },
+      "xacl": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists denying access to the project."
+      }
+   }
+}

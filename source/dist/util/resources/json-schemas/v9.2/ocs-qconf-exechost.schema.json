@@ -1,0 +1,68 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-exechost.schema.json",
+   "title": "OCS/GCS qconf execution host schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -se / -Me: an execution host definition. load_values are read-only runtime values reported by the host; they are shown but ignored on modify.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "hostname",
+      "load_scaling",
+      "complex_values",
+      "load_values",
+      "processors",
+      "user_lists",
+      "xuser_lists",
+      "projects",
+      "xprojects",
+      "usage_scaling",
+      "report_variables"
+   ],
+   "properties": {
+      "hostname": {
+         "type": "string",
+         "description": "Execution host name (or 'global' for the global host)."
+      },
+      "load_scaling": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Per-load-value scaling factors."
+      },
+      "complex_values": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Host complex (resource) values and capacities."
+      },
+      "load_values": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Read-only load/resource values reported by the host (shown, ignored on modify)."
+      },
+      "processors": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Number of processors of the host."
+      },
+      "user_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists allowed to use the host."
+      },
+      "xuser_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists denied use of the host."
+      },
+      "projects": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Projects allowed to use the host."
+      },
+      "xprojects": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Projects denied use of the host."
+      },
+      "usage_scaling": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Per-usage-metric scaling factors."
+      },
+      "report_variables": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Load/consumable variable names to include in reporting."
+      }
+   }
+}

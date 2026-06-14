@@ -63,60 +63,73 @@
             "min_cpu_interval"
          ],
          "properties": {
-            "load_avg": { "type": "number", "description": "Normalized load average." },
-            "load_short": { "type": "number", "description": "Short-term load average." },
-            "load_medium": { "type": "number", "description": "Medium-term load average." },
-            "load_long": { "type": "number", "description": "Long-term load average." },
-            "arch": { "type": "string", "description": "Architecture string of the execution host." },
-            "num_proc": { "type": "integer", "minimum": 0, "description": "Number of processors." },
-            "mem_free": { "type": "number", "description": "Free memory." },
-            "swap_free": { "type": "number", "description": "Free swap space." },
-            "virtual_free": { "type": "number", "description": "Free virtual memory." },
-            "mem_total": { "type": "number", "description": "Total memory." },
-            "swap_total": { "type": "number", "description": "Total swap space." },
-            "virtual_total": { "type": "number", "description": "Total virtual memory." },
-            "mem_used": { "type": "number", "description": "Used memory." },
-            "swap_used": { "type": "number", "description": "Used swap space." },
-            "virtual_used": { "type": "number", "description": "Used virtual memory." },
-            "cpu": { "type": "number", "description": "CPU utilization value." },
-            "m_topology": { "type": "string", "description": "Topology string describing the CPU layout." },
-            "m_socket": { "type": "integer", "minimum": 0, "description": "Socket count or socket-related topology value." },
-            "m_core": { "type": "integer", "minimum": 0, "description": "Core count or core-related topology value." },
-            "m_thread": { "type": "integer", "minimum": 0, "description": "Thread count or thread-related topology value." },
-            "np_load_avg": { "type": "number", "description": "Normalized per-processor load average." },
-            "np_load_short": { "type": "number", "description": "Short-term normalized per-processor load." },
-            "np_load_medium": { "type": "number", "description": "Medium-term normalized per-processor load." },
-            "np_load_long": { "type": "number", "description": "Long-term normalized per-processor load." },
-            "slots": { "type": "integer", "minimum": 0, "description": "Configured number of slots." },
-            "qname": { "$ref": "./ocs-qstat-common.schema.json#/$defs/clusterQueueName" },
-            "hostname": { "$ref": "./ocs-qstat-common.schema.json#/$defs/hostname" },
-            "tmpdir": { "type": "string", "minLength": 1, "description": "Temporary directory used for job execution." },
-            "seq_no": { "type": "integer", "minimum": 0, "description": "Sequence number of the queue." },
-            "rerun": { "type": "boolean", "description": "Indicates whether rerun is enabled." },
-            "calendar": { "type": "string", "description": "Associated calendar name or `NONE` if no calendar is configured.", "examples": ["NONE"] },
-            "s_rt": { "type": "number", "description": "Soft runtime limit." },
-            "h_rt": { "type": "number", "description": "Hard runtime limit." },
-            "s_cpu": { "type": "number", "description": "Soft CPU time limit." },
-            "h_cpu": { "type": "number", "description": "Hard CPU time limit." },
-            "s_fsize": { "type": "number", "description": "Soft file size limit." },
-            "h_fsize": { "type": "number", "description": "Hard file size limit." },
-            "s_data": { "type": "number", "description": "Soft data segment size limit." },
-            "h_data": { "type": "number", "description": "Hard data segment size limit." },
-            "s_stack": { "type": "number", "description": "Soft stack size limit." },
-            "h_stack": { "type": "number", "description": "Hard stack size limit." },
-            "s_core": { "type": "number", "description": "Soft core file size limit." },
-            "h_core": { "type": "number", "description": "Hard core file size limit." },
-            "s_rss": { "type": "number", "description": "Soft resident set size limit." },
-            "h_rss": { "type": "number", "description": "Hard resident set size limit." },
-            "s_vmem": { "type": "number", "description": "Soft virtual memory limit." },
-            "h_vmem": { "type": "number", "description": "Hard virtual memory limit." },
-            "min_cpu_interval": { "type": "integer", "minimum": 0, "description": "Minimum CPU accounting interval." }
+            "load_avg": {"type": "number", "description": "Normalized load average."},
+            "load_short": {"type": "number", "description": "Short-term load average."},
+            "load_medium": {"type": "number", "description": "Medium-term load average."},
+            "load_long": {"type": "number", "description": "Long-term load average."},
+            "arch": {"type": "string", "description": "Architecture string of the execution host."},
+            "num_proc": {"type": "integer", "minimum": 0, "description": "Number of processors."},
+            "mem_free": {"type": "number", "description": "Free memory."},
+            "swap_free": {"type": "number", "description": "Free swap space."},
+            "virtual_free": {"type": "number", "description": "Free virtual memory."},
+            "mem_total": {"type": "number", "description": "Total memory."},
+            "swap_total": {"type": "number", "description": "Total swap space."},
+            "virtual_total": {"type": "number", "description": "Total virtual memory."},
+            "mem_used": {"type": "number", "description": "Used memory."},
+            "swap_used": {"type": "number", "description": "Used swap space."},
+            "virtual_used": {"type": "number", "description": "Used virtual memory."},
+            "cpu": {"type": "number", "description": "CPU utilization value."},
+            "m_topology": {"type": "string", "description": "Topology string describing the CPU layout."},
+            "m_socket": {
+               "type": "integer",
+               "minimum": 0,
+               "description": "Socket count or socket-related topology value."
+            },
+            "m_core": {"type": "integer", "minimum": 0, "description": "Core count or core-related topology value."},
+            "m_thread": {
+               "type": "integer",
+               "minimum": 0,
+               "description": "Thread count or thread-related topology value."
+            },
+            "np_load_avg": {"type": "number", "description": "Normalized per-processor load average."},
+            "np_load_short": {"type": "number", "description": "Short-term normalized per-processor load."},
+            "np_load_medium": {"type": "number", "description": "Medium-term normalized per-processor load."},
+            "np_load_long": {"type": "number", "description": "Long-term normalized per-processor load."},
+            "slots": {"type": "integer", "minimum": 0, "description": "Configured number of slots."},
+            "qname": {"$ref": "./ocs-qstat-common.schema.json#/$defs/clusterQueueName"},
+            "hostname": {"$ref": "./ocs-qstat-common.schema.json#/$defs/hostname"},
+            "tmpdir": {"type": "string", "minLength": 1, "description": "Temporary directory used for job execution."},
+            "seq_no": {"type": "integer", "minimum": 0, "description": "Sequence number of the queue."},
+            "rerun": {"type": "boolean", "description": "Indicates whether rerun is enabled."},
+            "calendar": {
+               "type": "string",
+               "description": "Associated calendar name or `NONE` if no calendar is configured.",
+               "examples": [
+                  "NONE"
+               ]
+            },
+            "s_rt": {"type": "number", "description": "Soft runtime limit."},
+            "h_rt": {"type": "number", "description": "Hard runtime limit."},
+            "s_cpu": {"type": "number", "description": "Soft CPU time limit."},
+            "h_cpu": {"type": "number", "description": "Hard CPU time limit."},
+            "s_fsize": {"type": "number", "description": "Soft file size limit."},
+            "h_fsize": {"type": "number", "description": "Hard file size limit."},
+            "s_data": {"type": "number", "description": "Soft data segment size limit."},
+            "h_data": {"type": "number", "description": "Hard data segment size limit."},
+            "s_stack": {"type": "number", "description": "Soft stack size limit."},
+            "h_stack": {"type": "number", "description": "Hard stack size limit."},
+            "s_core": {"type": "number", "description": "Soft core file size limit."},
+            "h_core": {"type": "number", "description": "Hard core file size limit."},
+            "s_rss": {"type": "number", "description": "Soft resident set size limit."},
+            "h_rss": {"type": "number", "description": "Hard resident set size limit."},
+            "s_vmem": {"type": "number", "description": "Soft virtual memory limit."},
+            "h_vmem": {"type": "number", "description": "Hard virtual memory limit."},
+            "min_cpu_interval": {"type": "integer", "minimum": 0, "description": "Minimum CPU accounting interval."}
          },
          "additionalProperties": {
             "$ref": "./ocs-qstat-common.schema.json#/$defs/scalarValue"
          }
       },
-
       "runningJob": {
          "allOf": [
             {
@@ -150,11 +163,9 @@
             }
          ]
       },
-
       "pendingJob": {
          "$ref": "./ocs-qstat-common.schema.json#/$defs/pendingJobBase"
       },
-
       "queueInstance": {
          "type": "object",
          "required": [

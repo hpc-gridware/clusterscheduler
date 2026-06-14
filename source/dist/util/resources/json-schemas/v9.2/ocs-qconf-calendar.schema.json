@@ -1,0 +1,27 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-calendar.schema.json",
+   "title": "OCS/GCS qconf calendar schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -scal / -Mcal: a calendar definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "calendar_name",
+      "year",
+      "week"
+   ],
+   "properties": {
+      "calendar_name": {
+         "type": "string",
+         "description": "Calendar name."
+      },
+      "year": {
+         "type": "string",
+         "description": "Year calendar definition, or the empty string if unset (equivalent to NONE)."
+      },
+      "week": {
+         "type": "string",
+         "description": "Week calendar definition, or the empty string if unset (equivalent to NONE)."
+      }
+   }
+}

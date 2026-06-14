@@ -1,0 +1,200 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-config.schema.json",
+   "title": "OCS/GCS qconf configuration schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sconf / -Mconf: the global or a host (local) configuration. Each configuration parameter is a member of the object. The standard parameters are described below; the set is open-ended (custom and host-local parameters are allowed via additionalProperties), and a host-local configuration usually contains only a subset, so no parameter is required. List parameters are arrays of strings, 'params' parameters are arrays of name/value entries, and scalar parameters are validated as a string/number/boolean union because most are typed by value.",
+   "type": "object",
+   "additionalProperties": {
+      "anyOf": [
+         {
+            "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue"
+         },
+         {
+            "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+         },
+         {
+            "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
+         }
+      ]
+   },
+   "properties": {
+      "execd_spool_dir": {"type": "string", "description": "Spool directory used by the execution daemons."},
+      "mailer": {"type": "string", "description": "Absolute path of the mail delivery agent."},
+      "xterm": {"type": "string", "description": "Absolute path of the xterm command for interactive jobs."},
+      "load_sensor": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Executables used as additional load sensors."
+      },
+      "prolog": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Cluster-wide prolog command, or NONE."
+      },
+      "epilog": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Cluster-wide epilog command, or NONE."
+      },
+      "shell_start_mode": {
+         "type": "string",
+         "enum": [
+            "unix_behavior",
+            "posix_compliant",
+            "script_from_stdin"
+         ],
+         "description": "Default shell start mode for jobs."
+      },
+      "login_shells": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Shells treated as login shells."
+      },
+      "min_uid": {"type": "integer", "minimum": 0, "description": "Minimum user id allowed to run jobs."},
+      "min_gid": {"type": "integer", "minimum": 0, "description": "Minimum group id allowed to run jobs."},
+      "user_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists of users allowed cluster access."
+      },
+      "xuser_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists of users denied cluster access."
+      },
+      "projects": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Projects allowed cluster access."
+      },
+      "xprojects": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Projects denied cluster access."
+      },
+      "load_report_time": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Interval at which execution daemons report load (time value)."
+      },
+      "max_unheard": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Time after which an unheard-from host is considered unknown (time value)."
+      },
+      "loglevel": {"type": "string", "description": "Logging verbosity (e.g. log_info, log_warning, log_err)."},
+      "enforce_project": {"type": "boolean", "description": "Whether jobs must request a project."},
+      "enforce_user": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Whether submit users must exist as user objects ('auto', true or false)."
+      },
+      "administrator_mail": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Mail addresses notified of administrative problems."
+      },
+      "mail_tag": {"type": "string", "description": "Tag prepended to the subject of job mails, or NONE."},
+      "set_token_cmd": {"type": "string", "description": "Command used to set AFS tokens, or NONE."},
+      "pag_cmd": {"type": "string", "description": "Command used to set up a PAG, or NONE."},
+      "token_extend_time": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "AFS token extension interval (time value)."
+      },
+      "shepherd_cmd": {"type": "string", "description": "Alternative shepherd command, or NONE."},
+      "qmaster_params": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Additional qmaster tuning parameters."
+      },
+      "execd_params": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Additional execution daemon tuning parameters."
+      },
+      "reporting_params": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Reporting / accounting tuning parameters."
+      },
+      "binding_params": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Core binding tuning parameters."
+      },
+      "jsv_params": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Job submission verifier parameters."
+      },
+      "gid_range": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Range(s) of additional group ids used to track job processes."
+      },
+      "port_range": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Port range(s) used by interactive job startup."
+      },
+      "qlogin_daemon": {"type": "string", "description": "Daemon used for qlogin sessions ('builtin' or a command)."},
+      "qlogin_command": {
+         "type": "string",
+         "description": "Client command used for qlogin sessions ('builtin' or a command)."
+      },
+      "rsh_daemon": {"type": "string", "description": "Daemon used for qrsh sessions ('builtin' or a command)."},
+      "rsh_command": {
+         "type": "string",
+         "description": "Client command used for qrsh sessions ('builtin' or a command)."
+      },
+      "jsv_url": {"type": "string", "description": "URL of the server-side job submission verifier, or NONE."},
+      "jsv_allowed_mod": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Job attributes a JSV is allowed to modify."
+      },
+      "gdi_request_limits": {"type": "string", "description": "GDI request rate limits, or NONE."},
+      "rlogin_daemon": {"type": "string", "description": "Daemon used for qrlogin sessions ('builtin' or a command)."},
+      "rlogin_command": {
+         "type": "string",
+         "description": "Client command used for qrlogin sessions ('builtin' or a command)."
+      },
+      "reschedule_unknown": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Time before jobs on an unknown host are rescheduled (time value)."
+      },
+      "max_aj_instances": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of concurrently scheduled array job tasks (0 = unlimited)."
+      },
+      "max_aj_tasks": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of tasks in a single array job (0 = unlimited)."
+      },
+      "max_u_jobs": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of jobs a single user may have (0 = unlimited)."
+      },
+      "max_jobs": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of jobs in the system (0 = unlimited)."
+      },
+      "max_advance_reservations": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of advance reservations (0 = unlimited)."
+      },
+      "auto_user_oticket": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Override tickets given to automatically created users."
+      },
+      "auto_user_fshare": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Functional shares given to automatically created users."
+      },
+      "auto_user_default_project": {
+         "type": "string",
+         "description": "Default project of automatically created users, or NONE."
+      },
+      "auto_user_delete_time": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Idle time after which an automatically created user is deleted (time value; 0 disables)."
+      },
+      "delegated_file_staging": {"type": "boolean", "description": "Whether delegated file staging is enabled."},
+      "libjvm_path": {
+         "type": "string",
+         "description": "Path to the JVM shared library used by the JVM thread, or empty."
+      },
+      "additional_jvm_args": {
+         "type": "string",
+         "description": "Additional arguments passed to the JVM thread, or empty."
+      },
+      "topology_file": {"type": "string", "description": "Path to a topology description file, or NONE."}
+   }
+}

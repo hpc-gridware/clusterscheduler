@@ -1,0 +1,46 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-userset.schema.json",
+   "title": "OCS/GCS qconf user set schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -su / -Mu: an access list / department (user set) definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "name",
+      "type",
+      "fshare",
+      "oticket",
+      "entries"
+   ],
+   "properties": {
+      "name": {
+         "type": "string",
+         "description": "User set name."
+      },
+      "type": {
+         "type": "array",
+         "description": "User set roles. A user set may be an access list and/or a department.",
+         "items": {
+            "type": "string",
+            "enum": [
+               "ACL",
+               "DEPT"
+            ]
+         }
+      },
+      "fshare": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Functional share assigned to the department."
+      },
+      "oticket": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Override tickets assigned to the department."
+      },
+      "entries": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Member user names (or departmental group entries)."
+      }
+   }
+}

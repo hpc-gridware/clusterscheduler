@@ -1,0 +1,209 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-sched_conf.schema.json",
+   "title": "OCS/GCS qconf scheduler configuration schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -ssconf / -Msconf: the scheduler configuration.",
+   "type": "object",
+   "required": [
+      "algorithm",
+      "schedule_interval",
+      "maxujobs",
+      "queue_sort_method",
+      "job_load_adjustments",
+      "load_adjustment_decay_time",
+      "load_formula",
+      "schedd_job_info",
+      "flush_submit_sec",
+      "flush_finish_sec",
+      "params",
+      "reprioritize_interval",
+      "halftime",
+      "usage_weight_list",
+      "compensation_factor",
+      "weight_user",
+      "weight_project",
+      "weight_department",
+      "weight_job",
+      "weight_tickets_functional",
+      "weight_tickets_share",
+      "share_override_tickets",
+      "share_functional_shares",
+      "max_functional_jobs_to_schedule",
+      "report_pjob_tickets",
+      "max_pending_tasks_per_job",
+      "halflife_decay_list",
+      "policy_hierarchy",
+      "weight_ticket",
+      "weight_waiting_time",
+      "weight_deadline",
+      "weight_urgency",
+      "weight_priority",
+      "max_reservation",
+      "default_duration"
+   ],
+   "additionalProperties": {
+      "anyOf": [
+         {
+            "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue"
+         },
+         {
+            "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
+         }
+      ]
+   },
+   "properties": {
+      "algorithm": {
+         "type": "string",
+         "description": "Scheduling algorithm (currently 'default')."
+      },
+      "schedule_interval": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Interval at which scheduling runs are triggered (time value)."
+      },
+      "maxujobs": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of jobs a single user may have running at once (0 = unlimited)."
+      },
+      "queue_sort_method": {
+         "type": "string",
+         "description": "Order in which queue instances are sorted for scheduling.",
+         "enum": [
+            "load",
+            "seqno"
+         ]
+      },
+      "job_load_adjustments": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Per-load-value adjustments applied to a host for each job started on it."
+      },
+      "load_adjustment_decay_time": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Time over which the job load adjustments decay (time value)."
+      },
+      "load_formula": {
+         "type": "string",
+         "description": "Algebraic load formula used to derive a single load value per host."
+      },
+      "schedd_job_info": {
+         "type": "string",
+         "description": "Whether/which scheduler job information is kept for qstat -j (true, false, or 'job_list <ids>')."
+      },
+      "flush_submit_sec": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Seconds after a job submission before a scheduling run is flushed (0 = disabled)."
+      },
+      "flush_finish_sec": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Seconds after a job finishes before a scheduling run is flushed (0 = disabled)."
+      },
+      "params": {
+         "type": "string",
+         "description": "Additional scheduler parameters, or NONE."
+      },
+      "reprioritize_interval": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Interval at which running jobs are reprioritized (time value; 0 disables)."
+      },
+      "halftime": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Half-life (in hours) for decaying accumulated usage in the share tree policy."
+      },
+      "usage_weight_list": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+         "description": "Weights of the usage metrics (cpu, mem, io) combining into a single usage value."
+      },
+      "compensation_factor": {
+         "type": "number",
+         "description": "Factor controlling how aggressively the share tree compensates for past under-usage."
+      },
+      "weight_user": {
+         "type": "number",
+         "description": "Relative weight of the user shares in the functional policy."
+      },
+      "weight_project": {
+         "type": "number",
+         "description": "Relative weight of the project shares in the functional policy."
+      },
+      "weight_department": {
+         "type": "number",
+         "description": "Relative weight of the department shares in the functional policy."
+      },
+      "weight_job": {
+         "type": "number",
+         "description": "Relative weight of the job shares in the functional policy."
+      },
+      "weight_tickets_functional": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Total number of functional policy tickets."
+      },
+      "weight_tickets_share": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Total number of share tree policy tickets."
+      },
+      "share_override_tickets": {
+         "type": "boolean",
+         "description": "Whether override tickets are shared among the tasks of a parallel/array job."
+      },
+      "share_functional_shares": {
+         "type": "boolean",
+         "description": "Whether functional shares are shared among the tasks of a parallel/array job."
+      },
+      "max_functional_jobs_to_schedule": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of pending jobs considered by the functional policy per scheduling run."
+      },
+      "report_pjob_tickets": {
+         "type": "boolean",
+         "description": "Whether per-job tickets are reported to qstat."
+      },
+      "max_pending_tasks_per_job": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of pending array task ranges considered per array job."
+      },
+      "halflife_decay_list": {
+         "type": "string",
+         "description": "Per-usage-metric half-life decay specification, or NONE."
+      },
+      "policy_hierarchy": {
+         "type": "string",
+         "description": "Order in which the ticket policies (Override, Functional, Share-tree) are applied."
+      },
+      "weight_ticket": {
+         "type": "number",
+         "description": "Weight of the normalized ticket value in the overall job priority."
+      },
+      "weight_waiting_time": {
+         "type": "number",
+         "description": "Weight of the job waiting time in the overall job priority."
+      },
+      "weight_deadline": {
+         "type": "number",
+         "description": "Weight of the deadline urgency in the overall job priority."
+      },
+      "weight_urgency": {
+         "type": "number",
+         "description": "Weight of the normalized urgency value in the overall job priority."
+      },
+      "weight_priority": {
+         "type": "number",
+         "description": "Weight of the normalized POSIX priority in the overall job priority."
+      },
+      "max_reservation": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Maximum number of advance/backfill resource reservations made per scheduling run (0 = disabled)."
+      },
+      "default_duration": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Default runtime assumed for jobs without an explicit runtime limit (time value or INFINITY)."
+      }
+   }
+}

@@ -1,0 +1,40 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-user.schema.json",
+   "title": "OCS/GCS qconf user schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -suser / -Muser: a user definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "name",
+      "oticket",
+      "fshare",
+      "delete_time",
+      "default_project"
+   ],
+   "properties": {
+      "name": {
+         "type": "string",
+         "description": "User name."
+      },
+      "oticket": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Override tickets assigned to the user."
+      },
+      "fshare": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Functional share assigned to the user."
+      },
+      "delete_time": {
+         "type": "string",
+         "description": "Local ISO date-time (YYYY-MM-DDThh:mm:ss) after which an automatically created user is deleted, or the empty string if unset.",
+         "pattern": "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+      },
+      "default_project": {
+         "type": "string",
+         "description": "Default project for the user, or the empty string if unset (equivalent to NONE)."
+      }
+   }
+}

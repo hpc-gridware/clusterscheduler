@@ -1,0 +1,35 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-thread_pools.schema.json",
+   "title": "OCS/GCS qconf thread pool list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -stl: the qmaster thread pools and their sizes.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "thread_pools"
+   ],
+   "properties": {
+      "thread_pools": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+               "pool",
+               "size"
+            ],
+            "properties": {
+               "pool": {
+                  "type": "string",
+                  "description": "Thread pool name (e.g. listener, reader, scheduler)."
+               },
+               "size": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Number of threads in the pool."
+               }
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,75 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-role.schema.json",
+   "title": "OCS/GCS qconf role schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -srole / -Mrole: an RBAC role definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "name",
+      "enabled",
+      "user_list",
+      "parent_role_list",
+      "perm_list"
+   ],
+   "properties": {
+      "name": {
+         "type": "string",
+         "description": "Role name."
+      },
+      "enabled": {
+         "type": "boolean",
+         "description": "Whether the role is active. A disabled role grants no permissions."
+      },
+      "user_list": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "User names this role is granted to."
+      },
+      "parent_role_list": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Roles this role inherits permissions from."
+      },
+      "perm_list": {
+         "type": "array",
+         "description": "RBAC permission rules. The empty array is the empty rule set (NONE).",
+         "items": {
+            "$ref": "#/$defs/permRule"
+         }
+      }
+   },
+   "$defs": {
+      "permRule": {
+         "description": "One permission rule: six characteristics, all of which must match a request for the rule to apply.",
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "source",
+            "origin",
+            "operation",
+            "object_type",
+            "object_key",
+            "value_constraint"
+         ],
+         "properties": {
+            "source": {
+               "type": "string"
+            },
+            "origin": {
+               "type": "string"
+            },
+            "operation": {
+               "type": "string"
+            },
+            "object_type": {
+               "type": "string"
+            },
+            "object_key": {
+               "type": "string"
+            },
+            "value_constraint": {
+               "type": "string"
+            }
+         }
+      }
+   }
+}
