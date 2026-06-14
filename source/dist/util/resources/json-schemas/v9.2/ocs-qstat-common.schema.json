@@ -216,9 +216,7 @@
             },
             {
                "type": "object",
-               "required": [
-                  "submission_time"
-               ],
+               "required": [],
                "properties": {
                   "submission_time": {
                      "type": "string",

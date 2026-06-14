@@ -4,9 +4,7 @@
    "title": "OCS/GCS qstat reduced schema",
    "description": "Schema describing qstat reduced output. Additional priority and urgency related attributes may be present when qstat is called with switches such as `-pri`, `-urg`, or `-ext`.",
    "type": "object",
-   "required": [
-      "jobs_running"
-   ],
+   "required": [],
    "additionalProperties": true,
    "$defs": {
       "runningJob": {
@@ -35,14 +33,12 @@
             },
             {
                "type": "object",
-               "required": [
-                  "queue_name"
-               ],
+               "required": [],
                "properties": {
                   "queue_name": {
                      "type": "string",
                      "maxLength": 0,
-                     "description": "Queue instance name if already assigned, or an empty string if not yet assigned."
+                     "description": "Queue instance name if already assigned, or an empty string / absent if not yet assigned."
                   }
                },
                "additionalProperties": true

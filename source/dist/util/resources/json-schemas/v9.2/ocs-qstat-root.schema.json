@@ -1,0 +1,36 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-root.schema.json",
+   "title": "OCS/GCS qstat schema",
+   "description": "Root schema for the JSON produced by qstat -fmt json. qstat emits one of several output shapes depending on its mode: the default (and -ext, -urg) output, the full output (-f), the cluster queue summary (-g c) and the job detail output (-j). The concrete shape is identified by the document's '$id' member, which points at the matching per-mode schema. Each branch below selects a shape by its '$id' and validates the document against that shape's schema.",
+   "type": "object",
+   "required": [
+      "$id"
+   ],
+   "oneOf": [
+      {
+         "allOf": [
+            { "properties": { "$id": { "pattern": "ocs-qstat-reduced\\.schema\\.json$" } } },
+            { "$ref": "../v9.2/ocs-qstat-reduced.schema.json" }
+         ]
+      },
+      {
+         "allOf": [
+            { "properties": { "$id": { "pattern": "ocs-qstat-full\\.schema\\.json$" } } },
+            { "$ref": "../v9.2/ocs-qstat-full.schema.json" }
+         ]
+      },
+      {
+         "allOf": [
+            { "properties": { "$id": { "pattern": "ocs-qstat-cqueue\\.schema\\.json$" } } },
+            { "$ref": "../v9.2/ocs-qstat-cqueue.schema.json" }
+         ]
+      },
+      {
+         "allOf": [
+            { "properties": { "$id": { "pattern": "ocs-qstat-job\\.schema\\.json$" } } },
+            { "$ref": "../v9.2/ocs-qstat-job.schema.json" }
+         ]
+      }
+   ]
+}
