@@ -38,6 +38,7 @@
 #include <cctype>
 #include <cfloat>
 
+#include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_log.h"
 #include "uti/sge_string.h"
 #include "uti/sge_parse_num_par.h"
@@ -115,7 +116,7 @@ int extended_parse_ulong_val(double *dvalp, uint32_t *uvalp, ocs::CEntry::Type t
       return 0;
    }
 
-   if ((enable_infinity == 0) && (strcasecmp(s, "infinity") == 0)) {
+   if ((enable_infinity == 0) && (strcasecmp(s, INFINITY_STR) == 0)) {
       if (error_str) {
          sge_strlcpy(error_str, MSG_GDI_VALUETHATCANBESETTOINF, error_len);
       }
@@ -377,7 +378,7 @@ sge_parse_num_val(sge_rlim_t *rlimp, double *dvalp,
       *dvalp = 0;
       *rlimp = 0;
       return 0;
-   } else if (!strcasecmp(str, "infinity")) {
+   } else if (!strcasecmp(str, INFINITY_STR)) {
       *dvalp = DBL_MAX;       /* use this for comparing limits */
       *rlimp = RLIM_INFINITY; /* use this for limit setting */
       return 0xFFFFFFFF;      /* return max ulong in 32 bit */

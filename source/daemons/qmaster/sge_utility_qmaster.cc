@@ -34,6 +34,7 @@
 #include <cstring>
 #include <cctype>
 
+#include "uti/sge.h"               // INFINITY_STR
 #include "uti/config_file.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -443,7 +444,7 @@ attr_mod_time_str(lList **alpp, lListElem *qep, lListElem *new_ep, int nm, char 
 
       if (str != nullptr) {
          /* don't allow infinity for these parameters */
-         if ((strcasecmp(str, "infinity") == 0) && (enable_infinity == 0)) {
+         if ((strcasecmp(str, INFINITY_STR) == 0) && (enable_infinity == 0)) {
             DPRINTF("ERROR! Infinity value for \"%s\"\n", attr_name);
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SIG_DIGIT_SS, attr_name, str);
             answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

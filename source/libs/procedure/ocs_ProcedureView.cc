@@ -20,7 +20,9 @@
 
 #include <ostream>
 #include <chrono>
+#include <cfloat>                  // DBL_MAX (unlimited resource value, CS-2318)
 
+#include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_rmon_macros.h"
 
 #include "ocs_ProcedureView.h"
@@ -108,12 +110,21 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os, const lLis
    if (as_string) {
       const char *strval = lGetString(resource, CE_stringval);
       os << "\"" << raw2JSON(strval != nullptr ? strval : "") << "\"";
-   } else if (as_double) {
-      os << lGetDouble(resource, CE_doubleval);
    } else if (as_bool) {
       os << (lGetDouble(resource, CE_doubleval) > 0.0 ? "true" : "false");
    } else {
-      os << static_cast<uint64_t>(lGetDouble(resource, CE_doubleval));
+      // Numeric resource (DOUBLE, or INT/TIME/MEM/RSMAP). An unlimited value is stored
+      // as DBL_MAX; emit it as the string INFINITY_STR (the same token qconf -fmt json
+      // uses, see spool_json_write_ce_value()) instead of letting it overflow the
+      // uint64_t cast (undefined behaviour) or print 1.79769e+308 (CS-2318).
+      const double dval = lGetDouble(resource, CE_doubleval);
+      if (dval == DBL_MAX) {
+         os << '"' << INFINITY_STR << '"';
+      } else if (as_double) {
+         os << dval;
+      } else {
+         os << static_cast<uint64_t>(dval);
+      }
    }
    DRETURN_VOID;
 }

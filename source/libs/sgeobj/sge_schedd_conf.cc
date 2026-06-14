@@ -118,7 +118,7 @@
 #define MAXUJOBS                            0
 #define MAXGJOBS                            0
 #define SCHEDD_JOB_INFO                     "true"
-#define DEFAULT_DURATION                    "INFINITY"     // the default_duration and default_duration_I have to be
+#define DEFAULT_DURATION                    INFINITY_STR   // the default_duration and default_duration_I have to be
 #define DEFAULT_DURATION_I                  600            // in sync. On is the string version of the other (based on seconds)
 #define DEFAULT_DURATION_OFFSET             60
 

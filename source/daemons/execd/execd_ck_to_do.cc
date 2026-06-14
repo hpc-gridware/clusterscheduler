@@ -379,7 +379,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const lList *gdil_list
       if (queue != nullptr) {
          limit = lGetString(queue, limit_nm);
 
-         if (strcasecmp(limit, "infinity") == 0) {
+         if (strcasecmp(limit, INFINITY_STR) == 0) {
             clock_val = std::numeric_limits<uint64_t>::max();
          } else {
             uint32_t timestamp32;

@@ -1003,7 +1003,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
 
                if (compute_qwallclock) {
                   limit = lGetString(queue, QU_h_rt);
-                  if (strcasecmp(limit, "infinity") != 0) {
+                  if (strcasecmp(limit, INFINITY_STR) != 0) {
                      uint32_t clock_val;
                      parse_ulong_val(nullptr, &clock_val, ocs::CEntry::Type::TIME, limit, nullptr, 0);
                      task_wallclock = std::min(task_wallclock, sge_gmt32_to_gmt64(clock_val));
@@ -1012,7 +1012,7 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
                   }
 
                   limit = lGetString(queue, QU_s_rt);
-                  if (strcasecmp(limit, "infinity") != 0) {
+                  if (strcasecmp(limit, INFINITY_STR) != 0) {
                      uint32_t clock_val;
                      parse_ulong_val(nullptr, &clock_val, ocs::CEntry::Type::TIME, limit, nullptr, 0);
                      task_wallclock = std::min(task_wallclock, sge_gmt32_to_gmt64(clock_val));

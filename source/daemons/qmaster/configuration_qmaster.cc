@@ -470,14 +470,14 @@ check_config(lList **alpp, lListElem *conf) {
          }
       } else if (!strcmp(name, "load_report_time")) {
          /* do not allow infinity entry for load_report_time */
-         if (strcasecmp(value, "infinity") == 0) {
+         if (strcasecmp(value, INFINITY_STR) == 0) {
             ERROR(MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       } else if (!strcmp(name, "max_unheard")) {
          /* do not allow infinity entry */
-         if (strcasecmp(value, "infinity") == 0) {
+         if (strcasecmp(value, INFINITY_STR) == 0) {
             ERROR(MSG_CONF_INFNOTALLOWEDFORATTRXINCONFLISTOFY_SS, name, conf_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);

@@ -224,7 +224,7 @@ spool_json_write_typed_number(rapidjson::PrettyWriter<rapidjson::StringBuffer> &
                               double dval, ocs::CEntry::Type type)
 {
    if (dval == DBL_MAX) {
-      writer.String("INFINITY");
+      writer.String(INFINITY_STR);
       return;
    }
    const bool compact = (ocs_json_value_format_opt == OCS_JSON_VALUES_COMPACT);

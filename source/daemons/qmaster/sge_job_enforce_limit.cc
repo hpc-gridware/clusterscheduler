@@ -658,7 +658,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                   if (cple != nullptr) {
                      const char *job_limit = lGetString(cple, CE_stringval);
 
-                     if (job_limit != nullptr && strcasecmp(job_limit, "infinity") != 0) {
+                     if (job_limit != nullptr && strcasecmp(job_limit, INFINITY_STR) != 0) {
                         parse_ulong_val(nullptr, &job_h_rt, ocs::CEntry::Type::TIME, job_limit, nullptr, 0);
                         has_rt_limit = true;
                      }
@@ -680,7 +680,7 @@ sge_job_add_enforce_limit_trigger(lListElem *job, lListElem *ja_task) {
                      if (qi != nullptr) {
                         const char *qi_limit = lGetString(qi, QU_h_rt);
 
-                        if (qi_limit != nullptr && strcasecmp(qi_limit, "infinity") != 0) {
+                        if (qi_limit != nullptr && strcasecmp(qi_limit, INFINITY_STR) != 0) {
                            parse_ulong_val(nullptr, &current_qi_h_rt, ocs::CEntry::Type::TIME, qi_limit, nullptr, 0);
                            has_rt_limit = true;
                            qi_h_rt = std::min(current_qi_h_rt, qi_h_rt);
