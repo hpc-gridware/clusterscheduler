@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-rqs-list.schema.json",
+   "title": "OCS/GCS qconf resource quota set list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -srqsl: the list of resource quota set names.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "rqs"
+   ],
+   "properties": {
+      "rqs": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}

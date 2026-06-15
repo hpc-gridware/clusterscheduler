@@ -133,6 +133,84 @@
             {"properties": {"$id": {"pattern": "ocs-qconf-event_clients\\.schema\\.json$"}}},
             {"$ref": "../v9.2/ocs-qconf-event_clients.schema.json"}
          ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-calendar-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-calendar-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-ckpt-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-ckpt-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-config-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-config-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-exechost-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-exechost-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-hostgroup-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-hostgroup-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-pe-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-pe-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-project-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-project-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-cqueue-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-cqueue-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-userset-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-userset-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-user-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-user-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-role-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-role-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-complex_entry-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-complex_entry-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-rqs-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-rqs-list.schema.json"}
+         ]
       }
    ]
 }

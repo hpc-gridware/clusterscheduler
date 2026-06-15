@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-config-list.schema.json",
+   "title": "OCS/GCS qconf local configuration list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -sconfl: the list of local configuration names.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "config"
+   ],
+   "properties": {
+      "config": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}

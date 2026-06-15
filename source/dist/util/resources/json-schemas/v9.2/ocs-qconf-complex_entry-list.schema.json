@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-complex_entry-list.schema.json",
+   "title": "OCS/GCS qconf complex entry list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -scel: the list of complex entry names.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "complex_entry"
+   ],
+   "properties": {
+      "complex_entry": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}
