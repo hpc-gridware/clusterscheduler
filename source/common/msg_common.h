@@ -470,7 +470,7 @@
 #define MSG_GDI_UTEXT_Dconf_OPT                          _MESSAGE(60772, _("delete local configuration(s) named by a file or directory"))
 
 #define MSG_GDI_USAGE_Fmt_OPT                            "[-fmt plain|json]"
-#define MSG_GDI_UTEXT_Fmt_OPT                            _MESSAGE(60773, _("output/input format for -s*/-A*/-M* (default plain)"))
+#define MSG_GDI_UTEXT_Fmt_OPT                            _MESSAGE(60773, _("output/input format for -s*/-a*/-A*/-m*/-M* (default plain)"))
 
 #define MSG_GDI_USAGE_FmtVal_OPT                         "[-fmtval compact|numeric]"
 #define MSG_GDI_UTEXT_FmtVal_OPT                         _MESSAGE(60775, _("for -fmt json: render time/memory values as compact unit/colon strings (default) or as numeric seconds/bytes"))

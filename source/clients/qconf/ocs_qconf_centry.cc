@@ -126,7 +126,7 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
       const char *filename = nullptr;
 
       filename = spool_flatfile_write_object(&alp, *this_elem, false, CE_fields, &qconf_ce_sfi, SP_DEST_TMP,
-                                             SP_FORM_ASCII, filename, false);
+                                             qconf_opt_format, filename, false);
 
       if (answer_list_output(&alp)) {
          if (filename != nullptr) {
@@ -142,7 +142,7 @@ static bool centry_provide_modify_context(lListElem **this_elem, lList **answer_
 
          fields_out[0] = NoName;
          centry = spool_flatfile_read_object(&alp, CE_Type, nullptr, CE_fields, fields_out, true, &qconf_ce_sfi,
-                                             SP_FORM_ASCII, nullptr, filename);
+                                             qconf_opt_format, nullptr, filename);
 
          if (answer_list_output(&alp)) {
             lFreeElem(&centry);
@@ -694,7 +694,7 @@ static bool centry_list_provide_modify_context(lList **this_list, lList **answer
 
       spool_flatfile_align_list(answer_list, (const lList *) *this_list, CE_fields, 3);
       filename = spool_flatfile_write_list(answer_list, *this_list, CE_fields, &qconf_ce_list_sfi, SP_DEST_TMP,
-                                           SP_FORM_ASCII, nullptr, false);
+                                           qconf_opt_format, nullptr, false);
 
       if (answer_list_output(answer_list)) {
          if (filename != nullptr) {
@@ -709,7 +709,7 @@ static bool centry_list_provide_modify_context(lList **this_list, lList **answer
          lList *centry_list;
 
          centry_list = spool_flatfile_read_list(answer_list, CE_Type, CE_fields, nullptr, true, &qconf_ce_list_sfi,
-                                                SP_FORM_ASCII, nullptr, filename);
+                                                qconf_opt_format, nullptr, filename);
 
          if (answer_list_output(answer_list)) {
             lFreeList(&centry_list);

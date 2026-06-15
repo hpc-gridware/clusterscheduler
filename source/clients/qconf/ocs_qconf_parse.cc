@@ -1495,7 +1495,7 @@ int sge_parse_qconf(char *argv[])
             ep = sge_generic_cal(cal_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CAL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&ep);
             if (answer_list_output(&alp)) {
@@ -1528,7 +1528,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
             
@@ -1593,7 +1593,7 @@ int sge_parse_qconf(char *argv[])
             ep = sge_generic_ckpt(ckpt_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  CK_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&ep);
             if (answer_list_output(&alp)) {
@@ -1626,7 +1626,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
 
@@ -1845,7 +1845,7 @@ int sge_parse_qconf(char *argv[])
             lSetString(ep, RL_name, role_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  RL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&ep);
 
@@ -1877,7 +1877,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
                                             RL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
 
@@ -2031,7 +2031,7 @@ int sge_parse_qconf(char *argv[])
             ep = pe_create_template(pe_name);
             filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                                  PE_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&ep);
 
@@ -2065,7 +2065,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out,  true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
 
@@ -3238,7 +3238,7 @@ int sge_parse_qconf(char *argv[])
 
             filename = (char *)spool_flatfile_write_object(&alp, cal_src, false,
                                                  CAL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&cal_src);
 
@@ -3270,7 +3270,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, CAL_Type, nullptr,
                                             CAL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
 
@@ -3377,7 +3377,7 @@ int sge_parse_qconf(char *argv[])
 
             filename = (char *)spool_flatfile_write_object(&alp, ckpt_src, false,
                                                  CK_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&ckpt_src);
 
@@ -3409,7 +3409,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, CK_Type, nullptr,
                                             CK_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
             unlink(filename);
             sge_free(&filename);
 
@@ -3578,7 +3578,7 @@ int sge_parse_qconf(char *argv[])
 
             filename = (char *)spool_flatfile_write_object(&alp, role_src, false,
                                                  RL_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&role_src);
 
@@ -3610,7 +3610,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, RL_Type, nullptr,
                                             RL_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
 
             unlink(filename);
             sge_free(&filename);
@@ -3747,7 +3747,7 @@ int sge_parse_qconf(char *argv[])
             /* write pe to temp file */
             filename = (char *)spool_flatfile_write_object(&alp, pe_src, false,
                                                  PE_fields, &qconf_sfi,
-                                                 SP_DEST_TMP, SP_FORM_ASCII,
+                                                 SP_DEST_TMP, qconf_opt_format,
                                                  nullptr, false);
             lFreeElem(&pe_src);
 
@@ -3780,7 +3780,7 @@ int sge_parse_qconf(char *argv[])
             fields_out[0] = NoName;
             ep = spool_flatfile_read_object(&alp, PE_Type, nullptr,
                                             PE_fields, fields_out, true, &qconf_sfi,
-                                            SP_FORM_ASCII, nullptr, filename);
+                                            qconf_opt_format, nullptr, filename);
 
             unlink(filename);
             sge_free(&filename);
@@ -5859,7 +5859,7 @@ int sge_parse_qconf(char *argv[])
 
          filename = (char *)spool_flatfile_write_object(&alp, ce_src, false,
                                               CE_fields, &qconf_ce_sfi,
-                                              SP_DEST_TMP, SP_FORM_ASCII,
+                                              SP_DEST_TMP, qconf_opt_format,
                                               nullptr, false);
          lFreeElem(&ce_src);
 
@@ -5891,7 +5891,7 @@ int sge_parse_qconf(char *argv[])
          fields_out[0] = NoName;
          ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
                                          CE_fields, fields_out, true, &qconf_ce_sfi,
-                                         SP_FORM_ASCII, nullptr, filename);
+                                         qconf_opt_format, nullptr, filename);
          unlink(filename);
          sge_free(&filename);
 
@@ -5986,7 +5986,7 @@ int sge_parse_qconf(char *argv[])
          ep = centry_create(&alp, ce_name);
          filename = (char *)spool_flatfile_write_object(&alp, ep, false,
                                               CE_fields, &qconf_ce_sfi,
-                                              SP_DEST_TMP, SP_FORM_ASCII,
+                                              SP_DEST_TMP, qconf_opt_format,
                                               nullptr, false);
          lFreeElem(&ep);
 
@@ -6018,7 +6018,7 @@ int sge_parse_qconf(char *argv[])
          fields_out[0] = NoName;
          ep = spool_flatfile_read_object(&alp, CE_Type, nullptr,
                                          CE_fields, fields_out, true, &qconf_ce_sfi,
-                                         SP_FORM_ASCII, nullptr, filename);
+                                         qconf_opt_format, nullptr, filename);
          unlink(filename);
          sge_free(&filename);
 
@@ -6761,7 +6761,7 @@ static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid)
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
-                                                  SP_FORM_ASCII, filename,
+                                                  qconf_opt_format, filename,
                                                   false);
    if (answer_list_output(&alp)) {
       if (filename != nullptr) {
@@ -6796,7 +6796,7 @@ static lListElem *edit_exechost(lListElem *ep, uid_t uid, gid_t gid)
    fields_out[0] = NoName;
    hep = spool_flatfile_read_object(&alp, EH_Type, nullptr,
                                    fields, fields_out, true, &qconf_sfi,
-                                   SP_FORM_ASCII, nullptr, filename);
+                                   qconf_opt_format, nullptr, filename);
 
    if (answer_list_output(&alp)) {
       lFreeElem(&hep);
@@ -6832,7 +6832,7 @@ static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid)
 
    fname = (char *)spool_flatfile_write_object(&alp, lFirst(confl), false,
                                        SC_fields, &qconf_comma_sfi,
-                                       SP_DEST_TMP, SP_FORM_ASCII,
+                                       SP_DEST_TMP, qconf_opt_format,
                                        fname, false);
    if (answer_list_output(&alp)) {
       fprintf(stderr, "%s\n", MSG_SCHEDCONF_CANTCREATESCHEDULERCONFIGURATION);
@@ -6863,7 +6863,7 @@ static lList* edit_sched_conf(lList *confl, uid_t uid, gid_t gid)
    fields_out[0] = NoName;
    ep = spool_flatfile_read_object(&alp, SC_Type, nullptr,
                                    SC_fields, fields_out, true, &qconf_comma_sfi,
-                                   SP_FORM_ASCII, nullptr, fname);
+                                   qconf_opt_format, nullptr, fname);
 
    if (answer_list_output(&alp)) {
       lFreeElem(&ep);
@@ -6919,7 +6919,7 @@ static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid)
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
-                                                  SP_FORM_ASCII, nullptr, false);
+                                                  qconf_opt_format, nullptr, false);
    if (answer_list_output(&alp)) {
       if (filename != nullptr) {
          unlink(filename);
@@ -6951,7 +6951,7 @@ static lListElem *edit_user(lListElem *ep, uid_t uid, gid_t gid)
 
    fields_out[0] = NoName;
    newep = spool_flatfile_read_object(&alp, UU_Type, nullptr, fields, fields_out,
-                                    true, &qconf_sfi, SP_FORM_ASCII, nullptr,
+                                    true, &qconf_sfi, qconf_opt_format, nullptr,
                                     filename);
 
    if (answer_list_output(&alp)) {
@@ -6996,7 +6996,7 @@ static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid)
 
    filename = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
                                                   &qconf_sfi, SP_DEST_TMP,
-                                                  SP_FORM_ASCII, nullptr, false);
+                                                  qconf_opt_format, nullptr, false);
    if (answer_list_output(&alp)) {
       if (filename != nullptr) {
          unlink(filename);
@@ -7028,7 +7028,7 @@ static lListElem *edit_project(lListElem *ep, uid_t uid, gid_t gid)
 
    fields_out[0] = NoName;
    newep = spool_flatfile_read_object(&alp, PR_Type, nullptr, fields, fields_out,
-                                    true, &qconf_sfi, SP_FORM_ASCII, nullptr,
+                                    true, &qconf_sfi, qconf_opt_format, nullptr,
                                     filename);
 
    if (answer_list_output(&alp)) {
@@ -7083,7 +7083,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
 
    filename = spool_flatfile_write_object(&alp, ep, false,
                                           fields, &qconf_name_value_list_sfi,
-                                          SP_DEST_TMP, SP_FORM_ASCII,
+                                          SP_DEST_TMP, qconf_opt_format,
                                           nullptr, false);
    if (is_missing) {
       lFreeElem(&ep);
@@ -7124,7 +7124,7 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
    newep = spool_flatfile_read_object(&alp, STN_Type, nullptr,
                                       fields, fields_out,  true,
                                       &qconf_name_value_list_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
 
    if (answer_list_output(&alp)) {
       lFreeElem(&newep);
@@ -7541,7 +7541,7 @@ static int edit_usersets(lList *arglp) {
 
       fname = (char *)spool_flatfile_write_object(&alp, ep, false, US_fields,
                                            &qconf_param_sfi, SP_DEST_TMP,
-                                           SP_FORM_ASCII, fname, false);
+                                           qconf_opt_format, fname, false);
       if (answer_list_output(&alp)) {
          fprintf(stderr, "%s\n", MSG_FILE_ERRORWRITINGUSERSETTOFILE);
          DRETURN(-2);
@@ -7565,7 +7565,7 @@ static int edit_usersets(lList *arglp) {
       fields_out[0] = NoName;
       changed_ep = spool_flatfile_read_object(&alp, US_Type, nullptr,
                                       US_fields, fields_out,  true, &qconf_param_sfi,
-                                      SP_FORM_ASCII, nullptr, fname);
+                                      qconf_opt_format, nullptr, fname);
 
       if (answer_list_output(&alp)) {
          lFreeElem(&changed_ep);
@@ -7758,7 +7758,7 @@ static int add_modify_config(const char *cfn, const char *filename, uint32_t fla
 
       fields = sge_build_CONF_field_list(false);
       tmpname = (char *)spool_flatfile_write_object(&alp, ep, false, fields,
-                                            &qconf_sfi, SP_DEST_TMP, SP_FORM_ASCII,
+                                            &qconf_sfi, SP_DEST_TMP, qconf_opt_format,
                                             tmpname, false);
 
       lFreeElem(&ep);
@@ -7784,7 +7784,7 @@ static int add_modify_config(const char *cfn, const char *filename, uint32_t fla
       fields_out[0] = NoName;
       ep = spool_flatfile_read_object(&alp, CONF_Type, nullptr,
                                       fields, fields_out, false, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, tmpname);
+                                      qconf_opt_format, nullptr, tmpname);
 
       if (answer_list_output(&alp)) {
          lFreeElem(&ep);

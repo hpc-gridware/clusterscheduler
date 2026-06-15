@@ -1,6 +1,6 @@
 {
    "$schema": "https://json-schema.org/draft/2020-12/schema",
-   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-operator.schema.json",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-operator-list.schema.json",
    "title": "OCS/GCS qconf operator list schema",
    "description": "Schema describing the JSON produced by qconf -fmt json -so: the list of operator account names.",
    "type": "object",

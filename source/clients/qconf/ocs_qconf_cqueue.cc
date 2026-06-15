@@ -346,7 +346,7 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
       filename = spool_flatfile_write_object(answer_list, *this_elem,
                                                      false, CQ_fields,
                                                      &qconf_sfi, SP_DEST_TMP,
-                                                     SP_FORM_ASCII, filename,
+                                                     qconf_opt_format, filename,
                                                      false);
       
       if (answer_list_output(answer_list)) {
@@ -364,7 +364,7 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
          fields_out[0] = NoName;
          cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                              CQ_fields, fields_out, false, 
-                                             &qconf_sfi, SP_FORM_ASCII, 
+                                             &qconf_sfi, qconf_opt_format, 
                                              nullptr, filename);
 
          if (answer_list_output(answer_list)) {

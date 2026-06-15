@@ -100,26 +100,26 @@
       },
       {
          "allOf": [
-            {"properties": {"$id": {"pattern": "ocs-qconf-manager\\.schema\\.json$"}}},
-            {"$ref": "../v9.2/ocs-qconf-manager.schema.json"}
+            {"properties": {"$id": {"pattern": "ocs-qconf-manager-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-manager-list.schema.json"}
          ]
       },
       {
          "allOf": [
-            {"properties": {"$id": {"pattern": "ocs-qconf-operator\\.schema\\.json$"}}},
-            {"$ref": "../v9.2/ocs-qconf-operator.schema.json"}
+            {"properties": {"$id": {"pattern": "ocs-qconf-operator-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-operator-list.schema.json"}
          ]
       },
       {
          "allOf": [
-            {"properties": {"$id": {"pattern": "ocs-qconf-adminhost\\.schema\\.json$"}}},
-            {"$ref": "../v9.2/ocs-qconf-adminhost.schema.json"}
+            {"properties": {"$id": {"pattern": "ocs-qconf-adminhost-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-adminhost-list.schema.json"}
          ]
       },
       {
          "allOf": [
-            {"properties": {"$id": {"pattern": "ocs-qconf-submithost\\.schema\\.json$"}}},
-            {"$ref": "../v9.2/ocs-qconf-submithost.schema.json"}
+            {"properties": {"$id": {"pattern": "ocs-qconf-submithost-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-submithost-list.schema.json"}
          ]
       },
       {

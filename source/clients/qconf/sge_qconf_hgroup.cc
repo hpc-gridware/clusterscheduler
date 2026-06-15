@@ -150,7 +150,7 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
    DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
-      filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
+      filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, qconf_opt_format, filename, false);
       if (answer_list_has_error(answer_list)) {
          if (filename != nullptr) {
             unlink(filename);
@@ -165,7 +165,7 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
          lListElem *hgroup = nullptr;
 
          fields_out[0] = NoName;
-         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr, HGRP_fields, fields_out, true, &qconf_sfi, SP_FORM_ASCII, nullptr, filename);
+         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr, HGRP_fields, fields_out, true, &qconf_sfi, qconf_opt_format, nullptr, filename);
             
          if (answer_list_output (answer_list)) {
             lFreeElem(&hgroup);

@@ -408,7 +408,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
       *rqs_list = lCreateList("", RQS_Type);
    }
 
-   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
+   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, qconf_opt_format, filename, false);
 
    if (answer_list_has_error(answer_list)) {
       if (filename != nullptr) {
@@ -426,7 +426,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
       /* fields_out field does not work for rqs because of duplicate entry */
       new_rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
                                                nullptr, true, &qconf_rqs_sfi,
-                                               SP_FORM_ASCII, nullptr, filename);
+                                               qconf_opt_format, nullptr, filename);
       if (answer_list_has_error(answer_list)) {
          lFreeList(&new_rqs_list);
       }

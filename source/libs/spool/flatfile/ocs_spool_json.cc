@@ -1389,8 +1389,16 @@ spool_json_write_name_list(lList **answer_list, const lList *list, int keynm, ds
    /* same $schema/$id envelope as the object lists, but the array holds bare names */
    writer.StartObject();
    if (first != nullptr) {
-      spool_json_write_envelope(writer, first);
-      writer.Key(spool_json_typename(first, &key));
+      /* CS-2320: a name list carries its own "<type>-list" schema id so it is
+       * distinguishable from the object schema and from a record list that shares
+       * the same envelope key (e.g. -sc vs -scel, both "complex_entry"); the array
+       * key itself stays the plain object type name. */
+      const char *type_name = spool_json_typename(first, &key);
+      dstring list_id = DSTRING_INIT;
+      sge_dstring_sprintf(&list_id, "%s-list", type_name);
+      spool_json_write_envelope_name(writer, sge_dstring_get_string(&list_id));
+      sge_dstring_free(&list_id);
+      writer.Key(type_name);
    } else {
       writer.Key("names");
    }
