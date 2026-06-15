@@ -232,10 +232,12 @@ retrieves a default RQS configuration and executes and editor to allow you to cu
 Upon exit from the editor, the RQS is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
 
 ## -Arqs *fname*|*dir*
-Adds the resource quota set(s) (RQS) defined in *fname* to the xxQS_NAMExx cluster; a single file may contain
-several rule sets. If the argument is a directory, the rule sets from every (non-hidden) regular file in it are
-collected and added together in one request; if any file fails to parse nothing is applied. See also `-dry` and the
-EXIT STATUS section. Requires root/manager privileges.
+Adds or modifies the resource quota set(s) (RQS) defined in *fname* (refer to xxqs_name_sxx_resource_quota(5)); a
+single file may contain several rule sets. Each rule set in the file is added, or modified if a rule set of the same
+name already exists; rule sets not contained in the file are left unchanged (`-Arqs` and `-Mrqs` are
+interchangeable). If the argument is a directory, the rule sets from every (non-hidden) regular file in it are
+collected and applied together in one request; if any file fails to parse nothing is applied. See also `-dry` and
+the EXIT STATUS section. Requires root/manager privileges.
 
 ## -arole [*role_name*]
 Adds a new role description under the name *role_name* to the list of roles maintained by xxQS_NAMExx.
@@ -690,13 +692,18 @@ retrieves all resource quota sets, executes an editor and registers the new conf
 xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format.
 Requires root/manager privilege.
 
-## -Mrqs *fname*|*dir* \[*mrqs_name*\]
-Modifies a resource quota set (RQS) configuration from a file or a directory of files. Same as `-mrqs` (see below)
-but instead of invoking an editor the configuration is taken from *fname*. The name of the rule set in *fname* must
-be the same as rqs_name. If *rqs_name* is not set, all rule sets are overwritten by the rule sets in *fname*. If the
+## -Mrqs *fname*|*dir* \[*rqs_list*\]
+Adds or modifies resource quota set(s) (RQS) from a file or a directory of files, taking the configuration from
+*fname* instead of invoking an editor. Each rule set in the file is added, or modified if a rule set of the same
+name already exists, while every other rule set is left unchanged (`-Mrqs` and `-Arqs` are interchangeable). If the
 argument is a directory, the rule sets from every (non-hidden) regular file in it are collected and applied
-together (the optional *mrqs_name* does not apply to a directory). See also `-dry`. Refer to
-xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format. Requires root/manager privilege.
+together. See also `-dry`. Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format.
+Requires root/manager privilege.
+
+The optional *rqs_list* argument is **deprecated** and may be removed in a future release. It restricts the
+operation to the named rule set(s), which must be present in *fname*. Since rule sets absent from *fname* are now
+preserved automatically, it is no longer needed; to apply only some of the rule sets in a file, place just those
+rule sets in the file instead. The argument does not apply when *fname* is a directory.
 
 ## -msconf
 The current scheduler configuration (see xxqs_name_sxx_sched_conf(5)) is retrieved, an editor is executed
