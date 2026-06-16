@@ -647,13 +647,16 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                                                           QU_load_thresholds, QU_suspend_thresholds};
                               qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
                            }
+                           /* CS-2313a: a resolved queue instance is a QINSTANCE
+                            * object; give it the correct "qinstance" $id (the auto
+                            * type detection mis-resolves QU to exechost). */
                            filename_stdout = spool_flatfile_write_object(
                                                        answer_list, qinstance,
                                                        false, fields,
                                                        &qconf_sfi,
                                                        SP_DEST_STDOUT,
                                                        qconf_opt_format, nullptr,
-                                                       false);
+                                                       false, "qinstance");
                            sge_free(&fields);
                            sge_free(&filename_stdout);
                            
@@ -713,12 +716,15 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                                                           QU_load_thresholds, QU_suspend_thresholds};
                               qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
                            }
+                           /* CS-2313a: a resolved queue domain instance is a
+                            * QINSTANCE object; give it the correct "qinstance" $id
+                            * (the auto type detection mis-resolves QU to exechost). */
                            filename = spool_flatfile_write_object(answer_list, qinstance,
                                                                   false, fields,
                                                                   &qconf_sfi,
                                                                   SP_DEST_STDOUT,
                                                                   qconf_opt_format, nullptr,
-                                                                  false);
+                                                                  false, "qinstance");
                            sge_free(&fields);
                            sge_free(&filename);
                            

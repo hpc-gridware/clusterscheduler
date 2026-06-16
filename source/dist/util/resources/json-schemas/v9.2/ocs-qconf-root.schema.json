@@ -40,6 +40,12 @@
       },
       {
          "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-qinstance\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-qinstance.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
             {"properties": {"$id": {"pattern": "ocs-qconf-pe\\.schema\\.json$"}}},
             {"$ref": "../v9.2/ocs-qconf-pe.schema.json"}
          ]
