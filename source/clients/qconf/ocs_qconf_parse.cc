@@ -5351,7 +5351,9 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-stl " */
       if (strcmp("-stl", *spp) == 0) {
-         if (!show_thread_list()) {
+         /* show_thread_list() returns 0 on success and -1 on error (not a bool),
+          * so compare against 0 - a plain !ret would flag success as an error */
+         if (show_thread_list() != 0) {
             sge_parse_return = 1;
          }
          spp++;
