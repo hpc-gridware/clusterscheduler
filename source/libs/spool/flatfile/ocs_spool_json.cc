@@ -999,19 +999,28 @@ spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wri
  *
  * The inverse of spool_json_write_perm_list: each rule object's six fields are joined
  * with colons and the rules with commas. An empty array maps to the "NONE" sentinel
- * (the empty rule set), which qmaster accepts.
+ * (the empty rule set), which qmaster accepts. A non-array value (e.g. a bare string)
+ * is rejected here rather than silently coerced to NONE, which would wipe the rule set.
+ * Malformed rules within a well-formed array (missing/empty fields) are caught later by
+ * ocs::Role::parse_perm_list on the qmaster side.
  *
- * @param v    the JSON array of rule objects
- * @param out  dstring receiving the joined perm_list string
- * @return the joined perm_list string (pointer into @p out)
+ * @param v            the JSON array of rule objects
+ * @param out          dstring receiving the joined perm_list string
+ * @param answer_list  receives an error if @p v is not an array
+ * @return true on success (@p out set), false if @p v is not a JSON array
  */
-static const char *
-spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out)
+static bool
+spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, lList **answer_list)
 {
    sge_dstring_clear(out);
-   if (!v.IsArray() || v.Size() == 0) {
+   if (!v.IsArray()) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                              MSG_ROLE_PERMLIST_NOTARRAY);
+      return false;
+   }
+   if (v.Size() == 0) {
       sge_dstring_append(out, NONE_STR);
-      return sge_dstring_get_string(out);
+      return true;
    }
    for (rapidjson::SizeType i = 0; i < v.Size(); i++) {
       if (i > 0) {
@@ -1030,7 +1039,7 @@ spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out)
          }
       }
    }
-   return sge_dstring_get_string(out);
+   return true;
 }
 
 /**
@@ -1616,9 +1625,9 @@ spool_json_set_positional_name(lListElem *ep, int pos, int type, const rapidjson
 }
 
 /* forward */
-static void spool_json_populate_members(lListElem *ep, const lDescr *descr,
+static bool spool_json_populate_members(lListElem *ep, const lDescr *descr,
                                         const spooling_field *fields, int fields_out[],
-                                        const rapidjson::Value &obj);
+                                        lList **answer_list, const rapidjson::Value &obj);
 
 /**
  * @brief Element descriptor of a sublist field.
@@ -1669,7 +1678,8 @@ spool_json_sublist_subtype(int nm, const spooling_field *fields)
  * @return the populated list, or nullptr for an empty/unreadable array
  */
 static lList *
-spool_json_read_sublist(int nm, const spooling_field *fields, const rapidjson::Value &arr)
+spool_json_read_sublist(int nm, const spooling_field *fields, lList **answer_list,
+                        const rapidjson::Value &arr)
 {
    const lDescr *sub_descr = spool_json_sublist_subtype(nm, fields);
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
@@ -1712,13 +1722,15 @@ spool_json_read_sublist(int nm, const spooling_field *fields, const rapidjson::V
             } else if (vtype == lListT) {
                /* the value is itself a list (e.g. the cqueue threshold value is a
                 * complex list) -> read it as a nested sublist */
-               lSetPosList(sub, p1, spool_json_read_sublist(fields[1].nm, fields[1].sub_fields, mv->value));
+               lSetPosList(sub, p1, spool_json_read_sublist(fields[1].nm, fields[1].sub_fields, answer_list, mv->value));
             } else {
                spool_json_set_field(sub, p1, vtype, mv->value);
             }
          }
       } else if (el.IsObject()) {
-         spool_json_populate_members(sub, sub_descr, fields, nullptr, el);
+         /* sublists never carry a perm_list field, so populate_members cannot fail
+          * here; the bool is discarded (read_sublist returns the list, not a status) */
+         (void) spool_json_populate_members(sub, sub_descr, fields, nullptr, answer_list, el);
       }
       lAppendElem(list, sub);
    }
@@ -1836,12 +1848,14 @@ spool_json_read_flatten(lListElem *ep, const lDescr *descr, const spooling_field
  * @param descr       descriptor of @p ep
  * @param fields      spooling fields describing the object
  * @param fields_out  if non-null, receives the set of field ids found
+ * @param answer_list receives an error if a field (e.g. perm_list) is malformed
  * @param obj         the JSON object
+ * @return true on success, false if a field was malformed (answer_list set)
  */
-static void
+static bool
 spool_json_populate_members(lListElem *ep, const lDescr *descr,
                             const spooling_field *fields, int fields_out[],
-                            const rapidjson::Value &obj)
+                            lList **answer_list, const rapidjson::Value &obj)
 {
    const spooling_field *flatten = nullptr;
    for (int i = 0; fields[i].nm != NoName; i++) {
@@ -1872,14 +1886,17 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
 
       const int type = lGetPosType(descr, pos);
       if (type == lListT) {
-         lSetPosList(ep, pos, spool_json_read_sublist(nm, fields[i].sub_fields, m->value));
+         lSetPosList(ep, pos, spool_json_read_sublist(nm, fields[i].sub_fields, answer_list, m->value));
       } else if (type == lObjectT && fields[i].sub_fields != nullptr) {
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
           * leaves the field unset, so an absent filter round-trips to null */
          const lDescr *sub_descr = spool_json_object_subtype(&fields[i]);
          if (m->value.IsObject() && sub_descr != nullptr) {
             lListElem *sub = lCreateElem(sub_descr);
-            spool_json_populate_members(sub, sub_descr, fields[i].sub_fields, nullptr, m->value);
+            if (!spool_json_populate_members(sub, sub_descr, fields[i].sub_fields, nullptr, answer_list, m->value)) {
+               lFreeElem(&sub);
+               return false;
+            }
             lSetPosObject(ep, pos, sub);
          }
       } else if (spool_json_nm_is_datetime(nm)) {
@@ -1894,10 +1911,17 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
          /* symbolic enum token ("USER"/"PROJECT") or raw number -> enum value */
          lSetPosUlong(ep, pos, spool_json_enum_from_value(m->value, spool_json_enum_names(nm)));
       } else if (spool_json_nm_is_perm_list(nm)) {
-         /* array of rule objects -> comma/colon-joined perm_list string */
+         /* array of rule objects -> comma/colon-joined perm_list string; a non-array
+          * value is rejected rather than silently wiping the rule set to NONE */
          dstring s = DSTRING_INIT;
-         lSetPosString(ep, pos, spool_json_perm_list_from_array(m->value, &s));
+         const bool ok = spool_json_perm_list_from_array(m->value, &s, answer_list);
+         if (ok) {
+            lSetPosString(ep, pos, sge_dstring_get_string(&s));
+         }
          sge_dstring_free(&s);
+         if (!ok) {
+            return false;
+         }
       } else if (spool_json_nm_is_symbolic(nm)) {
          /* symbolic enum token ("INT", "<=", "YES", ...) -> enum value */
          dstring s = DSTRING_INIT;
@@ -1910,6 +1934,7 @@ spool_json_populate_members(lListElem *ep, const lDescr *descr,
    if (flatten != nullptr) {
       spool_json_read_flatten(ep, descr, fields, flatten, fields_out, obj);
    }
+   return true;
 }
 
 /**
@@ -1937,7 +1962,10 @@ spool_json_read_object(lList **answer_list, const lDescr *descr,
    }
 
    lListElem *ep = lCreateElem(descr);
-   spool_json_populate_members(ep, descr, fields, fields_out, doc);
+   if (!spool_json_populate_members(ep, descr, fields, fields_out, answer_list, doc)) {
+      lFreeElem(&ep);
+      DRETURN(nullptr);
+   }
    DRETURN(ep);
 }
 
@@ -1986,7 +2014,11 @@ spool_json_read_list(lList **answer_list, const lDescr *descr,
          continue;
       }
       lListElem *ep = lCreateElem(descr);
-      spool_json_populate_members(ep, descr, fields, k == 0 ? fields_out : nullptr, (*arr)[k]);
+      if (!spool_json_populate_members(ep, descr, fields, k == 0 ? fields_out : nullptr, answer_list, (*arr)[k])) {
+         lFreeElem(&ep);
+         lFreeList(&list);
+         DRETURN(nullptr);
+      }
       lAppendElem(list, ep);
    }
    DRETURN(list);
