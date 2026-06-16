@@ -652,7 +652,14 @@ namespace ocs {
       if (size > 0) {
          bool write_comment = false;
 
-         if (!std::filesystem::exists(filename) || std::filesystem::is_empty(filename)) {
+         /* Single non-throwing syscall avoids a race where the file could vanish between
+          * an exists() check and a follow-up is_empty() call (the latter would throw and
+          * terminate sge_qmaster). file_size() reports the missing-file case via ec; the
+          * ofstream below reopens with std::ios::app and recreates the file if needed.
+          */
+         std::error_code ec;
+         auto size_on_disk = std::filesystem::file_size(filename, ec);
+         if (ec || size_on_disk == 0) {
             if (write_comment_header) {
                write_comment = true;
             }

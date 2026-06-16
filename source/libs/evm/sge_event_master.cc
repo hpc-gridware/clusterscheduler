@@ -583,6 +583,18 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
    /* Start with no pending events. */
    build_subscription(ep);
 
+   /* CS-2295 experiment: widen the window in which this event-client
+    * (re)registration holds LOCK_GLOBAL(WRITE) + event_master_mutex across
+    * total_update, to make a lock-contention/ordering freeze reproducible and
+    * capturable. Opt-in: set OCS_EVM_REG_SLEEP_US (microseconds); no effect when
+    * unset. Remove once CS-2295 is understood. */
+   {
+      const char *evm_reg_sleep_us = getenv("OCS_EVM_REG_SLEEP_US");
+      if (evm_reg_sleep_us != nullptr) {
+         sge_usleep(atoi(evm_reg_sleep_us));
+      }
+   }
+
    /* build events for total update */
    total_update(ep, packet->gdi_session);
 
@@ -2341,6 +2353,18 @@ total_update(lListElem *event_client, uint64_t gdi_session)
    blockEvents(event_client, sgeE_ALL_EVENTS, true);
 
    sge_set_commit_required();
+
+   /* CS-2295 experiment: widen the nested-transaction window inside total_update
+    * (this thread has clobbered the worker's transaction via the nested
+    * set_commit_required, and still holds LOCK_GLOBAL(WRITE)+event_master_mutex).
+    * Opt-in: set OCS_EVM_TX_SLEEP_US (microseconds); no effect when unset.
+    * Remove once CS-2295 is understood. */
+   {
+      const char *evm_tx_sleep_us = getenv("OCS_EVM_TX_SLEEP_US");
+      if (evm_tx_sleep_us != nullptr) {
+         sge_usleep(atoi(evm_tx_sleep_us));
+      }
+   }
 
    total_update_event(event_client, sgeE_ADMINHOST_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CALENDAR_LIST, false, gdi_session);
