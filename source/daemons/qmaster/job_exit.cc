@@ -47,7 +47,6 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_answer.h"
 
-#include "ocs_FinishedJob.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_give_jobs.h"
 #include "execution_states.h"
@@ -161,8 +160,9 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JREMOVED);
 
-      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
-
+      /* CS-1239 consolidation: do AR cleanup BEFORE the commit. The commit now
+       * also buries the job (was a separate COMMIT_ST_DEBITED_EE step), so any
+       * reads from jep must complete first. */
       if (lGetUlong(jep, JB_ar) != 0 && (lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) {
          /* get AR and remove it if no other jobs are debited */
          lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
@@ -191,14 +191,7 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
          }
       }
 
-      /* CS-1239: book the finished job's usage into UU_/PR_/UPP_ in the
-       * worker thread (replaces the scheduler's ORT_update_user_usage and
-       * ORT_update_project_usage orders), then chain into sge_commit_job
-       * with mode COMMIT_ST_DEBITED_EE to bury the ja_task (replaces the
-       * scheduler's ORT_remove_job order). AR cleanup above still reads
-       * jep, so the bury must follow it. */
-      sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
-      sge_commit_job(jep, jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
+      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
    }
       /*
        * case 2: set job in error state
@@ -281,12 +274,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_FINISHED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_EXITED);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
-
-      /* CS-1239: book usage + bury the job in the worker thread, replacing
-       * the scheduler's ORT_update_user_usage / ORT_update_project_usage /
-       * ORT_remove_job order roundtrip. */
-      sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
-      sge_commit_job(jep, jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
 
    if (queueep != nullptr) {

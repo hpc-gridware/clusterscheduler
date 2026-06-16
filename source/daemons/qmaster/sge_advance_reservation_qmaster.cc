@@ -87,7 +87,6 @@
 #include "evm/sge_event_master.h"
 #include "evm/sge_queue_event_master.h"
 
-#include "ocs_FinishedJob.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_utility_qmaster.h"
 #include "sge_job_qmaster.h"
@@ -1938,12 +1937,6 @@ sge_ar_remove_all_jobs(uint32_t ar_id, int forced, monitoring_t *monitor, uint64
                if (forced) {
                   sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
-                  /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves
-                   * the ja_task in JFINISHED without removing it. See ocs_FinishedJob.h
-                   * and sge_job_exit() case 7 for the canonical pattern. */
-                  sge_book_finished_job_usage(jep, tmp_task, monitor, gdi_session);
-                  sge_commit_job(jep, tmp_task, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
-                                 monitor, gdi_session);
                } else {
                   if (!ISSET(lGetUlong(tmp_task, JAT_state), JDELETED)) {
                      // @todo CS-1093 we simply mark the job as deleted. When the next job report comes in for it

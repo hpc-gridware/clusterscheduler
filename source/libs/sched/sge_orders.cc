@@ -368,9 +368,9 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
 
 /* CS-1239: create_delete_job_orders removed - the worker thread now buries
- * the finished job inline (sge_job_exit ->
- * sge_commit_job(COMMIT_ST_DEBITED_EE)), so the scheduler no longer needs
- * to emit ORT_remove_job orders. */
+ * the finished job inline (sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE)
+ * books usage and buries the job in one step), so the scheduler no longer
+ * needs to emit ORT_remove_job orders. */
 
 /****** sge_orders/sge_join_orders() ******************************************
 *  NAME

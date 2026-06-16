@@ -65,7 +65,6 @@
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 
-#include "ocs_FinishedJob.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge_pe_qmaster.h"
 #include "evm/sge_queue_event_master.h"
@@ -690,12 +689,6 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, lListElem *qep, uint32_t force,
          if (lGetSubStr(jatep, JG_qname, qname, JAT_granted_destin_identifier_list) != nullptr) {
             /* 3: JOB_FINISH reports aborted */
             sge_commit_job(jep, jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN,
-                           monitor, packet->gdi_session);
-            /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves
-             * the ja_task in JFINISHED without removing it. See ocs_FinishedJob.h
-             * and sge_job_exit() case 7 for the canonical pattern. */
-            sge_book_finished_job_usage(jep, jatep, monitor, packet->gdi_session);
-            sge_commit_job(jep, jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
                            monitor, packet->gdi_session);
          }
       }

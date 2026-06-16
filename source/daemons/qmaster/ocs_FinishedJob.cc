@@ -194,10 +194,10 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
       ocs::SharetreeUsage::mark_share_tree_dirty();
    }
 
-   /* No sge_commit_job(COMMIT_ST_DEBITED_EE) call here by design - that
-    * chains in the caller (CS-1239 plan step 4, sge_job_exit). Keeps this
-    * helper a pure "book the usage" function, reviewable in isolation,
-    * and turns CS-1908's deferred-bury into a thin edit at the caller. */
+   /* Bury (sge_bury_job) is performed by the caller (sge_commit_job's
+    * COMMIT_ST_FINISHED_FAILED_EE case) right after this helper returns.
+    * Keeping this function a pure "book the usage" routine keeps its
+    * pre-/post-conditions reviewable in isolation. */
 
    return 0;
 }

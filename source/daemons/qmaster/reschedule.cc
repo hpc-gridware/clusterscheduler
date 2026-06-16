@@ -65,7 +65,6 @@
 #include "symbols.h"
 #include "reschedule.h"
 #include "configuration_qmaster.h"
-#include "ocs_FinishedJob.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_give_jobs.h"
 #include "msg_qmaster.h"
@@ -407,12 +406,6 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
             INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                            COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
-            /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves
-             * the ja_task in JFINISHED without removing it. See ocs_FinishedJob.h
-             * and sge_job_exit() case 7 for the canonical pattern. */
-            sge_book_finished_job_usage(jep, this_jatep, monitor, gdi_session);
-            sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
-                           monitor, gdi_session);
             continue;
          } else {
             INFO(MSG_RU_NOT_RESTARTABLE_SS, mail_type, mail_ids);
@@ -488,11 +481,6 @@ int reschedule_job(lListElem *jep, lListElem *jatep, lListElem *ep,
                INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
                sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                               COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
-               /* CS-1239: chain booking + bury - see comment at the other
-                * RESCHEDULE_KILL site above. */
-               sge_book_finished_job_usage(jep, this_jatep, monitor, gdi_session);
-               sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT,
-                              monitor, gdi_session);
                continue;
 
             } else {

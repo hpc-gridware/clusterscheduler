@@ -29,26 +29,29 @@
  *  ORT_update_project_usage, and ORT_remove_job, and applied in worker threads
  *  via sge_follow_order.
  *
- *  Preconditions: caller holds LOCK_GLOBAL (write); sge_commit_job with mode
- *  COMMIT_ST_FINISHED_FAILED_EE has already set JAT_status = JFINISHED.
+ *  Called from inside sge_commit_job's COMMIT_ST_FINISHED_FAILED_EE case, after
+ *  the JAT_status = JFINISHED transition and before sge_bury_job. External
+ *  callers should never invoke this helper directly - sge_commit_job is the
+ *  contract.
+ *
+ *  Preconditions: caller holds LOCK_GLOBAL (write); JAT_status is JFINISHED.
  *
  *  Steps:
  *    - resolve user / project refs;
  *    - sum the job's final scaled usage into UU_usage (or
  *      user.UU_project[project].UPP_usage when project is set), UU_long_term_usage
- *      / UPP_long_term_usage, PR_usage, and PR_long_term_usage. No decay - that
- *      is the TET decay task's job;
+ *      / UPP_long_term_usage, PR_usage, and PR_long_term_usage. Catches up the
+ *      decay since the last TET tick first, so the historical part stays in sync;
  *    - drop the job's entry from UU_debited_job_usage / PR_debited_job_usage
  *      (the job is gone, the tracking record must follow);
  *    - bump UU_version / PR_version (the change marker). UU_/PR_usage_seqno
  *      is deliberately NOT touched: it is the periodic decay handler's
  *      idempotency stamp; sharing it with the change marker would silently
  *      collide with the handler's run counter and skip decay ticks;
- *    - emit sgeE_USER_MOD / sgeE_PROJECT_MOD events with spool deferred to the
- *      TET flush task in ocs::SharetreeUsage;
- *    - mark the (user, project) dirty for that flush;
- *    - sge_commit_job with COMMIT_ST_DEBITED_EE to bury the ja_task / job,
- *      spool the removal, and emit sgeE_JOB_DEL / sgeE_JATASK_DEL.
+ *    - mark the (user, project) dirty for the TET sharetree-spool handler,
+ *      which batches the sgeE_USER_MOD / sgeE_PROJECT_MOD events and the spool
+ *      writes with sgeE_NEW_SHARETREE under one event-master transaction;
+ *    - mark the master share tree dirty so the next TET tick republishes it.
  *
  *  Returns 0 on success, a negative value on a hard error (missing jep/jatep).
  */

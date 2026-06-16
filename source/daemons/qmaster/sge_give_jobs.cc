@@ -670,11 +670,6 @@ sge_job_resend_event_handler_sim_job_end(uint32_t jobid, uint32_t jataskid, lLis
       lXchgList(jr, JR_usage, lGetListRef(jatep, JAT_scaled_usage_list));
       ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
       sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
-      /* CS-1239: chain booking + bury - FINISHED_FAILED_EE alone leaves the
-       * ja_task in JFINISHED without removing it. See ocs_FinishedJob.h and
-       * sge_job_exit() case 7 for the canonical pattern. */
-      sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
-      sge_commit_job(jep, jatep, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
    lFreeElem(&jr);
 }
@@ -890,24 +885,35 @@ create_timed_events_for_simulated_jobs() {
 *     sge_commit_mode_t mode, sge_commit_flags_t commit_flags)
 *
 *  FUNCTION
-*     sge_commit_job() implements job state transitons. When a dispatch
-*     order arrives from schedd the job is sent asynchonously to execd and
-*     sge_commit_job() is called with mode==COMMIT_ST_SENT. When a job report
-*     arrives from the execd mode is COMMIT_ST_ARRIVED. When the job failed
-*     or finished mode is COMMIT_ST_FINISHED_FAILED or
-*     COMMIT_ST_FINISHED_FAILED_EE depending on product mode:
+*     sge_commit_job() implements job state transitions. The mode parameter
+*     selects which transition:
 *
-*     A SGE job can be removed immediately when it is finished
-*     (mode==COMMIT_ST_FINISHED_FAILED). A SGEEE job may not be deleted
-*     (mode==COMMIT_ST_FINISHED_FAILED_EE) before the SGEEE scheduler has debited
-*     the jobs resource consumption in the corresponding objects (project/user/..).
-*     Only the job script may be deleted at this stage. When an order arrives at
-*     qmaster telling that debitation was done (mode==COMMIT_ST_DEBITED_EE) the
-*     job can be deleted.
+*       COMMIT_ST_SENT             Dispatch order from schedd: send the job
+*                                  asynchronously to execd and mark JTRANSFERING.
+*       COMMIT_ST_ARRIVED          Job report from execd: mark JRUNNING.
+*       COMMIT_ST_FINISHED_FAILED  Tear down an unenrolled array task that
+*                                  never ran (callers pair this with
+*                                  COMMIT_UNENROLLED_TASK). Log, fire the
+*                                  DRMAA finish event, bury. No usage to book,
+*                                  no host/queue debits to release.
+*       COMMIT_ST_FINISHED_FAILED_EE  GEEE finish: clear host/queue debits,
+*                                  emit JOB_FINAL_USAGE events, book usage into
+*                                  UU_/PR_/UPP_, bury. Pre-CS-1239 the booking
+*                                  was done by the scheduler via the ORT_remove_job
+*                                  order and a follow-up COMMIT_ST_DEBITED_EE
+*                                  call; CS-1239 folded both into this mode.
+*       COMMIT_ST_NO_RESOURCES     Schedd's ORT_remove_immediate_job order: bury
+*                                  an interactive job that could not be scheduled.
+*       COMMIT_ST_RESCHEDULED /
+*         _USER_RESCHEDULED /
+*         _FAILED_AND_ERROR        Reset the ja_task back to JIDLE/JQUEUED for
+*                                  another scheduling pass; preserve previous usage.
+*       COMMIT_ST_DELIVERY_FAILED  Same as RESCHEDULED, but sge_clear_granted_
+*                                  resources() must not increase free slots.
 *
-*     sge_commit_job() releases resources when a job is no longer running.
-*     Also state changes jobs are spooled and finally spooling files are
-*     deleted. Also jobs start time is set to the actual time when job is sent.
+*     sge_commit_job() spools the affected ja_task / job and emits the matching
+*     mirror events. For the finish modes it also burys the ja_task / job (and
+*     potentially the whole job, if this was the last ja_task).
 *
 *  INPUTS
 *     lListElem *jep                  - the job
@@ -923,13 +929,10 @@ create_timed_events_for_simulated_jobs() {
 void
 sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_t mode,
                int commit_flags, monitoring_t *monitor, uint64_t gdi_session) {
-   lListElem *tmp_ja_task;
    lListElem *global_host_ep;
    lUlong jobid, jataskid;
-   int no_unlink = 0;
    int spool_job = !(commit_flags & COMMIT_NO_SPOOLING);
    int no_events = (commit_flags & COMMIT_NO_EVENTS);
-   int unenrolled_task = (commit_flags & COMMIT_UNENROLLED_TASK);
    uint64_t now = sge_get_gmt64();
    const char *session;
    lList *answer_list = nullptr;
@@ -1231,18 +1234,28 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          break;
 
       case COMMIT_ST_FINISHED_FAILED:
-         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname, jr, jep,
-                                  jatep, nullptr, MSG_LOG_EXITED);
+         /* "Tear down an unenrolled array task" - in current callers this mode is
+          * always paired with COMMIT_UNENROLLED_TASK, i.e. the ja_task only existed
+          * as a pending range entry, was never enrolled, never ran. So there are
+          * no host/queue debits to release and no UU_/PR_ usage to book - we just
+          * log, fire the DRMAA finish event, and bury. */
+         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
+                                                   jr, jep, jatep, nullptr, MSG_LOG_EXITED);
          remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
-         if (!unenrolled_task) {
-            sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
-         }
          sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
          sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
          break;
       case COMMIT_ST_FINISHED_FAILED_EE:
+         /* CS-1239 consolidation: the legacy two-step (FINISHED_FAILED_EE then,
+          * after the scheduler debited usage via ORT_remove_job, DEBITED_EE) is
+          * collapsed into one step. The order roundtrip is gone, so the booking
+          * and the bury happen here, right after the JFINISHED transition.
+          * Eliminates one reporting-log entry, one sgeE_JATASK_MOD event, one
+          * jatep spool write that the next instruction would delete, and the
+          * duplicated script-delete + successor-release pair (sge_bury_job
+          * does both). */
          ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_FINISHED, MSG_QMASTER, qualified_hostname,
-                                  jr, jep, jatep, nullptr, MSG_LOG_WAIT4SGEDEL);
+                                                   jr, jep, jatep, nullptr, MSG_LOG_EXITED);
          remove_from_reschedule_unknown_lists(jobid, jataskid, gdi_session);
 
          lSetUlong(jatep, JAT_status, JFINISHED);
@@ -1255,53 +1268,29 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          }
          sge_clear_granted_resources(jep, jatep, 1, monitor, gdi_session);
          for_each_rw_lv(petask, lGetList(jatep, JAT_task_list)) {
-            sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid,
-                               jataskid,
-                               lGetString(petask, PET_id),
-                               nullptr, session,
+            sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
+                               lGetString(petask, PET_id), nullptr, session,
                                lGetListRW(petask, PET_scaled_usage), gdi_session);
          }
+         sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid, nullptr, nullptr, session,
+                            lGetListRW(jatep, JAT_scaled_usage_list), gdi_session);
 
-         sge_add_list_event(now, sgeE_JOB_FINAL_USAGE, jobid, jataskid,
-                            nullptr, nullptr, session, lGetListRW(jatep, JAT_scaled_usage_list), gdi_session);
+         /* Book the finished job's usage into UU_/PR_/UPP_ (was the second
+          * chained call from callers). No events or spool here - those are
+          * deferred to the TET sharetree-spool handler. */
+         sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
 
-         spool_transaction(&answer_list, spool_get_default_context(), STC_begin);
-
-         // @todo send event and do this earlier
-         sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, jataskid, nullptr, nullptr,
-                         session, jep, jatep, nullptr, true, true, gdi_session);
-
-         if (job_get_not_enrolled_ja_tasks(jep)) {
-            no_unlink = 1;
-         } else {
-            /* finished all ja-tasks => remove job script */
-            for_each_rw(tmp_ja_task, lGetList(jep, JB_ja_tasks)) {
-               if (lGetUlong(tmp_ja_task, JAT_status) != JFINISHED) {
-                  no_unlink = 1;
-                  break;
-               }
-            }
-         }
-
-         if (!no_unlink) {
-            release_successor_jobs(jep, gdi_session);
-            release_successor_jobs_ad(jep, gdi_session);
-            if ((lGetString(jep, JB_exec_file) != nullptr) && !JOB_TYPE_IS_BINARY(lGetUlong(jep, JB_type))) {
-               spool_delete_script(&answer_list, jobid, jep);
-            }
-         }
-         spool_transaction(&answer_list, spool_get_default_context(), STC_commit);
-         answer_list_output(&answer_list);
+         /* Bury the ja_task / job. sge_bury_job opens its own spool transaction
+          * around its writes (spool_delete_script + spool_delete_object) and
+          * emits sgeE_JATASK_DEL or sgeE_JOB_DEL. No outer transaction here
+          * because BerkeleyDB transactions do not nest. */
+         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
          break;
 
-      case COMMIT_ST_DEBITED_EE: /* CS-1239: chained from sge_book_finished_job_usage in sge_job_exit */
       case COMMIT_ST_NO_RESOURCES: /* triggered by ORT_remove_immediate_job */
-         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname, jr, jep, jatep, nullptr,
-                                  (mode == COMMIT_ST_DEBITED_EE) ? MSG_LOG_DELSGE : MSG_LOG_DELIMMEDIATE);
-
-         if (mode == COMMIT_ST_NO_RESOURCES) {
-            sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
-         }
+         ocs::ReportingFileWriter::create_job_logs(nullptr, now, JL_DELETED, MSG_SCHEDD, qualified_hostname,
+                                                   jr, jep, jatep, nullptr, MSG_LOG_DELIMMEDIATE);
+         sge_job_finish_event(jep, jatep, jr, commit_flags, nullptr, gdi_session);
          sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
          break;
 
@@ -1313,6 +1302,8 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
          lSetUlong(jatep, JAT_status, JIDLE);
          lSetUlong(jatep, JAT_state, JQUEUED | JWAITING);
          sge_clear_granted_resources(jep, jatep, 0, monitor, gdi_session);
+         // @todo: Verify: When delivery has been tried, hasn't the JATASK been spooled yet with state JTRANSFERRING?
+
          sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
                          nullptr, nullptr, session, jep, jatep, nullptr, true, false, gdi_session);
          answer_list_output(&answer_list);
@@ -1827,11 +1818,9 @@ sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *j
     * Remove one ja task
     */
    if (remove_job) {
-      /* we might have done this before, but to make sure, that we
-         did not miss it, we do it again.... */
       release_successor_jobs(job, gdi_session);
 
-      /* and this too, also flushes task dependency cache */
+      /* also flushes task dependency cache */
       release_successor_jobs_ad(job, gdi_session);
 
       /*

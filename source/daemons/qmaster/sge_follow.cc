@@ -1081,10 +1081,10 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
           * (former ORT_remove_interactive_job)
           *
           * CS-1239: ORT_remove_job is gone - finished-job removal now happens
-          * inline in the worker thread (sge_book_finished_job_usage +
-          * sge_commit_job(COMMIT_ST_DEBITED_EE) in sge_job_exit), so the
-          * scheduler never emits ORT_remove_job and this case no longer needs
-          * to handle the shared "remove finished job" path.
+          * inline in the worker thread (sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE)
+          * books usage and buries the job in one step), so the scheduler never
+          * emits ORT_remove_job and this case no longer needs to handle the
+          * shared "remove finished job" path.
           * ----------------------------------------------------------------------- */
       case ORT_remove_immediate_job: {
          lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
