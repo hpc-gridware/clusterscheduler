@@ -4548,7 +4548,11 @@ int sge_parse_qconf(char *argv[])
 
             lFreeList(&lp);
          } else {
-            spooling_field *fields = sge_build_STN_field_list(false, true);
+            /* JSON uses the nested-tree field list (childnodes are full child
+             * objects); ASCII uses the flat id-referenced list - same as -Astree */
+            spooling_field *fields = (qconf_opt_format == SP_FORM_JSON)
+                                     ? sge_build_STN_json_field_list()
+                                     : sge_build_STN_field_list(false, true);
 
             spp = sge_parser_get_next(spp);
 
@@ -4560,6 +4564,12 @@ int sge_parse_qconf(char *argv[])
 
             if (answer_list_output(&alp)) {
                lFreeElem(&ep);
+            }
+
+            /* the nested JSON form carries no node ids -> assign them (as the flat
+             * ASCII reader implicitly does) so the tree is well-formed for GDI */
+            if (ep != nullptr && qconf_opt_format == SP_FORM_JSON) {
+               id_sharetree(&alp, ep, 0, nullptr);
             }
 
             if (ep != nullptr) {
@@ -7079,12 +7089,18 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
       ep = getSNTemplate();
    }
 
-   fields = sge_build_STN_field_list(false, true);
+   /* JSON uses the nested-tree field list (no node ids - childnodes are full
+    * child objects); ASCII uses the flat id-referenced list. The "sharetree"
+    * type name is passed explicitly because the STN object type is mis-detected
+    * from its content. */
+   fields = (qconf_opt_format == SP_FORM_JSON)
+            ? sge_build_STN_json_field_list()
+            : sge_build_STN_field_list(false, true);
 
    filename = spool_flatfile_write_object(&alp, ep, false,
                                           fields, &qconf_name_value_list_sfi,
                                           SP_DEST_TMP, qconf_opt_format,
-                                          nullptr, false);
+                                          nullptr, false, "sharetree");
    if (is_missing) {
       lFreeElem(&ep);
    }
@@ -7128,6 +7144,12 @@ static lListElem *edit_sharetree(lListElem *ep, uid_t uid, gid_t gid)
 
    if (answer_list_output(&alp)) {
       lFreeElem(&newep);
+   }
+
+   /* the nested JSON form carries no node ids -> assign them (as the flat ASCII
+    * reader implicitly does) so the tree is well-formed for GDI */
+   if (newep != nullptr && qconf_opt_format == SP_FORM_JSON) {
+      id_sharetree(&alp, newep, 0, nullptr);
    }
 
    if (newep != nullptr) {
