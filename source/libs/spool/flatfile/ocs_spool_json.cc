@@ -1335,6 +1335,48 @@ spool_json_write_typed_object(lList **answer_list, const lListElem *object,
 }
 
 /**
+ * @brief Serialize a list with separate names for the $id schema and the array key.
+ *
+ * Most lists use the same token for both (see spool_json_write_typed_list), but an
+ * object that is queried both as a list and individually needs a distinct list
+ * schema: e.g. the categories use the array key "category" (the per-record object
+ * type) but the "category-list" schema id, so the list does not collide with the
+ * single-record "category" schema of "qconf -scat <id>".
+ *
+ * @param answer_list    for returning errors
+ * @param list           the list to serialize (a null list yields an empty array)
+ * @param fields         spooling fields describing the elements
+ * @param id_name        type name for the $id (ocs-qconf-<id_name>.schema.json)
+ * @param envelope_name  the array key wrapping the records
+ * @param out            dstring the JSON document is appended to
+ * @return true on success, false on error (answer_list set)
+ */
+bool
+spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
+                               const spooling_field *fields, const char *id_name,
+                               const char *envelope_name, dstring *out)
+{
+   DENTER(JSON_LAYER);
+
+   rapidjson::StringBuffer sb;
+   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+   writer.SetIndent(' ', 3);
+
+   writer.StartObject();
+   spool_json_write_envelope_name(writer, id_name);
+   writer.Key(envelope_name);
+   bool ok = spool_json_write_list_array(answer_list, list, writer, fields);
+   writer.EndObject();
+
+   if (!ok) {
+      DRETURN(false);
+   }
+   sge_dstring_append(out, sb.GetString());
+   sge_dstring_append_char(out, '\n');
+   DRETURN(true);
+}
+
+/**
  * @brief Serialize a list with an explicit type name for the envelope and array key.
  *
  * For lists whose element type is not a registered object (e.g. -stl thread pools).
@@ -1350,24 +1392,7 @@ bool
 spool_json_write_typed_list(lList **answer_list, const lList *list,
                             const spooling_field *fields, const char *type_name, dstring *out)
 {
-   DENTER(JSON_LAYER);
-
-   rapidjson::StringBuffer sb;
-   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-   writer.SetIndent(' ', 3);
-
-   writer.StartObject();
-   spool_json_write_envelope_name(writer, type_name);
-   writer.Key(type_name);
-   bool ok = spool_json_write_list_array(answer_list, list, writer, fields);
-   writer.EndObject();
-
-   if (!ok) {
-      DRETURN(false);
-   }
-   sge_dstring_append(out, sb.GetString());
-   sge_dstring_append_char(out, '\n');
-   DRETURN(true);
+   return spool_json_write_typed_list_ex(answer_list, list, fields, type_name, type_name, out);
 }
 
 /**

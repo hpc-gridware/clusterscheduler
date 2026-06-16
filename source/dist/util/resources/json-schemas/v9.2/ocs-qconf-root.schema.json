@@ -142,6 +142,18 @@
       },
       {
          "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-category-list\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-category-list.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
+            {"properties": {"$id": {"pattern": "ocs-qconf-category\\.schema\\.json$"}}},
+            {"$ref": "../v9.2/ocs-qconf-category.schema.json"}
+         ]
+      },
+      {
+         "allOf": [
             {"properties": {"$id": {"pattern": "ocs-qconf-calendar-list\\.schema\\.json$"}}},
             {"$ref": "../v9.2/ocs-qconf-calendar-list.schema.json"}
          ]

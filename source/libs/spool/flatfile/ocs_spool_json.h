@@ -64,6 +64,14 @@ bool
 spool_json_write_typed_list(lList **answer_list, const lList *list,
                             const spooling_field *fields, const char *type_name, dstring *out);
 
+/* Like spool_json_write_typed_list but with separate @p id_name (for the schema $id) and
+ * @p envelope_name (the array key), for an object queried both as a list and individually
+ * (e.g. the categories: array key "category" but "category-list" schema id). */
+bool
+spool_json_write_typed_list_ex(lList **answer_list, const lList *list,
+                               const spooling_field *fields, const char *id_name,
+                               const char *envelope_name, dstring *out);
+
 /* Like spool_json_write_object but with an explicit @p type_name for the envelope $id
  * (for objects whose type cannot be resolved by content, e.g. a sharetree STN node). */
 bool

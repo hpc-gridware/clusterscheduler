@@ -1,0 +1,41 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-category-list.schema.json",
+   "title": "OCS/GCS qconf category list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -scatl: all job categories and their reference counts. The empty array is a cluster with no categorized jobs.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "category"
+   ],
+   "properties": {
+      "category": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+               "id",
+               "rcount",
+               "str"
+            ],
+            "properties": {
+               "id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Category id."
+               },
+               "rcount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Number of jobs currently referencing this category."
+               },
+               "str": {
+                  "type": "string",
+                  "description": "The category string (the merged set of job request attributes that defines the category; \"-\" when empty)."
+               }
+            }
+         }
+      }
+   }
+}

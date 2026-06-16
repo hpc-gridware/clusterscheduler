@@ -29,6 +29,7 @@
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: spool_json_write_typed_list_ex */
 
 #include "ocs_qconf_Category.h"
 #include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
@@ -38,15 +39,25 @@ bool ocs::CategoryQconf::show_list(lList **answer_list) {
    DENTER(TOP_LAYER);
 
    lList *cat_list = get_via_gdi(answer_list);
-   if (cat_list != nullptr) {
+
+   if (qconf_opt_format == SP_FORM_JSON) {
+      /* CS-2313a: render the categories as a JSON array of { id, rcount, str }
+       * objects under the "category" key, but with the distinct "category-list"
+       * schema id so the list does not collide with the single-record "category"
+       * schema of "qconf -scat <id>". An empty/absent list still yields the
+       * enveloped empty array (so the JSON output is always valid). */
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list_ex(answer_list, cat_list, CAT_fields, "category-list", "category", &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else if (cat_list != nullptr) {
       spool_flatfile_align_list(answer_list, (const lList *) cat_list, CAT_fields, 3);
 
       const char *filename = spool_flatfile_write_list(answer_list, cat_list, CAT_fields, &qconf_cat_list_sfi,
                                                        SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
       sge_free(&filename);
-      lFreeList(&cat_list);
-
    }
+   lFreeList(&cat_list);
 
    if (answer_list_has_error(answer_list)) {
       DRETURN(false);
