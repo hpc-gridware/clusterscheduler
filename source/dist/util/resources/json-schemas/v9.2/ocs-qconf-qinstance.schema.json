@@ -1,164 +1,176 @@
 {
    "$schema": "https://json-schema.org/draft/2020-12/schema",
    "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-qinstance.schema.json",
-   "title": "OCS/GCS qconf queue instance schema",
-   "description": "Schema describing the JSON produced by qconf -fmt json -sq <queue>@<host> and -sq <queue>@@<hostgroup>: the resolved (effective) configuration of a single queue instance / domain.",
+   "title": "OCS/GCS qconf queue instance list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -sq <queue>@<host> and -sq <queue>@@<hostgroup>: the resolved (effective) configurations of the matching queue instances, as a single enveloped array.",
    "type": "object",
    "additionalProperties": true,
    "required": [
-      "qname",
-      "hostname"
+      "qinstance"
    ],
    "properties": {
-      "qname": {
-         "type": "string"
-      },
-      "hostname": {
-         "type": "string"
-      },
-      "seq_no": {
-         "type": "integer"
-      },
-      "load_thresholds": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
-      },
-      "suspend_thresholds": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "nsuspend": {
-         "type": "integer"
-      },
-      "suspend_interval": {
-         "type": "string"
-      },
-      "priority": {
-         "type": "string"
-      },
-      "min_cpu_interval": {
-         "type": "string"
-      },
-      "processors": {
-         "type": "string"
-      },
-      "qtype": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "ckpt_list": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "pe_list": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "rerun": {
-         "type": "boolean"
-      },
-      "slots": {
-         "type": "integer"
-      },
-      "tmpdir": {
-         "type": "string"
-      },
-      "shell": {
-         "type": "string"
-      },
-      "prolog": {
-         "type": "string"
-      },
-      "epilog": {
-         "type": "string"
-      },
-      "shell_start_mode": {
-         "type": "string"
-      },
-      "starter_method": {
-         "type": "string"
-      },
-      "suspend_method": {
-         "type": "string"
-      },
-      "resume_method": {
-         "type": "string"
-      },
-      "terminate_method": {
-         "type": "string"
-      },
-      "notify": {
-         "type": "string"
-      },
-      "owner_list": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "user_lists": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "xuser_lists": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "subordinate_list": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "complex_values": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
-      },
-      "projects": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "xprojects": {
-         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
-      },
-      "calendar": {
-         "type": "string"
-      },
-      "initial_state": {
-         "type": "string"
-      },
-      "s_rt": {
-         "type": "string"
-      },
-      "h_rt": {
-         "type": "string"
-      },
-      "s_cpu": {
-         "type": "string"
-      },
-      "h_cpu": {
-         "type": "string"
-      },
-      "s_fsize": {
-         "type": "string"
-      },
-      "h_fsize": {
-         "type": "string"
-      },
-      "s_data": {
-         "type": "string"
-      },
-      "h_data": {
-         "type": "string"
-      },
-      "s_stack": {
-         "type": "string"
-      },
-      "h_stack": {
-         "type": "string"
-      },
-      "s_core": {
-         "type": "string"
-      },
-      "h_core": {
-         "type": "string"
-      },
-      "s_rss": {
-         "type": "string"
-      },
-      "h_rss": {
-         "type": "string"
-      },
-      "s_vmem": {
-         "type": "string"
-      },
-      "h_vmem": {
-         "type": "string"
+      "qinstance": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+               "qname",
+               "hostname"
+            ],
+            "properties": {
+               "qname": {
+                  "type": "string"
+               },
+               "hostname": {
+                  "type": "string"
+               },
+               "seq_no": {
+                  "type": "integer"
+               },
+               "load_thresholds": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
+               },
+               "suspend_thresholds": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "nsuspend": {
+                  "type": "integer"
+               },
+               "suspend_interval": {
+                  "type": "string"
+               },
+               "priority": {
+                  "type": "string"
+               },
+               "min_cpu_interval": {
+                  "type": "string"
+               },
+               "processors": {
+                  "type": "string"
+               },
+               "qtype": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "ckpt_list": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "pe_list": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "rerun": {
+                  "type": "boolean"
+               },
+               "slots": {
+                  "type": "integer"
+               },
+               "tmpdir": {
+                  "type": "string"
+               },
+               "shell": {
+                  "type": "string"
+               },
+               "prolog": {
+                  "type": "string"
+               },
+               "epilog": {
+                  "type": "string"
+               },
+               "shell_start_mode": {
+                  "type": "string"
+               },
+               "starter_method": {
+                  "type": "string"
+               },
+               "suspend_method": {
+                  "type": "string"
+               },
+               "resume_method": {
+                  "type": "string"
+               },
+               "terminate_method": {
+                  "type": "string"
+               },
+               "notify": {
+                  "type": "string"
+               },
+               "owner_list": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "user_lists": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "xuser_lists": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "subordinate_list": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "complex_values": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
+               },
+               "projects": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "xprojects": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+               },
+               "calendar": {
+                  "type": "string"
+               },
+               "initial_state": {
+                  "type": "string"
+               },
+               "s_rt": {
+                  "type": "string"
+               },
+               "h_rt": {
+                  "type": "string"
+               },
+               "s_cpu": {
+                  "type": "string"
+               },
+               "h_cpu": {
+                  "type": "string"
+               },
+               "s_fsize": {
+                  "type": "string"
+               },
+               "h_fsize": {
+                  "type": "string"
+               },
+               "s_data": {
+                  "type": "string"
+               },
+               "h_data": {
+                  "type": "string"
+               },
+               "s_stack": {
+                  "type": "string"
+               },
+               "h_stack": {
+                  "type": "string"
+               },
+               "s_core": {
+                  "type": "string"
+               },
+               "h_core": {
+                  "type": "string"
+               },
+               "s_rss": {
+                  "type": "string"
+               },
+               "h_rss": {
+                  "type": "string"
+               },
+               "s_vmem": {
+                  "type": "string"
+               },
+               "h_vmem": {
+                  "type": "string"
+               }
+            }
+         }
       }
    }
 }

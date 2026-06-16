@@ -46,6 +46,7 @@
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: spool_json_write_typed_list */
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
@@ -567,7 +568,58 @@ cqueue_delete(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-bool 
+/****** resource_quota_qconf/qinstance_list_write() **************************
+*  NAME
+*     qinstance_list_write() -- print a list of resolved queue instances
+*
+*  FUNCTION
+*     Writes the resolved queue instances collected for a -sq <queue>@<host> or
+*     -sq <queue>@@<hostgroup> query. In json mode the instances are emitted as a
+*     single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
+*     json document even when the query matches several hosts; in ASCII mode each
+*     instance is printed as a separate block (blank-line separated), as before.
+*     The "qinstance" type name is passed explicitly because the QINSTANCE object
+*     type cannot be resolved from its content (it is mis-detected as exechost).
+*
+*  RESULT
+*     bool - true on success, false on error
+*******************************************************************************/
+static bool
+qinstance_list_write(lList **answer_list, const lList *qi_list)
+{
+   DENTER(TOP_LAYER);
+
+   spooling_field *fields = sge_build_QU_field_list(true, false);
+   /* Bugfix Issuezilla #1198: keep slots out of the complex values list */
+   insert_custom_complex_values_writer(fields);
+
+   if (qconf_opt_format == SP_FORM_JSON) {
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list(answer_list, qi_list, fields, "qinstance", &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else {
+      bool is_first = true;
+      const lListElem *qi;
+      for_each_ep(qi, qi_list) {
+         if (!is_first) {
+            fprintf(stdout, "\n");
+         }
+         is_first = false;
+         const char *fn = spool_flatfile_write_object(answer_list, qi, false, fields,
+                                                       &qconf_sfi, SP_DEST_STDOUT,
+                                                       qconf_opt_format, nullptr,
+                                                       false, "qinstance");
+         sge_free(&fn);
+      }
+   }
+   sge_free(&fields);
+
+   bool ret = !answer_list_output(answer_list);
+   DRETURN(ret);
+}
+
+bool
 cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 {
    bool ret = true;
@@ -603,139 +655,74 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
             if (has_domain) {
                const char *d_pattern = sge_dstring_get_string(&host_domain);
                lList *href_list = nullptr;
-               bool is_first = true;
+               lList *qi_list = lCreateList("qinstance_list", QU_Type);
+               static const int qu_ce[] = {QU_consumable_config_list,
+                                           QU_load_thresholds, QU_suspend_thresholds};
 
                hgroup_list_find_matching_and_resolve(hgroup_list, nullptr,
                                                      d_pattern, &href_list);
                for_each_ep_lv(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
-                  const lListElem *cqueue = nullptr;
+                  const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
                   if (cqueue != nullptr) {
-                     const lList *qinstance_list = nullptr;
+                     const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-                     qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep_lv(href, href_list) {
                         const char *hostname = lGetHost(href, HR_name);
-                        const lListElem *qinstance;
-
-                        qinstance = lGetElemHost(qinstance_list,
-                                                 QU_qhostname, hostname);
-
+                        const lListElem *qinstance = lGetElemHost(qinstance_list,
+                                                                  QU_qhostname, hostname);
                         if (qinstance != nullptr) {
-                           const char *filename_stdout;
-                           spooling_field *fields = sge_build_QU_field_list
-                                                                  (true, false);
-
-                           /* Bugfix: Issuezilla #1198
-                            * In order to prevent the slots from being printed
-                            * in the complex values list, we have to insert a
-                            * custom writer for the complex_values field.  We do
-                            * that with this function. */
-                           insert_custom_complex_values_writer(fields);
-
-                           if (is_first) {
-                              is_first = false; 
-                           } else {
-                              fprintf(stdout, "\n");
-                           }
-                           
-                           /* CS-2313a: type complex_values/thresholds for -fmt json */
-                           {
-                              static const int qu_ce[] = {QU_consumable_config_list,
-                                                          QU_load_thresholds, QU_suspend_thresholds};
-                              qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
-                           }
-                           /* CS-2313a: a resolved queue instance is a QINSTANCE
-                            * object; give it the correct "qinstance" $id (the auto
-                            * type detection mis-resolves QU to exechost). */
-                           filename_stdout = spool_flatfile_write_object(
-                                                       answer_list, qinstance,
-                                                       false, fields,
-                                                       &qconf_sfi,
-                                                       SP_DEST_STDOUT,
-                                                       qconf_opt_format, nullptr,
-                                                       false, "qinstance");
-                           sge_free(&fields);
-                           sge_free(&filename_stdout);
-                           
-                           if (answer_list_output(answer_list)) {
-                              lFreeList(&href_list);
-                              lFreeList(&qref_list);
-                              DRETURN(false);
-                           }
-
+                           /* collect a typed copy of the resolved instance */
+                           lListElem *qi_copy = lCopyElem(qinstance);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }
                      }
                   }
                }
 
+               /* one json array (or blank-line separated ASCII blocks) for all
+                * instances matched by the domain - keeps the json a single doc */
+               bool ok = qinstance_list_write(answer_list, qi_list);
+               lFreeList(&qi_list);
                lFreeList(&href_list);
-               lFreeList(&qref_list);
+               if (!ok) {
+                  lFreeList(&qref_list);
+                  DRETURN(false);
+               }
             } else if (has_hostname) {
                const char *h_pattern = sge_dstring_get_string(&host_domain);
                bool h_pattern_is_expression = ocs::is_expression(h_pattern);
-               bool is_first = true;
+               lList *qi_list = lCreateList("qinstance_list", QU_Type);
+               static const int qu_ce[] = {QU_consumable_config_list,
+                                           QU_load_thresholds, QU_suspend_thresholds};
 
                for_each_ep_lv(qref, qref_list) {
-                  const char *cqueue_name = nullptr;
-                  const lListElem *cqueue = nullptr;
+                  const char *cqueue_name = lGetString(qref, QR_name);
+                  const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  cqueue_name = lGetString(qref, QR_name);
-                  cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
                   if (cqueue != nullptr) {
-                     const lList *qinstance_list = nullptr;
+                     const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-                     qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep_lv(qinstance, qinstance_list) {
-                        const char *hostname = nullptr;
-
-                        hostname = lGetHost(qinstance, QU_qhostname);
+                        const char *hostname = lGetHost(qinstance, QU_qhostname);
                         if (!sge_eval_expression(ocs::CEntry::Type::HOST, h_pattern, hostname, nullptr, true, h_pattern_is_expression)) {
-                           const char *filename;
-                           spooling_field *fields = sge_build_QU_field_list(true, false);
-
-                           /* Bugfix: Issuezilla #1198
-                            * In order to prevent the slots from being printed
-                            * in the complex values list, we have to insert a
-                            * custom writer for the complex_values field.  We do
-                            * that with this function. */
-                           insert_custom_complex_values_writer(fields);
-
-                           if (is_first) {
-                              is_first = false; 
-                           } else {
-                              fprintf(stdout, "\n");
-                           }
-
-                           /* CS-2313a: type complex_values/thresholds for -fmt json */
-                           {
-                              static const int qu_ce[] = {QU_consumable_config_list,
-                                                          QU_load_thresholds, QU_suspend_thresholds};
-                              qconf_json_fill_complex(const_cast<lListElem *>(qinstance), qu_ce, 3);
-                           }
-                           /* CS-2313a: a resolved queue domain instance is a
-                            * QINSTANCE object; give it the correct "qinstance" $id
-                            * (the auto type detection mis-resolves QU to exechost). */
-                           filename = spool_flatfile_write_object(answer_list, qinstance,
-                                                                  false, fields,
-                                                                  &qconf_sfi,
-                                                                  SP_DEST_STDOUT,
-                                                                  qconf_opt_format, nullptr,
-                                                                  false, "qinstance");
-                           sge_free(&fields);
-                           sge_free(&filename);
-                           
-                           if (answer_list_output(answer_list)) {
-                              DRETURN(false);
-                           }
-
+                           lListElem *qi_copy = lCopyElem(qinstance);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }
                      }
                   }
+               }
+
+               bool ok = qinstance_list_write(answer_list, qi_list);
+               lFreeList(&qi_list);
+               if (!ok) {
+                  lFreeList(&qref_list);
+                  DRETURN(false);
                }
             } else {
                bool is_first = true;
