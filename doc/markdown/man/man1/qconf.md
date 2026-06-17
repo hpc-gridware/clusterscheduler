@@ -71,95 +71,67 @@ Similar to `-aattr` (see below) but takes specifications for the object attribut
 *fname* following the file format of the corresponding object (see xxqs_name_sxx_queue_conf(5) for the queue, 
 for example). Requires root/manager privileges.
 
-## -acal [*calendar_name*]
-Adds a new calendar definition to the xxQS_NAMExx environment. Calendars are used in xxQS_NAMExx for defining
-availability and unavailability schedules of queues. The format of a calendar definition is described in
-xxqs_name_sxx_calendar_conf(5).
+## -a*obj* \[*name*\]
+Adds an object interactively: `qconf` opens a template (or, where noted, an existing
+configuration) in an editor (the one named by `$EDITOR`) and registers the result on
+exit — the interactive counterpart of the file-based `-A<obj>`, and an upsert
+(`-a<obj>` and `-m<obj>` are interchangeable: an object whose name already exists is
+modified rather than rejected). `-a<obj>` is available for `-acal` (calendar),
+`-ackpt` (checkpointing environment), `-ace` (complex entries), `-ae` (execution
+host), `-ahgrp` (host group), `-ap` (parallel environment), `-aprj` (project), `-aq`
+(cluster queue), `-arole` (role), `-arqs` (resource quota set) and `-auser` (user),
+plus `-astree` (share tree) and `-aconf` (cluster/host configuration).
 
-With the calendar name given in the option argument `qconf` will open a temporary file and start up an editor.
-After entering the calendar definition and closing the editor the new calendar is checked and registered with
-xxqs_name_sxx_qmaster(8). The *calendar_name* is optional; if it is omitted a generic template definition named
-`template` is offered for editing. If a calendar with the given name already exists it is modified rather than
-rejected. Requires root/manager privileges.
+Most variants take an optional object name; if it is omitted a generic template named
+`template` is offered for editing, and if it is given it pre-fills the template's name
+field. The object's configuration follows the format of its man page:
 
-## -Acal *fname*|*dir*
-Adds or modifies one or more calendar definitions in the xxQS_NAMExx environment. Calendars are used in
-xxQS_NAMExx for defining availability and unavailability schedules of queues. The format of a calendar definition
-is described in xxqs_name_sxx_calendar_conf(5).
+| Option | Object | Argument | Format |
+|--------|--------|----------|--------|
+| `-acal`   | calendar | \[*calendar_name*\] | xxqs_name_sxx_calendar_conf(5) |
+| `-ackpt`  | checkpointing environment | \[*ckpt_name*\] | xxqs_name_sxx_checkpoint(5) |
+| `-ace`    | complex entries | \[*ce_name*\] | xxqs_name_sxx_complex(5) |
+| `-ae`     | execution host | \[*host_template*\] | xxqs_name_sxx_host_conf(5) |
+| `-ahgrp`  | host group | *group* | xxqs_name_sxx_hostgroup(5) |
+| `-ap`     | parallel environment | \[*pe_name*\] | xxqs_name_sxx_pe(5) |
+| `-aprj`   | project | \[*name*\] | xxqs_name_sxx_project(5) |
+| `-aq`     | cluster queue | \[*queue_name*\] | xxqs_name_sxx_queue_conf(5) |
+| `-arole`  | role | \[*role_name*\] | xxqs_name_sxx_role(5) |
+| `-arqs`   | resource quota set | \[*rqs_name*\] | xxqs_name_sxx_resource_quota(5) |
+| `-auser`  | user | \[*name*\] | xxqs_name_sxx_user(5) |
+| `-astree` | share tree | *(none)* | xxqs_name_sxx_share_tree(5) |
+| `-aconf`  | cluster/host configuration | *host*,... | xxqs_name_sxx_conf(5) |
 
-If the argument is a file, the single calendar definition contained in it is added; if a calendar of that name
-already exists it is modified instead. If the argument is a directory, every (non-hidden) regular file in it is
-read as one calendar definition and added or modified, and a one-line summary of the number of objects processed
-and failed is printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
-privileges.
+Object-specific notes:
 
-## -ace [*ce_name*]
-Adds a new complex entry to the complex list of the xxQS_NAMExx environment. Complex entries are used to define
-resources that can be requested by jobs. The different attributes define the characteristics of that resource and
-the way how xxQS_NAMExx should handle them. Find more information in xxqs_name_sxx_complex(5).  
+- `-ae` opens a copy of the named execution host's configuration when *host_template*
+  is given, or a generic template otherwise.
+- `-aconf` invokes an editor for each host in the comma-separated list and adds (or
+  modifies) that host's local configuration.
+- `-astree` is a singleton and takes no name argument; it creates the share tree, or
+  modifies it if one already exists (`-astree` and `-mstree` are interchangeable).
+- Usersets (ACLs) have no template-editor add: create one from a file with `-Au`, or
+  add a user to an ACL with `-au` (which creates the ACL if it does not yet exist;
+  see below). The scheduler configuration always exists and has no add form.
 
-With the *ce_name* given in the option argument `qconf` will open a temporary file and start up an editor.
-After entering the resource definition and closing the editor the new complex entry is checked and registered with
-xxqs_name_sxx_qmaster(8). The *ce_name* is optional; if it is omitted a generic template named `template` is
-offered for editing. If a complex entry of the given name already exists it is modified rather than rejected.
 Requires root/manager privileges.
 
-## -Ace *fname*|*dir*
-Adds or modifies one or more complex entries. Complex entries are used to define resources that can be requested by
-jobs (find more information in xxqs_name_sxx_complex(5)). If the argument is a file, the single entry it contains
-is added, or modified if an entry of that name already exists. If the argument is a directory, every (non-hidden)
-regular file in it is read as one complex-entry definition and added or modified, and a one-line summary is
-printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
+## -A*obj* *fname*|*dir*
+Adds objects from a file or a directory of files. `-A<obj>` is an upsert and is
+interchangeable with `-M<obj>`: if the argument is a file, the single object it
+contains is added, or modified if an object of that name already exists; if it is a
+directory, every (non-hidden) regular file in it is added or modified and a one-line
+summary is printed. See `-M<obj>` above for the full description, the per-object
+file-format table and the object-specific notes (`-Aconf` basename keying, `-Ae` host
+resolution, `-Arqs` rule-set semantics, the `-Astree` singleton). `-A<obj>` is
+available for the same objects as `-M<obj>`: `-Acal`, `-Ackpt`, `-Ace`, `-Ae`,
+`-Ahgrp`, `-Ap`, `-Aprj`, `-Aq`, `-Arole`, `-Arqs`, `-Au` (userset/ACL), `-Auser`,
+`-Astree` (share tree) and `-Aconf` (cluster/host configuration).
 
-## -ackpt [*ckpt_name*]
-Adds a checkpointing environment under the name *ckpt_name* to the list of checkpointing environments maintained
-by xxQS_NAMExx and to be usable to submit checkpointing jobs (see xxqs_name_sxx_checkpoint(5) for details on
-the format of a checkpointing environment definition). `qconf` retrieves a default checkpointing environment
-configuration and executes an editor to allow you to customize the checkpointing environment configuration. Upon
-exit from the editor, the checkpointing environment is registered with xxqs_name_sxx_qmaster(8). The *ckpt_name*
-is optional; if it is omitted a generic template definition named `template` is offered for editing. If a
-checkpointing environment of the given name already exists it is modified rather than rejected.
-Requires root/manager privileges.
-
-## -Ackpt *fname*|*dir*
-Adds or modifies one or more checkpointing environments (see xxqs_name_sxx_checkpoint(5)). If the argument is a
-file, the single definition it contains is added, or modified if a checkpointing environment of that name already
-exists. If the argument is a directory, every (non-hidden) regular file in it is read as one definition and added
-or modified, and a one-line summary is printed. See also `-dry`, `-strict` and the EXIT STATUS section.
-Requires root/manager privileges.
-
-## -aconf *host*, ...
-Successively adds configurations (see xxqs_name_sxx_conf(5)) For the hosts in the comma separated *host* list.
-For each *host*, an editor is invoked and the configuration for the host can be entered. The configuration is
-registered with xxqs_name_sxx_qmaster(8) after saving the file and quitting the editor. If a configuration for the
-host already exists it is modified rather than rejected. Requires root/manager privileges.
-
-## -Aconf *fname_list*|*dir*
-Add the configurations (see xxqs_name_sxx_conf(5)) specified in the files enlisted in the comma separated
-*fname_list*. The configuration is added for the host that is identical to the file name (its basename); a
-configuration that already exists is modified instead. An entry in the list may also be a directory, in which case
-every (non-hidden) regular file in it is applied the same way (basename = host). See also `-dry` and the EXIT
-STATUS section. Requires root/manager privileges.
-
-## -ae \[*host_template*\]
-Adds a host to the list of xxQS_NAMExx execution hosts. If a queue is configured on a host this host is
-automatically added to the xxQS_NAMExx execution host list. Adding execution hosts explicitly offers the
-advantage to be able to specify parameters like load scale values with the registration of the execution host.
-However, these parameters can be modified (from their defaults) at any later time via the `-me` option
-described below.  
-If the *host_template* argument is present, `qconf` retrieves the configuration of the specified execution
-host from xxqs_name_sxx_qmaster(8) or a generic template otherwise. The template is then stored in a file and
-`qconf` executes an editor to change the entries in the file. The format of the execution host specification is
-described in xxqs_name_sxx_host_conf(5). When the changes are saved in the editor and the editor is quit them the new
-execution host is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
-
-## -Ae *fname*|*dir*
-Adds or modifies one or more execution hosts. If the argument is a file, the single execution host it defines is
-added, or modified if a host of that name already exists. If the argument is a directory, every (non-hidden)
-regular file in it is read as one execution host specification and added or modified, and a one-line summary is
-printed. Each host name is resolved before it is applied. The format of the execution host specification is
-described in xxqs_name_sxx_host_conf(5). See also `-dry`, `-strict` and the EXIT STATUS section. Requires
-root/manager privileges.
+`-Astree` takes a single *fname* (the share tree is a singleton); the scheduler
+configuration always exists and has no add form. See also `-dry`, `-strict` and the
+EXIT STATUS section. Requires root/manager privileges (`-Au` also accepts operator
+privilege).
 
 ## -ah *hostname*,...
 Adds hosts *hostname* to the xxQS_NAMExx trusted host list. A host must be in this list to execute administrative
@@ -167,91 +139,11 @@ xxQS_NAMExx commands, the sole exception to this being the execution of `qconf` 
 node. The default xxQS_NAMExx installation procedures add all designated execution hosts (see the `-ae`
 option above) to the xxQS_NAMExx trusted host list automatically. Requires root/manager privileges.
 
-## -ahgrp *group*
-Adds a new host group with the name specified in *group*. This command invokes an editor that allows to
-make required changes. After the editor is quit the new host group entry is registered. Requires
-root/manager privileges.
-
-## -Ahgrp *fname*|*dir*
-Adds or modifies one or more host group configurations. If the argument is a file, the single host group it defines
-is added, or modified if a host group of that name already exists. If the argument is a directory, every
-(non-hidden) regular file in it is read as one host group definition and added or modified, and a one-line summary
-is printed. The file format must comply to xxqs_name_sxx_hostgroup(5). See also `-dry`, `-strict` and the EXIT
-STATUS section. Requires root/manager privileges.
-
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
 
 ## -ao *user*,...
 Adds the indicated users to the xxQS_NAMExx operator list. Requires root/manager privileges.
-
-## -ap [*pe_name*]
-Adds a new parallel environment (PE) description under the name *pe_name* to the list of parallel environments
-maintained by xxQS_NAMExx and to be usable to submit parallel jobs (see xxqs_name_sxx_pe(5) for details
-on the format of a PE definition. `Qconf` retrieves a default PE configuration and executes an editor
-to allow you to customize the PE configuration. Upon exit from the editor, the PE is registered with
-xxqs_name_sxx_qmaster(8). The *pe_name* is optional; if it is omitted a generic template named `template` is
-offered for editing. If a PE of the given name already exists it is modified rather than rejected.
-Requires root/manager privileges.
-
-## -Ap *fname*|*dir*
-Adds or modifies one or more parallel environments (see xxqs_name_sxx_pe(5)). If the argument is a file, the single
-PE it contains is added, or modified if a PE of that name already exists. If the argument is a directory, every
-(non-hidden) regular file in it is read as one PE definition and added or modified, and a one-line summary is
-printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
-
-## -aprj \[*name*\]
-Adds a project description to the list of registered projects (see xxqs_name_sxx_project(5)). `Qconf` retrieves
-a template project configuration and executes an editor to allow you to customize the new project.
-Upon exit from the editor, the specified project is registered with xxqs_name_sxx_qmaster(8). The *name* is
-optional; if it is given it pre-fills the template's name field. If a project of the given name already exists it
-is modified rather than rejected. Requires root/manager privileges.
-
-## -Aprj *fname*|*dir*
-Adds the project description defined in *fname* to the list of registered projects (see xxqs_name_sxx_project(5)).
-If the argument is a directory, one project per (non-hidden) regular file in it is added; a project that already
-exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager
-privileges.
-
-## -aq \[*queue_name*\]
-`Qconf` retrieves the default cluster queue configuration (see xxqs_name_sxx_queue_conf(5)) and executes an editor
-to allow you to customize the cluster queue configuration. Upon exit from the editor, the queue is registered with
-xxqs_name_sxx_qmaster(8). A minimal configuration requires only that the queue name and queue hostlist be set.
-Requires root/manager privileges.
-
-## -Aq *fname*|*dir*
-Adds or modifies one or more cluster queues. If the argument is a file, the single queue it defines is added, or
-modified if a queue of that name already exists. If the argument is a directory, every (non-hidden) regular file in
-it is read as one queue definition and added or modified, and a one-line summary is printed. See also `-dry`,
-`-strict` and the EXIT STATUS section. Requires root/manager privileges.
-
-## -arqs \[*rqs_name*\]
-Adds a resource quota set (RQS) description under the names *rqs_name* to the list of quota sets maintained
-by xxQS_NAMExx (see xxqs_name_sxx_resource_quota(5) for details on the format of a RQS definition). `Qconf`
-retrieves a default RQS configuration and executes and editor to allow you to customize the RQS configuration.
-Upon exit from the editor, the RQS is registered with xxqs_name_sxx_qmaster(8). Requires root/manager privileges.
-
-## -Arqs *fname*|*dir*
-Adds or modifies the resource quota set(s) (RQS) defined in *fname* (refer to xxqs_name_sxx_resource_quota(5)); a
-single file may contain several rule sets. Each rule set in the file is added, or modified if a rule set of the same
-name already exists; rule sets not contained in the file are left unchanged (`-Arqs` and `-Mrqs` are
-interchangeable). If the argument is a directory, the rule sets from every (non-hidden) regular file in it are
-collected and applied together in one request; if any file fails to parse nothing is applied. See also `-dry` and
-the EXIT STATUS section. Requires root/manager privileges.
-
-## -arole [*role_name*]
-Adds a new role description under the name *role_name* to the list of roles maintained by xxQS_NAMExx.
-`Qconf` retrieves a default role configuration and executes an editor to allow you to customize the role
-configuration. Upon exit from the editor, the role is registered with xxqs_name_sxx_qmaster(8). Refer to
-xxqs_name_sxx_role(5) for details on the role configuration format. The *role_name* is optional; if it is omitted
-a generic template named `template` is offered for editing. If a role of the given name already exists it is
-modified rather than rejected. Requires root/manager privileges.
-
-## -Arole *fname*|*dir*
-Adds or modifies one or more roles (refer to xxqs_name_sxx_role(5)). If the argument is a file, the single role it
-contains is added, or modified if a role of that name already exists. If the argument is a directory, every
-(non-hidden) regular file in it is read as one role definition and added or modified, and a one-line summary is
-printed. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privileges.
 
 ## -as *hostname*, ...
 Add hosts *hostname* to the list of hosts allowed to submit xxQS_NAMExx jobs and control their behavior only.
@@ -263,17 +155,6 @@ a hierarchical path (*\[/\]node_name\[\[/.\]node_name...\]*) specifying the loca
 share tree. The base name of the node_path is the name of the new node. The node is initialized to the number
 of specified shares. Requires root/manager privileges.
 
-## -astree
-Adds the definition of a share tree to the system (see xxqs_name_sxx_share_tree(5)). A template share tree is
-retrieved and an editor is invoked for modifying the share tree definition. Upon exiting the editor, the
-modified data is registered with xxqs_name_sxx_qmaster(8). The share tree is a singleton: if one already exists it
-is modified rather than rejected (`-astree` and `-mstree` are interchangeable). Requires root/manager privileges.
-
-## -Astree *fname*
-Adds the definition of a share tree to the system (see xxqs_name_sxx_share_tree(5)) from the file *fname*. If a
-share tree already exists it is modified instead (`-Astree` and `-Mstree` are interchangeable). Requires root or
-manager privileges.
-
 ## -at *thread_name*
 Activates an additional thread in the xxqs_name_sxx_qmaster(8) process. *thread_name* might be only *'scheduler'*.
 The corresponding thread is only started when it is not already running. There might be only one scheduler in the
@@ -282,24 +163,6 @@ master process at the same time.
 ## -au *user*,... *acl_name*,...
 Adds users to xxQS_NAMExx access control lists (ACL). Those lists are used for object usage authentication.
 Requires root/manager/operator privileges.
-
-## -Au *fname*|*dir*
-Add the user access list (ACL) defined in *fname** to xxQS_NAMExx. User lists are used for queue usage authentication.
-If the argument is a directory, one userset per (non-hidden) regular file in it is added; a userset that already
-exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
-root/manager/operator privileges.
-
-## -auser \[*name*\]
-Adds a user to the list of registered users (see xxqs_name_sxx_user*(5)). This command invokes an editor
-for showing a template user. The new user is registered after changing the entry and exiting the editor. The
-*name* is optional; if it is given it pre-fills the template's name field. If a user of the given name already
-exists it is modified rather than rejected. Requires root/manager privileges.
-
-## -Auser *fname*|*dir*
-Add the user defined in *fname* to the xxQS_NAMExx cluster. The format of the user specification is described
-in xxqs_name_sxx_user(5). If the argument is a directory, one user per (non-hidden) regular file in it is added;
-a user that already exists is modified instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
-root/manager privileges.
 
 ## -cb
 This parameter can be used since xxQS_NAMExx version 6.2u5 in combination with the command line switch `-sep`.
@@ -362,70 +225,93 @@ multiple attributes can be modified. Their specification has to be enlisted in *
 the file format of the corresponding object (see xxqs_name_sxx_queue_conf(5) for the queue, for example).  
 Requires root/manager privileges.
 
-## -dcal *calendar_name*,...
-Deletes the specified calendar definition(s) from xxQS_NAMExx. More than one calendar may be deleted at once by
-giving a comma-separated list of calendar names. Requires root/manager privileges.
+## -d*obj* *name*,...
+Deletes objects by a comma-separated list of names — the name-list counterpart of the
+file/directory `-D<obj>` deletes. `-d<obj>` is available for: `-dcal` (calendar),
+`-dckpt` (checkpointing environment), `-dce` (complex entries), `-de` (execution
+host), `-dhgrp` (host group), `-dp` (parallel environment), `-dprj` (project), `-dq`
+(cluster queue), `-drole` (role), `-drqs` (resource quota set), `-dul` (userset/ACL),
+`-duser` (user) and `-dconf` (cluster/host configuration). The share tree and
+scheduler configuration are singletons with no name-list delete (use `-dstree`).
 
-## -Dcal *fname*|*dir*
-Deletes the calendar definition(s) named in a file or in a directory of files. Each file is read and the calendar
-named by its `calendar_name` field is deleted; the rest of the file content is ignored. If the argument is a
-directory, every (non-hidden) regular file in it is processed and the deletion is confirmed interactively before
-it is carried out (use `-f` to skip the prompt, or `-dry` to preview). A calendar named in a file
-that no longer exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
+More than one object may be deleted at once by giving a comma-separated list of names:
 
-## -dce *ce_name*,...
-Deletes the specified complex entry(s) from the set of complex definitions of xxQS_NAMExx. More than one may be
-deleted at once by giving a comma-separated list of names. Requires root/manager privileges.
+| Option | Object | Argument |
+|--------|--------|----------|
+| `-dcal`   | calendar | *calendar_name*,... |
+| `-dckpt`  | checkpointing environment | *ckpt_name*,... |
+| `-dce`    | complex entries | *ce_name*,... |
+| `-de`     | execution host | *host_name*,... |
+| `-dhgrp`  | host group | *group*,... |
+| `-dp`     | parallel environment | *pe_name*,... |
+| `-dprj`   | project | *project*,... |
+| `-dq`     | cluster queue | *queue_name*,... |
+| `-drole`  | role | *role_name*,... |
+| `-drqs`   | resource quota set | *rqs_name_list* |
+| `-dul`    | userset (ACL) | *acl_name*,... |
+| `-duser`  | user | *user_list* |
+| `-dconf`  | cluster/host configuration | *host*,... |
 
-## -Dce *fname*|*dir*
-Deletes the complex entry(s) named in a file or in a directory of files. Each file is read and the entry named by
-its `name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is confirmed
-interactively unless `-f` is given, and `-dry` previews it. An entry named in a file that no longer exists is
-reported and skipped rather than treated as an error. Requires root/manager privileges.
+Object-specific notes:
 
-## -dckpt *ckpt_name*,...
-Deletes the specified checkpointing environment(s). More than one may be deleted at once by giving a
-comma-separated list of names. Requires root/manager privileges.
+- `-dconf` deletes the local configuration entries of the named host(s).
+- `-dq` removes the cluster queue(s) but lets active jobs run to completion.
+- `-drole` deletion is refused if a role is still referenced as a parent by another
+  role.
+- `-dul` deletes whole usersets (ACLs); to remove individual users *from* an ACL use
+  `-du` (see below) instead.
 
-## -Dckpt *fname*|*dir*
-Deletes the checkpointing environment(s) named in a file or in a directory of files. Each file is read and the
-environment named by its `ckpt_name` field is deleted; the rest of the file content is ignored. A directory is a
-bulk delete: it is confirmed interactively unless `-f` is given, and `-dry` previews it. An environment named in a
-file that no longer exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
+Requires root/manager privileges (`-dul` also accepts operator privilege).
 
-## -dconf *host*,...
-The local configuration entries for the specified hosts are deleted from the configuration list.
-Requires root/manager privilege.
+## -D*obj* *fname*|*dir*
+Deletes objects named in a file or a directory of files — the file/directory
+counterpart of the comma-separated `-d<obj>` name-list deletes, and a companion to
+`-A<obj>`/`-M<obj>`/`-S<obj>`. Each file is read, the object named in it is deleted,
+and the rest of the file content is ignored, so a file produced by `-S<obj>` (or any
+`-A<obj>`/`-M<obj>` input file) can be passed directly. `-D<obj>` is available for:
+`-Dcal` (calendar), `-Dckpt` (checkpointing environment), `-Dce` (complex entries),
+`-De` (execution host), `-Dhgrp` (host group), `-Dp` (parallel environment), `-Dprj`
+(project), `-Dq` (cluster queue), `-Drole` (role), `-Drqs` (resource quota set),
+`-Du` (userset/ACL), `-Duser` (user) and `-Dconf` (cluster/host configuration). The
+share tree and scheduler configuration are singletons with no `-D` form (use
+`-dstree`).
 
-## -Dconf *fname*|*dir*
-Deletes the local configuration entries for the host(s) named by a file or by a directory of files; the host key is
-the file basename (matching the `-Aconf`/`-Mconf` convention). A directory is a bulk delete confirmed interactively
-unless `-f` is given, and `-dry` previews it. A host whose configuration no longer exists is reported and skipped
-rather than treated as an error. Requires root/manager privilege.
+If the argument is a directory, every (non-hidden) regular file in it is processed as
+one bulk delete: it is confirmed interactively unless `-f` is given, and `-dry`
+previews it without deleting anything. Deletion is idempotent — an object named in a
+file that no longer exists is reported and skipped rather than treated as an error.
+Each object is identified by the name field of its file:
 
-## -de *host_name*,...
-Deletes one or more hosts from the xxQS_NAMExx execution host list. More than one may be deleted at once by giving
-a comma-separated list of host names. Requires root|manager privileges.
+| Option | Object | Name taken from |
+|--------|--------|-----------------|
+| `-Dcal`   | calendar | `calendar_name` field |
+| `-Dckpt`  | checkpointing environment | `ckpt_name` field |
+| `-Dce`    | complex entries | `name` field |
+| `-De`     | execution host | `hostname` field (resolved) |
+| `-Dhgrp`  | host group | `group_name` field |
+| `-Dp`     | parallel environment | `pe_name` field |
+| `-Dprj`   | project | object name |
+| `-Dq`     | cluster queue | `qname` field |
+| `-Drole`  | role | `name` field |
+| `-Drqs`   | resource quota set | rule-set name(s) |
+| `-Du`     | userset (ACL) | object name |
+| `-Duser`  | user | object name |
+| `-Dconf`  | cluster/host configuration | file *basename* (host) |
 
-## -De *fname*|*dir*
-Deletes the execution host(s) named in a file or in a directory of files. Each file is read and the host named by
-its `hostname` field is resolved and deleted; the rest of the file content is ignored. A directory is a bulk
-delete: it is confirmed interactively unless `-f` is given, and `-dry` previews it. A host named in a file that is
-no longer an execution host is reported and skipped rather than treated as an error. Requires root/manager privileges.
+Object-specific notes:
+
+- `-Dconf` keys on the host name taken from the file *basename* (not a field in the
+  file), matching `-Aconf`/`-Mconf`.
+- `-De` resolves each host name before deleting it.
+- `-Drole` deletion is refused if a role is still referenced as a parent by another
+  role.
+- `-Dq` lets active jobs run to completion.
+
+Requires root/manager privileges (`-Du` also accepts operator privilege).
 
 ## -dh *host_name*,...
 Deletes hosts from the xxQS_NAMExx trusted host list. The host on which xxqs_name_sxx_qmaster(8) is currently
 running cannot be removed from the list of administrative hosts. Requires root/manager privileges.
-
-## -dhgrp *group*,...
-Deletes the host group configuration(s) with the name(s) specified. More than one may be deleted at once by giving
-a comma-separated list of host group names. Requires root/manager privileges.
-
-## -Dhgrp *fname*|*dir*
-Deletes the host group(s) named in a file or in a directory of files. Each file is read and the host group named by
-its `group_name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
-confirmed interactively unless `-f` is given, and `-dry` previews it. A host group named in a file that no longer
-exists is reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -dm *user*\[,*user*,...\]
 Deletes managers from the manager list. It is not possible to delete the admin user or the user root
@@ -434,56 +320,6 @@ from the manager list. Requires root/manager privileges.
 ## -do *user*\[,*user*,...\]
 Deletes operators from the operator list. It is not possible to delete the admin user or the user root
 from the operator list. Requires root or manager privileges.
-
-## -dp *pe_name*,...
-Deletes the specified parallel environment(s) (PE). More than one may be deleted at once by giving a
-comma-separated list of names. Requires root/manager privileges.
-
-## -Dp *fname*|*dir*
-Deletes the parallel environment(s) named in a file or in a directory of files. Each file is read and the PE named
-by its `pe_name` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
-confirmed interactively unless `-f` is given, and `-dry` previews it. A PE named in a file that no longer exists is
-reported and skipped rather than treated as an error. Requires root/manager privileges.
-
-## -dprj *project*,...
-Deletes the specified project(s). More than one may be deleted at once by giving a comma-separated list of names.
-Requires root/manager privileges.
-
-## -Dprj *fname*|*dir*
-Deletes the project(s) named in a file or in a directory of files. Each file is read and the project named in it is
-deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry` previews it. A
-project named in a file that no longer exists is reported and skipped rather than treated as an error. Requires
-root/manager privileges.
-
-## -dq *queue_name*,...
-Removes the specified cluster queue(s). More than one may be deleted at once by giving a comma-separated list of
-names. Active jobs will be allowed to run to completion. Requires root/manager privileges.
-
-## -Dq *fname*|*dir*
-Deletes the cluster queue(s) named in a file or in a directory of files. Each file is read and the queue named by
-its `qname` field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is
-confirmed interactively unless `-f` is given, and `-dry` previews it. A queue named in a file that no longer exists
-is reported and skipped rather than treated as an error. Requires root/manager privileges.
-
-## -drqs *rqs_name_list*
-Deletes the specified resource quota sets (RQS). More than one may be deleted at once by giving a comma-separated
-list of names. Requires root/manager privileges.
-
-## -Drqs *fname*|*dir*
-Deletes the resource quota set(s) named in a file or in a directory of files. Each file is read and the rule set(s)
-named in it are deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry`
-previews it. A rule set named in a file that no longer exists is reported and skipped rather than treated as an
-error. Requires root/manager privileges.
-
-## -drole *role_name*,...
-Deletes the specified role(s). More than one may be deleted at once by giving a comma-separated list of names.
-Deletion is refused if a role is still referenced as a parent by another role. Requires root/manager privileges.
-
-## -Drole *fname*|*dir*
-Deletes the role(s) named in a file or in a directory of files. Each file is read and the role named by its `name`
-field is deleted; the rest of the file content is ignored. A directory is a bulk delete: it is confirmed
-interactively unless `-f` is given, and `-dry` previews it. A role named in a file that no longer exists is
-reported and skipped rather than treated as an error. Requires root/manager privileges.
 
 ## -ds host_name,... \<delete submit host>
 Deletes hosts from the xxQS_NAMExx submit host list. Requires root or
@@ -500,25 +336,6 @@ Deletes the current share tree. Requires root/manager privileges.
 ## -du *user*,... *acl_name*,...
 Deletes one or more users from one or more xxQS_NAMExx access control lists (ACLs). Requires
 root/manager/operator privileges.
-
-## -dul *acl_name*,...
-Deletes one or more access control lists (ACLs) from the system. Requires root/manager/operator privileges.
-
-## -Du *fname*|*dir*
-Deletes the userset(s) (access control lists) named in a file or in a directory of files. Each file is read and the
-userset named in it is deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and
-`-dry` previews it. A userset named in a file that no longer exists is reported and skipped rather than treated as
-an error. Requires root/manager/operator privileges.
-
-## -duser *user_list*
-Deletes the specified user(s) from the list of registered users. More than one may be deleted at once by giving a
-comma-separated list of names. Requires root/manager privileges.
-
-## -Duser *fname*|*dir*
-Deletes the user(s) named in a file or in a directory of files. Each file is read and the user named in it is
-deleted; a directory is a bulk delete confirmed interactively unless `-f` is given, and `-dry` previews it. A user
-named in a file that no longer exists is reported and skipped rather than treated as an error. Requires
-root/manager privileges.
 
 ## -f
 Modifier for the delete operations. Suppresses the interactive confirmation prompt that a directory based delete
@@ -586,196 +403,110 @@ root/manager privilege.
 Overwrites the complex configuration by the contents of *fname*. The argument file must comply to the format
 specified in xxqs_name_sxx_complex(5). Requires root or manager privilege.
 
-## -mce *ce_name*
-Retrieves the current configuration for the specified complex entry, executes an editor
-and on exit it registers the new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_complex(5) for
-details on the complex entry configuration format. If no complex entry of that name exists yet, a generic template
-is offered for editing and the entry is added on exit. Requires root/manager privilege.
+## -m*obj* \[*name*\]
+Retrieves the current configuration of an object, opens it in an editor (the one
+named by the `$EDITOR` environment variable), and on exit registers the changed
+configuration with xxqs_name_sxx_qmaster(8) — the interactive counterpart of the
+file-based `-M<obj>`. `-m<obj>` is available for the same configuration objects as
+`-S<obj>`/`-M<obj>`: `-mcal` (calendar), `-mckpt` (checkpointing environment),
+`-mce` (complex entries), `-me` (execution host), `-mhgrp` (host group), `-mp`
+(parallel environment), `-mprj` (project), `-mq` (cluster queue), `-mrole` (role),
+`-mrqs` (resource quota set), `-mu` (userset/ACL) and `-muser` (user), plus the
+singletons `-mstree` (share tree) and `-msconf` (scheduler configuration), and
+`-mconf` (cluster/host configuration).
 
-## -Mce *fname*|*dir*
-Adds or modifies one or more complex entries from a file or a directory of files (see xxqs_name_sxx_complex(5)). If
-the argument is a file, the single entry it contains is modified, or added if it does not yet exist. If the
-argument is a directory, every (non-hidden) regular file in it is processed and a one-line summary is printed. See
-also `-dry` and `-strict`. Requires root/manager privileges.
+Most variants take the name of the object to edit. If no object of that name exists
+yet, a generic template (pre-filled with the given name) is offered for editing and
+the object is added on exit — `-m<obj>` and `-a<obj>` are interchangeable. The
+object's configuration follows the format of its man page:
 
-## -mckpt *ckpt_name*
-Retrieves the current configuration for the specified checkpointing environment, executes an editor
-and registers the new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_checkpoint(5) for
-details on the checkpointing environment configuration format. If no checkpointing environment of that name exists
-yet, a generic template is offered for editing and the environment is added on exit. Requires root/manager privilege.
+| Option | Object | Argument | Format |
+|--------|--------|----------|--------|
+| `-mcal`   | calendar | *calendar_name* | xxqs_name_sxx_calendar_conf(5) |
+| `-mckpt`  | checkpointing environment | *ckpt_name* | xxqs_name_sxx_checkpoint(5) |
+| `-mce`    | complex entries | *ce_name* | xxqs_name_sxx_complex(5) |
+| `-me`     | execution host | *hostname* | xxqs_name_sxx_host_conf(5) |
+| `-mhgrp`  | host group | *group* | xxqs_name_sxx_hostgroup(5) |
+| `-mp`     | parallel environment | *pe_name* | xxqs_name_sxx_pe(5) |
+| `-mprj`   | project | *project* | xxqs_name_sxx_project(5) |
+| `-mq`     | cluster queue | *queuename* | xxqs_name_sxx_queue_conf(5) |
+| `-mrole`  | role | *role_name* | xxqs_name_sxx_role(5) |
+| `-mrqs`   | resource quota set | \[*rqs_name*\] | xxqs_name_sxx_resource_quota(5) |
+| `-mu`     | userset (ACL) | *acl_name* | xxqs_name_sxx_access_list(5) |
+| `-muser`  | user | *user* | xxqs_name_sxx_user(5) |
+| `-mstree` | share tree | *(none)* | xxqs_name_sxx_share_tree(5) |
+| `-msconf` | scheduler configuration | *(none)* | xxqs_name_sxx_sched_conf(5) |
+| `-mconf`  | cluster/host configuration | \[*host*,... \| **global**\] | xxqs_name_sxx_conf(5) |
 
-## -Mckpt *fname*|*dir*
-Adds or modifies one or more checkpointing environments from a file or a directory of files (see
-xxqs_name_sxx_checkpoint(5)). If the argument is a file, the single environment it contains is modified, or added
-if it does not yet exist. If the argument is a directory, every (non-hidden) regular file in it is processed and a
-one-line summary is printed. See also `-dry` and `-strict`. Requires root/manager privileges.
+Object-specific notes:
 
-## -mcal *calendar_name*
-The specified calendar definition (see xxqs_name_sxx_calendar_conf(5)) is retrieved, an editor is executed
-and the changed calendar definition is registered with xxqs_name_sxx_qmaster(8) upon exit of the editor.
-If no calendar of that name exists yet, a generic template is offered for editing and the calendar is added on
-exit. Requires root/manager privilege.
+- `-mconf` edits the configuration of the given host(s); if the argument is omitted
+  or **global**, the global configuration is edited. A configuration that does not
+  yet exist is created.
+- `-mrqs` edits the named resource quota set, or all rule sets if *rqs_name* is
+  omitted.
+- `-mstree` and `-msconf` are singletons and take no name argument; `-mstree`
+  creates the share tree if none exists (`-mstree` and `-astree` are
+  interchangeable).
 
-## -Mcal *fname*|*dir*
-Adds or modifies one or more calendar definitions from a file or a directory of files. If the argument is a file,
-the single calendar it contains is modified, or added if it does not yet exist. If the argument is a directory,
-every (non-hidden) regular file in it is processed and a one-line summary is printed. The argument file(s) must
-comply to the format described in xxqs_name_sxx_calendar_conf(5). See also `-dry` and `-strict`.
-Requires root or manager privilege.
-
-## -mconf \[*host*,... \| **global**\]
-The configuration for the specified host is retrieved, an editor is executed and the changed configuration is
-registered with xxqs_name_sxx_qmaster(8) upon exit of the editor. If the optional host argument is omitted or if
-the special host name **global** is specified, the global configuration is modified. If a configuration for the
-host does not yet exist it is created rather than rejected. The format of the configuration is described in
-xxqs_name_sxx_conf(5). Requires root/manager privilege.
-
-## -Mconf *fname_list*|*dir*
-Modify the configurations (see xxqs_name_sxx_conf(5)) specified in the files enlisted in the comma separated
-*fname_list*. The configuration is modified for the host that is identical to the file name (its basename); a
-configuration that does not yet exist is created instead. An entry in the list may also be a directory, in which
-case every (non-hidden) regular file in it is applied the same way (basename = host). See also `-dry` and the EXIT
-STATUS section. Requires root/manager privileges.
-
-## -me *hostname*
-Retrieves the current configuration for the specified execution host, executes an editor and registers the changed
-configuration with xxqs_name_sxx_qmaster(8) upon exit from the editor. The format of the execution host
-configuration is described in xxqs_name_sxx_host_conf(5). Requires root/manager privilege.
-
-## -Me *fname*|*dir*
-Adds or modifies one or more execution hosts from a file or a directory of files. If the argument is a file, the
-single host it defines is modified, or added if it does not yet exist. If the argument is a directory, every
-(non-hidden) regular file in it is processed and a one-line summary is printed. Each host name is resolved before
-it is applied. The argument file(s) must comply to the format defined in xxqs_name_sxx_host_conf(5). See also
-`-dry` and `-strict`. Requires root or manager privilege.
-
-## -mhgrp *group*
-The host group entries for the host group specified in *group* are retrieved and an editor is invoked for modifying
-the host group configuration. By closing the editor, the modified data is registered with xxqs_name_sxx_qmaster(8).
-The format of the host group configuration is described in xxqs_name_sxx_hostgroup(5). Requires
-root/manager privilege.
-
-## -Mhgrp *fname*|*dir*
-Adds or modifies one or more host group configurations from a file or a directory of files. If the argument is a
-file, the single host group it contains is modified, or added if it does not yet exist. If the argument is a
-directory, every (non-hidden) regular file in it is processed and a one-line summary is printed. The file format
-must comply to xxqs_name_sxx_hostgroup(5). See also `-dry` and `-strict`. Requires root/manager privilege.
-
-## -mp *pe_name*
-Retrieves the current configuration for the specified parallel environment (PE), executes an editor
-indicated by the EDITOR environment variable) configuration with the xxqs_name_sxx_qmaster(8). Refer to
-xxqs_name_sxx_pe(5) for details on the PE configuration format. If no PE of that name exists yet, a generic
-template is offered for editing and the PE is added on exit. Requires root/manager privilege.
-
-## -Mp *fname*|*dir*
-Adds or modifies one or more parallel environments from a file or a directory of files. If the argument is a file,
-the single PE it contains is modified, or added if it does not yet exist. If the argument is a directory, every
-(non-hidden) regular file in it is processed and a one-line summary is printed. Refer to xxqs_name_sxx_pe(5) for
-details on the PE configuration format. See also `-dry` and `-strict`. Requires root/manager privilege.
-
-## -mprj *project*
-Data for the specific project is retrieved (see xxqs_name_sxx_project(5)) and an editor is invoked
-for modifying the project definition. Upon exiting the editor, the modified data is registered. If the project does
-not exist it is created from a template pre-filled with the given name rather than rejected.
-Requires root/manager privileges.
-
-## -Mprj *fname*|*dir*
-Modifies a project configuration. Same as `-mprj` (see below) but instead of invoking an editor to
-modify the project configuration the file *fname* is considered to contain a changed configuration.
-If the argument is a directory, one project per (non-hidden) regular file in it is modified; a project that does
-not yet exist is created instead. Refer to xxqs_name_sxx_project*(5) for details on the project configuration
-format. See also `-dry`, `-strict` and the EXIT STATUS section. Requires root/manager privilege.
-
-## -mq *queuename*
-Retrieves the current configuration for the specified cluster queue, executes an editor and registers the
-new configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_queue_conf(5) for details on
-the queue configuration format. Requires root/manager privilege.
-
-## -Mq *fname*|*dir*
-Adds or modifies one or more cluster queues from a file or a directory of files. If the argument is a file, the
-single queue it contains is modified, or added if it does not yet exist. If the argument is a directory, every
-(non-hidden) regular file in it is processed and a one-line summary is printed. Refer to
-xxqs_name_sxx_queue_conf(5) for details on the queue configuration format. See also `-dry` and `-strict`.
 Requires root/manager privilege.
 
-## -mrole *role_name*
-Retrieves the current configuration for the specified role, executes an editor and registers the new
-configuration with the xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_role(5) for details on the
-role configuration format. If no role of that name exists yet, a generic template is offered for editing and the
-role is added on exit. Requires root/manager privilege.
+## -M*obj* *fname*|*dir*
+Adds or modifies objects from a file or a directory of files — the file-based
+counterpart of the interactive `-m<obj>` editors and the exact inverse of the
+`-S<obj>` exporters. `-M<obj>` is available for the same configuration objects as
+`-S<obj>`: `-Mcal` (calendar), `-Mckpt` (checkpointing environment), `-Mce` (complex
+entries), `-Me` (execution host), `-Mhgrp` (host group), `-Mp` (parallel
+environment), `-Mprj` (project), `-Mq` (cluster queue), `-Mrole` (role), `-Mrqs`
+(resource quota set), `-Mu` (userset/ACL) and `-Muser` (user), plus the singletons
+`-Mstree` (share tree) and `-Msconf` (scheduler configuration), and `-Mconf`
+(cluster/host configuration).
 
-## -Mrole *fname*|*dir*
-Adds or modifies one or more roles from a file or a directory of files. If the argument is a file, the single role
-it contains is modified, or added if it does not yet exist. If the argument is a directory, every (non-hidden)
-regular file in it is processed and a one-line summary is printed. Refer to xxqs_name_sxx_role(5) for details on
-the role configuration format. See also `-dry` and `-strict`. Requires root/manager privilege.
+If the argument is a file, the single object it contains is modified, or added if no
+object of that name exists yet — `-M<obj>` and `-A<obj>` are interchangeable
+upserts. If the argument is a directory, every (non-hidden) regular file in it is
+applied the same way and a one-line summary of the number of objects modified/added
+and failed is printed. See also `-dry`, `-strict` and the EXIT STATUS section. Files
+written by `-S<obj>` re-import unchanged through `-M<obj>`. Requires root/manager
+privileges. Each object's file must comply to the format of its configuration man
+page:
 
-## -mrqs \[*rqs_name*\]
-Retrieves the resource quota set (RQS) configuration defined in *rqs_name*, or if *rqs_name* is not given,
-retrieves all resource quota sets, executes an editor and registers the new configuration with the
-xxqs_name_sxx_qmaster(8). Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format.
-Requires root/manager privilege.
+| Option | Object | File format |
+|--------|--------|-------------|
+| `-Mcal`   | calendar | xxqs_name_sxx_calendar_conf(5) |
+| `-Mckpt`  | checkpointing environment | xxqs_name_sxx_checkpoint(5) |
+| `-Mce`    | complex entries | xxqs_name_sxx_complex(5) |
+| `-Me`     | execution host | xxqs_name_sxx_host_conf(5) |
+| `-Mhgrp`  | host group | xxqs_name_sxx_hostgroup(5) |
+| `-Mp`     | parallel environment | xxqs_name_sxx_pe(5) |
+| `-Mprj`   | project | xxqs_name_sxx_project(5) |
+| `-Mq`     | cluster queue | xxqs_name_sxx_queue_conf(5) |
+| `-Mrole`  | role | xxqs_name_sxx_role(5) |
+| `-Mrqs`   | resource quota set | xxqs_name_sxx_resource_quota(5) |
+| `-Mu`     | userset (ACL) | xxqs_name_sxx_access_list(5) |
+| `-Muser`  | user | xxqs_name_sxx_user(5) |
+| `-Mstree` | share tree | xxqs_name_sxx_share_tree(5) |
+| `-Msconf` | scheduler configuration | xxqs_name_sxx_sched_conf(5) |
+| `-Mconf`  | cluster/host configuration | xxqs_name_sxx_conf(5) |
 
-## -Mrqs *fname*|*dir* \[*rqs_list*\]
-Adds or modifies resource quota set(s) (RQS) from a file or a directory of files, taking the configuration from
-*fname* instead of invoking an editor. Each rule set in the file is added, or modified if a rule set of the same
-name already exists, while every other rule set is left unchanged (`-Mrqs` and `-Arqs` are interchangeable). If the
-argument is a directory, the rule sets from every (non-hidden) regular file in it are collected and applied
-together. See also `-dry`. Refer to xxqs_name_sxx_resource_quota(5) for details on the RQS configuration format.
-Requires root/manager privilege.
+Object-specific notes:
 
-The optional *rqs_list* argument is **deprecated** and may be removed in a future release. It restricts the
-operation to the named rule set(s), which must be present in *fname*. Since rule sets absent from *fname* are now
-preserved automatically, it is no longer needed; to apply only some of the rule sets in a file, place just those
-rule sets in the file instead. The argument does not apply when *fname* is a directory.
-
-## -msconf
-The current scheduler configuration (see xxqs_name_sxx_sched_conf(5)) is retrieved, an editor is executed
-and the changed configuration is registered with xxqs_name_sxx_qmaster(8) upon exit of the editor. Requires
-root/manager privilege.
-
-## -Msconf *fname*
-Modifies the scheduler configuration. The current scheduler configuration (see xxqs_name_sxx_sched_conf(5))
-is overridden with the configuration specified in the file. Requires root/manager privilege.
+- `-Me` resolves each host name before the host is applied.
+- `-Mconf` keys each configuration on the host name taken from the file *basename*
+  (not a field in the file); `-Mconf global` modifies the global configuration. It
+  also accepts a comma-separated *fname_list*.
+- `-Mrqs` modifies each rule set in the file, adding it if absent, and leaves every
+  other rule set unchanged. Its optional trailing *rqs_list* argument is
+  **deprecated** and may be removed in a future release: place only the rule sets to
+  apply in the file instead. The argument does not apply when the argument is a
+  directory.
+- `-Mstree` and `-Msconf` are singletons — they take a single *fname*, not a
+  directory; `-Mstree` creates the share tree if none exists.
 
 ## -mstnode *node_path*=*shares*,...
 Modifies the specified share tree node(s) in the share tree (see xxqs_name_sxxshare_tree(5)). The *node_path*
 is a hierarchical path (*\[/\]node_name\[\[/.\]node_name...\])* specifying the location of an existing node in
 the share tree. The node is set to the number of specified *shares*. Requires root/manager privileges.
-
-## -mstree
-Modifies the definition of the share tree (see xxqs_name_sxx_share_tree(5)). The present share tree is retrieved
-and an editor is invoked for modifying the share tree definition. Upon exiting the editor, the modified data
-is registered with xxqs_name_sxx_qmaster(8). If no share tree exists yet it is created rather than rejected
-(`-mstree` and `-astree` are interchangeable). Requires root/manager privileges.
-
-## -Mstree *fname*
-Modifies the definition of the share tree (see xxqs_name_sxx_share_tree(5)). The modified sharetree is read from
-file fname. If no share tree exists yet it is created instead (`-Mstree` and `-Astree` are interchangeable).
-Requires root/manager privileges.
-
-## -mu *acl_name*
-Retrieves the current configuration for the specified user access list, executes an editor and registers the new
-configuration with the xxqs_name_sxx_qmaster(8). If the userset does not exist it is created rather than rejected.
-Requires root/manager privilege.
-
-## -Mu *fname*|*dir*
-Takes the user access list (ACL) defined in *fname* to overwrite any existing ACL with the same name; a userset
-that does not yet exist is created instead. If the argument is a directory, one userset per (non-hidden) regular
-file in it is modified. See xxqs_name_sxx_access_list(5) for information on the ACL configuration format. See also
-`-dry`, `-strict` and the EXIT STATUS section. Requires root or manager privilege.
-
-## -muser *user*
-Data for the specific user is retrieved (see xxqs_name_sxx_user(5)) and an editor is invoked for modifying the
-user definition. Upon exiting the editor, the modified data is registered at xxqs_name_sxx_qmaster(8). If the user
-does not exist it is created from a template pre-filled with the given name rather than rejected. Requires
-root/manager privilege.
-
-## -Muser *fname*|*dir*
-Modify the user defined in *fname* in the xxQS_NAMExx cluster. The format of the user specification is described in
-xxqs_name_sxx_user(5). If the argument is a directory, one user per (non-hidden) regular file in it is modified; a
-user that does not yet exist is created instead. See also `-dry`, `-strict` and the EXIT STATUS section. Requires
-root/manager privileges.
 
 ## -purge *queue* *attr_nm*,... *obj_spec*  
 
