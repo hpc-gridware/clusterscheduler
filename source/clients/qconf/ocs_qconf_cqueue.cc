@@ -426,7 +426,14 @@ cqueue_add(lList **answer_list, const char *name)
          ret &= cqueue_provide_modify_context(&cqueue, answer_list, true);
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::SET_ALL);
+         /* CS-2305: upsert - modify the cqueue if it already exists, add it
+          * otherwise (consistent with -Aq and the interactive -aprj/-acal). */
+         lList *exist_al = nullptr;
+         lListElem *existing = cqueue_get_via_gdi(&exist_al, lGetString(cqueue, CQ_name));
+         lFreeList(&exist_al);
+         ocs::gdi::Command cmd = (existing != nullptr) ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
+         lFreeElem(&existing);
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, cmd, ocs::gdi::SubCommand::SET_ALL);
       }
 
       lFreeElem(&cqueue);

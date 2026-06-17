@@ -244,7 +244,14 @@ hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
          ret = hgroup_provide_modify_context(&hgroup, answer_list, true);
       }
       if (ret) {
-         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, ocs::gdi::Command::ADD);
+         /* CS-2306: upsert - modify the host group if it already exists, add it
+          * otherwise (consistent with -Ahgrp and the interactive -aprj/-acal). */
+         lList *exist_al = nullptr;
+         lListElem *existing = hgroup_get_via_gdi(&exist_al, lGetHost(hgroup, HGRP_name));
+         lFreeList(&exist_al);
+         ocs::gdi::Command cmd = (existing != nullptr) ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
+         lFreeElem(&existing);
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, cmd);
       }
 
       lFreeElem(&hgroup);

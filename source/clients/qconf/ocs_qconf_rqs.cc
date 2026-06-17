@@ -53,6 +53,7 @@
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
+#include "msg_sgeobjlib.h"   /* MSG_RQS_REQUEST_DUPLICATE_NAME_S */
 
 static bool
 rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message);
@@ -351,6 +352,21 @@ static bool
 rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
 {
    DENTER(TOP_LAYER);
+
+   /* a file that lists the same rqs name more than once is ambiguous; reject it.
+    * The former REPLACE (SET_ALL) path was rejected by qmaster with this message;
+    * the per-element upsert below would otherwise silently apply each block in turn
+    * (last-write-wins), so an equivalent client-side check restores the behaviour. */
+   for (const lListElem *a = lFirst(file_rqs_list); a != nullptr; a = lNext(a)) {
+      const char *name_a = lGetString(a, RQS_name);
+      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+         if (name_a != nullptr && strcmp(name_a, lGetString(b, RQS_name)) == 0) {
+            answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                                    MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
+            DRETURN(false);
+         }
+      }
+   }
 
    lList *current_list = nullptr;
    if (!rqs_get_all_via_gdi(answer_list, &current_list)) {
