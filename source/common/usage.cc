@@ -222,7 +222,6 @@ FILE *fp
 }
 
 
-
 void sge_usage(ProgName prog_number, FILE *fp) {
    DENTER(TOP_LAYER);
   char namebuf[128];
@@ -338,6 +337,14 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(Ahgrp_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_Ahgrp_OPT, MSG_GDI_UTEXT_Ahgrp_OPT);
+   }
+
+   if (VALID_OPT(arole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_arole_OPT, MSG_GDI_UTEXT_arole_OPT);
+   }
+
+   if (VALID_OPT(Arole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Arole_OPT, MSG_GDI_UTEXT_Arole_OPT);
    }
 
    if (VALID_OPT(arqs_OPT, prog_number)) {
@@ -627,6 +634,14 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(dl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_dl_OPT_DATE_TIME , MSG_GDI_UTEXT_dl_OPT_DATE_TIME );
       MARK(OA_DATE_TIME);
+   }
+
+   if (VALID_OPT(drole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_drole_OPT, MSG_GDI_UTEXT_drole_OPT);
+   }
+
+   if (VALID_OPT(Drole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Drole_OPT, MSG_GDI_UTEXT_Drole_OPT);
    }
 
    if (VALID_OPT(drqs_OPT, prog_number)) {
@@ -928,6 +943,14 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_Mhgrp_OPT, MSG_GDI_UTEXT_Mhgrp_OPT);
    }
 
+   if (VALID_OPT(mrole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_mrole_OPT, MSG_GDI_UTEXT_mrole_OPT);
+   }
+
+   if (VALID_OPT(Mrole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Mrole_OPT, MSG_GDI_UTEXT_Mrole_OPT);
+   }
+
    if (VALID_OPT(mrqs_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_mrqs_OPT, MSG_GDI_UTEXT_mrqs_OPT);
       MARK(OA_RQS_LIST);
@@ -1154,6 +1177,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(scel_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_scel_OPT , MSG_GDI_UTEXT_scel_OPT);
    }
+   if (VALID_OPT(Sce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sce_OPT, MSG_GDI_UTEXT_Sce_OPT);
+   }
 
    if (VALID_OPT(scal_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_scal_OPT_CALENDAR_NAME, MSG_GDI_UTEXT_scal_OPT_CALENDAR_NAME);
@@ -1161,6 +1187,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(scall_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_scall_OPT, MSG_GDI_UTEXT_scall_OPT);
+   }
+   if (VALID_OPT(Scal_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Scal_OPT, MSG_GDI_UTEXT_Scal_OPT);
    }
 
    if (VALID_OPT(scat_OPT, prog_number)) {
@@ -1172,84 +1201,6 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       MARK(OA_CATEGORY_ID);
    }
 
-   if (VALID_OPT(arole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_arole_OPT, MSG_GDI_UTEXT_arole_OPT);
-   }
-
-   if (VALID_OPT(Arole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Arole_OPT, MSG_GDI_UTEXT_Arole_OPT);
-   }
-
-   if (VALID_OPT(drole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_drole_OPT, MSG_GDI_UTEXT_drole_OPT);
-   }
-
-   if (VALID_OPT(Drole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Drole_OPT, MSG_GDI_UTEXT_Drole_OPT);
-   }
-
-   if (VALID_OPT(mrole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_mrole_OPT, MSG_GDI_UTEXT_mrole_OPT);
-   }
-
-   if (VALID_OPT(Mrole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Mrole_OPT, MSG_GDI_UTEXT_Mrole_OPT);
-   }
-
-   if (VALID_OPT(srole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_srole_OPT, MSG_GDI_UTEXT_srole_OPT);
-   }
-
-   if (VALID_OPT(srolel_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_srolel_OPT, MSG_GDI_UTEXT_srolel_OPT);
-   }
-
-   /* CS-23xx: bulk export (-S<obj> name|dir) */
-   if (VALID_OPT(Scal_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Scal_OPT, MSG_GDI_UTEXT_Scal_OPT);
-   }
-   if (VALID_OPT(Sckpt_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sckpt_OPT, MSG_GDI_UTEXT_Sckpt_OPT);
-   }
-   if (VALID_OPT(Sce_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sce_OPT, MSG_GDI_UTEXT_Sce_OPT);
-   }
-   if (VALID_OPT(Se_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Se_OPT, MSG_GDI_UTEXT_Se_OPT);
-   }
-   if (VALID_OPT(Shgrp_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Shgrp_OPT, MSG_GDI_UTEXT_Shgrp_OPT);
-   }
-   if (VALID_OPT(Sp_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sp_OPT, MSG_GDI_UTEXT_Sp_OPT);
-   }
-   if (VALID_OPT(Sprj_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sprj_OPT, MSG_GDI_UTEXT_Sprj_OPT);
-   }
-   if (VALID_OPT(Sq_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sq_OPT, MSG_GDI_UTEXT_Sq_OPT);
-   }
-   if (VALID_OPT(Srole_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Srole_OPT, MSG_GDI_UTEXT_Srole_OPT);
-   }
-   if (VALID_OPT(Srqs_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Srqs_OPT, MSG_GDI_UTEXT_Srqs_OPT);
-   }
-   if (VALID_OPT(Su_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Su_OPT, MSG_GDI_UTEXT_Su_OPT);
-   }
-   if (VALID_OPT(Suser_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Suser_OPT, MSG_GDI_UTEXT_Suser_OPT);
-   }
-   if (VALID_OPT(Sstree_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sstree_OPT, MSG_GDI_UTEXT_Sstree_OPT);
-   }
-   if (VALID_OPT(Ssconf_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Ssconf_OPT, MSG_GDI_UTEXT_Ssconf_OPT);
-   }
-   if (VALID_OPT(Sconf_OPT, prog_number)) {
-      PRINTITD(MSG_GDI_USAGE_Sconf_OPT, MSG_GDI_UTEXT_Sconf_OPT);
-   }
 
    if (VALID_OPT(sckpt_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sckpt_OPT_CKPT_NAME, 
@@ -1259,6 +1210,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(sckptl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sckptl_OPT, MSG_GDI_UTEXT_sckptl_OPT);
    }
+   if (VALID_OPT(Sckpt_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sckpt_OPT, MSG_GDI_UTEXT_Sckpt_OPT);
+   }
 
    if (VALID_OPT(sconf_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sconf_OPT_HOSTLISTORGLOBAL, 
@@ -1267,6 +1221,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(sconfl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sconfl_OPT, MSG_GDI_UTEXT_sconfl_OPT);
+   }
+   if (VALID_OPT(Sconf_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sconf_OPT, MSG_GDI_UTEXT_Sconf_OPT);
    }
 
    if (VALID_OPT(scope_OPT, prog_number)) {
@@ -1284,6 +1241,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(sel_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sel_OPT, MSG_GDI_UTEXT_sel_OPT);
+   }
+   if (VALID_OPT(Se_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Se_OPT, MSG_GDI_UTEXT_Se_OPT);
    }
 
    if (VALID_OPT(sep_OPT, prog_number)) {
@@ -1311,9 +1271,24 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(shgrpl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_shgrpl_OPT, MSG_GDI_UTEXT_shgrpl_OPT);
    }
+   if (VALID_OPT(Shgrp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Shgrp_OPT, MSG_GDI_UTEXT_Shgrp_OPT);
+   }
  
    if (VALID_OPT(sick_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sick_OPT , MSG_GDI_UTEXT_sick_OPT );
+   }
+
+   if (VALID_OPT(srole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_srole_OPT, MSG_GDI_UTEXT_srole_OPT);
+   }
+
+   if (VALID_OPT(srolel_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_srolel_OPT, MSG_GDI_UTEXT_srolel_OPT);
+   }
+
+   if (VALID_OPT(Srole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Srole_OPT, MSG_GDI_UTEXT_Srole_OPT);
    }
 
    if (VALID_OPT(srqs_OPT,  prog_number)) {
@@ -1324,6 +1299,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(srqsl_OPT,  prog_number)) {
       PRINTITD(MSG_GDI_USAGE_srqsl_OPT , MSG_GDI_UTEXT_srqsl_OPT );
       MARK(OA_RQS_LIST);
+   }
+   if (VALID_OPT(Srqs_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Srqs_OPT, MSG_GDI_UTEXT_Srqs_OPT);
    }
 
    if (VALID_OPT(stl_OPT, prog_number)) {
@@ -1355,6 +1333,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(spl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_spl_OPT , MSG_GDI_UTEXT_spl_OPT );
    }
+   if (VALID_OPT(Sp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sp_OPT, MSG_GDI_UTEXT_Sp_OPT);
+   }
 
    if (VALID_OPT(sprj_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sprj_OPT_PROJECT, MSG_GDI_UTEXT_sprj_OPT_PROJECT);
@@ -1362,6 +1343,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(sprjl_OPT, prog_number)) {
       PRINTITD( MSG_GDI_USAGE_sprjl_OPT, MSG_GDI_UTEXT_sprjl_OPT);
+   }
+   if (VALID_OPT(Sprj_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sprj_OPT, MSG_GDI_UTEXT_Sprj_OPT);
    }
 
    if (VALID_OPT(sq_OPT, prog_number)) {
@@ -1372,6 +1356,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
 
    if (VALID_OPT(sql_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sql_OPT , MSG_GDI_UTEXT_sql_OPT );
+   }
+   if (VALID_OPT(Sq_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sq_OPT, MSG_GDI_UTEXT_Sq_OPT);
    }
 
    if (VALID_OPT(ss_OPT, prog_number)) {
@@ -1385,6 +1372,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(ssconf_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_ssconf_OPT , MSG_GDI_UTEXT_ssconf_OPT );
    } 
+   if (VALID_OPT(Ssconf_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Ssconf_OPT, MSG_GDI_UTEXT_Ssconf_OPT);
+   }
 
    if (VALID_OPT(sstnode_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sstnode_OPT_NODE_LIST, 
@@ -1407,6 +1397,9 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(sstree_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sstree_OPT, MSG_GDI_UTEXT_sstree_OPT);
    }
+   if (VALID_OPT(Sstree_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sstree_OPT, MSG_GDI_UTEXT_Sstree_OPT);
+   }
 
 
    if (VALID_OPT(su_OPT, prog_number)) {
@@ -1422,9 +1415,15 @@ void sge_usage(ProgName prog_number, FILE *fp) {
    if (VALID_OPT(sul_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sul_OPT, MSG_GDI_UTEXT_sul_OPT);
    }
+   if (VALID_OPT(Su_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Su_OPT, MSG_GDI_UTEXT_Su_OPT);
+   }
 
    if (VALID_OPT(susl_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_suserl_OPT, MSG_GDI_UTEXT_suserl_OPT);
+   }
+   if (VALID_OPT(Suser_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Suser_OPT, MSG_GDI_UTEXT_Suser_OPT);
    }
 
    if (VALID_OPT(sync_OPT, prog_number)) {
