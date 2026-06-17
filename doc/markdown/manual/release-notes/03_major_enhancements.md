@@ -152,5 +152,76 @@ without losing any in-memory state, and resumes seamlessly on reconnect.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### File-Based Bulk Configuration and Export with qconf
+
+`qconf` gains a complete file- and directory-based interface for the cluster's configuration objects.
+Operations that previously worked on a single object through an interactive editor can now be driven from
+files and whole directories in a single command, making cluster configuration scriptable, idempotent, and
+well suited to backup, migration, and external configuration management.
+
+**Bulk add, modify and delete**
+
+The file-based add (`-A<obj>`), modify (`-M<obj>`) and delete (`-D<obj>`) operations now accept either a single
+file or a directory of files. A directory is processed as one batch — every object in it is applied in a single
+request, and a one-line summary reports how many objects were processed and how many failed. The name-list
+delete (`-d<obj> a,b,c`) removes several objects in one call. These operations are available for all
+configuration object types: calendars, complex entries, checkpointing environments, host and global
+configurations, execution hosts, host groups, parallel environments, projects, cluster queues, resource quota
+sets, usersets and users, plus the share tree and scheduler configuration.
+
+**Add and modify are interchangeable (upsert)**
+
+`-a`/`-A` and `-m`/`-M` no longer fail depending on whether an object already exists. Applying a file creates the
+object if it is missing and modifies it if it is present, so re-applying the same file is idempotent and safe to
+repeat — the behaviour external configuration-management tools rely on. Likewise, deleting an object that no
+longer exists is reported and skipped rather than treated as an error.
+
+**Configuration export (`-S<obj>`)**
+
+A new save operation, `-S<obj>`, is the inverse of the file-based add: it writes objects to re-importable files.
+`qconf -Sq queues/` exports every cluster queue to its own file, named after the queue, and `qconf -Aq queues/`
+reads them all back. Exported files use exactly the format the importer reads, so a complete cluster
+configuration can be exported, edited or placed under version control, and re-applied unchanged. A single object
+can be exported by name (for example `qconf -Sprj myproject`).
+
+**Safety for batch operations**
+
+- `-dry` previews exactly what a directory-based add or delete would do, without contacting the qmaster.
+- `-strict` validates a whole directory first and applies nothing if any file is malformed.
+- `-f` is required to overwrite an existing export file and to skip the confirmation prompt of a directory-wide
+  delete.
+- Object names that are not valid file names, or that would collide on a case-insensitive file system, are
+  rejected during export rather than silently altered.
+
+**Structured JSON format (`-fmt json`)**
+
+The show (`-s<obj>`), file-based add/modify (`-A`/`-M`) and export (`-S`) operations accept `-fmt json`, which
+emits and reads a structured JSON representation with natively typed values (numbers, booleans, nested arrays)
+validated against published JSON schemas. This makes qconf output and input directly consumable by external
+tooling such as `jq`, scripts and configuration-management frameworks, instead of the traditional flat-file
+format. The default remains the classic ASCII format.
+
+**Usage**
+
+    # Back up every queue, edit, and re-apply
+    qconf -Sq queues/
+    qconf -Aq queues/
+
+    # Apply a whole directory of host configurations in one batch
+    qconf -Mconf hosts/
+
+    # Preview a bulk delete without performing it
+    qconf -dry -Dq queues/
+
+    # Export and re-import in structured JSON
+    qconf -fmt json -Sp pes/
+    qconf -fmt json -Ap pes/
+
+Together these changes let administrators treat cluster configuration as files that can be exported, diffed,
+stored in version control, and re-applied — the foundation for managing a cluster's configuration with standard
+configuration-management workflows.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 [//]: # (Each file has to end with two empty lines)
 
