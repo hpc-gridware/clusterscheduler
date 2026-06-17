@@ -89,6 +89,18 @@
 #define MSG_QCONF_CONFIRMDELETE_I                     _MESSAGE(5018, _("Delete %d object(s)? (y/n) "))
 #define MSG_QCONF_DELETEABORTED_I                     _MESSAGE(5019, _("aborted - %d object(s) not deleted"))
 #define MSG_QCONF_UNKNOWNFMT_S                        _MESSAGE(5020, _("unknown -fmt value " SFQ " (expected plain|json)"))
+
+/* CS-23xx: qconf -S<obj> bulk export (save objects to a file or directory of files) */
+#define MSG_QCONF_EXPORTSKIPPEDEXISTS_S               _MESSAGE(5021, _(SFQ " exists - skipped (use -f to overwrite)"))
+#define MSG_QCONF_EXPORTWRITEFAILED_S                 _MESSAGE(5022, _("failed to write " SFQ))
+#define MSG_QCONF_EXPORTWROTE_S                       _MESSAGE(5023, _("wrote " SFN))
+#define MSG_QCONF_EXPORTUNSAFENAME_S                  _MESSAGE(5024, _("object name " SFQ " is not a valid file name - not exported"))
+#define MSG_QCONF_EXPORTCOLLISION_SS                  _MESSAGE(5025, _("object name " SFQ " collides with " SFQ " on a case-insensitive file system - not exported"))
+#define MSG_QCONF_EXPORTCANTMKDIR_S                   _MESSAGE(5026, _("cannot create export directory " SFQ))
+#define MSG_QCONF_EXPORTNODIRALLOWED_S                _MESSAGE(5027, _(SFQ ": a directory argument is not allowed for this object - give a file name"))
+#define MSG_QCONF_EXPORTSUMMARY_SII                   _MESSAGE(5028, _(SFN ": %d object(s) exported, %d failed"))
+#define MSG_QCONF_EXPORTNOOBJECT_S                    _MESSAGE(5029, _("no object named " SFQ " to export"))
+
 #define MSG_QCONF_UNKNOWNFMTVAL_S                     _MESSAGE(5254, _("unknown -fmtval value " SFQ " (expected compact|numeric)"))
 
 // clang-format on

@@ -320,6 +320,30 @@ file is valid; if any file fails to parse, nothing is sent to xxqs_name_sxx_qmas
 pre-apply check, not a multi-object transaction: once validation passes, a failure while sending an already
 validated batch can still leave earlier objects applied.
 
+## -S*obj* *name*|*dir*
+Exports (saves) objects to re-importable files, the inverse of the `-A`/`-M` bulk add/modify operations.
+`-S<obj>` is available for the importable configuration objects: `-Scal` (calendar), `-Sckpt` (checkpointing
+environment), `-Sce` (complex entries), `-Se` (exec host), `-Shgrp` (host group), `-Sp` (parallel environment),
+`-Sprj` (project), `-Sq` (cluster queue), `-Srole` (role), `-Srqs` (resource quota set), `-Su` (userset) and
+`-Suser` (user), plus the two singletons `-Sstree` (share tree) and `-Ssconf` (scheduler configuration), and the
+bespoke `-Sconf` (cluster/host configuration).
+
+If the argument is an existing directory or ends with a `/`, `-S<obj>` runs in **directory mode**: every object of
+that type is written to its own file inside the directory, each file named after the object; the directory is
+created if it does not exist. Otherwise the argument is treated as a single object name and that one object is
+written to a file of that name in the current directory. Each exported file uses the same format the matching
+`-A<obj>`/`-M<obj>` reads, so it re-imports unchanged; for example `qconf -Sq queues/` followed by `qconf -Aq
+queues/` round-trips every queue.
+
+By default an existing destination file is left untouched and skipped with a warning; use `-f` to overwrite. Under
+`-fmt json` each file is written as JSON with a `.json` suffix. An object whose name is not a valid file name (for
+example, one containing `/` or beginning with `-`), or two objects in a directory export whose names differ only in
+case, are reported as an error and not written. The singletons `-Sstree` and `-Ssconf` take a file name only — a
+directory argument is rejected. `-Sconf` takes a single host name (or `global`) or a directory; in directory mode
+it writes the global configuration (file `global`) and every host's local configuration (one file per host). Unlike
+`-sconf`, `-Sconf` does not accept a comma-separated host list. Export is read-only and does not require
+root/manager privileges.
+
 ## -clearusage
 Clears all user and project usage from the share tree. All usage will be initialized back to zero.
 

@@ -336,6 +336,25 @@ enum {
    Mrole_OPT,   ///< modify role from file
    srole_OPT,   ///< show role
    srolel_OPT,  ///< show all role names
+
+   /* CS-23xx: bulk export (-S<obj> name|dir) — save objects to a file or directory.
+    * NOTE: append-only and kept in this order; the sge_options[][] rows in
+    * sge_options.cc must stay positionally aligned with these enum values. */
+   Scal_OPT,    ///< export calendar(s)
+   Sckpt_OPT,   ///< export checkpoint env(s)
+   Sce_OPT,     ///< export complex entry/entries
+   Se_OPT,      ///< export exec host(s)
+   Shgrp_OPT,   ///< export host group(s)
+   Sp_OPT,      ///< export parallel environment(s)
+   Sprj_OPT,    ///< export project(s)
+   Sq_OPT,      ///< export cluster queue(s)
+   Srole_OPT,   ///< export role(s)
+   Srqs_OPT,    ///< export resource quota set(s)
+   Su_OPT,      ///< export userset(s)
+   Suser_OPT,   ///< export user(s)
+   Sstree_OPT,  ///< export the share tree (singleton)
+   Ssconf_OPT,  ///< export the scheduler configuration (singleton)
+   Sconf_OPT,   ///< export global + host configuration(s)
 };
 
 /* macros used in parsing */

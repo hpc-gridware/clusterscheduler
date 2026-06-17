@@ -583,6 +583,39 @@ unsigned short sge_options[][ALL_OPT + 1] =
    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
    /* srolel_OPT - show all role names */
    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+
+   /* CS-23xx: bulk export (-S<obj>) — all qconf-only (column 2 = QCONF). These rows
+    * must stay in the same order as the S<obj>_OPT enum values in sge_options.h. */
+   /* Scal_OPT  - export calendar(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sckpt_OPT - export checkpoint env(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sce_OPT   - export complex entry/entries */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Se_OPT    - export exec host(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Shgrp_OPT - export host group(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sp_OPT    - export parallel environment(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sprj_OPT  - export project(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sq_OPT    - export cluster queue(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Srole_OPT - export role(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Srqs_OPT  - export resource quota set(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Su_OPT    - export userset(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Suser_OPT - export user(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sstree_OPT - export the share tree (singleton) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Ssconf_OPT - export the scheduler configuration (singleton) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+   /* Sconf_OPT - export global + host configuration(s) */
+   {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
    /*
        n  q  q  q  q  q  q  q  q  q  q  q  q  q  q  e  q  q  q  q  n  A
        o  a  c  d  h  m  m  r  r  s  s  r  l  s  s  x  e  r  r  r  o  L

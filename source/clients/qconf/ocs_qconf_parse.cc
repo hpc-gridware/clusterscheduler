@@ -793,6 +793,469 @@ qconf_delete_path(ocs::gdi::Target target, const lDescr *descr, spooling_field *
    return ctx.n_fail;
 }
 
+/* ================= CS-23xx: bulk export ( qconf -S<obj> name|dir ) =================
+ *
+ * The inverse of qconf_apply_path(): pull objects from qmaster with a read-only GDI
+ * GET and write each to its own re-importable flatfile. Each file is written with the
+ * same IMPORT field list that -A<obj>/-M<obj> read, so an exported file round-trips
+ * by construction (KTD2). The argument disambiguates like the import side: an existing
+ * directory or a trailing '/' selects directory mode (one file per object, named after
+ * it); otherwise it is a single object name written to ./<name>.
+ */
+
+/**
+ * @brief True if @p name is safe to use verbatim as an export file name (R5/KTD7).
+ *
+ * Rejects empty, ".", "..", a name containing '/', and a name beginning with '-'
+ * (which would be reparsed as an option on re-import). Never sanitizes - an unsafe
+ * name is reported as an error for that object.
+ */
+static bool
+qconf_name_is_fs_safe(const char *name)
+{
+   if (name == nullptr || name[0] == '\0') {
+      return false;
+   }
+   if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+      return false;
+   }
+   if (name[0] == '-') {
+      return false;
+   }
+   if (strchr(name, '/') != nullptr) {
+      return false;
+   }
+   return true;
+}
+
+/** @brief Provider of an object type's IMPORT field list for export (KTD2/KTD8).
+ *
+ *  Returns the field list to write with and sets *owned to true when the engine must
+ *  free it afterwards (a dynamically built list, e.g. exechost/project/user) or false
+ *  for a shared static table (e.g. CQ_fields). The format lets sharetree pick its
+ *  JSON vs ASCII field list. */
+typedef spooling_field *(*qconf_build_fields_fn)(spool_flatfile_format format, bool *owned);
+
+/**
+ * @brief Write one object element to @p dest as a re-importable flatfile (KTD4).
+ *
+ * Honors -f: an existing destination is skipped with a warning (non-fatal) unless
+ * force is set, in which case it is unlinked first because COPY mode does not
+ * truncate. The content is written to a tmp file (the only path-less flatfile
+ * destination) then relocated with rename(), falling back to
+ * sge_copy_append(src, dst, COPY) + unlink(src) across filesystems.
+ *
+ * @param as_list  write the element wrapped in a one-element list (rqs rule-set
+ *                 framing) instead of as a bare object.
+ * @param is_root  spool_flatfile_write_object is_root flag (sharetree writes the
+ *                 root node; ignored when @p as_list is set).
+ * @return 0 on success or a (non-fatal) skip, 1 on a write/relocate failure.
+ */
+static int
+qconf_export_write_one(const lListElem *ep, const spooling_field *fields,
+                       const spool_flatfile_instr *sfi, const char *json_type_name,
+                       bool as_list, bool is_root, const char *dest)
+{
+   if (sge_is_file(dest)) {
+      if (!qconf_opt_force) {
+         WARNING(MSG_QCONF_EXPORTSKIPPEDEXISTS_S, dest);
+         return 0;   /* -f overwrites (R4/KTD6); without it this is a non-fatal skip */
+      }
+      unlink(dest);   /* COPY fallback does not O_TRUNC (KTD4) */
+   }
+
+   lList *alp = nullptr;
+   char *tmp;
+   if (as_list) {
+      lList *one = lCreateList("export", lGetElemDescr(ep));
+      /* build a throwaway single-element list around a copy of ep */
+      lAppendElem(one, lCopyElem(ep));
+      tmp = (char *)spool_flatfile_write_list(&alp, one, fields, sfi, SP_DEST_TMP,
+                                              qconf_opt_format, nullptr, false);
+      lFreeList(&one);
+   } else {
+      tmp = (char *)spool_flatfile_write_object(&alp, ep, is_root, fields, sfi,
+                                                SP_DEST_TMP, qconf_opt_format,
+                                                nullptr, false, json_type_name);
+   }
+   if (tmp == nullptr || answer_list_output(&alp)) {
+      ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+      if (tmp != nullptr) {
+         unlink(tmp);
+         sge_free(&tmp);
+      }
+      lFreeList(&alp);
+      return 1;
+   }
+   lFreeList(&alp);
+
+   int ret = 0;
+   if (rename(tmp, dest) != 0) {
+      /* cross-filesystem rename fails with EXDEV: copy then drop the tmp source.
+       * sge_copy_append() takes (src, dst, mode) - src first (KTD4). */
+      if (sge_copy_append(tmp, dest, SGE_MODE_COPY) != 0) {
+         ERROR(MSG_QCONF_EXPORTWRITEFAILED_S, dest);
+         ret = 1;
+      }
+      unlink(tmp);
+   }
+   sge_free(&tmp);
+   if (ret == 0) {
+      qconf_info_printf(MSG_QCONF_EXPORTWROTE_S, dest);
+   }
+   return ret;
+}
+
+/**
+ * @brief Build the destination path for one exported object (R3).
+ *
+ * @param dir    directory in bulk mode, or nullptr in single mode (cwd).
+ * @param name   object name (already FS-safe checked).
+ * @param suffix ".json" under -fmt json, "" otherwise.
+ */
+static void
+qconf_export_dest(dstring *dest, const char *dir, const char *name, const char *suffix)
+{
+   sge_dstring_clear(dest);
+   if (dir != nullptr) {
+      sge_dstring_sprintf(dest, "%s/%s%s", dir, name, suffix);
+   } else {
+      sge_dstring_sprintf(dest, "%s%s", name, suffix);
+   }
+}
+
+/**
+ * @brief Export objects of one type to a file or a directory of files (R1-R5,R8).
+ *
+ * Directory mode (arg is an existing directory or ends with '/') exports every
+ * object of the type, one file each, creating the directory if missing. Single mode
+ * exports the one object named by @p path to ./<name>. The write uses @p build_fields
+ * (the import field list), and per-object failures are counted and reported but do
+ * not abort the run (continue-and-report, KTD9).
+ *
+ * @param target       GDI target list (e.g. CQ_LIST)
+ * @param descr        CULL descriptor of the object type
+ * @param name_nm      name attribute of the object
+ * @param build_fields import-field-list provider (KTD8)
+ * @param sfi          flatfile spooling instruction
+ * @param json_type_name explicit JSON $id type, or nullptr to derive from content
+ * @param as_list      rqs-style list framing (see qconf_export_write_one)
+ * @param path         the name|dir argument
+ * @param exclude1,2   bulk: object names to exclude from the GET (template/global)
+ * @return the number of objects that failed to export
+ */
+static int
+qconf_export_path(ocs::gdi::Target target, const lDescr *descr, int name_nm,
+                  qconf_build_fields_fn build_fields,
+                  const spool_flatfile_instr *sfi, const char *json_type_name,
+                  bool as_list, const char *path,
+                  const char *exclude1 = nullptr, const char *exclude2 = nullptr)
+{
+   const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
+   size_t plen = strlen(path);
+   bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
+
+   bool owned = false;
+   spooling_field *fields = build_fields(qconf_opt_format, &owned);
+
+   int failures = 0;
+
+   if (is_bulk) {
+      /* normalize the directory string (drop a single trailing '/') */
+      char dir[4096];
+      sge_strlcpy(dir, path, sizeof(dir));
+      size_t dl = strlen(dir);
+      if (dl > 1 && dir[dl - 1] == '/') {
+         dir[dl - 1] = '\0';
+      }
+
+      if (!sge_is_directory(dir)) {
+         /* KTD3: 4-arg, non-recursive, exit_on_error=false */
+         if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
+            ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
+            if (owned) { sge_free(&fields); }
+            return 1;
+         }
+      }
+
+      /* KTD5: GET all, excluding template/global in the where clause. */
+      lCondition *where = nullptr;
+      if (exclude1 != nullptr && exclude2 != nullptr) {
+         where = lWhere("%T(!(%Ic=%s || %Ic=%s))", descr, name_nm, exclude1, name_nm, exclude2);
+      } else if (exclude1 != nullptr) {
+         where = lWhere("%T(!(%Ic=%s))", descr, name_nm, exclude1);
+      }
+      lEnumeration *what = lWhat("%T(ALL)", descr);
+      lList *lp = nullptr;
+      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
+      lFreeWhere(&where);
+      lFreeWhat(&what);
+      if (show_answer_list(alp) != 0) {
+         failures++;
+      }
+      lFreeList(&alp);
+
+      /* R5/KTD7: case-insensitive basename collision guard across the run. The
+       * seen list holds the lowercased names already used. */
+      lList *seen = lCreateList("export seen", ST_Type);
+      char lcbuf[1024];
+      dstring dest = DSTRING_INIT;
+      int n_total = lGetNumberOfElem(lp);
+      lListElem *ep;
+      for_each_rw (ep, lp) {
+         const char *name = qconf_get_name(ep, name_nm);
+         if (!qconf_name_is_fs_safe(name)) {
+            ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
+            failures++;
+            continue;
+         }
+         sge_strlcpy(lcbuf, name, sizeof(lcbuf));
+         sge_strtolower(lcbuf, sizeof(lcbuf));
+         if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
+            ERROR(MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
+            failures++;
+            continue;
+         }
+         lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
+
+         qconf_export_dest(&dest, dir, name, suffix);
+         failures += qconf_export_write_one(ep, fields, sfi, json_type_name, as_list,
+                                            false, sge_dstring_get_string(&dest));
+      }
+      sge_dstring_free(&dest);
+      lFreeList(&seen);
+      lFreeList(&lp);
+
+      qconf_info_printf(MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
+   } else {
+      /* single object named by path -> ./<name>[.json] */
+      const char *name = path;
+      if (!qconf_name_is_fs_safe(name)) {
+         ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name);
+         if (owned) { sge_free(&fields); }
+         return 1;
+      }
+      lCondition *where = qconf_name_is_host(descr, name_nm)
+         ? lWhere("%T(%Ih=%s)", descr, name_nm, name)
+         : lWhere("%T(%I==%s)", descr, name_nm, name);
+      lEnumeration *what = lWhat("%T(ALL)", descr);
+      lList *lp = nullptr;
+      lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
+      lFreeWhere(&where);
+      lFreeWhat(&what);
+      if (show_answer_list(alp) != 0) {
+         failures++;
+      }
+      lFreeList(&alp);
+
+      lListElem *ep = lFirstRW(lp);
+      if (ep == nullptr) {
+         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, name);
+         failures++;
+      } else {
+         dstring dest = DSTRING_INIT;
+         qconf_export_dest(&dest, nullptr, name, suffix);
+         failures += qconf_export_write_one(ep, fields, sfi, json_type_name, as_list,
+                                            false, sge_dstring_get_string(&dest));
+         sge_dstring_free(&dest);
+      }
+      lFreeList(&lp);
+   }
+
+   if (owned) {
+      sge_free(&fields);
+   }
+   return failures;
+}
+
+/**
+ * @brief Export a true singleton (sharetree, sched_conf) to a single file (R6).
+ *
+ * A directory argument is rejected - singletons have no directory-of-many form.
+ * The one object is fetched (GET all, take the first) and written verbatim to the
+ * given path.
+ *
+ * @param is_root spool_flatfile_write_object is_root flag (sharetree uses true).
+ * @return the number of failures (0 on success).
+ */
+static int
+qconf_export_singleton(ocs::gdi::Target target, const lDescr *descr,
+                       qconf_build_fields_fn build_fields,
+                       const spool_flatfile_instr *sfi, const char *json_type_name,
+                       bool is_root, const char *path)
+{
+   size_t plen = strlen(path);
+   if (sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/')) {
+      ERROR(MSG_QCONF_EXPORTNODIRALLOWED_S, path);
+      return 1;
+   }
+
+   lEnumeration *what = lWhat("%T(ALL)", descr);
+   lList *lp = nullptr;
+   lList *alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::GET,
+                                          ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
+   lFreeWhat(&what);
+   int failures = 0;
+   if (show_answer_list(alp) != 0) {
+      failures++;
+   }
+   lFreeList(&alp);
+
+   lListElem *ep = lFirstRW(lp);
+   if (ep == nullptr) {
+      ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
+      lFreeList(&lp);
+      return failures + 1;
+   }
+
+   bool owned = false;
+   spooling_field *fields = build_fields(qconf_opt_format, &owned);
+   failures += qconf_export_write_one(ep, fields, sfi, json_type_name, false, is_root, path);
+   if (owned) {
+      sge_free(&fields);
+   }
+   lFreeList(&lp);
+   return failures;
+}
+
+/* qconf_build_fields_fn providers (KTD8): objects with a shared static field table
+ * report owned=false; objects whose import field list is built on demand report
+ * owned=true so the engine frees it. The provider mirrors exactly the field list the
+ * matching -A<obj> import handler reads with. */
+static spooling_field *qconf_fields_CAL (spool_flatfile_format, bool *o) { *o = false; return CAL_fields;  }
+static spooling_field *qconf_fields_CK  (spool_flatfile_format, bool *o) { *o = false; return CK_fields;   }
+static spooling_field *qconf_fields_CE  (spool_flatfile_format, bool *o) { *o = false; return CE_fields;   }
+static spooling_field *qconf_fields_RL  (spool_flatfile_format, bool *o) { *o = false; return RL_fields;   }
+static spooling_field *qconf_fields_PE  (spool_flatfile_format, bool *o) { *o = false; return PE_fields;   }
+static spooling_field *qconf_fields_HGRP(spool_flatfile_format, bool *o) { *o = false; return HGRP_fields; }
+static spooling_field *qconf_fields_CQ  (spool_flatfile_format, bool *o) { *o = false; return CQ_fields;   }
+static spooling_field *qconf_fields_US  (spool_flatfile_format, bool *o) { *o = false; return US_fields;   }
+static spooling_field *qconf_fields_RQS (spool_flatfile_format, bool *o) { *o = false; return RQS_fields;  }
+static spooling_field *qconf_fields_SC  (spool_flatfile_format, bool *o) { *o = false; return SC_fields;   }
+/* import list omits runtime load_values/processors (to_stdout=false) so it round-trips (KTD2) */
+static spooling_field *qconf_fields_EH  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_EH_field_list(false, false, false); }
+static spooling_field *qconf_fields_PR  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_PR_field_list(false); }
+static spooling_field *qconf_fields_UU  (spool_flatfile_format, bool *o) { *o = true;  return sge_build_UU_field_list(false); }
+static spooling_field *qconf_fields_STN (spool_flatfile_format fmt, bool *o) {
+   *o = true;
+   return (fmt == SP_FORM_JSON) ? sge_build_STN_json_field_list() : sge_build_STN_field_list(false, true);
+}
+
+/**
+ * @brief Bespoke config export (R7/KTD8): config keys on the host basename, not on
+ *        a field, so it cannot use the generic engine.
+ *
+ * Bulk mode writes the global config (file `global`) plus every host's local config
+ * (file = host), a complete re-importable set. Single mode writes one host's config
+ * to a file named after it; `-Sconf global` writes the global config to `global`.
+ * Unlike `-sconf host,host`, `-Sconf` takes a single name or a directory only.
+ *
+ * @return the number of configs that failed to export
+ */
+static int
+qconf_conf_export(const char *path)
+{
+   const char *suffix = (qconf_opt_format == SP_FORM_JSON) ? ".json" : "";
+   size_t plen = strlen(path);
+   bool is_bulk = sge_is_directory(path) || (plen > 0 && path[plen - 1] == '/');
+
+   spooling_field *fields = sge_build_CONF_field_list(false);
+   int failures = 0;
+
+   if (is_bulk) {
+      char dir[4096];
+      sge_strlcpy(dir, path, sizeof(dir));
+      size_t dl = strlen(dir);
+      if (dl > 1 && dir[dl - 1] == '/') {
+         dir[dl - 1] = '\0';
+      }
+      if (!sge_is_directory(dir)) {
+         if (sge_mkdir(dir, 0755, false, false) != 0 || !sge_is_directory(dir)) {
+            ERROR(MSG_QCONF_EXPORTCANTMKDIR_S, dir);
+            sge_free(&fields);
+            return 1;
+         }
+      }
+
+      lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
+      lList *lp = nullptr;
+      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET,
+                                             ocs::gdi::SubCommand::NONE, &lp, nullptr, what);
+      lFreeWhat(&what);
+      if (show_answer_list(alp) != 0) {
+         failures++;
+      }
+      lFreeList(&alp);
+
+      lList *seen = lCreateList("export seen", ST_Type);
+      char lcbuf[1024];
+      dstring dest = DSTRING_INIT;
+      int n_total = lGetNumberOfElem(lp);
+      lListElem *ep;
+      for_each_rw (ep, lp) {
+         const char *name = lGetHost(ep, CONF_name);
+         if (!qconf_name_is_fs_safe(name)) {
+            ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
+            failures++;
+            continue;
+         }
+         sge_strlcpy(lcbuf, name, sizeof(lcbuf));
+         sge_strtolower(lcbuf, sizeof(lcbuf));
+         if (lGetElemStr(seen, ST_name, lcbuf) != nullptr) {
+            ERROR(MSG_QCONF_EXPORTCOLLISION_SS, name, lcbuf);
+            failures++;
+            continue;
+         }
+         lAddElemStr(&seen, ST_name, lcbuf, ST_Type);
+         qconf_export_dest(&dest, dir, name, suffix);
+         failures += qconf_export_write_one(ep, fields, &qconf_sfi, nullptr, false, false,
+                                            sge_dstring_get_string(&dest));
+      }
+      sge_dstring_free(&dest);
+      lFreeList(&seen);
+      lFreeList(&lp);
+      qconf_info_printf(MSG_QCONF_EXPORTSUMMARY_SII, dir, n_total - failures, failures);
+   } else {
+      if (!qconf_name_is_fs_safe(path)) {
+         ERROR(MSG_QCONF_EXPORTUNSAFENAME_S, path);
+         sge_free(&fields);
+         return 1;
+      }
+      /* "global" resolves to SGE_GLOBAL_NAME for the lookup but the file keeps the
+       * user-given basename (which re-imports to the same host key). */
+      const char *cfn = (strcasecmp(path, "global") == 0) ? SGE_GLOBAL_NAME : path;
+      lCondition *where = lWhere("%T(%Ih=%s)", CONF_Type, CONF_name, cfn);
+      lEnumeration *what = lWhat("%T(ALL)", CONF_Type);
+      lList *lp = nullptr;
+      lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CONF_LIST, ocs::gdi::Command::GET,
+                                             ocs::gdi::SubCommand::NONE, &lp, where, what);
+      lFreeWhere(&where);
+      lFreeWhat(&what);
+      if (show_answer_list(alp) != 0) {
+         failures++;
+      }
+      lFreeList(&alp);
+
+      lListElem *ep = lFirstRW(lp);
+      if (ep == nullptr) {
+         ERROR(MSG_QCONF_EXPORTNOOBJECT_S, path);
+         failures++;
+      } else {
+         dstring dest = DSTRING_INIT;
+         qconf_export_dest(&dest, nullptr, path, suffix);
+         failures += qconf_export_write_one(ep, fields, &qconf_sfi, nullptr, false, false,
+                                            sge_dstring_get_string(&dest));
+         sge_dstring_free(&dest);
+      }
+      lFreeList(&lp);
+   }
+
+   sge_free(&fields);
+   return failures;
+}
+
 /**
  * @brief Validate-hook adapter for parallel environments (CS-2301).
  *
@@ -6283,6 +6746,153 @@ int sge_parse_qconf(char *argv[])
          if (qconf_apply_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_fields,
                               CQ_name, *spp, qconf_cq_verify, &qconf_sfi, nullptr,
                               ocs::gdi::SubCommand::SET_ALL, false) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+
+      /* CS-23xx: "-S<obj> name|dir" — bulk export, the inverse of -A<obj>/-M<obj>.
+       * Read-only (no manager check), like -s<obj>. Each handler passes the object's
+       * IMPORT field list so the exported files re-import unchanged. */
+      if (strcmp("-Scal", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::CAL_LIST, CAL_Type, CAL_name,
+                               qconf_fields_CAL, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Sckpt", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::CK_LIST, CK_Type, CK_name,
+                               qconf_fields_CK, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Sce", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::CE_LIST, CE_Type, CE_name,
+                               qconf_fields_CE, &qconf_ce_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Se", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         /* exclude the template and global pseudo-hosts (KTD5); explicit "exechost"
+          * JSON $id (EH shares its name field with adminhost). */
+         if (qconf_export_path(ocs::gdi::Target::EH_LIST, EH_Type, EH_name,
+                               qconf_fields_EH, &qconf_sfi, "exechost", false, *spp,
+                               SGE_TEMPLATE_NAME, SGE_GLOBAL_NAME) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Shgrp", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::HGRP_LIST, HGRP_Type, HGRP_name,
+                               qconf_fields_HGRP, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Sp", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::PE_LIST, PE_Type, PE_name,
+                               qconf_fields_PE, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Sprj", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::PR_LIST, PR_Type, PR_name,
+                               qconf_fields_PR, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Sq", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::CQ_LIST, CQ_Type, CQ_name,
+                               qconf_fields_CQ, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Srole", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::RL_LIST, RL_Type, RL_name,
+                               qconf_fields_RL, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Srqs", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         /* rqs files carry a rule-set list, so export with list framing (as_list). */
+         if (qconf_export_path(ocs::gdi::Target::RQS_LIST, RQS_Type, RQS_name,
+                               qconf_fields_RQS, &qconf_rqs_sfi, nullptr, true, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Su", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::US_LIST, US_Type, US_name,
+                               qconf_fields_US, &qconf_param_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Suser", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_path(ocs::gdi::Target::UU_LIST, UU_Type, UU_name,
+                               qconf_fields_UU, &qconf_sfi, nullptr, false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      /* singletons: a directory argument is rejected (R6) */
+      if (strcmp("-Sstree", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         /* sharetree writes the root node (is_root=true) with the name/value sfi */
+         if (qconf_export_singleton(ocs::gdi::Target::STN_LIST, STN_Type,
+                                    qconf_fields_STN, &qconf_name_value_list_sfi,
+                                    "sharetree", true, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      if (strcmp("-Ssconf", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_export_singleton(ocs::gdi::Target::SC_LIST, SC_Type,
+                                    qconf_fields_SC, &qconf_comma_sfi,
+                                    "sched_conf", false, *spp) != 0) {
+            sge_parse_return = 1;
+         }
+         spp++;
+         continue;
+      }
+      /* bespoke config export (R7): basename keying, global + per-host */
+      if (strcmp("-Sconf", *spp) == 0) {
+         spp = sge_parser_get_next(spp);
+         if (qconf_conf_export(*spp) != 0) {
             sge_parse_return = 1;
          }
          spp++;

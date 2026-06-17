@@ -1193,6 +1193,38 @@
 #define MSG_GDI_USAGE_srolel_OPT          "[-srolel]"
 #define MSG_GDI_UTEXT_srolel_OPT          _MESSAGE(60757, _("show all role names"))
 
+/* CS-23xx: bulk export (-S<obj> name|dir) usage lines */
+#define MSG_GDI_USAGE_Scal_OPT            "[-Scal name|dir]"
+#define MSG_GDI_UTEXT_Scal_OPT            _MESSAGE(60776, _("export calendar(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sckpt_OPT           "[-Sckpt name|dir]"
+#define MSG_GDI_UTEXT_Sckpt_OPT           _MESSAGE(60777, _("export checkpointing environment(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sce_OPT             "[-Sce name|dir]"
+#define MSG_GDI_UTEXT_Sce_OPT             _MESSAGE(60778, _("export complex entry/entries to a file or a directory of files"))
+#define MSG_GDI_USAGE_Se_OPT              "[-Se name|dir]"
+#define MSG_GDI_UTEXT_Se_OPT              _MESSAGE(60779, _("export exec host(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Shgrp_OPT           "[-Shgrp name|dir]"
+#define MSG_GDI_UTEXT_Shgrp_OPT           _MESSAGE(60780, _("export host group(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sp_OPT              "[-Sp name|dir]"
+#define MSG_GDI_UTEXT_Sp_OPT              _MESSAGE(60781, _("export parallel environment(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sprj_OPT            "[-Sprj name|dir]"
+#define MSG_GDI_UTEXT_Sprj_OPT            _MESSAGE(60782, _("export project(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sq_OPT              "[-Sq name|dir]"
+#define MSG_GDI_UTEXT_Sq_OPT              _MESSAGE(60783, _("export cluster queue(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Srole_OPT           "[-Srole name|dir]"
+#define MSG_GDI_UTEXT_Srole_OPT           _MESSAGE(60784, _("export role(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Srqs_OPT            "[-Srqs name|dir]"
+#define MSG_GDI_UTEXT_Srqs_OPT            _MESSAGE(60785, _("export resource quota set(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Su_OPT              "[-Su name|dir]"
+#define MSG_GDI_UTEXT_Su_OPT              _MESSAGE(60786, _("export userset(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Suser_OPT           "[-Suser name|dir]"
+#define MSG_GDI_UTEXT_Suser_OPT           _MESSAGE(60787, _("export user(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sstree_OPT          "[-Sstree fname]"
+#define MSG_GDI_UTEXT_Sstree_OPT          _MESSAGE(60788, _("export the share tree to a file"))
+#define MSG_GDI_USAGE_Ssconf_OPT          "[-Ssconf fname]"
+#define MSG_GDI_UTEXT_Ssconf_OPT          _MESSAGE(60789, _("export the scheduler configuration to a file"))
+#define MSG_GDI_USAGE_Sconf_OPT           "[-Sconf host|dir]"
+#define MSG_GDI_UTEXT_Sconf_OPT           _MESSAGE(60790, _("export the global and/or host configuration(s) to a file or a directory of files"))
+
 #define MSG_ROLE_INTEGRITY_USERSET_SS  _MESSAGE(60758, _("startup integrity: role " SFQ " references userset " SFQ " which does not exist"))
 #define MSG_ROLE_INTEGRITY_PARENT_SS   _MESSAGE(60759, _("startup integrity: role " SFQ " references parent role " SFQ " which does not exist"))
 #define MSG_ROLE_PERMLIST_NFIELDS_SI   _MESSAGE(60760, _("denied: perm_list rule " SFQ " has %d colon-separated fields (expected 6)"))

@@ -1204,6 +1204,53 @@ void sge_usage(ProgName prog_number, FILE *fp) {
       PRINTITD(MSG_GDI_USAGE_srolel_OPT, MSG_GDI_UTEXT_srolel_OPT);
    }
 
+   /* CS-23xx: bulk export (-S<obj> name|dir) */
+   if (VALID_OPT(Scal_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Scal_OPT, MSG_GDI_UTEXT_Scal_OPT);
+   }
+   if (VALID_OPT(Sckpt_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sckpt_OPT, MSG_GDI_UTEXT_Sckpt_OPT);
+   }
+   if (VALID_OPT(Sce_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sce_OPT, MSG_GDI_UTEXT_Sce_OPT);
+   }
+   if (VALID_OPT(Se_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Se_OPT, MSG_GDI_UTEXT_Se_OPT);
+   }
+   if (VALID_OPT(Shgrp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Shgrp_OPT, MSG_GDI_UTEXT_Shgrp_OPT);
+   }
+   if (VALID_OPT(Sp_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sp_OPT, MSG_GDI_UTEXT_Sp_OPT);
+   }
+   if (VALID_OPT(Sprj_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sprj_OPT, MSG_GDI_UTEXT_Sprj_OPT);
+   }
+   if (VALID_OPT(Sq_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sq_OPT, MSG_GDI_UTEXT_Sq_OPT);
+   }
+   if (VALID_OPT(Srole_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Srole_OPT, MSG_GDI_UTEXT_Srole_OPT);
+   }
+   if (VALID_OPT(Srqs_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Srqs_OPT, MSG_GDI_UTEXT_Srqs_OPT);
+   }
+   if (VALID_OPT(Su_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Su_OPT, MSG_GDI_UTEXT_Su_OPT);
+   }
+   if (VALID_OPT(Suser_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Suser_OPT, MSG_GDI_UTEXT_Suser_OPT);
+   }
+   if (VALID_OPT(Sstree_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sstree_OPT, MSG_GDI_UTEXT_Sstree_OPT);
+   }
+   if (VALID_OPT(Ssconf_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Ssconf_OPT, MSG_GDI_UTEXT_Ssconf_OPT);
+   }
+   if (VALID_OPT(Sconf_OPT, prog_number)) {
+      PRINTITD(MSG_GDI_USAGE_Sconf_OPT, MSG_GDI_UTEXT_Sconf_OPT);
+   }
+
    if (VALID_OPT(sckpt_OPT, prog_number)) {
       PRINTITD(MSG_GDI_USAGE_sckpt_OPT_CKPT_NAME, 
          MSG_GDI_UTEXT_sckpt_OPT_CKPT_NAME);
