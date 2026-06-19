@@ -160,12 +160,19 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
       ocs::ReportingFileWriter::create_job_logs(nullptr, timestamp, JL_DELETED, MSG_EXECD, hostname, jr, jep, jatep, nullptr,
                                MSG_LOG_JREMOVED);
 
-      /* CS-1239 consolidation: do AR cleanup BEFORE the commit. The commit now
-       * also buries the job (was a separate COMMIT_ST_DEBITED_EE step), so any
-       * reads from jep must complete first. */
-      if (lGetUlong(jep, JB_ar) != 0 && (lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED) {
+      /* CS-1239: snapshot what AR cleanup needs because the commit below now also
+       * buries the ja_task (and possibly the job), invalidating jep/jatep. The AR
+       * removal check must run AFTER the commit because qinstance_slots_used() on
+       * the AR's reserved queues only drops once sge_clear_granted_resources()
+       * inside sge_commit_job() has released this job's bookings. */
+      uint32_t job_ar_id = lGetUlong(jep, JB_ar);
+      bool job_was_deleted = (lGetUlong(jatep, JAT_state) & JDELETED) == JDELETED;
+
+      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
+
+      if (job_ar_id != 0 && job_was_deleted) {
          /* get AR and remove it if no other jobs are debited */
-         lListElem *ar = ar_list_locate(master_ar_list, lGetUlong(jep, JB_ar));
+         lListElem *ar = ar_list_locate(master_ar_list, job_ar_id);
 
          if (ar != nullptr && lGetUlong(ar, AR_state) == AR_DELETED) {
             const lListElem *ar_queue;
@@ -190,8 +197,6 @@ sge_job_exit(lListElem *jr, lListElem *jep, lListElem *jatep, monitoring_t *moni
             }
          }
       }
-
-      sge_commit_job(jep, jatep, jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
    }
       /*
        * case 2: set job in error state
