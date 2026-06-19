@@ -843,9 +843,10 @@ CheckConfigFile()
          $INFOTEXT -log "to ensure, that existing installations are not overwritten!"
          is_valid="false"
       fi
-      if [ "$SPOOLING_METHOD" != "berkeleydb" -a "$SPOOLING_METHOD" != "classic" ]; then
-         $INFOTEXT -e "Your >SPOOLING_METHOD< entry is wrong, only >berkeleydb< or >classic< is allowed!"
-         $INFOTEXT -log "Your >SPOOLING_METHOD< entry is wrong, only >berkeleydb< or >classic< is allowed!"
+      if [ "$SPOOLING_METHOD" != "berkeleydb" -a "$SPOOLING_METHOD" != "classic" \
+           -a "$SPOOLING_METHOD" != "postgres" ]; then
+         $INFOTEXT -e "Your >SPOOLING_METHOD< entry is wrong, only >berkeleydb<, >classic<, or >postgres< is allowed!"
+         $INFOTEXT -log "Your >SPOOLING_METHOD< entry is wrong, only >berkeleydb<, >classic<, or >postgres< is allowed!"
          is_valid="false"
       fi
       if [ "$SPOOLING_METHOD" = "berkeleydb" -a -z "$DB_SPOOLING_DIR" ]; then
@@ -2812,6 +2813,57 @@ CheckRunningDaemon()
 }
 
 #----------------------------------------------------------------------------
+# CheckPgTooling()
+#
+# Verifies that pg_dump and psql are on PATH before the PG backup/restore
+# branches start work. Logs and exits non-zero with a diagnostic when
+# either is missing so the operator gets a clear "install postgresql
+# client tools" pointer rather than a confusing "empty backup" outcome.
+#
+CheckPgTooling()
+{
+   if ! command -v pg_dump >/dev/null 2>&1; then
+      $INFOTEXT -e "pg_dump is required for postgres backup/restore but is not on PATH"
+      $INFOTEXT -log "pg_dump is required for postgres backup/restore but is not on PATH"
+      MoveLog
+      exit 1
+   fi
+   if ! command -v psql >/dev/null 2>&1; then
+      $INFOTEXT -e "psql is required for postgres backup/restore but is not on PATH"
+      $INFOTEXT -log "psql is required for postgres backup/restore but is not on PATH"
+      MoveLog
+      exit 1
+   fi
+}
+
+#----------------------------------------------------------------------------
+# ParsePgSpoolingParams <bootstrap-file>
+#
+# Parses the bootstrap file's spooling_params line (a libpq conninfo
+# string, written by inst_qmaster.sh's SetSpoolingOptionsPostgres) and
+# sets the shell variables PG_HOST, PG_PORT, PG_DBNAME, PG_USER, and
+# PG_PASSFILE. Any keyword absent from spooling_params produces an empty
+# string for that variable; the caller decides whether the absence is an
+# error.
+#
+ParsePgSpoolingParams()
+{
+   _bootstrap=$1
+   if [ ! -f "$_bootstrap" ]; then
+      $INFOTEXT -e "Bootstrap file %s not found" "$_bootstrap"
+      $INFOTEXT -log "Bootstrap file %s not found" "$_bootstrap"
+      MoveLog
+      exit 1
+   fi
+   _params=`grep '^spooling_params' "$_bootstrap" | sed 's/^spooling_params *//'`
+   PG_HOST=`echo "$_params" | sed -n 's/.*\(^\| \)host=\([^ ]*\).*/\2/p'`
+   PG_PORT=`echo "$_params" | sed -n 's/.*\(^\| \)port=\([^ ]*\).*/\2/p'`
+   PG_DBNAME=`echo "$_params" | sed -n 's/.*\(^\| \)dbname=\([^ ]*\).*/\2/p'`
+   PG_USER=`echo "$_params" | sed -n 's/.*\(^\| \)user=\([^ ]*\).*/\2/p'`
+   PG_PASSFILE=`echo "$_params" | sed -n 's/.*\(^\| \)passfile=\([^ ]*\).*/\2/p'`
+}
+
+#----------------------------------------------------------------------------
 # Backup configuration
 # BackupConfig
 #
@@ -2821,6 +2873,9 @@ BackupConfig()
    BUP_BDB_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters cluster_name slice_name"
    BUP_BDB_COMMON_DIR_LIST_TMP="sgeCA"
    BUP_BDB_SPOOL_FILE_LIST_TMP="jobseqnum"
+   BUP_PG_COMMON_FILE_LIST_TMP="accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
+   BUP_PG_COMMON_DIR_LIST_TMP="sgeCA"
+   BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="configuration sched_configuration accounting bootstrap qtask settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="sgeCA local_conf"
    BUP_CLASSIC_SPOOL_FILE_LIST_TMP="jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts usermapping users usersets zombies"
@@ -2888,6 +2943,9 @@ RestoreConfig()
    BUP_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd sgebdb shadow_masters st.enabled cluster_name slice_name"
    BUP_COMMON_DIR_LIST="sgeCA"
    BUP_SPOOL_FILE_LIST="jobseqnum"
+   BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
+   BUP_PG_COMMON_DIR_LIST="sgeCA"
+   BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST="configuration sched_configuration accounting bootstrap qtask settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="sgeCA local_conf"
    BUP_CLASSIC_SPOOL_FILE_LIST="jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts usermapping users usersets zombies"
@@ -2978,6 +3036,89 @@ RestoreConfig()
                ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $master_spool
             fi
          done
+      elif [ "$spooling_method" = "postgres" ]; then
+         CheckPgTooling
+
+         if [ ! -d $SGE_ROOT/$SGE_CELL ]; then
+            ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL
+         fi
+         if [ ! -d $SGE_ROOT/$SGE_CELL/common ]; then
+            ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL/common
+         fi
+
+         for f in $BUP_PG_COMMON_FILE_LIST; do
+            if [ -f /tmp/bup_tmp_$DATE/$f ]; then
+               ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         for f in $BUP_PG_COMMON_DIR_LIST; do
+            if [ -d /tmp/bup_tmp_$DATE/$f ]; then
+               ExecuteAsAdmin $CPR /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         # Re-parse the restored bootstrap so the SQL restore targets the
+         # PG instance the operator was actually backing up — using the
+         # current-cell bootstrap would point at the wrong DB if the
+         # operator restores into a fresh cell.
+         ParsePgSpoolingParams "$SGE_ROOT/$SGE_CELL/common/bootstrap"
+         if [ -z "$PG_HOST" -o -z "$PG_DBNAME" -o -z "$PG_USER" ]; then
+            $INFOTEXT -e "Restored bootstrap spooling_params is missing host/dbname/user"
+            $INFOTEXT -log "Restored bootstrap spooling_params is missing host/dbname/user"
+            MoveLog
+            exit 1
+         fi
+         if [ -z "$PG_PORT" ]; then
+            PG_PORT=5432
+         fi
+
+         # Restore the libpq .pgpass when it lives under the restored
+         # common dir AND the backup carried it (DoBackup only copies
+         # passfiles inside the cell). After the copy, force 0600 + chown
+         # to ADMINUSER so libpq's strict-perm check passes when qmaster
+         # reads it — `cp` does not preserve mode and the backup tarball
+         # extract may run as a different user.
+         if [ -n "$PG_PASSFILE" ]; then
+            case "$PG_PASSFILE" in
+               $SGE_ROOT/$SGE_CELL/common/*)
+                  _pf_base=`basename "$PG_PASSFILE"`
+                  if [ -f /tmp/bup_tmp_$DATE/$_pf_base ]; then
+                     ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$_pf_base "$PG_PASSFILE"
+                     chmod 0600 "$PG_PASSFILE"
+                     if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
+                        chown "$ADMINUSER" "$PG_PASSFILE"
+                     fi
+                  fi
+                  ;;
+            esac
+         fi
+
+         _dump=/tmp/bup_tmp_$DATE/$BUP_PG_DUMP_FILE
+         if [ ! -f "$_dump" ]; then
+            $INFOTEXT -e "Postgres dumpfile %s missing from backup" "$BUP_PG_DUMP_FILE"
+            $INFOTEXT -log "Postgres dumpfile %s missing from backup" "$BUP_PG_DUMP_FILE"
+            MoveLog
+            exit 1
+         fi
+         $INFOTEXT -n "Restoring postgres config table from %s\n" "$_dump"
+         if [ -n "$PG_PASSFILE" ]; then
+            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -f "$_dump"
+         else
+            psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -f "$_dump"
+         fi
+         if [ $? -ne 0 ]; then
+            $INFOTEXT -e "psql restore failed; config table may be in an inconsistent state"
+            $INFOTEXT -log "psql restore failed; config table may be in an inconsistent state"
+            MoveLog
+            exit 1
+         fi
       else
          if [ -d $SGE_ROOT/$SGE_CELL ]; then
             if [ -d $SGE_ROOT/$SGE_CELL/common ]; then
@@ -3111,6 +3252,82 @@ RestoreConfig()
                ExecuteAsAdmin $CP $bup_file/$f $master_spool
             fi
          done
+      elif [ "$spooling_method" = "postgres" ]; then
+         CheckPgTooling
+
+         if [ ! -d $SGE_ROOT/$SGE_CELL ]; then
+            ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL
+         fi
+         if [ ! -d $SGE_ROOT/$SGE_CELL/common ]; then
+            ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL/common
+         fi
+
+         for f in $BUP_PG_COMMON_FILE_LIST; do
+            if [ -f $bup_file/$f ]; then
+               ExecuteAsAdmin $CP $bup_file/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         for f in $BUP_PG_COMMON_DIR_LIST; do
+            if [ -d $bup_file/$f ]; then
+               ExecuteAsAdmin $CPR $bup_file/$f $SGE_ROOT/$SGE_CELL/common/
+            fi
+         done
+
+         ParsePgSpoolingParams "$SGE_ROOT/$SGE_CELL/common/bootstrap"
+         if [ -z "$PG_HOST" -o -z "$PG_DBNAME" -o -z "$PG_USER" ]; then
+            $INFOTEXT -e "Restored bootstrap spooling_params is missing host/dbname/user"
+            $INFOTEXT -log "Restored bootstrap spooling_params is missing host/dbname/user"
+            MoveLog
+            exit 1
+         fi
+         if [ -z "$PG_PORT" ]; then
+            PG_PORT=5432
+         fi
+
+         # Restore the libpq .pgpass when it lives under the restored
+         # common dir AND the backup carried it. Force 0600 + chown to
+         # ADMINUSER so libpq's strict-perm check succeeds.
+         if [ -n "$PG_PASSFILE" ]; then
+            case "$PG_PASSFILE" in
+               $SGE_ROOT/$SGE_CELL/common/*)
+                  _pf_base=`basename "$PG_PASSFILE"`
+                  if [ -f $bup_file/$_pf_base ]; then
+                     ExecuteAsAdmin $CP $bup_file/$_pf_base "$PG_PASSFILE"
+                     chmod 0600 "$PG_PASSFILE"
+                     if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
+                        chown "$ADMINUSER" "$PG_PASSFILE"
+                     fi
+                  fi
+                  ;;
+            esac
+         fi
+
+         _dump=$bup_file/$BUP_PG_DUMP_FILE
+         if [ ! -f "$_dump" ]; then
+            $INFOTEXT -e "Postgres dumpfile %s missing from backup" "$_dump"
+            $INFOTEXT -log "Postgres dumpfile %s missing from backup" "$_dump"
+            MoveLog
+            exit 1
+         fi
+         $INFOTEXT -n "Restoring postgres config table from %s\n" "$_dump"
+         if [ -n "$PG_PASSFILE" ]; then
+            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -f "$_dump"
+         else
+            psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -f "$_dump"
+         fi
+         if [ $? -ne 0 ]; then
+            $INFOTEXT -e "psql restore failed; config table may be in an inconsistent state"
+            $INFOTEXT -log "psql restore failed; config table may be in an inconsistent state"
+            MoveLog
+            exit 1
+         fi
       else
 
          if [ -d $SGE_ROOT/$SGE_CELL ]; then
@@ -3650,6 +3867,82 @@ DoBackup()
             ExecuteAsAdmin $CPF $master_spool/$f $backup_dir
          fi
       done
+   elif [ "$spooling_method" = "postgres" ]; then
+      CheckPgTooling
+      ParsePgSpoolingParams "$SGE_ROOT/$SGE_CELL/common/bootstrap"
+      if [ -z "$PG_HOST" -o -z "$PG_DBNAME" -o -z "$PG_USER" ]; then
+         $INFOTEXT -e "Bootstrap spooling_params is missing host/dbname/user"
+         $INFOTEXT -log "Bootstrap spooling_params is missing host/dbname/user"
+         MoveLog
+         exit 1
+      fi
+      if [ -z "$PG_PORT" ]; then
+         PG_PORT=5432
+      fi
+
+      for f in $BUP_PG_COMMON_FILE_LIST_TMP; do
+         if [ -f $SGE_ROOT/$SGE_CELL/common/$f ]; then
+            BUP_COMMON_FILE_LIST="$BUP_COMMON_FILE_LIST $f"
+            ExecuteAsAdmin $CPF $SGE_ROOT/$SGE_CELL/common/$f $backup_dir
+         fi
+      done
+
+      for f in $BUP_PG_COMMON_DIR_LIST_TMP; do
+         if [ -d $SGE_ROOT/$SGE_CELL/common/$f ]; then
+            BUP_COMMON_DIR_LIST="$BUP_COMMON_DIR_LIST $f"
+            ExecuteAsAdmin $CPFR $SGE_ROOT/$SGE_CELL/common/$f $backup_dir
+         fi
+      done
+
+      # Back up the libpq .pgpass when it lives under $SGE_ROOT/$SGE_CELL/common
+      # (the installer's default location). Custom paths outside the cell dir
+      # are operator-managed; we surface a notice but do not copy them — the
+      # backup tarball is assumed to be limited to the cell's footprint.
+      # The copy in $backup_dir is chmod 0600 so the tar/tar.gz that wraps
+      # the backup does not expose the credential to other readers.
+      if [ -n "$PG_PASSFILE" -a -f "$PG_PASSFILE" ]; then
+         case "$PG_PASSFILE" in
+            $SGE_ROOT/$SGE_CELL/common/*)
+               _pf_base=`basename "$PG_PASSFILE"`
+               ExecuteAsAdmin $CPF "$PG_PASSFILE" "$backup_dir/$_pf_base"
+               chmod 0600 "$backup_dir/$_pf_base"
+               BUP_COMMON_FILE_LIST="$BUP_COMMON_FILE_LIST $_pf_base"
+               ;;
+            *)
+               $INFOTEXT -n "\nNote: passfile %s is outside %s/%s/common —\n" \
+                            "      not included in this backup; back it up manually.\n" \
+                         "$PG_PASSFILE" "$SGE_ROOT" "$SGE_CELL"
+               ;;
+         esac
+      fi
+
+      # Dump only the `config` table — `jobs` is intentionally excluded
+      # per R15. `--clean --if-exists` makes restore idempotent against
+      # an existing schema; PGPASSFILE is set per-invocation so the
+      # credential reference does not survive into other shell
+      # subprocesses or the installer's exported environment.
+      $INFOTEXT -n "Dumping postgres config table to %s/%s\n" \
+                "$backup_dir" "$BUP_PG_DUMP_FILE"
+      if [ -n "$PG_PASSFILE" ]; then
+         PGPASSFILE="$PG_PASSFILE" pg_dump --no-password --clean --if-exists \
+            --table=config \
+            --host="$PG_HOST" --port="$PG_PORT" \
+            --dbname="$PG_DBNAME" --username="$PG_USER" \
+            > "$backup_dir/$BUP_PG_DUMP_FILE"
+      else
+         pg_dump --no-password --clean --if-exists \
+            --table=config \
+            --host="$PG_HOST" --port="$PG_PORT" \
+            --dbname="$PG_DBNAME" --username="$PG_USER" \
+            > "$backup_dir/$BUP_PG_DUMP_FILE"
+      fi
+      if [ $? -ne 0 ]; then
+         $INFOTEXT -e "pg_dump failed; partial dumpfile may be present"
+         $INFOTEXT -log "pg_dump failed; partial dumpfile may be present"
+         MoveLog
+         exit 1
+      fi
+      BUP_SPOOL_FILE_LIST="$BUP_SPOOL_FILE_LIST $BUP_PG_DUMP_FILE"
    else
       for f in $BUP_CLASSIC_COMMON_FILE_LIST_TMP; do
          if [ -f $SGE_ROOT/$SGE_CELL/common/$f ]; then
