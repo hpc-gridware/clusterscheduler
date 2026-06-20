@@ -49,9 +49,11 @@
 #include "spool/flatfile/sge_flatfile_obj.h"
 
 #include "ocs_qconf_rqs.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_common.h"
 #include "msg_clients_common.h"
 #include "msg_qconf.h"
+#include "msg_sgeobjlib.h"   /* MSG_RQS_REQUEST_DUPLICATE_NAME_S */
 
 static bool
 rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_unchanged_message);
@@ -101,7 +103,7 @@ rqs_show(lList **answer_list, const char *name)
       const char* filename;
       filename = spool_flatfile_write_list(answer_list, rqs_list, RQS_fields, 
                                         &qconf_rqs_sfi,
-                                        SP_DEST_STDOUT, SP_FORM_ASCII, nullptr,
+                                        SP_DEST_STDOUT, qconf_opt_format, nullptr,
                                         false);
       sge_free(&filename);
    }
@@ -319,6 +321,88 @@ rqs_modify(lList **answer_list, const char *name) {
    DRETURN(ret);
 }
 
+/****** resource_quota_qconf/rqs_upsert_via_gdi() ******************************
+*  NAME
+*     rqs_upsert_via_gdi() -- modify-or-add the file's rqs, preserve the rest
+*
+*  SYNOPSIS
+*     static bool rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
+*
+*  FUNCTION
+*     Applies the resource quota sets in @p file_rqs_list to the current rqs
+*     configuration: an rqs is modified (MOD) if one of the same name already
+*     exists, added (ADD) otherwise, and every other rqs is left untouched. This
+*     gives -Arqs and -Mrqs (without an explicit rqs_list) the same add-or-modify
+*     semantics as the per-object -Ap/-Mp, instead of replacing the whole rqs list
+*     (which would silently delete rqs not present in the file). The file's rqs
+*     are split by existence into a MOD batch and an ADD batch so that the
+*     resulting messages accurately read "modified"/"added".
+*
+*  INPUTS
+*     lList **answer_list   - answer list
+*     lList *file_rqs_list  - the rqs read from the file (not modified/freed here)
+*
+*  RESULT
+*     bool - true on success, false on error
+*
+*  NOTES
+*     MT-NOTE: rqs_upsert_via_gdi() is MT safe
+*******************************************************************************/
+static bool
+rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
+{
+   DENTER(TOP_LAYER);
+
+   /* a file that lists the same rqs name more than once is ambiguous; reject it.
+    * The former REPLACE (SET_ALL) path was rejected by qmaster with this message;
+    * the per-element upsert below would otherwise silently apply each block in turn
+    * (last-write-wins), so an equivalent client-side check restores the behaviour. */
+   for (const lListElem *a = lFirst(file_rqs_list); a != nullptr; a = lNext(a)) {
+      const char *name_a = lGetString(a, RQS_name);
+      for (const lListElem *b = lNext(a); b != nullptr; b = lNext(b)) {
+         if (name_a != nullptr && strcmp(name_a, lGetString(b, RQS_name)) == 0) {
+            answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
+                                    MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
+            DRETURN(false);
+         }
+      }
+   }
+
+   lList *current_list = nullptr;
+   if (!rqs_get_all_via_gdi(answer_list, &current_list)) {
+      DRETURN(false);
+   }
+
+   /* split the file's rqs into those that already exist (MOD) and those that are
+    * new (ADD); both commands leave rqs not present in the file untouched and
+    * produce accurate "modified"/"added" messages (unlike REPLACE, which reports
+    * a spurious "removed" for every changed rule set). */
+   lList *mod_list = nullptr;
+   lList *add_list = nullptr;
+   lListElem *file_rqs;
+   for_each_ep_lv(file_rqs, file_rqs_list) {
+      const char *rqs_name = lGetString(file_rqs, RQS_name);
+      lList **target = (rqs_list_locate(current_list, rqs_name) != nullptr) ? &mod_list : &add_list;
+      if (*target == nullptr) {
+         *target = lCreateList("rqs_list", RQS_Type);
+      }
+      lAppendElem(*target, lCopyElem(file_rqs));
+   }
+   lFreeList(&current_list);
+
+   bool ret = true;
+   if (ret && mod_list != nullptr) {
+      ret = rqs_add_del_mod_via_gdi(mod_list, answer_list, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::SET_ALL);
+   }
+   if (ret && add_list != nullptr) {
+      ret = rqs_add_del_mod_via_gdi(add_list, answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::SET_ALL);
+   }
+   lFreeList(&mod_list);
+   lFreeList(&add_list);
+
+   DRETURN(ret);
+}
+
 /****** resource_quota_qconf/rqs_add_from_file() ********************
 *  NAME
 *     rqs_add_from_file() -- add resource quota set from file
@@ -351,9 +435,11 @@ rqs_add_from_file(lList **answer_list, const char *filename) {
       lList *rqs_list = nullptr;
 
       /* fields_out field does not work for rqs because of duplicate entry */
-      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, SP_FORM_ASCII, nullptr, filename);
+      rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields, nullptr, true, &qconf_rqs_sfi, qconf_opt_format, nullptr, filename);
       if (!answer_list_has_error(answer_list)) {
-         ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::SET_ALL);
+         /* upsert the file's rqs (modify-or-add) and keep all other rqs, matching
+          * -Mrqs and the per-object -Ap/-Mp behaviour */
+         ret = rqs_upsert_via_gdi(answer_list, rqs_list);
       }
 
       lFreeList(&rqs_list);
@@ -407,7 +493,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
       *rqs_list = lCreateList("", RQS_Type);
    }
 
-   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
+   filename = spool_flatfile_write_list(answer_list, *rqs_list, RQS_fields, &qconf_rqs_sfi, SP_DEST_TMP, qconf_opt_format, filename, false);
 
    if (answer_list_has_error(answer_list)) {
       if (filename != nullptr) {
@@ -425,7 +511,7 @@ rqs_provide_modify_context(lList **rqs_list, lList **answer_list, bool ignore_un
       /* fields_out field does not work for rqs because of duplicate entry */
       new_rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
                                                nullptr, true, &qconf_rqs_sfi,
-                                               SP_FORM_ASCII, nullptr, filename);
+                                               qconf_opt_format, nullptr, filename);
       if (answer_list_has_error(answer_list)) {
          lFreeList(&new_rqs_list);
       }
@@ -544,12 +630,15 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
       /* fields_out field does not work for rqs because of duplicate entry */
       rqs_list = spool_flatfile_read_list(answer_list, RQS_Type, RQS_fields,
                                           nullptr, true, &qconf_rqs_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
       if (rqs_list != nullptr) {
 
          if (name != nullptr && strlen(name) > 0 ) {
+            /* -Mrqs <file> <rqs_list>: modify only the explicitly named rqs (which
+             * must be present in the file) and leave every other rqs untouched */
             lList *selected_rqs_list = nullptr;
             lList *found_rqs_list = lCreateList("rqs_list", RQS_Type);
+            bool ok = true;
 
             cmd = ocs::gdi::Command::MOD;
             sub_cmd = ocs::gdi::SubCommand::SET_ALL;
@@ -562,19 +651,21 @@ rqs_modify_from_file(lList **answer_list, const char *filename, const char* name
                } else {
                   snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_RQS_NOTFOUNDINFILE_SS, lGetString(tmp_rqs, RQS_name), filename);
                   answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
-                  lFreeList(&found_rqs_list);
+                  ok = false;
                   break;
                }
             }
             lFreeList(&selected_rqs_list);
-            lFreeList(&rqs_list);
-            rqs_list = found_rqs_list;
+            if (ok) {
+               ret = rqs_add_del_mod_via_gdi(found_rqs_list, answer_list, cmd, sub_cmd);
+            }
+            lFreeList(&found_rqs_list);
          } else {
-            cmd = ocs::gdi::Command::REPLACE;
-         }
-
-         if (rqs_list != nullptr) {
-            ret = rqs_add_del_mod_via_gdi(rqs_list, answer_list, cmd, sub_cmd);
+            /* -Mrqs <file> without an explicit rqs_list behaves like the per-object
+             * -Mp/-Mq: upsert each rqs contained in the file (modify it if it
+             * already exists, add it if it is new) and leave every other rqs
+             * untouched - rather than REPLACE-ing the whole rqs configuration. */
+            ret = rqs_upsert_via_gdi(answer_list, rqs_list);
          }
       }
       lFreeList(&rqs_list);

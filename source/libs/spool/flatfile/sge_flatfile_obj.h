@@ -56,6 +56,7 @@ extern spooling_field RQS_fields[];
 spooling_field *sge_build_PR_field_list(bool spool);
 spooling_field *sge_build_UU_field_list(bool spool);
 spooling_field *sge_build_STN_field_list(bool spool, bool recurse);
+spooling_field *sge_build_STN_json_field_list();
 spooling_field *sge_build_EH_field_list(bool spool, bool to_stdout,
                                             bool history);
 spooling_field *sge_build_CONF_field_list(bool spool_config);

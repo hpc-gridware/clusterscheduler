@@ -426,6 +426,81 @@ static tConfEntry conf_entries[] = {
 };
 
 /**
+ * @brief Classify a config parameter's list-ness for JSON rendering (CS-2313a).
+ *
+ * The two sets below mirror exactly how the config loader parses them above: the value
+ * lists are split via lString2ListNone(..., " \t,"); the *_params are tokenized via
+ * sge_strtok_r(..., PARAMS_DELIMITER) into KEY=VALUE entries. Everything else is a
+ * plain scalar string.
+ *
+ * @param name  config parameter name
+ * @return CONF_PARAM_VALUE_LIST, CONF_PARAM_NAMEVALUE_LIST, or CONF_PARAM_SCALAR
+ */
+conf_param_list_type_t
+config_param_list_type(const char *name)
+{
+   if (name == nullptr) {
+      return CONF_PARAM_SCALAR;
+   }
+   static const char *const value_lists[] = {
+      "user_lists", "xuser_lists", "projects", "xprojects",
+      "login_shells", "jsv_allowed_mod", "load_sensor", "administrator_mail",
+      "gid_range", "port_range", nullptr
+   };
+   static const char *const namevalue_lists[] = {
+      "qmaster_params", "execd_params", "reporting_params", "binding_params", "jsv_params", nullptr
+   };
+   for (const char *const *p = value_lists; *p != nullptr; p++) {
+      if (strcmp(name, *p) == 0) {
+         return CONF_PARAM_VALUE_LIST;
+      }
+   }
+   for (const char *const *p = namevalue_lists; *p != nullptr; p++) {
+      if (strcmp(name, *p) == 0) {
+         return CONF_PARAM_NAMEVALUE_LIST;
+      }
+   }
+   return CONF_PARAM_SCALAR;
+}
+
+/**
+ * @brief Numeric value type of a config scalar parameter (CS-2313a).
+ *
+ * Mirrors the chg_conf_val(..., &intval, INT|TIME) calls in the config loader (params
+ * parsed into a numeric/time field). Everything else (string targets) is NONE ->
+ * rendered as a string.
+ *
+ * @param name  config parameter name
+ * @return the complex entry type (INT/TIME), or NONE for a plain string parameter
+ */
+ocs::CEntry::Type
+config_param_value_type(const char *name)
+{
+   if (name == nullptr) {
+      return ocs::CEntry::Type::NONE;
+   }
+   static const char *const int_params[] = {
+      "min_uid", "min_gid", "max_aj_instances", "max_aj_tasks", "max_u_jobs",
+      "max_jobs", "max_advance_reservations", "auto_user_oticket", "auto_user_fshare", nullptr
+   };
+   static const char *const time_params[] = {
+      "load_report_time", "max_unheard", "token_extend_time", "reschedule_unknown",
+      "auto_user_delete_time", nullptr
+   };
+   for (const char *const *p = int_params; *p != nullptr; p++) {
+      if (strcmp(name, *p) == 0) {
+         return ocs::CEntry::Type::INT;
+      }
+   }
+   for (const char *const *p = time_params; *p != nullptr; p++) {
+      if (strcmp(name, *p) == 0) {
+         return ocs::CEntry::Type::TIME;
+      }
+   }
+   return ocs::CEntry::Type::NONE;
+}
+
+/**
  * \brief Initialize config list with compiled in values.
  *
  * \details

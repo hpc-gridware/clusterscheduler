@@ -195,4 +195,8 @@
 
 #define NONE_STR                  "NONE"
 
+/* canonical token for an unlimited resource value (TIME/MEM/INT/DOUBLE). Used for
+ * display and as the stored sentinel; parsing remains case-insensitive. */
+#define INFINITY_STR              "INFINITY"
+
 #define FIRST_CORE                "first_core"

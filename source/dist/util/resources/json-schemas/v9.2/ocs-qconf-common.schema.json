@@ -1,0 +1,48 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-common.schema.json",
+   "title": "OCS/GCS qconf common definitions",
+   "description": "Shared $defs referenced by the per-object ocs-qconf-*.schema.json files describing the JSON produced and consumed by qconf -fmt json.",
+   "$defs": {
+      "scalarValue": {
+         "description": "A typed attribute value. Plain strings, numbers and booleans are emitted natively. TIME/MEM values are rendered as unit/colon strings (compact, the default) or as numbers (seconds/bytes, with -fmtval numeric); an unlimited value is the string \"INFINITY\". An unset string attribute is the empty string. On input any of these forms is accepted.",
+         "anyOf": [
+            {"type": "string"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"}
+         ]
+      },
+      "nameList": {
+         "description": "A list of names (e.g. an access list, project list or host reference list).",
+         "type": "array",
+         "items": {
+            "type": "string"
+         }
+      },
+      "namedValue": {
+         "description": "A name/value entry, e.g. one complex value, threshold, load value or parameter.",
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "name",
+            "value"
+         ],
+         "properties": {
+            "name": {
+               "type": "string"
+            },
+            "value": {
+               "$ref": "#/$defs/scalarValue"
+            }
+         }
+      },
+      "namedValueList": {
+         "description": "An array of name/value entries.",
+         "type": "array",
+         "items": {
+            "$ref": "#/$defs/namedValue"
+         }
+      }
+   }
+}

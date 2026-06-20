@@ -46,6 +46,7 @@
 
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/ocs_spool_json.h"   /* CS-2313a: spool_json_write_typed_list */
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_cqueue.h"
@@ -61,6 +62,8 @@
 #include "gdi/ocs_gdi_Request.h"
 
 #include "ocs_qconf_cqueue.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
+#include "ocs_qconf_centry.h"  /* CS-2313a: centry_list_get_via_gdi */
 #include "msg_qconf.h"
 #include "ocs_Pattern.h"
 
@@ -127,6 +130,46 @@ cqueue_get_via_gdi(lList **answer_list, const char *name)
    }
 
    DRETURN(ret);
+}
+
+/**
+ * @brief Type the values inside the cqueue per-host complex override lists (CS-2313a).
+ *
+ * For -fmt json, types the values inside complex_values, load_thresholds, and
+ * suspend_thresholds. Each override entry's value is a CE_Type list; resolving its
+ * types from the master complex list lets the JSON writer emit typed numbers (e.g.
+ * np_load_avg as a double) instead of strings. Mutates only the throwaway object about
+ * to be shown.
+ *
+ * @param cqueue  the (throwaway) cqueue element to be shown
+ */
+static void
+cqueue_json_type_complex_overrides(lListElem *cqueue)
+{
+   if (qconf_opt_format != SP_FORM_JSON || cqueue == nullptr) {
+      return;
+   }
+   static const int override_fields[] = {
+      CQ_consumable_config_list, CQ_load_thresholds, CQ_suspend_thresholds
+   };
+   lList *alp = nullptr;
+   lList *master_centry_list = centry_list_get_via_gdi(&alp);
+   lFreeList(&alp);
+   if (master_centry_list == nullptr) {
+      return;
+   }
+   for (int i = 0; i < 3; i++) {
+      lList *override_list = lGetListRW(cqueue, override_fields[i]);
+      for (lListElem *entry = lFirstRW(override_list); entry != nullptr; entry = lNextRW(entry)) {
+         lList *ce_list = lGetListRW(entry, ACELIST_value);
+         if (ce_list != nullptr && lGetNumberOfElem(ce_list) > 0) {
+            lList *fill_alp = nullptr;
+            centry_list_fill_request(ce_list, &fill_alp, master_centry_list, true, true, true);
+            lFreeList(&fill_alp);
+         }
+      }
+   }
+   lFreeList(&master_centry_list);
 }
 
 static bool cqueue_hgroup_get_via_gdi(lList **answer_list,
@@ -304,7 +347,7 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
       filename = spool_flatfile_write_object(answer_list, *this_elem,
                                                      false, CQ_fields,
                                                      &qconf_sfi, SP_DEST_TMP,
-                                                     SP_FORM_ASCII, filename,
+                                                     qconf_opt_format, filename,
                                                      false);
       
       if (answer_list_output(answer_list)) {
@@ -322,7 +365,7 @@ cqueue_provide_modify_context(lListElem **this_elem, lList **answer_list,
          fields_out[0] = NoName;
          cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                              CQ_fields, fields_out, false, 
-                                             &qconf_sfi, SP_FORM_ASCII, 
+                                             &qconf_sfi, qconf_opt_format, 
                                              nullptr, filename);
 
          if (answer_list_output(answer_list)) {
@@ -383,7 +426,14 @@ cqueue_add(lList **answer_list, const char *name)
          ret &= cqueue_provide_modify_context(&cqueue, answer_list, true);
       }
       if (ret) {
-         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::SET_ALL);
+         /* CS-2305: upsert - modify the cqueue if it already exists, add it
+          * otherwise (consistent with -Aq and the interactive -aprj/-acal). */
+         lList *exist_al = nullptr;
+         lListElem *existing = cqueue_get_via_gdi(&exist_al, lGetString(cqueue, CQ_name));
+         lFreeList(&exist_al);
+         ocs::gdi::Command cmd = (existing != nullptr) ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
+         lFreeElem(&existing);
+         ret &= cqueue_add_del_mod_via_gdi(cqueue, answer_list, cmd, ocs::gdi::SubCommand::SET_ALL);
       }
 
       lFreeElem(&cqueue);
@@ -406,7 +456,7 @@ cqueue_add_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
@@ -475,7 +525,7 @@ cqueue_modify_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       cqueue = spool_flatfile_read_object(answer_list, CQ_Type, nullptr,
                                           CQ_fields, fields_out, false, &qconf_sfi,
-                                          SP_FORM_ASCII, nullptr, filename);
+                                          qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&cqueue);
@@ -525,7 +575,58 @@ cqueue_delete(lList **answer_list, const char *name)
    DRETURN(ret);
 }
 
-bool 
+/****** resource_quota_qconf/qinstance_list_write() **************************
+*  NAME
+*     qinstance_list_write() -- print a list of resolved queue instances
+*
+*  FUNCTION
+*     Writes the resolved queue instances collected for a -sq <queue>@<host> or
+*     -sq <queue>@@<hostgroup> query. In json mode the instances are emitted as a
+*     single enveloped array ({ "qinstance": [ ... ] }) so the output is one valid
+*     json document even when the query matches several hosts; in ASCII mode each
+*     instance is printed as a separate block (blank-line separated), as before.
+*     The "qinstance" type name is passed explicitly because the QINSTANCE object
+*     type cannot be resolved from its content (it is mis-detected as exechost).
+*
+*  RESULT
+*     bool - true on success, false on error
+*******************************************************************************/
+static bool
+qinstance_list_write(lList **answer_list, const lList *qi_list)
+{
+   DENTER(TOP_LAYER);
+
+   spooling_field *fields = sge_build_QU_field_list(true, false);
+   /* Bugfix Issuezilla #1198: keep slots out of the complex values list */
+   insert_custom_complex_values_writer(fields);
+
+   if (qconf_opt_format == SP_FORM_JSON) {
+      dstring out = DSTRING_INIT;
+      spool_json_write_typed_list(answer_list, qi_list, fields, "qinstance", &out);
+      printf("%s", sge_dstring_get_string(&out));
+      sge_dstring_free(&out);
+   } else {
+      bool is_first = true;
+      const lListElem *qi;
+      for_each_ep(qi, qi_list) {
+         if (!is_first) {
+            fprintf(stdout, "\n");
+         }
+         is_first = false;
+         const char *fn = spool_flatfile_write_object(answer_list, qi, false, fields,
+                                                       &qconf_sfi, SP_DEST_STDOUT,
+                                                       qconf_opt_format, nullptr,
+                                                       false, "qinstance");
+         sge_free(&fn);
+      }
+   }
+   sge_free(&fields);
+
+   bool ret = !answer_list_output(answer_list);
+   DRETURN(ret);
+}
+
+bool
 cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 {
    bool ret = true;
@@ -561,121 +662,74 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
             if (has_domain) {
                const char *d_pattern = sge_dstring_get_string(&host_domain);
                lList *href_list = nullptr;
-               bool is_first = true;
+               lList *qi_list = lCreateList("qinstance_list", QU_Type);
+               static const int qu_ce[] = {QU_consumable_config_list,
+                                           QU_load_thresholds, QU_suspend_thresholds};
 
                hgroup_list_find_matching_and_resolve(hgroup_list, nullptr,
                                                      d_pattern, &href_list);
                for_each_ep_lv(qref, qref_list) {
                   const char *cqueue_name = lGetString(qref, QR_name);
-                  const lListElem *cqueue = nullptr;
+                  const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
                   if (cqueue != nullptr) {
-                     const lList *qinstance_list = nullptr;
+                     const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-                     qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep_lv(href, href_list) {
                         const char *hostname = lGetHost(href, HR_name);
-                        const lListElem *qinstance;
-
-                        qinstance = lGetElemHost(qinstance_list,
-                                                 QU_qhostname, hostname);
-
+                        const lListElem *qinstance = lGetElemHost(qinstance_list,
+                                                                  QU_qhostname, hostname);
                         if (qinstance != nullptr) {
-                           const char *filename_stdout;
-                           spooling_field *fields = sge_build_QU_field_list
-                                                                  (true, false);
-
-                           /* Bugfix: Issuezilla #1198
-                            * In order to prevent the slots from being printed
-                            * in the complex values list, we have to insert a
-                            * custom writer for the complex_values field.  We do
-                            * that with this function. */
-                           insert_custom_complex_values_writer(fields);
-
-                           if (is_first) {
-                              is_first = false; 
-                           } else {
-                              fprintf(stdout, "\n");
-                           }
-                           
-                           filename_stdout = spool_flatfile_write_object(
-                                                       answer_list, qinstance,
-                                                       false, fields,
-                                                       &qconf_sfi,
-                                                       SP_DEST_STDOUT,
-                                                       SP_FORM_ASCII, nullptr,
-                                                       false);
-                           sge_free(&fields);
-                           sge_free(&filename_stdout);
-                           
-                           if (answer_list_output(answer_list)) {
-                              lFreeList(&href_list);
-                              lFreeList(&qref_list);
-                              DRETURN(false);
-                           }
-
+                           /* collect a typed copy of the resolved instance */
+                           lListElem *qi_copy = lCopyElem(qinstance);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }
                      }
                   }
                }
 
+               /* one json array (or blank-line separated ASCII blocks) for all
+                * instances matched by the domain - keeps the json a single doc */
+               bool ok = qinstance_list_write(answer_list, qi_list);
+               lFreeList(&qi_list);
                lFreeList(&href_list);
-               lFreeList(&qref_list);
+               if (!ok) {
+                  lFreeList(&qref_list);
+                  DRETURN(false);
+               }
             } else if (has_hostname) {
                const char *h_pattern = sge_dstring_get_string(&host_domain);
                bool h_pattern_is_expression = ocs::is_expression(h_pattern);
-               bool is_first = true;
+               lList *qi_list = lCreateList("qinstance_list", QU_Type);
+               static const int qu_ce[] = {QU_consumable_config_list,
+                                           QU_load_thresholds, QU_suspend_thresholds};
 
                for_each_ep_lv(qref, qref_list) {
-                  const char *cqueue_name = nullptr;
-                  const lListElem *cqueue = nullptr;
+                  const char *cqueue_name = lGetString(qref, QR_name);
+                  const lListElem *cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
 
-                  cqueue_name = lGetString(qref, QR_name);
-                  cqueue = lGetElemStr(cqueue_list, CQ_name, cqueue_name);
                   if (cqueue != nullptr) {
-                     const lList *qinstance_list = nullptr;
+                     const lList *qinstance_list = lGetList(cqueue, CQ_qinstances);
 
-                     qinstance_list = lGetList(cqueue, CQ_qinstances);
                      for_each_ep_lv(qinstance, qinstance_list) {
-                        const char *hostname = nullptr;
-
-                        hostname = lGetHost(qinstance, QU_qhostname);
+                        const char *hostname = lGetHost(qinstance, QU_qhostname);
                         if (!sge_eval_expression(ocs::CEntry::Type::HOST, h_pattern, hostname, nullptr, true, h_pattern_is_expression)) {
-                           const char *filename;
-                           spooling_field *fields = sge_build_QU_field_list(true, false);
-
-                           /* Bugfix: Issuezilla #1198
-                            * In order to prevent the slots from being printed
-                            * in the complex values list, we have to insert a
-                            * custom writer for the complex_values field.  We do
-                            * that with this function. */
-                           insert_custom_complex_values_writer(fields);
-
-                           if (is_first) {
-                              is_first = false; 
-                           } else {
-                              fprintf(stdout, "\n");
-                           }
-
-                           filename = spool_flatfile_write_object(answer_list, qinstance,
-                                                                  false, fields,
-                                                                  &qconf_sfi,
-                                                                  SP_DEST_STDOUT,
-                                                                  SP_FORM_ASCII, nullptr,
-                                                                  false);
-                           sge_free(&fields);
-                           sge_free(&filename);
-                           
-                           if (answer_list_output(answer_list)) {
-                              DRETURN(false);
-                           }
-
+                           lListElem *qi_copy = lCopyElem(qinstance);
+                           qconf_json_fill_complex(qi_copy, qu_ce, 3);
+                           lAppendElem(qi_list, qi_copy);
                            found_something = true;
                         }
                      }
                   }
+               }
+
+               bool ok = qinstance_list_write(answer_list, qi_list);
+               lFreeList(&qi_list);
+               if (!ok) {
+                  lFreeList(&qref_list);
+                  DRETURN(false);
                }
             } else {
                bool is_first = true;
@@ -693,9 +747,10 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
                         fprintf(stdout, "\n");
                      }
 
-                     outname = spool_flatfile_write_object(answer_list, cqueue, 
+                     cqueue_json_type_complex_overrides(const_cast<lListElem *>(cqueue));
+                     outname = spool_flatfile_write_object(answer_list, cqueue,
                                                  false, CQ_fields, &qconf_sfi,
-                                                 SP_DEST_STDOUT, SP_FORM_ASCII, 
+                                                 SP_DEST_STDOUT, qconf_opt_format,
                                                  nullptr, false);
                      sge_free(&outname);
                            
@@ -727,8 +782,9 @@ cqueue_show(lList **answer_list, const lList *qref_pattern_list)
 
       DTRACE;
       ret &= cqueue_set_template_attributes(cqueue, answer_list);
+      cqueue_json_type_complex_overrides(cqueue);
       filename = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
-                                             &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII,
+                                             &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format,
                                              nullptr, false);
                            
       sge_free(&filename);

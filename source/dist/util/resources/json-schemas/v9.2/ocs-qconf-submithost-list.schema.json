@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-submithost-list.schema.json",
+   "title": "OCS/GCS qconf submit host list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -ss: the list of submit host names.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "submithost"
+   ],
+   "properties": {
+      "submithost": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}

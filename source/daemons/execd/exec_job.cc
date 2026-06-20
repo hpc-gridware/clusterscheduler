@@ -218,7 +218,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
    const char *ret = lGetString(master_q, limit_nm);
    // can not really happen but just to be sure
    if (ret == nullptr) {
-      ret = "INFINITY";
+      ret = INFINITY_STR;
    }
 
    DPRINTF("sge_exec_job_get_limit: limit_name=%s, limit=%s\n", limit_name, ret);
@@ -229,7 +229,7 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
    // and sum up the limits of the (possibly multiple) queues
    const lListElem *pe = lGetObject(jatep, JAT_pe_object);
    if (pe != nullptr && lGetBool(pe, PE_control_slaves) &&
-       strcasecmp(ret, "INFINITY") != 0) {
+       strcasecmp(ret, INFINITY_STR) != 0) {
       DPRINTF("sge_exec_job_get_limit: we have a tightly integrated parallel job and limit is not infinity\n");
       if ((petep == nullptr && lGetBool(pe, PE_master_forks_slaves)) || // master task forks slaves
                                lGetBool(pe, PE_daemon_forks_slaves)) {  // one slave task forks slaves
@@ -247,9 +247,9 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, ocs:
                const char *limit_str = lGetString(queue, limit_nm);
                if (limit_str != NULL) {
                   // if one of the queue instances has a limit of infinity the sum is infinity
-                  if (strcasecmp(limit_str, "INFINITY") == 0) {
+                  if (strcasecmp(limit_str, INFINITY_STR) == 0) {
                      DPRINTF("sge_exec_job_get_limit: qinstance %s has infinity\n", lGetString(gdil_ep, JG_qname));
-                     ret = "INFINITY";
+                     ret = INFINITY_STR;
                      break;
                   } else {
                      uint32_t slots = lGetUlong(gdil_ep, JG_slots);

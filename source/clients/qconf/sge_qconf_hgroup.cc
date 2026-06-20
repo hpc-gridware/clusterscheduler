@@ -49,6 +49,7 @@
 #include "gdi/ocs_gdi_Client.h"
 
 #include "sge_qconf_hgroup.h"
+#include "ocs_qconf_parse.h"   /* CS-2313a: qconf_opt_format */
 #include "msg_common.h"
 #include "msg_qconf.h"
 
@@ -149,7 +150,7 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
    DENTER(TOP_LAYER);
    if (this_elem != nullptr && *this_elem != nullptr) {
       const char *filename = nullptr;
-      filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, SP_FORM_ASCII, filename, false);
+      filename = spool_flatfile_write_object(answer_list, *this_elem, false, HGRP_fields, &qconf_sfi, SP_DEST_TMP, qconf_opt_format, filename, false);
       if (answer_list_has_error(answer_list)) {
          if (filename != nullptr) {
             unlink(filename);
@@ -164,7 +165,7 @@ hgroup_provide_modify_context(lListElem **this_elem, lList **answer_list, bool i
          lListElem *hgroup = nullptr;
 
          fields_out[0] = NoName;
-         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr, HGRP_fields, fields_out, true, &qconf_sfi, SP_FORM_ASCII, nullptr, filename);
+         hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr, HGRP_fields, fields_out, true, &qconf_sfi, qconf_opt_format, nullptr, filename);
             
          if (answer_list_output (answer_list)) {
             lFreeElem(&hgroup);
@@ -243,7 +244,14 @@ hgroup_add(lList **answer_list, const char *name, bool is_name_validate ) {
          ret = hgroup_provide_modify_context(&hgroup, answer_list, true);
       }
       if (ret) {
-         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, ocs::gdi::Command::ADD);
+         /* CS-2306: upsert - modify the host group if it already exists, add it
+          * otherwise (consistent with -Ahgrp and the interactive -aprj/-acal). */
+         lList *exist_al = nullptr;
+         lListElem *existing = hgroup_get_via_gdi(&exist_al, lGetHost(hgroup, HGRP_name));
+         lFreeList(&exist_al);
+         ocs::gdi::Command cmd = (existing != nullptr) ? ocs::gdi::Command::MOD : ocs::gdi::Command::ADD;
+         lFreeElem(&existing);
+         ret = hgroup_add_del_mod_via_gdi(hgroup, answer_list, cmd);
       }
 
       lFreeElem(&hgroup);
@@ -266,7 +274,7 @@ hgroup_add_from_file(lList **answer_list, const char *filename) {
       fields_out[0] = NoName;
       hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
 
       if (answer_list_output (answer_list)) {
          lFreeElem(&hgroup);
@@ -331,7 +339,7 @@ hgroup_modify_from_file(lList **answer_list, const char *filename)
       fields_out[0] = NoName;
       hgroup = spool_flatfile_read_object(answer_list, HGRP_Type, nullptr,
                                       HGRP_fields, fields_out, true, &qconf_sfi,
-                                      SP_FORM_ASCII, nullptr, filename);
+                                      qconf_opt_format, nullptr, filename);
             
       if (answer_list_output(answer_list)) {
          lFreeElem(&hgroup);
@@ -390,7 +398,7 @@ hgroup_show(lList **answer_list, const char *name)
    
       if (hgroup != nullptr) {
          const char *filename;
-         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, SP_FORM_ASCII, nullptr, false);
+         filename = spool_flatfile_write_object(answer_list, hgroup, false, HGRP_fields, &qconf_sfi, SP_DEST_STDOUT, qconf_opt_format, nullptr, false);
       
          sge_free(&filename);
          lFreeElem(&hgroup);

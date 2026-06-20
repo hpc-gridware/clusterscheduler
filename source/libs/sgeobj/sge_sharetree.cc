@@ -172,8 +172,11 @@ lListElem *getSNTemplate()
 
    DENTER(TOP_LAYER);
 
+   /* Use the catch-all "default" node so the offered template is a valid,
+    * acceptable sharetree as-is: a single leaf named "template" would be rejected
+    * (it is not a known user/project), whereas "default" matches all users. */
    ep = lCreateElem(STN_Type);
-   lSetString(ep, STN_name, "template");
+   lSetString(ep, STN_name, "default");
    lSetUlong(ep, STN_type, 0);
    lSetUlong(ep, STN_id, 0);
    lSetUlong(ep, STN_shares, 0);

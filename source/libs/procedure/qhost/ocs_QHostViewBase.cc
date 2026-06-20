@@ -25,6 +25,7 @@
 #include <sstream>
 #include <format>
 
+#include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_bitfield.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_parse_num_par.h"
@@ -421,7 +422,7 @@ ocs::QHostViewBase::reformat_double_string(char *new_string, const size_t result
    double dval;
    if (parse_ulong_val(&dval, nullptr, CEntry::Type::MEM, old_string, nullptr, 0)) {
       if (dval == DBL_MAX) {
-         std::strcpy(new_string, "infinity");
+         std::strcpy(new_string, INFINITY_STR);   // CS-2318: canonical uppercase token
       } else {
          static const char units[] = { '\0', 'K', 'M', 'G', 'T', 'P', 'E' };
 

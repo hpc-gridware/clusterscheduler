@@ -1,0 +1,22 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-hostgroup.schema.json",
+   "title": "OCS/GCS qconf host group schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -shgrp / -Mhgrp: a host group definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "group_name",
+      "hostlist"
+   ],
+   "properties": {
+      "group_name": {
+         "type": "string",
+         "description": "Host group name (starts with '@')."
+      },
+      "hostlist": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Member host names and/or nested host group names (or empty when NONE)."
+      }
+   }
+}

@@ -336,29 +336,31 @@
 #define MSG_GDI_USAGE_ac_OPT_CONTEXT_LIST                "[-ac context_list]"
 #define MSG_GDI_UTEXT_ac_OPT_CONTEXT_LIST                _MESSAGE(23292, _("add context variable(s)"))
 
-#define MSG_GDI_USAGE_acal_OPT_FNAME                     "[-acal calendar_name]"
-#define MSG_GDI_UTEXT_acal_OPT_FNAME                     _MESSAGE(23294, _("add a new calendar"))
+#define MSG_GDI_USAGE_acal_OPT_FNAME                     "[-acal [calendar_name]]"
+#define MSG_GDI_UTEXT_acal_OPT_FNAME                     _MESSAGE(23294, _("add a calendar"))
 
-#define MSG_GDI_USAGE_Acal_OPT_FNAME                     "[-Acal fname]"
-#define MSG_GDI_UTEXT_Acal_OPT_FNAME                     _MESSAGE(23295, _("add a new calendar from file"))
+#define MSG_GDI_USAGE_Acal_OPT_FNAME                     "[-Acal fname|dir]"
+#define MSG_GDI_UTEXT_Acal_OPT_FNAME                     _MESSAGE(23295, _("add calendar(s) from a file or a directory of files"))
 
-#define MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME                "[-ackpt ckpt_name]"
+#define MSG_GDI_USAGE_ackpt_OPT_CKPT_NAME                "[-ackpt [ckpt_name]]"
 #define MSG_GDI_UTEXT_ackpt_OPT_CKPT_NAME                _MESSAGE(23296, _("add a ckpt interface definition"))
 
-#define MSG_GDI_USAGE_Ackpt_OPT_FNAME                    "[-Ackpt fname]"
-#define MSG_GDI_UTEXT_Ackpt_OPT_FNAME                    _MESSAGE(23297, _("add a ckpt interface definition from file"))
+#define MSG_GDI_USAGE_Ackpt_OPT_FNAME                    "[-Ackpt fname|dir]"
+#define MSG_GDI_UTEXT_Ackpt_OPT_FNAME                    _MESSAGE(23297, _("add ckpt interface(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_aconf_OPT_HOST_LIST                "[-aconf host_list]"
 #define MSG_GDI_UTEXT_aconf_OPT_HOST_LIST                _MESSAGE(23298, _("add configurations"))
 
-#define MSG_GDI_USAGE_Aconf_OPT_FILE_LIST                "[-Aconf file_list]"
-#define MSG_GDI_UTEXT_Aconf_OPT_FILE_LIST                _MESSAGE(23299, _("add configurations from file_list"))
+#define MSG_GDI_USAGE_Aconf_OPT_FILE_LIST                "[-Aconf file_list|dir]"
+#define MSG_GDI_UTEXT_Aconf_OPT_FILE_LIST                _MESSAGE(23299, _("add configurations from file_list or directory"))
 
 #define MSG_GDI_USAGE_ae_OPT_EXEC_SERVER_TEMPLATE        "[-ae [exec_server_template]]"
 #define MSG_GDI_UTEXT_ae_OPT_EXEC_SERVER_TEMPLATE        _MESSAGE(23300, _("add an exec host using a template"))
 
-#define MSG_GDI_USAGE_Ae_OPT_FNAME                       "[-Ae fname]"
-#define MSG_GDI_UTEXT_Ae_OPT_FNAME                       _MESSAGE(23301, _("add an exec host from file"))
+#define MSG_GDI_USAGE_Ae_OPT_FNAME                       "[-Ae fname|dir]"
+#define MSG_GDI_UTEXT_Ae_OPT_FNAME                       _MESSAGE(23301, _("add exec host(s) from a file or directory"))
+#define MSG_GDI_USAGE_De_OPT_FNAME                       "[-De fname|dir]"
+#define MSG_GDI_UTEXT_De_OPT_FNAME                       _MESSAGE(60765, _("delete exec host(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_ah_OPT_HOSTNAME                    "[-ah hostname_list]"
 #define MSG_GDI_UTEXT_ah_OPT_HOSTNAME                    _MESSAGE(23302, _("add an administrative host"))
@@ -369,14 +371,16 @@
 #define MSG_GDI_USAGE_ao_OPT_USER_LIST                   "[-ao user_list]"
 #define MSG_GDI_UTEXT_ao_OPT_USER_LIST                   _MESSAGE(23304, _("add user to operator list"))
 
-#define MSG_GDI_USAGE_ap_OPT_PE_NAME                     "[-ap pe-name]"
-#define MSG_GDI_UTEXT_ap_OPT_PE_NAME                     _MESSAGE(23305, _("add a new parallel environment"))
+#define MSG_GDI_USAGE_ap_OPT_PE_NAME                     "[-ap [pe-name]]"
+#define MSG_GDI_UTEXT_ap_OPT_PE_NAME                     _MESSAGE(23305, _("add a parallel environment"))
 
-#define MSG_GDI_USAGE_Ap_OPT_FNAME                       "[-Ap fname]"
-#define MSG_GDI_UTEXT_Ap_OPT_FNAME                       _MESSAGE(23306, _("add a new parallel environment from file"))
+#define MSG_GDI_USAGE_Ap_OPT_FNAME                       "[-Ap fname|dir]"
+#define MSG_GDI_UTEXT_Ap_OPT_FNAME                       _MESSAGE(23306, _("add PE(s) from a file or a directory"))
 
 #define MSG_GDI_USAGE_aq_OPT_Q_TEMPLATE                  "[-aq [queue_name]]"
 #define MSG_GDI_UTEXT_aq_OPT_Q_TEMPLATE                  _MESSAGE(23307, _("add a new cluster queue"))
+#define MSG_GDI_USAGE_Dq_OPT_FNAME                       "[-Dq fname|dir]"
+#define MSG_GDI_UTEXT_Dq_OPT_FNAME                       _MESSAGE(60766, _("delete cluster queue(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_as_OPT_HOSTNAME                    "[-as hostname_list]"
 #define MSG_GDI_UTEXT_as_OPT_HOSTNAME                    _MESSAGE(23308, _("add a submit host"))
@@ -393,29 +397,29 @@
 #define MSG_GDI_USAGE_au_OPT_USER_LIST_LISTNAME_LIST     "[-au user_list listname_list]"
 #define MSG_GDI_UTEXT_au_OPT_USER_LIST_LISTNAME_LIST     _MESSAGE(23312, _("add user(s) to userset list(s)"))
 
-#define MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST               "[-Au fname]"
-#define MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST               _MESSAGE(23313, _("add userset from file"))
+#define MSG_GDI_USAGE_Au_OPT_LISTNAME_LIST               "[-Au fname|dir]"
+#define MSG_GDI_UTEXT_Au_OPT_LISTNAME_LIST               _MESSAGE(23313, _("add userset from file or directory"))
 
-#define MSG_GDI_USAGE_AUSER                              "[-auser]"
+#define MSG_GDI_USAGE_AUSER                              "[-auser [name]]"
 #define MSG_GDI_UTEXT_AUSER                              _MESSAGE(23314, _("add user"))
 
-#define MSG_GDI_USAGE_Auser                              "[-Auser fname]"
-#define MSG_GDI_UTEXT_Auser                              _MESSAGE(23315, _("add user from file"))
+#define MSG_GDI_USAGE_Auser                              "[-Auser fname|dir]"
+#define MSG_GDI_UTEXT_Auser                              _MESSAGE(23315, _("add user from file or directory"))
 
-#define MSG_GDI_USAGE_APRJ                               "[-aprj]"
+#define MSG_GDI_USAGE_APRJ                               "[-aprj [name]]"
 #define MSG_GDI_UTEXT_APRJ                               _MESSAGE(23316, _("add project"))
 
-#define MSG_GDI_USAGE_Aprj                               "[-Aprj fname]"
-#define MSG_GDI_UTEXT_Aprj                               _MESSAGE(23317, _("add project from file"))
+#define MSG_GDI_USAGE_Aprj                               "[-Aprj fname|dir]"
+#define MSG_GDI_UTEXT_Aprj                               _MESSAGE(23317, _("add project from file or directory"))
 
-#define MSG_GDI_USAGE_Mprj_OPT_PROJECT                   "[-Mprj fname]"
-#define MSG_GDI_UTEXT_Mprj_OPT_PROJECT                   _MESSAGE(23318, _("modify project from file"))
+#define MSG_GDI_USAGE_Mprj_OPT_PROJECT                   "[-Mprj fname|dir]"
+#define MSG_GDI_UTEXT_Mprj_OPT_PROJECT                   _MESSAGE(23318, _("modify project from file or directory"))
 
 #define MSG_GDI_USAGE_A_OPT_ACCOUNT_STRING               "[-A account_string]"
 #define MSG_GDI_UTEXT_A_OPT_ACCOUNT_STRING               _MESSAGE(23319, _("account string in accounting record"))
 
-#define MSG_GDI_USAGE_Aq_OPT_FNAME                       "[-Aq fname]"
-#define MSG_GDI_UTEXT_Aq_OPT_FNAME                       _MESSAGE(23320, _("add a queue from file"))
+#define MSG_GDI_USAGE_Aq_OPT_FNAME                       "[-Aq fname|dir]"
+#define MSG_GDI_UTEXT_Aq_OPT_FNAME                       _MESSAGE(23320, _("add queue(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_c_OPT_CKPT_SELECTOR                "[-c ckpt_selector]"
 #define MSG_GDI_UTEXT_c_OPT_CKPT_SELECTOR                _MESSAGE(23321, _("define type of checkpointing for job"))
@@ -447,17 +451,34 @@
 #define MSG_GDI_USAGE_dc_OPT_SIMPLE_COMPLEX_LIST         "[-dc simple_context_list]"
 #define MSG_GDI_UTEXT_dc_OPT_SIMPLE_COMPLEX_LIST         _MESSAGE(23331, _("delete context variable(s)"))
 
-#define MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME             "[-dcal calendar_name]"
-#define MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME             _MESSAGE(23332, _("delete calendar"))
+#define MSG_GDI_USAGE_dcal_OPT_CALENDAR_NAME             "[-dcal calendar_name_list]"
+#define MSG_GDI_UTEXT_dcal_OPT_CALENDAR_NAME             _MESSAGE(23332, _("delete calendar(s)"))
 
-#define MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME                "[-dckpt ckpt_name]"
-#define MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME                _MESSAGE(23333, _("delete ckpt interface definition"))
+#define MSG_GDI_USAGE_Dcal_OPT_FNAME                     "[-Dcal fname|dir]"
+#define MSG_GDI_UTEXT_Dcal_OPT_FNAME                     _MESSAGE(23520, _("delete the calendar(s) named in a file or a directory of files"))
+
+#define MSG_GDI_USAGE_dckpt_OPT_CKPT_NAME                "[-dckpt ckpt_name_list]"
+#define MSG_GDI_UTEXT_dckpt_OPT_CKPT_NAME                _MESSAGE(23333, _("delete ckpt interface definition(s)"))
+
+#define MSG_GDI_USAGE_Dckpt_OPT_FNAME                    "[-Dckpt fname|dir]"
+#define MSG_GDI_UTEXT_Dckpt_OPT_FNAME                    _MESSAGE(23524, _("delete ckpt interface(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_dconf_OPT_HOST_LIST                "[-dconf host_list]"
 #define MSG_GDI_UTEXT_dconf_OPT_HOST_LIST                _MESSAGE(23334, _("delete local configurations"))
 
+#define MSG_GDI_USAGE_Dconf_OPT                          "[-Dconf fname|dir]"
+#define MSG_GDI_UTEXT_Dconf_OPT                          _MESSAGE(60772, _("delete local configuration(s) named by a file or directory"))
+
+#define MSG_GDI_USAGE_Fmt_OPT                            "[-fmt plain|json]"
+#define MSG_GDI_UTEXT_Fmt_OPT                            _MESSAGE(60773, _("output/input format for -s*/-a*/-A*/-m*/-M* (default plain)"))
+
+#define MSG_GDI_USAGE_FmtVal_OPT                         "[-fmtval compact|numeric]"
+#define MSG_GDI_UTEXT_FmtVal_OPT                         _MESSAGE(60775, _("for -fmt json: render time/memory values as compact unit/colon strings (default) or as numeric seconds/bytes"))
+
+#define MSG_FLATFILE_INVALIDJSON                         _MESSAGE(60774, _("invalid JSON input"))
+
 #define MSG_GDI_USAGE_de_OPT_HOST_LIST                   "[-de host_list]"
-#define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host"))
+#define MSG_GDI_UTEXT_de_OPT_HOST_LIST                   _MESSAGE(23335, _("delete exec host(s)"))
 
 #define MSG_GDI_USAGE_display_OPT_DISPLAY                "[-display display]"
 #define MSG_GDI_UTEXT_display_OPT_DISPLAY                _MESSAGE(23336, _("set DISPLAY variable inside interactive job (not available for qrsh without command)"))
@@ -474,11 +495,14 @@
 #define MSG_GDI_USAGE_do_OPT_USER_LIST                   "[-do user_list]"
 #define MSG_GDI_UTEXT_do_OPT_USER_LIST                   _MESSAGE(23340, _("delete user from operator list"))
 
-#define MSG_GDI_USAGE_dp_OPT_PE_NAME                     "[-dp pe-name]"
-#define MSG_GDI_UTEXT_dp_OPT_PE_NAME                     _MESSAGE(23341, _("delete parallel environment"))
+#define MSG_GDI_USAGE_dp_OPT_PE_NAME                     "[-dp pe-name_list]"
+#define MSG_GDI_UTEXT_dp_OPT_PE_NAME                     _MESSAGE(23341, _("delete parallel environment(s)"))
 
-#define MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST              "[-dq destin_id_list]"
-#define MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST              _MESSAGE(23342, _("delete queue"))
+#define MSG_GDI_USAGE_Dp_OPT_FNAME                       "[-Dp fname|dir]"
+#define MSG_GDI_UTEXT_Dp_OPT_FNAME                       _MESSAGE(23525, _("delete PE(s) named in a file or a directory"))
+
+#define MSG_GDI_USAGE_dq_OPT_DESTIN_ID_LIST              "[-dq cqueue_list]"
+#define MSG_GDI_UTEXT_dq_OPT_DESTIN_ID_LIST              _MESSAGE(23342, _("delete cluster queue(s)"))
 
 #define MSG_GDI_USAGE_ds_OPT_HOST_LIST                   "[-ds host_list]"
 #define MSG_GDI_UTEXT_ds_OPT_HOST_LIST                   _MESSAGE(23343, _("delete submit host"))
@@ -495,11 +519,20 @@
 #define MSG_GDI_USAGE_dul_OPT_LISTNAME_LIST              "[-dul listname_list]"
 #define MSG_GDI_UTEXT_dul_OPT_LISTNAME_LIST              _MESSAGE(23347, _("delete userset list(s) completely"))
 
+#define MSG_GDI_USAGE_Du_OPT                             "[-Du fname|dir]"
+#define MSG_GDI_UTEXT_Du_OPT                             _MESSAGE(60771, _("delete userset(s) named in a file or directory"))
+
 #define MSG_GDI_USAGE_DUSER_USER                         "[-duser user_list]"
 #define MSG_GDI_UTEXT_DUSER_USER                         _MESSAGE(23348, _("delete user(s)"))
 
+#define MSG_GDI_USAGE_Duser_OPT                          "[-Duser fname|dir]"
+#define MSG_GDI_UTEXT_Duser_OPT                          _MESSAGE(60769, _("delete user(s) named in a file or directory"))
+
 #define MSG_GDI_USAGE_dprj_OPT_PROJECT                   "[-dprj project_list]"
 #define MSG_GDI_UTEXT_dprj_OPT_PROJECT                   _MESSAGE(23349, _("delete project"))
+
+#define MSG_GDI_USAGE_Dprj_OPT                           "[-Dprj fname|dir]"
+#define MSG_GDI_UTEXT_Dprj_OPT                           _MESSAGE(60770, _("delete project(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_e_OPT                              "[-e]"
 #define MSG_GDI_UTEXT_e_OPT                              _MESSAGE(23350, _("enable"))
@@ -558,25 +591,25 @@
 #define MSG_GDI_UTEXT_mc_OPT_COMPLEX                     _MESSAGE(23368, _("modify complex attributes"))
 
 #define MSG_GDI_USAGE_mckpt_OPT_CKPT_NAME                "[-mckpt ckpt_name]"
-#define MSG_GDI_UTEXT_mckpt_OPT_CKPT_NAME                _MESSAGE(23369, _("modify a ckpt interface definition"))
+#define MSG_GDI_UTEXT_mckpt_OPT_CKPT_NAME                _MESSAGE(23369, _("modify a ckpt interface (adds it if missing)"))
 
 #define MSG_GDI_USAGE_Mc_OPT_COMPLEX_NAME_FNAME          "[-Mc fname]"
 #define MSG_GDI_UTEXT_Mc_OPT_COMPLEX_NAME_FNAME          _MESSAGE(23370, _("modify complex attributes from file"))
 
 #define MSG_GDI_USAGE_mcal_OPT_CALENDAR_NAME             "[-mcal calendar_name]"
-#define MSG_GDI_UTEXT_mcal_OPT_CALENDAR_NAME             _MESSAGE(23371, _("modify calendar"))
+#define MSG_GDI_UTEXT_mcal_OPT_CALENDAR_NAME             _MESSAGE(23371, _("modify a calendar"))
 
-#define MSG_GDI_USAGE_Mcal_OPT_FNAME                     "[-Mcal fname]"
-#define MSG_GDI_UTEXT_Mcal_OPT_FNAME                     _MESSAGE(23372, _("modify calendar from file"))
+#define MSG_GDI_USAGE_Mcal_OPT_FNAME                     "[-Mcal fname|dir]"
+#define MSG_GDI_UTEXT_Mcal_OPT_FNAME                     _MESSAGE(23372, _("modify calendar(s) from a file or a directory of files"))
 
-#define MSG_GDI_USAGE_Mckpt_OPT_FNAME                    "[-Mckpt fname]"
-#define MSG_GDI_UTEXT_Mckpt_OPT_FNAME                    _MESSAGE(23373, _("modify a ckpt interface definition from file"))
+#define MSG_GDI_USAGE_Mckpt_OPT_FNAME                    "[-Mckpt fname|dir]"
+#define MSG_GDI_UTEXT_Mckpt_OPT_FNAME                    _MESSAGE(23373, _("modify ckpt interface(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mconf_OPT_HOSTLISTORGLOBAL         "[-mconf [host_list|global]]"
 #define MSG_GDI_UTEXT_mconf_OPT_HOSTLISTORGLOBAL         _MESSAGE(23374, _("modify configurations"))
 
-#define MSG_GDI_USAGE_Mconf_OPT_FILE_LIST                "[-Mconf file_list]"
-#define MSG_GDI_UTEXT_Mconf_OPT_FILE_LIST                _MESSAGE(23375, _("modify configurations from file_list"))
+#define MSG_GDI_USAGE_Mconf_OPT_FILE_LIST                "[-Mconf file_list|dir]"
+#define MSG_GDI_UTEXT_Mconf_OPT_FILE_LIST                _MESSAGE(23375, _("modify configurations from file_list or directory"))
 
 #define MSG_GDI_USAGE_msconf_OPT                         "[-msconf]"
 #define MSG_GDI_UTEXT_msconf_OPT                         _MESSAGE(23376, _("modify scheduler configuration"))
@@ -584,32 +617,32 @@
 #define MSG_GDI_USAGE_me_OPT_SERVER                      "[-me server]"
 #define MSG_GDI_UTEXT_me_OPT_SERVER                      _MESSAGE(23377, _("modify exec server"))
 
-#define MSG_GDI_USAGE_Me_OPT_FNAME                       "[-Me fname]"
-#define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec server from file"))
+#define MSG_GDI_USAGE_Me_OPT_FNAME                       "[-Me fname|dir]"
+#define MSG_GDI_UTEXT_Me_OPT_FNAME                       _MESSAGE(23378, _("modify exec host(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mp_OPT_PE_NAME                     "[-mp pe-name]"
-#define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment"))
+#define MSG_GDI_UTEXT_mp_OPT_PE_NAME                     _MESSAGE(23379, _("modify a parallel environment (adds it if missing)"))
 
-#define MSG_GDI_USAGE_Mp_OPT_FNAME                       "[-Mp fname]"
-#define MSG_GDI_UTEXT_Mp_OPT_FNAME                       _MESSAGE(23380, _("modify a parallel environment from file"))
+#define MSG_GDI_USAGE_Mp_OPT_FNAME                       "[-Mp fname|dir]"
+#define MSG_GDI_UTEXT_Mp_OPT_FNAME                       _MESSAGE(23380, _("modify PE(s) from a file or a directory"))
 
 #define MSG_GDI_USAGE_mq_OPT_QUEUE                       "[-mq queue]"
 #define MSG_GDI_UTEXT_mq_OPT_QUEUE                       _MESSAGE(23381, _("modify a queue"))
 
-#define MSG_GDI_USAGE_Mq_OPT_FNAME                       "[-Mq fname]"
-#define MSG_GDI_UTEXT_Mq_OPT_FNAME                       _MESSAGE(23382, _("modify a queue from file"))
+#define MSG_GDI_USAGE_Mq_OPT_FNAME                       "[-Mq fname|dir]"
+#define MSG_GDI_UTEXT_Mq_OPT_FNAME                       _MESSAGE(23382, _("modify queue(s) from a file or directory"))
 
 #define MSG_GDI_USAGE_mu_OPT_LISTNAME_LIST               "[-mu listname_list]"
 #define MSG_GDI_UTEXT_mu_OPT_LISTNAME_LIST               _MESSAGE(23384, _("modify the given userset list"))
 
-#define MSG_GDI_USAGE_Mu_OPT_LISTNAME_LIST               "[-Mu fname]"
-#define MSG_GDI_UTEXT_Mu_OPT_LISTNAME_LIST               _MESSAGE(23385, _("modify userset from file"))
+#define MSG_GDI_USAGE_Mu_OPT_LISTNAME_LIST               "[-Mu fname|dir]"
+#define MSG_GDI_UTEXT_Mu_OPT_LISTNAME_LIST               _MESSAGE(23385, _("modify userset from file or directory"))
 
 #define MSG_GDI_USAGE_muser_OPT_USER                     "[-muser user]"
 #define MSG_GDI_UTEXT_muser_OPT_USER                     _MESSAGE(23386, _("modify a user"))
 
-#define MSG_GDI_USAGE_Muser_OPT_USER                     "[-Muser fname]"
-#define MSG_GDI_UTEXT_Muser_OPT_USER                     _MESSAGE(23387, _("modify a user from file"))
+#define MSG_GDI_USAGE_Muser_OPT_USER                     "[-Muser fname|dir]"
+#define MSG_GDI_UTEXT_Muser_OPT_USER                     _MESSAGE(23387, _("modify a user from file or directory"))
 
 #define MSG_GDI_USAGE_mprj_OPT_PROJECT                   "[-mprj project]"
 #define MSG_GDI_UTEXT_mprj_OPT_PROJECT                   _MESSAGE(23388, _("modify a project"))
@@ -756,17 +789,20 @@
 #define MSG_GDI_USAGE_ahgrp_OPT                          "[-ahgrp group]"
 #define MSG_GDI_UTEXT_ahgrp_OPT                          _MESSAGE(23443, _("add new host group entry"))
 
-#define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp file]"
-#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add new host group entry from file"))
+#define MSG_GDI_USAGE_Ahgrp_OPT                          "[-Ahgrp fname|dir]"
+#define MSG_GDI_UTEXT_Ahgrp_OPT                          _MESSAGE(23444, _("add host group(s) from a file or directory"))
 
-#define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group]"
-#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry"))
+#define MSG_GDI_USAGE_dhgrp_OPT                          "[-dhgrp group_list]"
+#define MSG_GDI_UTEXT_dhgrp_OPT                          _MESSAGE(23445, _("delete host group entry(s)"))
+
+#define MSG_GDI_USAGE_Dhgrp_OPT                          "[-Dhgrp fname|dir]"
+#define MSG_GDI_UTEXT_Dhgrp_OPT                          _MESSAGE(60767, _("delete host group(s) named in a file or directory"))
 
 #define MSG_GDI_USAGE_mhgrp_OPT                          "[-mhgrp group]"
 #define MSG_GDI_UTEXT_mhgrp_OPT                          _MESSAGE(23446, _("modify host group entry"))
 
-#define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file]"
-#define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file"))
+#define MSG_GDI_USAGE_Mhgrp_OPT                          "[-Mhgrp file|dir]"
+#define MSG_GDI_UTEXT_Mhgrp_OPT                          _MESSAGE(23447, _("modify host group entry from file or directory"))
 
 #define MSG_GDI_USAGE_su_OPT_LISTNAME_LIST               "[-su listname_list]"
 #define MSG_GDI_UTEXT_su_OPT_LISTNAME_LIST               _MESSAGE(23448, _("show the given userset list" ))
@@ -934,6 +970,14 @@
 #define MSG_GDI_USAGE_dept_OPT_DEPT_NAME                 "[-dept department_name]"
 #define MSG_GDI_UTEXT_dept_OPT_DEPT_NAME                 _MESSAGE(23519, _("set job's department"))
 
+/* CS-2299: cross-cutting modifiers for the qconf add/modify/delete operations */
+#define MSG_GDI_USAGE_DRYRUN_OPT                         "[-dry]"
+#define MSG_GDI_UTEXT_DRYRUN_OPT                         _MESSAGE(23521, _("show what would happen, change nothing"))
+#define MSG_GDI_USAGE_FORCE_OPT                          "[-f]"
+#define MSG_GDI_UTEXT_FORCE_OPT                          _MESSAGE(23522, _("skip the bulk-delete confirmation prompt"))
+#define MSG_GDI_USAGE_STRICT_OPT                         "[-strict]"
+#define MSG_GDI_UTEXT_STRICT_OPT                         _MESSAGE(23523, _("apply a directory only if all files are valid"))
+
 
 
 #define MSG_UNKNOWNREASON                 _MESSAGE(60000, _("<unknown reason>"))
@@ -1004,14 +1048,16 @@
 #define MSG_GDI_UTEXT_srqsl_OPT           _MESSAGE(60617, _("show resource quota set list"))
 #define MSG_GDI_USAGE_arqs_OPT            "[-arqs [rqs_list]]"
 #define MSG_GDI_UTEXT_arqs_OPT            _MESSAGE(60618, _("add resource quota set(s)"))
-#define MSG_GDI_USAGE_Arqs_OPT            "[-Arqs fname]"
-#define MSG_GDI_UTEXT_Arqs_OPT            _MESSAGE(60619, _("add resource quota set(s) from file"))
+#define MSG_GDI_USAGE_Arqs_OPT            "[-Arqs fname|dir]"
+#define MSG_GDI_UTEXT_Arqs_OPT            _MESSAGE(60619, _("add resource quota set(s) from a file or directory"))
 #define MSG_GDI_USAGE_drqs_OPT            "[-drqs rqs_list]"
 #define MSG_GDI_UTEXT_drqs_OPT            _MESSAGE(60620, _("delete resource quota set(s)"))
+#define MSG_GDI_USAGE_Drqs_OPT            "[-Drqs fname|dir]"
+#define MSG_GDI_UTEXT_Drqs_OPT            _MESSAGE(60768, _("delete resource quota set(s) named in a file or directory"))
 #define MSG_GDI_USAGE_mrqs_OPT            "[-mrqs [rqs_list]]"
 #define MSG_GDI_UTEXT_mrqs_OPT            _MESSAGE(60621, _("modify resource quota set(s)"))
-#define MSG_GDI_USAGE_Mrqs_OPT            "[-Mrqs fname [rqs_list]]"
-#define MSG_GDI_UTEXT_Mrqs_OPT            _MESSAGE(60622, _("modify resource quota set(s) from file"))
+#define MSG_GDI_USAGE_Mrqs_OPT            "[-Mrqs fname|dir]"
+#define MSG_GDI_UTEXT_Mrqs_OPT            _MESSAGE(60622, _("modify resource quota set(s) from a file or directory"))
 #define MSG_OBJ_NAME_MISSING              _MESSAGE(60623, _("Object name missing in request"))
 
 #define MSG_GDI_USAGE_wd_OPT              "[-wd working_directory]"
@@ -1051,16 +1097,18 @@
 #define MSG_PACK_ERRORUNPACKING_S         _MESSAGE(60714, _("error unpacking: " SFN))
 #define MSG_PACK_INVALIDPACKDATA          _MESSAGE(60715, _("the pack string contained invalid characters"))
 #define MSG_PACK_WRONGPACKTYPE_UI         _MESSAGE(60716, _("wrong pack type (got: " sge_u32 " / expected %d"))
-#define MSG_GDI_USAGE_ace_OPT_NAME        "[-ace ce_name]"
-#define MSG_GDI_UTEXT_ace_OPT_NAME        _MESSAGE(60717, _("add a new complex entry"))
-#define MSG_GDI_USAGE_dce_OPT_NAME        "[-dce ce_name]"
-#define MSG_GDI_UTEXT_dce_OPT_NAME        _MESSAGE(60718, _("delete a complex entry"))
-#define MSG_GDI_USAGE_Ace_OPT_FNAME       "[-Ace fname]"
-#define MSG_GDI_UTEXT_Ace_OPT_FNAME       _MESSAGE(60719, _("add a new complex entry from file"))
+#define MSG_GDI_USAGE_ace_OPT_NAME        "[-ace [ce_name]]"
+#define MSG_GDI_UTEXT_ace_OPT_NAME        _MESSAGE(60717, _("add a complex entry"))
+#define MSG_GDI_USAGE_dce_OPT_NAME        "[-dce ce_name_list]"
+#define MSG_GDI_UTEXT_dce_OPT_NAME        _MESSAGE(60718, _("delete complex entry(s)"))
+#define MSG_GDI_USAGE_Dce_OPT_FNAME       "[-Dce fname|dir]"
+#define MSG_GDI_UTEXT_Dce_OPT_FNAME       _MESSAGE(60764, _("delete complex entry(s) named in a file or directory"))
+#define MSG_GDI_USAGE_Ace_OPT_FNAME       "[-Ace fname|dir]"
+#define MSG_GDI_UTEXT_Ace_OPT_FNAME       _MESSAGE(60719, _("add complex entry(s) from a file or directory"))
 #define MSG_GDI_USAGE_mce_OPT_NAME        "[-mce ce_name]"
-#define MSG_GDI_UTEXT_mce_OPT_NAME        _MESSAGE(60720, _("modify a complex entry"))
-#define MSG_GDI_USAGE_Mce_OPT_FNAME       "[-Mce fname]"
-#define MSG_GDI_UTEXT_Mce_OPT_FNAME       _MESSAGE(60721, _("modify a complex entry from file"))
+#define MSG_GDI_UTEXT_mce_OPT_NAME        _MESSAGE(60720, _("modify a complex entry (adds it if missing)"))
+#define MSG_GDI_USAGE_Mce_OPT_FNAME       "[-Mce fname|dir]"
+#define MSG_GDI_UTEXT_Mce_OPT_FNAME       _MESSAGE(60721, _("modify complex entry(s) from a file or directory"))
 #define MSG_GDI_USAGE_sce_OPT_NAME        "[-sce ce_name]"
 #define MSG_GDI_UTEXT_sce_OPT_NAME        _MESSAGE(60722, _("show a complex entry"))
 #define MSG_GDI_USAGE_scel_OPT            "[-scel]"
@@ -1128,24 +1176,59 @@
 
 #define MSG_OBJ_ROLE                      _MESSAGE(60750, _("role"))
 
-#define MSG_GDI_USAGE_arole_OPT           "[-arole role_name]"
-#define MSG_GDI_UTEXT_arole_OPT           _MESSAGE(60751, _("add a new role interactively"))
-#define MSG_GDI_USAGE_Arole_OPT           "[-Arole fname]"
-#define MSG_GDI_UTEXT_Arole_OPT           _MESSAGE(60752, _("add a new role from file"))
-#define MSG_GDI_USAGE_drole_OPT           "[-drole role_name]"
-#define MSG_GDI_UTEXT_drole_OPT           _MESSAGE(60753, _("delete role"))
+#define MSG_GDI_USAGE_arole_OPT           "[-arole [role_name]]"
+#define MSG_GDI_UTEXT_arole_OPT           _MESSAGE(60751, _("add a role interactively"))
+#define MSG_GDI_USAGE_Arole_OPT           "[-Arole fname|dir]"
+#define MSG_GDI_UTEXT_Arole_OPT           _MESSAGE(60752, _("add role(s) from a file or a directory"))
+#define MSG_GDI_USAGE_drole_OPT           "[-drole role_name_list]"
+#define MSG_GDI_UTEXT_drole_OPT           _MESSAGE(60753, _("delete role(s)"))
+#define MSG_GDI_USAGE_Drole_OPT           "[-Drole fname|dir]"
+#define MSG_GDI_UTEXT_Drole_OPT           _MESSAGE(60763, _("delete role(s) named in a file or a directory"))
 #define MSG_GDI_USAGE_mrole_OPT           "[-mrole role_name]"
-#define MSG_GDI_UTEXT_mrole_OPT           _MESSAGE(60754, _("modify role interactively"))
-#define MSG_GDI_USAGE_Mrole_OPT           "[-Mrole fname]"
-#define MSG_GDI_UTEXT_Mrole_OPT           _MESSAGE(60755, _("modify role from file"))
+#define MSG_GDI_UTEXT_mrole_OPT           _MESSAGE(60754, _("modify a role (adds it if missing)"))
+#define MSG_GDI_USAGE_Mrole_OPT           "[-Mrole fname|dir]"
+#define MSG_GDI_UTEXT_Mrole_OPT           _MESSAGE(60755, _("modify role(s) from a file or a directory"))
 #define MSG_GDI_USAGE_srole_OPT           "[-srole role_name]"
 #define MSG_GDI_UTEXT_srole_OPT           _MESSAGE(60756, _("show role"))
 #define MSG_GDI_USAGE_srolel_OPT          "[-srolel]"
 #define MSG_GDI_UTEXT_srolel_OPT          _MESSAGE(60757, _("show all role names"))
 
+/* CS-23xx: bulk export (-S<obj> name|dir) usage lines */
+#define MSG_GDI_USAGE_Scal_OPT            "[-Scal name|dir]"
+#define MSG_GDI_UTEXT_Scal_OPT            _MESSAGE(60776, _("export calendar(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sckpt_OPT           "[-Sckpt name|dir]"
+#define MSG_GDI_UTEXT_Sckpt_OPT           _MESSAGE(60777, _("export checkpointing environment(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sce_OPT             "[-Sce name|dir]"
+#define MSG_GDI_UTEXT_Sce_OPT             _MESSAGE(60778, _("export complex entry/entries to a file or a directory of files"))
+#define MSG_GDI_USAGE_Se_OPT              "[-Se name|dir]"
+#define MSG_GDI_UTEXT_Se_OPT              _MESSAGE(60779, _("export exec host(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Shgrp_OPT           "[-Shgrp name|dir]"
+#define MSG_GDI_UTEXT_Shgrp_OPT           _MESSAGE(60780, _("export host group(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sp_OPT              "[-Sp name|dir]"
+#define MSG_GDI_UTEXT_Sp_OPT              _MESSAGE(60781, _("export parallel environment(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sprj_OPT            "[-Sprj name|dir]"
+#define MSG_GDI_UTEXT_Sprj_OPT            _MESSAGE(60782, _("export project(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sq_OPT              "[-Sq name|dir]"
+#define MSG_GDI_UTEXT_Sq_OPT              _MESSAGE(60783, _("export cluster queue(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Srole_OPT           "[-Srole name|dir]"
+#define MSG_GDI_UTEXT_Srole_OPT           _MESSAGE(60784, _("export role(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Srqs_OPT            "[-Srqs name|dir]"
+#define MSG_GDI_UTEXT_Srqs_OPT            _MESSAGE(60785, _("export resource quota set(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Su_OPT              "[-Su name|dir]"
+#define MSG_GDI_UTEXT_Su_OPT              _MESSAGE(60786, _("export userset(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Suser_OPT           "[-Suser name|dir]"
+#define MSG_GDI_UTEXT_Suser_OPT           _MESSAGE(60787, _("export user(s) to a file or a directory of files"))
+#define MSG_GDI_USAGE_Sstree_OPT          "[-Sstree fname]"
+#define MSG_GDI_UTEXT_Sstree_OPT          _MESSAGE(60788, _("export the share tree to a file"))
+#define MSG_GDI_USAGE_Ssconf_OPT          "[-Ssconf fname]"
+#define MSG_GDI_UTEXT_Ssconf_OPT          _MESSAGE(60789, _("export the scheduler configuration to a file"))
+#define MSG_GDI_USAGE_Sconf_OPT           "[-Sconf host|dir]"
+#define MSG_GDI_UTEXT_Sconf_OPT           _MESSAGE(60790, _("export the global and/or host configuration(s) to a file or a directory of files"))
+
 #define MSG_ROLE_INTEGRITY_USERSET_SS  _MESSAGE(60758, _("startup integrity: role " SFQ " references userset " SFQ " which does not exist"))
 #define MSG_ROLE_INTEGRITY_PARENT_SS   _MESSAGE(60759, _("startup integrity: role " SFQ " references parent role " SFQ " which does not exist"))
 #define MSG_ROLE_PERMLIST_NFIELDS_SI   _MESSAGE(60760, _("denied: perm_list rule " SFQ " has %d colon-separated fields (expected 6)"))
 #define MSG_ROLE_PERMLIST_EMPTYFIELD_SI _MESSAGE(60761, _("denied: perm_list rule " SFQ " has empty field %d"))
+#define MSG_ROLE_PERMLIST_NOTARRAY      _MESSAGE(60762, _("denied: perm_list must be a JSON array of rule objects"))
 
 // clang-format on

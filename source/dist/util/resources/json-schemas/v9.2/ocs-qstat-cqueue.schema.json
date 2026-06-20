@@ -1,10 +1,12 @@
 {
    "$schema": "https://json-schema.org/draft/2020-12/schema",
-   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-group.schema.json",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qstat-cqueue.schema.json",
    "title": "OCS/GCS qstat group schema",
    "description": "Schema describing qstat group output (-g c). Fields after 'manual_intervention' are only present with -ext switch.",
    "type": "object",
-   "required": ["queues"],
+   "required": [
+      "queues"
+   ],
    "additionalProperties": true,
    "properties": {
       "queues": {

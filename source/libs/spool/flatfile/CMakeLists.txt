@@ -22,6 +22,7 @@
 set(LIBRARY_NAME spoolc)
 set(LIBRARY_SOURCES
         sge_flatfile.cc
+        ocs_spool_json.cc
         sge_flatfile_obj.cc
         sge_flatfile_obj_rsmap.cc
         sge_spooling_flatfile.cc

@@ -618,11 +618,11 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
        */
       if (ret) {
          const char *value[] = {
-            "INFINITY", "INFINITY", "INFINITY", "INFINITY",
-            "INFINITY", "INFINITY", "INFINITY", "INFINITY",
-            "INFINITY", "INFINITY", "INFINITY", "INFINITY",
+            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
+            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
+            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
             nullptr
-         }; 
+         };
          const int attr[] = {
             CQ_s_fsize, CQ_h_fsize, CQ_s_data, CQ_h_data,
             CQ_s_stack, CQ_h_stack, CQ_s_core, CQ_h_core,
@@ -647,9 +647,9 @@ cqueue_set_template_attributes(lListElem *this_elem, lList **answer_list)
        */
       if (ret) {
          const char *value[] = {
-            "INFINITY", "INFINITY", "INFINITY", "INFINITY",
+            INFINITY_STR, INFINITY_STR, INFINITY_STR, INFINITY_STR,
             nullptr
-         }; 
+         };
          const int attr[] = {
             CQ_s_rt, CQ_h_rt, CQ_s_cpu, CQ_h_cpu,
             NoName

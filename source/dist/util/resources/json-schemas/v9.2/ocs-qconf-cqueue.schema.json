@@ -1,0 +1,393 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-cqueue.schema.json",
+   "title": "OCS/GCS qconf cluster queue schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sq / -Mq: a cluster queue definition. Apart from qname and hostlist, every attribute is a list of per-host overrides: each entry has a 'name' (the host or host group it applies to, or 'default') and a 'value' whose type depends on the attribute.",
+   "type": "object",
+   "additionalProperties": {
+      "$ref": "#/$defs/anyOverrideList"
+   },
+   "required": [
+      "qname",
+      "hostlist"
+   ],
+   "properties": {
+      "$schema": {
+         "type": "string"
+      },
+      "$id": {
+         "type": "string"
+      },
+      "qname": {
+         "type": "string",
+         "description": "Cluster queue name."
+      },
+      "hostlist": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Hosts and host groups on which the queue is instantiated."
+      },
+      "seq_no": {
+         "$ref": "#/$defs/integerOverrideList",
+         "description": "Sequence number used for queue sorting."
+      },
+      "load_thresholds": {
+         "$ref": "#/$defs/complexOverrideList",
+         "description": "Load thresholds above which the queue is suspended/overloaded."
+      },
+      "suspend_thresholds": {
+         "$ref": "#/$defs/complexOverrideList",
+         "description": "Thresholds above which jobs in the queue are suspended."
+      },
+      "nsuspend": {
+         "$ref": "#/$defs/integerOverrideList",
+         "description": "Number of jobs suspended per suspend interval when a threshold is exceeded."
+      },
+      "suspend_interval": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Time interval between successive job suspensions (time value)."
+      },
+      "priority": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Nice value applied to jobs in the queue."
+      },
+      "min_cpu_interval": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Minimum interval between two checkpoints (time value)."
+      },
+      "processors": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Processor set the queue binds to (UNDEFINED or a processor specification)."
+      },
+      "qtype": {
+         "$ref": "#/$defs/qtypeOverrideList",
+         "description": "Per-host queue type: a list of the enabled queue type names."
+      },
+      "ckpt_list": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Checkpointing environments available in the queue."
+      },
+      "pe_list": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Parallel environments available in the queue."
+      },
+      "rerun": {
+         "$ref": "#/$defs/booleanOverrideList",
+         "description": "Default rerun behaviour for jobs aborted in the queue."
+      },
+      "slots": {
+         "$ref": "#/$defs/integerOverrideList",
+         "description": "Number of job slots."
+      },
+      "tmpdir": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Temporary directory path."
+      },
+      "shell": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Default command interpreter used to run jobs."
+      },
+      "prolog": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Queue prolog command, or NONE."
+      },
+      "epilog": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Queue epilog command, or NONE."
+      },
+      "shell_start_mode": {
+         "$ref": "#/$defs/shellStartModeOverrideList",
+         "description": "Per-host shell start mode."
+      },
+      "starter_method": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Executable started in place of the shell, or NONE."
+      },
+      "suspend_method": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Command used to suspend jobs, or NONE."
+      },
+      "resume_method": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Command used to resume jobs, or NONE."
+      },
+      "terminate_method": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Command used to terminate jobs, or NONE."
+      },
+      "notify": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Time to wait between a warning signal and the kill signal (time value)."
+      },
+      "owner_list": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Users allowed to suspend/resume/disable the queue."
+      },
+      "user_lists": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Access lists allowed to use the queue."
+      },
+      "xuser_lists": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Access lists denied use of the queue."
+      },
+      "subordinate_list": {
+         "$ref": "#/$defs/anyOverrideList",
+         "description": "Subordinate queue relationships."
+      },
+      "complex_values": {
+         "$ref": "#/$defs/complexOverrideList",
+         "description": "Complex (resource) values and capacities of the queue."
+      },
+      "projects": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Projects allowed to use the queue."
+      },
+      "xprojects": {
+         "$ref": "#/$defs/nameListOverrideList",
+         "description": "Projects denied use of the queue."
+      },
+      "calendar": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Calendar controlling availability of the queue, or NONE."
+      },
+      "initial_state": {
+         "$ref": "#/$defs/initialStateOverrideList",
+         "description": "Per-host initial queue state."
+      },
+      "s_rt": {"$ref": "#/$defs/scalarOverrideList", "description": "Soft real time limit (time value or INFINITY)."},
+      "h_rt": {"$ref": "#/$defs/scalarOverrideList", "description": "Hard real time limit (time value or INFINITY)."},
+      "s_cpu": {"$ref": "#/$defs/scalarOverrideList", "description": "Soft CPU time limit (time value or INFINITY)."},
+      "h_cpu": {"$ref": "#/$defs/scalarOverrideList", "description": "Hard CPU time limit (time value or INFINITY)."},
+      "s_fsize": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft file size limit (memory value or INFINITY)."
+      },
+      "h_fsize": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard file size limit (memory value or INFINITY)."
+      },
+      "s_data": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft data segment limit (memory value or INFINITY)."
+      },
+      "h_data": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard data segment limit (memory value or INFINITY)."
+      },
+      "s_stack": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft stack size limit (memory value or INFINITY)."
+      },
+      "h_stack": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard stack size limit (memory value or INFINITY)."
+      },
+      "s_core": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft core file size limit (memory value or INFINITY)."
+      },
+      "h_core": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard core file size limit (memory value or INFINITY)."
+      },
+      "s_rss": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft resident set size limit (memory value or INFINITY)."
+      },
+      "h_rss": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard resident set size limit (memory value or INFINITY)."
+      },
+      "s_vmem": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Soft virtual memory limit (memory value or INFINITY)."
+      },
+      "h_vmem": {
+         "$ref": "#/$defs/scalarOverrideList",
+         "description": "Hard virtual memory limit (memory value or INFINITY)."
+      }
+   },
+   "$defs": {
+      "overrideEntry": {
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "name",
+            "value"
+         ],
+         "properties": {
+            "name": {
+               "type": "string",
+               "description": "Host or host group the override applies to, or 'default'."
+            }
+         }
+      },
+      "anyOverrideList": {
+         "description": "A per-host override list with an unconstrained value (scalar, name list or name/value list).",
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "anyOf": [
+                           {"$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue"},
+                           {"$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"},
+                           {"$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"}
+                        ]
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "scalarOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "integerOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "type": "integer",
+                        "minimum": 0
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "booleanOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "type": "boolean"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "nameListOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "complexOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "qtypeOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "type": "array",
+                        "items": {
+                           "type": "string",
+                           "enum": [
+                              "BATCH",
+                              "INTERACTIVE"
+                           ]
+                        }
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "shellStartModeOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "type": "string",
+                        "enum": [
+                           "unix_behavior",
+                           "posix_compliant",
+                           "script_from_stdin"
+                        ]
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      "initialStateOverrideList": {
+         "type": "array",
+         "items": {
+            "allOf": [
+               {"$ref": "#/$defs/overrideEntry"},
+               {
+                  "type": "object",
+                  "properties": {
+                     "value": {
+                        "type": "string",
+                        "enum": [
+                           "default",
+                           "enabled",
+                           "disabled"
+                        ]
+                     }
+                  }
+               }
+            ]
+         }
+      }
+   }
+}

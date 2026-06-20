@@ -1,0 +1,51 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-sharetree.schema.json",
+   "title": "OCS/GCS qconf share tree schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sstree / -Astree: the share tree as a nested tree of nodes. The document is the root node; each node carries its children inline in childnodes.",
+   "type": "object",
+   "additionalProperties": true,
+   "allOf": [
+      {
+         "$ref": "#/$defs/node"
+      }
+   ],
+   "$defs": {
+      "node": {
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "name",
+            "type",
+            "shares",
+            "childnodes"
+         ],
+         "properties": {
+            "name": {
+               "type": "string",
+               "description": "Node name: a project, user, or the special 'default' user node for interior nodes, or an arbitrary grouping name for the root."
+            },
+            "type": {
+               "type": "string",
+               "description": "Node kind.",
+               "enum": [
+                  "USER",
+                  "PROJECT"
+               ]
+            },
+            "shares": {
+               "type": "integer",
+               "minimum": 0,
+               "description": "Shares assigned to this node relative to its siblings."
+            },
+            "childnodes": {
+               "type": "array",
+               "description": "Child nodes (empty for a leaf).",
+               "items": {
+                  "$ref": "#/$defs/node"
+               }
+            }
+         }
+      }
+   }
+}

@@ -1,0 +1,96 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-pe.schema.json",
+   "title": "OCS/GCS qconf parallel environment schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sp / -Mp: a parallel environment definition.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "pe_name",
+      "slots",
+      "user_lists",
+      "xuser_lists",
+      "start_proc_args",
+      "stop_proc_args",
+      "allocation_rule",
+      "control_slaves",
+      "job_is_first_task",
+      "urgency_slots",
+      "accounting_summary",
+      "ign_sreq_on_mhost",
+      "master_forks_slaves",
+      "daemon_forks_slaves"
+   ],
+   "properties": {
+      "pe_name": {
+         "type": "string",
+         "description": "Parallel environment name."
+      },
+      "slots": {
+         "type": "integer",
+         "minimum": 0,
+         "description": "Total number of slots available to the parallel environment."
+      },
+      "user_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists allowed to use the parallel environment."
+      },
+      "xuser_lists": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+         "description": "Access lists denied use of the parallel environment."
+      },
+      "start_proc_args": {
+         "type": "string",
+         "description": "Startup command line, or the empty string for NONE."
+      },
+      "stop_proc_args": {
+         "type": "string",
+         "description": "Shutdown command line, or the empty string for NONE."
+      },
+      "allocation_rule": {
+         "description": "Slot allocation rule: a special token ($pe_slots, $fill_up, $round_robin) or a fixed integer slot count.",
+         "anyOf": [
+            {
+               "type": "string",
+               "enum": [
+                  "$pe_slots",
+                  "$fill_up",
+                  "$round_robin"
+               ]
+            },
+            {
+               "type": "integer",
+               "minimum": 1
+            }
+         ]
+      },
+      "control_slaves": {
+         "type": "boolean",
+         "description": "Whether OCS/GCS generates and controls the slave tasks."
+      },
+      "job_is_first_task": {
+         "type": "boolean",
+         "description": "Whether the job script itself counts as one of the requested slots."
+      },
+      "urgency_slots": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+         "description": "Slot count assumed for urgency/resource computation: a method token (min, max, avg) or a fixed integer."
+      },
+      "accounting_summary": {
+         "type": "boolean",
+         "description": "Whether a single accounting record is written for the whole parallel job."
+      },
+      "ign_sreq_on_mhost": {
+         "type": "boolean",
+         "description": "Whether slave resource requests are ignored on the master host."
+      },
+      "master_forks_slaves": {
+         "type": "boolean",
+         "description": "Whether the master task forks the slave tasks."
+      },
+      "daemon_forks_slaves": {
+         "type": "boolean",
+         "description": "Whether a daemon forks the slave tasks."
+      }
+   }
+}

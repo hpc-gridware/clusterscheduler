@@ -312,13 +312,24 @@ static spooling_field RQRL_sub_fields[] = {
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
+/* CS-2313a: structural JSON shape of an RQS filter (RQRF). The ASCII path renders
+ * these via write_RQR_obj/read_RQR_obj (the flat "{a,b,!c}" string and takes
+ * precedence there); the JSON path instead recurses these sub_fields, emitting
+ * { "expand": <bool>, "scope": [..], "xscope": [..] }. */
+static spooling_field RQRF_sub_fields[] = {
+   {  RQRF_expand,         0, "expand",            false, nullptr,       false, nullptr, nullptr, nullptr},
+   {  RQRF_scope,          0, "scope",             false, ST_sub_fields, false, nullptr, nullptr, nullptr},
+   {  RQRF_xscope,         0, "xscope",            false, ST_sub_fields, false, nullptr, nullptr, nullptr},
+   {  NoName,              0, nullptr,             false, nullptr,       false, nullptr, nullptr, nullptr}
+};
+
 static spooling_field RQR_sub_fields[] = {
    {  RQR_name,            0, "name",              false, nullptr, false, nullptr, nullptr, nullptr},
-   {  RQR_filter_users,    0, "users",             false, nullptr, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_projects, 0, "projects",          false, nullptr, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_pes,      0, "pes",               false, nullptr, false, nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_queues,   0, "queues",            false, nullptr,false,  nullptr, read_RQR_obj, write_RQR_obj},
-   {  RQR_filter_hosts,    0, "hosts",             false, nullptr, false, nullptr, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_users,    0, "users",             false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_projects, 0, "projects",          false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_pes,      0, "pes",               false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_queues,   0, "queues",            false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
+   {  RQR_filter_hosts,    0, "hosts",             false, RQRF_sub_fields, false, RQRF_Type, read_RQR_obj, write_RQR_obj},
    {  RQR_limit,           0, "to",                false, RQRL_sub_fields,  false, &qconf_sub_name_value_comma_sfi, nullptr, nullptr},
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };
@@ -677,7 +688,36 @@ spooling_field *sge_build_STN_field_list(bool spool, bool recurse)
    }
    
    create_spooling_field (&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
-   
+
+   return fields;
+}
+
+/**
+ * @brief Build the nested-tree STN field list used for JSON (CS-2313a).
+ *
+ * Unlike sge_build_STN_field_list (the flat ASCII model, where childnodes is a list of
+ * child ids and the writer flattens the tree into separate id-keyed blocks), this list
+ * renders childnodes as an array of full child node objects recursively: the
+ * "childnodes" field's sub_fields point back at the same field list, so the generic
+ * JSON writer/reader descend the real CULL tree directly. STN_id and STN_version are
+ * omitted (the nested form needs no id bookkeeping; ids are re-assigned via
+ * id_sharetree() after a read).
+ *
+ * @return a freshly allocated, self-referential spooling field list (caller frees)
+ */
+spooling_field *sge_build_STN_json_field_list()
+{
+   /* name, type, shares, childnodes, terminator = 5 fields */
+   spooling_field *fields = (spooling_field *)sge_malloc(sizeof(spooling_field) * 5);
+   int count = 0;
+
+   create_spooling_field (&fields[count++], STN_name,   0, "name",   false, nullptr, false, nullptr, nullptr, nullptr);
+   create_spooling_field (&fields[count++], STN_type,   0, "type",   false, nullptr, false, nullptr, nullptr, nullptr);
+   create_spooling_field (&fields[count++], STN_shares, 0, "shares", false, nullptr, false, nullptr, nullptr, nullptr);
+   /* childnodes recurses with this very field list -> a nested tree of full child nodes */
+   create_spooling_field (&fields[count++], STN_children, 0, "childnodes", false, fields, false, nullptr, nullptr, nullptr);
+   create_spooling_field (&fields[count++], NoName, 0, nullptr, false, nullptr, false, nullptr, nullptr, nullptr);
+
    return fields;
 }
 

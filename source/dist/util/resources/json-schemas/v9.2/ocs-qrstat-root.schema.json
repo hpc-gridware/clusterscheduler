@@ -185,14 +185,20 @@
                "type": "string",
                "description": "State flags (no duplicates).",
                "allOf": [
-                  { "pattern": "^[wWrEd]+$" },
-                  { "not": { "pattern": ".*w.*w" } },
-                  { "not": { "pattern": ".*W.*W" } },
-                  { "not": { "pattern": ".*r.*r" } },
-                  { "not": { "pattern": ".*E.*E" } },
-                  { "not": { "pattern": ".*d.*d" } }
+                  {"pattern": "^[wWrEd]+$"},
+                  {"not": {"pattern": ".*w.*w"}},
+                  {"not": {"pattern": ".*W.*W"}},
+                  {"not": {"pattern": ".*r.*r"}},
+                  {"not": {"pattern": ".*E.*E"}},
+                  {"not": {"pattern": ".*d.*d"}}
                ],
-               "examples": ["w", "r", "Wr", "E", "wd"]
+               "examples": [
+                  "w",
+                  "r",
+                  "Wr",
+                  "E",
+                  "wd"
+               ]
             },
             "submission_time": {
                "type": "string",
@@ -253,17 +259,22 @@
                "type": "string",
                "description": "Mail option flags without duplicates. 'n' must not be combined.",
                "anyOf": [
-                  { "const": "n" },
+                  {"const": "n"},
                   {
                      "allOf": [
-                        { "pattern": "^[bea]+$" },
-                        { "not": { "pattern": ".*b.*b" } },
-                        { "not": { "pattern": ".*e.*e" } },
-                        { "not": { "pattern": ".*a.*a" } }
+                        {"pattern": "^[bea]+$"},
+                        {"not": {"pattern": ".*b.*b"}},
+                        {"not": {"pattern": ".*e.*e"}},
+                        {"not": {"pattern": ".*a.*a"}}
                      ]
                   }
                ],
-               "examples": ["n", "b", "be", "ae"]
+               "examples": [
+                  "n",
+                  "b",
+                  "be",
+                  "ae"
+               ]
             },
             "mail_list": {
                "type": "array",

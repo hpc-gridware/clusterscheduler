@@ -110,7 +110,9 @@ enum {
    dm_OPT,
    do_OPT,
    dq_OPT,
+   Dq_OPT, /* del cqueue objects from file/directory (CS-2305) */
    du_OPT,
+   Du_OPT, /* del userset objects from file/directory (CS-2310) */
    ke_OPT,
 
    mc_OPT,
@@ -133,6 +135,7 @@ enum {
 
    as_OPT,
    de_OPT,
+   De_OPT, /* del exec hosts from file/directory (CS-2304) */
    ds_OPT,
    Mc_OPT,
    me_OPT,
@@ -146,10 +149,13 @@ enum {
    ap_OPT, /* add pe object */
    mp_OPT, /* mod pe object */
    dp_OPT, /* del pe object */
+   Dp_OPT, /* del pe objects from file/directory (CS-2301) */
    sp_OPT, /* show pe object */
    spl_OPT, /* show pe object list */
    sconfl_OPT,  /* show list of local configurations */
    dconf_OPT,   /* delete local configuration */
+   Dconf_OPT,   /* delete local configuration(s) from file/directory (CS-2311) */
+   Fmt_OPT,     /* -fmt plain|json: output/input serialization format (CS-2313a) */
    starthist_OPT,  /* flush history */
 
    Mq_OPT,
@@ -171,6 +177,7 @@ enum {
    mus_OPT,     /* SGE modify user */
    Mus_OPT,     /* SGE modify user from file */
    dus_OPT,     /* SGE delete user */
+   Dus_OPT,     /* SGE delete users from file/directory (CS-2308) */
    sus_OPT,     /* SGE show user */
 
    susl_OPT,    /* SGE show user list */
@@ -179,6 +186,7 @@ enum {
    Mprj_OPT,     /* SGE modify project from file */
    mprj_OPT,     /* SGE modify project */
    dprj_OPT,     /* SGE delete project */
+   Dprj_OPT,     /* SGE delete projects from file/directory (CS-2309) */
    sprj_OPT,     /* SGE show project */
    sprjl_OPT,    /* SGE show project list */
    mstree_OPT,   /* SGE modify sharetree */
@@ -199,6 +207,7 @@ enum {
    ackpt_OPT,    /* add ckpt element */
    Ackpt_OPT,    /* add ckpt element from file */
    dckpt_OPT,    /* delete ckpt element */
+   Dckpt_OPT,    /* delete ckpt elements listed in file/directory (CS-2300) */
    mckpt_OPT,    /* modify ckpt element */
    Mckpt_OPT,    /* modify ckpt element from file */
    sckpt_OPT,    /* show ckpt element */
@@ -217,6 +226,7 @@ enum {
    mcal_OPT,     /* modify calendar interactively */
    Mcal_OPT,     /* modify calendar from file */
    dcal_OPT,     /* remove calendar */
+   Dcal_OPT,     /* remove calendars listed in file/directory (CS-2299) */
    scal_OPT,     /* show calendar */
    scall_OPT,    /* show calendar list */
    w_OPT,        /* warn mode concerning verification of schedulability */
@@ -252,6 +262,7 @@ enum {
    ahgrp_OPT,    /* add new host group entry */
    Ahgrp_OPT,    /* add new host group entry from file */
    dhgrp_OPT,    /* delete host group entry  */
+   Dhgrp_OPT,    /* delete host groups from file/directory (CS-2306) */
    mhgrp_OPT,    /* modify host group entry */
    shgrp_OPT,    /* show host group entry */
    shgrp_tree_OPT,        /* show host group entry as tree*/
@@ -274,6 +285,7 @@ enum {
    mrqs_OPT,     /* modfiy resource quota set */
    Mrqs_OPT,     /* modify resource quota set from file */
    drqs_OPT,     /* delete resource quota set */
+   Drqs_OPT,     /* delete resource quota sets from file/directory (CS-2307) */
    ar_OPT,       /* advanced resservation option */
    he_OPT,       /* error handling for qrsub */
    explain_OPT,  /* explain error in qrstat */
@@ -291,6 +303,7 @@ enum {
    mce_OPT, /* mod ce object */
    Mce_OPT, /* mod ce object */
    dce_OPT, /* del ce object */
+   Dce_OPT, /* del ce objects from file/directory (CS-2303) */
    sce_OPT, /* show ce object */
    scel_OPT,/* show ce object list */
 
@@ -318,10 +331,30 @@ enum {
    arole_OPT,   ///< add role interactively
    Arole_OPT,   ///< add role from file
    drole_OPT,   ///< delete role
+   Drole_OPT,   ///< delete roles listed in file/directory (CS-2302)
    mrole_OPT,   ///< modify role interactively
    Mrole_OPT,   ///< modify role from file
    srole_OPT,   ///< show role
    srolel_OPT,  ///< show all role names
+
+   /* CS-23xx: bulk export (-S<obj> name|dir) — save objects to a file or directory.
+    * NOTE: append-only and kept in this order; the sge_options[][] rows in
+    * sge_options.cc must stay positionally aligned with these enum values. */
+   Scal_OPT,    ///< export calendar(s)
+   Sckpt_OPT,   ///< export checkpoint env(s)
+   Sce_OPT,     ///< export complex entry/entries
+   Se_OPT,      ///< export exec host(s)
+   Shgrp_OPT,   ///< export host group(s)
+   Sp_OPT,      ///< export parallel environment(s)
+   Sprj_OPT,    ///< export project(s)
+   Sq_OPT,      ///< export cluster queue(s)
+   Srole_OPT,   ///< export role(s)
+   Srqs_OPT,    ///< export resource quota set(s)
+   Su_OPT,      ///< export userset(s)
+   Suser_OPT,   ///< export user(s)
+   Sstree_OPT,  ///< export the share tree (singleton)
+   Ssconf_OPT,  ///< export the scheduler configuration (singleton)
+   Sconf_OPT,   ///< export global + host configuration(s)
 };
 
 /* macros used in parsing */

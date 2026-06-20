@@ -1,0 +1,114 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-rqs.schema.json",
+   "title": "OCS/GCS qconf resource quota set schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -srqs / -Mrqs: the resource quota sets.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "rqs"
+   ],
+   "properties": {
+      "rqs": {
+         "type": "array",
+         "items": {
+            "$ref": "#/$defs/ruleSet"
+         }
+      }
+   },
+   "$defs": {
+      "filter": {
+         "description": "A scope filter selecting the objects (users, projects, pes, queues or hosts) a rule applies to. An empty scope matches all.",
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "expand",
+            "scope",
+            "xscope"
+         ],
+         "properties": {
+            "expand": {
+               "type": "boolean",
+               "description": "Whether the rule is expanded into one limit per matching object."
+            },
+            "scope": {
+               "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+               "description": "Names (or wildcards) the rule applies to; empty matches all."
+            },
+            "xscope": {
+               "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList",
+               "description": "Names (or wildcards) excluded from the rule."
+            }
+         }
+      },
+      "rule": {
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "name",
+            "users",
+            "projects",
+            "pes",
+            "queues",
+            "hosts",
+            "to"
+         ],
+         "properties": {
+            "name": {
+               "type": "string",
+               "description": "Optional rule name, or the empty string."
+            },
+            "users": {
+               "$ref": "#/$defs/filter"
+            },
+            "projects": {
+               "$ref": "#/$defs/filter"
+            },
+            "pes": {
+               "$ref": "#/$defs/filter"
+            },
+            "queues": {
+               "$ref": "#/$defs/filter"
+            },
+            "hosts": {
+               "$ref": "#/$defs/filter"
+            },
+            "to": {
+               "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/namedValueList",
+               "description": "The limited resources and their limit values."
+            }
+         }
+      },
+      "ruleSet": {
+         "type": "object",
+         "additionalProperties": true,
+         "required": [
+            "name",
+            "description",
+            "enabled",
+            "limit"
+         ],
+         "properties": {
+            "name": {
+               "type": "string",
+               "description": "Resource quota set name."
+            },
+            "description": {
+               "type": "string",
+               "description": "Free-text description, or the empty string."
+            },
+            "enabled": {
+               "type": "boolean",
+               "description": "Whether the resource quota set is active."
+            },
+            "limit": {
+               "type": "array",
+               "description": "The rules that make up the resource quota set.",
+               "items": {
+                  "$ref": "#/$defs/rule"
+               }
+            }
+         }
+      }
+   }
+}

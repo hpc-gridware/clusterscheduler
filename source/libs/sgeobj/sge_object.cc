@@ -574,6 +574,38 @@ object_get_name(const lDescr *descr) {
    return name;
 }
 
+/**
+ * @brief Type name of an object, identified by content.
+ *
+ * Returns the registered type name (e.g. "MANAGER", "USERSET", "CQUEUE") of @p object
+ * by scanning object_base[] for the type whose primary key attribute is present in the
+ * object's descriptor. Unlike object_get_name(object_get_type()), this covers every
+ * registered type and works on GDI-transported elements (whose descriptor is a rebuilt
+ * copy, so a pointer compare would fail). Types without a primary key (e.g. the
+ * scheduler configuration) cannot be identified this way and yield "unknown".
+ *
+ * @param object  the object to identify
+ * @return the registered type name, or "unknown"
+ */
+const char *
+object_get_type_name(const lListElem *object) {
+   const char *name = "unknown";
+
+   if (object != nullptr) {
+      const lDescr *descr = lGetElemDescr(object);
+
+      for (int i = SGE_TYPE_ADMINHOST; i < SGE_TYPE_ALL; i++) {
+         if (object_base[i].descr != nullptr && object_base[i].key_nm != NoName &&
+             lGetPosInDescr(descr, object_base[i].key_nm) >= 0) {
+            name = object_base[i].type_name;
+            break;
+         }
+      }
+   }
+
+   return name;
+}
+
 /****** sgeobj/object/object_append_field_to_dstring() ************************
 *  NAME
 *     object_append_field_to_dstring() -- object field to string

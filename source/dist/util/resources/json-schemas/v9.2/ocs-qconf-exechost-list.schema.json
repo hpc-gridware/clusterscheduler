@@ -1,0 +1,16 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-exechost-list.schema.json",
+   "title": "OCS/GCS qconf execution host list schema",
+   "description": "Schema describing the JSON produced by qconf -fmt json -sel: the list of execution host names.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "exechost"
+   ],
+   "properties": {
+      "exechost": {
+         "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/nameList"
+      }
+   }
+}

@@ -44,6 +44,7 @@
 #include "sgeobj/cull/sge_conf_CF_L.h"
 
 #include "sgeobj/ocs_BindingUnit.h"
+#include "sgeobj/ocs_CEntry.h"   /* ocs::CEntry::Type for config_param_value_type */
 
 #define GID_RANGE_NOT_ALLOWED_ID 100
 #define RLIMIT_UNDEFINED -9999
@@ -233,3 +234,18 @@ std::string mconf_get_binding_filter();
 binding_mode_t mconf_get_binding_mode();
 ocs::BindingUnit::Unit mconf_get_default_binding_unit();
 std::string mconf_get_topology_file();
+
+/* CS-2313a: list-ness of a global/local config parameter, used to render its JSON value
+ * as an array. Grounded in how the config loader (sge_conf.cc) parses each parameter. */
+typedef enum {
+   CONF_PARAM_SCALAR = 0,      /* plain string value */
+   CONF_PARAM_VALUE_LIST,      /* " \t," separated values -> JSON array of strings */
+   CONF_PARAM_NAMEVALUE_LIST   /* ", " separated KEY=VALUE -> JSON array of {name,value} */
+} conf_param_list_type_t;
+
+conf_param_list_type_t config_param_list_type(const char *name);
+
+/* CS-2313a: numeric value type of a config scalar parameter (INT or TIME, else NONE),
+ * grounded in the chg_conf_val(..., type) calls in the config loader. Used to render
+ * typed config scalars (e.g. max_jobs -> number, load_report_time -> time) in JSON. */
+ocs::CEntry::Type config_param_value_type(const char *name);

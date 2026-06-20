@@ -1,0 +1,30 @@
+name: validate-json-schemas
+run-name: JSON schema validation triggered by ${{ github.actor }}
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'source/dist/util/resources/json-schemas/**'
+      - '.github/workflows/validate_schemas.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'source/dist/util/resources/json-schemas/**'
+      - '.github/workflows/validate_schemas.yml'
+jobs:
+  validate-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: install ajv-cli and ajv-formats
+        run: npm install -g ajv-cli ajv-formats
+      - name: validate the JSON schema set
+        shell: bash
+        run: source/dist/util/resources/json-schemas/validate-schemas.sh

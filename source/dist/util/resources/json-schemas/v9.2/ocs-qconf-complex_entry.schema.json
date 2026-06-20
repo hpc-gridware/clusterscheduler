@@ -1,0 +1,96 @@
+{
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$id": "https://raw.githubusercontent.com/hpc-gridware/clusterscheduler/master/source/dist/util/resources/json-schemas/v9.2/ocs-qconf-complex_entry.schema.json",
+   "title": "OCS/GCS qconf complex entry schema",
+   "description": "Schema describing the JSON produced and consumed by qconf -fmt json -sc / -Mc: the complex (resource) attribute definitions.",
+   "type": "object",
+   "additionalProperties": true,
+   "required": [
+      "complex_entry"
+   ],
+   "properties": {
+      "complex_entry": {
+         "type": "array",
+         "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+               "name",
+               "shortcut",
+               "type",
+               "relop",
+               "requestable",
+               "consumable",
+               "default",
+               "urgency"
+            ],
+            "properties": {
+               "name": {
+                  "type": "string",
+                  "description": "Complex attribute name."
+               },
+               "shortcut": {
+                  "type": "string",
+                  "description": "Abbreviation that may be used in place of the name."
+               },
+               "type": {
+                  "type": "string",
+                  "description": "Value type of the attribute.",
+                  "enum": [
+                     "INT",
+                     "STRING",
+                     "TIME",
+                     "MEMORY",
+                     "BOOL",
+                     "CSTRING",
+                     "HOST",
+                     "DOUBLE",
+                     "RESTRING",
+                     "RSMAP"
+                  ]
+               },
+               "relop": {
+                  "type": "string",
+                  "description": "Relational operator used when comparing a request against the attribute.",
+                  "enum": [
+                     "==",
+                     "<",
+                     ">",
+                     "<=",
+                     ">=",
+                     "!=",
+                     "EXCL"
+                  ]
+               },
+               "requestable": {
+                  "type": "string",
+                  "description": "Whether the attribute may be requested by a job.",
+                  "enum": [
+                     "NO",
+                     "YES",
+                     "FORCED"
+                  ]
+               },
+               "consumable": {
+                  "type": "string",
+                  "description": "Whether and how the attribute is managed as a consumable.",
+                  "enum": [
+                     "NO",
+                     "YES",
+                     "JOB",
+                     "HOST"
+                  ]
+               },
+               "default": {
+                  "$ref": "../v9.2/ocs-qconf-common.schema.json#/$defs/scalarValue",
+                  "description": "Default request value used when the attribute is consumable and not explicitly requested."
+               },
+               "urgency": {
+                  "type": "number",
+                  "description": "Urgency value contribution of the attribute."
+               }
+            }
+         }
+      }
+   }
+}

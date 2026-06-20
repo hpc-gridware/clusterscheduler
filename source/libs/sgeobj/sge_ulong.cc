@@ -38,6 +38,7 @@
 #include <cstring>
 #include <climits>
 
+#include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 #include "uti/sge_parse_num_par.h"
@@ -65,7 +66,10 @@ bool double_print_infinity_to_dstring(double value, dstring *string)
    DENTER(ULONG_LAYER);
    if (string != nullptr) {
       if (value == DBL_MAX) {
-         sge_dstring_append(string, "infinity");
+         // CS-2318: display unlimited as the canonical uppercase INFINITY_STR,
+         // consistent with the stored token (cqueue defaults, default_duration) and
+         // qconf/JSON output. Parsing stays case-insensitive, so old input works.
+         sge_dstring_append(string, INFINITY_STR);
       } else {
          ret = false;
       }
