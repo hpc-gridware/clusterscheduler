@@ -379,7 +379,6 @@ rqs_upsert_via_gdi(lList **answer_list, lList *file_rqs_list)
     * a spurious "removed" for every changed rule set). */
    lList *mod_list = nullptr;
    lList *add_list = nullptr;
-   lListElem *file_rqs;
    for_each_ep_lv(file_rqs, file_rqs_list) {
       const char *rqs_name = lGetString(file_rqs, RQS_name);
       lList **target = (rqs_list_locate(current_list, rqs_name) != nullptr) ? &mod_list : &add_list;
