@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -610,13 +610,47 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
 
       /* search for all requested configuration values */
       for (i = 0; i < n; i++) {
-         if ((strcasecmp(name[i].name, cp) == 0) &&
-             ((cp = strtok_r(nullptr, " \t\n", &pos)) != nullptr)) {
-            strncpy(value[i], cp, 512);
-            cp = value[i];
-            is_found[i] = true;
-            if (name[i].is_required) {
-               --nmissing;
+         if (strcasecmp(name[i].name, cp) == 0) {
+            /*
+             * Take the rest of the line as the value. We cannot tokenize on
+             * whitespace here: the postgres `spooling_params` line is a libpq
+             * conninfo string that carries spaces between its key=value pairs
+             * (host=... port=... dbname=...), and tokenizing would silently drop
+             * everything after the first key=value. The classic and berkeleydb
+             * spool_params values are single tokens, so they used to be parsed
+             * correctly by strtok_r; the new logic preserves that case and
+             * additionally handles multi-token values cleanly.
+             *
+             * pos points just past the NUL that strtok_r wrote in place of the
+             * delimiter that ended the attribute name. Skip remaining
+             * whitespace, then copy through end-of-line, stripping trailing
+             * whitespace and the line terminator.
+             */
+            if (pos != nullptr) {
+               while (*pos == ' ' || *pos == '\t') {
+                  pos++;
+               }
+               if (*pos != '\0' && *pos != '\n' && *pos != '\r') {
+                  char *value_end = pos;
+                  while (*value_end != '\0' && *value_end != '\n' && *value_end != '\r') {
+                     value_end++;
+                  }
+                  while (value_end > pos &&
+                         (value_end[-1] == ' ' || value_end[-1] == '\t')) {
+                     value_end--;
+                  }
+                  size_t len = value_end - pos;
+                  if (len > 1024) {
+                     len = 1024;
+                  }
+                  memcpy(value[i], pos, len);
+                  value[i][len] = '\0';
+                  cp = value[i];
+                  is_found[i] = true;
+                  if (name[i].is_required) {
+                     --nmissing;
+                  }
+               }
             }
             break;
          }
