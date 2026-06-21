@@ -461,9 +461,11 @@ SetSpoolingOptionsPostgres()
       fi
    else
       $INFOTEXT -n "\nPostgreSQL spooling: please enter the connection parameters." \
-                   "\nThe database and the qmaster role must already exist; if you" \
-                   "\nwant the installer to provision them, run spoolinit init" \
-                   "\nseparately first.\n"
+                   "\nThe PostgreSQL database and the role that qmaster will connect as" \
+                   "\nmust already exist (created via 'psql' by a DB administrator with" \
+                   "\nCREATE DATABASE / CREATE ROLE privileges before running this" \
+                   "\ninstaller). This installer will then run 'spoolinit init' to" \
+                   "\ncreate the 'config' and 'jobs' tables inside that database.\n"
 
       $INFOTEXT -n "\nPostgreSQL host >> "
       SPOOLING_PG_HOST=`Enter ""`

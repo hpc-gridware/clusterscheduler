@@ -3046,6 +3046,20 @@ RestoreConfig()
             ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL/common
          fi
 
+         # Recreate the qmaster spool dir. PG keeps spool data in the
+         # remote DB, not in $master_spool, but qmaster's first action
+         # at startup is sge_chdir_exit(qmaster_spool_dir) — the dir
+         # MUST exist or qmaster aborts with
+         # "can't change to directory". BDB/classic restore arms above
+         # do the same mkdir; the fresh-install path always Makedirs
+         # $QMDIR regardless of method (inst_qmaster.sh:767).
+         if [ ! -d $master_spool ]; then
+            ExecuteAsAdmin $MKDIR $master_spool
+            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
+         elif [ ! -d $master_spool/job_scripts ]; then
+            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
+         fi
+
          for f in $BUP_PG_COMMON_FILE_LIST; do
             if [ -f /tmp/bup_tmp_$DATE/$f ]; then
                ExecuteAsAdmin $CP /tmp/bup_tmp_$DATE/$f $SGE_ROOT/$SGE_CELL/common/
@@ -3260,6 +3274,17 @@ RestoreConfig()
          fi
          if [ ! -d $SGE_ROOT/$SGE_CELL/common ]; then
             ExecuteAsAdmin $MKDIR $SGE_ROOT/$SGE_CELL/common
+         fi
+
+         # Recreate the qmaster spool dir (see the tar.gz arm above for
+         # the rationale: qmaster chdirs into it at startup; PG keeps
+         # spool data in the remote DB but the directory itself must
+         # exist).
+         if [ ! -d $master_spool ]; then
+            ExecuteAsAdmin $MKDIR $master_spool
+            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
+         elif [ ! -d $master_spool/job_scripts ]; then
+            ExecuteAsAdmin $MKDIR $master_spool/job_scripts
          fi
 
          for f in $BUP_PG_COMMON_FILE_LIST; do
