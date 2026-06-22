@@ -220,7 +220,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
              * the parent's (root) gid (CS-2333). Must precede setuid() while
              * we are still privileged. */
             if (setgid(pw->pw_gid)) {
-               snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
+               snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SETGIDFAILED_U, sge_u32c(pw->pw_gid));
                snprintf(err_str, sizeof(err_str), "\n");
                if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
                   /* nothing we can do here - we are anyway about to exit */
