@@ -215,6 +215,20 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                sge_exit(1);
             }
 
+            /* drop the primary group before the uid - initgroups() only sets the
+             * supplementary groups, so without this setgid() the child would keep
+             * the parent's (root) gid (CS-2333). Must precede setuid() while
+             * we are still privileged. */
+            if (setgid(pw->pw_gid)) {
+               snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
+               snprintf(err_str, sizeof(err_str), "\n");
+               if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
+                  /* nothing we can do here - we are anyway about to exit */
+               }
+               sge_free(&buffer);
+               sge_exit(1);
+            }
+
             if (setuid(pw->pw_uid)) {
                snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SWITCHTOUSERFAILED_SS, user, strerror(errno));
                snprintf(err_str, sizeof(err_str), "\n");
@@ -526,6 +540,13 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       }
 
       if (pw != nullptr) {
+         /* drop the primary group before the uid - initgroups() (called in the
+          * parent) only sets the supplementary groups, so without this setgid()
+          * the child would keep the parent's (root) gid (CS-2333). Must
+          * precede setuid() while we are still privileged. */
+         if (setgid(pw->pw_gid)) {
+            sge_exit(1);
+         }
          int lret = setuid(tuid);
          if (lret) {
             sge_exit(1);
