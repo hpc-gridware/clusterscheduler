@@ -47,6 +47,19 @@ namespace ocs {
       /** @brief Return @p input as a quoted, JSON-escaped string (including the surrounding `""`). */
       static std::string raw2quotedJSON(const std::string &input);
 
+      /** @brief `const char*` overload of raw2quotedJSON() that is NULL-safe.
+       *
+       * Server-supplied object strings are typically obtained via `lGetString()`,
+       * which returns `const char*` and may be NULL. Routing such a value through
+       * the `const std::string&` overload would construct `std::string(nullptr)`
+       * (undefined behaviour / crash). This overload renders NULL as an empty
+       * JSON string `""` (CWE-476). All `const char*` call sites bind here.
+       *
+       * @param input string to escape and quote, or NULL for an empty JSON string
+       * @return the quoted, JSON-escaped representation (`""` when @p input is NULL)
+       */
+      static std::string raw2quotedJSON(const char *input);
+
       /** @brief Write @p time (microseconds since epoch) as an ISO 8601 timestamp to @p os.
        *
        * Format: `YYYY-MM-DDTHH:MM:SS.mmmZ` (millisecond precision, always UTC).

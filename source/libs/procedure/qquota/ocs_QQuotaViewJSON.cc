@@ -86,8 +86,8 @@ ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char *rqs_n
    indent++;
 
    // rule attributes
-   os << std::string(indent * 3, ' ') << "\"rqs_name\": " << raw2quotedJSON(rqs_name != nullptr ? rqs_name : "") << ",\n";
-   os << std::string(indent * 3, ' ') << "\"rule_name\": " << raw2quotedJSON(rule_name != nullptr ? rule_name : "");
+   os << std::string(indent * 3, ' ') << "\"rqs_name\": " << raw2quotedJSON(rqs_name) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"rule_name\": " << raw2quotedJSON(rule_name);
 }
 
 void
@@ -125,7 +125,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"exclude\": " << (exclude ? "true" : "false") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value != nullptr ? value : "") << "\n";
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value) << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    } else {
@@ -142,7 +142,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"exclude\": " << (exclude ? "true" : "false") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value != nullptr ? value : "") << "\n";
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value) << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    }
@@ -165,7 +165,7 @@ ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resourc
    // show the resource and the max limit.
    // `used` is optional. not available for static limits (non-consumables)
    os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"resource\": " << raw2quotedJSON(resource != nullptr ? resource : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"resource\": " << raw2quotedJSON(resource) << ",\n";
    if (used != 0) {
       os << std::string(indent * 3, ' ') << "\"used\": " << used << ",\n";
    }

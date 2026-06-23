@@ -81,6 +81,13 @@ std::string ocs::ProcedureView::raw2quotedJSON(const std::string &input) {
    DRETURN(output);
 }
 
+std::string ocs::ProcedureView::raw2quotedJSON(const char *input) {
+   DENTER(TOP_LAYER);
+   // NULL-safe: a NULL server string renders as an empty JSON string instead of
+   // constructing std::string(nullptr) (CWE-476).
+   DRETURN(raw2quotedJSON(input != nullptr ? std::string(input) : std::string()));
+}
+
 /** @brief convert the timestamp to ISO 8601 format
  */
 void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time) {

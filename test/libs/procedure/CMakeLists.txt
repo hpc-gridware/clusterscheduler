@@ -25,6 +25,12 @@ target_include_directories(test_procedure_qquota_json PRIVATE "./")
 target_link_libraries(test_procedure_qquota_json PRIVATE procedure sched gdi sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_procedure_qquota_json COMMAND test_procedure_qquota_json)
 
+add_executable(test_procedure_qrstat_json test_procedure_qrstat_json.cc)
+target_include_directories(test_procedure_qrstat_json PRIVATE "./")
+target_link_libraries(test_procedure_qrstat_json PRIVATE procedure sched gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_procedure_qrstat_json COMMAND test_procedure_qrstat_json)
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_procedure_qquota_json DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_procedure_qrstat_json DESTINATION testbin/${SGE_ARCH})
 endif ()
