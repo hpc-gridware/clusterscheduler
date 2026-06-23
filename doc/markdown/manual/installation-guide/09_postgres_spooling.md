@@ -116,32 +116,30 @@ between the qmaster host and the PostgreSQL host.
 
 ## Provisioning PostgreSQL for xxQS_NAMExx
 
-PostgreSQL spooling involves three layers, each created by a
-different actor at a different time:
+PostgreSQL spooling needs one database and one role, both created
+by a PostgreSQL superuser before `inst_sge -m` runs. The installer
+then dispatches `spoolinit init` automatically as its final step
+to create the `config` and `jobs` tables inside that database.
 
-- **Layer 1: PostgreSQL database** (for example `gcs_spool`).
-  Created by a DB administrator via `psql` and `CREATE DATABASE`
-  before `inst_sge -m` runs.
-- **Layer 2: PostgreSQL role** that qmaster connects as (for
-  example `gcs`). Created by a DB administrator via `psql` and
-  `CREATE ROLE` before `inst_sge -m` runs.
-- **Layer 3: Spool tables** `config` and `jobs`. Created by
-  `spoolinit init`, which `inst_sge -m` dispatches automatically
-  as its final step.
+### Step 1: Create the qmaster role
 
-You, the DB administrator, provision layers 1 and 2 via `psql`.
-The installer handles layer 3 automatically.
+```sql
+CREATE ROLE gcs WITH LOGIN PASSWORD '<choose-a-strong-password>';
+```
 
-### Step 1: Create the spool database
+This is the role qmaster connects as for all its spool traffic,
+both at install time (when `spoolinit init` creates the tables)
+and at runtime.
 
-As a PostgreSQL superuser:
+### Step 2: Create the spool database owned by the role
 
 ```sql
 CREATE DATABASE gcs_spool
     ENCODING 'UTF8'
     LC_COLLATE 'C'
     LC_CTYPE 'C'
-    TEMPLATE template0;
+    TEMPLATE template0
+    OWNER gcs;
 ```
 
 `LC_COLLATE 'C'` is recommended (not strictly required): the
@@ -149,88 +147,22 @@ spool-table primary key is declared with `COLLATE "C"` at table
 creation time, but matching the database default avoids surprise
 when running ad-hoc `psql` queries against the cluster.
 
-### Step 2: Create the qmaster role
+The `OWNER gcs` clause is the load-bearing part: ownership gives
+the role implicit `CREATE` on the `public` schema (so `spoolinit
+init` can create the tables) and ownership of those tables once
+created (so qmaster's runtime SELECT/INSERT/UPDATE/DELETE traffic
+just works). No additional `GRANT` statements are needed.
 
-```sql
-CREATE ROLE gcs WITH LOGIN PASSWORD '<choose-a-strong-password>';
-```
-
-This is the role qmaster connects as for its long-lived runtime
-DML traffic. It is *not* the role `spoolinit` uses for the initial
-DDL — see *Two-role privilege model* below.
-
-### Step 3: Grant runtime privileges
-
-The qmaster runtime role needs:
-
-- `CONNECT` on the spool database
-- `USAGE` on the schema where the spool tables live (typically
-  `public`)
-- `SELECT`, `INSERT`, `UPDATE`, `DELETE` on the `config` and
-  `jobs` tables
-
-The tables don't exist yet (`spoolinit` will create them in step 4
-below), so the cleanest path is to authorize the role to receive
-the DML grant automatically when `spoolinit` creates the tables.
-Two equivalent approaches:
-
-**Option A — atomic grant in `spoolinit init` (recommended).** Set
-`qmaster_role=<role_name>` in `spooling_params`; `spoolinit init`
-will issue the `GRANT ... ON config, jobs TO <role>` inside the
-same transaction as the `CREATE TABLE` statements, so the spool is
-immediately usable by the qmaster role once `spoolinit` succeeds.
-
-**Option B — operator-explicit default privileges.** Run this
-once BEFORE `spoolinit init`:
-
-```sql
-\c gcs_spool
-GRANT CONNECT ON DATABASE gcs_spool TO gcs;
-GRANT USAGE ON SCHEMA public TO gcs;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO gcs;
-```
-
-Critical ordering: `ALTER DEFAULT PRIVILEGES` is **forward-only**
-in PostgreSQL — it affects tables created **after** the ALTER.
-Running ALTER after `spoolinit init` does *not* retroactively
-grant on the existing `config` / `jobs` tables. If you hit a
-permission error from qmaster because you ALTERed too late, the
-recovery is an explicit:
-
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON config, jobs TO gcs;
-```
-
-### Two-role privilege model: spoolinit vs qmaster
-
-If your site enforces least-privilege role separation, use two
-distinct PostgreSQL roles:
-
-- **`spoolinit` role** (operator-driven, used only at install
-  time): `CONNECT` on the database, `USAGE` on the schema,
-  `CREATE` on the schema, plus DML on the tables it creates. The
-  operator supplies this credential at install time only; it is
-  not stored in the bootstrap.
-
-- **qmaster runtime role** (long-lived): `CONNECT`, `USAGE` on
-  the schema, `SELECT`/`INSERT`/`UPDATE`/`DELETE` on `config` and
-  `jobs`. **No DDL privileges at all.** This is the role that
-  lives in qmaster's `spooling_params` for the cluster's operating
-  lifetime.
-
-Single-role deployments (where `spoolinit` and qmaster use the
-same credential) are supported and simpler; the framework does
-not branch on this choice. qmaster simply never attempts DDL.
-
-### PG 15+ note: explicit schema grants
+### PG 15+ note
 
 PostgreSQL 15 removed the implicit `CREATE` privilege on the
-`public` schema. Operators copying example SQL from older
-references will hit `permission denied for schema public` at
-`spoolinit` time unless they explicitly `GRANT USAGE ON SCHEMA
-public` and (for the `spoolinit` role) `GRANT CREATE ON SCHEMA
-public`. The examples above already include `GRANT USAGE`.
+`public` schema. Making the qmaster role the database owner (as
+in Step 2 above) restores `CREATE` automatically. If your site
+deviates from the recommended layout — for example, you create
+the database under a different owner and want qmaster to use a
+non-owner role — the operator must additionally `GRANT USAGE,
+CREATE ON SCHEMA public TO gcs` against the new database before
+running `inst_sge -m`.
 
 ## Installing xxQS_NAMExx against PostgreSQL
 
@@ -256,7 +188,7 @@ create the 'config' and 'jobs' tables inside that database.
 PostgreSQL host >> pgdb.example.com
 PostgreSQL port [5432] >>
 Database name >> gcs_spool
-Database user (qmaster runtime role) >> gcs
+Database user >> gcs
 SSL mode (e.g. disable, require, verify-full;
   leave empty to let libpq pick its default) [] >>
 ```
@@ -279,9 +211,7 @@ cluster admin user so libpq's strict-permission check succeeds
 when qmaster reads it.
 
 After all prompts, the installer runs `spoolinit init` against
-the database, creating the `config` and `jobs` tables (and
-issuing the cross-role `GRANT` when `qmaster_role=...` is in
-`spooling_params`).
+the database, creating the `config` and `jobs` tables.
 
 ### Auto-install with inst_sge -auto
 
@@ -387,7 +317,7 @@ string with xxQS_NAMExx-specific extensions. The full token set:
 - `host=<hostname>` — PostgreSQL server hostname (required)
 - `port=<port>` — TCP port (default 5432)
 - `dbname=<name>` — spool database name (required)
-- `user=<role>` — qmaster runtime role (required)
+- `user=<role>` — the PostgreSQL role qmaster connects as (required)
 - `sslmode=<mode>` — `disable`, `allow`, `prefer`, `require`,
   `verify-ca`, `verify-full`; libpq's default is `prefer`.
 - `sslrootcert=<path>`, `sslcert=<path>`, `sslkey=<path>` —
@@ -409,10 +339,6 @@ remaining conninfo string is passed to libpq:
   `5` minimum prevents accidentally disabling the
   broken-connection reconnect path; the `300` ceiling keeps the
   envelope below the shadowd failover interval.
-- `qmaster_role=<name>` — names the PostgreSQL role that the
-  atomic `GRANT` in `spoolinit init` targets. Consumed by
-  `spoolinit` only; ignored at qmaster runtime. Omit for
-  single-role deployments.
 
 ### Not supported
 
@@ -577,10 +503,16 @@ When `spoolinit init` reports:
 postgres DDL requires elevated privileges (PG error 42501)
 ```
 
-it was invoked with a role that lacks `CREATE` on the target
-schema. Use a role with DDL privileges for `spoolinit` (per the
-two-role privilege model above); qmaster's runtime role is
-intentionally DML-only.
+the role qmaster connects as lacks `CREATE` on the target
+schema. The recommended fix is to make that role the database
+owner (see *Step 2: Create the spool database owned by the role*
+above) so ownership of `public` is implicit. If your site
+deviates from the recommended layout, grant `CREATE` on the
+schema explicitly:
+
+```sql
+GRANT USAGE, CREATE ON SCHEMA public TO gcs;
+```
 
 ### Passfile permissions too open
 

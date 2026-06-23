@@ -861,6 +861,26 @@ CheckConfigFile()
          $INFOTEXT -e "Please check your logfile!\n >%s<" "$LOGSNAME"
          is_valid="false"
       fi
+      if [ "$SPOOLING_METHOD" = "postgres" ]; then
+         # Pre-flight non-empty checks so an auto-install with the shipped
+         # blank-template defaults fails here instead of aborting mid-install
+         # from SetSpoolingOptionsPostgres after partial side effects.
+         if [ -z "$SPOOLING_PG_HOST" ]; then
+            $INFOTEXT -e "Your >SPOOLING_PG_HOST< is empty. Set it to the PostgreSQL host."
+            $INFOTEXT -log "Your >SPOOLING_PG_HOST< is empty. Set it to the PostgreSQL host."
+            is_valid="false"
+         fi
+         if [ -z "$SPOOLING_PG_DBNAME" ]; then
+            $INFOTEXT -e "Your >SPOOLING_PG_DBNAME< is empty. Set it to the spool database name."
+            $INFOTEXT -log "Your >SPOOLING_PG_DBNAME< is empty. Set it to the spool database name."
+            is_valid="false"
+         fi
+         if [ -z "$SPOOLING_PG_USER" ]; then
+            $INFOTEXT -e "Your >SPOOLING_PG_USER< is empty. Set it to the qmaster runtime role."
+            $INFOTEXT -log "Your >SPOOLING_PG_USER< is empty. Set it to the qmaster runtime role."
+            is_valid="false"
+         fi
+      fi
 
       if [ -z "$QMASTER_SPOOL_DIR" -o  "`echo "$QMASTER_SPOOL_DIR" | cut -d"/" -f1`" = "`echo "$QMASTER_SPOOL_DIR" | cut -d"/" -f2`" ]; then
          $INFOTEXT -e "Your >QMASTER_SPOOL_DIR< is empty or an invalid path. It must be a valid path!"
@@ -2837,6 +2857,28 @@ CheckPgTooling()
 }
 
 #----------------------------------------------------------------------------
+# AssertPgPassfileSafe <path>
+#
+# Rejects passfile paths containing ".." segments before any privileged
+# copy. A malicious backup tarball whose bootstrap carries
+# "passfile=$SGE_ROOT/$SGE_CELL/common/../../etc/foo" would otherwise match
+# the restore-time case-glob "$SGE_ROOT/$SGE_CELL/common/*" and let
+# ExecuteAsAdmin $CP write attacker-supplied content to an arbitrary path
+# as root.
+#
+AssertPgPassfileSafe()
+{
+   case "$1" in
+      *..*)
+         $INFOTEXT -e "passfile path %s contains '..' — refusing to use" "$1"
+         $INFOTEXT -log "passfile path %s contains '..' — refusing to use" "$1"
+         MoveLog
+         exit 1
+         ;;
+   esac
+}
+
+#----------------------------------------------------------------------------
 # ParsePgSpoolingParams <bootstrap-file>
 #
 # Parses the bootstrap file's spooling_params line (a libpq conninfo
@@ -3094,6 +3136,7 @@ RestoreConfig()
          # reads it — `cp` does not preserve mode and the backup tarball
          # extract may run as a different user.
          if [ -n "$PG_PASSFILE" ]; then
+            AssertPgPassfileSafe "$PG_PASSFILE"
             case "$PG_PASSFILE" in
                $SGE_ROOT/$SGE_CELL/common/*)
                   _pf_base=`basename "$PG_PASSFILE"`
@@ -3102,6 +3145,10 @@ RestoreConfig()
                      chmod 0600 "$PG_PASSFILE"
                      if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
                         chown "$ADMINUSER" "$PG_PASSFILE"
+                     elif [ "`id -u`" = "0" ]; then
+                        $INFOTEXT -w "Warning: %s is root-owned; chown it to the qmaster service user" "$PG_PASSFILE"
+                        $INFOTEXT -w "         before starting qmaster, or libpq will reject the file."
+                        $INFOTEXT -log "Warning: %s is root-owned; libpq will reject it at qmaster startup." "$PG_PASSFILE"
                      fi
                   fi
                   ;;
@@ -3116,20 +3163,23 @@ RestoreConfig()
             exit 1
          fi
          $INFOTEXT -n "Restoring postgres config table from %s\n" "$_dump"
+         # --single-transaction wraps DROP/CREATE/COPY into one txn so a
+         # mid-restore failure rolls back to the pre-restore state instead
+         # of leaving the table partially populated.
          if [ -n "$PG_PASSFILE" ]; then
             PGPASSFILE="$PG_PASSFILE" psql --no-password \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
-               -v ON_ERROR_STOP=1 -f "$_dump"
+               --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          else
             psql --no-password \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
-               -v ON_ERROR_STOP=1 -f "$_dump"
+               --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          fi
          if [ $? -ne 0 ]; then
-            $INFOTEXT -e "psql restore failed; config table may be in an inconsistent state"
-            $INFOTEXT -log "psql restore failed; config table may be in an inconsistent state"
+            $INFOTEXT -e "psql restore failed; transaction rolled back, config table unchanged"
+            $INFOTEXT -log "psql restore failed; transaction rolled back, config table unchanged"
             MoveLog
             exit 1
          fi
@@ -3314,6 +3364,7 @@ RestoreConfig()
          # common dir AND the backup carried it. Force 0600 + chown to
          # ADMINUSER so libpq's strict-perm check succeeds.
          if [ -n "$PG_PASSFILE" ]; then
+            AssertPgPassfileSafe "$PG_PASSFILE"
             case "$PG_PASSFILE" in
                $SGE_ROOT/$SGE_CELL/common/*)
                   _pf_base=`basename "$PG_PASSFILE"`
@@ -3322,6 +3373,10 @@ RestoreConfig()
                      chmod 0600 "$PG_PASSFILE"
                      if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
                         chown "$ADMINUSER" "$PG_PASSFILE"
+                     elif [ "`id -u`" = "0" ]; then
+                        $INFOTEXT -w "Warning: %s is root-owned; chown it to the qmaster service user" "$PG_PASSFILE"
+                        $INFOTEXT -w "         before starting qmaster, or libpq will reject the file."
+                        $INFOTEXT -log "Warning: %s is root-owned; libpq will reject it at qmaster startup." "$PG_PASSFILE"
                      fi
                   fi
                   ;;
@@ -3336,20 +3391,23 @@ RestoreConfig()
             exit 1
          fi
          $INFOTEXT -n "Restoring postgres config table from %s\n" "$_dump"
+         # --single-transaction wraps DROP/CREATE/COPY into one txn so a
+         # mid-restore failure rolls back to the pre-restore state instead
+         # of leaving the table partially populated.
          if [ -n "$PG_PASSFILE" ]; then
             PGPASSFILE="$PG_PASSFILE" psql --no-password \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
-               -v ON_ERROR_STOP=1 -f "$_dump"
+               --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          else
             psql --no-password \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
-               -v ON_ERROR_STOP=1 -f "$_dump"
+               --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          fi
          if [ $? -ne 0 ]; then
-            $INFOTEXT -e "psql restore failed; config table may be in an inconsistent state"
-            $INFOTEXT -log "psql restore failed; config table may be in an inconsistent state"
+            $INFOTEXT -e "psql restore failed; transaction rolled back, config table unchanged"
+            $INFOTEXT -log "psql restore failed; transaction rolled back, config table unchanged"
             MoveLog
             exit 1
          fi
@@ -3926,6 +3984,7 @@ DoBackup()
       # The copy in $backup_dir is chmod 0600 so the tar/tar.gz that wraps
       # the backup does not expose the credential to other readers.
       if [ -n "$PG_PASSFILE" -a -f "$PG_PASSFILE" ]; then
+         AssertPgPassfileSafe "$PG_PASSFILE"
          case "$PG_PASSFILE" in
             $SGE_ROOT/$SGE_CELL/common/*)
                _pf_base=`basename "$PG_PASSFILE"`
@@ -3962,11 +4021,16 @@ DoBackup()
             > "$backup_dir/$BUP_PG_DUMP_FILE"
       fi
       if [ $? -ne 0 ]; then
-         $INFOTEXT -e "pg_dump failed; partial dumpfile may be present"
-         $INFOTEXT -log "pg_dump failed; partial dumpfile may be present"
+         $INFOTEXT -e "pg_dump failed; removing partial dumpfile"
+         $INFOTEXT -log "pg_dump failed; removing partial dumpfile"
+         rm -f "$backup_dir/$BUP_PG_DUMP_FILE"
          MoveLog
          exit 1
       fi
+      # The dump carries the full `config` table (managers, operators,
+      # complex defs, sharetree). Mirror the .pgpass copy's 0600 so the
+      # credential-adjacent state is not world-readable in $backup_dir.
+      chmod 0600 "$backup_dir/$BUP_PG_DUMP_FILE"
       BUP_SPOOL_FILE_LIST="$BUP_SPOOL_FILE_LIST $BUP_PG_DUMP_FILE"
    else
       for f in $BUP_CLASSIC_COMMON_FILE_LIST_TMP; do

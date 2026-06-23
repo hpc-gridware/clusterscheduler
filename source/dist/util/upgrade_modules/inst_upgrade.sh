@@ -403,7 +403,7 @@ sched_configuration"
             ;;
       esac
       #Selecting new spooling method
-      suggested_spoooling_params=`BootstrapGetValue ${UPGRADE_BACKUP_DIR}/$SGE_CELL/common "spooling_params"`
+      suggested_spooling_params=`BootstrapGetValue ${UPGRADE_BACKUP_DIR}/$SGE_CELL/common "spooling_params"`
       SetSpoolingOptions "$suggested_spooling_method" "$suggested_spooling_params"
    fi
 	

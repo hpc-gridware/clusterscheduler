@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -234,7 +234,7 @@ int sge_get_confval_array(const char *fname,
                           int n,
                           int nmissing,
                           bootstrap_entry_t name[],
-                          char value[][1025],
+                          char value[][4097],
                           dstring *error_dstring
 );
 

@@ -484,7 +484,7 @@ SetSpoolingOptionsPostgres()
          SPOOLING_PG_DBNAME=`Enter ""`
       done
 
-      $INFOTEXT -n "\nDatabase user (qmaster runtime role) >> "
+      $INFOTEXT -n "\nDatabase user >> "
       SPOOLING_PG_USER=`Enter ""`
       while [ -z "$SPOOLING_PG_USER" ]; do
          $INFOTEXT -n "User cannot be empty. Database user >> "
@@ -509,7 +509,7 @@ SetSpoolingOptionsPostgres()
          SPOOLING_PG_PASSFILE=`Enter $SPOOLING_PG_PASSFILE`
          $INFOTEXT -n "\nDatabase password (will not be echoed) >> "
          stty -echo 2>/dev/null
-         read SPOOLING_PG_PASSWORD
+         read -r SPOOLING_PG_PASSWORD
          stty echo 2>/dev/null
          $ECHO ""
       fi
@@ -535,11 +535,27 @@ SetSpoolingOptionsPostgres()
       # `user` only — qmaster's runtime role is the load-bearing
       # discriminator, and wildcarding the rest survives FQDN-vs-shortname
       # mismatches between connect-time host strings and the file entry.
+      # libpq treats unescaped ':' as a field separator and '\' as the
+      # escape character; both must be backslash-escaped in user/password
+      # before writing or libpq silently misparses the file and reports
+      # "no password supplied" at qmaster startup. Escape '\' first (so
+      # the colon-escape that follows is not itself re-escaped).
       ( umask 077 && \
-        $ECHO "*:*:*:$SPOOLING_PG_USER:$SPOOLING_PG_PASSWORD" > "$SPOOLING_PG_PASSFILE" )
+        _esc_user=`printf '%s' "$SPOOLING_PG_USER" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
+        _esc_pw=`printf '%s' "$SPOOLING_PG_PASSWORD" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
+        printf '%s\n' "*:*:*:$_esc_user:$_esc_pw" > "$SPOOLING_PG_PASSFILE" )
       chmod 0600 "$SPOOLING_PG_PASSFILE"
       if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
          chown "$ADMINUSER" "$SPOOLING_PG_PASSFILE"
+      elif [ "`id -u`" = "0" ]; then
+         # Installer ran as root with no qmaster service user resolvable;
+         # .pgpass is now root-owned. libpq's strict-perm check requires
+         # the file owner to match the process EUID, so a non-root qmaster
+         # would silently fail authentication. Surface this to the operator
+         # before the eventual MSG_POSTGRES_PASSFILEOWNER failure at startup.
+         $INFOTEXT -w "Warning: %s is root-owned. chown it to the qmaster service" "$SPOOLING_PG_PASSFILE"
+         $INFOTEXT -w "         user before starting qmaster, or libpq will reject the file."
+         $INFOTEXT -log "Warning: %s is root-owned; libpq will reject it at qmaster startup." "$SPOOLING_PG_PASSFILE"
       fi
       # Wipe the cleartext from the installer's environment so any
       # subprocess (or /proc/<pid>/environ inspection) cannot read it.

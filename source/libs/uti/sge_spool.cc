@@ -537,7 +537,7 @@ DRETURN_VOID;
 *     MT-NOTE: sge_get_confval() is MT safe
 ******************************************************************************/
 char *sge_get_confval(const char *conf_val, const char *fname) {
-   static char valuev[1][1025];
+   static char valuev[1][4097];
    bootstrap_entry_t namev[1];
 
    namev[0].name = conf_val;
@@ -554,10 +554,10 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
 *     sge_get_confval_array() - Read configuration file entries
 *
 *  SYNOPSIS
-*     int sge_get_confval_array(const char *fname, int n, 
-*                               const char *name[], 
-*                               char value[][1025],
-*                               dstring *error_dstring) 
+*     int sge_get_confval_array(const char *fname, int n,
+*                               const char *name[],
+*                               char value[][4097],
+*                               dstring *error_dstring)
 *
 *  FUNCTION
 *     Reads in an array of configuration file entries
@@ -572,9 +572,9 @@ char *sge_get_confval(const char *conf_val, const char *fname) {
 *     MT-NOTE: sge_get_confval_array() is MT safe
 ******************************************************************************/
 int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entry_t name[],
-                          char value[][1025], dstring *error_dstring) {
+                          char value[][4097], dstring *error_dstring) {
    FILE *fp;
-   char buf[1024], *cp;
+   char buf[4096], *cp;
    int i;
    bool *is_found = nullptr;
 
@@ -640,8 +640,8 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
                      value_end--;
                   }
                   size_t len = value_end - pos;
-                  if (len > 1024) {
-                     len = 1024;
+                  if (len > 4096) {
+                     len = 4096;
                   }
                   memcpy(value[i], pos, len);
                   value[i][len] = '\0';
