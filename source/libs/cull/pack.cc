@@ -618,52 +618,53 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
    DRETURN(PACK_SUCCESS);
 }
 
-/* ---------------------------------------------------------
-
-   return values:
-   PACK_SUCCESS
-   PACK_ENOMEM
-   PACK_FORMAT
+/** @brief Unpack a NUL-terminated string from the packbuffer.
+ *
+ * Validates that at least one byte remains and that a terminating NUL lies
+ * within the remaining (untrusted, network-supplied) buffer *before* reading
+ * or copying. This prevents the out-of-bounds reads that an unbounded
+ * `cur_ptr[0]` / `strlen()` would perform at the buffer boundary (CWE-125,
+ * CS-2342). An empty string (leading NUL) yields a NULL result, mirroring the
+ * previous behaviour; all sibling unpackers bounds-check before reading.
+ *
+ * @param pb   packbuffer to read from; cur_ptr/bytes_used advanced on success
+ * @param str  out: newly allocated copy of the string (caller frees), or NULL
+ *             for an empty string
+ * @return PACK_SUCCESS, PACK_FORMAT (truncated / no in-bounds terminator), or
+ *         PACK_ENOMEM
  */
 int unpackstr(sge_pack_buffer *pb, char **str) {
-   uint32_t n;
-
    DENTER(PACK_LAYER);
 
-#if 1
-   /* determine string length */
-   if (!pb->cur_ptr[0]) {
+   /* at least the terminator byte must remain before we touch the buffer */
+   size_t remaining = pb->mem_size - pb->bytes_used;
+   if (remaining < 1) {
+      DRETURN(PACK_FORMAT);
+   }
 
+   /* empty string: a single NUL byte */
+   if (pb->cur_ptr[0] == '\0') {
       *str = nullptr;
-
-      /* update cur_ptr & bytes_unpacked */
       pb->cur_ptr = &(pb->cur_ptr[1]);
       pb->bytes_used++;
-
-      /* are there enough bytes ? */
-      if (pb->bytes_used > pb->mem_size) {
-         DRETURN(PACK_FORMAT);
-      }
-
       DRETURN(PACK_SUCCESS);
-   } else {
-#endif
-      n = strlen(pb->cur_ptr) + 1;
-
-      /* are there enough bytes ? */
-      if (n + pb->bytes_used > pb->mem_size) {
-         DRETURN(PACK_FORMAT);
-      }
-      *str = strdup(pb->cur_ptr);
-      if (!*str) {
-         DRETURN(PACK_ENOMEM);
-      }
-      /* update cur_ptr & bytes_unpacked */
-      pb->bytes_used += n;
-      pb->cur_ptr = &(pb->cur_ptr[n]);
-#if 1
    }
-#endif
+
+   /* find the terminator within the remaining bytes - never scan past the end */
+   const void *nul = memchr(pb->cur_ptr, '\0', remaining);
+   if (nul == nullptr) {
+      DRETURN(PACK_FORMAT);
+   }
+   size_t n = (static_cast<const char *>(nul) - pb->cur_ptr) + 1;
+
+   *str = strdup(pb->cur_ptr);
+   if (!*str) {
+      DRETURN(PACK_ENOMEM);
+   }
+
+   /* update cur_ptr & bytes_unpacked */
+   pb->bytes_used += n;
+   pb->cur_ptr = &(pb->cur_ptr[n]);
 
    DRETURN(PACK_SUCCESS);
 }
