@@ -395,6 +395,31 @@ int main(int argc, char *argv[]) {
       unlink(filename);
    }
 
+   // --- getByteArray (CS-2341: NULL-deref on unset string attribute) ---
+   printf("\n--- getByteArray ---\n");
+   {
+      // valid round-trip: encode known bytes, decode them back
+      lListElem *be = lCreateElem(TEST_Type);
+      const char bytes[] = {(char)0xDE, (char)0xAD, (char)0xBE, (char)0xEF};
+      setByteArray(bytes, (int)sizeof(bytes), be, TEST_string);
+
+      char *decoded = nullptr;
+      int n = getByteArray(&decoded, be, TEST_string);
+      CHECK(21, "getByteArray round-trip returns original size",
+            n == (int)sizeof(bytes));
+      CHECK(22, "getByteArray round-trip yields original bytes",
+            decoded != nullptr && memcmp(decoded, bytes, sizeof(bytes)) == 0);
+      sge_free(&decoded);
+      lFreeElem(&be);
+
+      // regression: unset string attribute must not crash (was strlen(NULL))
+      char *out = nullptr;
+      int n_null = getByteArray(&out, empty_ep, TEST_string);
+      CHECK(23, "getByteArray on unset string returns 0 (no NULL-deref)",
+            n_null == 0);
+      sge_free(&out);
+   }
+
    lFreeElem(&ep);
    lFreeElem(&empty_ep);
 

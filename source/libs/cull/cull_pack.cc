@@ -1516,28 +1516,22 @@ void setByteArray(const char *byteArray, int size, lListElem *elem, int name) {
    sge_free(&z_stream_str);
 }
 
-/****** cull_pack/getByteArray() ***********************************************
-*  NAME
-*     getByteArray() -- transforms a string into a byte array. 
-*
-*  SYNOPSIS
-*     int getByteArray(char **byte, const lListElem *elem, int name) 
-*
-*  FUNCTION
-*     extracts a string from an element and changes it into a byte array. The
-*     target has to be a pointer to nullptr. The array will be created in the function
-*     and no memory is freed. The calling functions have to take care of that.
-*
-*  INPUTS
-*     char **byte           - target byte array, has to be a pointer to nullptr
-*     const lListElem *elem - the list element, which contains the string
-*     int name              - name of the attribute containing the string 
-*
-*  RESULT
-*     int - >= 0 the size of the byte array
-*           < 0 the position of the first none hex character
-*
-*******************************************************************************/
+/** @brief Transform the hex string stored in attribute @p name into a byte array.
+ *
+ * Extracts the string attribute from @p elem and decodes it into a freshly
+ * allocated byte array (`*byte`, which the caller must free). The string
+ * attribute may be unset, in which case `lGetString()` returns NULL; that is
+ * treated as "no data" and 0 is returned rather than dereferencing NULL
+ * (CWE-476, CS-2341) — callers already handle a non-positive size as invalid
+ * pack data. Valid input is decoded unchanged.
+ *
+ * @param byte  out: newly allocated byte array (caller frees); set on success
+ * @param elem  source element holding the hex string
+ * @param name  attribute id of the string to decode
+ * @return number of bytes (>= 0) on success; 0 if the attribute is unset/empty;
+ *         a negative value (the position of the first non-hex character) on a
+ *         malformed string
+ */
 int getByteArray(char **byte, const lListElem *elem, int name) {
    const char *numbers = {"0123456789ABCDEF"};
    int lower_part = 0;
@@ -1550,6 +1544,11 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
    }
 
    string = lGetString(elem, name);
+   if (string == nullptr) {
+      // unset string attribute: return 0 so callers treat it as invalid pack
+      // data instead of dereferencing NULL in strlen() (CWE-476, CS-2341)
+      return 0;
+   }
    size = strlen(string) / 2;
    *byte = sge_malloc(size);
    memset(*byte, 0, size);
