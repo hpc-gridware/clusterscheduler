@@ -62,6 +62,16 @@ ocs::QQuotaViewJSON::report_finished(std::ostream &os) {
    os << std::string(indent * 3, ' ') << "}\n";
 }
 
+/** @brief Begin a JSON rule object, emitting the RQS and rule names.
+ *
+ * Both names are server-supplied object data routed through raw2quotedJSON()
+ * (escapes and quotes the value, CWE-116). NULL is rendered as an empty string
+ * to avoid constructing std::string(nullptr) (CS-2338).
+ *
+ * @param os         output stream to write the JSON fragment to
+ * @param rqs_name   resource-quota-set name (RQS_name); server-supplied, may be NULL
+ * @param rule_name  rule name (RQR_name); server-supplied, may be NULL
+ */
 void
 ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char *rqs_name, const char *rule_name) {
    // terminate last rule  if there was one
@@ -76,8 +86,8 @@ ocs::QQuotaViewJSON::report_limit_rule_begin(std::ostream &os, const char *rqs_n
    indent++;
 
    // rule attributes
-   os << std::string(indent * 3, ' ') << "\"rqs_name\": " << raw2quotedJSON(rqs_name) << ",\n";
-   os << std::string(indent * 3, ' ') << "\"rule_name\": " << raw2quotedJSON(rule_name);
+   os << std::string(indent * 3, ' ') << "\"rqs_name\": " << raw2quotedJSON(rqs_name != nullptr ? rqs_name : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"rule_name\": " << raw2quotedJSON(rule_name != nullptr ? rule_name : "");
 }
 
 void
@@ -93,6 +103,19 @@ ocs::QQuotaViewJSON::report_limit_rule_finished(std::ostream &os) {
    last_filter_name.clear();
 }
 
+/** @brief Emit one filter scope value as a JSON object into the filter array.
+ *
+ * The value is server-supplied object data (RQS scope name, ST_name), so it is
+ * always routed through raw2quotedJSON() - which adds the surrounding quotes and
+ * escapes embedded quotes/backslashes/control characters - so it cannot break out
+ * of the JSON string (CWE-116, CS-2338). A NULL value renders as an empty
+ * string. Both the same-filter (append) and new-filter branches escape identically.
+ *
+ * @param os           output stream to write the JSON fragment to
+ * @param filter_name  filter keyword (e.g. "users"); fixed literal, not user data
+ * @param value        scope name to emit; server-supplied, may be NULL
+ * @param exclude      true for an xscope (excluded) entry, false otherwise
+ */
 void
 ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *filter_name, const char *value, const bool exclude) {
 
@@ -102,7 +125,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"exclude\": " << (exclude ? "true" : "false") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"name\": \"" << value << "\"\n";
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value != nullptr ? value : "") << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    } else {
@@ -119,19 +142,30 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"exclude\": " << (exclude ? "true" : "false") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value) << "\n";
+      os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(value != nullptr ? value : "") << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    }
    last_filter_name = filter_name;
 }
 
+/** @brief Emit a resource limit (name, optional usage, max) as JSON.
+ *
+ * The resource name is server-supplied and routed through raw2quotedJSON()
+ * (escapes and quotes the value, CWE-116). NULL is rendered as an empty string
+ * to avoid constructing std::string(nullptr) (CS-2338).
+ *
+ * @param os        output stream to write the JSON fragment to
+ * @param resource  resource name; server-supplied, may be NULL
+ * @param max       configured limit value
+ * @param used      current usage; 0 means omit (e.g. static non-consumable limits)
+ */
 void
 ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resource, const uint64_t max, const uint64_t used) {
    // show the resource and the max limit.
    // `used` is optional. not available for static limits (non-consumables)
    os << ",\n";
-   os << std::string(indent * 3, ' ') << "\"resource\": " << raw2quotedJSON(resource) << ",\n";
+   os << std::string(indent * 3, ' ') << "\"resource\": " << raw2quotedJSON(resource != nullptr ? resource : "") << ",\n";
    if (used != 0) {
       os << std::string(indent * 3, ' ') << "\"used\": " << used << ",\n";
    }
