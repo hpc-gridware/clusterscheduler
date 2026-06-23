@@ -423,6 +423,156 @@ SetSpoolingOptionsClassic()
    SPOOLING_ARGS="$SGE_ROOT_VAL/$COMMONDIR;$QMDIR"
 }
 
+# SetSpoolingOptionsPostgres()
+#
+# Drives both the interactive (-m) and auto-installer (-auto) flows for the
+# postgres spooling method. Collects host / port / dbname / user / sslmode
+# from either AUTO template variables (SPOOLING_PG_*) or interactive
+# prompts. When a password is supplied via SPOOLING_PG_PASSWORD or the
+# interactive prompt, writes it to a libpq .pgpass file (default location
+# $SGE_ROOT/$SGE_CELL/common/.pgpass), chmod 0600, chown to ADMINUSER, and
+# unsets SPOOLING_PG_PASSWORD so the cleartext does not survive into
+# subprocess environments (KTD-9). The final libpq conninfo string is
+# stored in SPOOLING_ARGS for the bootstrap-file emission; it never
+# contains password=.
+SetSpoolingOptionsPostgres()
+{
+   SPOOLING_METHOD=postgres
+   SPOOLING_LIB=libspoolp
+
+   if [ "$AUTO" = "true" ]; then
+      if [ -z "$SPOOLING_PG_HOST" ]; then
+         $INFOTEXT -log "SPOOLING_PG_HOST must be set when SPOOLING_METHOD=postgres"
+         MoveLog
+         exit 1
+      fi
+      if [ -z "$SPOOLING_PG_DBNAME" ]; then
+         $INFOTEXT -log "SPOOLING_PG_DBNAME must be set when SPOOLING_METHOD=postgres"
+         MoveLog
+         exit 1
+      fi
+      if [ -z "$SPOOLING_PG_USER" ]; then
+         $INFOTEXT -log "SPOOLING_PG_USER must be set when SPOOLING_METHOD=postgres"
+         MoveLog
+         exit 1
+      fi
+      if [ -z "$SPOOLING_PG_PORT" ]; then
+         SPOOLING_PG_PORT=5432
+      fi
+   else
+      $INFOTEXT -n "\nPostgreSQL spooling: please enter the connection parameters." \
+                   "\nThe PostgreSQL database and the role that qmaster will connect as" \
+                   "\nmust already exist (created via 'psql' by a DB administrator with" \
+                   "\nCREATE DATABASE / CREATE ROLE privileges before running this" \
+                   "\ninstaller). This installer will then run 'spoolinit init' to" \
+                   "\ncreate the 'config' and 'jobs' tables inside that database.\n"
+
+      $INFOTEXT -n "\nPostgreSQL host >> "
+      SPOOLING_PG_HOST=`Enter ""`
+      while [ -z "$SPOOLING_PG_HOST" ]; do
+         $INFOTEXT -n "Host cannot be empty. PostgreSQL host >> "
+         SPOOLING_PG_HOST=`Enter ""`
+      done
+
+      $INFOTEXT -n "\nPostgreSQL port [5432] >> "
+      SPOOLING_PG_PORT=`Enter 5432`
+
+      $INFOTEXT -n "\nDatabase name >> "
+      SPOOLING_PG_DBNAME=`Enter ""`
+      while [ -z "$SPOOLING_PG_DBNAME" ]; do
+         $INFOTEXT -n "Database name cannot be empty. Database name >> "
+         SPOOLING_PG_DBNAME=`Enter ""`
+      done
+
+      $INFOTEXT -n "\nDatabase user >> "
+      SPOOLING_PG_USER=`Enter ""`
+      while [ -z "$SPOOLING_PG_USER" ]; do
+         $INFOTEXT -n "User cannot be empty. Database user >> "
+         SPOOLING_PG_USER=`Enter ""`
+      done
+
+      $INFOTEXT -n "\nSSL mode (e.g. disable, require, verify-full;" \
+                   "\n  leave empty to let libpq pick its default) [] >> "
+      SPOOLING_PG_SSLMODE=`Enter ""`
+
+      $INFOTEXT -n "\nThe installer can write a libpq .pgpass file holding the password" \
+                   "\nso qmaster can authenticate without a cleartext credential in any" \
+                   "\nworld-readable file. Decline if your pg_hba.conf uses peer / trust" \
+                   "\n/ ident / GSSAPI / certificate authentication."
+      $INFOTEXT -n -ask "y" "n" -def "n" \
+                "\nSet up a .pgpass file with a password? [n] >> "
+      if [ $? = 0 ]; then
+         if [ -z "$SPOOLING_PG_PASSFILE" ]; then
+            SPOOLING_PG_PASSFILE="$SGE_ROOT_VAL/$SGE_CELL_VAL/common/.pgpass"
+         fi
+         $INFOTEXT -n "\n.pgpass path [%s] >> " "$SPOOLING_PG_PASSFILE"
+         SPOOLING_PG_PASSFILE=`Enter $SPOOLING_PG_PASSFILE`
+         $INFOTEXT -n "\nDatabase password (will not be echoed) >> "
+         stty -echo 2>/dev/null
+         read -r SPOOLING_PG_PASSWORD
+         stty echo 2>/dev/null
+         $ECHO ""
+      fi
+   fi
+
+   if [ -n "$SPOOLING_PG_PASSWORD" ]; then
+      if [ -z "$SPOOLING_PG_PASSFILE" ]; then
+         SPOOLING_PG_PASSFILE="$SGE_ROOT_VAL/$SGE_CELL_VAL/common/.pgpass"
+      fi
+      _pgpass_dir=`dirname "$SPOOLING_PG_PASSFILE"`
+      if [ ! -d "$_pgpass_dir" ]; then
+         $INFOTEXT -log "Cannot write .pgpass: directory %s does not exist" "$_pgpass_dir"
+         MoveLog
+         exit 1
+      fi
+      if [ ! -w "$_pgpass_dir" ]; then
+         $INFOTEXT -log "Cannot write .pgpass: directory %s is not writable" "$_pgpass_dir"
+         MoveLog
+         exit 1
+      fi
+      # libpq .pgpass format: hostname:port:database:username:password.
+      # Per KTD-9 we wildcard host / port / dbname and discriminate on
+      # `user` only — qmaster's runtime role is the load-bearing
+      # discriminator, and wildcarding the rest survives FQDN-vs-shortname
+      # mismatches between connect-time host strings and the file entry.
+      # libpq treats unescaped ':' as a field separator and '\' as the
+      # escape character; both must be backslash-escaped in user/password
+      # before writing or libpq silently misparses the file and reports
+      # "no password supplied" at qmaster startup. Escape '\' first (so
+      # the colon-escape that follows is not itself re-escaped).
+      ( umask 077 && \
+        _esc_user=`printf '%s' "$SPOOLING_PG_USER" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
+        _esc_pw=`printf '%s' "$SPOOLING_PG_PASSWORD" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/:/\\\\:/g'` && \
+        printf '%s\n' "*:*:*:$_esc_user:$_esc_pw" > "$SPOOLING_PG_PASSFILE" )
+      chmod 0600 "$SPOOLING_PG_PASSFILE"
+      if [ "$ADMINUSER" != default ] && [ -n "$ADMINUSER" ]; then
+         chown "$ADMINUSER" "$SPOOLING_PG_PASSFILE"
+      elif [ "`id -u`" = "0" ]; then
+         # Installer ran as root with no qmaster service user resolvable;
+         # .pgpass is now root-owned. libpq's strict-perm check requires
+         # the file owner to match the process EUID, so a non-root qmaster
+         # would silently fail authentication. Surface this to the operator
+         # before the eventual MSG_POSTGRES_PASSFILEOWNER failure at startup.
+         $INFOTEXT -w "Warning: %s is root-owned. chown it to the qmaster service" "$SPOOLING_PG_PASSFILE"
+         $INFOTEXT -w "         user before starting qmaster, or libpq will reject the file."
+         $INFOTEXT -log "Warning: %s is root-owned; libpq will reject it at qmaster startup." "$SPOOLING_PG_PASSFILE"
+      fi
+      # Wipe the cleartext from the installer's environment so any
+      # subprocess (or /proc/<pid>/environ inspection) cannot read it.
+      SPOOLING_PG_PASSWORD=
+      unset SPOOLING_PG_PASSWORD
+   fi
+
+   SPOOLING_ARGS="host=$SPOOLING_PG_HOST port=$SPOOLING_PG_PORT"
+   SPOOLING_ARGS="$SPOOLING_ARGS dbname=$SPOOLING_PG_DBNAME user=$SPOOLING_PG_USER"
+   if [ -n "$SPOOLING_PG_SSLMODE" ]; then
+      SPOOLING_ARGS="$SPOOLING_ARGS sslmode=$SPOOLING_PG_SSLMODE"
+   fi
+   if [ -n "$SPOOLING_PG_PASSFILE" ]; then
+      SPOOLING_ARGS="$SPOOLING_ARGS passfile=$SPOOLING_PG_PASSFILE"
+   fi
+}
+
 # $1 - spooling method
 # $2 - suggested spooling params from the backup
 SetSpoolingOptionsDynamic()
@@ -432,25 +582,29 @@ SetSpoolingOptionsDynamic()
       suggested_method=classic
    fi
    if [ "$AUTO" = "true" ]; then
-      if [ "$SPOOLING_METHOD" != "berkeleydb" -a "$SPOOLING_METHOD" != "classic" ]; then
+      if [ "$SPOOLING_METHOD" != "berkeleydb" -a "$SPOOLING_METHOD" != "classic" \
+           -a "$SPOOLING_METHOD" != "postgres" ]; then
          SPOOLING_METHOD="classic"
       fi
    else
       $INFOTEXT -n "Your SGE binaries are compiled to link the spooling libraries\n" \
                    "during runtime (dynamically). So you can choose between Berkeley DB \n" \
-                   "spooling and Classic spooling method."
-      $INFOTEXT -n "\nPlease choose a spooling method (berkeleydb|classic) [%s] >> " "$suggested_method"
+                   "spooling, Classic spooling, and PostgreSQL spooling."
+      $INFOTEXT -n "\nPlease choose a spooling method (berkeleydb|classic|postgres) [%s] >> " "$suggested_method"
       SPOOLING_METHOD=`Enter $suggested_method`
    fi
 
    $CLEAR
 
-   case $SPOOLING_METHOD in 
+   case $SPOOLING_METHOD in
       classic)
          SetSpoolingOptionsClassic
          ;;
       berkeleydb)
          SetSpoolingOptionsBerkeleyDB $2
+         ;;
+      postgres)
+         SetSpoolingOptionsPostgres
          ;;
       *)
          $INFOTEXT "\nUnknown spooling method. Exit."
@@ -469,12 +623,15 @@ SetSpoolingOptions()
    $INFOTEXT -u "\nSetup spooling"
    COMPILED_IN_METHOD=`ExecuteAsAdmin $SPOOLINIT method`
    $INFOTEXT -log "Setting spooling method to %s" $COMPILED_IN_METHOD
-   case "$COMPILED_IN_METHOD" in 
+   case "$COMPILED_IN_METHOD" in
       classic)
          SetSpoolingOptionsClassic
          ;;
       berkeleydb)
          SetSpoolingOptionsBerkeleyDB $1
+         ;;
+      postgres)
+         SetSpoolingOptionsPostgres
          ;;
       dynamic)
          SetSpoolingOptionsDynamic $1

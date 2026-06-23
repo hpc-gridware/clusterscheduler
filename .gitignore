@@ -14,6 +14,7 @@ cvs_update.*
 .clion.source.upload.marker
 local_notes
 .claude
+.compound-engineering/*.local.yaml
 
 # clion build
 cmake-build-debug

@@ -1,5 +1,25 @@
 # Major Enhancements
 
+## v9.1.3
+
+### Postgres Spooling Backend
+
+Gridware Cluster Scheduler 9.1.3 introduces **PostgreSQL** as a third xxqs_name_sxx_qmaster spooling backend, joining the existing *classic* (filesystem) and *berkeleydb* options. The new backend stores the cluster's spool state in a remote PostgreSQL database, removing the BerkeleyDB environment lock and the NFS quirks that surround it.
+
+Key characteristics:
+
+- **ACID-compliant shared store.** All spool writes go through a PostgreSQL transaction. Two tables — `config` and `jobs` — hold the byte-identical CULL pack format used by the BerkeleyDB backend.
+- **High availability.** Multiple shadow masters share the same PostgreSQL instance. The qmaster spool directory still lives on a shared filesystem because sge_shadowd polls a heartbeat file there, but the bulk of the state (configuration, jobs, queues, sharetree, …) is reached over TCP — no BerkeleyDB environment directory on NFS.
+- **Single-role provisioning.** A PostgreSQL superuser creates one role and one database owned by that role; `spoolinit init` (run automatically by `inst_sge -m`) creates the schema. No cross-role GRANT setup is required.
+- **Credential handling via libpq `.pgpass`.** The `bootstrap` file is world-readable, so embedding `password=` in `spooling_params` is rejected. Operators point `passfile=` at a 0600 `.pgpass` owned by the qmaster user; the installer can write this file as part of `inst_sge -m`.
+- **Backup and restore.** `inst_sge -bup` and `-rst` add postgres arms that drive `pg_dump`/`psql` (with `--single-transaction` so restores are all-or-nothing) and copy the `.pgpass` alongside the dump for a complete round-trip.
+- **Upgrade.** `inst_sge -upd` carries an existing postgres spool forward by truncating the spool tables (preserving the `__schema_version` row) so the upgraded qmaster starts from a clean slate against the same database. The same upgrade procedure also lets operators **switch to postgres from any other spooling method** (classic or berkeleydb) without a separate migration step — choose `postgres` at the spooling-method prompt and supply the connection parameters; the upgrade discards the old on-disk spool and populates a fresh PostgreSQL schema.
+- **Configurable via libpq conninfo.** Standard libpq keywords (host, port, dbname, user, sslmode, sslcert/sslkey/sslrootcert, keepalives_*, connect_timeout) plus the xxQS_NAMExx extension `retry_max_seconds=` are accepted in `spooling_params`. See `sge_bootstrap(5)` for the keyword reference.
+
+For provisioning steps, conninfo syntax, troubleshooting, and the HA story, see the *Installation Guide* chapter **"PostgreSQL Spooling"** and the *Administration Guide* chapter **"High Availability and Reliability"**.
+
+(Available in Gridware Cluster Scheduler only.)
+
 ## v9.1.2
 
 ### Updates to dbwriter
