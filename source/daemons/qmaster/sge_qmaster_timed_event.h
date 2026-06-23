@@ -63,6 +63,8 @@ typedef enum {
    TYPE_AR_EVENT, /**/
    TYPE_ENFORCE_LIMIT_EVENT, /**/
    TYPE_SESSION_CLEANUP_EVENT,         //< trigger that cleans up old sessions that have not been used for a longer time
+   TYPE_SHARETREE_SPOOL_EVENT,         //< CS-1239: drain ocs::SharetreeUsage FIFOs to the spool backend
+   TYPE_SHARETREE_TICK_EVENT,          //< CS-1239: periodic decay + batched USER_MOD/PROJECT_MOD/NEW_SHARETREE publish
 #if defined(OCS_WITH_OPENSSL)
    TYPE_SSL_CERT_RENEWAL_EVENT,
 #endif

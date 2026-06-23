@@ -35,13 +35,27 @@
 #include <pthread.h>
 #include <cstring>
 
+#include "uti/sge_lock.h"
 #include "uti/sge_mtutil.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
+#include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/ocs_ShareTree.h"
+#include "sgeobj/ocs_UserProject.h"
+#include "sgeobj/ocs_Usage.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_ja_task.h"
+#include "sgeobj/sge_job.h"
+#include "sgeobj/sge_object.h"
+#include "sgeobj/sge_schedd_conf.h"
+#include "sgeobj/sge_userprj.h"
 #include "sgeobj/ocs_Session.h"
+
+#include "evm/sge_event_master.h"
+
+#include "sched/sgeee.h"
 
 #include "comm/cl_commlib.h"
 
@@ -52,6 +66,7 @@
 #include "gdi/ocs_gdi_Packet.h"
 
 #include <cinttypes>
+#include "ocs_SharetreeUsage.h"
 #include "ocs_ReportingFileWriter.h"
 #include "ocs_security_qmaster.h"
 #include "setup_qmaster.h"
@@ -77,6 +92,237 @@ static void
 sge_timer_cleanup_monitor(monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    sge_monitor_free(monitor);
+   DRETURN_VOID;
+}
+
+/** CS-1239: drain the per-finish user/project dirty FIFOs to the spool backend.
+ *
+ * Self-rescheduling one-shot event: pulls up to a 100ms work budget from the
+ * FIFOs under LOCK_GLOBAL (read), then re-arms itself at +1s while the queue
+ * is still non-empty (resume-drain cadence), or at +STREE_SPOOL_INTERVAL when
+ * caught up (idle cadence). The cadence knob lives in qmaster_params
+ * (mconf_get_spool_time, default 240s).
+ */
+static void
+sge_sharetree_spool_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_READ), monitor);
+   const int remaining = ocs::SharetreeUsage::spool_budget(100, ocs::SessionManager::GDI_SESSION_NONE);
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
+
+   const uint32_t next_in_s = (remaining > 0) ? 1u : static_cast<uint32_t>(mconf_get_spool_time());
+   te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(next_in_s),
+                                TYPE_SHARETREE_SPOOL_EVENT, ONE_TIME_EVENT,
+                                0, 0, "sharetree-spool");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   DRETURN_VOID;
+}
+
+/** CS-1239 step 5: periodic share-tree tick - decay UU_/PR_/UPP_, then (if
+ * anything is dirty) emit batched sgeE_USER_MOD / sgeE_PROJECT_MOD /
+ * sgeE_NEW_SHARETREE inside one event-master transaction.
+ *
+ * Replaces the previous split into TYPE_USAGE_DECAY_EVENT (decay + per-user
+ * MOD events) and TYPE_SHARETREE_PUBLISH_EVENT (republish). Pre-CS-1239 the
+ * scheduler emitted USER_MOD / PROJECT_MOD / NEW_SHARETREE as one event
+ * package on every share-tree-affecting order roundtrip; mirror clients
+ * (including the scheduler thread itself) relied on that atomicity to
+ * compute consistent tickets. The split path broke the invariant because
+ * MOD events shipped on the worker thread at job-finish time and
+ * NEW_SHARETREE shipped a tick later: between them the scheduler saw fresh
+ * usage against a stale tree and dispatched the wrong jobs.
+ *
+ * This handler restores the invariant: one tick, one transaction, one event
+ * package.
+ *
+ * Inside the tick (under LOCK_GLOBAL write):
+ *   1. Decay every master user / project via decay_userprj_usage and mark
+ *      each event-dirty (UniqueFifo dedup absorbs the case where worker
+ *      booking already marked the same name in this interval). Master is
+ *      the sole owner of usage decay - scheduler PASS 0 and sge_share_mon
+ *      both read UU_/PR_usage at face value with no local catch-up, so
+ *      the mass MOD storm IS the mechanism that keeps every mirror's
+ *      UU_/PR_usage current.
+ *   2. Refresh the default decay constant (formerly in sge_calc_tickets).
+ *   3. If anything is dirty (event-dirty queues OR the share-tree-dirty
+ *      flag), open a commit-required transaction:
+ *        a. Emit sgeE_USER_MOD for each event-dirty user.
+ *        b. Emit sgeE_PROJECT_MOD for each event-dirty project.
+ *        c. Recompute master share tree (init nodes, count active ja_tasks
+ *           per leaf, propagate counts, m_share, calc_node_usage, targets,
+ *           STN_version bump).
+ *        d. Emit sgeE_NEW_SHARETREE.
+ *        e. Commit - the events ship as one package.
+ *   4. Self-reschedule at +mconf_get_sharetree_tick_interval().
+ *
+ * Note on the leaf counting at step 3c: we walk the master job list and
+ * count active ja_tasks per leaf via search_user_project_node, mirroring
+ * what the scheduler does on its mirror copy but on master state. We
+ * deliberately do NOT create temp "default" sibling nodes (a
+ * scheduler-mirror-only construct), so default-mapped users see their
+ * counts aggregated on the "default" leaf instead of split per-user.
+ * Acceptable trade-off flagged in CS-1239 step 5.
+ *
+ * Seqno: handler keeps its own monotonic counter so we never collide with
+ * the scheduler thread's sge_scheduling_run namespace and never get skipped
+ * by the "seqno already processed" idempotency guard in
+ * decay_userprj_usage. The calc_node_usage call inside the publish step
+ * passes (u_long)-1 to recompute without stamping UU_/PR_usage_seqno
+ * (that stamp is owned by the decay step a few lines above).
+ *
+ * Cadence: mconf_get_sharetree_tick_interval() returns the STREE_TICK_INTERVAL
+ * qmaster_param value (default 5 s, clamped to [1, 300]). Runtime changes
+ * take effect on the next tick; configuration_qmaster.cc also calls
+ * sge_reschedule_sharetree_tick() to apply tighter intervals faster.
+ */
+static void
+sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
+   DENTER(TOP_LAYER);
+
+   static u_long tet_decay_run = 0;
+   ++tet_decay_run;
+
+   const uint64_t curr_time = sge_get_gmt64();
+   lList *decay_list = ocs::Usage::get_decay_list();
+
+   MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
+
+   /* CS-1239: short-circuit when no master share tree is configured. The
+    * decay walk would mark every user / project event-dirty for nothing (no
+    * consumer), and the publish step has nothing to publish. Self-reschedule
+    * so a later qconf -Astree is picked up on the next tick. This restores
+    * the pre-CS-1239 implicit gate ("no UU/PR objects -> no work"; see
+    * calc_usage.md) by checking the direct indicator. Matching gate is in
+    * sge_book_finished_job_usage. */
+   if (lFirst(*ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE)) == nullptr) {
+      SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+
+      const uint32_t next_in_s = static_cast<uint32_t>(mconf_get_sharetree_tick_interval());
+      te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(next_in_s),
+                                   TYPE_SHARETREE_TICK_EVENT, ONE_TIME_EVENT,
+                                   0, 0, "sharetree-tick");
+      te_add_event(ev);
+      te_free_event(&ev);
+
+      DRETURN_VOID;
+   }
+
+   /* 1+2: decay all users / projects on the master GLOBAL store and mark each
+    *      one event-dirty so the publish step below ships sgeE_USER_MOD /
+    *      sgeE_PROJECT_MOD to every mirror. With CS-1239 the master is the
+    *      sole owner of usage decay: scheduler PASS 0 and sge_share_mon both
+    *      read UU_/PR_usage at face value (no local catch-up), so the mirror
+    *      must carry the current decayed value or those consumers compute
+    *      against a stale historic value. The mass mark is the price of "one
+    *      authoritative decay site"; spool-dirty stays worker-only because
+    *      the spool snapshot doesn't need to reflect every decay tick (the
+    *      load-time stamp lets the recovery-side catch-up resolve it).
+    *      Refresh the default decay constant in case halftime changed. */
+   ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
+
+   bool any_object = false;
+   lList **user_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USER);
+   if (user_list != nullptr) {
+      for_each_rw_lv(user, *user_list) {
+         ocs::UserProject::decay_userprj_usage(user, true, decay_list, tet_decay_run, curr_time);
+         ocs::SharetreeUsage::mark_user_event_dirty(lGetString(user, UU_name));
+         any_object = true;
+      }
+   }
+   lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
+   if (project_list != nullptr) {
+      for_each_rw_lv(project, *project_list) {
+         ocs::UserProject::decay_userprj_usage(project, false, decay_list, tet_decay_run, curr_time);
+         ocs::SharetreeUsage::mark_project_event_dirty(lGetString(project, PR_name));
+         any_object = true;
+      }
+   }
+   if (any_object) {
+      ocs::SharetreeUsage::mark_share_tree_dirty();
+   }
+
+   /* 3: if anything is dirty, open a transaction and ship the batched
+    *    USER_MOD / PROJECT_MOD / NEW_SHARETREE as one event package. */
+   const bool tree_dirty = ocs::SharetreeUsage::consume_share_tree_dirty();
+   const bool any_events = ocs::SharetreeUsage::has_event_dirty();
+
+   if (tree_dirty || any_events) {
+      lList **master_stree_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
+      lListElem *root = (master_stree_list != nullptr) ? lFirstRW(*master_stree_list) : nullptr;
+
+      sge_set_commit_required();
+
+      ocs::SharetreeUsage::emit_dirty_user_events(ocs::SessionManager::GDI_SESSION_NONE);
+      ocs::SharetreeUsage::emit_dirty_project_events(ocs::SessionManager::GDI_SESSION_NONE);
+
+      if (root != nullptr) {
+         const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
+         const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
+         const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
+
+         sge_init_share_tree_nodes(root);
+         ocs::ShareTree::set_node_project_flag(root, master_project_list);
+
+         /* Active-ja_task predicate matches scheduler's job_is_active. */
+         for_each_ep_lv(job, master_job_list) {
+            for_each_rw_lv(ja_task, lGetList(job, JB_ja_tasks)) {
+               const u_long status = lGetUlong(ja_task, JAT_status);
+               const u_long state = lGetUlong(ja_task, JAT_state);
+               const bool active = (status & (JRUNNING | JMIGRATING | JTRANSFERING))
+                                && !(state & (JSUSPENDED | JSUSPENDED_ON_THRESHOLD));
+               if (!active) {
+                  continue;
+               }
+               const char *owner = lGetString(job, JB_owner);
+               const char *project = lGetString(job, JB_project);
+               if (owner == nullptr && project == nullptr) {
+                  continue;
+               }
+               lListElem *parent = nullptr;
+               lListElem *leaf = ocs::ShareTree::search_user_project_node(root, owner, project,
+                                                                         &parent, root);
+               if (leaf != nullptr) {
+                  lSetUlong(leaf, STN_job_ref_count,
+                            lGetUlong(leaf, STN_job_ref_count) + 1);
+                  lSetUlong(leaf, STN_active_job_ref_count,
+                            lGetUlong(leaf, STN_active_job_ref_count) + 1);
+               }
+            }
+         }
+
+         update_job_ref_count(root);
+         update_active_job_ref_count(root);
+         lSetDouble(root, STN_m_share, 1.0);
+         calculate_m_shares(root);
+
+         /* Seqno (u_long)-1 tells calc_node_usage to recurse + recompute
+          * without stamping UU_/PR_usage_seqno - the decay step above owns
+          * that stamp and we must not double-stamp inside the same tick. */
+         ocs::ShareTree::calc_node_usage(root, master_user_list, master_project_list,
+                                         decay_list, curr_time, nullptr, (u_long)-1);
+         sge_calc_node_targets(root, root);
+
+         lAddUlong(root, STN_version, 1);
+
+         sge_add_event(curr_time, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
+                       nullptr, root, ocs::SessionManager::GDI_SESSION_NONE);
+      }
+
+      sge_commit(ocs::SessionManager::GDI_SESSION_NONE);
+   }
+
+   SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
+
+   const uint32_t next_in_s = static_cast<uint32_t>(mconf_get_sharetree_tick_interval());
+   te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(next_in_s),
+                                TYPE_SHARETREE_TICK_EVENT, ONE_TIME_EVENT,
+                                0, 0, "sharetree-tick");
+   te_add_event(ev);
+   te_free_event(&ev);
+
    DRETURN_VOID;
 }
 
@@ -110,6 +356,10 @@ sge_timer_register_event_handler() {
    te_register_event_handler(sge_automatic_user_cleanup_handler, TYPE_AUTOMATIC_USER_CLEANUP_EVENT);
 
    te_register_event_handler(ocs::SessionManager::session_cleanup_handler, TYPE_SESSION_CLEANUP_EVENT);
+
+   te_register_event_handler(sge_sharetree_spool_handler, TYPE_SHARETREE_SPOOL_EVENT);
+
+   te_register_event_handler(sge_sharetree_tick_handler, TYPE_SHARETREE_TICK_EVENT);
 
    /*
     * one time events
@@ -172,6 +422,35 @@ void sge_timer_start_periodic_tasks() {
    te_free_event(&ev);
 
    ev = te_new_event(sge_gmt32_to_gmt64(120), TYPE_SESSION_CLEANUP_EVENT, RECURRING_EVENT, 0, 0, "session-cleanup");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   /* CS-1239: bootstrap the share-tree spool event at +5 s so a freshly
+    * started qmaster drains the per-finish dirty FIFOs within seconds
+    * rather than waiting up to STREE_SPOOL_INTERVAL (240 s default). The
+    * handler self-reschedules (ONE_TIME_EVENT, not RECURRING_EVENT) so the
+    * next due time can depend on how much work is left after each tick.
+    * Same caveat as for the decay event: a runtime change to
+    * STREE_SPOOL_INTERVAL takes effect only on the *next* tick, so
+    * configuration_qmaster.cc::do_mod_config also calls
+    * sge_reschedule_sharetree_spool() to drop the pending event and
+    * re-queue at +5 s. */
+   ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
+                     TYPE_SHARETREE_SPOOL_EVENT, ONE_TIME_EVENT, 0, 0, "sharetree-spool");
+   te_add_event(ev);
+   te_free_event(&ev);
+
+   /* CS-1239: bootstrap the periodic share-tree tick (decay + batched
+    * USER_MOD/PROJECT_MOD/NEW_SHARETREE publish) at +5 s so a freshly
+    * started qmaster has STN_combined_usage / m_share populated for
+    * sge_share_mon within seconds. After the first tick the handler
+    * self-reschedules at +STREE_TICK_INTERVAL. ONE_TIME_EVENT +
+    * handler-side reschedule means a runtime change to STREE_TICK_INTERVAL
+    * takes effect on the next tick. Config changes that need to take effect
+    * *sooner* go through sge_reschedule_sharetree_tick() from
+    * configuration_qmaster.cc. */
+   ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
+                     TYPE_SHARETREE_TICK_EVENT, ONE_TIME_EVENT, 0, 0, "sharetree-tick");
    te_add_event(ev);
    te_free_event(&ev);
 

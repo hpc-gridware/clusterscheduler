@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -41,20 +41,21 @@
  * valid values for OR_type 
  */
 enum {
-   ORT_start_job = 1,               /* 1*/
-   ORT_tickets,                     /* 2*/
-   ORT_ptickets,                    /* 3*/
-   ORT_remove_job,                  /* 4*/
-   ORT_update_project_usage,        /* 5*/
-   ORT_update_user_usage,           /* 6*/
-   ORT_share_tree,                  /* 7*/
-   ORT_remove_immediate_job,        /* 8*/
-   ORT_sched_conf,                  /* 9*/
-   ORT_suspend_on_threshold,        /*10*/
-   ORT_unsuspend_on_threshold,      /*11*/
-   ORT_job_schedd_info,             /*12*/
-   ORT_clear_pri_info               /*13*/  /*the ja_task_number field has a special meaning with the order
-: */
+   /* CS-1239: ORT_remove_job, ORT_update_project_usage, ORT_update_user_usage
+    * and ORT_share_tree are gone - finished-job booking + bury moved to the
+    * worker thread (sge_book_finished_job_usage), and master share-tree
+    * recomputation + sgeE_NEW_SHARETREE emission moved to the qmaster TET
+    * sharetree publish handler. The scheduler no longer emits any of these
+    * and no handlers exist in sge_follow.cc. */
+   ORT_start_job = 1,
+   ORT_tickets,
+   ORT_ptickets,
+   ORT_remove_immediate_job,
+   ORT_sched_conf,
+   ORT_suspend_on_threshold,
+   ORT_unsuspend_on_threshold,
+   ORT_job_schedd_info,
+   ORT_clear_pri_info                       /*the ja_task_number field has a special meaning with the order: */
                                             /* == 0 : only pending jobs are set to 0*/
                                             /* != 0 : pending and running jobs are set to 0 */
 };

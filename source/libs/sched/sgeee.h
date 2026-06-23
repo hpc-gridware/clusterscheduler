@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -53,8 +53,18 @@ int  sort_host_list_by_share_load ( lList *host_list,       /* EH_Type */
 
 void sge_clear_job( lListElem *job, bool is_clear_all);
 
-void 
+void
 sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *queued_jobs,
                       lList *finished_jobs, order_t *orders,
                       bool update_usage_and_configuration, int seqno, bool update_execd);
+
+/* CS-1239 step 5: share-tree compute primitives exposed so the qmaster
+ * TET share-tree publish handler can recompute master-sharetree node
+ * fields without depending on a scheduler_all_data_t. The scheduler
+ * itself still uses these on its mirror data store. */
+int  sge_init_share_tree_nodes(lListElem *root);
+void calculate_m_shares(lListElem *parent_node);
+u_long update_job_ref_count(lListElem *node);
+u_long update_active_job_ref_count(lListElem *node);
+int  sge_calc_node_targets(lListElem *root, lListElem *node);
 

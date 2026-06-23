@@ -229,8 +229,17 @@ reschedule_jobs(lListElem *ep, uint32_t force, lList **answer, monitoring_t *mon
       /*
        * Find all jobs currently running on the host/queue
        * append the jobids/taskids into a sublist of the exechost object
+       *
+       * Cache the next pointer before processing: with ENABLE_RESCHEDULE_KILL
+       * reschedule_job() -> sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE) now
+       * buries the job synchronously (CS-1239 consolidation), which removes
+       * the current jep from this very list. A plain for_each_rw_lv would
+       * dereference next through the freed element.
        */
-      for_each_rw_lv(jep, *(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB))) {
+      lListElem *jep;
+      lListElem *next_jep = lFirstRW(*ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB));
+      while ((jep = next_jep) != nullptr) {
+         next_jep = lNextRW(jep);
          reschedule_job(jep, nullptr, ep, force, answer, monitor, is_manual, gdi_session);
       }
       ret = 0;

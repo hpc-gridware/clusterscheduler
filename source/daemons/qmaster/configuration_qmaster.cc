@@ -72,6 +72,7 @@
 #include "configuration_qmaster.h"
 #include "ocs_ReportingFileWriter.h"
 #include "sge.h"
+#include "ocs_SharetreeUsage.h"
 #include "sge_persistence_qmaster.h"
 #include "sge_userprj_qmaster.h"
 #include "reschedule.h"
@@ -395,6 +396,20 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
 
       // The maximum number of events clients might have changed.
       sge_set_max_dynamic_event_clients(mconf_get_max_dynamic_event_clients());
+
+      // CS-1239: STREE_TICK_INTERVAL may have changed. The pending one-time
+      // tick event was scheduled with the *previous* interval, so without
+      // an explicit re-schedule a tighter new interval would not take effect
+      // until the already-queued event fires - which can be up to 300 s away.
+      // Drop the queued event and re-queue at +5 s so the new value is in
+      // effect within seconds.
+      sge_reschedule_sharetree_tick();
+
+      // CS-1239: same story for STREE_SPOOL_INTERVAL and the dirty-objects
+      // flush event - the already-queued event keeps its original 240 s
+      // schedule unless we explicitly re-arm it. issue_1385 pins
+      // STREE_SPOOL_INTERVAL low then reads the spool file within seconds.
+      sge_reschedule_sharetree_spool();
    }
 
    /* invalidate configuration cache */

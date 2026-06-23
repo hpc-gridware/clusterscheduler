@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -70,6 +70,11 @@ target_include_directories(test_sgeobj_role PRIVATE "./")
 target_link_libraries(test_sgeobj_role PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_role COMMAND test_sgeobj_role)
 
+add_executable(test_sgeobj_usage test_sgeobj_usage.cc)
+target_include_directories(test_sgeobj_usage PRIVATE "./")
+target_link_libraries(test_sgeobj_usage PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_usage COMMAND test_sgeobj_usage)
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_eval_expression DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_performance DESTINATION testbin/${SGE_ARCH})
@@ -81,4 +86,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_schedd_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_utility DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_role DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_usage DESTINATION testbin/${SGE_ARCH})
 endif ()

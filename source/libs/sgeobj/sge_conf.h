@@ -180,6 +180,7 @@ bool mconf_get_set_lib_path();
 bool mconf_get_inherit_env();
 bool mconf_get_enable_hwloc();
 int mconf_get_spool_time();
+int mconf_get_sharetree_tick_interval();
 int mconf_get_max_ds_deviation();
 uint32_t mconf_get_monitor_time();
 bool mconf_get_do_accounting();

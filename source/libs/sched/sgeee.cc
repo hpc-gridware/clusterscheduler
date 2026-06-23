@@ -155,15 +155,12 @@ static int sge_calc_tickets (scheduler_all_data_t *lists,
                       int do_usage,
                       double *max_tickets);
 
-static lListElem *get_mod_share_tree(lListElem *node, lEnumeration *what, int seqno);
 static lList *sge_sort_pending_job_nodes(lListElem *root, lListElem *node,
                            double total_share_tree_tickets);
-static int sge_calc_node_targets(lListElem *root, lListElem *node, scheduler_all_data_t *lists);
 static int sge_calc_sharetree_targets(lListElem *root, scheduler_all_data_t *lists,
                            lList *decay_list, uint64_t curr_time,
                            u_long seqno);
 static int sge_init_share_tree_node_fields( lListElem *node, void *ptr );
-static int sge_init_share_tree_nodes( lListElem *root );
 
 static double calc_pjob_override_tickets_shared( sge_ref_t *ref);
 
@@ -197,13 +194,8 @@ static uint32_t task_ref_entries = 0;   /* thread local */
 static uint32_t task_ref_job_pos = 0;   /* thread local */
 static double Master_min_tix = 0.0;     /* thread local */
 static double Master_max_tix = 0.0;     /* thread local */
-static uint32_t halflife = 0;                /* stores the last used halflife time to detect changes  thread_local*/
 static int last_seqno = 0;              /* stores the last used seqno for the orders  thread_local*/
 static uint64_t past = 0;               /* stores the last re-order send time thread local */
-static lEnumeration *user_usage_what = nullptr; /* thread local */
-static lEnumeration *prj_usage_what = nullptr; /* thread local */
-static lEnumeration *share_tree_what = nullptr; /* thread local */
-
 
 /****** sgeee/tix_range_set() **************************************************
 *  NAME
@@ -846,7 +838,7 @@ sge_unset_job_cnts(sge_ref_t *ref, int queued) {
  * every time a job becomes active or inactive (in adjust_m_shares).
  *--------------------------------------------------------------------*/
 
-static void
+void
 calculate_m_shares( lListElem *parent_node )
 {
    DENTER(TOP_LAYER);
@@ -917,7 +909,7 @@ update_job_ref_count( lListElem *node )
  * update_active_job_ref_count - update active_job_ref_count for node and descendants
  *--------------------------------------------------------------------*/
 
-static u_long
+u_long
 update_active_job_ref_count( lListElem *node )
 {
    int active_job_count=0;
@@ -994,63 +986,11 @@ sge_init_share_tree_node_fields( lListElem *node,
  * that will be set and used during sge_calc_tickets
  *--------------------------------------------------------------------*/
 
-static int
+int
 sge_init_share_tree_nodes( lListElem *root )
 {
    return ocs::ShareTree::foreach_call_func(root, sge_init_share_tree_node_fields, nullptr);
 }
-
-
-/*--------------------------------------------------------------------
- * delete_debited_job_usage - deleted debitted job usage for job
- *--------------------------------------------------------------------*/
-
-static void
-delete_debited_job_usage(lListElem *job, lListElem *user, lListElem *project, u_long seqno)
-{
-   const lList *upu_list;
-   lListElem *upu;
-
-   DENTER(TOP_LAYER);
-
-   DPRINTF("DDJU (1) " sge_u32 "\n", lGetUlong(job, JB_job_number));
-
-   if (user) {
-      upu_list = lGetList(user, UU_debited_job_usage);
-      DPRINTF("DDJU (2) " sge_u32 "\n", lGetUlong(job, JB_job_number));
-      if (upu_list) {
-
-         /* Note: In order to cause the qmaster to delete the
-            usage for this job, we zero out UPU_old_usage_list
-            for this job in the UU_debited_job_usage list */
-         DPRINTF("DDJU (3) " sge_u32 "\n", lGetUlong(job, JB_job_number));
-
-         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            DPRINTF("DDJU (4) " sge_u32 "\n", lGetUlong(job, JB_job_number));
-            lSetList(upu, UPU_old_usage_list, nullptr);
-            lSetUlong(user, UU_usage_seqno, seqno);
-         }
-      }
-   }
-
-   if (project) {
-      upu_list = lGetList(project, PR_debited_job_usage);
-      if (upu_list) {
-
-         /* Note: In order to cause the qmaster to delete the
-            usage for this job, we zero out UPU_old_usage_list
-            for this job in the PR_debited_job_usage list */
-
-         if ((upu = lGetElemUlongRW(upu_list, UPU_job_number, lGetUlong(job, JB_job_number)))) {
-            lSetList(upu, UPU_old_usage_list, nullptr);
-            lSetUlong(project, PR_usage_seqno, seqno);
-         }
-      }
-   }
-
-   DRETURN_VOID;
-}
-
 
 /*--------------------------------------------------------------------
  * combine_usage - combines a node's associated user/project usage
@@ -2131,8 +2071,6 @@ sge_calc_tickets( scheduler_all_data_t *lists,
 
    all_lists = lists;
 
-   uint64_t curr_time = sge_get_gmt64();
-
    sge_scheduling_run++;
 
    lList *decay_list = ocs::Usage::get_decay_list();
@@ -2142,30 +2080,6 @@ sge_calc_tickets( scheduler_all_data_t *lists,
     * user/project usage lists (CS-1385) */
    lList *usage_weight_list = sconf_get_usage_weight_list();
 
-   // @todo CS-272: move this to sconf-MOD in worker
-#if 1
-   // Decay usage for all users and projects if halflife changes
-   if (do_usage && sconf_is() && halflife != sconf_get_halftime()) {
-      int oldhalflife = halflife;
-      halflife = sconf_get_halftime();
-      /* decay up till now based on old half life (unless it's zero),
-         all future decay will be based on new halflife */
-      if (oldhalflife == 0) {
-         ocs::Usage::calculate_default_decay_constant(halflife);
-      } else {
-         ocs::Usage::calculate_default_decay_constant(oldhalflife);
-      }
-
-      for_each_rw_lv(user, lists->user_list) {
-         ocs::UserProject::decay_userprj_usage(user, true, decay_list, sge_scheduling_run, curr_time);
-      }
-      for_each_rw_lv(project, lists->project_list) {
-         ocs::UserProject::decay_userprj_usage(project, false, decay_list, sge_scheduling_run, curr_time);
-      }
-   } else {
-      ocs::Usage::calculate_default_decay_constant(sconf_get_halftime());
-   }
-#endif
 
    /*-------------------------------------------------------------
     * Init job_ref_count in each share tree node to zero
@@ -2322,48 +2236,6 @@ sge_calc_tickets( scheduler_all_data_t *lists,
       calculate_m_shares(root);
    }
 
-   // @todo CS-272: move this to final usage reporting in report handling
-#if 1
-   /*-----------------------------------------------------------------
-    * Handle finished jobs. We add the finished job usage to the
-    * user and project objects and then we delete the debited job
-    * usage from the associated user/project object.  The debited
-    * job usage is a usage list which is maintained in the user/project
-    * object to indicate how much of the job's usage has been added
-    * to the user/project usage so far.
-    * We also add a usage value called finished_jobs to the job usage
-    * so it will be summed and decayed in the user and project usage.
-    * If the finished_jobs usage value already exists, then we know
-    * we already handled this finished job, but the qmaster hasn't
-    * been updated yet.
-    *-----------------------------------------------------------------*/
-
-   if (do_usage && finished_jobs) {
-      for_each_rw(job, finished_jobs) {
-         sge_ref_t jref;
-
-         for_each_rw_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-            memset(&jref, 0, sizeof(jref));
-            sge_set_job_refs(job, ja_task, &jref, nullptr, lists, 0);
-            if (lGetElemStr(lGetList(jref.ja_task, JAT_scaled_usage_list), UA_name, "finished_jobs") == nullptr) {
-               lListElem *u = lAddSubStr(jref.ja_task, UA_name, "finished_jobs", JAT_scaled_usage_list, UA_Type);
-               if (u != nullptr) {
-                  lSetDouble(u, UA_value, 1.0);
-               }
-               ocs::Usage::decay_and_sum_usage(jref.job, jref.ja_task, jref.node, jref.user, jref.project,
-                                               decay_list, usage_weight_list, sge_scheduling_run, curr_time);
-               DPRINTF("DDJU (0) " sge_u32 "." sge_u32"\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
-               delete_debited_job_usage(jref.job, jref.user, jref.project, sge_scheduling_run);
-            }
-         }
-      }
-   } else {
-      DPRINTF("\n");
-      DPRINTF("no DDJU: do_usage: %d finished_jobs %d\n", do_usage, (finished_jobs!=nullptr));
-      DPRINTF("\n");
-   }
-#endif
-
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
    prof_init = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4, false, nullptr);
    PROF_START_MEASUREMENT(SGE_PROF_SCHEDLIB4);
@@ -2385,17 +2257,29 @@ sge_calc_tickets( scheduler_all_data_t *lists,
    // @todo CS-272: move this to online usage reporting in report handling
 #if 1
       if (do_usage) {
-         ocs::Usage::decay_and_sum_usage(job_ref[job_ndx].job, job_ref[job_ndx].ja_task, job_ref[job_ndx].node, job_ref[job_ndx].user,
-                                         job_ref[job_ndx].project, decay_list, usage_weight_list, sge_scheduling_run, curr_time);
+         /* CS-1239: scheduler no longer decays locally - the TET share-tree
+          * tick is the sole decay site and ships the decayed UU_/PR_usage
+          * to every mirror via sgeE_USER_MOD / sgeE_PROJECT_MOD. PASS 0
+          * only sums the in-flight running-job projection onto whatever
+          * mirror currently holds. sum_usage = book_user_project_usage
+          * with do_decay=false. */
+         ocs::Usage::sum_usage(job_ref[job_ndx].job, job_ref[job_ndx].ja_task,
+                               job_ref[job_ndx].user, job_ref[job_ndx].project, usage_weight_list);
       }
 #endif
 
       combine_usage(&job_ref[job_ndx]);
    }
 
-   if (root)
-      sge_calc_sharetree_targets(root, lists, decay_list,
-                                 curr_time, sge_scheduling_run);
+   if (root) {
+      /* CS-1239: pass curr_time=0 so the calc_node_usage call inside
+       * sge_calc_sharetree_targets does NOT decay UU_/PR_usage locally.
+       * Decay is owned by the TET share-tree tick handler which ships
+       * decayed values via sgeE_USER_MOD / sgeE_PROJECT_MOD; scheduler
+       * just reads what mirror has. seqno is irrelevant when now=0
+       * because the per-userprj decay branch is gated on now != 0. */
+      sge_calc_sharetree_targets(root, lists, decay_list, 0, 0);
+   }
 
    PROF_STOP_MEASUREMENT(SGE_PROF_SCHEDLIB4);
    prof_pass0 = prof_get_measurement_wallclock(SGE_PROF_SCHEDLIB4,false, nullptr);
@@ -3029,7 +2913,7 @@ sge_calc_sharetree_targets( lListElem *root,
 
    /* Calculate targeted proportions for each node */
 
-   sge_calc_node_targets(root, root, lists);
+   sge_calc_node_targets(root, root);
 
    DRETURN(0);
 }
@@ -3040,10 +2924,9 @@ sge_calc_sharetree_targets( lListElem *root,
  * for the sub-tree rooted at this node
  *--------------------------------------------------------------------*/
 
-static int
+int
 sge_calc_node_targets( lListElem *root,
-                       lListElem *node,
-                       scheduler_all_data_t *lists )
+                       lListElem *node )
 {
    const lList *children;
    double sum_shares, sum, compensation_factor;
@@ -3227,56 +3110,11 @@ sge_calc_node_targets( lListElem *root,
 
    for_each_rw_lv(child, children) {
       if (lGetUlong(child, STN_job_ref_count)>0) {
-         sge_calc_node_targets(root, child, lists);
+         sge_calc_node_targets(root, child);
       }
    }
 
    DRETURN(0);
-}
-
-/*--------------------------------------------------------------------
- * get_mod_share_tree - return reduced modified share tree
- *--------------------------------------------------------------------*/
-
-static lListElem *
-get_mod_share_tree( lListElem *node,
-                    lEnumeration *what,
-                    int seqno )
-{
-   lListElem *new_node=nullptr;
-   const lList *children;
-   lListElem *child;
-
-   if (((children = lGetList(node, STN_children))) &&
-       lGetNumberOfElem(children) > 0) {
-
-      lList *child_list=nullptr;
-
-      for_each_rw(child, children) {
-         lListElem *child_node;
-         child_node = get_mod_share_tree(child, what, seqno);
-         if (child_node) {
-            if (!child_list)
-               child_list = lCreateList("", STN_Type);
-            lAppendElem(child_list, child_node);
-         }
-      }
-
-      if (child_list) {
-         new_node = lCopyElem(node);
-         lSetList(new_node, STN_children, child_list);
-      }
-
-   } else {
-
-      if (lGetUlong(node, STN_pass2_seqno) > (uint32_t)seqno &&
-          lGetUlong(node, STN_temp) == 0) {
-         new_node = lCopyElem(node);
-      }
-
-   }
-
-   return new_node;
 }
 
 /****** sgeee/sge_build_sgeee_orders() *******************************************
@@ -3292,15 +3130,9 @@ get_mod_share_tree( lListElem *node,
 *  FUNCTION
 *     Builds generates the orderlist for sending the scheduling decisions
 *     to the qmaster. The following orders are generated:
-*     - running job tickets
-*     - pending job tickets
-*     - delete order for finished jobs
-*     - update user usage order
-*     - update project usage order
-*     - update share tree order
-*     - update scheduler configuration order
-*     -  orders updating user/project resource usage (ORT_update_project_usage)
-*     -  orders updating running tickets needed for dynamic repriorization (ORT_ticket)
+*     - running job tickets (ORT_tickets)
+*     - pending job tickets (ORT_ptickets / ORT_clear_pri_info)
+*     - update scheduler configuration order (ORT_sched_conf)
 *     Most orders are generated by using the sge_create_orders function.
 *
 *  INPUTS
@@ -3325,38 +3157,15 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
                        lList *finished_jobs, order_t *orders,
                        bool update_usage_and_configuration, int seqno, bool update_execd)
 {
-   lCondition *user_where=nullptr;
-   lCondition *prj_where=nullptr;
    lList *up_list = nullptr;
    lList *order_list = nullptr;
    lListElem *order = nullptr;
-   lListElem *root = nullptr;
    int norders = 0;
    uint32_t max_pending_tasks_per_job = sconf_get_max_pending_tasks_per_job();
 
    bool max_queued_ticket_orders = sconf_get_report_pjob_tickets();
 
    DENTER(TOP_LAYER);
-
-   if (share_tree_what == nullptr) {
-      share_tree_what = lWhat("%T(%I %I %I %I %I %I)", STN_Type,
-                         STN_version, STN_name, STN_job_ref_count, STN_m_share,
-                         STN_last_actual_proportion,
-                         STN_adjusted_current_proportion);
-   }
-
-   if (user_usage_what == nullptr) {
-      user_usage_what = lWhat("%T(%I %I %I %I %I %I %I)", UU_Type,
-                              UU_name, UU_usage, UU_usage_time_stamp,
-                              UU_long_term_usage, UU_project,
-                              UU_debited_job_usage, UU_version);
-   }
-   if (prj_usage_what == nullptr) {
-      prj_usage_what = lWhat("%T(%I %I %I %I %I %I %I)", PR_Type,
-                              PR_name, PR_usage, PR_usage_time_stamp,
-                              PR_long_term_usage, PR_project,
-                              PR_debited_job_usage, PR_version);
-   }
 
    if (orders->pendingOrderList == nullptr) {
       orders->pendingOrderList = lCreateList("orderlist", OR_Type);
@@ -3440,90 +3249,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, lList *running_jobs, lList *
 
    }
 
-   /*-----------------------------------------------------------------
-    * build delete job orders for finished jobs
-    *-----------------------------------------------------------------*/
-   if (finished_jobs) {
-      order_list  = create_delete_job_orders(finished_jobs, order_list);
-   }
-
    if (update_usage_and_configuration) {
-
-      /*-----------------------------------------------------------------
-       * build update user usage order
-       *-----------------------------------------------------------------*/
-
-      /* NOTE: make sure we get all usage entries which have been decayed
-         or have accumulated additional usage */
-
-      user_where = lWhere("%T(%I > %u)", UU_Type, UU_usage_seqno, last_seqno);
-
-      if (lists->user_list) {
-         norders = lGetNumberOfElem(order_list);
-         if ((up_list = lSelect("", lists->user_list, user_where, user_usage_what))) {
-            if (lGetNumberOfElem(up_list)>0) {
-               order = lCreateElem(OR_Type);
-               lSetUlong(order, OR_type, ORT_update_user_usage);
-               lSetList(order, OR_joker, up_list);
-               lAppendElem(order_list, order);
-            } else {
-               lFreeList(&up_list);
-            }
-         }
-         DPRINTF("   added %d orders for updating usage of user\n",
-            lGetNumberOfElem(order_list) - norders);
-      }
-
-      /*-----------------------------------------------------------------
-       * build update project usage order
-       *-----------------------------------------------------------------*/
-      if (lists->project_list) {
-         /* Only select projects whose usage actually changed since the last
-          * order generation - symmetric to user_where above. Without this
-          * filter every project is selected on every scheduler run, producing
-          * a redundant ORT_update_project_usage order and a PROJECT_MOD event
-          * per project per cycle even on a completely idle cluster (CS-2266).
-          * PR_usage_seqno is stamped (like UU_usage_seqno) only when usage is
-          * booked, so the empty-list guard below then skips quiet cycles. */
-         prj_where = lWhere("%T(%I > %u)", PR_Type, PR_usage_seqno, last_seqno);
-         norders = lGetNumberOfElem(order_list);
-         if ((up_list = lSelect("", lists->project_list, prj_where, prj_usage_what))) {
-            if (lGetNumberOfElem(up_list)>0) {
-               order = lCreateElem(OR_Type);
-               lSetUlong(order, OR_type, ORT_update_project_usage);
-               lSetList(order, OR_joker, up_list);
-               lAppendElem(order_list, order);
-            } else {
-               lFreeList(&up_list);
-            }
-         }
-         DPRINTF("   added %d orders for updating usage of project\n",
-            lGetNumberOfElem(order_list) - norders);
-      }
-
-      lFreeWhere(&user_where);
-      lFreeWhere(&prj_where);
-
-      /*-----------------------------------------------------------------
-       * build update share tree order
-       *-----------------------------------------------------------------*/
-
-      if (lists->share_tree && ((root = lFirstRW(lists->share_tree)))) {
-         lListElem *node = nullptr;
-         norders = lGetNumberOfElem(order_list);
-
-         if ((node = get_mod_share_tree(root, share_tree_what, last_seqno))) {
-            up_list = lCreateList("", STN_Type);
-            lAppendElem(up_list, node);
-
-            order = lCreateElem(OR_Type);
-            lSetUlong(order, OR_type, ORT_share_tree);
-            lSetList(order, OR_joker, up_list);
-            lAppendElem(order_list, order);
-         }
-         DPRINTF("   added %d orders for updating share tree\n",
-            lGetNumberOfElem(order_list) - norders);
-      }
 
       /*-----------------------------------------------------------------
        * build update scheduler configuration order
@@ -3643,8 +3369,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
    min_tix = 0;
    max_tix = -1;
 
-   /* calculate tickets for pending jobs and compute their shares */
-   sge_calc_tickets(lists, running_jobs, finished_jobs, pending_jobs, 1, &max_tix);
+   /* calculate tickets for pending jobs and compute their shares.
+    * CS-1239: finished-job booking moved to worker thread - pass nullptr so
+    * the (now inert) finished-jobs branch in sge_calc_tickets is skipped. */
+   sge_calc_tickets(lists, running_jobs, nullptr, pending_jobs, 1, &max_tix);
 
    /* correct the shares for the running jobs */
    seqno = sge_calc_tickets(lists, running_jobs, nullptr, nullptr, 0, &max_tix);
@@ -3694,8 +3422,10 @@ int sgeee_scheduler(scheduler_all_data_t *lists,
       }
       /* we are not calculation pending tickets here, only the running, finished jobs,
          and the sharetree changes are processed. The pending tickets are calculated at the
-         end of the scheduler cycle */
-      sge_build_sgeee_orders(lists, running_jobs, nullptr, finished_jobs, orders, true, seqno,
+         end of the scheduler cycle.
+         CS-1239: finished-job booking + delete order moved to worker thread - pass
+         nullptr so the (now inert) finished-jobs branch is skipped. */
+      sge_build_sgeee_orders(lists, running_jobs, nullptr, nullptr, orders, true, seqno,
                              update_execd);
    }
 

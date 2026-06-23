@@ -204,7 +204,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
    uint32_t state;
    uint32_t pe_slots = 0, q_slots = 0, q_version;
    lListElem *pe = nullptr;
-   bool is_spool = do_stree_spooling();
    uint64_t now = sge_get_gmt64();
 
    or_type = lGetUlong(ep, OR_type);
@@ -1076,22 +1075,20 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          break;
 
          /* -----------------------------------------------------------------------
-          * REMOVE JOBS THAT ARE WAITING FOR SCHEDD'S PERMISSION TO GET DELETED
-          *
-          * Using this order schedd can only remove jobs in the
-          * "dead but not buried" state
-          *
-          * ----------------------------------------------------------------------- */
-      case ORT_remove_job:
-         /* -----------------------------------------------------------------------
           * REMOVE IMMEDIATE JOBS THAT COULD NOT GET SCHEDULED IN THIS PASS
           *
           * Using this order schedd can only remove idle immediate jobs
           * (former ORT_remove_interactive_job)
+          *
+          * CS-1239: ORT_remove_job is gone - finished-job removal now happens
+          * inline in the worker thread (sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE)
+          * books usage and buries the job in one step), so the scheduler never
+          * emits ORT_remove_job and this case no longer needs to handle the
+          * shared "remove finished job" path.
           * ----------------------------------------------------------------------- */
       case ORT_remove_immediate_job: {
          lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-         DPRINTF("ORDER: ORT_remove_immediate_job or ORT_remove_job\n");
+         DPRINTF("ORDER: ORT_remove_immediate_job\n");
 
          job_number = lGetUlong(ep, OR_job_number);
          if (job_number == 0) {
@@ -1100,22 +1097,15 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
          }
          task_number = lGetUlong(ep, OR_ja_task_number);
          if (task_number == 0) {
-            ERROR(MSG_JOB_NOORDERTASK_US, job_number, (or_type == ORT_remove_immediate_job) ? "ORT_remove_immediate_job" : "ORT_remove_job");
+            ERROR(MSG_JOB_NOORDERTASK_US, job_number, "ORT_remove_immediate_job");
             DRETURN(-2);
          }
-         DPRINTF("ORDER: remove %sjob " sge_u32 "." sge_u32 "\n", or_type == ORT_remove_immediate_job ? "immediate " : "", job_number, task_number);
+         DPRINTF("ORDER: remove immediate job " sge_u32 "." sge_u32 "\n", job_number, task_number);
          jep = lGetElemUlongRW(master_job_list, JB_job_number, job_number);
          if (jep == nullptr) {
-            if (or_type == ORT_remove_job) {
-               ERROR(MSG_JOB_FINDJOB_U, job_number);
-               /* try to repair schedd data - session is unknown here */
-               sge_add_event(now, sgeE_JOB_DEL, job_number, task_number, nullptr, nullptr, nullptr, nullptr, gdi_session);
-               DRETURN(-1);
-            } else {
-               /* in case of an immediate parallel job the job could be missing */
-               INFO(MSG_JOB_FINDJOB_U, job_number);
-               DRETURN(0);
-            }
+            /* in case of an immediate parallel job the job could be missing */
+            INFO(MSG_JOB_FINDJOB_U, job_number);
+            DRETURN(0);
          }
          jatp = job_search_task(jep, nullptr, task_number);
 
@@ -1131,10 +1121,6 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
                DRETURN(-1);
             }
 
-            if (or_type == ORT_remove_job) {
-               ERROR(MSG_JOB_ORDERDELINCOMPLETEJOB_UU, job_number, task_number);
-               lSetUlong(jatp, JAT_status, JFINISHED);
-            }
             sge_event_spool(&answer_list, 0, sgeE_JATASK_ADD,
                             job_number, task_number, nullptr, nullptr,
                             lGetString(jep, JB_session),
@@ -1142,295 +1128,40 @@ sge_follow_order(lListElem *ep, char *ruser, char *rhost, lList **topp, monitori
             answer_list_output(&answer_list);
          }
 
-         if (or_type == ORT_remove_job) {
-            if (lGetUlong(jatp, JAT_status) != JFINISHED) {
-               ERROR(MSG_JOB_REMOVENOTFINISHED_U, lGetUlong(jep, JB_job_number));
-               DRETURN(-1);
+         if (!JOB_TYPE_IS_IMMEDIATE(lGetUlong(jep, JB_type))) {
+            if (lGetString(jep, JB_script_file)) {
+               ERROR(MSG_JOB_REMOVENONINTERACT_U, lGetUlong(jep, JB_job_number));
+            } else {
+               ERROR(MSG_JOB_REMOVENONIMMEDIATE_U, lGetUlong(jep, JB_job_number));
             }
-
-            /* remove it */
-            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_DEBITED_EE, COMMIT_DEFAULT, monitor, gdi_session);
-         } else {
-            if (!JOB_TYPE_IS_IMMEDIATE(lGetUlong(jep, JB_type))) {
-               if (lGetString(jep, JB_script_file)) {
-                  ERROR(MSG_JOB_REMOVENONINTERACT_U, lGetUlong(jep, JB_job_number));
-               } else {
-                  ERROR(MSG_JOB_REMOVENONIMMEDIATE_U, lGetUlong(jep, JB_job_number));
-               }
-               DRETURN(-1);
-            }
-            if (lGetUlong(jatp, JAT_status) != JIDLE) {
-               ERROR(MSG_JOB_REMOVENOTIDLEIA_U, lGetUlong(jep, JB_job_number));
-               DRETURN(-1);
-            }
-            INFO(MSG_JOB_NOFREERESOURCEIA_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatp, JAT_task_number), lGetString(jep, JB_owner));
-
-            /* remove it */
-            sge_commit_job(jep, jatp, nullptr, COMMIT_ST_NO_RESOURCES, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
-         }
-         break;
-      }
-
-// @todo CS-272: should not be required as soon as deletion of job specific
-#if 1
-         /* -----------------------------------------------------------------------
-          * REPLACE A PROJECT'S
-          *
-          * - PR_usage
-          * - PR_usage_time_stamp
-          * - PR_long_term_usage
-          * - PR_debited_job_usage
-          *
-          * Using this order schedd can debit usage on users/projects
-          * both orders are handled identically except target list
-          * ----------------------------------------------------------------------- */
-      case ORT_update_project_usage:
-      DPRINTF("ORDER: ORT_update_project_usage\n");
-         {
-            const lList *master_project_list = *ocs::DataStore::get_master_list(SGE_TYPE_PROJECT);
-
-            DPRINTF("ORDER: update %d projects\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
-
-            lListElem *up_order;
-            for_each_rw (up_order, lGetList(ep, OR_joker)) {
-               int pos = lGetPosViaElem(up_order, PR_name, SGE_NO_ABORT);
-               if (pos < 0) {
-                  continue;
-               }
-               const char *up_name = lGetString(up_order, PR_name);
-               if (up_name == nullptr) {
-                  continue;
-               }
-               lListElem *up = prj_list_locate(master_project_list, up_name);
-               if (up == nullptr) {
-                  /* order contains reference to unknown user/prj object */
-                  continue;
-               }
-
-               DPRINTF("%s %s usage updating with %d jobs\n", MSG_OBJ_PRJ,
-                       up_name, lGetNumberOfElem(lGetList(up_order, PR_debited_job_usage)));
-
-               if (!(up = prj_list_locate(master_project_list, up_name))) {
-                  /* order contains reference to unknown user/prj object */
-                  continue;
-               }
-
-               // @todo does the version have a meaning here?
-               if ((pos = lGetPosViaElem(up_order, PR_version, SGE_NO_ABORT)) >= 0 &&
-                   (lGetPosUlong(up_order, pos) != lGetUlong(up, PR_version))) {
-                  /* order contains update for outdated user/project usage */
-                  WARNING(MSG_ORD_USRPRJVERSION_SUU, up_name, lGetPosUlong(up_order, pos), lGetUlong(up, PR_version));
-                  /* Note: Should we apply the debited job usage in this case? */
-                  continue;
-               }
-
-               lAddUlong(up, PR_version, 1);
-
-               if ((pos = lGetPosViaElem(up_order, PR_project, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_project, up, PR_project);
-               }
-
-               if ((pos = lGetPosViaElem(up_order, PR_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong64(up, PR_usage_time_stamp, lGetPosUlong64(up_order, pos));
-
-               if ((pos = lGetPosViaElem(up_order, PR_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_usage, up, PR_usage);
-               }
-
-               if ((pos = lGetPosViaElem(up_order, PR_long_term_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, PR_long_term_usage, up, PR_long_term_usage);
-               }
-
-               /* update old usage in up for each job appearing in
-                  PR_debited_job_usage of 'up_order' */
-               lListElem *ju;
-               lListElem *next = lFirstRW(lGetList(up_order, PR_debited_job_usage));
-               while ((ju = next)) {
-                  next = lNextRW(ju);
-
-                  job_number = lGetUlong(ju, UPU_job_number);
-
-                  /* seek for existing debited usage of this job */
-                  lListElem *up_ju;
-                  if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, PR_debited_job_usage))) {
-
-                     /* if passed old usage list is nullptr, delete existing usage */
-                     if (lGetList(ju, UPU_old_usage_list) == nullptr) {
-                        lRemoveElem(lGetListRW(up_order, PR_debited_job_usage), &ju);
-                        lRemoveElem(lGetListRW(up, PR_debited_job_usage), &up_ju);
-                     } else {
-                        /* still exists - replace old usage with new one */
-                        DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
-                        lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
-                     }
-
-                  } else {
-                     /* unchain ju element and chain it into our user/prj object */
-                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
-                     lDechainElem(lGetListRW(up_order, PR_debited_job_usage), ju);
-
-                     if (lGetList(ju, UPU_old_usage_list) != nullptr) {
-                        /* unchain ju element and chain it into our user/prj object */
-                        lList *tlp;
-                        if (!(tlp = lGetListRW(up, PR_debited_job_usage))) {
-                           tlp = lCreateList(up_name, UPU_Type);
-                           lSetList(up, PR_debited_job_usage, tlp);
-                        }
-                        lInsertElem(tlp, nullptr, ju);
-                     } else {
-                        /* do not chain in empty empty usage records */
-                        lFreeElem(&ju);
-                     }
-                  }
-               }
-
-               /* spool and send event */
-               lList *answer_list = nullptr;
-               sge_event_spool(&answer_list, 0, sgeE_PROJECT_MOD, 0, 0, up_name,
-                               nullptr, nullptr, up, nullptr, nullptr,
-                               true, is_spool, gdi_session);
-               answer_list_output(&answer_list);
-            }
-         }
-         break;
-
-         /* -----------------------------------------------------------------------
-          * REPLACE A USER
-          *
-          * - UU_usage
-          * - UU_usage_time_stamp
-          * - UU_long_term_usage
-          * - UU_debited_job_usage
-          *
-          * Using this order schedd can debit usage on users/projects
-          * both orders are handled identically except target list
-          * ----------------------------------------------------------------------- */
-      case ORT_update_user_usage:
-      DPRINTF("ORDER: ORT_update_user_usage\n");
-         {
-            lListElem *up_order, *up, *ju, *up_ju, *next;
-            int pos;
-            const char *up_name;
-            lList *tlp;
-            const lList *master_user_list = *ocs::DataStore::get_master_list(SGE_TYPE_USER);
-
-            DPRINTF("ORDER: update %d users\n", lGetNumberOfElem(lGetList(ep, OR_joker)));
-
-            for_each_rw (up_order, lGetList(ep, OR_joker)) {
-               if ((pos = lGetPosViaElem(up_order, UU_name, SGE_NO_ABORT)) < 0 ||
-                   !(up_name = lGetString(up_order, UU_name))) {
-                  continue;
-               }
-
-               DPRINTF("%s %s usage updating with %d jobs\n", MSG_OBJ_USER,
-                       up_name, lGetNumberOfElem(lGetList(up_order, UU_debited_job_usage)));
-
-               if (!(up = user_list_locate(master_user_list, up_name))) {
-                  /* order contains reference to unknown user/prj object */
-                  continue;
-               }
-
-               if ((pos = lGetPosViaElem(up_order, UU_version, SGE_NO_ABORT)) >= 0 &&
-                   (lGetPosUlong(up_order, pos) != lGetUlong(up, UU_version))) {
-                  /* order contains update for outdated user/project usage */
-                  WARNING(MSG_ORD_USRPRJVERSION_SUU, up_name, lGetPosUlong(up_order, pos), lGetUlong(up, UU_version));
-                  /* Note: Should we apply the debited job usage in this case? */
-                  continue;
-               }
-
-               lAddUlong(up, UU_version, 1);
-
-               if ((pos = lGetPosViaElem(up_order, UU_project, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, UU_project, up, UU_project);
-               }
-
-               if ((pos = lGetPosViaElem(up_order, UU_usage_time_stamp, SGE_NO_ABORT)) >= 0)
-                  lSetUlong64(up, UU_usage_time_stamp, lGetPosUlong64(up_order, pos));
-
-               if ((pos = lGetPosViaElem(up_order, UU_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, UU_usage, up, UU_usage);
-               }
-
-               if ((pos = lGetPosViaElem(up_order, UU_long_term_usage, SGE_NO_ABORT)) >= 0) {
-                  lSwapList(up_order, UU_long_term_usage, up, UU_long_term_usage);
-               }
-
-               /* update old usage in up for each job appearing in
-                  UU_debited_job_usage of 'up_order' */
-               next = lFirstRW(lGetList(up_order, UU_debited_job_usage));
-               while ((ju = next)) {
-                  next = lNextRW(ju);
-
-                  job_number = lGetUlong(ju, UPU_job_number);
-
-                  /* seek for existing debited usage of this job */
-                  if ((up_ju = lGetSubUlongRW(up, UPU_job_number, job_number, UU_debited_job_usage))) {
-
-                     /* if passed old usage list is nullptr, delete existing usage */
-                     if (lGetList(ju, UPU_old_usage_list) == nullptr) {
-
-                        lRemoveElem(lGetListRW(up_order, UU_debited_job_usage), &ju);
-                        lRemoveElem(lGetListRW(up, UU_debited_job_usage), &up_ju);
-
-                     } else {
-
-                        /* still exists - replace old usage with new one */
-                        DPRINTF("updating debited usage for job " sge_u32 "\n", job_number);
-                        lSwapList(ju, UPU_old_usage_list, up_ju, UPU_old_usage_list);
-                     }
-
-                  } else {
-                     /* unchain ju element and chain it into our user/prj object */
-                     DPRINTF("adding debited usage for job " sge_u32 "\n", job_number);
-                     lDechainElem(lGetListRW(up_order, UU_debited_job_usage), ju);
-
-                     if (lGetList(ju, UPU_old_usage_list) != nullptr) {
-                        /* unchain ju element and chain it into our user/prj object */
-                        if (!(tlp = lGetListRW(up, UU_debited_job_usage))) {
-                           tlp = lCreateList(up_name, UPU_Type);
-                           lSetList(up, UU_debited_job_usage, tlp);
-                        }
-                        lInsertElem(tlp, nullptr, ju);
-                     } else {
-                        /* do not chain in empty empty usage records */
-                        lFreeElem(&ju);
-                     }
-                  }
-               }
-
-               /* spool and send event */
-
-               {
-                  lList *answer_list = nullptr;
-                  sge_event_spool(&answer_list, 0, sgeE_USER_MOD, 0, 0, up_name,
-                                  nullptr, nullptr, up, nullptr, nullptr,
-                                  true, is_spool, gdi_session);
-                  answer_list_output(&answer_list);
-               }
-            }
-         }
-         break;
-#endif
-
-         /* -----------------------------------------------------------------------
-          * FILL IN SEVERAL SCHEDULING VALUES INTO QMASTER'S SHARE TREE
-          * TO BE DISPLAYED BY QMON AND OTHER CLIENTS
-          * ----------------------------------------------------------------------- */
-      case ORT_share_tree: {
-         lList *master_stree_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-
-         DPRINTF("ORDER: ORT_share_tree\n");
-         ocs::ShareTree::zero_fields(lFirstRW(master_stree_list));
-         if (update_sharetree(master_stree_list, lGetListRW(ep, OR_joker)) != 0) {
-            DPRINTF("ORDER: ORT_share_tree failed\n");
             DRETURN(-1);
          }
+         if (lGetUlong(jatp, JAT_status) != JIDLE) {
+            ERROR(MSG_JOB_REMOVENOTIDLEIA_U, lGetUlong(jep, JB_job_number));
+            DRETURN(-1);
+         }
+         INFO(MSG_JOB_NOFREERESOURCEIA_UU, lGetUlong(jep, JB_job_number), lGetUlong(jatp, JAT_task_number), lGetString(jep, JB_owner));
 
-         // no need to spool but other data stores need to be updated
-         sge_add_event(now, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr,
-                       nullptr, lFirstRW(master_stree_list), gdi_session);
-      }
+         /* remove it */
+         sge_commit_job(jep, jatp, nullptr, COMMIT_ST_NO_RESOURCES, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
          break;
+      }
+
+      /* CS-1239: ORT_update_project_usage and ORT_update_user_usage handlers
+       * removed. User/project debited-job-usage updates now happen directly
+       * in the worker thread (sge_book_finished_job_usage), which marks the
+       * affected user/project event-dirty + spool-dirty via
+       * ocs::SharetreeUsage. The TET share-tree tick handler
+       * (sge_sharetree_tick_handler in sge_thread_timer.cc) drains the event
+       * FIFOs and batches USER_MOD / PROJECT_MOD with the trailing
+       * NEW_SHARETREE inside one event-master transaction; the TET dirty-
+       * objects flush handler takes care of throttled spool persistence. */
+
+      /* CS-1239 step 5: ORT_share_tree handler removed. Recomputation +
+       * sgeE_NEW_SHARETREE emission now happen in the merged TET share-tree
+       * tick handler (see above), driven by ocs::SharetreeUsage::
+       * mark_share_tree_dirty() set from sge_book_finished_job_usage and
+       * from the decay step of the tick itself. */
 
          /* -----------------------------------------------------------------------
           * UPDATE FIELDS IN SCHEDULING CONFIGURATION

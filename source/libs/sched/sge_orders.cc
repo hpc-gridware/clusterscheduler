@@ -367,26 +367,10 @@ sge_send_orders2master(sge_evc_class_t *evc, lList **orders)
 
 
 
-/*--------------------------------------------------------------------
- * build a ORT_remove_job order for each finished job 
- *--------------------------------------------------------------------*/
-lList *create_delete_job_orders(
-lList *finished_jobs, 
-lList *order_list  
-) {
-   DENTER(TOP_LAYER);
-
-   for_each_ep_lv(job, finished_jobs) {
-      for_each_ep_lv(ja_task, lGetList(job, JB_ja_tasks)) {
-         DPRINTF("DELETE JOB " sge_u32 "." sge_u32 "\n", lGetUlong(job, JB_job_number), lGetUlong(ja_task, JAT_task_number));
-         order_list = sge_create_orders(order_list, ORT_remove_job, job, ja_task, nullptr, true);
-      }
-   }
-
-   DRETURN(order_list);
-}
-
-
+/* CS-1239: create_delete_job_orders removed - the worker thread now buries
+ * the finished job inline (sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE)
+ * books usage and buries the job in one step), so the scheduler no longer
+ * needs to emit ORT_remove_job orders. */
 
 /****** sge_orders/sge_join_orders() ******************************************
 *  NAME

@@ -4032,7 +4032,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
          for (task_number = enrolled_start;
               task_number <= enrolled_end;
               task_number += *step) {
-            int spool_job = 1;
             int is_defined = job_is_ja_task_defined(job, task_number);
 
             if (is_defined) {
@@ -4130,9 +4129,8 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);
                   get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor, packet->gdi_session);
                } else {
-                  // @todo: spool_job = 1 = COMMIT_NO_SPOOLING = 0x0001
-                  sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE, spool_job | COMMIT_NEVER_RAN,
-                                 monitor, packet->gdi_session);
+                  sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
+                                 COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
                   showmessage = 1;
                   if (!*alltasks && showmessage) {
                      range_list_insert_id(&range_list, nullptr, task_number);
