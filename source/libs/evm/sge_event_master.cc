@@ -2395,25 +2395,20 @@ total_update(lListElem *event_client, uint64_t gdi_session)
 } /* total_update() */
 
 
-/****** evm/sge_event_master/build_subscription() ******************************
-*  NAME
-*     build_subscription() -- generates an array out of the cull registration
-*                                 structure
-*
-*  SYNOPSIS
-*     static void build_subscription(lListElem *event_el)
-*
-*  FUNCTION
-*      generates an array out of the cull registration
-*      structure. The array contains all event elements and each of them
-*      has an identifier, if it is subscribed or not. Before that is done, it is
-*      tested, the EV_changed flag is set. If not, the function simply returns.
-*
-*
-*  INPUTS
-*     lListElem *event_el - the event element, which event structure will be transformed
-*
-*******************************************************************************/
+/** @brief Build the per-event-client subscription array from EV_subscribed.
+ *
+ * Transforms the cull EV_subscribed registration list into a fixed
+ * sgeE_EVENTSIZE-element array, one entry per event type flagging whether it
+ * is subscribed. Returns early when the EV_changed flag is not set.
+ *
+ * Each EVS_id is client-supplied and indexes the fixed-size array directly.
+ * Entries whose id is outside (sgeE_ALL_EVENTS, sgeE_EVENTSIZE) are ignored so
+ * the sink cannot perform an out-of-bounds write into sub_array (CWE-787,
+ * CS-2340) — independent of any caller-side verification. Valid ids are
+ * processed unchanged.
+ *
+ * @param event_el  the event-client element whose subscription is (re)built
+ */
 static void build_subscription(lListElem *event_el)
 {
    const lList *subscription = lGetList(event_el, EV_subscribed);
@@ -2441,6 +2436,14 @@ static void build_subscription(lListElem *event_el)
    for_each_ep_lv(sub_el, subscription) {
       const lListElem *temp = nullptr;
       uint32_t event = lGetUlong(sub_el, EVS_id);
+
+      // EVS_id is client-supplied; reject out-of-range ids so they cannot index
+      // past the fixed sgeE_EVENTSIZE-element sub_array (CWE-787, CS-2340). Same
+      // predicate as elem_select() and event_client_verify_subscription().
+      if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
+         DPRINTF("ignoring out-of-range EVS_id " sge_u32 " in subscription\n", event);
+         continue;
+      }
 
       sub_array[event].subscription = EV_SUBSCRIBED;
       sub_array[event].flush = lGetBool(sub_el, EVS_flush) ? true : false;
