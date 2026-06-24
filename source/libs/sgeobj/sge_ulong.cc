@@ -247,28 +247,23 @@ bool double_print_to_dstring(double value, dstring *string, ocs::CEntry::Type ty
    }
 }
 
-/****** sge_ulong/ulong_parse_date_time_from_string() **************************
-*  NAME
-*     ulong_parse_date_time_from_string() -- Parse string into date/time ulong
-*
-*  SYNOPSIS
-*     bool ulong_parse_date_time_from_string(uint32_t *this_ulong, lList
-*     **answer_list, const char *string) 
-*
-*  FUNCTION
-*     ??? 
-*
-*  INPUTS
-*     uint32_t *this_ulong - ???
-*     lList **answer_list  - ??? 
-*     const char *string   - ??? 
-*
-*  RESULT
-*     bool - 
-*
-*  NOTES
-*     MT-NOTE: ulong_parse_date_time_from_string() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Parse a date/time specifier into seconds since the epoch.
+ *
+ * Parses a string of the form [[CC]YY]MMDDhhmm[.SS] (as accepted by the
+ * qsub/qalter "-a" option, qacct "-b"/"-e" and DRMAA start time). The input is
+ * attacker-controlled and is copied into a fixed-size stack buffer of
+ * sizeof(stringT) bytes, so its length must be strictly less than the buffer
+ * capacity to leave room for the terminating NUL. Oversized, empty or malformed
+ * input is rejected. MT-NOTE: this function is MT safe.
+ *
+ * @param[out] this_ulong  parsed time in seconds since the epoch, or -1 (cast to
+ *                         uint32_t) on any error
+ * @param[out] answer_list error answer on failure; if nullptr the message is
+ *                         printed to stderr instead
+ * @param[in]  string      the date/time string to parse
+ * @return true on success, false on error (NULL/empty/too long/malformed)
+ */
 bool 
 ulong_parse_date_time_from_string(uint32_t *this_ulong,
                                   lList **answer_list, const char *string) 
@@ -301,7 +296,11 @@ ulong_parse_date_time_from_string(uint32_t *this_ulong,
       DRETURN(false);
    }
 
-   if (strlen(string) > sizeof(stringT)) {
+   // Reject before the strcpy below if the string does not fit together with
+   // its NUL terminator: a string of length sizeof(stringT) would need one
+   // extra byte for the terminator, so the bound is '>=', not '>' (CS-2349,
+   // CWE-193/CWE-787 off-by-one stack overflow).
+   if (strlen(string) >= sizeof(stringT)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_STARTTIMETOOLONG);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -313,7 +312,7 @@ ulong_parse_date_time_from_string(uint32_t *this_ulong,
       DRETURN(false);
    }
 
-   strcpy(inp_date_str, string);
+   sge_strlcpy(inp_date_str, string, sizeof(inp_date_str));
    non_seconds=sge_strtok_r(inp_date_str, ".", &context);
    seconds=sge_strtok_r(nullptr, ".", &context);
 
