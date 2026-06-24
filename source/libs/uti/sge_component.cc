@@ -959,6 +959,13 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
       DRETURN(false);
 #endif
    } else {
+      // Non-Munge: auth_info is only DECODED here (Encoder::decode is a reversible
+      // transport encoding, not authentication). This is by design and NOT a missing
+      // identity check (see CS-2345, assessed as by-design): user authentication
+      // is provided by Munge, which cross-checks the authenticated uid/gid against the
+      // claimed values above. TLS mode provides transport and host authentication only
+      // (auto-generated host certificates, no per-user identity); combine `tls` + `munge`
+      // for verified user identity.
       std::string auth_info_str(auth_info);
       if (!ocs::Encoder::decode(auth_info_str, auth_buffer_str)) {
          sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_FAILEDTOEXTRACTAUTHINFO);
