@@ -33,6 +33,8 @@
 #
 #  All Rights Reserved.
 #
+#  Portions of this software are Copyright (c) 2024-2026 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -289,17 +291,18 @@ RestoreSequenceNumberFiles()
 
 
 #Select spooling method
-# $1 - backued spooling method
-SelectNewSpooling() 
+# $1 - backuped spooling method
+SelectNewSpooling()
 {
    backup_spooling_method=$1
-   if [ "$backup_spooling_method" != "berkeleydb" -a "$backup_spooling_method" != "classic" ]; then
+   if [ "$backup_spooling_method" != "berkeleydb" -a "$backup_spooling_method" != "classic" \
+        -a "$backup_spooling_method" != "postgres" ]; then
       $INFOTEXT "Invalid arg $1 to SelectNewSpooling"
       exit 1
    fi
-	
+
    keep=false
-	
+
    $CLEAR
    $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nUse previous %s spooling method ('y') or use new spooling method ('n') (y/n) [y] >> " \
              $backup_spooling_method
@@ -331,6 +334,47 @@ SelectNewSpooling()
             $INFOTEXT -n "\t- Restart your BDB server (>>sgebdb start<<).\n"
             $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
          fi
+      elif [ "$SPOOLING_METHOD" = "postgres" ]; then
+         # PostgreSQL spooling: the spool data lives in the remote PG
+         # database. Clear the contents of `config` and `jobs` so the
+         # subsequent upgrade steps can repopulate them from the backup;
+         # preserve the `__schema_version` metadata row in `config` so
+         # qmaster's startup probe keeps passing without a second
+         # spoolinit pass. Both pg_dump (the operator may want to take
+         # one for safety) and psql are required on PATH; CheckPgTooling
+         # surfaces a clear error if they are missing.
+         CheckPgTooling
+         ParsePgSpoolingParams "$SGE_ROOT/$SGE_CELL/common/bootstrap"
+         if [ -z "$PG_HOST" -o -z "$PG_DBNAME" -o -z "$PG_USER" ]; then
+            $INFOTEXT -e "Bootstrap spooling_params is missing host/dbname/user"
+            $INFOTEXT -log "Bootstrap spooling_params is missing host/dbname/user"
+            MoveLog
+            exit 1
+         fi
+         if [ -z "$PG_PORT" ]; then
+            PG_PORT=5432
+         fi
+         $INFOTEXT -n "\nClearing postgres spool tables on %s:%s/%s as %s\n" \
+                   "$PG_HOST" "$PG_PORT" "$PG_DBNAME" "$PG_USER"
+         $INFOTEXT -n "(the __schema_version row is preserved so qmaster can validate the schema at next startup)\n"
+         _sql="DELETE FROM config WHERE key <> '__schema_version'; DELETE FROM jobs;"
+         if [ -n "$PG_PASSFILE" ]; then
+            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -c "$_sql"
+         else
+            psql --no-password \
+               --host="$PG_HOST" --port="$PG_PORT" \
+               --dbname="$PG_DBNAME" --username="$PG_USER" \
+               -v ON_ERROR_STOP=1 -c "$_sql"
+         fi
+         if [ $? -ne 0 ]; then
+            $INFOTEXT -e "Failed to clear postgres spool tables; tables may be in an inconsistent state"
+            $INFOTEXT -log "Failed to clear postgres spool tables; tables may be in an inconsistent state"
+            MoveLog
+            exit 1
+         fi
       else #Classic
          tmp_spool=`echo $SPOOLING_ARGS | awk -F";" '{print $1}' | awk '{print $2}'`
          list="configuration
@@ -341,13 +385,25 @@ sched_configuration"
          done
       fi
    else
-      if [ "$backup_spooling_method" = "classic" ]; then
-          suggested_spooling_method=berkeley
-      else
-          suggested_spooling_method=classic
-      fi
+      case "$backup_spooling_method" in
+         classic)
+            suggested_spooling_method=berkeleydb
+            ;;
+         berkeleydb)
+            suggested_spooling_method=classic
+            ;;
+         postgres)
+            # No obvious "other" method to suggest when switching away
+            # from postgres; default to classic as the safest single-host
+            # fallback. The operator gets a prompt regardless.
+            suggested_spooling_method=classic
+            ;;
+         *)
+            suggested_spooling_method=classic
+            ;;
+      esac
       #Selecting new spooling method
-      suggested_spoooling_params=`BootstrapGetValue ${UPGRADE_BACKUP_DIR}/$SGE_CELL/common "spooling_params"`
+      suggested_spooling_params=`BootstrapGetValue ${UPGRADE_BACKUP_DIR}/$SGE_CELL/common "spooling_params"`
       SetSpoolingOptions "$suggested_spooling_method" "$suggested_spooling_params"
    fi
 	

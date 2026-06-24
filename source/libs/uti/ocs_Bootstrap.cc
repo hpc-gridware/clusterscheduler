@@ -300,7 +300,7 @@ ocs::Bootstrap::init_from_file() {
            {"reader_threads",    false},
            {"scheduler_threads", false},
    };
-   char value[NUM_BOOTSTRAP][1025];
+   char value[NUM_BOOTSTRAP][4097];
    dstring error_dstring = DSTRING_INIT;
 
    // ensure that the number of entries in the sec_mode_names array matches the number of entries in the bs_sec_mode_t enum

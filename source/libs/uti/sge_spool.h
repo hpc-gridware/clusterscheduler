@@ -229,7 +229,7 @@ int sge_get_confval_array(const char *fname,
                           int n,
                           int nmissing,
                           bootstrap_entry_t name[],
-                          char value[][1025],
+                          char value[][4097],
                           dstring *error_dstring
 );
 
