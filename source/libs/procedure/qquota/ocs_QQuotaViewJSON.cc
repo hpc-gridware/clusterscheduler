@@ -161,7 +161,7 @@ ocs::QQuotaViewJSON::report_limit_string_value(std::ostream &os, const char *fil
  * @param used      current usage; 0 means omit (e.g. static non-consumable limits)
  */
 void
-ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resource, const uint64_t max, const uint64_t used) {
+ocs::QQuotaViewJSON::report_resource_value(std::ostream &os, const char* resource, CEntry::Type /*type*/, const uint64_t max, const uint64_t used) {
    // show the resource and the max limit.
    // `used` is optional. not available for static limits (non-consumables)
    os << ",\n";

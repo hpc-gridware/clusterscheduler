@@ -87,7 +87,7 @@ ocs::QQuotaViewXML::report_limit_rule_finished(std::ostream &os) {
 }
 
 void
-ocs::QQuotaViewXML::report_resource_value(std::ostream &os, const char *resource, uint64_t max, uint64_t used) {
+ocs::QQuotaViewXML::report_resource_value(std::ostream &os, const char *resource, CEntry::Type /*type*/, uint64_t max, uint64_t used) {
    DENTER(TOP_LAYER);
    os << "   <limit resource='" << EscapedString(resource) << "' ";
    os << "limit='" << max << "'";

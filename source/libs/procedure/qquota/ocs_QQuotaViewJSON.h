@@ -38,6 +38,6 @@ namespace ocs {
       void report_limit_rule_begin(std::ostream &os, const char* rqs_name_name, const char *rule_name) override;
       void report_limit_string_value(std::ostream &os, const char *filter_name, const char *value, bool exclude) override;
       void report_limit_rule_finished(std::ostream &os) override;
-      void report_resource_value(std::ostream &os, const char* resource, uint64_t max, uint64_t used) override;
+      void report_resource_value(std::ostream &os, const char* resource, CEntry::Type type, uint64_t max, uint64_t used) override;
    };
 }

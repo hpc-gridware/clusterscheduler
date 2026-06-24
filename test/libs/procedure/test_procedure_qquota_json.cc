@@ -142,7 +142,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       // NULL resource name must not crash and renders an empty string
       ocs::QQuotaViewJSON view(parameter);
       std::ostringstream os;
-      view.report_resource_value(os, nullptr, 5, 0);
+      view.report_resource_value(os, nullptr, ocs::CEntry::Type::INT, 5, 0);
       const std::string out = os.str();
       CHECK(id, "QQUOTA-JSON: NULL resource -> empty string",
             contains(out, "\"resource\": \"\"")); id++;

@@ -42,7 +42,7 @@ namespace ocs {
    private:
       char *qquota_get_next_filter(stringT filter, const char *cp);
       void qquota_print_out_rule(std::ostream &os, const lListElem *rqs, lListElem *rule, const char *limit_name,
-                                        uint64_t usage_value, uint64_t limit_value, qquota_filter_t qfilter,
+                                        ocs::CEntry::Type type, uint64_t usage_value, uint64_t limit_value, qquota_filter_t qfilter,
                                         lList *printed_rules, QQuotaViewBase &view);
       void qquota_print_out_filter(std::ostream &os, lListElem *filter, const char *name, const char *value, QQuotaViewBase &view);
    public:

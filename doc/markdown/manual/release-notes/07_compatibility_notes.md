@@ -32,5 +32,21 @@ number of invocations per second:
 | `qrstat:get:*:*:*=N` | `qrstat:get:proc:*:*=N` |
 | `qquota:get:*:*:*=N` | `qquota:get:proc:*:*=N` |
 
+## *qquota* Plain Output: Memory and Time Limits Shown With Units
+
+In the plain (non-XML, non-JSON) output of *qquota*, resource-quota limit and usage values are now displayed in the
+human-readable form that matches the resource's complex attribute type, instead of the raw canonical number:
+
+- **MEMORY** attributes are shown with a unit, e.g. `4.000G` instead of `4294967296`.
+- **TIME** attributes are shown as `HH:MM:SS` (or `D:HH:MM:SS`), e.g. `01:00:00` instead of `3600`.
+- All other types (INT, DOUBLE, BOOL, …) continue to be shown as plain integers.
+
+Previously the plain output printed the raw canonical value (bytes for memory, seconds for time) and additionally
+truncated it to the column width, so a 4 GiB limit could appear as the misleading value `42949672`.
+
+**Impact:** scripts that parse the plain *qquota* output and expect the raw numeric value must be adapted. For
+machine-readable, unformatted numeric values use `qquota -xml` or `qquota -json` instead — their output is
+**unchanged** and continues to report the canonical numeric value.
+
 [//]: # (Each file has to end with two empty lines)
 

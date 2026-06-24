@@ -24,6 +24,9 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/ocs_Pattern.h"
 #include "uti/sge.h"
+#include "uti/sge_parse_num_par.h"
+
+#include "sgeobj/ocs_CEntry.h"
 
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -49,15 +52,28 @@ ocs::QQuotaController::~QQuotaController() {
 char *
 ocs::QQuotaController::qquota_get_next_filter(stringT filter, const char *cp)
 {
-   auto *ret = (char *)strchr(cp, '/');
-   ret++;
-   if (ret - cp < MAX_STRING_SIZE && ret - cp > 1) {
-      snprintf(filter, ret - cp, "%s", cp);
+   // cp is part of a server-supplied RUE_name key; it may be NULL or lack the '/'
+   // separators. Never form an invalid pointer from a failed strchr() (the old
+   // `strchr(cp,'/')++` produced (char*)1 on a missing separator, which the next
+   // call then dereferenced -> SIGSEGV) (CWE-469/CWE-476, CS-2348).
+   if (cp == nullptr) {
+      snprintf(filter, MAX_STRING_SIZE, "-");
+      return nullptr;
+   }
+   const char *slash = strchr(cp, '/');
+   if (slash == nullptr) {
+      // no separator: emit "-" and return a pointer to the terminating NUL, so a
+      // subsequent call re-scans an empty string instead of an invalid pointer
+      snprintf(filter, MAX_STRING_SIZE, "-");
+      return const_cast<char *>(cp + strlen(cp));
+   }
+   const ptrdiff_t len = slash - cp + 1;
+   if (len > 1 && len < MAX_STRING_SIZE) {
+      snprintf(filter, len, "%s", cp);
    } else {
       snprintf(filter, MAX_STRING_SIZE, "-");
    }
-
-   return ret;
+   return const_cast<char *>(slash + 1);
 }
 
 void
@@ -82,7 +98,7 @@ ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, lListElem *filt
 
 void
 ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *rqs, lListElem *rule, const char *limit_name,
-                                  uint64_t usage, uint64_t limit, qquota_filter_t qfilter,
+                                  ocs::CEntry::Type type, uint64_t usage, uint64_t limit, qquota_filter_t qfilter,
                                   lList *printed_rules, QQuotaViewBase &view) {
    // create a unique key
    std::ostringstream oss_key;
@@ -101,7 +117,7 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const lListElem *
 
    // make the output
    view.report_limit_rule_begin(os, lGetString(rqs, RQS_name), lGetString(rule, RQR_name));
-   view.report_resource_value(os, limit_name, limit, usage);
+   view.report_resource_value(os, limit_name, type, limit, usage);
    qquota_print_out_filter(os, lGetObject(rule, RQR_filter_users), "users", qfilter.user, view);
    qquota_print_out_filter(os, lGetObject(rule, RQR_filter_projects), "projects", qfilter.project, view);
    qquota_print_out_filter(os, lGetObject(rule, RQR_filter_pes), "pes", qfilter.pe, view);
@@ -180,6 +196,9 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                  DPRINTF("centry %s not defined -> IGNORING\n", limit_name);
                                  continue;
                               }
+                              // attribute type drives value parsing (RQRL_value) and
+                              // human-readable rendering of the limit (CS-2348)
+                              const auto centry_type = static_cast<ocs::CEntry::Type>(lGetUlong(raw_centry, CE_valtype));
 
                               if (lList *rml = parameter.get_resource_match_list(); rml != nullptr &&
                                   ((centry_list_locate(rml, limit_name) == nullptr) &&
@@ -287,7 +306,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     qf.pe = pe;
                                     qf.queue = queue;
                                     qf.host = host;
-                                    qquota_print_out_rule(oss, rqs, rule, limit_name, value_value, limit_value, qf, printed_rules, view);
+                                    qquota_print_out_rule(oss, rqs, rule, limit_name, centry_type, value_value, limit_value, qf, printed_rules, view);
 
                                     sge_dstring_free(&limit_str);
                                     sge_dstring_free(&value_str);
@@ -298,9 +317,21 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                  DPRINTF("found centry %s - static value\n", limit_name);
 
                                  qquota_filter_t qf{};
-                                 uint64_t limit_value = std::stoul(lGetString(limit, RQRL_value));
+                                 // RQRL_value is a complex-attribute value spec (e.g. "4G",
+                                 // "1:0:0"), server-supplied. Parse it according to the
+                                 // attribute's type via parse_ulong_val(), which validates and
+                                 // returns a status instead of throwing - std::stoul() here
+                                 // crashed qquota on a NULL/non-numeric/out-of-range value and
+                                 // silently mis-parsed typed values like "4G" (CWE-248, CS-2348).
+                                 uint64_t limit_value = 0;
+                                 double dval = 0.0;
+                                 if (const char *value_str = lGetString(limit, RQRL_value);
+                                     value_str != nullptr &&
+                                     parse_ulong_val(&dval, nullptr, centry_type, value_str, nullptr, 0)) {
+                                    limit_value = static_cast<uint64_t>(dval);
+                                 }
                                  qquota_print_out_rule(oss, rqs, rule, limit_name,
-                                                       0, limit_value, qf, printed_rules, view);
+                                                       centry_type, 0, limit_value, qf, printed_rules, view);
 
                               }
                            }

@@ -22,6 +22,9 @@
 #include <sstream>
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_dstring.h"
+
+#include "sgeobj/sge_ulong.h"
 
 #include "ocs_QQuotaViewBase.h"
 #include "ocs_QQuotaViewPlain.h"
@@ -103,15 +106,31 @@ ocs::QQuotaViewPlain::report_limit_rule_finished(std::ostream &os) {
 }
 
 void
-ocs::QQuotaViewPlain::report_resource_value(std::ostream &os, const char *resource, uint64_t max, uint64_t used) {
+ocs::QQuotaViewPlain::report_resource_value(std::ostream &os, const char *resource, CEntry::Type type, uint64_t max, uint64_t used) {
    DENTER(TOP_LAYER);
+   // Format memory and time values human-readably by attribute type (e.g. memory ->
+   // "4.000G", time -> "01:00:00"); everything else is a whole uint64, printed as a plain
+   // integer - NOT via double_print_to_dstring()'s "%f", which would render slots=10 as
+   // "10.000000". Do not truncate the field (the previous "{:<20.20}" cut a large value
+   // like 4294967296 to "42949672", making a 4 GiB limit look like ~43 million) (CS-2348).
+   auto value_to_dstring = [type](uint64_t v, dstring *out) {
+      if (type == CEntry::Type::MEM || type == CEntry::Type::TIME) {
+         double_print_to_dstring(static_cast<double>(v), out, type);
+      } else {
+         sge_dstring_sprintf(out, sge_u64, v);
+      }
+   };
+   DSTRING_STATIC(max_str, 64);
+   value_to_dstring(max, &max_str);
    std::ostringstream oss;
    if (used == 0) {
-      oss << resource << "=" << max;
+      oss << resource << "=" << sge_dstring_get_string(&max_str);
    } else {
-      oss << resource << "=" << used << "/" <<  max;
+      DSTRING_STATIC(used_str, 64);
+      value_to_dstring(used, &used_str);
+      oss << resource << "=" << sge_dstring_get_string(&used_str) << "/" << sge_dstring_get_string(&max_str);
    }
-   os << std::format("{:<20.20} ", oss.str());
+   os << std::format("{:<20} ", oss.str());
    DRETURN_VOID;
 }
 
