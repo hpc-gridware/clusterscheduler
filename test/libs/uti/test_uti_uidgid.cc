@@ -167,14 +167,17 @@ int main(int /*argc*/, char * /*argv*/[]) {
       // T21: name-based lookup must succeed
       CHECK(id, "ocs_get_groups(by-name) succeeds",
             ocs_get_groups(username, gid, &amount2, &grp_array2, &error_dstr)); id++;
-      // T22: both variants must report the same number of groups
-      CHECK(id, "both ocs_get_groups variants return the same group count",
-            amount1 == amount2); id++;
+      // NOTE: the two variants are intentionally NOT compared for equality. The
+      // by-process variant (getgroups) returns the running process's supplementary
+      // groups, snapshotted at session start, while the by-name variant
+      // (getgrouplist) returns the user's configured groups. These legitimately
+      // differ when a group membership changed after the session began, or under
+      // su/sudo/containers - so an equality assertion would be environment-fragile.
       sge_free(&grp_array2);
    }
 
    printf("\n--- ocs_id2dstring ---\n");
-   // T23/T24: identity string must be non-empty and contain the uid= prefix
+   // T22/T23: identity string must be non-empty and contain the uid= prefix
    {
       DSTRING_STATIC(dstr, MAX_STRING_SIZE);
       ocs_id2dstring(&dstr, uid, username, gid, groupname, amount1, grp_array1);
@@ -184,7 +187,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "ocs_id2dstring output contains uid= prefix",
             idstr != nullptr && strstr(idstr, "uid=") != nullptr); id++;
    }
-   // T25: with no supplementary groups the output contains "NONE"
+   // T24: with no supplementary groups the output contains "NONE"
    {
       DSTRING_STATIC(dstr, MAX_STRING_SIZE);
       ocs_id2dstring(&dstr, uid, username, gid, groupname, 0, nullptr);
