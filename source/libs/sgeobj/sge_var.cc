@@ -767,34 +767,23 @@ var_list_verify(const lList *lp, lList **answer_list)
    return ret;
 }
 
-/****** sge_var/var_list_parse_from_string() *******************************
-*  NAME
-*     var_list_parse_from_string() -- parse vars from string list 
-*
-*  SYNOPSIS
-*     int var_list_parse_from_string(lList **lpp, 
-*                                    const char *variable_str, 
-*                                    int check_environment) 
-*
-*  FUNCTION
-*     Parse a list of variables ("lpp") from a comma separated 
-*     string list ("variable_str"). The boolean "check_environment"
-*     defined wether the current value of a variable is taken from
-*     the environment of the calling process.
-*
-*  INPUTS
-*     lList **lpp              - VA_Type list 
-*     const char *variable_str - source string 
-*     int check_environment    - boolean
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        >0 - Error
-*
-*  NOTES
-*     MT-NOTE: var_list_parse_from_string() is MT safe
-*******************************************************************************/
+/**
+ * @brief Parse a comma-separated variable list into a VA_Type list.
+ *
+ * Splits @p variable_str on ',' into "name[=value]" tokens and appends a VA_Type
+ * element per token to @p lpp (creating the list if *lpp is nullptr). The input
+ * is attacker-controlled (qsub/qalter -v/-V/-ac/-dc, JSV); a malformed token
+ * that carries no name part (e.g. "==") is rejected with an error instead of
+ * dereferencing NULL. MT-NOTE: this function is MT safe.
+ *
+ * @param[in,out] lpp              VA_Type list to append to; created if *lpp is
+ *                                 nullptr
+ * @param[in]     variable_str     source string ("a=1,b=2,...")
+ * @param[in]     check_environment if true, a name without "=value" takes its
+ *                                 value from the caller's environment
+ * @return 0 on success, >0 on error (1 lpp nullptr, 2 strdup, 3 empty list,
+ *         4 list create, 5 malformed token)
+ */
 int var_list_parse_from_string(lList **lpp, const char *variable_str,
                                int check_environment)
 {
@@ -841,7 +830,18 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
 
       context = nullptr;
       variable = sge_strtok_r(*pstr, "=", &context);
-      SGE_ASSERT((variable));
+      // sge_strtok_r() returns nullptr when the token is all delimiters (e.g.
+      // "=="); string_list() does not strip '=', so such a token is reachable
+      // from client input. Reject it gracefully instead of asserting / running
+      // strlen() on NULL (CS-2350, CWE-476/CWE-617). context is already
+      // allocated by the first sge_strtok_r() call and must be freed here.
+      if (variable == nullptr) {
+         sge_free_saved_vars(context);
+         lRemoveElem(*lpp, &ep);
+         sge_free(&va_string);
+         sge_free(&str_str);
+         DRETURN(5);
+      }
       var_len=strlen(variable);
       lSetString(ep, VA_variable, variable);
       val_str=*pstr;

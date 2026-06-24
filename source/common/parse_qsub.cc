@@ -2420,29 +2420,19 @@ static int sge_parse_checkpoint_interval(
 
 /***************************************************************************/
 
-/****** client/var/var_list_parse_from_environment() **************************
-*  NAME
-*     var_list_parse_from_environment() -- create var list from env 
-*
-*  SYNOPSIS
-*     static int var_list_parse_from_environment(lList **lpp, char **envp) 
-*
-*  FUNCTION
-*     Create a list of variables from the given environment. 
-*
-*  INPUTS
-*     lList **lpp - VA_Type list 
-*     char **envp - environment pointer 
-*
-*  RESULT
-*     static int - error state
-*         0 - OK
-*        >0 - Error   
-*
-*  NOTES
-*     MT-NOTES: var_list_parse_from_environment() is MT safe
-*******************************************************************************/
-static int var_list_parse_from_environment(lList **lpp, char **envp) 
+/**
+ * @brief Create a VA_Type variable list from an environment array.
+ *
+ * Appends one VA_Type element per "NAME=value" entry of @p envp to @p lpp
+ * (creating the list if *lpp is nullptr). A degenerate entry that carries no
+ * name (an all-'=' string such as "=") is skipped rather than asserted on, so a
+ * crafted ambient environment cannot crash the parse. MT-NOTE: MT safe.
+ *
+ * @param[in,out] lpp  VA_Type list to append to; created if *lpp is nullptr
+ * @param[in]     envp NULL-terminated environment array ("NAME=value" entries)
+ * @return 0 on success, >0 on error (1 bad args, 3 list create)
+ */
+static int var_list_parse_from_environment(lList **lpp, char **envp)
 {
    DENTER(TOP_LAYER);
 
@@ -2464,7 +2454,15 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
       SGE_ASSERT((env_entry));
 
       char *env_name = sge_strtok_r(env_entry, "=", &context);
-      SGE_ASSERT((env_name));
+      // sge_strtok_r() returns nullptr for an all-delimiter entry (e.g. "="),
+      // which the old SGE_ASSERT turned into an abort / NULL deref on a crafted
+      // ambient environment (CS-2350, CWE-476/CWE-617). Skip such a nameless
+      // entry instead of crashing the whole -V parse.
+      if (env_name == nullptr) {
+         sge_free(&env_entry);
+         sge_free_saved_vars(context);
+         continue;
+      }
       lListElem *ep = lAddElemStr(lpp, VA_variable, env_name, VA_Type);
 
       char *env_description = sge_strtok_r((char *) 0, "\0", &context);
