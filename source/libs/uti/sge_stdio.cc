@@ -195,7 +195,10 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          if (myuid != pw->pw_uid) {
             /* Only change user if we differ from the wanted user */
             if (myuid != SGE_SUPERUSER_UID) {
-               if (write(2, not_root, sizeof(not_root)) != sizeof(not_root)) {
+               // strlen, not sizeof(const char*) which is the 8-byte pointer
+               // size and truncates the message (CS-2360, CWE-467).
+               const size_t not_root_len = strlen(not_root);
+               if (write(2, not_root, not_root_len) != static_cast<ssize_t>(not_root_len)) {
                   /* nothing we can do here - we are anyway about to exit */
                }
                sge_free(&buffer);
@@ -263,7 +266,10 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
 
       execlp(shell, arg0, "-c", command, nullptr);
 
-      if (write(2, could_not, sizeof(could_not)) != sizeof(could_not)) {
+      // strlen, not sizeof(const char*) which is the 8-byte pointer size and
+      // truncates the message (CS-2360, CWE-467).
+      const size_t could_not_len = strlen(could_not);
+      if (write(2, could_not, could_not_len) != static_cast<ssize_t>(could_not_len)) {
          /* nothing we can do here - we are anyway about to exit */
       }
       sge_exit(1);
