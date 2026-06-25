@@ -606,35 +606,22 @@ const char *sge_gettext(const char *x) {
    return x;
 }
 
-/****** uti/language/sge_gettext_() ********************************************
-*  NAME
-*     sge_gettext_() -- add error id to message
-*
-*  SYNOPSIS
-*     const char* sge_gettext_(int msg_id, const char *msg_str)
-*
-*  FUNCTION
-*     This function is used for adding the message id to the translated
-*     gettext message string. The message id is only added when the
-*     function sge_get_message_id_output() returns not "0" and the
-*     message string contains at least one SPACE character.
-*
-*  INPUTS
-*     int msg_id          - message id
-*     const char *msg_str - message to translate
-*
-*  RESULT
-*     const char* - translated (L10N) message with message id
-*
-*  SEE ALSO
-*     uti/language/sge_init_language()
-*     uti/language/sge_init_language_func()
-*     uti/language/sge_gettext()
-*     uti/language/sge_gettext_()
-*     uti/language/sge_gettext__()
-*     uti/language/sge_get_message_id_output()
-*     uti/language/sge_set_message_id_output()
-*******************************************************************************/
+/**
+ * @brief Add the message id to a translated (gettext) message string.
+ *
+ * Prepends the message id as "[id] " to the translated message, but only when
+ * message-id output is enabled (sge_get_message_id_output() != 0) and @p msg_str
+ * contains at least one space. Results are cached in a hash table keyed by the
+ * message id.
+ *
+ * @param[in] msg_id  message id (positive message-catalog id; the "[id] " prefix
+ *                    is added for ids <= 99999)
+ * @param[in] msg_str message to translate
+ * @return the translated (L10N) message, with the id prefix where applicable
+ *
+ * @see sge_init_language(), sge_init_language_func(), sge_gettext(),
+ *      sge_gettext__(), sge_get_message_id_output(), sge_set_message_id_output()
+ */
 const char *sge_gettext_(int msg_id, const char *msg_str) {
    /* extern */
 #ifndef __SGE_COMPILE_WITH_GETTEXT__
@@ -677,7 +664,12 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 
          org_message = sge_malloc(strlen(msg_str) + 1);
          SGE_ASSERT(org_message != nullptr);
-         trans_message = sge_malloc(strlen(gettext_return_string) + 1 + 8); /* max "(99999) "*/
+         /* Size for the worst-case prefix "[-2147483648] " (14 bytes), not just
+            the largest positive id "[99999] " (8): the msg_id <= 99999 guard
+            below also matches negative ids, which would otherwise overflow the
+            buffer (CS-2361, CWE-787). */
+         const size_t trans_size = strlen(gettext_return_string) + 1 + 16;
+         trans_message = sge_malloc(trans_size);
          SGE_ASSERT(trans_message != nullptr);
          new_mp = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
          SGE_ASSERT(new_mp != nullptr);
@@ -688,9 +680,9 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
          strcpy(org_message, msg_str);
          new_mp->message = org_message;
          if (msg_id <= 99999) {
-            sprintf(trans_message, "[%d] %s", msg_id, gettext_return_string);
+            snprintf(trans_message, trans_size, "[%d] %s", msg_id, gettext_return_string);
          } else {
-            sprintf(trans_message, "%s", gettext_return_string);
+            snprintf(trans_message, trans_size, "%s", gettext_return_string);
          }
          new_mp->local_message = trans_message;
 
