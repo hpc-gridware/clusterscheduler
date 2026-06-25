@@ -1490,13 +1490,21 @@ GetDefaultClusterName() {
 #
 SetupRcScriptNames61()
 {
-   case $1 in
-      shadow)
-         return;;
-      *)
-         hosttype=$1;;
-   esac
-   if [ $hosttype = "qmaster" ]; then
+   hosttype=$1
+   # Callers spell the shadow role both ways ("shadow" and "shadowd"); normalize.
+   if [ "$hosttype" = "shadowd" ]; then
+      hosttype="shadow"
+   fi
+   # A shadow host reuses the shared sgemaster script — the same RC file name
+   # selects the master service; sgemaster decides per host whether to start
+   # sge_qmaster, sge_shadowd, or both based on act_qmaster and shadow_masters.
+   if [ "$hosttype" = "shadow" ]; then
+      TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
+      STARTUP_FILE_NAME=sgemaster
+      S95NAME=S95sgemaster
+      K03NAME=K03sgemaster
+      DAEMON_NAME="shadow"
+   elif [ $hosttype = "qmaster" ]; then
       TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
       STARTUP_FILE_NAME=sgemaster
       S95NAME=S95sgemaster
@@ -1541,14 +1549,22 @@ SetupRcScriptNames()
       return
    fi
 
-   case $1 in
-      shadow)
-         DAEMON_NAME="shadow"
-         return;;
-      *)
-         hosttype=$1;;
-   esac
-   if [ $hosttype = "qmaster" ]; then
+   hosttype=$1
+   # Callers spell the shadow role both ways ("shadow" and "shadowd"); normalize.
+   if [ "$hosttype" = "shadowd" ]; then
+      hosttype="shadow"
+   fi
+   # A shadow host reuses the shared sgemaster script — the same RC file name
+   # selects the master service; sgemaster decides per host whether to start
+   # sge_qmaster, sge_shadowd, or both based on act_qmaster and shadow_masters.
+   if [ "$hosttype" = "shadow" ]; then
+      script_name=sgemaster
+      TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
+      STARTUP_FILE_NAME=sgemaster.$SGE_CLUSTER_NAME
+      S95NAME=S95sgemaster.$SGE_CLUSTER_NAME
+      K03NAME=K03sgemaster.$SGE_CLUSTER_NAME
+      DAEMON_NAME="shadow"
+   elif [ $hosttype = "qmaster" ]; then
       script_name=sgemaster
       TMP_SGE_STARTUP_FILE=/tmp/sgemaster.$$
       STARTUP_FILE_NAME=sgemaster.$SGE_CLUSTER_NAME
@@ -1656,7 +1672,10 @@ CheckIfClusterNameAlreadyExists()
       fi
    fi
 
-   # Shadowd does not have RC script
+   # sge_shadowd reuses the qmaster systemd unit / RC script of the cluster
+   # — there is no shadowd-specific RC artifact. Detecting the unit here
+   # would misfire on a co-located master+shadow host (and block the second
+   # install). The shared file is found via the qmaster role check instead.
    if [ "$hosttype" = "shadowd" ]; then
       return $ret
    fi
@@ -2227,7 +2246,7 @@ GetServiceName()
       return 1
    fi
 
-   if [ "$UNIT_NAME" = "shadow" ]; then
+   if [ "$UNIT_NAME" = "shadow" -o "$UNIT_NAME" = "shadowd" ]; then
       UNIT_NAME="qmaster"
    fi
    SERVICE_NAME="$SLICE_NAME-$UNIT_NAME.service"
@@ -2441,6 +2460,19 @@ InstallRcScript()
       return 0
    fi
 
+   # The cluster's RC artifact (systemd unit / init script) is shared between
+   # the qmaster and shadow roles — sgemaster dispatches per host. If a prior
+   # install already created it (e.g. adding shadow on a host that is already
+   # the qmaster), reuse it instead of asking and overwriting.
+   CheckRCfiles $hosttype
+   if [ $? -eq 1 ]; then
+      $INFOTEXT "%s startup script for cluster %s already present at %s — not overwriting." \
+                "$DAEMON_NAME" "$SGE_CLUSTER_NAME" "$rc_path"
+      $INFOTEXT -log "%s startup script for cluster %s already present at %s — not overwriting." \
+                "$DAEMON_NAME" "$SGE_CLUSTER_NAME" "$rc_path"
+      return 0
+   fi
+
    $INFOTEXT -u "\n%s startup script" $DAEMON_NAME
 
    # --- from here only if root installs ---
@@ -2452,9 +2484,6 @@ InstallRcScript()
       $INFOTEXT "\nDo you want to start %s automatically at machine boot?" "$DAEMON_NAME"
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n \
                 "NOTE: If you select \"n\" SMF will be not used at all! (y/n) [y] >> "
-   # RC on shadow are in qmaster already
-   elif [ "$hosttype" = "shadow" ]; then
-      return 0
    else
       $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nWe can install the startup script that will\n" \
              "start %s at machine boot (y/n) [y] >> " $DAEMON_NAME
@@ -2825,7 +2854,21 @@ CheckRunningDaemon()
       ;;
 
       sge_shadowd )
-         #TODO: Should do something!
+         # sge_shadowd writes shadowd_$HOST.pid (or _$UQHOST.pid for the
+         # short hostname) into the qmaster spool dir; mirror the lookup
+         # the sgemaster rc-script uses.
+         host=`$SGE_UTILBIN/gethostname -aname`
+         uqhost=`$ECHO $host | cut -f1 -d.`
+         for pidfile in "$QMDIR/shadowd_$host.pid" "$QMDIR/shadowd_$uqhost.pid"; do
+            if [ -s "$pidfile" ]; then
+               daemon_pid=`cat "$pidfile"`
+               $SGE_UTILBIN/checkprog $daemon_pid $daemon_name > /dev/null
+               if [ $? -eq 0 ]; then
+                  return 0
+               fi
+            fi
+         done
+         return 1
       ;;
    esac
 
