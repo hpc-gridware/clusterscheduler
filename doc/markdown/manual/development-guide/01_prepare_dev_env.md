@@ -16,7 +16,6 @@ For the xxQS_NAMExx core product, the environment has to provide:
 
 Depending on the OS, additional packages are required:
 
-* libtirpc-devel (Linux)
 * systemd-devel or libudev-dev (Linux), libudev-devd (FreeBSD)
 * some cmake versions delivered with the OS are either too old or too new, and you need to install cmake yourself.
   In such a case we recommend installing version 3.27.9.
@@ -29,6 +28,8 @@ Relying on os packages for the 3rdparty tools requires the following additional 
 When building with support for TLS encryption, OpenSSL version 3.x is required.
 On build hosts the development package is required, on target hosts the runtime package is required.
 The cmake build checks for the OpenSSL header files having the correct version. If they are found, building with OpenSSL is enabled.
+
+When building with postgres spooling support (Gridware Cluster Scheduler only), the postgres development library and includes are required.
 
 Documentation is written in Markdown. To be able to generate product man pages and PDF manuals, you need:
 
@@ -84,6 +85,12 @@ Maven (`mvn`) is not in `PATH` by default, source `/opt/rh/rh-maven35/enable`.
 yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel rh-maven35
 ```
 
+#### for postgres spooling
+
+```bash
+yum install -y postgresql-devel
+```
+
 ### Debian 12
 
 ```
@@ -98,6 +105,12 @@ apt-get install -y libssl-dev
 #### for repository drmaa-java
 ```
 apt-get install y openjdk-17-jdk maven
+```
+
+#### for postgres spooling
+
+```bash
+apt install -y libpq-dev
 ```
 
 ### Debian 13
@@ -116,6 +129,12 @@ apt-get install -y libssl-dev
 #### for repository drmaa-java
 ```
 apt-get install -y openjdk-21-jdk maven
+```
+
+#### for postgres spooling
+
+```bash
+apt install -y libpq-dev
 ```
 
 ### FreeBSD 13/14
@@ -144,6 +163,14 @@ where it is found by the cmake build system.
 On FreeBSD 14 install with:
 ```
 pkg install openssl
+```
+
+#### for postgres spooling
+
+(postgresql version might differ on your machine)
+
+```bash
+pkg install postgresql18-client-18.3
 ```
 
 ### maxOS 14/15 (default for darwin-amd64)
@@ -184,6 +211,8 @@ brew install doxygen graphviz
 #### for repository drmaa-java
 ```
 ```
+
+@todo development package for postgres spooling
 
 ### Raspian 11
 
@@ -231,6 +260,12 @@ dnf install -y texlive*
 dnf install -y openssl-devel
 ```
 
+#### for postgres spooling
+
+```bash
+dnf install -y libpq-devel
+```
+
 ### Solaris 11 (default for sol-amd64)
 
 ```
@@ -255,6 +290,9 @@ pkg install pkg:/developer/java/jdk-8
 There is no Maven package in the Solaris 11 package manager,
 so you need to install it [manually](https://maven.apache.org/install.html).
 
+#### for postgres spooling
+
+There is no development package for the PostgreSQL client library. Build with `-DWITH_SPOOL_DYNAMIC=OFF` or build PostgreSQL yourself.
 
 ### OpenIndiana, OmniOS, ... (default for osol-amd64)
 
@@ -279,6 +317,10 @@ pkg install pkg:/developer/java/openjdk8
 pkg install pkg:/developer/build/maven
 ```
 
+#### for postgres spooling
+
+There is no development package for the PostgreSQL client library. Build with `-DWITH_SPOOL_DYNAMIC=OFF` or build PostgreSQL yourself.
+
 ### SUSE Tumbleweed (default for lx-riscv64)
 
 ```
@@ -294,6 +336,12 @@ zypper install -y libopenssl-devel
 #### for repository drmaa-java
 ```
 zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven
+```
+
+#### for postgres spooling
+
+```bash
+zypper install -y postgresql-devel
 ```
 
 ### Ubuntu 20/22/24/26
@@ -319,6 +367,12 @@ apt-get install -y libssl-dev
 #### for repository drmaa-java
 ```
 apt-get install -y openjdk-8-jdk maven
+```
+
+#### for postgres spooling
+
+```bash
+apt install -y libpq-dev
 ```
 
 ## Clone the Required Repositories
