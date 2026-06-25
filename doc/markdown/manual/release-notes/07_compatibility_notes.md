@@ -48,5 +48,22 @@ truncated it to the column width, so a 4 GiB limit could appear as the misleadin
 machine-readable, unformatted numeric values use `qquota -xml` or `qquota -json` instead — their output is
 **unchanged** and continues to report the canonical numeric value.
 
+## Spool Files Created With Owner-Only Permissions (0600)
+
+Flatfile spool files written by the qmaster (under `$SGE_ROOT/<cell>/spool/qmaster/...`) are now created with mode
+**0600** — read/write for the owning administrative user only. Previously they were created with mode 0666, so the
+final on-disk permissions depended entirely on the daemon's umask and could leave the files group- or
+world-readable (and, under a permissive umask, even writable).
+
+These files hold the authoritative cluster configuration and job metadata. Restricting them to the owner closes an
+information-disclosure and tampering exposure for any local user able to traverse the spool directory.
+
+**Impact:** any external tooling or process that read or modified qmaster spool files *directly* — as a user other
+than the qmaster/shadowd administrative account — will no longer be able to access them. Direct access to spool
+files has never been a supported interface. To read, back up, version, or modify configuration objects
+programmatically, use the file- and directory-based *qconf* interface (`-S<obj>` to export, `-A<obj>`/`-M<obj>` to
+apply) described in the *File-Based Bulk Configuration and Export with qconf* section of the **Major Enhancements** —
+it operates through the qmaster and removes any need to touch spool files directly.
+
 [//]: # (Each file has to end with two empty lines)
 
