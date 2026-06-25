@@ -1076,6 +1076,23 @@ void ocs::QStatJobViewJSON::report_pending_tasks(std::ostream &os, const lListEl
    DRETURN_VOID;
 }
 
+/**
+ * @brief Emit a job name/value list (env_list or context) as a JSON array.
+ *
+ * Shared helper used by report_env_list (nm == JB_env_list) and report_ctx_list
+ * (nm == JB_context).
+ *
+ * SECURITY (CS-2355, MEDIUM-QSTAT-001): when called for JB_env_list this emits
+ * the full captured job environment unredacted, the JSON counterpart of the
+ * plain-view disclosure (QStatJobViewPlain::report_env_list). Any redaction
+ * policy decided in CS-2355 for the job environment must be applied here for the
+ * JSON view; none is applied yet.
+ *
+ * @param[in,out] os   output stream
+ * @param[in]     job  job element to report
+ * @param[in]     nm   CULL field to emit (JB_env_list or JB_context)
+ * @param[in]     name JSON key name for the emitted array
+ */
 void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem *job, int nm, const char *name) {
    DENTER(TOP_LAYER);
 
@@ -1126,6 +1143,17 @@ void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const lListElem 
    DRETURN_VOID;
 }
 
+/**
+ * @brief Emit the job's environment (JB_env_list) in JSON qstat -j output.
+ *
+ * SECURITY (CS-2355, MEDIUM-QSTAT-001): unredacted job-environment disclosure,
+ * the JSON counterpart of QStatJobViewPlain::report_env_list. The actual
+ * emission happens in report_X_env_list(); the pending redaction decision is
+ * tracked in CS-2355.
+ *
+ * @param[in,out] os  output stream
+ * @param[in]     job job element to report
+ */
 void ocs::QStatJobViewJSON::report_env_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    report_X_env_list(os, job, JB_env_list, "env_list");

@@ -271,6 +271,19 @@ void ocs::QStatJobViewXML::report_shell_list(std::ostream &os, const lListElem *
    DRETURN_VOID;
 }
 
+/**
+ * @brief Job environment is intentionally not emitted in qstat -j XML output.
+ *
+ * Unlike the plain and JSON views, the XML view does not expose the job
+ * environment (JB_env_list); this override is deliberately a no-op.
+ *
+ * SECURITY (CS-2355, MEDIUM-QSTAT-001): if environment output is ever added
+ * here, do NOT emit JB_env_list verbatim — apply the redaction policy decided in
+ * CS-2355 (the plain and JSON views disclose it unredacted today).
+ *
+ * @param[in,out] os  output stream (unused)
+ * @param[in]     job job element (unused)
+ */
 void ocs::QStatJobViewXML::report_env_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    DRETURN_VOID;

@@ -701,6 +701,21 @@ void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const lListElem
    DRETURN_VOID;
 }
 
+/**
+ * @brief Emit the job's environment (JB_env_list) in plain qstat -j output.
+ *
+ * SECURITY (CS-2355, MEDIUM-QSTAT-001): the environment is printed verbatim
+ * (after splitting off the internal VAR_PREFIX variables) with no redaction, so
+ * secrets captured at submit time — e.g. via qsub -V (AWS_SECRET_ACCESS_KEY,
+ * *_TOKEN, *_PASSWORD, …) — are shown to any user permitted to qstat -j this
+ * job. Whether and how to redact (denylist and/or owner/manager gating) is a
+ * pending site-policy decision tracked in CS-2355; no redaction is applied here
+ * yet. If this is changed, change the JSON view too
+ * (QStatJobViewJSON::report_env_list); the XML view currently emits nothing.
+ *
+ * @param[in,out] os  output stream
+ * @param[in]     job job element to report
+ */
 void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const lListElem *job) {
    DENTER(TOP_LAYER);
    if (lGetPosViaElem(job, JB_env_list, SGE_NO_ABORT) >= 0) {
