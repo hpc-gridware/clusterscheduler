@@ -1085,46 +1085,29 @@ spool_flatfile_write_object(lList **answer_list, const lListElem *object,
    DRETURN(result);
 }
 
-/****** spool/flatfile/spool_flatfile_open_file() ***********************
-*  NAME
-*     spool_flatfile_open_file() -- open spooling file or stream
-*
-*  SYNOPSIS
-*     static FILE * 
-*     spool_flatfile_open_file(lList **answer_list, 
-*                              const spool_flatfile_destination destination, 
-*                              const char *filepath_in, 
-*                              const char **filepath_out) 
-*
-*  FUNCTION
-*     Opens a file or stream as described by <destination>.
-*
-*     Streams are locked to handle concurrent access by multiple threads.
-*     
-*     If <destination> is SP_DEST_TMP, a temporary file is opened.
-*
-*     If <destination> is SP_DEST_SPOOL, the file specified by 
-*     <filepath_in> is opened.
-*
-*     The name of the file/stream opened is returned in <filepath_out>.
-*     It is in the responsibility of the caller to free the memory allocated
-*     by <filepath_out>.
-*
-*     spool_flatfile_close_file shall be used to close a file opened using
-*     spool_flatfile_open_file.
-*
-*  INPUTS
-*     lList **answer_list                          - for error reporting 
-*     const spool_flatfile_destination destination - destination
-*     const char *filepath_in                      - optional filename
-*     const char **filepath_out                    - returned filename
-*
-*  RESULT
-*     static FILE * - on success a file handle, else nullptr
-*
-*  SEE ALSO
-*     spool/flatfile/spool_flatfile_close_file()
-*******************************************************************************/
+/**
+ * @brief Open a spooling file or stream as described by @p destination.
+ *
+ * Streams are locked to handle concurrent access by multiple threads.
+ * - SP_DEST_TMP: a temporary file is opened (via sge_tmpnam, mode 0600).
+ * - SP_DEST_SPOOL: the file named by @p filepath_in is created/opened. Spool
+ *   files hold authoritative cluster state and are created owner-only (0600,
+ *   never group-/world-accessible) with O_TRUNC and O_NOFOLLOW; confidentiality
+ *   must not depend on the daemon umask, and the create must not follow a
+ *   pre-planted symlink (CS-2352, CWE-732/CWE-276).
+ * - SP_DEST_STDOUT / SP_DEST_STDERR: the corresponding standard stream.
+ *
+ * The name of the file/stream opened is returned in @p filepath_out; the caller
+ * must free it. Use spool_flatfile_close_file() to close the result.
+ *
+ * @param[out] answer_list  for error reporting
+ * @param[in]  destination  what to open (spool file, temp file, std stream)
+ * @param[in]  filepath_in  target filename for SP_DEST_SPOOL (optional otherwise)
+ * @param[out] filepath_out name of the file/stream opened (caller frees)
+ * @return on success the open fd (or FILE* under USE_FOPEN); -1/nullptr on error
+ *
+ * @see spool_flatfile_close_file()
+ */
 #ifdef USE_FOPEN
 static FILE * 
 #else
@@ -1160,7 +1143,12 @@ spool_flatfile_open_file(lList **answer_list,
          fd = fopen(filepath_in, "w");
          if (fd == nullptr) {
 #else
-         fd = open(filepath_in, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+         // Spool files hold authoritative cluster state: create them owner-only
+         // (0600), never group-/world-accessible, and do not rely on the daemon
+         // umask for confidentiality. O_TRUNC overwrites any stale temp cleanly;
+         // O_NOFOLLOW refuses to follow a pre-planted symlink at the target
+         // (CS-2352, CWE-732/CWE-276).
+         fd = open(filepath_in, O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW, S_IRUSR|S_IWUSR);
          if (fd == -1) {
 #endif
             answer_list_add_sprintf(answer_list, STATUS_EDISK,
@@ -1197,7 +1185,8 @@ spool_flatfile_open_file(lList **answer_list,
             fd = fopen(filepath_in, "w");
             if (fd == nullptr) {
 #else
-            fd = open(filepath_in, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+            // owner-only, hardened create (see SP_DEST_SPOOL above, CS-2352)
+            fd = open(filepath_in, O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW, S_IRUSR|S_IWUSR);
             if (fd == -1) {
 #endif
                answer_list_add_sprintf(answer_list, STATUS_EDISK, 

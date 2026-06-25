@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include "uti/sge_component.h"
@@ -98,6 +99,7 @@ static int PE_spaces_test();
 static int CE_special_test();
 static int PE_empty_lists_test();
 static int PE_large_list_test();
+static int SPOOL_perm_test();
 
 typedef int (*func)();
 
@@ -144,6 +146,7 @@ int main(int argc, char** argv)
    CHECK(id, "CE special chars: decimal and scientific notation in fields",      CE_special_test()      == 0); id++;
    CHECK(id, "PE empty lists: explicitly empty user_list and xuser_list",        PE_empty_lists_test()  == 0); id++;
    CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
+   CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -2762,6 +2765,52 @@ static int PE_minimal_test()
    sge_unlink(nullptr, file2);
    sge_free(&file1);
    sge_free(&file2);
+   answer_list_output(&alp);
+   return ret;
+}
+
+// SECURITY REGRESSION (CS-2352, MEDIUM-SPOOL-001, CWE-732/CWE-276):
+// spool_flatfile_open_file() used to create SP_DEST_SPOOL files with mode 0666
+// (world-/group-writable, world-readable), relying solely on the daemon umask.
+// Spool files hold authoritative cluster state and must be owner-only (0600).
+// Write a minimal object via SP_DEST_SPOOL under umask(0) so the on-disk mode
+// reflects exactly the requested create mode, then assert it is 0600 with no
+// group/other bits. Pre-fix the file is 0666, so this returns non-zero.
+static int SPOOL_perm_test()
+{
+   lList *alp = nullptr;
+   lListElem *ep = lCreateElem(PE_Type);
+   lSetString(ep, PE_name, "perm_pe");
+
+   char path[1024];
+   snprintf(path, sizeof(path), "/tmp/test_spool_perm.%ld", (long)getpid());
+   unlink(path);
+
+   // Neutralise the ambient umask so the resulting mode is exactly what the
+   // code requested (otherwise it would be mode & ~umask).
+   mode_t old_umask = umask(0);
+   const char *result = spool_flatfile_write_object(&alp, ep, false,
+                                                    PE_fields, &qconf_sfi,
+                                                    SP_DEST_SPOOL, SP_FORM_ASCII,
+                                                    path, false);
+   umask(old_umask);
+   lFreeElem(&ep);
+
+   int ret = 1;
+   struct stat sb{};
+   if (result != nullptr && stat(path, &sb) == 0) {
+      const mode_t perm = sb.st_mode & 07777;
+      if (perm == (S_IRUSR | S_IWUSR)) {
+         ret = 0;
+      } else {
+         printf("   spool file mode = 0%03o (expected 0600)\n", (unsigned)perm);
+      }
+   } else {
+      printf("   could not write/stat spool file via SP_DEST_SPOOL\n");
+   }
+
+   unlink(path);
+   sge_free(&result);
    answer_list_output(&alp);
    return ret;
 }
