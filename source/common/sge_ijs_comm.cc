@@ -93,6 +93,15 @@ static sge_gdi_com_error_t ijs_communication_error = {CL_RETVAL_OK,
                                                       false, 0, 0,
                                                       false, 0, 0};
 
+/* When true, a bind() failure during a port-range scan (CL_RETVAL_BIND_SOCKET)
+ * is expected and is logged at DEBUG instead of ERROR, and is not latched as a
+ * hard communication error. start_ijs_server() turns this on around its
+ * port_range scan so that probing a busy candidate port does not print a
+ * spurious "commlib error: can't bind socket" to the user; the scan reports one
+ * clear error only if the whole range is exhausted (CS-2358). Guarded by
+ * ijs_general_communication_error_mutex. */
+static bool ijs_suppress_bind_errors = false;
+
 static bool do_timeout_handling(time_t *time, int *counter)
 {
    struct timeval  now;
@@ -120,6 +129,19 @@ static bool do_timeout_handling(time_t *time, int *counter)
    return ret;
 }
 
+/**
+ * @brief commlib application error callback for the IJS communication.
+ *
+ * Registered via cl_com_set_error_func() in comm_open_connection(). Records the
+ * latest commlib error and logs it (with duplicate suppression). Access-denied
+ * and endpoint-not-unique errors are rate-counted as before. A bind-socket
+ * failure (CL_RETVAL_BIND_SOCKET) is handled specially while a port-range scan
+ * is in progress (see ijs_suppress_bind_errors): it is then expected and
+ * retryable, so it is logged at DEBUG rather than ERROR and is not latched as a
+ * hard error.
+ *
+ * @param[in] commlib_error the commlib error descriptor (may be nullptr)
+ */
 static void ijs_general_communication_error(
                const cl_application_error_list_elem_t *commlib_error)
 {
@@ -160,6 +182,14 @@ static void ijs_general_communication_error(
          }
          break;
 
+      case CL_RETVAL_BIND_SOCKET:
+         /* During a port-range scan a busy candidate port is expected; do not
+          * latch it as a hard communication error (see ijs_suppress_bind_errors). */
+         if (!ijs_suppress_bind_errors) {
+            ijs_communication_error.com_was_error = true;
+         }
+         break;
+
       default:
          ijs_communication_error.com_was_error = true;
          break;
@@ -178,7 +208,15 @@ static void ijs_general_communication_error(
        */
       ijs_communication_error.com_last_error = ijs_communication_error.com_error;
 
-      switch (commlib_error->cl_err_type) {
+      /* A bind() failure during a port-range scan is expected and retryable, so
+       * downgrade it to DEBUG instead of letting it reach the user as an ERROR
+       * (see ijs_suppress_bind_errors). */
+      cl_log_t effective_log_type = commlib_error->cl_err_type;
+      if (ijs_suppress_bind_errors && commlib_error->cl_error == CL_RETVAL_BIND_SOCKET) {
+         effective_log_type = CL_LOG_DEBUG;
+      }
+
+      switch (effective_log_type) {
          case CL_LOG_ERROR:
             if (commlib_error->cl_info != nullptr) {
                ERROR(MSG_GDI_GENERAL_COM_ERROR_SS, cl_get_error_text(commlib_error->cl_error), commlib_error->cl_info);
@@ -218,6 +256,45 @@ static void ijs_general_communication_error(
    sge_mutex_unlock("ijs_general_communication_error_mutex",
                     __func__, __LINE__, &ijs_general_communication_error_mutex);
    DRETURN_VOID;
+}
+
+/**
+ * @brief Enable or disable suppression of port-bind error logging.
+ *
+ * While enabled, a CL_RETVAL_BIND_SOCKET reported by the commlib is treated by
+ * ijs_general_communication_error() as an expected, retryable condition: it is
+ * logged at DEBUG instead of ERROR and is not latched as a hard communication
+ * error. start_ijs_server() turns this on for the duration of its port_range
+ * scan so that probing a busy candidate port does not emit a spurious
+ * "commlib error: can't bind socket" to the user.
+ *
+ * @param[in] suppress true to suppress bind errors, false to restore normal logging
+ */
+void comm_set_suppress_bind_errors(bool suppress) {
+   sge_mutex_lock("ijs_general_communication_error_mutex",
+                  __func__, __LINE__, &ijs_general_communication_error_mutex);
+   ijs_suppress_bind_errors = suppress;
+   sge_mutex_unlock("ijs_general_communication_error_mutex",
+                    __func__, __LINE__, &ijs_general_communication_error_mutex);
+}
+
+/**
+ * @brief Clear the transient commlib error state recorded by the IJS error handler.
+ *
+ * Resets the non-sticky fields (current error, last logged error and the generic
+ * error flag) to their initial values. Intended to be called after a port-range
+ * scan succeeds so a bind failure that was retried away does not linger in the
+ * recorded state. The CL_RETVAL_ACCESS_DENIED / CL_RETVAL_ENDPOINT_NOT_UNIQUE
+ * markers are left untouched (they are sticky by design).
+ */
+void comm_reset_application_error() {
+   sge_mutex_lock("ijs_general_communication_error_mutex",
+                  __func__, __LINE__, &ijs_general_communication_error_mutex);
+   ijs_communication_error.com_error = CL_RETVAL_OK;
+   ijs_communication_error.com_was_error = false;
+   ijs_communication_error.com_last_error = CL_RETVAL_OK;
+   sge_mutex_unlock("ijs_general_communication_error_mutex",
+                    __func__, __LINE__, &ijs_general_communication_error_mutex);
 }
 
 int comm_get_application_error(dstring *err_msg)

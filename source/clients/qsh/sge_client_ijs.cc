@@ -855,44 +855,30 @@ cleanup:
    DRETURN(ret_val);
 }
 
-/****** sge_client_ijs/start_ijs_server() **************************************
-*  NAME
-*     start_ijs_server() -- starts the commlib server for the builtin
-*                           interactive job support
-*
-*  SYNOPSIS
-*     int start_ijs_server(const char* username, int csp_mode,
-*                          COMM_HANDLE **phandle, dstring *p_err_msg)
-*
-*  FUNCTION
-*     Starts the commlib server for the commlib connection between the shepherd
-*     of the interactive job (qrsh/qlogin) and the qrsh/qlogin command.
-*     Over this connection the stdin/stdout/stderr input/output is transferred.
-*
-*  INPUTS
-*     bool csp_mode -        If false, the server uses unsecured communications,
-*                            otherwise it uses secured communictions.
-*     const char* username - The owner of the certificates that are used to
-*                            secure the connection.
-*                            Used only in CSP mode, otherwise ignored.
-*  OUTPUTS
-*     COMM_HANDLE **handle - Pointer to the COMM server handle.
-*                            Gets initialized in this function.
-*     dstring *p_err_msg -   Contains the error reason in case of error.
-*
-*  RESULT
-*     int - 0: OK
-*           1: Can't open connection
-*           2: Can't set connection parameters
-*
-*  NOTES
-*     MT-NOTE: start_builtin_ijs_server() is not MT safe
-*
-*  SEE ALSO
-*     sge_client_ijs/run_ijs_server()
-*     sge_client_ijs/stop_ijs_server()
-*     sge_client_ijs/force_ijs_server_shutdown()
-*******************************************************************************/
+/**
+ * @brief Start the commlib server for builtin interactive job support (qrsh/qlogin).
+ *
+ * Opens the commlib server endpoint used for the connection between the
+ * interactive job's shepherd and the qrsh/qlogin command (stdin/stdout/stderr
+ * forwarding). If @p port_range is non-empty the server binds to the first free
+ * port found by scanning the range; while scanning, a busy candidate port is
+ * expected and is not reported to the user as an error (see
+ * comm_set_suppress_bind_errors()). If @p port_range is empty the OS assigns an
+ * ephemeral port. On a successful scan the transient bind-error state is
+ * cleared; if the whole range is exhausted a single clear error is reported via
+ * @p p_err_msg.
+ *
+ * @param[in]  communication_framework commlib framework to use (e.g. TCP/TLS)
+ * @param[in]  hostname  local hostname to bind/advertise
+ * @param[in]  username  owner used for secured (CSP) communication; ignored otherwise
+ * @param[in]  port_range optional RN_Type list of ports to bind to; nullptr/empty selects an OS-assigned port
+ * @param[out] phandle   receives the initialized COMM server handle
+ * @param[out] p_err_msg receives the error reason on failure
+ * @return 0 on success, 1 if no connection could be opened, 2 if connection parameters could not be set
+ *
+ * @note MT-NOTE: start_ijs_server() is not MT safe.
+ * @see run_ijs_server(), stop_ijs_server(), force_ijs_server_shutdown()
+ */
 int start_ijs_server(cl_framework_t communication_framework, const char *hostname,
                      const char* username, const lList *port_range,
                      COMM_HANDLE **phandle, dstring *p_err_msg)
@@ -912,8 +898,12 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
          ret_val = 1;
       }
    } else {
-      // iterate through port_range; bind to first available port
+      // iterate through port_range; bind to first available port. A busy
+      // candidate port is expected while scanning, so suppress the commlib's
+      // per-attempt "can't bind socket" error (it is logged at DEBUG instead of
+      // reaching the user). Only an exhausted range is a real error (CS-2358).
       bool found = false;
+      comm_set_suppress_bind_errors(true);
       for (const lListElem *rep = lFirst(port_range); rep && !found; rep = lNext(rep)) {
          const uint32_t min  = lGetUlong(rep, RN_min);
          const uint32_t max  = lGetUlong(rep, RN_max);
@@ -931,7 +921,12 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
             }
          }
       }
-      if (!found) {
+      comm_set_suppress_bind_errors(false);
+      if (found) {
+         // a busy port was retried away; drop the transient bind-failure state
+         comm_reset_application_error();
+      } else {
+         sge_dstring_sprintf(p_err_msg, "no free port found in configured port_range");
          ret_val = 1;
       }
    }
