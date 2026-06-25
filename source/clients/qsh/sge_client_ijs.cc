@@ -1489,8 +1489,12 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
          ret_val = 1;
       }
    } else {
-      // iterate through port_range; bind to first available port
+      // iterate through port_range; bind to first available port. A busy
+      // candidate port is expected while scanning, so suppress the commlib's
+      // per-attempt "can't bind socket" error (it is logged at DEBUG instead of
+      // reaching the user). Only an exhausted range is a real error (CS-2358).
       bool found = false;
+      comm_set_suppress_bind_errors(true);
       for (const lListElem *rep = lFirst(port_range); rep && !found; rep = lNext(rep)) {
          const uint32_t min  = lGetUlong(rep, RN_min);
          const uint32_t max  = lGetUlong(rep, RN_max);
@@ -1508,7 +1512,12 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
             }
          }
       }
-      if (!found) {
+      comm_set_suppress_bind_errors(false);
+      if (found) {
+         // a busy port was retried away; drop the transient bind-failure state
+         comm_reset_application_error();
+      } else {
+         sge_dstring_sprintf(p_err_msg, "no free port found in configured port_range");
          ret_val = 1;
       }
    }

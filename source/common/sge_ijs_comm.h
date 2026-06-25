@@ -120,6 +120,8 @@ int comm_open_connection(bool                 b_server,
                          dstring              *err_msg);
 
 int comm_get_application_error(dstring *err_msg);
+void comm_set_suppress_bind_errors(bool suppress);
+void comm_reset_application_error();
 int comm_shutdown_connection(COMM_HANDLE *handle,
                              const char *component_name,
                              char *hostname,
