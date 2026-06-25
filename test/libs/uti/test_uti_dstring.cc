@@ -37,10 +37,13 @@
 #include <cstring>
 #include <ctime>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_dstring.h"
+#include "uti/sge_tmpnam.h"
 #include "basis_types.h"
 
 static int s_fail = 0;
@@ -300,6 +303,63 @@ static void test_ulong_to_binstring(int *id) {
    sge_dstring_free(&ds);
 }
 
+/**
+ * @brief Regression test: sge_tmpnam() must not interpret $TMPDIR as a format string.
+ *
+ * SECURITY REGRESSION (CS-2354, MEDIUM-UTI-003, CWE-134): sge_tmpnam() used to
+ * store its result with sge_dstring_sprintf(aBuffer, tmp_string), passing a path
+ * derived from the attacker-influenceable $TMPDIR as the *format* string. A
+ * TMPDIR containing printf conversion specifiers was therefore interpreted
+ * (%n = out-of-bounds write, %s/%x = garbage read/crash). The fix copies the
+ * path verbatim, so specifiers must survive literally in the returned path. The
+ * test uses "%x%x" (not "%n") so a reintroduced bug fails the assertion cleanly
+ * instead of writing to a wild pointer.
+ *
+ * @param[in,out] id running CHECK counter, advanced once per check
+ */
+static void test_tmpnam_format_string_safety(int *id) {
+   printf("\n--- sge_tmpnam format-string safety (CS-2354) ---\n");
+
+   char dir[256];
+   snprintf(dir, sizeof(dir), "/tmp/sge_tmpnam_fmt_%%x%%x_%ld", (long)getpid());
+   // dir now literally contains the four characters "%x%x"
+   const bool made_dir = (mkdir(dir, 0700) == 0);
+
+   char saved_tmpdir[SGE_PATH_MAX];
+   const char *cur = getenv("TMPDIR");
+   const bool had_tmpdir = (cur != nullptr);
+   if (had_tmpdir) {
+      snprintf(saved_tmpdir, sizeof(saved_tmpdir), "%s", cur);
+   }
+   setenv("TMPDIR", dir, 1);
+
+   char buf[SGE_PATH_MAX];
+   int fd = -1;
+   dstring err = DSTRING_INIT;
+   char *res = sge_tmpnam(buf, &fd, &err);
+
+   CHECK(*id, "tmpnam: returns non-null for TMPDIR containing format specifiers",
+         res != nullptr); (*id)++;
+   CHECK(*id, "tmpnam: format specifiers in TMPDIR preserved literally (not interpreted)",
+         res != nullptr && strstr(res, "%x%x") != nullptr); (*id)++;
+
+   if (fd >= 0) {
+      close(fd);
+   }
+   if (res != nullptr) {
+      unlink(res);
+   }
+   if (made_dir) {
+      rmdir(dir);
+   }
+   if (had_tmpdir) {
+      setenv("TMPDIR", saved_tmpdir, 1);
+   } else {
+      unsetenv("TMPDIR");
+   }
+   sge_dstring_free(&err);
+}
+
 static void test_split_no_delimiter(int *id) {
    printf("\n--- sge_dstring_split without delimiter ---\n");
 
@@ -451,6 +511,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_copy_dstring(&id);
    test_strip_whitespace(&id);
    test_ulong_to_binstring(&id);
+   test_tmpnam_format_string_safety(&id);
    test_split_no_delimiter(&id);
    test_dynamic_growth(&id);
    test_static_full_capacity(&id);

@@ -143,6 +143,21 @@ static int elect_path(dstring *aBuffer) {
 }
 
 
+/**
+ * @brief Create and open a unique temp file under the directory prefix in @p aBuffer.
+ *
+ * Appends a "pid-<pid>-XXXXXX" template to the directory prefix already held in
+ * @p aBuffer, creates the file with mkstemp(), and replaces @p aBuffer's
+ * contents with the resulting path. The path is copied verbatim, never used as a
+ * printf format string, because it carries the attacker-influenceable TMPDIR
+ * value (CS-2354, CWE-134). On failure an explanatory message is written to
+ * @p error_message.
+ *
+ * @param[in,out] aBuffer       in: directory prefix (with trailing '/'); out: full temp-file path
+ * @param[out]    fd            file descriptor returned by mkstemp() on success
+ * @param[out]    error_message error text on failure
+ * @return 0 on success, -1 on error
+ */
 static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message) {
    int my_errno;
    char tmp_file_string[256];
@@ -171,7 +186,10 @@ static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message) {
       return -1;
    }
 
-   // finally copy the resulting path to aBuffer
-   sge_dstring_sprintf(aBuffer, tmp_string);
+   // finally copy the resulting path to aBuffer. Use a verbatim copy, never
+   // sge_dstring_sprintf(aBuffer, tmp_string): tmp_string carries the
+   // attacker-influenceable TMPDIR value and must not be interpreted as a
+   // printf format string (CS-2354, CWE-134).
+   sge_dstring_copy_string(aBuffer, tmp_string);
    return 0;
 }
