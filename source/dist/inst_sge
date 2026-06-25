@@ -1171,6 +1171,21 @@ if [ $SHADOW = "install" ]; then
 	      $INFOTEXT -log "Starting sge_shadowd on host %s\n" $SHADOW_HOST
 	      if [ "$SGE_ENABLE_SMF" = "true" ]; then
 	         $SVCADM enable -s "svc:/application/sge/shadowd:$SGE_CLUSTER_NAME"
+	      elif [ "$RC_FILE" = "systemd" -a `IsSystemdServiceInstalled shadow` = "true" ]; then
+	         # Systemd owns the lifecycle now — start the unit so sge_shadowd
+	         # is tracked in the master service's cgroup. On a host that is
+	         # also the qmaster (unit already active) a restart would bounce
+	         # qmaster too, so fall back to a direct spawn and tell the admin.
+	         SERVICE_NAME=`GetServiceName shadow`
+	         systemctl is-active "$SERVICE_NAME" > /dev/null 2>&1
+	         if [ $? -eq 0 ]; then
+	            $INFOTEXT "%s is already active; starting sge_shadowd directly.\n" "$SERVICE_NAME"
+	            $INFOTEXT "Restart %s when convenient so sge_shadowd is tracked by systemd.\n" "$SERVICE_NAME"
+	            $INFOTEXT -log "%s is already active; starting sge_shadowd directly." "$SERVICE_NAME"
+	            $SGE_ROOT/bin/$SGE_ARCH/sge_shadowd &
+	         else
+	            systemctl start "$SERVICE_NAME"
+	         fi
 	      else
 	         $SGE_ROOT/bin/$SGE_ARCH/sge_shadowd &
 	      fi
@@ -1234,6 +1249,11 @@ if [ $SHADOW = "uninstall" ]; then
          cat $SGE_ROOT/$SGE_CELL/common/shadow_masters_tmp | grep -v "^${s_host}$" >> $SGE_ROOT/$SGE_CELL/common/shadow_masters
          ExecuteAsAdmin chmod 644 $SGE_ROOT/$SGE_CELL/common/shadow_masters
          ExecuteAsAdmin rm -f $SGE_ROOT/$SGE_CELL/common/shadow_masters_tmp
+         # Drop the systemd unit / init script only on a shadow-only host —
+         # on a co-located qmaster+shadow host the same unit also runs qmaster.
+         if [ x`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster | grep "^${s_host}$"` = x ]; then
+            RemoveRcScript $s_host shadow $euid
+         fi
          $SGE_ROOT/bin/$SGE_ARCH/qconf -sel >/dev/null 2>&1
          if [ "$?" = 0 ]; then
             # check to make sure the host we are removing is not needed
@@ -1264,6 +1284,11 @@ if [ $SHADOW = "uninstall" ]; then
          cat $SGE_ROOT/$SGE_CELL/common/shadow_masters_tmp | grep -v "^${s_host}$" >> $SGE_ROOT/$SGE_CELL/common/shadow_masters
          ExecuteAsAdmin chmod 644 $SGE_ROOT/$SGE_CELL/common/shadow_masters
          ExecuteAsAdmin rm -f $SGE_ROOT/$SGE_CELL/common/shadow_masters_tmp
+         # Drop the systemd unit / init script only on a shadow-only host —
+         # on a co-located qmaster+shadow host the same unit also runs qmaster.
+         if [ x`cat $SGE_ROOT/$SGE_CELL/common/act_qmaster | grep "^${s_host}$"` = x ]; then
+            RemoveRcScript $s_host shadow $euid
+         fi
          $SGE_ROOT/bin/$SGE_ARCH/qconf -sel >/dev/null 2>&1
          if [ "$?" = 0 ]; then
             # check to make sure the host we are removing is not needed

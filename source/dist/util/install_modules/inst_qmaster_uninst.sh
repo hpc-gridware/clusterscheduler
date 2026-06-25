@@ -32,6 +32,8 @@
 #
 #  All Rights Reserved.
 #
+#  Portions of this software are Copyright (c) 2025-2026 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 #
@@ -111,8 +113,16 @@ ShutdownMaster()
    reporting=$SGE_ROOT/$SGE_CELL/reporting
    
    toDelete="accounting act_qmaster bootstrap cluster_name configuration jmx local_conf qtask sched_configuration sgeCA sge_request sgemaster"
-   
-   RemoveRcScript $HOST "qmaster" $euid
+
+   # The qmaster systemd unit / init script is shared with sge_shadowd —
+   # if this host is still listed in shadow_masters the shadowd role still
+   # needs it. Only the last role to be uninstalled drops the RC artifact.
+   if [ x`cat $SGE_ROOT/$SGE_CELL/common/shadow_masters 2>/dev/null | grep "^${HOST}$"` = x ]; then
+      RemoveRcScript $HOST "qmaster" $euid
+   else
+      $INFOTEXT "Host %s is still a shadow master — keeping the shared qmaster RC script." "$HOST"
+      $INFOTEXT -log "Host %s is still a shadow master — keeping the shared qmaster RC script." "$HOST"
+   fi
 
    if [ -f $SGE_ROOT/$SGE_CELL/common/sgebdb ]; then
       $INFOTEXT "Berkeley db server is being used with this installation"
