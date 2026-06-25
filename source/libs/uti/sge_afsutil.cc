@@ -114,8 +114,12 @@ int sge_afs_extend_token(const char *command, char *tokenbuf, const char *user,
    DENTER(TOP_LAYER);
 
    snprintf(cmdbuf, sizeof(cmdbuf), "%s %s %d", command, user, token_extend_time);
-   if (err_str) {
-      strcpy(err_str, cmdbuf);
+   if (err_str != nullptr) {
+      // Honour err_str_size, like the other err_str writes below; the previous
+      // strcpy ignored it and would overflow an err_str smaller than cmdbuf
+      // (CS-2353, CWE-120). Current callers pass large-enough buffers, so this
+      // is a defensive fix against a future undersized caller.
+      snprintf(err_str, err_str_size, "%s", cmdbuf);
    }
 
    command_pid = sge_peopen("/bin/sh", 0, cmdbuf, nullptr, nullptr, &fp_in, &fp_out, &fp_err, false);
