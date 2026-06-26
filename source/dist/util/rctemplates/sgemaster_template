@@ -40,6 +40,8 @@
 #
 #  All Rights Reserved.
 #
+#  Portions of this software are Copyright (c) 2024,2026 HPC-Gridware GmbH
+#
 ##########################################################################
 #___INFO__MARK_END__
 
@@ -422,6 +424,60 @@ DetectSMFService()
    fi
 }
 
+#---------------------------------------------------------------------------
+# DetectSystemdService
+#    Set $systemd_service to the cluster's qmaster systemd unit if this
+#    cluster's startup is owned by systemd, or empty otherwise. Presence
+#    of common/slice_name is the install-time marker written by
+#    InstallSystemdUnitFile.
+#
+DetectSystemdService()
+{
+   systemd_service=""
+
+   slice_file=$SGE_ROOT/$SGE_CELL/common/slice_name
+   if [ ! -r "$slice_file" ]; then
+      return
+   fi
+
+   slice_name=`cat "$slice_file"`
+   if [ -z "$slice_name" ]; then
+      return
+   fi
+
+   if ! command -v systemctl >/dev/null 2>&1; then
+      return
+   fi
+
+   candidate="${slice_name}-qmaster.service"
+   if systemctl list-unit-files "$candidate" >/dev/null 2>&1; then
+      systemd_service="$candidate"
+   fi
+}
+
+#---------------------------------------------------------------------------
+# WriteAsAdmin
+#    Stage a one-line file in /tmp and copy it to $1 as the admin user via
+#    adminrun, so $1's existing owner/group are preserved. Used to
+#    pre-write act_qmaster from `sgemaster -migrate` (root) without
+#    breaking the admin-user ownership the installer set up. Mirrors the
+#    install-time SafelyCreateFile pattern.
+#
+WriteAsAdmin()
+{
+   target=$1
+   content=$2
+
+   admin_user=`GetAdminUser`
+   tmp=/tmp/sgemaster.write.$$
+   echo "$content" > $tmp
+   chmod 644 $tmp
+   $utilbin_dir/adminrun $admin_user cp $tmp $target
+   rc=$?
+   rm -f $tmp
+   return $rc
+}
+
 
 #---------------------------------------------------------------------------
 usage()
@@ -577,6 +633,25 @@ if [ "$startup" = true ]; then
        fi
 
        qmaster_host=true
+
+       # When the cluster is systemd-managed, hand the actual sge_qmaster
+       # start off to systemctl so the daemon ends up inside the unit's
+       # cgroup instead of the shell session that ran `sgemaster -migrate`.
+       # Pre-write act_qmaster so the unit's `sgemaster start` (ExecStart=)
+       # recognises this host as the qmaster host; sge_qmaster rewrites
+       # the same value on startup, so this is idempotent.
+       DetectSystemdService
+       if [ -n "$systemd_service" ]; then
+          WriteAsAdmin $SGE_ROOT/$SGE_CELL/common/act_qmaster "$HOST"
+          if [ $? -ne 0 ]; then
+             echo "   could not update act_qmaster as admin user; aborting migrate."
+             exit 1
+          fi
+          echo "   handing off to systemd: systemctl restart $systemd_service"
+          systemctl restart "$systemd_service"
+          exit $?
+       fi
+
        #If we use SMF, we need to notify the SMF service
        DetectSMFService qmaster
        if [ -n "$service" ]; then
