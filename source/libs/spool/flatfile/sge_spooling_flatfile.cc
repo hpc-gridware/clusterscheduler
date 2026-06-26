@@ -1002,6 +1002,24 @@ spool_classic_default_read_func(lList **answer_list,
 *     spool/flatfile/--Flatfile-Spooling
 *     spool/spool_delete_object()
 *******************************************************************************/
+
+/**
+ * @brief Check that a spool object key is a single safe filesystem path component.
+ *
+ * A key is used verbatim to build a spool-file path (EXECHOST_DIR/<key> etc.).
+ * Most keys are validated upstream by verify_str_key(), but host names are not,
+ * so this is a defence-in-depth guard at the spool sink: reject a key that
+ * contains '/' or starts with '.' (".", "..", "../x", ".hidden"), which could
+ * otherwise escape the spool directory (CS-2364, CWE-22).
+ *
+ * @param[in] key the object key / filename component
+ * @return true if @p key is safe to use as a single path component, false otherwise
+ */
+bool
+spool_flatfile_key_is_safe(const char *key) {
+   return key != nullptr && key[0] != '.' && strchr(key, '/') == nullptr;
+}
+
 bool
 spool_classic_default_write_func(lList **answer_list,
                                   const lListElem *type,
@@ -1189,6 +1207,16 @@ spool_classic_default_write_func(lList **answer_list,
       backup_load_list = spool_exechost_strip_dynamic_load(object);
    }
 
+   /* Defence-in-depth: the key becomes a single filesystem path component below;
+    * reject an unsafe key (e.g. an unvalidated host name like "../../tmp/x")
+    * before it reaches the filesystem (CS-2364, CWE-22). */
+   if (filename != nullptr && !spool_flatfile_key_is_safe(filename)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_SPOOL_UNSAFE_KEY_S, filename);
+      ret = false;
+      filename = nullptr;   /* skip the default spool path below */
+   }
+
    /* spool, if possible, using default spooling behavior.
     * job are spooled in the corresponding case branch
     */
@@ -1282,6 +1310,16 @@ spool_classic_default_delete_func(lList **answer_list,
    bool ret = true;
 
    DENTER(TOP_LAYER);
+
+   /* Defence-in-depth: key is used to build the unlink path; reject an unsafe
+    * key (e.g. an unvalidated host name like "../../tmp/x") so a delete cannot
+    * escape the spool directory (CS-2364, CWE-22). No legitimate object key
+    * contains '/' or starts with '.'. */
+   if (!spool_flatfile_key_is_safe(key)) {
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                              MSG_SPOOL_UNSAFE_KEY_S, key != nullptr ? key : "");
+      DRETURN(false);
+   }
 
    switch(object_type) {
       case SGE_TYPE_ADMINHOST:

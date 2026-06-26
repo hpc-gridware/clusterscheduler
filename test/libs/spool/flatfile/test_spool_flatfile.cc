@@ -53,6 +53,7 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/sge_spooling_flatfile.h"
 #include "spool/flatfile/sge_spooling_flatfile_scanner.h"
 
 #include <sge_log.h>
@@ -100,6 +101,7 @@ static int CE_special_test();
 static int PE_empty_lists_test();
 static int PE_large_list_test();
 static int SPOOL_perm_test();
+static int SPOOL_key_safe_test();
 
 typedef int (*func)();
 
@@ -147,6 +149,7 @@ int main(int argc, char** argv)
    CHECK(id, "PE empty lists: explicitly empty user_list and xuser_list",        PE_empty_lists_test()  == 0); id++;
    CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
    CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
+   CHECK(id, "SPOOL key: spool_flatfile_key_is_safe rejects '/' and leading '.'", SPOOL_key_safe_test() == 0); id++;
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -2812,6 +2815,39 @@ static int SPOOL_perm_test()
    unlink(path);
    sge_free(&result);
    answer_list_output(&alp);
+   return ret;
+}
+
+// SECURITY REGRESSION (CS-2364, LOW-SPOOL-002, CWE-22):
+// spool_flatfile_key_is_safe() is the defence-in-depth guard at the spool sink.
+// An object key (e.g. an unvalidated host name) is used verbatim as a path
+// component, so a key containing '/' or starting with '.' (".", "..", "../x",
+// ".hidden") could escape the spool directory. The guard must reject those and
+// accept ordinary keys (including FQDNs with '-' and '.').
+static int SPOOL_key_safe_test()
+{
+   struct { const char *key; bool expect_safe; } cases[] = {
+      {"validkey",            true},
+      {"host-01.example.com", true},   // '-' and '.' are fine when not leading
+      {"12345.7",             true},   // job-style key
+      {"../../tmp/x",         false},
+      {"/etc/passwd",         false},
+      {"..",                  false},
+      {".",                   false},
+      {".hidden",             false},
+      {"a/b",                 false},
+      {nullptr,               false},
+   };
+   int ret = 0;
+   for (const auto &c : cases) {
+      if (spool_flatfile_key_is_safe(c.key) != c.expect_safe) {
+         printf("   spool_flatfile_key_is_safe(%s) = %s, expected %s\n",
+                c.key ? c.key : "nullptr",
+                spool_flatfile_key_is_safe(c.key) ? "true" : "false",
+                c.expect_safe ? "true" : "false");
+         ret = 1;
+      }
+   }
    return ret;
 }
 

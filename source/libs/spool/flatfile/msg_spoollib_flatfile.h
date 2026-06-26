@@ -60,5 +60,6 @@
 #define MSG_SPOOL_SCHEDDCONFIGNOTDELETED     _MESSAGE(62018, _("the scheduler configuration must not be deleted"))
 #define MSG_MUST_BE_POSITIVE_VALUE_S         _MESSAGE(62019, _("parameter " SFQ " must be a positive number"))
 #define MSG_RSMAP_INCONSISTENTAMOUNT_SSUU    _MESSAGE(62020, _("RSMAP " SFQ " value " SFQ " has amount " sge_u32 " but " sge_u32 " elements "))
+#define MSG_SPOOL_UNSAFE_KEY_S               _MESSAGE(62021, _("refusing to spool object with unsafe key " SFQ " (must not contain '/' or start with '.')"))
 
 // clang-format on

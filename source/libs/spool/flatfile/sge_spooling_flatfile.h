@@ -111,9 +111,12 @@ spool_classic_default_write_func(lList **answer_list,
                                   const lListElem *object, 
                                   const char *key, 
                                   const sge_object_type object_type);
-bool 
-spool_classic_default_delete_func(lList **answer_list, 
-                                   const lListElem *type, 
+bool
+spool_classic_default_delete_func(lList **answer_list,
+                                   const lListElem *type,
                                    const lListElem *rule,
-                                   const char *key, 
+                                   const char *key,
                                    const sge_object_type object_type);
+
+bool
+spool_flatfile_key_is_safe(const char *key);

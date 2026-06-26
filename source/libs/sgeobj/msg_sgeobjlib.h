@@ -251,6 +251,7 @@
 #define MSG_PATH_ALIAS_INVALID_PATH       _MESSAGE(64331, _("paths may not be empty strings"))
 #define MSG_HOSTNAME_NOT_EMPTY            _MESSAGE(64332, _("hostnames may not be empty string"))
 #define MSG_HOSTNAME_TOO_LONG_D           _MESSAGE(64333, _("hostnames may not be longer than %d characters"))
+#define MSG_HOSTNAME_ILLEGAL_CHAR_S       _MESSAGE(64334, _("hostname " SFQ " contains an illegal path character ('/' or a leading '.')"))
 
 #define MSG_EVENT_INVALIDNAME _MESSAGE(64340, _("invalid event client name"))
 #define MSG_EVENT_ONLYADMINMAYSTARTSPECIALEVC _MESSAGE(64341, _("only admin user or root may start special event clients"))

@@ -208,11 +208,45 @@ static void test_verify_str_key() {
 }
 
 // ---------------------------------------------------------------------------
+// verify_host_name  [T33–T42]
+//
+// SECURITY REGRESSION (CS-2364, LOW-SPOOL-002, CWE-22): host names become spool
+// file keys (EXECHOST_DIR/<name>) and are NOT run through verify_str_key(), so
+// verify_host_name() must reject names that are unsafe as a single path
+// component — a '/' anywhere or a leading '.' (".", "..", "../x", ".hidden").
+// Before the fix those were accepted (return true); T35-T40 fail against the
+// unpatched verify_host_name().
+// ---------------------------------------------------------------------------
+static void test_verify_host_name() {
+   printf("\n--- verify_host_name ---\n");
+   lList *al = nullptr;
+
+   // T33/T34: ordinary names accepted (incl. an FQDN with '-' and '.')
+   CHECK(33, "plain hostname accepted",      verify_host_name(&al, "myhost"));
+   CHECK(34, "FQDN with '-' and '.' accepted", verify_host_name(&al, "host-01.example.com"));
+
+   // T35-T40: path-traversal / unsafe names rejected
+   CHECK(35, "traversal '../../tmp/x' rejected", !verify_host_name(&al, "../../tmp/x"));
+   CHECK(36, "absolute '/etc/passwd' rejected",  !verify_host_name(&al, "/etc/passwd"));
+   CHECK(37, "'..' rejected",                    !verify_host_name(&al, ".."));
+   CHECK(38, "'.' rejected",                     !verify_host_name(&al, "."));
+   CHECK(39, "leading-dot '.hidden' rejected",   !verify_host_name(&al, ".hidden"));
+   CHECK(40, "embedded slash 'a/b' rejected",    !verify_host_name(&al, "a/b"));
+
+   // T41/T42: nullptr / empty rejected
+   CHECK(41, "nullptr rejected",  !verify_host_name(&al, nullptr));
+   CHECK(42, "empty rejected",    !verify_host_name(&al, ""));
+
+   lFreeList(&al);
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    lInit(nmv);
 
    test_verify_str_key();
+   test_verify_host_name();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
