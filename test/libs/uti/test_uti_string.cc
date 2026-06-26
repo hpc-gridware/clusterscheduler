@@ -595,6 +595,54 @@ static void test_str_reverse() {
    }
 }
 
+/**
+ * @brief Tests for sge_strtok() — tokenizing including the continuation form.
+ */
+static void test_strtok() {
+   printf("\n--- sge_strtok ---\n");
+
+   // T71-T74: tokenize "a:b:c" on ':' using the str / nullptr continuation form
+   const char *t = sge_strtok("a:b:c", ":");
+   CHECK(71, "sge_strtok first token 'a'", t != nullptr && strcmp(t, "a") == 0);
+   t = sge_strtok(nullptr, ":");
+   CHECK(72, "sge_strtok next token 'b'", t != nullptr && strcmp(t, "b") == 0);
+   t = sge_strtok(nullptr, ":");
+   CHECK(73, "sge_strtok next token 'c'", t != nullptr && strcmp(t, "c") == 0);
+   t = sge_strtok(nullptr, ":");
+   CHECK(74, "sge_strtok exhausted → nullptr", t == nullptr);
+}
+
+/**
+ * @brief Tests for sge_jobname().
+ *
+ * sge_jobname() re-tokenizes a pointer that aliases sge_strtok()'s internal
+ * static buffer (first on ';', then on ' '), which is the overlapping-copy path
+ * fixed under CS-347 / CS-2362. These cases exercise that aliasing path and pin
+ * the documented behaviour; they also turn into a real overlap detector if the
+ * suite is ever run under ASAN/UBSan.
+ */
+static void test_jobname() {
+   printf("\n--- sge_jobname ---\n");
+
+   // T75-T78: ';' then ' ' splitting (each exercises the aliasing re-tokenize)
+   CHECK(75, "'cd /home/me/5five; hostname' → 'cd'",
+         strcmp(sge_jobname("cd /home/me/5five; hostname"), "cd") == 0);
+   CHECK(76, "'cat /tmp/5five' → 'cat'",
+         strcmp(sge_jobname("cat /tmp/5five"), "cat") == 0);
+   CHECK(77, "'bla;blub' → 'bla'",
+         strcmp(sge_jobname("bla;blub"), "bla") == 0);
+   CHECK(78, "'a b' → 'a'",
+         strcmp(sge_jobname("a b"), "a") == 0);
+
+   // T79: no ';'/' ' — basename of the whole string
+   CHECK(79, "'/home/me/4Ujob' → '4Ujob'",
+         strcmp(sge_jobname("/home/me/4Ujob"), "4Ujob") == 0);
+
+   // T80/T81: nullptr / empty → nullptr
+   CHECK(80, "nullptr → nullptr", sge_jobname(nullptr) == nullptr);
+   CHECK(81, "empty string → nullptr", sge_jobname("") == nullptr);
+}
+
 // ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
@@ -618,6 +666,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_strip_slash_at_eol();
    test_dirname();
    test_str_reverse();
+   test_strtok();
+   test_jobname();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

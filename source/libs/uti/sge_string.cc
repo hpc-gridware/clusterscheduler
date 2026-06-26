@@ -100,43 +100,20 @@ const char *sge_basename(const char *name, int delim) {
    }
 }
 
-/****** uti/string/sge_jobname() ***********************************************
-*  NAME
-*     sge_jobname() -- get jobname of command line string 
-*
-*  SYNOPSIS
-*     const char* sge_jobname(const char *name) 
-*
-*  FUNCTION
-*     Determine the jobname of a command line. The following definition is used
-*     for the jobname:
-*     - take everything up to the first semicolon
-*     - take everything up to the first whitespace
-*     - take the basename
-*
-*  INPUTS
-*     const char *name - contains the input string (command line)
-*
-*  RESULT
-*     const char* - pointer to the jobname
-*                   nullptr if name is nullptr or only '\0'
-*
-*  EXAMPLE
-*  Command line                       jobname
-*  ----------------------------------------------
-*  "cd /home/me/5five; hostname" --> cd
-*  "/home/me/4Ujob"              --> 4Ujob (invalid, will be denied)
-*  "cat /tmp/5five"              --> cat
-*  "bla;blub"                    --> bla
-*  "a b"                         --> a
-*      
-*
-*  NOTES
-*     MT-NOTE: sge_jobname() is not MT safe 
-*
-*  SEE ALSO
-*     sge_basename()
-*******************************************************************************/
+/**
+ * @brief Determine the jobname of a command-line string.
+ *
+ * The jobname is everything up to the first ';', then up to the first
+ * whitespace, then the basename. Examples:
+ *   "cd /home/me/5five; hostname" -> "cd"; "cat /tmp/5five" -> "cat";
+ *   "bla;blub" -> "bla"; "a b" -> "a".
+ * MT-NOTE: not MT safe (uses sge_strtok()).
+ *
+ * @param[in] name command-line input string
+ * @return pointer to the jobname, or nullptr if @p name is nullptr or empty
+ *
+ * @see sge_basename(), sge_strtok()
+ */
 const char *sge_jobname(const char *name) {
 
    const char *cp = nullptr;
@@ -144,7 +121,10 @@ const char *sge_jobname(const char *name) {
    DENTER(BASIS_LAYER);
    if (name && name[0] != '\0') {
       cp = sge_strtok(name, ";");
-      cp = sge_strtok(cp, " "); // @todo CS-347 sge_strok strcpy to a static buffer - here strcpy's src and dst overlap!!
+      // cp aliases sge_strtok()'s internal static buffer; re-tokenizing it is
+      // safe because sge_strtok() copies with memmove() (resolves CS-347,
+      // CS-2362).
+      cp = sge_strtok(cp, " ");
       cp = sge_basename(cp, '/');
    }
 
@@ -205,30 +185,22 @@ char *sge_dirname(const char *name, int delim) {
    }
 }
 
-/****** uti/string/sge_strtok() ***********************************************
-*  NAME
-*     sge_strtok() -- Replacement for strtok() 
-*
-*  SYNOPSIS
-*     char* sge_strtok(const char *str, const char *delimitor) 
-*
-*  FUNCTION
-*     Replacement for strtok(). If no delimitor is given 
-*     isspace() is used.
-*
-*  INPUTS
-*     const char *str       - string which should be tokenized 
-*     const char *delimitor - delimitor string 
-*
-*  RESULT
-*     char* - first/next token of str.
-*
-*  NOTES
-*     MT-NOTE: sge_strtok() is not MT safe, use sge_strtok_r() instead
-*
-*  SEE ALSO
-*     uti/string/sge_strtok_r()     
-******************************************************************************/
+/**
+ * @brief Replacement for strtok() using an internal static buffer.
+ *
+ * Tokenizes @p str on any character in @p delimitor (isspace() if none given)
+ * and returns the first token; pass nullptr as @p str on subsequent calls to
+ * get the next token. The input is copied into an internal static buffer with
+ * memmove(), so it is safe to pass a pointer that aliases that buffer (as
+ * sge_jobname() does when re-tokenizing a previous result — CS-347 / CS-2362).
+ * MT-NOTE: not MT safe, use sge_strtok_r() instead.
+ *
+ * @param[in] str       string to tokenize, or nullptr to continue the previous
+ * @param[in] delimitor delimiter characters (nullptr selects whitespace)
+ * @return the first/next token of @p str, or nullptr when exhausted
+ *
+ * @see sge_strtok_r()
+ */
 char *sge_strtok(const char *str, const char *delimitor) {
    char *cp;
    char *saved_cp;
@@ -254,7 +226,10 @@ char *sge_strtok(const char *str, const char *delimitor) {
          alloc_len = n;
       }
       SGE_ASSERT(static_str != nullptr);
-      strcpy(static_str, str);
+      // memmove, not strcpy: str may alias static_str (e.g. sge_jobname()
+      // re-tokenizes a previous result), and strcpy with overlapping src/dst is
+      // undefined behaviour (CS-347, CS-2362, CWE-628). n == strlen(str).
+      memmove(static_str, str, n + 1);
       saved_cp = static_str;
    } else {
       saved_cp = static_cp;
