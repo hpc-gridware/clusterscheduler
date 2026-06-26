@@ -148,6 +148,34 @@ int main(int /*argc*/, char * /*argv*/[]) {
             contains(out, "\"resource\": \"\"")); id++;
    }
 
+   // ProcedureView::isJSONNumber() — decides whether a value may be emitted
+   // unquoted in JSON. Pins the safe set (CS-2365, LOW-QSTAT-002): only valid
+   // RFC 8259 numbers, NOT strtod-accepted-but-invalid-JSON tokens such as
+   // inf/nan/hex, which the previous strtod() gate let through unquoted.
+   printf("\n--- isJSONNumber ---\n");
+   {
+      // valid JSON numbers → may be emitted unquoted
+      CHECK(id, "isJSONNumber '0'",        ocs::QQuotaViewJSON::isJSONNumber("0"));        id++;
+      CHECK(id, "isJSONNumber '-1'",       ocs::QQuotaViewJSON::isJSONNumber("-1"));       id++;
+      CHECK(id, "isJSONNumber '1.5'",      ocs::QQuotaViewJSON::isJSONNumber("1.5"));      id++;
+      CHECK(id, "isJSONNumber '1e10'",     ocs::QQuotaViewJSON::isJSONNumber("1e10"));     id++;
+      CHECK(id, "isJSONNumber '-0.5e+3'",  ocs::QQuotaViewJSON::isJSONNumber("-0.5e+3"));  id++;
+
+      // strtod-accepted but NOT valid JSON → must be rejected (would be quoted)
+      CHECK(id, "isJSONNumber 'inf' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("inf"));      id++;
+      CHECK(id, "isJSONNumber 'nan' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("nan"));      id++;
+      CHECK(id, "isJSONNumber 'infinity' rejected", !ocs::QQuotaViewJSON::isJSONNumber("infinity")); id++;
+      CHECK(id, "isJSONNumber '0x1p4' rejected",    !ocs::QQuotaViewJSON::isJSONNumber("0x1p4"));    id++;
+      CHECK(id, "isJSONNumber '+1' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("+1"));       id++;
+      CHECK(id, "isJSONNumber '.5' rejected",       !ocs::QQuotaViewJSON::isJSONNumber(".5"));       id++;
+      CHECK(id, "isJSONNumber '1.' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("1."));       id++;
+      CHECK(id, "isJSONNumber '01' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("01"));       id++;
+      CHECK(id, "isJSONNumber '1,000' rejected",    !ocs::QQuotaViewJSON::isJSONNumber("1,000"));    id++;
+      CHECK(id, "isJSONNumber 'abc' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("abc"));      id++;
+      CHECK(id, "isJSONNumber '' rejected",         !ocs::QQuotaViewJSON::isJSONNumber(""));         id++;
+      CHECK(id, "isJSONNumber nullptr rejected",    !ocs::QQuotaViewJSON::isJSONNumber(nullptr));    id++;
+   }
+
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
 }

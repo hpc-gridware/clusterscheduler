@@ -60,6 +60,8 @@ namespace ocs {
        */
       static std::string raw2quotedJSON(const char *input);
 
+      static bool isJSONNumber(const char *value);
+
       /** @brief Write @p time (microseconds since epoch) as an ISO 8601 timestamp to @p os.
        *
        * Format: `YYYY-MM-DDTHH:MM:SS.mmmZ` (millisecond precision, always UTC).

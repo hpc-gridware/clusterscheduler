@@ -88,6 +88,72 @@ std::string ocs::ProcedureView::raw2quotedJSON(const char *input) {
    DRETURN(raw2quotedJSON(input != nullptr ? std::string(input) : std::string()));
 }
 
+/**
+ * @brief Test whether @p value is a syntactically valid JSON number.
+ *
+ * A value may be emitted unquoted into a JSON document only if it is a valid
+ * JSON number per RFC 8259: an optional leading `-`, an integer part with no
+ * leading zeros, an optional `.`fraction and an optional `e`/`E` exponent. This
+ * deliberately rejects tokens that `strtod()` would otherwise accept but that
+ * are not valid JSON (`inf`, `nan`, `infinity`, hex floats like `0x1p4`, a
+ * leading `+` or `.`, thousands separators), which would corrupt the output if
+ * echoed unquoted (CS-2365, CWE-74). Any value for which this returns false must
+ * be quoted/escaped instead.
+ *
+ * @param value the candidate token (NULL/empty returns false)
+ * @return true if @p value is a valid JSON number and safe to emit unquoted
+ */
+bool ocs::ProcedureView::isJSONNumber(const char *value) {
+   // grammar: -?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?
+   if (value == nullptr || *value == '\0') {
+      return false;
+   }
+   const char *p = value;
+
+   // optional minus (JSON allows no leading '+')
+   if (*p == '-') {
+      ++p;
+   }
+
+   // integer part: "0" alone, or [1-9][0-9]* (no leading zeros)
+   if (*p == '0') {
+      ++p;
+   } else if (*p >= '1' && *p <= '9') {
+      while (*p >= '0' && *p <= '9') {
+         ++p;
+      }
+   } else {
+      return false;   // no digits, or a leading '.'
+   }
+
+   // optional fraction: '.' followed by at least one digit
+   if (*p == '.') {
+      ++p;
+      if (!(*p >= '0' && *p <= '9')) {
+         return false;
+      }
+      while (*p >= '0' && *p <= '9') {
+         ++p;
+      }
+   }
+
+   // optional exponent: [eE] [+-]? digit+
+   if (*p == 'e' || *p == 'E') {
+      ++p;
+      if (*p == '+' || *p == '-') {
+         ++p;
+      }
+      if (!(*p >= '0' && *p <= '9')) {
+         return false;
+      }
+      while (*p >= '0' && *p <= '9') {
+         ++p;
+      }
+   }
+
+   return *p == '\0';   // no trailing characters
+}
+
 /** @brief convert the timestamp to ISO 8601 format
  */
 void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time) {

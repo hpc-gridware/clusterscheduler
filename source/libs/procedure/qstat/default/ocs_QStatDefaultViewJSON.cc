@@ -543,12 +543,11 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
    indent++;
    os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(name) << ",\n";
    {
-      char *end = nullptr;
-      errno = 0;
-      strtod(value != nullptr ? value : "", &end);
-      const bool is_number = (errno == 0 && end != value && end != nullptr && *end == '\0');
+      // Emit the value unquoted only if it is a valid JSON number; otherwise
+      // quote/escape it. A runtime strtod() sniff would accept inf/nan/hex etc.
+      // and corrupt the JSON (CS-2365, CWE-74).
       os << std::string(indent * 3, ' ') << "\"value\": ";
-      if (is_number) {
+      if (isJSONNumber(value)) {
          os << value;
       } else {
          os << raw2quotedJSON(value != nullptr ? value : "");
