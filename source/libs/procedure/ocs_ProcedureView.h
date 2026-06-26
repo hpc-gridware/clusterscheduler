@@ -64,6 +64,8 @@ namespace ocs {
 
       static int add_saturating_int(int a, int b);
 
+      static uint32_t add_saturating_u32(uint32_t a, uint32_t b);
+
       /** @brief Write @p time (microseconds since epoch) as an ISO 8601 timestamp to @p os.
        *
        * Format: `YYYY-MM-DDTHH:MM:SS.mmmZ` (millisecond precision, always UTC).

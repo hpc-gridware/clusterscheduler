@@ -176,6 +176,24 @@ int ocs::ProcedureView::add_saturating_int(int a, int b) {
    return a + b;
 }
 
+/**
+ * @brief Add two uint32_t, clamping to UINT32_MAX instead of wrapping.
+ *
+ * Unsigned overflow wraps (modular) rather than being UB, but a wrapped total is
+ * still wrong; this saturates instead — used for slot-count accumulators that
+ * sum across many objects (CS-2368, CWE-190).
+ *
+ * @param a first addend
+ * @param b second addend
+ * @return a + b, clamped to UINT32_MAX on overflow
+ */
+uint32_t ocs::ProcedureView::add_saturating_u32(uint32_t a, uint32_t b) {
+   if (a > std::numeric_limits<uint32_t>::max() - b) {
+      return std::numeric_limits<uint32_t>::max();
+   }
+   return a + b;
+}
+
 /** @brief convert the timestamp to ISO 8601 format
  */
 void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time) {

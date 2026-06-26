@@ -66,14 +66,16 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
 
          used_slots = qinstance_slots_used(qinstance);
          resv_slots = qinstance_slots_reserved_now(qinstance);
-         (*used) += used_slots;
-         (*resv) += resv_slots;
-         (*total) += slots;
+         // saturating adds: these uint32 accumulators sum slot counts across all
+         // queue instances and must not wrap (CS-2368, CWE-190).
+         *used  = ProcedureView::add_saturating_u32(*used, used_slots);
+         *resv  = ProcedureView::add_saturating_u32(*resv, resv_slots);
+         *total = ProcedureView::add_saturating_u32(*total, slots);
 
          if (!sge_get_double_qattr(&host_load_avg, LOAD_ATTR_NP_LOAD_AVG, qinstance, exechost_list, centry_list,
                                    &has_value_from_object)) {
             if (has_value_from_object) {
-               load_slots += slots;
+               load_slots = ProcedureView::add_saturating_u32(load_slots, slots);
                *load += host_load_avg * slots;
             }
          }
@@ -85,47 +87,47 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const lListElem *cqueue
          if (qinstance_state_is_manual_suspended(qinstance) || qinstance_state_is_unknown(qinstance) ||
              qinstance_state_is_manual_disabled(qinstance) || qinstance_state_is_ambiguous(qinstance) ||
              qinstance_state_is_error(qinstance)) {
-            *manual_intervention += slots;
+            *manual_intervention = ProcedureView::add_saturating_u32(*manual_intervention, slots);
          } else if (qinstance_state_is_alarm(qinstance) || qinstance_state_is_cal_disabled(qinstance) ||
                     qinstance_state_is_orphaned(qinstance) || qinstance_state_is_susp_on_sub(qinstance) ||
                     qinstance_state_is_cal_suspended(qinstance) || qinstance_state_is_suspend_alarm(qinstance)) {
-            *temp_disabled += slots;
+            *temp_disabled = ProcedureView::add_saturating_u32(*temp_disabled, slots);
          } else {
-            *available += slots;
-            used_available += used_slots;
+            *available = ProcedureView::add_saturating_u32(*available, slots);
+            used_available = ProcedureView::add_saturating_u32(used_available, used_slots);
          }
          if (qinstance_state_is_unknown(qinstance)) {
-            *unknown += slots;
+            *unknown = ProcedureView::add_saturating_u32(*unknown, slots);
          }
          if (qinstance_state_is_alarm(qinstance)) {
-            *load_alarm += slots;
+            *load_alarm = ProcedureView::add_saturating_u32(*load_alarm, slots);
          }
          if (qinstance_state_is_manual_disabled(qinstance)) {
-            *disabled_manual += slots;
+            *disabled_manual = ProcedureView::add_saturating_u32(*disabled_manual, slots);
          }
          if (qinstance_state_is_cal_disabled(qinstance)) {
-            *disabled_calendar += slots;
+            *disabled_calendar = ProcedureView::add_saturating_u32(*disabled_calendar, slots);
          }
          if (qinstance_state_is_ambiguous(qinstance)) {
-            *ambiguous += slots;
+            *ambiguous = ProcedureView::add_saturating_u32(*ambiguous, slots);
          }
          if (qinstance_state_is_orphaned(qinstance)) {
-            *orphaned += slots;
+            *orphaned = ProcedureView::add_saturating_u32(*orphaned, slots);
          }
          if (qinstance_state_is_manual_suspended(qinstance)) {
-            *suspend_manual += slots;
+            *suspend_manual = ProcedureView::add_saturating_u32(*suspend_manual, slots);
          }
          if (qinstance_state_is_susp_on_sub(qinstance)) {
-            *suspend_on_subordinate += slots;
+            *suspend_on_subordinate = ProcedureView::add_saturating_u32(*suspend_on_subordinate, slots);
          }
          if (qinstance_state_is_cal_suspended(qinstance)) {
-            *suspend_calendar += slots;
+            *suspend_calendar = ProcedureView::add_saturating_u32(*suspend_calendar, slots);
          }
          if (qinstance_state_is_suspend_alarm(qinstance)) {
-            *suspend_threshold += slots;
+            *suspend_threshold = ProcedureView::add_saturating_u32(*suspend_threshold, slots);
          }
          if (qinstance_state_is_error(qinstance)) {
-            *error += slots;
+            *error = ProcedureView::add_saturating_u32(*error, slots);
          }
       }
       if (load_slots > 0) {

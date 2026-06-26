@@ -34,6 +34,7 @@
 
 #include <cstdio>
 #include <climits>
+#include <cstdint>
 #include <sstream>
 #include <string>
 
@@ -189,6 +190,18 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(id, "add_saturating_int(INT_MIN, -1) == INT_MIN (clamped)", ocs::QQuotaViewJSON::add_saturating_int(INT_MIN, -1) == INT_MIN); id++;
       CHECK(id, "add_saturating_int(-5, 3) == -2",        ocs::QQuotaViewJSON::add_saturating_int(-5, 3) == -2);        id++;
       CHECK(id, "add_saturating_int(0, 0) == 0",          ocs::QQuotaViewJSON::add_saturating_int(0, 0) == 0);          id++;
+   }
+
+   // ProcedureView::add_saturating_u32() — saturating add for the qstat -g c
+   // uint32 slot-total accumulators (CS-2368, LOW-QSTAT-005): UINT32_MAX + 1 must
+   // clamp to UINT32_MAX instead of wrapping to a small value.
+   printf("\n--- add_saturating_u32 ---\n");
+   {
+      CHECK(id, "add_saturating_u32(5, 1) == 6",            ocs::QQuotaViewJSON::add_saturating_u32(5u, 1u) == 6u); id++;
+      CHECK(id, "add_saturating_u32(UINT32_MAX, 0)",        ocs::QQuotaViewJSON::add_saturating_u32(UINT32_MAX, 0u) == UINT32_MAX); id++;
+      CHECK(id, "add_saturating_u32(UINT32_MAX, 1) clamped", ocs::QQuotaViewJSON::add_saturating_u32(UINT32_MAX, 1u) == UINT32_MAX); id++;
+      CHECK(id, "add_saturating_u32(UINT32_MAX-1, 5) clamped", ocs::QQuotaViewJSON::add_saturating_u32(UINT32_MAX - 1u, 5u) == UINT32_MAX); id++;
+      CHECK(id, "add_saturating_u32(0, 0) == 0",            ocs::QQuotaViewJSON::add_saturating_u32(0u, 0u) == 0u); id++;
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
