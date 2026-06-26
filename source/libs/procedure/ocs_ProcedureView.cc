@@ -21,6 +21,7 @@
 #include <ostream>
 #include <chrono>
 #include <cfloat>                  // DBL_MAX (unlimited resource value, CS-2318)
+#include <limits>
 
 #include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_rmon_macros.h"
@@ -103,7 +104,7 @@ std::string ocs::ProcedureView::raw2quotedJSON(const char *input) {
  * @param value the candidate token (NULL/empty returns false)
  * @return true if @p value is a valid JSON number and safe to emit unquoted
  */
-bool ocs::ProcedureView::isJSONNumber(const char *value) {
+bool ocs::ProcedureView::is_JSON_number(const char *value) {
    // grammar: -?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?
    if (value == nullptr || *value == '\0') {
       return false;
@@ -152,6 +153,27 @@ bool ocs::ProcedureView::isJSONNumber(const char *value) {
    }
 
    return *p == '\0';   // no trailing characters
+}
+
+/**
+ * @brief Add two ints, clamping to INT_MAX/INT_MIN instead of overflowing.
+ *
+ * Signed-integer overflow is undefined behaviour; this returns a saturated
+ * result instead (e.g. as a loop bound where an already-saturated value is
+ * incremented — CS-2367, CWE-190).
+ *
+ * @param a first addend
+ * @param b second addend
+ * @return a + b, clamped to [INT_MIN, INT_MAX]
+ */
+int ocs::ProcedureView::add_saturating_int(int a, int b) {
+   if (b > 0 && a > std::numeric_limits<int>::max() - b) {
+      return std::numeric_limits<int>::max();
+   }
+   if (b < 0 && a < std::numeric_limits<int>::min() - b) {
+      return std::numeric_limits<int>::min();
+   }
+   return a + b;
 }
 
 /** @brief convert the timestamp to ISO 8601 format

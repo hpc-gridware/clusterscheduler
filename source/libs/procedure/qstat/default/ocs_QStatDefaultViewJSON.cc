@@ -547,7 +547,7 @@ void ocs::QStatDefaultViewJSON::report_default_request(std::ostream &os, const c
       // quote/escape it. A runtime strtod() sniff would accept inf/nan/hex etc.
       // and corrupt the JSON (CS-2365, CWE-74).
       os << std::string(indent * 3, ' ') << "\"value\": ";
-      if (isJSONNumber(value)) {
+      if (is_JSON_number(value)) {
          os << value;
       } else {
          os << raw2quotedJSON(value != nullptr ? value : "");

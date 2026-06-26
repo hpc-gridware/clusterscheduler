@@ -60,7 +60,9 @@ namespace ocs {
        */
       static std::string raw2quotedJSON(const char *input);
 
-      static bool isJSONNumber(const char *value);
+      static bool is_JSON_number(const char *value);
+
+      static int add_saturating_int(int a, int b);
 
       /** @brief Write @p time (microseconds since epoch) as an ISO 8601 timestamp to @p os.
        *

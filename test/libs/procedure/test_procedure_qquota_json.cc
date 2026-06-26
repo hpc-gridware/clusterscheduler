@@ -33,6 +33,7 @@
  */
 
 #include <cstdio>
+#include <climits>
 #include <sstream>
 #include <string>
 
@@ -148,32 +149,46 @@ int main(int /*argc*/, char * /*argv*/[]) {
             contains(out, "\"resource\": \"\"")); id++;
    }
 
-   // ProcedureView::isJSONNumber() — decides whether a value may be emitted
+   // ProcedureView::is_JSON_number() — decides whether a value may be emitted
    // unquoted in JSON. Pins the safe set (CS-2365, LOW-QSTAT-002): only valid
    // RFC 8259 numbers, NOT strtod-accepted-but-invalid-JSON tokens such as
    // inf/nan/hex, which the previous strtod() gate let through unquoted.
-   printf("\n--- isJSONNumber ---\n");
+   printf("\n--- is_JSON_number ---\n");
    {
       // valid JSON numbers → may be emitted unquoted
-      CHECK(id, "isJSONNumber '0'",        ocs::QQuotaViewJSON::isJSONNumber("0"));        id++;
-      CHECK(id, "isJSONNumber '-1'",       ocs::QQuotaViewJSON::isJSONNumber("-1"));       id++;
-      CHECK(id, "isJSONNumber '1.5'",      ocs::QQuotaViewJSON::isJSONNumber("1.5"));      id++;
-      CHECK(id, "isJSONNumber '1e10'",     ocs::QQuotaViewJSON::isJSONNumber("1e10"));     id++;
-      CHECK(id, "isJSONNumber '-0.5e+3'",  ocs::QQuotaViewJSON::isJSONNumber("-0.5e+3"));  id++;
+      CHECK(id, "is_JSON_number '0'",        ocs::QQuotaViewJSON::is_JSON_number("0"));        id++;
+      CHECK(id, "is_JSON_number '-1'",       ocs::QQuotaViewJSON::is_JSON_number("-1"));       id++;
+      CHECK(id, "is_JSON_number '1.5'",      ocs::QQuotaViewJSON::is_JSON_number("1.5"));      id++;
+      CHECK(id, "is_JSON_number '1e10'",     ocs::QQuotaViewJSON::is_JSON_number("1e10"));     id++;
+      CHECK(id, "is_JSON_number '-0.5e+3'",  ocs::QQuotaViewJSON::is_JSON_number("-0.5e+3"));  id++;
 
       // strtod-accepted but NOT valid JSON → must be rejected (would be quoted)
-      CHECK(id, "isJSONNumber 'inf' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("inf"));      id++;
-      CHECK(id, "isJSONNumber 'nan' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("nan"));      id++;
-      CHECK(id, "isJSONNumber 'infinity' rejected", !ocs::QQuotaViewJSON::isJSONNumber("infinity")); id++;
-      CHECK(id, "isJSONNumber '0x1p4' rejected",    !ocs::QQuotaViewJSON::isJSONNumber("0x1p4"));    id++;
-      CHECK(id, "isJSONNumber '+1' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("+1"));       id++;
-      CHECK(id, "isJSONNumber '.5' rejected",       !ocs::QQuotaViewJSON::isJSONNumber(".5"));       id++;
-      CHECK(id, "isJSONNumber '1.' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("1."));       id++;
-      CHECK(id, "isJSONNumber '01' rejected",       !ocs::QQuotaViewJSON::isJSONNumber("01"));       id++;
-      CHECK(id, "isJSONNumber '1,000' rejected",    !ocs::QQuotaViewJSON::isJSONNumber("1,000"));    id++;
-      CHECK(id, "isJSONNumber 'abc' rejected",      !ocs::QQuotaViewJSON::isJSONNumber("abc"));      id++;
-      CHECK(id, "isJSONNumber '' rejected",         !ocs::QQuotaViewJSON::isJSONNumber(""));         id++;
-      CHECK(id, "isJSONNumber nullptr rejected",    !ocs::QQuotaViewJSON::isJSONNumber(nullptr));    id++;
+      CHECK(id, "is_JSON_number 'inf' rejected",      !ocs::QQuotaViewJSON::is_JSON_number("inf"));      id++;
+      CHECK(id, "is_JSON_number 'nan' rejected",      !ocs::QQuotaViewJSON::is_JSON_number("nan"));      id++;
+      CHECK(id, "is_JSON_number 'infinity' rejected", !ocs::QQuotaViewJSON::is_JSON_number("infinity")); id++;
+      CHECK(id, "is_JSON_number '0x1p4' rejected",    !ocs::QQuotaViewJSON::is_JSON_number("0x1p4"));    id++;
+      CHECK(id, "is_JSON_number '+1' rejected",       !ocs::QQuotaViewJSON::is_JSON_number("+1"));       id++;
+      CHECK(id, "is_JSON_number '.5' rejected",       !ocs::QQuotaViewJSON::is_JSON_number(".5"));       id++;
+      CHECK(id, "is_JSON_number '1.' rejected",       !ocs::QQuotaViewJSON::is_JSON_number("1."));       id++;
+      CHECK(id, "is_JSON_number '01' rejected",       !ocs::QQuotaViewJSON::is_JSON_number("01"));       id++;
+      CHECK(id, "is_JSON_number '1,000' rejected",    !ocs::QQuotaViewJSON::is_JSON_number("1,000"));    id++;
+      CHECK(id, "is_JSON_number 'abc' rejected",      !ocs::QQuotaViewJSON::is_JSON_number("abc"));      id++;
+      CHECK(id, "is_JSON_number '' rejected",         !ocs::QQuotaViewJSON::is_JSON_number(""));         id++;
+      CHECK(id, "is_JSON_number nullptr rejected",    !ocs::QQuotaViewJSON::is_JSON_number(nullptr));    id++;
+   }
+
+   // ProcedureView::add_saturating_int() — saturating add used for the qstat
+   // per-task line-count loop bound (CS-2367, LOW-QSTAT-004): INT_MAX + 1 must
+   // clamp to INT_MAX instead of overflowing (UB).
+   printf("\n--- add_saturating_int ---\n");
+   {
+      CHECK(id, "add_saturating_int(5, 1) == 6",          ocs::QQuotaViewJSON::add_saturating_int(5, 1) == 6);          id++;
+      CHECK(id, "add_saturating_int(INT_MAX, 0) == INT_MAX", ocs::QQuotaViewJSON::add_saturating_int(INT_MAX, 0) == INT_MAX); id++;
+      CHECK(id, "add_saturating_int(INT_MAX, 1) == INT_MAX (clamped)", ocs::QQuotaViewJSON::add_saturating_int(INT_MAX, 1) == INT_MAX); id++;
+      CHECK(id, "add_saturating_int(INT_MAX-1, 1) == INT_MAX", ocs::QQuotaViewJSON::add_saturating_int(INT_MAX - 1, 1) == INT_MAX); id++;
+      CHECK(id, "add_saturating_int(INT_MIN, -1) == INT_MIN (clamped)", ocs::QQuotaViewJSON::add_saturating_int(INT_MIN, -1) == INT_MIN); id++;
+      CHECK(id, "add_saturating_int(-5, 3) == -2",        ocs::QQuotaViewJSON::add_saturating_int(-5, 3) == -2);        id++;
+      CHECK(id, "add_saturating_int(0, 0) == 0",          ocs::QQuotaViewJSON::add_saturating_int(0, 0) == 0);          id++;
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

@@ -220,7 +220,9 @@ ocs::QStatDefaultController::process_jobs_in_queue(std::ostream &os, lListElem *
 
                } else {
                   /* yes */
-                  lines_to_print = (int)slots_in_queue+slot_adjust;
+                  // saturating add: slots_in_queue is already clamped to INT_MAX,
+                  // so a plain + slot_adjust could overflow (UB) (CS-2367, CWE-190)
+                  lines_to_print = ProcedureView::add_saturating_int(slots_in_queue, slot_adjust);
                   slots_per_line = 1;
                }
 
