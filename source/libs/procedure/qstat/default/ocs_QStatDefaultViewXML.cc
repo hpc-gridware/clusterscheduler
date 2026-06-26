@@ -189,7 +189,7 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
    attribute_list = lGetListRW(xml_elem, XMLE_List);
 
    xml_append_Attr_S(attribute_list, "name", qname);
-   xml_append_Attr_S(attribute_list, "qtype", summary->queue_type);
+   xml_append_Attr_S(attribute_list, "qtype", summary->queue_type.c_str());
 
    /* number of used/free slots */
    xml_append_Attr_U(attribute_list, "slots_used", summary->used_slots);
@@ -202,11 +202,11 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
    }
 
    /* arch */
-   if(summary->arch) {
-      xml_append_Attr_S(attribute_list, "arch", summary->arch);
+   if (!summary->arch.empty()) {
+      xml_append_Attr_S(attribute_list, "arch", summary->arch.c_str());
    }
 
-   xml_append_Attr_S(attribute_list, "state", summary->state);
+   xml_append_Attr_S(attribute_list, "state", summary->state.c_str());
 
    DRETURN_VOID;
 }

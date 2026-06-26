@@ -122,7 +122,7 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
 
    // Why is has_load_value required?
    std::ostringstream ss_load_avg;
-   if (summary->has_load_value || (summary->state != nullptr && strchr(summary->state, 'u') != nullptr)) {
+   if (summary->has_load_value || summary->state.find('u') != std::string::npos) {
       ss_load_avg << "-NA-";
    } else {
       if (summary->has_load_value_from_object) {
@@ -133,8 +133,8 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
    }
 
    os << std::format("{:<8.8} ", ss_load_avg.str());
-   os << std::format("{:<13.13} ", summary->arch ? summary->arch : "-NA-");
-   os << std::format("{} ", summary->state ? summary->state : "NA");
+   os << std::format("{:<13.13} ", summary->arch.empty() ? "-NA-" : summary->arch.c_str());
+   os << std::format("{} ", summary->state.empty() ? "NA" : summary->state.c_str());
    DRETURN_VOID;
 }
 

@@ -22,6 +22,7 @@
 
 #include <cinttypes>
 #include <algorithm>
+#include <string>
 
 #include "ocs_ProcedureView.h"
 #include "../ocs_QStatParameter.h"
@@ -40,14 +41,19 @@ namespace ocs {
       };
 
       struct queue_summary_t {
-         const char* queue_type;
+         // Owning storage: queue_type/arch/state used to be const char* aliasing
+         // stack locals of the controller, a latent use-after-scope if the
+         // summary ever outlived that frame (CS-2366, LOW-QSTAT-003). std::string
+         // makes them own their data; an empty string means "absent". load_avg_str
+         // points at a string literal and stays const char*.
+         std::string queue_type;
 
          uint32_t    used_slots;
          uint32_t    resv_slots;
          uint32_t    total_slots;
 
-         const char* arch;
-         const char* state;
+         std::string arch;
+         std::string state;
 
          const char* load_avg_str;
          bool has_load_value;

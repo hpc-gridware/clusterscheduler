@@ -1159,11 +1159,18 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    }
 
    QStatDefaultViewBase::queue_summary_t summary {};
+   // These fields must own their storage: they used to be const char* aliasing
+   // stack locals below (a latent use-after-scope). Pin that a revert to a
+   // non-owning type fails to compile (CS-2366, LOW-QSTAT-003).
+   static_assert(std::is_same_v<decltype(summary.queue_type), std::string> &&
+                 std::is_same_v<decltype(summary.arch), std::string> &&
+                 std::is_same_v<decltype(summary.state), std::string>,
+                 "queue_summary_t queue_type/arch/state must own their storage");
+
    // CS-2387: load variable resolved on the client from SGE_QSTAT_LOAD_AVG and
    // marshalled through QStatParameter, so both client- and server-rendered
    // qstat (see ExecContext::SERVER path in ocs_qstat.cc) honour the caller's env.
    summary.load_avg_str = parameter.get_load_avg_variable();
-
 
    // compute the load and check for alarm states
    summary.has_load_value = sge_get_double_qattr(&summary.load_avg, summary.load_avg_str, queue,
@@ -1196,9 +1203,9 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    /* arch */
    char arch_string[80];
    if (!sge_get_string_qattr(arch_string, sizeof(arch_string)-1, LOAD_ATTR_ARCH, queue, model.get_exechost_list(), model.get_centry_list())) {
-      summary.arch = arch_string;
+      summary.arch = arch_string;   // std::string copies; no longer aliases the stack array
    } else {
-      summary.arch = nullptr;
+      summary.arch.clear();         // absent → empty (was nullptr)
    }
 
    DSTRING_STATIC(state_string, 32);
