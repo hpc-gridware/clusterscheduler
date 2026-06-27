@@ -553,8 +553,8 @@ SetSpoolingOptionsPostgres()
          # the file owner to match the process EUID, so a non-root qmaster
          # would silently fail authentication. Surface this to the operator
          # before the eventual MSG_POSTGRES_PASSFILEOWNER failure at startup.
-         $INFOTEXT -w "Warning: %s is root-owned. chown it to the qmaster service" "$SPOOLING_PG_PASSFILE"
-         $INFOTEXT -w "         user before starting qmaster, or libpq will reject the file."
+         $INFOTEXT -e "Warning: %s is root-owned. chown it to the qmaster service" "$SPOOLING_PG_PASSFILE"
+         $INFOTEXT -e "         user before starting qmaster, or libpq will reject the file."
          $INFOTEXT -log "Warning: %s is root-owned; libpq will reject it at qmaster startup." "$SPOOLING_PG_PASSFILE"
       fi
       # Wipe the cleartext from the installer's environment so any
