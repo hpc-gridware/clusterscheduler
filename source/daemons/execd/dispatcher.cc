@@ -90,7 +90,9 @@ int sge_execd_process_messages() {
 #if defined(OCS_WITH_OPENSSL)
    bool tls_security = ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_TLS);
    int certificate_lifetime = ocs::Bootstrap::get_cert_lifetime();
-   INFO(MSG_TLS_CERT_LIFETIME_D, certificate_lifetime);
+   if (tls_security) {
+      INFO(MSG_TLS_CERT_LIFETIME_D, certificate_lifetime);
+   }
    uint64_t certificate_check_interval = sge_gmt32_to_gmt64(certificate_lifetime / 20);
    uint64_t next_certificate_check = 0;
 #endif
