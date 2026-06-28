@@ -25,6 +25,13 @@ target_include_directories(test_sched_eval_performance PRIVATE "./")
 target_link_libraries(test_sched_eval_performance PRIVATE sched gdi sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sched_eval_performance COMMAND test_sched_eval_performance)
 
+# test_sched_eval_performance is correct but long-running, so it is kept out of
+# the default ctest run. Opt in by reconfiguring with -DENABLE_LONG_TESTS=ON
+# (same switch as the uti lock/deadlock, cull perf and sgeobj_fgl tests).
+if (NOT ENABLE_LONG_TESTS)
+   set_tests_properties(test_sched_eval_performance PROPERTIES DISABLED TRUE)
+endif ()
+
 add_executable(test_sched_resource_utilization test_sched_resource_utilization.cc)
 target_include_directories(test_sched_resource_utilization PRIVATE "./")
 target_link_libraries(test_sched_resource_utilization PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})

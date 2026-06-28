@@ -32,6 +32,13 @@ target_include_directories(test_spool_mt PRIVATE "./")
 target_link_libraries(test_spool_mt PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_mt COMMAND test_spool_mt)
 
+# test_spool_performance and test_spool_mt are correct but long-running, so they
+# are kept out of the default ctest run. Opt in by reconfiguring with
+# -DENABLE_LONG_TESTS=ON (same switch as the other long-running unit tests).
+if (NOT ENABLE_LONG_TESTS)
+   set_tests_properties(test_spool_performance test_spool_mt PROPERTIES DISABLED TRUE)
+endif ()
+
 add_executable(test_spool_utilities test_spool_utilities.cc)
 target_include_directories(test_spool_utilities PRIVATE "./")
 target_link_libraries(test_spool_utilities PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -41,6 +48,11 @@ add_executable(test_spool test_spool.cc ../../../source/common/sig_handlers.cc)
 target_include_directories(test_spool PRIVATE "./")
 target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool COMMAND test_spool)
+
+# test_spool requires arguments (<method> <shared lib> <arguments>) and cannot
+# be run by a bare ctest, so it is always disabled (kept registered only for
+# discoverability).
+set_tests_properties(test_spool PROPERTIES DISABLED TRUE)
 
 if (INSTALL_SGE_TEST)
    install(TARGETS test_spool DESTINATION testbin/${SGE_ARCH})

@@ -40,6 +40,13 @@ target_include_directories(test_sgeobj_fgl PRIVATE "./")
 target_link_libraries(test_sgeobj_fgl PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_fgl COMMAND test_sgeobj_fgl)
 
+# test_sgeobj_fgl is correct but long-running, so it is kept out of the default
+# ctest run. Opt in by reconfiguring with -DENABLE_LONG_TESTS=ON (same switch as
+# the uti lock/deadlock and cull perf tests).
+if (NOT ENABLE_LONG_TESTS)
+   set_tests_properties(test_sgeobj_fgl PROPERTIES DISABLED TRUE)
+endif ()
+
 add_executable(test_sgeobj_object test_sgeobj_object.cc)
 target_include_directories(test_sgeobj_object PRIVATE "./")
 target_link_libraries(test_sgeobj_object PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})

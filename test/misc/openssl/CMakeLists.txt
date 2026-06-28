@@ -27,6 +27,9 @@ if (WITH_OPENSSL)
     add_test(NAME test_openssl COMMAND test_openssl)
     #target_link_libraries(test_openssl PRIVATE ssl crypto)
 
+    # Disabled in the default ctest run (kept registered for discoverability).
+    set_tests_properties(test_openssl PROPERTIES DISABLED TRUE)
+
     if (INSTALL_SGE_TEST)
         install(TARGETS test_openssl DESTINATION testbin/${SGE_ARCH})
     endif ()

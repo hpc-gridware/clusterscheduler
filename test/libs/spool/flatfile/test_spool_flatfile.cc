@@ -149,7 +149,7 @@ int main(int argc, char** argv)
    CHECK(id, "PE empty lists: explicitly empty user_list and xuser_list",        PE_empty_lists_test()  == 0); id++;
    CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
    CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
-   CHECK(id, "SPOOL key: spool_flatfile_key_is_safe rejects '/' and leading '.'", SPOOL_key_safe_test() == 0); id++;
+   CHECK(id, "SPOOL key: spool_flatfile_key_is_safe accepts relative multi-component keys, rejects traversal", SPOOL_key_safe_test() == 0); id++;
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -2820,23 +2820,32 @@ static int SPOOL_perm_test()
 
 // SECURITY REGRESSION (CS-2364, LOW-SPOOL-002, CWE-22):
 // spool_flatfile_key_is_safe() is the defence-in-depth guard at the spool sink.
-// An object key (e.g. an unvalidated host name) is used verbatim as a path
-// component, so a key containing '/' or starting with '.' (".", "..", "../x",
-// ".hidden") could escape the spool directory. The guard must reject those and
-// accept ordinary keys (including FQDNs with '-' and '.').
+// An object key is used to build a spool path, so it must not escape the spool
+// directory. A key may legitimately be a multi-component relative path - a queue
+// instance is spooled as "<cqueue>/<host>" and a job script key embeds a path -
+// so '/' is allowed as a separator. The guard validates each component instead:
+// the key must be relative (no leading '/') and no component may be empty, "."
+// or ".." or start with '.' (".hidden"). Ordinary keys (including FQDNs with '-'
+// and '.') and well-formed multi-component keys are accepted; traversal is not.
 static int SPOOL_key_safe_test()
 {
    struct { const char *key; bool expect_safe; } cases[] = {
-      {"validkey",            true},
-      {"host-01.example.com", true},   // '-' and '.' are fine when not leading
-      {"12345.7",             true},   // job-style key
-      {"../../tmp/x",         false},
-      {"/etc/passwd",         false},
-      {"..",                  false},
-      {".",                   false},
-      {".hidden",             false},
-      {"a/b",                 false},
-      {nullptr,               false},
+      {"validkey",                    true},
+      {"host-01.example.com",         true},   // '-' and '.' are fine when not leading
+      {"12345.7",                     true},   // job-style key
+      {"cqueue/host",                 true},   // queue-instance key: '/' is a valid separator
+      {"q_issue1760/v01701.fritz.box",true},   // realistic queue-instance key (CS-2364 regression)
+      {"../../tmp/x",                 false},
+      {"/etc/passwd",                 false},   // absolute path
+      {"..",                          false},
+      {".",                           false},
+      {".hidden",                     false},
+      {"a/../b",                      false},   // traversal in a later component
+      {"a/./b",                       false},   // "." component
+      {"a//b",                        false},   // empty component
+      {"a/",                          false},   // trailing slash -> empty last component
+      {"a/.hidden",                   false},   // leading '.' in a later component
+      {nullptr,                       false},
    };
    int ret = 0;
    for (const auto &c : cases) {

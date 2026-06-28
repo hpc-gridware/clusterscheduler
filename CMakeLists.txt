@@ -129,6 +129,14 @@ endif()
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 
+# When OFF (default), long-running unit tests are registered but DISABLED so a
+# bare ctest skips them; reconfigure with -DENABLE_LONG_TESTS=ON to run them.
+# Likewise ENABLE_DRMAA_TESTS gates the DRMAA cluster/integration tests (they
+# need a live qmaster and have arguments). The per-test gates live in the
+# test/ subdirectories (and gcs-extensions).
+option(ENABLE_LONG_TESTS "Run the long-running unit tests" OFF)
+option(ENABLE_DRMAA_TESTS "Run the DRMAA cluster/integration tests" OFF)
+
 
 set(PROJECT_3RDPARTY_HOME
         "$ENV{HOME}/3rd_party"

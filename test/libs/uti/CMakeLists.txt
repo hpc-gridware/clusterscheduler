@@ -134,6 +134,23 @@ target_include_directories(test_uti_Encoder PRIVATE "./")
 target_link_libraries(test_uti_Encoder PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_Encoder COMMAND test_uti_Encoder)
 
+# These tests are correct but long-running, so they are kept out of the default
+# ctest run. Opt in by reconfiguring with -DENABLE_LONG_TESTS=ON. (Defined here,
+# after all listed tests are registered, so set_tests_properties can see them.)
+set(LONG_TESTS
+   test_uti_deadlock
+   test_uti_lock_simple
+   test_uti_lock_multiple
+   test_uti_lock_fifo
+   test_uti_lock_trylock
+   test_uti_profiling
+   test_uti_sl
+   test_uti_threads
+)
+if (NOT ENABLE_LONG_TESTS)
+   set_tests_properties(${LONG_TESTS} PROPERTIES DISABLED TRUE)
+endif ()
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_uti_bitfield DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_uti_deadlock DESTINATION testbin/${SGE_ARCH})

@@ -50,6 +50,13 @@ target_include_directories(test_ocs_cull_perf PRIVATE "./")
 target_link_libraries(test_ocs_cull_perf PRIVATE cull sgeobj uti commlists ${SGE_LIBS})
 add_test(NAME test_ocs_cull_perf COMMAND test_ocs_cull_perf)
 
+# test_ocs_cull_perf and test_cull_hash are correct but long-running, so they are
+# kept out of the default ctest run. Opt in by reconfiguring with
+# -DENABLE_LONG_TESTS=ON (same switch as the uti lock/deadlock tests).
+if (NOT ENABLE_LONG_TESTS)
+   set_tests_properties(test_ocs_cull_perf test_cull_hash PROPERTIES DISABLED TRUE)
+endif ()
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_ocs_cull_perf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_cull_hash DESTINATION testbin/${SGE_ARCH})
