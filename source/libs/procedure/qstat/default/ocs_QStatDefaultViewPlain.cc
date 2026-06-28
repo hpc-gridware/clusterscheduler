@@ -134,7 +134,7 @@ void ocs::QStatDefaultViewPlain::report_queue_summary(std::ostream &os, const ch
 
    os << std::format("{:<8.8} ", ss_load_avg.str());
    os << std::format("{:<13.13} ", summary->arch.empty() ? "-NA-" : summary->arch.c_str());
-   os << std::format("{} ", summary->state.empty() ? "NA" : summary->state.c_str());
+   os << std::format("{} ", summary->state.c_str());   // empty state → empty column (normal queue); CS-2366 regression fix
    DRETURN_VOID;
 }
 
