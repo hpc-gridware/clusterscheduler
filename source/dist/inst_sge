@@ -388,6 +388,21 @@ if [ "$UPDATE" = true ]; then
    cloned_backup_directory=`CloneDir ${UPGRADE_BACKUP_DIR} ${current_date}`
    UPGRADE_BACKUP_DIR=$cloned_backup_directory
 
+   # CloneDir ran before we knew the cluster's admin_user (ADMINUSER is
+   # still "default" at this point), so /tmp/cs_<date>/ is root-owned with
+   # 755 perms. Later, after GetAdminUser, ExecuteAsAdmin routes through
+   # adminrun and tries to touch/cp inside the clone as the admin user —
+   # which fails with "Permission denied" (CS-2370). Read admin_user from
+   # the cloned backup's bootstrap and chown the tree so subsequent
+   # admin-user operations on the clone work.
+   if [ "`id -u`" = "0" ]; then
+      _bup_admin_user=`BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" admin_user`
+      if [ -n "$_bup_admin_user" ] && [ "$_bup_admin_user" != "none" ]; then
+         chown -R "$_bup_admin_user" "$UPGRADE_BACKUP_DIR"
+      fi
+      unset _bup_admin_user
+   fi
+
    # Read sge_root, sge_cell, qmaster, execd port from the backup
    SGE_ROOT=`pwd | sed 's/\/tmp_mnt//'`
    bck_sge_root=`cat "${UPGRADE_BACKUP_DIR}/sge_root" | awk -F= '{print $2}' | awk -F\; '{print $1}' 2>/dev/null`

@@ -2739,7 +2739,7 @@ MoveLog()
       loghosttype="execd"
    fi
 
-   if [ $EXECD = "uninstall" -o $QMASTER = "uninstall" -o $SHADOW = "uninstall" ]; then
+   if [ "$EXECD" = "uninstall" -o "$QMASTER" = "uninstall" -o "$SHADOW" = "uninstall" ]; then
       installtype="uninstall"
    else
       installtype="install"
