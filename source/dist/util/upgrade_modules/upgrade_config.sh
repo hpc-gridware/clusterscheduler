@@ -36,8 +36,16 @@ PRODUCT_SHORTCUT="sge"
 
 HOST=$("$ROOTDIR"/utilbin/"$ARCH"/gethostname -aname)
 
+# arch_variables defines Translate (used by ExecuteAsAdmin's error path);
+# without it any failure inside ExecuteAsAdmin would log "Translate: not
+# found" instead of the intended message (CS-2370).
+. "$ROOTDIR"/util/arch_variables
 . "$ROOTDIR"/util/install_modules/inst_common.sh
 BasicSettings
+# Switch $INFOTEXT from the bare "echo" set by BasicSettings to the real
+# infotext binary; otherwise option flags like "-log" are printed literally
+# and "%s" format placeholders are never expanded (CS-2370).
+SetUpInfoText
 GetAdminUser
 
 ###############################################################################
