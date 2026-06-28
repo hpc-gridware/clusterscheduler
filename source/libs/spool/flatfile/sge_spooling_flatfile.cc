@@ -1004,20 +1004,38 @@ spool_classic_default_read_func(lList **answer_list,
 *******************************************************************************/
 
 /**
- * @brief Check that a spool object key is a single safe filesystem path component.
+ * @brief Check that a spool object key is a safe relative spool path.
  *
  * A key is used verbatim to build a spool-file path (EXECHOST_DIR/<key> etc.).
  * Most keys are validated upstream by verify_str_key(), but host names are not,
- * so this is a defence-in-depth guard at the spool sink: reject a key that
- * contains '/' or starts with '.' (".", "..", "../x", ".hidden"), which could
- * otherwise escape the spool directory (CS-2364, CWE-22).
+ * so this is a defence-in-depth guard at the spool sink (CS-2364, CWE-22).
  *
- * @param[in] key the object key / filename component
- * @return true if @p key is safe to use as a single path component, false otherwise
+ * A key may be a multi-component relative path: a queue instance is spooled
+ * under "<cqueue>/<host>", so '/' is a legitimate separator and must not be
+ * rejected outright. Instead every component is validated independently — the
+ * key must be relative (no leading '/') and no component may be empty, "." or
+ * ".." or start with '.' — so the resulting path can never escape the spool
+ * directory.
+ *
+ * @param[in] key the object key (a relative path of one or more components)
+ * @return true if @p key is safe to use as a relative spool path, false otherwise
  */
 bool
 spool_flatfile_key_is_safe(const char *key) {
-   return key != nullptr && key[0] != '.' && strchr(key, '/') == nullptr;
+   // Reject nullptr, empty, or absolute keys outright.
+   if (key == nullptr || key[0] == '\0' || key[0] == '/') {
+      return false;
+   }
+   // Validate each '/'-separated component: none may be empty (handles "//" and
+   // a trailing '/'), nor "." / ".." / a leading-dot name (handles "comp[0] == '.'").
+   for (const char *comp = key; comp != nullptr; ) {
+      if (comp[0] == '\0' || comp[0] == '.' || comp[0] == '/') {
+         return false;
+      }
+      const char *slash = strchr(comp, '/');
+      comp = (slash != nullptr) ? slash + 1 : nullptr;
+   }
+   return true;
 }
 
 bool
