@@ -1,5 +1,55 @@
 # Full List of Fixes
 
+## v9.1.3
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-1962](https://hpc-gridware.atlassian.net/browse/CS-1962) Edit dbwriter configuration and rules file in qontrol to simplify administration
+- [CS-2214](https://hpc-gridware.atlassian.net/browse/CS-2214) Add "Configuration Files" section in Qontrol to manage GCS configuration files (prolog,epilog,bootstrap etc.)
+- [CS-2261](https://hpc-gridware.atlassian.net/browse/CS-2261) Add port_range to qontrol
+- [CS-2265](https://hpc-gridware.atlassian.net/browse/CS-2265) Improve forward compatibility in Qontrol to display unknown parameters in global / scheduler configuration
+- [CS-2296](https://hpc-gridware.atlassian.net/browse/CS-2296) Associating a PE with a queue fails due to a missing if/match header
+- [CS-2328](https://hpc-gridware.atlassian.net/browse/CS-2328) Qontrol: Assigning a Calendar to a queue fails with if/match tag
+- [CS-2332](https://hpc-gridware.atlassian.net/browse/CS-2332) Qontrol: API Keys should be dynamically loaded when new keys are added
+
+### [CS-335](https://hpc-gridware.atlassian.net/browse/CS-335) dbwriter: bring-up and stabilization
+
+- [CS-2255](https://hpc-gridware.atlassian.net/browse/CS-2255) dbwriter installer should support an auto-install template file for simple installation
+- [CS-2263](https://hpc-gridware.atlassian.net/browse/CS-2263) inst_dbwriter tries to systemctl start non-existent unit when user declines startup-script install if a leftover ocs<port>-dbwriter.service unit was present at the start of the run
+- [CS-2319](https://hpc-gridware.atlassian.net/browse/CS-2319) dbwriter installation prints "./inst_dbwriter: 366: queryJavaDataModel: not found"
+- [CS-2321](https://hpc-gridware.atlassian.net/browse/CS-2321) dbwriter installation on MySQL fails when there are multiple ARCo databases on one server being accessible by the same user
+- [CS-2323](https://hpc-gridware.atlassian.net/browse/CS-2323) dbwriter installation fails when an existing dbwriter.conf file is loaded
+- [CS-2325](https://hpc-gridware.atlassian.net/browse/CS-2325) add unit tests for dbwriter related shell functions
+- [CS-2374](https://hpc-gridware.atlassian.net/browse/CS-2374) dbwriter discards reporting data when sge_checkpoint table has no row for ch_id=1
+
+### [CS-822](https://hpc-gridware.atlassian.net/browse/CS-822) Provide Support for AI Workloads
+
+- [CS-2335](https://hpc-gridware.atlassian.net/browse/CS-2335) Qontrol: MCP get_job_history hangs on large accounting logs
+- [CS-2337](https://hpc-gridware.atlassian.net/browse/CS-2337) Add structured logging facility to MCP server
+
+### Bug
+
+- [CS-2258](https://hpc-gridware.atlassian.net/browse/CS-2258) sge_execd does not retry connecting to sge_qmaster when in TLS mode and sge_qmaster hostname is not resolvable
+- [CS-2279](https://hpc-gridware.atlassian.net/browse/CS-2279) sge_qmaster can terminate due to TOCTOU race in ReportingFileWriter::flush()
+- [CS-2317](https://hpc-gridware.atlassian.net/browse/CS-2317) sge_share_mon reports usage_time=0 for project-only nodes in the share tree
+- [CS-2329](https://hpc-gridware.atlassian.net/browse/CS-2329) on a shadow host the shadowd/qmaster service is not registered with systemd
+- [CS-2333](https://hpc-gridware.atlassian.net/browse/CS-2333) sge_peopen/sge_peopen_r drop UID without GID (missing setgid) — server JSV runs with gid=0 in root qmaster
+- [CS-2351](https://hpc-gridware.atlassian.net/browse/CS-2351) testsuite does not install the systemd unit on shadow only host
+- [CS-2357](https://hpc-gridware.atlassian.net/browse/CS-2357) On shadow-only hosts the qmaster systemd service (ocs<port>-qmaster.service) starts sge_shadowd successfully but then immediately stops it again
+- [CS-2358](https://hpc-gridware.atlassian.net/browse/CS-2358) qrsh prints spurious "commlib error: can't bind socket" when a port_range candidate port is busy
+- [CS-2363](https://hpc-gridware.atlassian.net/browse/CS-2363) after sgemaster -migrate the sge_qmaster process is not shown in systemctl status ocs-qmaster.service
+- [CS-2369](https://hpc-gridware.atlassian.net/browse/CS-2369) upgrade procedure logs "infotext: too few arguments"
+- [CS-2370](https://hpc-gridware.atlassian.net/browse/CS-2370) upgrade procedure logs "touch: cannot touch '/tmp/cs_2026-06-26_16:01:30/centry.tmp': Permission denied"
+- [CS-2372](https://hpc-gridware.atlassian.net/browse/CS-2372) sge_execd logs INFO message "TLS certificate lifetime: 31536000s" when TLS is not enabled
+
+### New Feature
+
+- [CS-2260](https://hpc-gridware.atlassian.net/browse/CS-2260) Add a way that only licenses defined in alias file are added as GCS complexes
+- [CS-2326](https://hpc-gridware.atlassian.net/browse/CS-2326) Add spooling to PostgreSQL
+
+
+
+
 ## v9.1.2
 
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
