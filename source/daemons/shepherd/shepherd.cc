@@ -2330,6 +2330,22 @@ static void handle_signals_and_methods(
       shepherd_trace("reaped sge_coshepherd");
       coshepherd_pid = -999;
    }
+
+   /* CS-3017: alarm(0) at the top of this function paused any pending notify
+    * timer to measure it. The npid==-1 block above re-arms it (via
+    * forward_signal_to_job / shepherd_deliver_signal) when it handles a signal.
+    * But a suspend delivered through the CS-2226 signal_pipe FIFO arrives with
+    * npid==0 and received_signal==0, so that block is skipped and the paused
+    * timer - which is what fires the delayed SIGSTOP/SIGKILL after the notify
+    * period - would be lost, leaving the job never suspended. Whenever a
+    * postponed signal is still scheduled and the block did not run (npid != -1),
+    * restore the timer. (npid==-1 paths never set a new alarm here, so this
+    * cannot clobber a freshly-armed one.) */
+   if (npid != -1 && *postponed_signal != 0 && remaining_alarm > 0) {
+      shepherd_trace("re-arming paused notify alarm (%d s) for postponed signal %s",
+                     remaining_alarm, sge_sys_sig2str(*postponed_signal));
+      alarm(remaining_alarm);
+   }
 }
 /*------------------------------------------------------------------------*/
 /**
