@@ -997,14 +997,25 @@ static int cl_com_tcp_connection_request_handler_setup_finalize(cl_com_connectio
       return CL_RETVAL_PARAMS;
    }
 
-   /* make socket listening for incoming connects */
-   if (listen(sockfd, 5) != 0) {   /* TODO: set listen params */
+   /* Make socket listening for incoming connects.
+    *
+    * CS-2375: the backlog was hardcoded to 5, far too small for a daemon that
+    * can receive a burst of connections (e.g. an execd hit by a massively
+    * parallel tight-integration job: each qrsh -inherit task opens a task-
+    * delivery connection, plus shepherd and IJS-relay connections, all to the
+    * master-host execd at once). When the accept queue overflows, excess
+    * connects are dropped/reset, the client's connect fails fast and its
+    * in-flight synchronous task send returns CL_RETVAL_CONNECTION_NOT_FOUND
+    * ("failed sending task to execd ...: can't find connection"). Use the
+    * kernel maximum (SOMAXCONN); the kernel silently caps it to its own limit. */
+   int cl_listen_backlog = SOMAXCONN;
+   if (listen(sockfd, cl_listen_backlog) != 0) {
       shutdown(sockfd, 2);
       close(sockfd);
       CL_LOG(CL_LOG_ERROR, "listen error");
       return CL_RETVAL_LISTEN_ERROR;
    }
-   CL_LOG_INT(CL_LOG_INFO, "listening with backlog=", 5);
+   CL_LOG_INT(CL_LOG_INFO, "listening with backlog=", cl_listen_backlog);
 
    /* set server socked file descriptor and mark connection as service handler */
    private_com->sockfd = sockfd;

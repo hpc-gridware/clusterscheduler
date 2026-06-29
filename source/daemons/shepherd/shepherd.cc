@@ -2331,7 +2331,7 @@ static void handle_signals_and_methods(
       coshepherd_pid = -999;
    }
 
-   /* CS-3017: alarm(0) at the top of this function paused any pending notify
+   /* CS-2373: alarm(0) at the top of this function paused any pending notify
     * timer to measure it. The npid==-1 block above re-arms it (via
     * forward_signal_to_job / shepherd_deliver_signal) when it handles a signal.
     * But a suspend delivered through the CS-2226 signal_pipe FIFO arrives with

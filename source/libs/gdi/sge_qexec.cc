@@ -182,24 +182,57 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd, const 
       lSetString(petrep, PETR_queuename, queuename);
    }
 
-   if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
+   /* CS-2375: the qrsh -inherit task delivery to the execd is a single
+    * synchronous send. When a massively parallel tightly-integrated job starts
+    * many tasks at once, the freshly (auto-)opened connection to the master-host
+    * execd may not have completed its handshake by the time the send fires, so
+    * cl_commlib_append_message_to_connection() rejects it with
+    * CL_RETVAL_SEND_ERROR (connection not yet in CL_COM_WORK) or
+    * CL_RETVAL_CONNECTION_NOT_FOUND. Both are *pre-transmit* failures - the task
+    * was never queued, so retrying cannot double-start it. Retry a few times,
+    * driving the (single-threaded client) commlib between attempts so the
+    * connection can progress to CL_COM_WORK. */
+   {
+      constexpr int task_send_max_attempts = 10;
+      cl_com_handle_t *execd_handle = nullptr;
+
+      for (int attempt = 0; attempt < task_send_max_attempts; attempt++) {
+         if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
+            lFreeElem(&petrep);
+            snprintf(lasterror, sizeof(lasterror), SFN, MSG_GDI_OUTOFMEMORY);
+            DRETURN(nullptr);
+         }
+
+         /* gdi_send_message_pb() consumes (frees) the packed buffer on every
+          * attempt, so re-pack the task delivery for each try. */
+         pack_job_delivery(&pb, petrep);
+
+         ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
+                                                           ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
+
+         clear_packbuffer(&pb);
+
+         if (ret == CL_RETVAL_OK ||
+             (ret != CL_RETVAL_SEND_ERROR && ret != CL_RETVAL_CONNECTION_NOT_FOUND)) {
+            break;   /* delivered, or a non-transient error that retrying won't help */
+         }
+
+         /* transient: let the opening connection make progress, then back off */
+         if (execd_handle == nullptr) {
+            execd_handle = cl_com_get_handle("execd_handle", 0);
+         }
+         if (execd_handle != nullptr) {
+            cl_commlib_trigger(execd_handle, 1);
+         }
+         sge_usleep(100000);   /* 100 ms */
+      }
+
       lFreeElem(&petrep);
-      snprintf(lasterror, sizeof(lasterror), SFN, MSG_GDI_OUTOFMEMORY);
-      DRETURN(nullptr);
-   }
 
-   pack_job_delivery(&pb, petrep);
-
-   ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
-                                                     ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
-
-   clear_packbuffer(&pb);
-
-   lFreeElem(&petrep);
-
-   if (ret != CL_RETVAL_OK) {
-      snprintf(lasterror, sizeof(lasterror), MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname, cl_get_error_text(ret));
-      DRETURN(nullptr);
+      if (ret != CL_RETVAL_OK) {
+         snprintf(lasterror, sizeof(lasterror), MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname, cl_get_error_text(ret));
+         DRETURN(nullptr);
+      }
    }
 
    /* add list into our remote task list */
