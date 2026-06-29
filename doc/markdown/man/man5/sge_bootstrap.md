@@ -55,15 +55,17 @@ for *ignore_fqdn* is *true*.
 
 Defines how xxqs_name_sxx_qmaster(8) writes its configuration and the status information of a running cluster.
 
-The available spooling methods are *berkeleydb* and *classic*.
+The available spooling methods are *berkeleydb*, *classic*, and *postgres*. The *postgres* method is only available 
+in Gridware Cluster Scheduler.
 
 ## *spooling_lib*
 
 The name of a shared library containing the *spooling_method* to be loaded at xxqs_name_sxx_qmaster(8) initialization 
 time. The extension characterizing a shared library (.so, .sl, .dylib etc.) is not contained in *spooling_lib*.
 
-If *spooling_method* was set to *berkeleydb* during installation, *spooling_lib* is set to *libspoolb*, if *classic* 
-was chosen as *spooling_method*, *spooling_lib* is set to *libspoolc*.
+If *spooling_method* was set to *berkeleydb* during installation, *spooling_lib* is set to *libspoolb*. If *classic* 
+was chosen, *spooling_lib* is set to *libspoolc*. If *postgres* was chosen, *spooling_lib* is set to *libspoolp* 
+(Gridware Cluster Scheduler only).
 
 Not all operating systems allow the dynamic loading of libraries. On these platforms a certain spooling method 
 (default: berkeleydb) is compiled into the binaries and the parameter *spooling_lib* will be ignored.
@@ -81,6 +83,14 @@ Berkeley DB RPC server.
 
 For spooling method *classic* the spooling parameters take the form \<common_dir>;\<qmaster spool dir>, e.g.
 /sge/default/common;/sge/default/spool/qmaster
+
+For spooling method *postgres* the spooling parameters take the form of a libpq keyword/value conninfo string, e.g.
+host=pgdb.example.com port=5432 dbname=gcs_spool user=gcs sslmode=require passfile=/sge/default/common/.pgpass
+
+Supported libpq keywords include *host*, *port*, *dbname*, *user*, *sslmode*, *sslrootcert*, *sslcert*, *sslkey*, 
+*passfile*, *connect_timeout*, and the *keepalives_** family. Embedding a cleartext *password=* keyword is forbidden 
+because the *bootstrap* file is world-readable; use *passfile=* pointing at a 0600 .pgpass file owned by the qmaster 
+user instead. See the *PostgreSQL Spooling* chapter of the installation guide for the full provisioning workflow.
 
 ## *binary_path*
 

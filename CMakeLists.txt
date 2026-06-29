@@ -81,6 +81,7 @@ endif()
 # 3RD_PARTY OPTIONS
 option(WITH_OS_3RDPARTY "Use 3rdparty libraries provided by OS packages" OFF)
 option(WITH_SPOOL_BERKELEYDB "Enable berkeleydb spooling" ON)
+option(WITH_SPOOL_POSTGRES "Enable postgres spooling" OFF)
 option(WITH_SPOOL_DYNAMIC "Enable dynamic spooling configuration" ON)
 option(WITH_HWLOC "Enable building with hwloc library" ON)
 option(WITH_JEMALLOC "Enable use of the jemalloc memory allocator" ON)
