@@ -1261,6 +1261,23 @@ cl_com_handle_t *cl_com_create_handle(int *commlib_error,
 
    new_handle->auto_close_mode = CL_CM_AC_DISABLED;
 
+   /* CS-2375: max_open_connections is derived from the *soft* RLIMIT_NOFILE
+    * below. A daemon (qmaster/execd) that inherited a low soft limit (e.g. 1024)
+    * would then refuse connections under a large fan-in - e.g. a massively
+    * parallel tight-integration job opening hundreds of connections to one execd
+    * at once - even though a much larger hard limit is available. Raise the soft
+    * limit to the hard limit first (always permitted without privileges) so we
+    * use the full descriptor headroom the OS allows. */
+   if (getrlimit(RLIMIT_NOFILE, &application_rlimits) == 0 &&
+       application_rlimits.rlim_cur < application_rlimits.rlim_max) {
+      struct rlimit raised_nofile = application_rlimits;
+      raised_nofile.rlim_cur = raised_nofile.rlim_max;
+      if (setrlimit(RLIMIT_NOFILE, &raised_nofile) == 0) {
+         CL_LOG_INT(CL_LOG_INFO, "raised RLIMIT_NOFILE soft limit to hard limit:",
+                    (int) raised_nofile.rlim_cur);
+      }
+   }
+
    getrlimit(RLIMIT_NOFILE, &application_rlimits);
 
    new_handle->max_open_connections = (unsigned long) application_rlimits.rlim_cur;

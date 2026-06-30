@@ -12,6 +12,7 @@ Slice=GENSLICE.slice
 ExecStart=GENROOT/GENCELL/common/sgemaster start
 ExecStop=GENROOT/GENCELL/common/sgemaster stop
 Restart=no
+LimitNOFILE=65536
 #We can set (cgroups / systemd-run) options
 #MemoryAccounting=true
 #IOAccounting=true
