@@ -367,6 +367,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
    struct passwd *pw = nullptr;
    uid_t myuid;
    uid_t tuid;
+   gid_t tgid = (gid_t) -1;
 
    DENTER(TOP_LAYER);
 
@@ -472,6 +473,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
       DPRINTF("myuid = %d\n", (int) myuid);
       if (pw != nullptr) {
          tuid = pw->pw_uid;
+         tgid = pw->pw_gid;
          DPRINTF("target uid = %d\n", (int) tuid);
       }
 
@@ -543,8 +545,10 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          /* drop the primary group before the uid - initgroups() (called in the
           * parent) only sets the supplementary groups, so without this setgid()
           * the child would keep the parent's (root) gid (CS-2333). Must
-          * precede setuid() while we are still privileged. */
-         if (setgid(pw->pw_gid)) {
+          * precede setuid() while we are still privileged.
+          * Use the captured tgid, not pw->pw_gid: pw points into pw_struct/buffer
+          * which are already out of scope / freed by this point (CS-2333). */
+         if (setgid(tgid)) {
             sge_exit(1);
          }
          int lret = setuid(tuid);
