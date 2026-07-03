@@ -1394,8 +1394,10 @@ int comm_recv_message(COMM_HANDLE *handle, recv_message_t *recv_mess, dstring *e
                tmpbuf[MIN(99, message->message_length)] = 0;
                /* control message */
                recv_mess->type = tmpbuf[0];
-               /* scan subtype */
-               sscanf((char*)&(tmpbuf[1]), "%s", sub_type);
+               /* scan subtype - cap the field width at sizeof(sub_type)-1 so an
+                * attacker-controlled token in the wire payload cannot overflow
+                * the 10-byte sub_type on the stack (CWE-121, CS-2344) */
+               sscanf((char*)&(tmpbuf[1]), "%9s", sub_type);
                if (strcmp(sub_type, "WS") == 0) {
                   int row, col, xpixel, ypixel;
                   sscanf((char*)&(tmpbuf[4]),
