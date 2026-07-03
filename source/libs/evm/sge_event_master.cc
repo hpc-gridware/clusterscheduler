@@ -2451,6 +2451,14 @@ static void build_subscription(lListElem *event_el)
       const lListElem *temp = nullptr;
       u_long32 event = lGetUlong(sub_el, EVS_id);
 
+      // EVS_id is client-supplied; reject out-of-range ids so they cannot index
+      // past the fixed sgeE_EVENTSIZE-element sub_array (CWE-787, CS-2340). Same
+      // predicate as elem_select() and event_client_verify_subscription().
+      if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
+         DPRINTF("ignoring out-of-range EVS_id " sge_u32 " in subscription\n", event);
+         continue;
+      }
+
       sub_array[event].subscription = EV_SUBSCRIBED;
       sub_array[event].flush = lGetBool(sub_el, EVS_flush) ? true : false;
       sub_array[event].flush_time = lGetUlong(sub_el, EVS_interval);
