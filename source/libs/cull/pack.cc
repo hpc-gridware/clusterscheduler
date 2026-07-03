@@ -627,40 +627,38 @@ int unpackdouble(sge_pack_buffer *pb, double *dp) {
    PACK_FORMAT
  */
 int unpackstr(sge_pack_buffer *pb, char **str) {
-   u_long32 n;
-
    DENTER(PACK_LAYER);
 
-   /* determine string length */
-   if (!pb->cur_ptr[0]) {
+   /* at least the terminator byte must remain before we touch the buffer */
+   size_t remaining = pb->mem_size - pb->bytes_used;
+   if (remaining < 1) {
+      DRETURN(PACK_FORMAT);
+   }
 
+   /* empty string: a single NUL byte */
+   if (pb->cur_ptr[0] == '\0') {
       *str = nullptr;
-
-      /* update cur_ptr & bytes_unpacked */
       pb->cur_ptr = &(pb->cur_ptr[1]);
       pb->bytes_used++;
-
-      /* are there enough bytes ? */
-      if (pb->bytes_used > pb->mem_size) {
-         DRETURN(PACK_FORMAT);
-      }
-
       DRETURN(PACK_SUCCESS);
-   } else {
-      n = strlen(pb->cur_ptr) + 1;
-
-      /* are there enough bytes ? */
-      if (n + pb->bytes_used > pb->mem_size) {
-         DRETURN(PACK_FORMAT);
-      }
-      *str = strdup(pb->cur_ptr);
-      if (!*str) {
-         DRETURN(PACK_ENOMEM);
-      }
-      /* update cur_ptr & bytes_unpacked */
-      pb->bytes_used += n;
-      pb->cur_ptr = &(pb->cur_ptr[n]);
    }
+
+   /* find the terminator within the remaining bytes - never scan past the end
+    * (crafted network buffer may omit an in-bounds NUL; CWE-125, CS-2342) */
+   const void *nul = memchr(pb->cur_ptr, '\0', remaining);
+   if (nul == nullptr) {
+      DRETURN(PACK_FORMAT);
+   }
+   size_t n = (static_cast<const char *>(nul) - pb->cur_ptr) + 1;
+
+   *str = strdup(pb->cur_ptr);
+   if (!*str) {
+      DRETURN(PACK_ENOMEM);
+   }
+
+   /* update cur_ptr & bytes_unpacked */
+   pb->bytes_used += n;
+   pb->cur_ptr = &(pb->cur_ptr[n]);
 
    DRETURN(PACK_SUCCESS);
 }

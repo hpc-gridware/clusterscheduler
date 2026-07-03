@@ -36,6 +36,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <unistd.h>
+#include <sys/mman.h>
+
+/* MAP_ANONYMOUS is the Linux spelling; classic BSD/Darwin use MAP_ANON.
+ * FreeBSD/Solaris/macOS define MAP_ANON, so fall back to it when needed. */
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
@@ -173,6 +181,43 @@ static bool compare_objects(const lListElem *a, const lListElem *b) {
       }
    }
 
+   return ret;
+}
+
+/* Call unpackstr() with cur_ptr sitting 'remaining' bytes before an unmapped
+ * guard page, so any read past the in-bounds bytes faults deterministically
+ * (CS-2342). With the fix, unpackstr never reads the guard page and returns
+ * PACK_FORMAT; without it, case A reads cur_ptr[0] and case B runs strlen()
+ * into the guard page and SIGSEGVs.
+ * remaining: in-bounds bytes left at cur_ptr (0 = case A, 1 = case B).
+ * Returns the unpackstr() return value (PACK_FORMAT expected). */
+static int unpackstr_at_guard(size_t remaining) {
+   const long ps = sysconf(_SC_PAGESIZE);
+   char *region = static_cast<char *>(mmap(nullptr, 2 * ps, PROT_READ | PROT_WRITE,
+                                           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+   if (region == MAP_FAILED) {
+      return PACK_ENOMEM;
+   }
+   /* second page is the guard: any access faults */
+   mprotect(region + ps, ps, PROT_NONE);
+
+   char *const boundary = region + ps;
+   const size_t L = (remaining == 0) ? 8 : remaining;  /* in-bounds content size */
+   char *const buf_start = boundary - L;
+   memset(buf_start, 0x41, L);                          /* all non-NUL -> no in-bounds terminator */
+
+   sge_pack_buffer pb{};
+   pb.head_ptr = buf_start;
+   pb.mem_size = L;
+   pb.bytes_used = L - remaining;          /* remaining = mem_size - bytes_used */
+   pb.cur_ptr = buf_start + pb.bytes_used; /* sits 'remaining' bytes before the guard page */
+
+   char *out = nullptr;
+   const int ret = unpackstr(&pb, &out);
+   if (ret == PACK_SUCCESS) {
+      sge_free(&out);
+   }
+   munmap(region, 2 * ps);
    return ret;
 }
 
@@ -381,6 +426,35 @@ int main(int argc, char *argv[]) {
       }
       sge_free(&out);
       lFreeElem(&empty_ep);
+   }
+
+   /* unpackstr boundary (CS-2342: OOB read at buffer end) */
+   {
+      /* valid in-bounds string still round-trips */
+      char vbuf[] = "hello";
+      sge_pack_buffer spb{};
+      spb.head_ptr = spb.cur_ptr = vbuf;
+      spb.mem_size = sizeof(vbuf);   /* includes the terminating NUL */
+      spb.bytes_used = 0;
+      char *sout = nullptr;
+      if (unpackstr(&spb, &sout) != PACK_SUCCESS || sout == nullptr ||
+          strcmp(sout, "hello") != 0) {
+         fprintf(stderr, "unpackstr valid string did not round-trip\n");
+         return EXIT_FAILURE;
+      }
+      sge_free(&sout);
+
+      /* case A: 0 bytes remaining -> must reject without reading cur_ptr[0] */
+      if (unpackstr_at_guard(0) != PACK_FORMAT) {
+         fprintf(stderr, "unpackstr with 0 bytes left did not return PACK_FORMAT (OOB read)\n");
+         return EXIT_FAILURE;
+      }
+
+      /* case B: 1 non-NUL byte, no in-bounds terminator -> must reject without strlen OOB */
+      if (unpackstr_at_guard(1) != PACK_FORMAT) {
+         fprintf(stderr, "unpackstr without in-bounds NUL did not return PACK_FORMAT (OOB strlen)\n");
+         return EXIT_FAILURE;
+      }
    }
 
    /* cleanup and exit */
