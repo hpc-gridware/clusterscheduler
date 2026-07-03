@@ -532,15 +532,29 @@ get_all_lists(lList **rqs_l, lList **centry_l, lList **userset_l,
 *******************************************************************************/
 static char *qquota_get_next_filter(stringT filter, const char *cp)
 {
-   auto *ret = (char *)strchr(cp, '/');
-   ret++;
-   if (ret - cp < MAX_STRING_SIZE && ret - cp > 1) { 
-      snprintf(filter, ret - cp, "%s", cp);
+   // cp is part of a server-supplied RUE_name key; it may be NULL or lack the '/'
+   // separators. Never form an invalid pointer from a failed strchr() (the old
+   // `strchr(cp,'/')++` produced (char*)1 on a missing separator, which the next
+   // call then dereferenced -> SIGSEGV) (CWE-469/CWE-476, CS-2348).
+   if (cp == nullptr) {
+      snprintf(filter, MAX_STRING_SIZE, "-");
+      return nullptr;
+   }
+   const char *slash = strchr(cp, '/');
+   if (slash == nullptr) {
+      // no separator: emit "-" and return a pointer to the terminating NUL, so a
+      // subsequent call re-scans an empty string instead of an invalid pointer
+      snprintf(filter, MAX_STRING_SIZE, "-");
+      return const_cast<char *>(cp + strlen(cp));
+   }
+   const ptrdiff_t len = slash - cp + 1;
+   if (len > 1 && len < MAX_STRING_SIZE) {
+      snprintf(filter, len, "%s", cp);
    } else {
       snprintf(filter, MAX_STRING_SIZE, "-");
    }
 
-   return ret;
+   return const_cast<char *>(slash + 1);
 }
 
 /****** qquota_output/qquota_print_out_rule() **********************************
