@@ -72,10 +72,26 @@ static const cl_xml_sequence_t cl_com_sequence_array[CL_XML_SEQUENCE_ARRAY_SIZE]
 
 static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, unsigned long buffer_length);
 
+/** @brief Extract the value of an XML version="..." attribute from a buffer.
+ *
+ * Copies the characters up to the next double quote into a newly allocated
+ * string. Hardened against a zero/underflowed @p buffer_length, which previously
+ * caused an out-of-bounds write at charptr[buffer_length - 1] and an
+ * out-of-bounds scan from an over-run pointer (CWE-787/CWE-191, CS-2343); the
+ * callers additionally clamp version_begin < buffer_length so the length can
+ * never underflow.
+ *
+ * @param charptr       pointer to the first character after version="
+ * @param buffer_length number of valid bytes available at charptr
+ * @return newly malloc'ed version string, or nullptr on error/empty input
+ */
 static char *cl_xml_parse_version(char *charptr, unsigned long buffer_length) {
    char *ret = nullptr;
    char *sign = nullptr;
 
+   if (charptr == nullptr || buffer_length == 0) {
+      return nullptr;
+   }
    charptr[buffer_length - 1] = '\0';
    if ((sign = strchr(charptr, '"'))) {
       int size = sign - charptr;
@@ -611,7 +627,7 @@ int cl_xml_parse_CM(unsigned char *buffer, unsigned long buffer_length, cl_com_C
    }
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
       if ((*message)->version == nullptr) {
          CL_LOG(CL_LOG_ERROR, "version information undefined");
@@ -919,7 +935,7 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    }
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    }
 
@@ -1064,14 +1080,25 @@ int cl_xml_parse_CRM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    return CL_RETVAL_OK;
 }
 
+/** @brief Test whether the tag starting at @p start contains "version".
+ *
+ * Scans the tag (until '>' or the end of the buffer) for the literal
+ * "version". The 7-byte compare is bounded by @p buffer_length so it cannot
+ * read past the end of the untrusted buffer (CWE-125, CS-2343).
+ *
+ * @param buffer         the message buffer
+ * @param start          index of the first character after the opening '<'
+ * @param buffer_length  number of valid bytes in @p buffer
+ * @return true if a "version" attribute name is present in the tag
+ */
 static bool cl_xml_parse_is_version(const char *buffer, unsigned long start, unsigned long buffer_length) {
    unsigned long i = 0;
    bool found = false;
 
    if (buffer != nullptr) {
       for (i = start; (i < buffer_length) && (buffer[i] != '>'); i++) {
-         /* check for version string in tag */
-         if (strncmp(&buffer[i], "version", 7) == 0) {
+         /* check for version string in tag - bound the 7-byte compare */
+         if (i + 7 <= buffer_length && strncmp(&buffer[i], "version", 7) == 0) {
             found = true;
             break;
          }
@@ -1188,7 +1215,7 @@ int cl_xml_parse_MIH(unsigned char *buffer, unsigned long buffer_length, cl_com_
 
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    }
 
@@ -1400,7 +1427,7 @@ int cl_xml_parse_SIRM(unsigned char *buffer, unsigned long buffer_length, cl_com
    }
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    }
 
@@ -1534,7 +1561,7 @@ int cl_xml_parse_AM(unsigned char *buffer, unsigned long buffer_length, cl_com_A
 
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
       (*message)->version = nullptr;
@@ -1607,7 +1634,7 @@ int cl_xml_parse_CCM(unsigned char *buffer, unsigned long buffer_length, cl_com_
    }
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
       (*message)->version = nullptr;
@@ -1670,7 +1697,7 @@ int cl_xml_parse_CCRM(unsigned char *buffer, unsigned long buffer_length, cl_com
 
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
       (*message)->version = nullptr;
@@ -1732,7 +1759,7 @@ int cl_xml_parse_SIM(unsigned char *buffer, unsigned long buffer_length, cl_com_
 
 
    /* get version */
-   if (version_begin > 0) {
+   if (version_begin > 0 && version_begin < buffer_length) {
       (*message)->version = cl_xml_parse_version((char *) &(buffer[version_begin]), buffer_length - version_begin);
    } else {
       (*message)->version = nullptr;
