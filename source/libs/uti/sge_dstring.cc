@@ -744,7 +744,10 @@ const char *sge_dstring_ulong_to_binstring(dstring *sb, u_long32 number) {
       number /= 2;
    }
    sge_strip_blanks(buffer);
-   sge_dstring_sprintf(sb, buffer);
+   // copy verbatim, never as a printf format string (CS-2354, CWE-134); buffer
+   // here only holds binary digits, but this keeps the safe-by-construction
+   // pattern consistent with sge_tmpnam().
+   sge_dstring_copy_string(sb, buffer);
    return sge_dstring_get_string(sb);
 }
 

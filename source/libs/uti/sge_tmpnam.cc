@@ -171,7 +171,10 @@ static int spawn_file(dstring *aBuffer, int *fd, dstring *error_message) {
       return -1;
    }
 
-   // finally copy the resulting path to aBuffer
-   sge_dstring_sprintf(aBuffer, tmp_string);
+   // finally copy the resulting path to aBuffer. Use a verbatim copy, never
+   // sge_dstring_sprintf(aBuffer, tmp_string): tmp_string carries the
+   // attacker-influenceable TMPDIR value and must not be interpreted as a
+   // printf format string (CS-2354, CWE-134).
+   sge_dstring_copy_string(aBuffer, tmp_string);
    return 0;
 }

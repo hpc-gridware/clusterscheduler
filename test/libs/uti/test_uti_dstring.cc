@@ -34,10 +34,15 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "uti/sge_dstring.h"
+#include "uti/sge_tmpnam.h"
+#include "basis_types.h"
 
 #define STATIC_SIZE 20
 
@@ -263,6 +268,67 @@ static void test_dstring_performance_dynamic(int max, const char *data) {
    printf("%d dstring creations took %.2fs\n", max, time);
 }
 
+/*
+ * SECURITY REGRESSION (CS-2354, MEDIUM-UTI-003, CWE-134): sge_tmpnam() used to
+ * store its result with sge_dstring_sprintf(aBuffer, tmp_string), passing a path
+ * derived from the attacker-influenceable $TMPDIR as the *format* string. A
+ * TMPDIR containing printf conversion specifiers was therefore interpreted
+ * (%n = out-of-bounds write, %s/%x = garbage read/crash). The fix copies the
+ * path verbatim, so specifiers must survive literally in the returned path. The
+ * test uses "%x%x" (not "%n") so a reintroduced bug fails the assertion cleanly
+ * instead of writing to a wild pointer.
+ */
+static bool
+check_tmpnam_format_string_safety() {
+   bool ret = true;
+   printf("\nchecking sge_tmpnam format-string safety (CS-2354)\n");
+
+   char dir[256];
+   snprintf(dir, sizeof(dir), "/tmp/sge_tmpnam_fmt_%%x%%x_%ld", (long)getpid());
+   // dir now literally contains the four characters "%x%x"
+   const bool made_dir = (mkdir(dir, 0700) == 0);
+
+   char saved_tmpdir[SGE_PATH_MAX];
+   const char *cur = getenv("TMPDIR");
+   const bool had_tmpdir = (cur != nullptr);
+   if (had_tmpdir) {
+      snprintf(saved_tmpdir, sizeof(saved_tmpdir), "%s", cur);
+   }
+   setenv("TMPDIR", dir, 1);
+
+   char buf[SGE_PATH_MAX];
+   int fd = -1;
+   dstring err = DSTRING_INIT;
+   char *res = sge_tmpnam(buf, &fd, &err);
+
+   if (res == nullptr) {
+      printf("   FAIL: sge_tmpnam returned null for TMPDIR with format specifiers\n");
+      ret = false;
+   } else if (strstr(res, "%x%x") == nullptr) {
+      printf("   FAIL: format specifiers in TMPDIR not preserved literally: %s\n", res);
+      ret = false;
+   } else {
+      printf("   ok: format specifiers preserved literally (not interpreted)\n");
+   }
+
+   if (fd >= 0) {
+      close(fd);
+   }
+   if (res != nullptr) {
+      unlink(res);
+   }
+   if (made_dir) {
+      rmdir(dir);
+   }
+   if (had_tmpdir) {
+      setenv("TMPDIR", saved_tmpdir, 1);
+   } else {
+      unsetenv("TMPDIR");
+   }
+   sge_dstring_free(&err);
+   return ret;
+}
+
 int main(int argc, char *argv[]) {
    bool ret = true;
    dstring dynamic_dstring = DSTRING_INIT;
@@ -276,6 +342,8 @@ int main(int argc, char *argv[]) {
    test_dstring_performance(&dynamic_dstring, 100000, "test_data");
    test_dstring_performance_dynamic(100000, "test_data");
    printf("%s\n", sge_dstring_get_string(&dynamic_dstring));
+
+   ret = check_tmpnam_format_string_safety() && ret;
 
    if (ret) {
       printf("\n\nrunning all checks with a static dstring of length %d\n",
