@@ -849,7 +849,18 @@ int var_list_parse_from_string(lList **lpp, const char *variable_str,
 
       context = nullptr;
       variable = sge_strtok_r(*pstr, "=", &context);
-      SGE_ASSERT((variable));
+      // sge_strtok_r() returns nullptr when the token is all delimiters (e.g.
+      // "=="); string_list() does not strip '=', so such a token is reachable
+      // from client input. Reject it gracefully instead of asserting / running
+      // strlen() on NULL (CS-2350, CWE-476/CWE-617). context is already
+      // allocated by the first sge_strtok_r() call and must be freed here.
+      if (variable == nullptr) {
+         sge_free_saved_vars(context);
+         lRemoveElem(*lpp, &ep);
+         sge_free(&va_string);
+         sge_free(&str_str);
+         DRETURN(5);
+      }
       var_len=strlen(variable);
       lSetString(ep, VA_variable, variable);
       val_str=*pstr;

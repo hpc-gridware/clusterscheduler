@@ -2418,7 +2418,15 @@ static int var_list_parse_from_environment(lList **lpp, char **envp)
       SGE_ASSERT((env_entry));
 
       char *env_name = sge_strtok_r(env_entry, "=", &context);
-      SGE_ASSERT((env_name));
+      // sge_strtok_r() returns nullptr for an all-delimiter entry (e.g. "="),
+      // which the old SGE_ASSERT turned into an abort / NULL deref on a crafted
+      // ambient environment (CS-2350, CWE-476/CWE-617). Skip such a nameless
+      // entry instead of crashing the whole -V parse.
+      if (env_name == nullptr) {
+         sge_free(&env_entry);
+         sge_free_saved_vars(context);
+         continue;
+      }
       lListElem *ep = lAddElemStr(lpp, VA_variable, env_name, VA_Type);
 
       char *env_description = sge_strtok_r((char *) 0, "\0", &context);
