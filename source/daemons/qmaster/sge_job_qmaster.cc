@@ -4027,10 +4027,19 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
 
       /*
        * Delete enrolled ja tasks
+       *
+       * CS-1239 hazard: sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE) and the
+       * forced get_rid_of_job_due_to_qdel() path both synchronously bury the
+       * ja_task. When the last enrolled ja_task is buried, sge_bury_job()
+       * removes the whole `job` element from the master job list; any further
+       * dereference of `job` (including by the outer do-while head at
+       * job_get_smallest_unenrolled_task_id() etc.) would be UAF. Track the
+       * remaining enrolled count and bail out when it hits zero.
        */
       if (existing_tasks > *deleted_tasks) {
+         uint32_t remaining_enrolled = job_get_enrolled_ja_tasks(job);
          for (task_number = enrolled_start;
-              task_number <= enrolled_end;
+              task_number <= enrolled_end && remaining_enrolled > 0;
               task_number += *step) {
             int is_defined = job_is_ja_task_defined(job, task_number);
 
@@ -4125,16 +4134,28 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                /* remember who deleted the job - added to the accounting record later */
                job_set_deleted_by(tmp_task, packet->user, packet->host);
 
+               bool ja_task_buried = false;
                if (lGetString(tmp_task, JAT_master_queue) && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);
                   get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor, packet->gdi_session);
+                  /* get_rid_of_job_due_to_qdel only buries on the forced paths;
+                   * the unforced paths just register the job for deletion. */
+                  ja_task_buried = forced;
                } else {
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
+                  ja_task_buried = true;
                   showmessage = 1;
                   if (!*alltasks && showmessage) {
                      range_list_insert_id(&range_list, nullptr, task_number);
                   }
+               }
+
+               if (ja_task_buried && --remaining_enrolled == 0) {
+                  /* Last enrolled ja_task buried -> `job` element has been
+                   * removed from the master job list and is no longer valid. */
+                  job = nullptr;
+                  break;
                }
             } else { ; /* Task did never exist! - Ignore silently */
             }
@@ -4170,6 +4191,15 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
          sge_free(&dupped_session);
          lFreeList(&range_list);
          DRETURN(njobs);
+      }
+
+      /* If the enrolled-ja_task loop above buried the last task, `job` was
+       * removed from the master job list and is dangling; the next pass of
+       * the do-while would call job_get_smallest_unenrolled_task_id(job)
+       * on freed memory. Remaining range entries (if any) belong to a job
+       * that no longer exists, so stop here. */
+      if (job == nullptr) {
+         break;
       }
 
       rn = lNext(rn);
