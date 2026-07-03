@@ -30,6 +30,7 @@
 #include "sge_security.h"
 #include "sge_string.h"
 #include "sge_uidgid.h"
+#include "sge_unistd.h"
 #include "sge_rmon_macros.h"
 
 #include "msg_common.h"
@@ -1004,7 +1005,18 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
             if (amount != nullptr && grp_array != nullptr) {
                if (sscanf(token, "%d", amount) == 1) {
                   if (*amount > 0) {
-                     const size_t size = *amount * sizeof(ocs_grp_elem_t);
+                     // The count is attacker-controlled and arrives pre-auth. Cap it at the OS
+                     // supplementary-group maximum (the client builds the list from getgroups(),
+                     // so this never rejects a legitimate request) before sizing the allocation -
+                     // otherwise a tiny request declaring a huge count forces a multi-TB sge_malloc
+                     // (pre-auth DoS) and, on a 32-bit size_t, *amount * sizeof() wraps to an
+                     // undersized buffer that the loop below overruns (CWE-789/CWE-190, CS-2346).
+                     if (static_cast<uint32_t>(*amount) > sge_sysconf(SGE_SYSCONF_NGROUPS_MAX)) {
+                        sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_NSUP);
+                        ret = false;
+                        break;
+                     }
+                     const size_t size = static_cast<size_t>(*amount) * sizeof(ocs_grp_elem_t);
                      *grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(size));
                      if (*grp_array == nullptr) {
                         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_NSUP);
