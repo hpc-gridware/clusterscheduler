@@ -806,17 +806,25 @@ static void* commlib_to_pty(void *t_conf)
                ioctl(fd_write, TIOCSWINSZ, &(recv_mess.ws));
                b_was_connected = 1;
                break;
-            case SETTINGS_CTRL_MSG:
+            case SETTINGS_CTRL_MSG: {
                /* control message */
                shepherd_trace("commlib_to_pty: received settings message");
                /* Forward the settings to the child process.
                 * This is also tells the child process that it can start
                 * the job 'in' the pty now.
+                *
+                * Use the authoritative wire length (message body minus the 1-byte type
+                * tag), like the STDIN_DATA_MSG handler above. recv_mess.data points into
+                * the exactly-message_length-sized commlib buffer, which is NOT
+                * NUL-terminated, so strlen() here would read past the heap allocation
+                * (CWE-125 over-read + heap info leak, CS-2347).
                 */
-               shepherd_trace("commlib_to_pty: writing to child %d bytes: %s",
-                              strlen(recv_mess.data), recv_mess.data);
+               const size_t settings_len = (recv_mess.cl_message->message_length > 1)
+                                         ? recv_mess.cl_message->message_length - 1 : 0;
+               shepherd_trace("commlib_to_pty: writing to child %zu bytes: %.*s",
+                              settings_len, (int)settings_len, recv_mess.data);
                if (write(g_p_ijs_fds->pipe_to_child, recv_mess.data,
-                         strlen(recv_mess.data)) != (ssize_t)strlen(recv_mess.data)) {
+                         settings_len) != (ssize_t)settings_len) {
                   shepherd_trace("commlib_to_pty: error in communicating "
                      "with child -> exiting");
                   do_exit = 1;
@@ -825,6 +833,7 @@ static void* commlib_to_pty(void *t_conf)
                }
                b_was_connected = 1;
                break;
+            }
             default:
                shepherd_trace("commlib_to_pty: received unknown message");
                break;
