@@ -353,6 +353,36 @@ int main(int argc, char *argv[]) {
    lFreeElem(&copy);
    unlink(filename);
 
+   /* getByteArray (CS-2341: NULL-deref on unset PACK_string attribute) */
+   {
+      /* valid round-trip: encode known bytes, decode them back */
+      lListElem *be = lCreateElem(TEST_Type);
+      const char bytes[] = {(char)0xDE, (char)0xAD, (char)0xBE, (char)0xEF};
+      char *decoded = nullptr;
+      int n;
+
+      setByteArray(bytes, (int)sizeof(bytes), be, TEST_string);
+      n = getByteArray(&decoded, be, TEST_string);
+      if (n != (int)sizeof(bytes) || decoded == nullptr ||
+          memcmp(decoded, bytes, sizeof(bytes)) != 0) {
+         fprintf(stderr, "getByteArray round-trip failed: size %d, decoded %p\n",
+                 n, (void *)decoded);
+         return EXIT_FAILURE;
+      }
+      sge_free(&decoded);
+      lFreeElem(&be);
+
+      /* regression: unset string attribute must return 0, not strlen(NULL) */
+      lListElem *empty_ep = lCreateElem(TEST_Type);
+      char *out = nullptr;
+      if (getByteArray(&out, empty_ep, TEST_string) != 0) {
+         fprintf(stderr, "getByteArray on unset string did not return 0 (NULL-deref regression)\n");
+         return EXIT_FAILURE;
+      }
+      sge_free(&out);
+      lFreeElem(&empty_ep);
+   }
+
    /* cleanup and exit */
 #if defined(OCS_WITH_MUNGE)
    ocs::uti::Munge::shutdown();

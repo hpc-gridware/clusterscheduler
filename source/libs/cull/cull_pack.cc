@@ -1555,6 +1555,11 @@ int getByteArray(char **byte, const lListElem *elem, int name) {
    }
 
    string = lGetString(elem, name);
+   if (string == nullptr) {
+      // unset string attribute: return 0 so callers treat it as invalid pack
+      // data instead of dereferencing NULL in strlen() (CWE-476, CS-2341)
+      return 0;
+   }
    size = strlen(string) / 2;
    *byte = sge_malloc(size);
    memset(*byte, 0, size);
