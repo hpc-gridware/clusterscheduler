@@ -207,6 +207,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
       te_add_event(ev);
       te_free_event(&ev);
 
+      lFreeList(&decay_list);
       DRETURN_VOID;
    }
 
@@ -323,6 +324,7 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
    te_add_event(ev);
    te_free_event(&ev);
 
+   lFreeList(&decay_list);
    DRETURN_VOID;
 }
 

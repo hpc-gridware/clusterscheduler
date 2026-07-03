@@ -199,5 +199,6 @@ sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t * /* 
     * Keeping this function a pure "book the usage" routine keeps its
     * pre-/post-conditions reviewable in isolation. */
 
+   lFreeList(&decay_list);
    return 0;
 }
