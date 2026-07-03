@@ -297,7 +297,11 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
       DRETURN(false);
    }
 
-   if (strlen(string) > sizeof(stringT)) {
+   // Reject before the copy below if the string does not fit together with
+   // its NUL terminator: a string of length sizeof(stringT) would need one
+   // extra byte for the terminator, so the bound is '>=', not '>' (CS-2349,
+   // CWE-193/CWE-787 off-by-one stack overflow).
+   if (strlen(string) >= sizeof(stringT)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_STARTTIMETOOLONG);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -309,7 +313,7 @@ ulong_parse_date_time_from_string(u_long32 *this_ulong,
       DRETURN(false);
    }
 
-   strcpy(inp_date_str, string);
+   sge_strlcpy(inp_date_str, string, sizeof(inp_date_str));
    non_seconds=sge_strtok_r(inp_date_str, ".", &context);
    seconds=sge_strtok_r(nullptr, ".", &context);
 
