@@ -101,6 +101,7 @@ static int CE_special_test();
 static int PE_empty_lists_test();
 static int PE_large_list_test();
 static int SPOOL_perm_test();
+static int SPOOL_dir_perm_test();
 static int SPOOL_key_safe_test();
 
 typedef int (*func)();
@@ -149,6 +150,7 @@ int main(int argc, char** argv)
    CHECK(id, "PE empty lists: explicitly empty user_list and xuser_list",        PE_empty_lists_test()  == 0); id++;
    CHECK(id, "PE large list: 10-element user_list round-trips correctly",        PE_large_list_test()   == 0); id++;
    CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
+   CHECK(id, "SPOOL dir perm: classic spool directory created 0700 (not world/group traversable)", SPOOL_dir_perm_test() == 0); id++;
    CHECK(id, "SPOOL key: spool_flatfile_key_is_safe accepts relative multi-component keys, rejects traversal", SPOOL_key_safe_test() == 0); id++;
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
@@ -2814,6 +2816,63 @@ static int SPOOL_perm_test()
 
    unlink(path);
    sge_free(&result);
+   answer_list_output(&alp);
+   return ret;
+}
+
+// SECURITY REGRESSION (CS-2352 directory hardening, CWE-732 / CWE-276):
+// CS-2352 hardened the classic-spool *file* mode to 0600, but the directories
+// that contain those files were created 0755 - world-readable and traversable -
+// so their entry names (job IDs, queue-instance and object names, per-host
+// config) still leaked to any local user able to reach the spool tree. The
+// classic-spool startup functions now create their directories owner-only
+// (0700). This exercises the real path via spool_classic_common_startup_func(),
+// which creates the "local_conf" subdirectory, and asserts the resulting mode
+// is exactly 0700. Red->green: pre-fix the directory is 0755.
+static int SPOOL_dir_perm_test()
+{
+   lList *alp = nullptr;
+
+   char base[1024];
+   snprintf(base, sizeof(base), "/tmp/test_spool_dirperm.%ld", (long)getpid());
+
+   // "local_conf" mirrors LOCAL_CONF_DIR (uti/sge_bootstrap_files.h); kept as a
+   // literal here so the test needs no extra include.
+   char sub[1152];
+   snprintf(sub, sizeof(sub), "%s/%s", base, "local_conf");
+   rmdir(sub);   // clean any leftover from a previous run
+   rmdir(base);
+
+   if (mkdir(base, 0755) != 0) {
+      printf("   could not create test common dir %s\n", base);
+      return 1;
+   }
+
+   lListElem *rule = lCreateElem(SPR_Type);
+   lSetString(rule, SPR_url, base);
+
+   // Neutralise the ambient umask so the resulting mode is exactly what the
+   // code requested (otherwise it would be mode & ~umask).
+   mode_t old_umask = umask(0);
+   bool ok = spool_classic_common_startup_func(&alp, rule, false);
+   umask(old_umask);
+   lFreeElem(&rule);
+
+   int ret = 1;
+   struct stat sb{};
+   if (ok && stat(sub, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+      const mode_t perm = sb.st_mode & 07777;
+      if (perm == (S_IRUSR | S_IWUSR | S_IXUSR)) {   // 0700
+         ret = 0;
+      } else {
+         printf("   spool dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
+      }
+   } else {
+      printf("   could not create/stat local_conf dir via common_startup_func\n");
+   }
+
+   rmdir(sub);
+   rmdir(base);
    answer_list_output(&alp);
    return ret;
 }

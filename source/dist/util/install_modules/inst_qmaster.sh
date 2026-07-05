@@ -781,7 +781,9 @@ MakeDirsMaster()
    Makedir $SGE_CELL_VAL
    Makedir $COMMONDIR
    Makedir $QMDIR
-   Makedir $QMDIR/job_scripts
+   # job_scripts is created by qmaster itself at startup (owner-only 0700, for
+   # classic spooling only; bdb/postgres keep the script in the DB) - like every
+   # other spool object directory. Do not pre-create it here (CS-2352).
 
    $INFOTEXT -wait -auto $AUTO -n "Hit <RETURN> to continue >> "
    $CLEAR

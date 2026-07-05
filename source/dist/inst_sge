@@ -531,7 +531,10 @@ if [ "$UPDATE" = true ]; then
    if [ -d "$QMDIR" ]; then
       ExecuteAsAdmin rm -rf "$QMDIR/*"   # remove old qmaster spool dir
    fi
-   Makedir $QMDIR/job_scripts            # create a new one
+   # Only the spool dir itself must pre-exist (qmaster chdirs into it at
+   # startup). The job_scripts subdir - like the other object dirs - is created
+   # by qmaster at startup (owner-only 0700, classic only); see CS-2352.
+   Makedir $QMDIR
 
    if [ "$UPGRADE_MODE" = upgrade ]; then
       SelectNewSpooling `BootstrapGetValue "${UPGRADE_BACKUP_DIR}/cell" "spooling_method"`
@@ -593,6 +596,12 @@ if [ "$UPDATE" = true ]; then
       $INFOTEXT "Error: Loading the configuration failed! Please check the log file $SGE_ROOT/load_config.log"
       $INFOTEXT "The cluster might be in an inconsistent state!"
       exit $ret
+   fi
+
+   # CS-2352: the reused spool tree may still carry the old permissive modes
+   # (0755 dirs / 0666 files). Harden them now that the spool is fully populated.
+   if [ "$SPOOLING_METHOD" = classic ]; then
+      HardenClassicSpoolPermissions "$QMDIR"
    fi
 
    #Need to restart the qmaster to use the new config

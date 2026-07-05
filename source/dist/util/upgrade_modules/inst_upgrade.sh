@@ -190,7 +190,7 @@ dbwriter.conf"
 
 #-------------------------------------------------------------------------------
 # ReplaceKeystorePassword: replace the com.sun.grid.jgdi.management.jmxremote.ssl.serverKeystorePassword
-# $1 - management.properties 
+# $1 - management.properties
 ReplaceKeystorePassword()
 {
    MANAGEMENTPROPERTIES=$1
