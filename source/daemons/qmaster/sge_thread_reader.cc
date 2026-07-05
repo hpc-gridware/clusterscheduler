@@ -92,7 +92,7 @@ sge_reader_terminate() {
    DENTER(TOP_LAYER);
 
    /*
-    * trigger pthread_cancel for each thread so that further 
+    * trigger pthread_cancel for each thread so that further
     * shutdown process will be faster
     */
    cl_thread_list_elem_t *thr;
@@ -159,8 +159,8 @@ sge_reader_main(void *arg) {
 
       /*
        * Wait for packets. As long as packets are available cancellation
-       * of this thread is ignored. The shutdown procedure in the main 
-       * thread takes care that packet producers will be terminated 
+       * of this thread is ignored. The shutdown procedure in the main
+       * thread takes care that packet producers will be terminated
        * before all reader threads so that this won't be a problem.
        */
       MONITOR_IDLE_TIME(sge_tq_wait_for_task(ReaderRequestQueue, 1, SGE_TQ_GDI_PACKET, (void **) &packet),

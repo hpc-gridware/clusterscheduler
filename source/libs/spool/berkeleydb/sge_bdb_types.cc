@@ -125,6 +125,38 @@ bdb_create(const char *path)
    return info;
 }
 
+/**
+ * Releases the per-rule bdb_info allocated in bdb_create: deletes the
+ * pthread key, frees the strdup'd path and the DB handle array, destroys
+ * the mutex, and frees the struct. Worker threads that still hold a
+ * per-thread bdb_connection must have had their pthread-key destructor
+ * fired first; ordinarily that happens at thread exit.
+ */
+void
+bdb_destroy(bdb_info *info)
+{
+   if (info == nullptr || *info == nullptr) {
+      return;
+   }
+
+   pthread_key_delete((*info)->key);
+   pthread_mutex_destroy(&((*info)->mtx));
+
+   if ((*info)->path != nullptr) {
+      /* path was strdup'd by spool_berkeleydb_create_context and handed
+       * to bdb_create; the struct stores it typed as const for its
+       * external getters, so cast const away for the free.
+       */
+      sge_free((void *)&((*info)->path));
+   }
+
+   if ((*info)->db != nullptr) {
+      sge_free(&((*info)->db));
+   }
+
+   sge_free(info);
+}
+
 /*
 * initialize thread local storage for a connection.
 *  NOTES

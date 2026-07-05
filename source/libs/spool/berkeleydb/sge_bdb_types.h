@@ -73,6 +73,9 @@ typedef struct _bdb_info *bdb_info;
 bdb_info
 bdb_create(const char *path);
 
+void
+bdb_destroy(bdb_info *info);
+
 const char *
 bdb_get_path(bdb_info info);
 
