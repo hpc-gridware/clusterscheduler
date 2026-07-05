@@ -28,7 +28,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2024 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/       
@@ -72,6 +72,9 @@ typedef struct _bdb_info *bdb_info;
 
 bdb_info
 bdb_create(const char *path);
+
+void
+bdb_destroy(bdb_info *info);
 
 const char *
 bdb_get_path(bdb_info info);

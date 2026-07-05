@@ -258,14 +258,15 @@ spool_berkeleydb_default_shutdown_func(lList **answer_list,
    info = (bdb_info)lGetRef(rule, SPR_clientdata);
 
    if (info == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              lGetString(rule, SPR_url));
-      ret = false;
-   } else {
-      ret = spool_berkeleydb_close_database(answer_list, info);
+      /* Already shut down (e.g., spool_free_context after an explicit
+       * spool_shutdown_context) — nothing to do.
+       */
+      DRETURN(true);
    }
+
+   ret = spool_berkeleydb_close_database(answer_list, info);
+   bdb_destroy(&info);
+   lSetRef((lListElem *)rule, SPR_clientdata, nullptr);
 
    DRETURN(ret);
 }

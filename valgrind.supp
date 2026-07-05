@@ -237,20 +237,6 @@
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z10bdb_createPKc
-   fun:spool_berkeleydb_create_context
-   fun:_Z28spool_dynamic_create_contextPP6_lListPKcS3_S3_
-   fun:_Z28spool_create_dynamic_contextPP6_lListPKcS3_S3_
-   fun:_Z26sge_initialize_persistencePP6_lList
-   ...
-}
-
-{
-   @todo thread local storage (TLS) is not cleaned up properly (BDB)
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
    fun:_Z11bdb_get_txnP9_bdb_info
    fun:_Z34spool_berkeleydb_start_transactionPP6_lListP9_bdb_info
    fun:_Z33spool_berkeleydb_transaction_funcPP6_lListPK10_lListElem28spooling_transaction_command
