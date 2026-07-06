@@ -302,6 +302,7 @@ SelectNewSpooling()
    fi
 
    keep=false
+   rewrite_bootstrap=false
 
    $CLEAR
    $INFOTEXT -auto $AUTO -ask "y" "n" -def "y" -n "\nUse previous %s spooling method ('y') or use new spooling method ('n') (y/n) [y] >> " \
@@ -376,13 +377,36 @@ SelectNewSpooling()
             exit 1
          fi
       else #Classic
-         tmp_spool=`echo $SPOOLING_ARGS | awk -F";" '{print $1}' | awk '{print $2}'`
-         list="configuration
-local_conf
-sched_configuration"
-         for f in $list; do
-            ExecuteAsAdmin rm -rf "${tmp_spool}/${f}"
-         done
+         # Classic spooling now stores the configuration (global configuration,
+         # per-host local_conf and the scheduler configuration) in the spool
+         # directory together with all other objects. A reused bootstrap from an
+         # older cell still carries the obsolete "<common_dir>;<spool_dir>"
+         # spooling_params (with the configuration spooled into the common
+         # directory), which the spooling library now rejects. Migrate the params
+         # to the single spool directory and force the bootstrap rewrite below;
+         # the configuration itself is repopulated in the spool directory by
+         # upgrade_config.sh after qmaster has started.
+         #
+         # Only the two-argument form carries an old common directory to clean up;
+         # a bootstrap that already uses the single-argument form must not be
+         # treated as "<common>;..." (that would point old_common at the live
+         # spool dir).
+         case "$SPOOLING_ARGS" in
+            *\;*) old_common=`echo "$SPOOLING_ARGS" | awk -F";" '{print $1}'` ;;
+            *)    old_common="" ;;
+         esac
+         SPOOLING_ARGS="$QMDIR"
+         rewrite_bootstrap=true
+
+         # Remove the obsolete configuration spool from the old common directory
+         # (guarded: only an existing common dir, only entries that exist).
+         if [ -n "$old_common" ] && [ -d "$old_common" ]; then
+            for f in configuration sched_configuration local_conf; do
+               if [ -e "$old_common/$f" ]; then
+                  ExecuteAsAdmin rm -rf "$old_common/$f"
+               fi
+            done
+         fi
       fi
    else
       case "$backup_spooling_method" in
@@ -407,7 +431,11 @@ sched_configuration"
       SetSpoolingOptions "$suggested_spooling_method" "$suggested_spooling_params"
    fi
 	
-   if [ "$keep" = false ]; then
+   # Rewrite when switching method (keep=false) or when a reused classic
+   # bootstrap had to be migrated to the single spool-directory params
+   # (rewrite_bootstrap=true). For the keep=true case the method/lib lines are
+   # rewritten with their unchanged values (a harmless no-op).
+   if [ "$keep" = false -o "$rewrite_bootstrap" = true ]; then
       ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_method.*' "spooling_method         $SPOOLING_METHOD" 644
       ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_lib.*'    "spooling_lib            $SPOOLING_LIB" 644
       ReplaceLineWithMatch "$SGE_ROOT/$SGE_CELL/common/bootstrap" 'spooling_params.*' "spooling_params         $SPOOLING_ARGS" 644
