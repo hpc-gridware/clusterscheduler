@@ -407,52 +407,6 @@ spool_classic_default_shutdown_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/**
- * @brief Set up the classic (flatfile) common directory.
- *
- * Checks that the common directory exists and creates the subdirectory for the
- * local (per-host) and global configuration spool if it does not yet exist.
- *
- * The local_conf subdirectory is created owner-only (0700). It is written and
- * read exclusively by qmaster (clients obtain their configuration via GDI, not
- * from disk), and its entry names reveal which hosts carry a local config, so
- * it must not be readable by group/other. The parent common directory itself
- * stays world-readable so clients can still read act_qmaster/bootstrap/settings.
- *
- * This function should not be called directly; it is called by the spooling
- * framework.
- *
- * @param[out] answer_list  to return error messages
- * @param[in]  rule         rule containing data like the path to the common
- *                          directory
- * @param[in]  check        check the spooling database
- * @return true on success, else false
- */
-bool
-spool_classic_common_startup_func(lList **answer_list,
-                                   const lListElem *rule, bool check)
-{
-   bool ret = true;
-   const char *url;
-
-   DENTER(TOP_LAYER);
-
-   /* check common directory */
-   url = lGetString(rule, SPR_url);
-   if (!sge_is_directory(url)) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_SPOOL_COMMONDIRDOESNOTEXIST_S, url);
-      ret = false;
-   } else {
-      /* Create directory for local/global configuration owner-only (0700);
-       * qmaster-private, entry names leak per-host config (CS-2352). */
-      sge_mkdir2(url, LOCAL_CONF_DIR, 0700, true);
-   }
-
-   DRETURN(ret);
-}
-
 static bool read_validate_object(lList **answer_list,
                    const lListElem *type, const lListElem *rule,
                    const char *key, int key_nm,

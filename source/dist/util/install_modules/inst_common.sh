@@ -333,7 +333,6 @@ SetPerm()
 SetCellDependentVariables()
 {
    COMMONDIR=$SGE_CELL_VAL/common
-   LCONFDIR=$SGE_CELL_VAL/common/local_conf
    CASHAREDDIR=$COMMONDIR/sgeCA
 }
 
@@ -3038,6 +3037,12 @@ BackupConfig()
 # In both cases the disclosure/tamper vectors closed by CS-2352 would stay open,
 # so we explicitly fix the modes.
 #
+# Scope: the qmaster classic object directories, the global/scheduler
+# configuration files and the local_conf subdirectory, all under the given spool
+# dir. The execd spool is intentionally left untouched (not part of CS-2352). The
+# pass is idempotent and safe to re-run. The CALLER must ensure classic spooling -
+# the function does not check the spooling method itself.
+#
 #   $1 - qmaster spool directory (e.g. $QMDIR or the restored master_spool)
 HardenClassicSpoolPermissions()
 {
@@ -3058,19 +3063,22 @@ resource_quotas advance_reservations roles"
       fi
    done
 
-   # managers/operators are plain files at the spool root (not in an object dir).
-   # They list the cluster's administrative accounts, so group/other must have
-   # neither read nor write access (disclosure + privilege-escalation vector).
-   for f in managers operators; do
+   # managers/operators, and the global (configuration) and scheduler
+   # (sched_configuration) configuration, are plain files at the spool root (not
+   # in an object dir). They expose the cluster's administrative accounts and
+   # configuration, so group/other must have neither read nor write access
+   # (disclosure + privilege-escalation vector).
+   for f in managers operators configuration sched_configuration; do
       if [ -f "$qm_spool_dir/$f" ]; then
          ExecuteAsAdmin $CHMOD 600 "$qm_spool_dir/$f"
       fi
    done
 
-   # common/local_conf: global + per-host configuration spool (qmaster-private),
-   # mirroring spool_classic_common_startup_func(). The parent common/ dir is
-   # deliberately left world-readable so clients can still read act_qmaster etc.
-   lc_dir="$SGE_ROOT/$SGE_CELL/common/local_conf"
+   # local_conf: per-host configuration spool (qmaster-private), now under the
+   # spool directory with the other configuration objects, mirroring
+   # spool_classic_default_startup_func(). Its entry names reveal which hosts
+   # carry a local config, so it must not be readable by group/other.
+   lc_dir="$qm_spool_dir/local_conf"
    if [ -d "$lc_dir" ]; then
       ExecuteAsAdmin find "$lc_dir" -type d -exec $CHMOD 700 {} +
       ExecuteAsAdmin find "$lc_dir" -type f -exec $CHMOD 600 {} +

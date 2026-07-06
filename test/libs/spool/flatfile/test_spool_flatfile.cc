@@ -103,6 +103,7 @@ static int PE_large_list_test();
 static int SPOOL_perm_test();
 static int SPOOL_dir_perm_test();
 static int SPOOL_key_safe_test();
+static int SPOOL_classic_params_test();
 
 typedef int (*func)();
 
@@ -152,6 +153,7 @@ int main(int argc, char** argv)
    CHECK(id, "SPOOL perm: SP_DEST_SPOOL file created 0600 (not world/group accessible)", SPOOL_perm_test() == 0); id++;
    CHECK(id, "SPOOL dir perm: classic spool directory created 0700 (not world/group traversable)", SPOOL_dir_perm_test() == 0); id++;
    CHECK(id, "SPOOL key: spool_flatfile_key_is_safe accepts relative multi-component keys, rejects traversal", SPOOL_key_safe_test() == 0); id++;
+   CHECK(id, "SPOOL params: classic create_context rejects legacy 2-arg and non-absolute spooling_params", SPOOL_classic_params_test() == 0); id++;
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -2825,10 +2827,12 @@ static int SPOOL_perm_test()
 // that contain those files were created 0755 - world-readable and traversable -
 // so their entry names (job IDs, queue-instance and object names, per-host
 // config) still leaked to any local user able to reach the spool tree. The
-// classic-spool startup functions now create their directories owner-only
-// (0700). This exercises the real path via spool_classic_common_startup_func(),
-// which creates the "local_conf" subdirectory, and asserts the resulting mode
-// is exactly 0700. Red->green: pre-fix the directory is 0755.
+// classic-spool startup function now creates its directories owner-only (0700).
+// This exercises the real path via spool_classic_default_startup_func(), which -
+// among the object directories - creates the "local_conf" subdirectory for the
+// per-host configuration (configuration now lives in the spool dir, not the
+// common dir), and asserts the resulting mode is exactly 0700. Red->green:
+// pre-fix the directory is 0755.
 static int SPOOL_dir_perm_test()
 {
    lList *alp = nullptr;
@@ -2836,15 +2840,21 @@ static int SPOOL_dir_perm_test()
    char base[1024];
    snprintf(base, sizeof(base), "/tmp/test_spool_dirperm.%ld", (long)getpid());
 
-   // "local_conf" mirrors LOCAL_CONF_DIR (uti/sge_bootstrap_files.h); kept as a
-   // literal here so the test needs no extra include.
-   char sub[1152];
-   snprintf(sub, sizeof(sub), "%s/%s", base, "local_conf");
-   rmdir(sub);   // clean any leftover from a previous run
-   rmdir(base);
+   // spool_classic_default_startup_func() chdirs into the spool dir; remember the
+   // current working directory so we can restore it afterwards (and not strand
+   // the process in a directory we are about to delete).
+   char cwd[4096];
+   if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+      printf("   getcwd failed\n");
+      return 1;
+   }
 
+   // clean any leftover from a previous run, then create the spool dir
+   char cmd[1200];
+   snprintf(cmd, sizeof(cmd), "rm -rf %s", base);
+   if (system(cmd) != 0) { /* best effort cleanup */ }
    if (mkdir(base, 0755) != 0) {
-      printf("   could not create test common dir %s\n", base);
+      printf("   could not create test spool dir %s\n", base);
       return 1;
    }
 
@@ -2854,9 +2864,17 @@ static int SPOOL_dir_perm_test()
    // Neutralise the ambient umask so the resulting mode is exactly what the
    // code requested (otherwise it would be mode & ~umask).
    mode_t old_umask = umask(0);
-   bool ok = spool_classic_common_startup_func(&alp, rule, false);
+   bool ok = spool_classic_default_startup_func(&alp, rule, false);
    umask(old_umask);
    lFreeElem(&rule);
+
+   // restore the working directory changed by the startup function
+   if (chdir(cwd) != 0) { /* best effort */ }
+
+   // "local_conf" mirrors LOCAL_CONF_DIR (uti/sge_bootstrap_files.h); kept as a
+   // literal here so the test needs no extra include.
+   char sub[1152];
+   snprintf(sub, sizeof(sub), "%s/%s", base, "local_conf");
 
    int ret = 1;
    struct stat sb{};
@@ -2865,15 +2883,47 @@ static int SPOOL_dir_perm_test()
       if (perm == (S_IRUSR | S_IWUSR | S_IXUSR)) {   // 0700
          ret = 0;
       } else {
-         printf("   spool dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
+         printf("   local_conf dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
       }
    } else {
-      printf("   could not create/stat local_conf dir via common_startup_func\n");
+      printf("   could not create/stat local_conf dir via default_startup_func\n");
    }
 
-   rmdir(sub);
-   rmdir(base);
+   snprintf(cmd, sizeof(cmd), "rm -rf %s", base);
+   if (system(cmd) != 0) { /* best effort cleanup */ }
    answer_list_output(&alp);
+   return ret;
+}
+
+// Regression for the classic spooling parameter change (RBAC config-in-spool-dir
+// work): the configuration objects moved into the spool directory, so the classic
+// spooling parameter is now a single absolute spool directory path. The obsolete
+// two-argument "<common_dir>;<spool_dir>" form must be rejected (hard error, not
+// silently accepted), as must a null or non-absolute path. The accept path (a
+// valid single directory) allocates a full spooling context and is exercised by
+// qmaster startup and the testsuite, so it is intentionally not re-created here;
+// this test focuses on the rejection contract, which returns nullptr without
+// allocating.
+static int SPOOL_classic_params_test()
+{
+   struct { const char *args; const char *desc; } rejected[] = {
+      {nullptr,          "null args"},
+      {"relative/path",  "non-absolute path"},
+      {"/common;/spool", "legacy <common_dir>;<spool_dir> two-argument form"},
+      {"/a;/b;/c",       "malformed multi-token form"},
+   };
+
+   int ret = 0;
+   for (const auto &c : rejected) {
+      lList *alp = nullptr;
+      lListElem *ctx = spool_classic_create_context(&alp, c.args);
+      if (ctx != nullptr) {
+         printf("   spool_classic_create_context accepted %s (expected reject)\n", c.desc);
+         lFreeElem(&ctx);
+         ret = 1;
+      }
+      lFreeList(&alp);
+   }
    return ret;
 }
 

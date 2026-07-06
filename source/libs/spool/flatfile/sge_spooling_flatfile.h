@@ -88,12 +88,8 @@ bool
 spool_classic_default_shutdown_func(lList **answer_list,
                                     const lListElem *rule);
 
-bool 
-spool_classic_common_startup_func(lList **answer_list, 
-                                   const lListElem *rule, bool check);
-
-bool 
-spool_classic_default_list_func(lList **answer_list, 
+bool
+spool_classic_default_list_func(lList **answer_list,
                                  const lListElem *type, 
                                  const lListElem *rule,
                                  lList **list, 
