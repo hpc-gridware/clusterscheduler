@@ -2829,8 +2829,8 @@ static int SPOOL_perm_test()
 // config) still leaked to any local user able to reach the spool tree. The
 // classic-spool startup function now creates its directories owner-only (0700).
 // This exercises the real path via spool_classic_default_startup_func(), which -
-// among the object directories - creates the "local_conf" subdirectory for the
-// per-host configuration (configuration now lives in the spool dir, not the
+// among the object directories - creates the "configs" subdirectory holding the
+// global and per-host configurations (which now live in the spool dir, not the
 // common dir), and asserts the resulting mode is exactly 0700. Red->green:
 // pre-fix the directory is 0755.
 static int SPOOL_dir_perm_test()
@@ -2871,10 +2871,10 @@ static int SPOOL_dir_perm_test()
    // restore the working directory changed by the startup function
    if (chdir(cwd) != 0) { /* best effort */ }
 
-   // "local_conf" mirrors LOCAL_CONF_DIR (uti/sge_bootstrap_files.h); kept as a
-   // literal here so the test needs no extra include.
+   // "configs" mirrors CONFIG_DIR (uti/sge.h); kept as a literal here so the test
+   // needs no extra include.
    char sub[1152];
-   snprintf(sub, sizeof(sub), "%s/%s", base, "local_conf");
+   snprintf(sub, sizeof(sub), "%s/%s", base, "configs");
 
    int ret = 1;
    struct stat sb{};
@@ -2883,10 +2883,10 @@ static int SPOOL_dir_perm_test()
       if (perm == (S_IRUSR | S_IWUSR | S_IXUSR)) {   // 0700
          ret = 0;
       } else {
-         printf("   local_conf dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
+         printf("   configs dir mode = 0%03o (expected 0700)\n", (unsigned)perm);
       }
    } else {
-      printf("   could not create/stat local_conf dir via default_startup_func\n");
+      printf("   could not create/stat configs dir via default_startup_func\n");
    }
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", base);

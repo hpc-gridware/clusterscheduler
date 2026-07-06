@@ -277,9 +277,9 @@ spool_classic_create_context(lList **answer_list, const char *args)
           * their own rule any more: with no type-specific rule they fall back to
           * the SGE_TYPE_ALL rule above (see the rule lookup in the read/write/
           * list/delete functions) and are therefore spooled into the spool
-          * directory - the global configuration and scheduler configuration as
-          * single files at the spool dir root, the per-host configurations in
-          * the local_conf subdirectory. They no longer use the common
+          * directory - the global and per-host configurations in the configs
+          * subdirectory (keyed by name), the scheduler configuration as a single
+          * file at the spool dir root. They no longer use the common
           * directory. */
       }
       sge_free_saved_vars(strtok_context);
@@ -293,9 +293,9 @@ spool_classic_create_context(lList **answer_list, const char *args)
  *
  * Checks that the spool directory exists, changes into it, and creates the
  * per-object-type subdirectories if they do not yet exist. This includes the
- * local_conf subdirectory holding the per-host configurations; the global
- * configuration and scheduler configuration are single files at the spool
- * directory root and need no subdirectory.
+ * configs subdirectory holding the global and per-host configurations; the
+ * scheduler configuration is a single file at the spool directory root and
+ * needs no subdirectory.
  *
  * The subdirectories are created owner-only (0700): they hold authoritative
  * job and configuration spool, and their entry names alone (job IDs, queue
@@ -357,7 +357,12 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0700, true);
          sge_mkdir2(url, AR_DIR, 0700, true);
          sge_mkdir2(url, ROLE_DIR, 0700, true);
-         sge_mkdir2(url, LOCAL_CONF_DIR, 0700, true);
+         /* Configuration objects (the global configuration and the per-host
+          * local configurations) are spooled here, keyed by name ("global" and
+          * the host name); the scheduler configuration remains a single file at
+          * the spool dir root. Owner-only (0700): the entry names reveal which
+          * hosts carry a local config (CS-2352). */
+         sge_mkdir2(url, CONFIG_DIR, 0700, true);
       }
    }
 
@@ -529,9 +534,10 @@ spool_classic_default_list_func(lList **answer_list,
             directory = CKPTOBJ_DIR;
             break;
          case SGE_TYPE_CONFIG:
+            /* The global ("global") and per-host configurations share one
+             * directory, keyed by name; scanning it reads them all. */
             key_nm    = CONF_name;
-            filename  = "global";
-            directory = LOCAL_CONF_DIR;
+            directory = CONFIG_DIR;
             break;
          case SGE_TYPE_EXECHOST:
             directory = EXECHOST_DIR;
@@ -765,14 +771,11 @@ spool_classic_default_read_func(lList **answer_list,
          filename = key;
          break;
       case SGE_TYPE_CONFIG:
+         /* Global ("global") and per-host configurations are spooled in one
+          * directory, keyed by name. */
          parse_values = false;
-         if (sge_hostcmp(key, "global") == 0) {
-            directory = ".";
-            filename  = CONF_FILE;
-         } else {
-            directory = LOCAL_CONF_DIR;
-            filename  = key;
-         }
+         directory = CONFIG_DIR;
+         filename  = key;
          break;
       case SGE_TYPE_EXECHOST:
          directory = EXECHOST_DIR;
@@ -994,13 +997,10 @@ spool_classic_default_write_func(lList **answer_list,
          filename = key;
          break;
       case SGE_TYPE_CONFIG:
-         if (sge_hostcmp(key, "global") == 0) {
-            directory = ".";
-            filename  = CONF_FILE;
-         } else {
-            directory = LOCAL_CONF_DIR;
-            filename  = key;
-         }
+         /* Global ("global") and per-host configurations are spooled in one
+          * directory, keyed by name. */
+         directory = CONFIG_DIR;
+         filename  = key;
          break;
       case SGE_TYPE_EXECHOST:
          directory = EXECHOST_DIR;
@@ -1283,7 +1283,7 @@ spool_classic_default_delete_func(lList **answer_list,
 
             dir_name = sge_dstring_sprintf(&dir_name_dstring, "%s/%s",
                                            lGetString(rule, SPR_url),
-                                           LOCAL_CONF_DIR);
+                                           CONFIG_DIR);
             ret = sge_unlink(dir_name, key);
             sge_dstring_free(&dir_name_dstring);
          }

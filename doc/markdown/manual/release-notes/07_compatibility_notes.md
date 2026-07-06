@@ -67,12 +67,12 @@ it operates through the qmaster and removes any need to touch spool files direct
 
 ## Classic Spooling: Configuration Stored in the Spool Directory
 
-With *classic* spooling, the global configuration, the per-host local configurations (`local_conf`) and the
-scheduler configuration are now stored in the qmaster spool directory (`$SGE_ROOT/<cell>/spool/qmaster/...`,
-owner-only) together with all other spooled objects. Previously they were kept as flat files under
-`$SGE_ROOT/<cell>/common` (`configuration`, `local_conf/<host>`, `sched_configuration`). The `common`
-directory continues to hold the non-spooled files (`bootstrap`, `act_qmaster`, `settings.sh`, host aliases,
-etc.).
+With *classic* spooling, the global and per-host configurations are now stored in a `configs` directory under
+the qmaster spool directory — `$SGE_ROOT/<cell>/spool/qmaster/configs/global` and `.../configs/<host>` — and
+the scheduler configuration as `.../spool/qmaster/sched_configuration`, owner-only, together with all other
+spooled objects. Previously they were kept as flat files under `$SGE_ROOT/<cell>/common` (`configuration`,
+`local_conf/<host>`, `sched_configuration`). The `common` directory continues to hold the non-spooled files
+(`bootstrap`, `act_qmaster`, `settings.sh`, host aliases, etc.).
 
 As a consequence, the classic `spooling_params` entry in the `bootstrap` file is now a single qmaster spool
 directory path instead of the two-argument `<common_dir>;<spool_dir>` form, which is no longer accepted

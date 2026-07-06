@@ -2966,7 +2966,7 @@ BackupConfig()
    BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="sgeCA"
-   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configuration sched_configuration local_conf jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts users usersets"
+   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts users usersets"
    BUP_COMMON_FILE_LIST=""
    BUP_SPOOL_FILE_LIST=""
    BUP_SPOOL_DIR_LIST=""
@@ -3037,9 +3037,9 @@ BackupConfig()
 # In both cases the disclosure/tamper vectors closed by CS-2352 would stay open,
 # so we explicitly fix the modes.
 #
-# Scope: the qmaster classic object directories, the global/scheduler
-# configuration files and the local_conf subdirectory, all under the given spool
-# dir. The execd spool is intentionally left untouched (not part of CS-2352). The
+# Scope: the qmaster classic object directories, the scheduler configuration file
+# and the configs directory (global + per-host configuration), all under the given
+# spool dir. The execd spool is intentionally left untouched (not part of CS-2352). The
 # pass is idempotent and safe to re-run. The CALLER must ensure classic spooling -
 # the function does not check the spooling method itself.
 #
@@ -3063,22 +3063,23 @@ resource_quotas advance_reservations roles"
       fi
    done
 
-   # managers/operators, and the global (configuration) and scheduler
-   # (sched_configuration) configuration, are plain files at the spool root (not
-   # in an object dir). They expose the cluster's administrative accounts and
-   # configuration, so group/other must have neither read nor write access
-   # (disclosure + privilege-escalation vector).
-   for f in managers operators configuration sched_configuration; do
+   # managers/operators and the scheduler configuration (sched_configuration) are
+   # plain files at the spool root (not in an object dir). They expose the
+   # cluster's administrative accounts and configuration, so group/other must have
+   # neither read nor write access (disclosure + privilege-escalation vector). The
+   # global and per-host configurations live in the configs directory and are
+   # hardened below.
+   for f in managers operators sched_configuration; do
       if [ -f "$qm_spool_dir/$f" ]; then
          ExecuteAsAdmin $CHMOD 600 "$qm_spool_dir/$f"
       fi
    done
 
-   # local_conf: per-host configuration spool (qmaster-private), now under the
-   # spool directory with the other configuration objects, mirroring
-   # spool_classic_default_startup_func(). Its entry names reveal which hosts
-   # carry a local config, so it must not be readable by group/other.
-   lc_dir="$qm_spool_dir/local_conf"
+   # configs: the global and per-host configuration spool (qmaster-private), under
+   # the spool directory with the other objects, mirroring
+   # spool_classic_default_startup_func(). Its entry names reveal which hosts carry
+   # a local config, so it must not be readable by group/other.
+   lc_dir="$qm_spool_dir/configs"
    if [ -d "$lc_dir" ]; then
       ExecuteAsAdmin find "$lc_dir" -type d -exec $CHMOD 700 {} +
       ExecuteAsAdmin find "$lc_dir" -type f -exec $CHMOD 600 {} +
@@ -3102,12 +3103,13 @@ RestoreConfig()
    BUP_PG_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
    BUP_PG_COMMON_DIR_LIST="sgeCA"
    BUP_PG_DUMP_FILE="postgres-config.sql"
-   # configuration, sched_configuration and local_conf now live in the spool
-   # directory (classic spooling), so they are restored into the spool dir (not
-   # common). sgeCA remains a common directory. Same-version restore only.
+   # The configs directory (global + per-host configuration) and the
+   # sched_configuration file now live in the spool directory (classic spooling),
+   # so they are restored into the spool dir (not common). sgeCA remains a common
+   # directory. Same-version restore only.
    BUP_CLASSIC_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="sgeCA"
-   BUP_CLASSIC_SPOOL_FILE_LIST="configuration sched_configuration local_conf jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts users usersets"
+   BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts users usersets"
 
    MKDIR="mkdir -p"
    CP="cp -f"

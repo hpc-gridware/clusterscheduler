@@ -71,10 +71,10 @@ submitted by that same user are handled correctly by the system.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/configs/global
 xxQS_NAMExx global configuration (classic spooling; other spooling methods store it in the spooling database)
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/local_conf/<host>
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/configs/<host>
 xxQS_NAMExx host specific configuration (classic spooling)
 
 ## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/<host>

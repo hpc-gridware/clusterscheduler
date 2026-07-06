@@ -29,8 +29,8 @@ Callers that previously scraped `qstat -s z` output should switch to `qstat -s f
 
 ## Classic Spooling: Configuration Moved into the Spool Directory
 
-For clusters using *classic* spooling, the global configuration, the per-host local configurations
-(`local_conf`) and the scheduler configuration are now spooled in the qmaster spool directory together with
+For clusters using *classic* spooling, the global and per-host configurations are now spooled in a `configs`
+directory under the qmaster spool directory (and the scheduler configuration as a file there) together with
 all other objects, instead of in `$SGE_ROOT/$SGE_CELL/common`. Consequently the `spooling_params` entry in
 the `bootstrap` file is now a single qmaster spool directory path; the obsolete two-argument form
 `<common_dir>;<spool_dir>` is rejected and qmaster will not start with it.

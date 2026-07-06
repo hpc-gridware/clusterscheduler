@@ -378,7 +378,7 @@ SelectNewSpooling()
          fi
       else #Classic
          # Classic spooling now stores the configuration (global configuration,
-         # per-host local_conf and the scheduler configuration) in the spool
+         # per-host local configurations and the scheduler configuration) in the spool
          # directory together with all other objects. A reused bootstrap from an
          # older cell still carries the obsolete "<common_dir>;<spool_dir>"
          # spooling_params (with the configuration spooled into the common

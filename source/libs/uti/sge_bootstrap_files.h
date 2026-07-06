@@ -40,11 +40,9 @@
 #define PATH_SEPARATOR "/"
 #define COMMON_DIR "common"
 #define BOOTSTRAP_FILE "bootstrap"
-#define CONF_FILE "configuration"
 #define SCHED_CONF_FILE "sched_configuration"
 #define ACCT_FILE "accounting"
 #define REPORTING_FILE "reporting"
-#define LOCAL_CONF_DIR "local_conf"
 #define SHADOW_MASTERS_FILE "shadow_masters"
 
 #define PATH_SEPARATOR "/"
