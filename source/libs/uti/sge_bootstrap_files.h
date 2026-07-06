@@ -57,12 +57,6 @@ const char *
 bootstrap_get_bootstrap_file();
 
 const char *
-bootstrap_get_conf_file();
-
-const char *
-bootstrap_get_sched_conf_file();
-
-const char *
 bootstrap_get_act_qmaster_file();
 
 const char *
@@ -70,9 +64,6 @@ bootstrap_get_acct_file();
 
 const char *
 bootstrap_get_reporting_file();
-
-const char *
-bootstrap_get_local_conf_dir();
 
 const char *
 bootstrap_get_shadow_masters_file();

@@ -62,12 +62,9 @@ typedef struct {
    // files and paths
    char *cell_root;
    char *bootstrap_file;
-   char *conf_file;
-   char *sched_conf_file;
    char *act_qmaster_file;
    char *acct_file;
    char *reporting_file;
-   char *local_conf_dir;
    char *shadow_masters_file;
    char *alias_file;
 } sge_bootstrap_files_tl1_t;
@@ -91,11 +88,6 @@ set_cell_root(sge_bootstrap_files_tl1_t *tl, const char *cell_root) {
 }
 
 static void
-set_conf_file(sge_bootstrap_files_tl1_t *tl, const char *conf_file) {
-   tl->conf_file = sge_strdup(tl->conf_file, conf_file);
-}
-
-static void
 set_bootstrap_file(sge_bootstrap_files_tl1_t *tl, const char *bootstrap_file) {
    tl->bootstrap_file = sge_strdup(tl->bootstrap_file, bootstrap_file);
 }
@@ -116,18 +108,8 @@ set_reporting_file(sge_bootstrap_files_tl1_t *tl, const char *reporting_file) {
 }
 
 static void
-set_local_conf_dir(sge_bootstrap_files_tl1_t *tl, const char *local_conf_dir) {
-   tl->local_conf_dir = sge_strdup(tl->local_conf_dir, local_conf_dir);
-}
-
-static void
 set_shadow_masters_file(sge_bootstrap_files_tl1_t *tl, const char *shadow_masters_file) {
    tl->shadow_masters_file = sge_strdup(tl->shadow_masters_file, shadow_masters_file);
-}
-
-static void
-set_sched_conf_file(sge_bootstrap_files_tl1_t *tl, const char *sched_conf_file) {
-   tl->sched_conf_file = sge_strdup(tl->sched_conf_file, sched_conf_file);
 }
 
 static void
@@ -142,11 +124,9 @@ bootstrap_files_log_tl1_parameter(sge_bootstrap_files_tl1_t *tl) {
    DPRINTF("FILES AND PATHS ===\n");
    DPRINTF("   cell_root                 >%s<\n", tl->cell_root);
    DPRINTF("   bootstrap_file            >%s<\n", tl->bootstrap_file);
-   DPRINTF("   conf_file                 >%s<\n", tl->conf_file);
    DPRINTF("   act_qmaster_file          >%s<\n", tl->act_qmaster_file);
    DPRINTF("   acct_file                 >%s<\n", tl->acct_file);
    DPRINTF("   reporting_file            >%s<\n", tl->reporting_file);
-   DPRINTF("   local_conf_dir            >%s<\n", tl->local_conf_dir);
    DPRINTF("   shadow_masters_file       >%s<\n", tl->shadow_masters_file);
    DPRINTF("   alias_file                >%s<\n", tl->alias_file);
 
@@ -215,12 +195,6 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, BOOTSTRAP_FILE);
    set_bootstrap_file(tl, sge_dstring_get_string(&bw));
 
-   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, CONF_FILE);
-   set_conf_file(tl, sge_dstring_get_string(&bw));
-
-   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, SCHED_CONF_FILE);
-   set_sched_conf_file(tl, sge_dstring_get_string(&bw));
-
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ACT_QMASTER_FILE);
    set_act_qmaster_file(tl, sge_dstring_get_string(&bw));
 
@@ -229,9 +203,6 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, REPORTING_FILE);
    set_reporting_file(tl, sge_dstring_get_string(&bw));
-
-   sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, LOCAL_CONF_DIR);
-   set_local_conf_dir(tl, sge_dstring_get_string(&bw));
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, SHADOW_MASTERS_FILE);
    set_shadow_masters_file(tl, sge_dstring_get_string(&bw));
@@ -264,12 +235,9 @@ bootstrap_files_tl1_destroy(void *tl) {
    // files and paths
    sge_free(&(_tl->cell_root));
    sge_free(&(_tl->bootstrap_file));
-   sge_free(&(_tl->conf_file));
-   sge_free(&(_tl->sched_conf_file));
    sge_free(&(_tl->act_qmaster_file));
    sge_free(&(_tl->acct_file));
    sge_free(&(_tl->reporting_file));
-   sge_free(&(_tl->local_conf_dir));
    sge_free(&(_tl->shadow_masters_file));
    sge_free(&(_tl->alias_file));
 
@@ -290,18 +258,6 @@ bootstrap_get_bootstrap_file() {
 }
 
 const char *
-bootstrap_get_conf_file() {
-   GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->conf_file;
-}
-
-const char *
-bootstrap_get_sched_conf_file() {
-   GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->sched_conf_file;
-}
-
-const char *
 bootstrap_get_act_qmaster_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->act_qmaster_file;
@@ -317,12 +273,6 @@ const char *
 bootstrap_get_reporting_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
    return tl->reporting_file;
-}
-
-const char *
-bootstrap_get_local_conf_dir() {
-   GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->local_conf_dir;
 }
 
 const char *
