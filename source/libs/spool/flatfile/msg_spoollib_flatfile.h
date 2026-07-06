@@ -54,7 +54,6 @@
 #define MSG_PARSINGLISTBADRECORDSEP_DS       _MESSAGE(62012, _("values in the attribute value list in line %d should be separated by " SFQ))
 #define MSG_FLATFILE_ERROR_READINGFILE_S     _MESSAGE(62013, _("error reading file: " SFQ))
 #define MSG_SPOOL_INCORRECTSPOOLDIRPATH      _MESSAGE(62014, _("incorrect path given for the spool directory"))
-#define MSG_SPOOL_COMMONDIRDOESNOTEXIST_S    _MESSAGE(62015, _("common directory " SFQ " does not exist"))
 #define MSG_SPOOL_SPOOLDIRDOESNOTEXIST_S     _MESSAGE(62016, _("spool directory " SFQ " does not exist"))
 #define MSG_SPOOL_GLOBALCONFIGNOTDELETED     _MESSAGE(62017, _("the global configuration must not be deleted"))
 #define MSG_SPOOL_SCHEDDCONFIGNOTDELETED     _MESSAGE(62018, _("the scheduler configuration must not be deleted"))
