@@ -420,7 +420,7 @@ SetSpoolingOptionsClassic()
 {
    SPOOLING_METHOD=classic
    SPOOLING_LIB=libspoolc
-   SPOOLING_ARGS="$SGE_ROOT_VAL/$COMMONDIR;$QMDIR"
+   SPOOLING_ARGS="$QMDIR"
 }
 
 # SetSpoolingOptionsPostgres()
