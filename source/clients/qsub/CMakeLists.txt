@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ add_executable(
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
       ../../common/usage.cc
+      ../../common/ocs_ClientSanitizerOptions.cc
       ../../libs/japi/japi.cc)
 target_include_directories(qsub PRIVATE ${SGE_INCLUDES})
 

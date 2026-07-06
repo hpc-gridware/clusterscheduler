@@ -402,6 +402,7 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
       return 1;
    }
+   qstat_env_destroy(&qstat_env);
    sge_exit(0);
    return 0;
 }

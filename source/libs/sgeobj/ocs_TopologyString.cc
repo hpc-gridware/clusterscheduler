@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,10 +40,6 @@
 #include "ocs_BindingUnit.h"
 #include "ocs_TopologyString.h"
 #include "sge_conf.h"
-
-const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = DATA_NODE_CHARACTERS_DEFINE;
-const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = HARDWARE_NODE_CHARACTERS_DEFINE;
-const std::string ocs::TopologyString::STRUCTURE_CHARACTERS = "()";
 
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
 ocs::TopologyString::TopologyString(const std::string& topology) {

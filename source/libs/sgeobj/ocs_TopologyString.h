@@ -3,7 +3,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2025 HPC-Gridware GmbH
+ *  Copyright 2025-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <array>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -106,10 +107,16 @@ namespace ocs {
       static constexpr size_t MAX_LENGTH = 2560;
       static constexpr int NO_POS = NO_POS_DEFINE;
 
-      // Static constants for node characters
-      static const std::string DATA_NODE_CHARACTERS;
-      static const std::string HARDWARE_NODE_CHARACTERS;
-      static const std::string STRUCTURE_CHARACTERS;
+      /* Static constants for node characters.
+       *
+       * DATA_NODE_CHARACTERS / HARDWARE_NODE_CHARACTERS / STRUCTURE_CHARACTERS are
+       * defined inline in the header (constexpr std::string_view) to avoid ODR
+       * dup ation across the static-linked binaries and the dlopen'd spool
+       * plugin libraries. See ocs_TopologyString.h for details.
+       */
+      static constexpr std::string_view DATA_NODE_CHARACTERS = DATA_NODE_CHARACTERS_DEFINE;
+      static constexpr std::string_view HARDWARE_NODE_CHARACTERS = HARDWARE_NODE_CHARACTERS_DEFINE;
+      static constexpr std::string_view STRUCTURE_CHARACTERS = "()";
 
       static std::string id_tuple2string(const std::vector<std::pair<int, int>> &ids);
 
