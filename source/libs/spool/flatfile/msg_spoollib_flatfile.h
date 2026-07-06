@@ -53,7 +53,7 @@
 #define MSG_PARSINGLISTBADRECORDEND_DS       _MESSAGE(62011, _("each value in the attribute value list in line %d should end with " SFQ))
 #define MSG_PARSINGLISTBADRECORDSEP_DS       _MESSAGE(62012, _("values in the attribute value list in line %d should be separated by " SFQ))
 #define MSG_FLATFILE_ERROR_READINGFILE_S     _MESSAGE(62013, _("error reading file: " SFQ))
-#define MSG_SPOOL_INCORRECTPATHSFORCOMMONANDSPOOLDIR _MESSAGE(62014, _("incorrect paths given for common and/or spool directory"))
+#define MSG_SPOOL_INCORRECTSPOOLDIRPATH      _MESSAGE(62014, _("incorrect path given for the spool directory"))
 #define MSG_SPOOL_COMMONDIRDOESNOTEXIST_S    _MESSAGE(62015, _("common directory " SFQ " does not exist"))
 #define MSG_SPOOL_SPOOLDIRDOESNOTEXIST_S     _MESSAGE(62016, _("spool directory " SFQ " does not exist"))
 #define MSG_SPOOL_GLOBALCONFIGNOTDELETED     _MESSAGE(62017, _("the global configuration must not be deleted"))
@@ -61,5 +61,6 @@
 #define MSG_MUST_BE_POSITIVE_VALUE_S         _MESSAGE(62019, _("parameter " SFQ " must be a positive number"))
 #define MSG_RSMAP_INCONSISTENTAMOUNT_SSUU    _MESSAGE(62020, _("RSMAP " SFQ " value " SFQ " has amount " sge_u32 " but " sge_u32 " elements "))
 #define MSG_SPOOL_UNSAFE_KEY_S               _MESSAGE(62021, _("refusing to spool object with unsafe key " SFQ " (must not contain '/' or start with '.')"))
+#define MSG_SPOOL_LEGACYCLASSICPARAMS        _MESSAGE(62022, _("obsolete classic spooling parameter format: expected a single spool directory path, but the bootstrap file still uses the legacy common_dir;spool_dir form - please migrate it"))
 
 // clang-format on

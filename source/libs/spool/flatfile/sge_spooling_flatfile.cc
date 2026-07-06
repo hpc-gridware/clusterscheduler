@@ -87,43 +87,26 @@ const char *get_classic_spooling_method()
 static bool write_manop(int spool, ocs::gdi::Target target);
 static bool read_manop(ocs::gdi::Target target);
 
-/****** spool/flatfile/spool_flatfile_create_context() ********************
-*  NAME
-*     spool_flatfile_create_context() -- create a flatfile spooling context
-*
-*  SYNOPSIS
-*     lListElem*
-*     spool_flatfile_create_context(lList **answer_list, const char *args)
-*
-*  FUNCTION
-*     Create a spooling context for the flatfile spooling.
-*
-*     Two rules are created: One for spooling in the common directory, the
-*     other for spooling in the spool directory.
-*
-*     The following object type descriptions are create:
-*        - for SGE_TYPE_CONFIG, referencing the rule for the common directory
-*        - for SGE_TYPE_SCHEDD_CONF, also referencing the rule for the common
-*          directory
-*        - for SGE_TYPE_ALL (default for all object types), referencing the rule
-*          for the spool directory
-*
-*     The function expects to get as argument two absolute paths:
-*        1. The path of the common directory
-*        2. The path of the spool directory
-*     The format of the input string is "<common_dir>;<spool_dir>"
-*
-*  INPUTS
-*     lList **answer_list - to return error messages
-*     const char *args - arguments to classic spooling
-*
-*  RESULT
-*     lListElem* - on success, the new spooling context, else nullptr
-*
-*  SEE ALSO
-*     spool/--Spooling
-*     spool/flatfile/--Flatfile-Spooling
-*******************************************************************************/
+/**
+ * @brief Create a classic (flatfile) spooling context.
+ *
+ * Creates a single spooling rule bound to SGE_TYPE_ALL, so every object type is
+ * spooled into the qmaster spool directory. This now includes the configuration
+ * objects - the global configuration, the per-host local configurations and the
+ * scheduler configuration - which used to be spooled into a separate common
+ * directory. They no longer have a type-specific rule and therefore fall back to
+ * the SGE_TYPE_ALL rule.
+ *
+ * The argument is the absolute path of the spool directory. The legacy
+ * two-argument form "<common_dir>;<spool_dir>" is no longer supported and is
+ * rejected with an error; a bootstrap file still carrying it must be migrated to
+ * a single spool directory path.
+ *
+ * @param[out] answer_list  to return error messages
+ * @param[in]  args         absolute spool directory path (the legacy
+ *                          "<common_dir>;<spool_dir>" form is rejected)
+ * @return on success the new spooling context, else nullptr
+ */
 lListElem *
 spool_classic_create_context(lList **answer_list, const char *args)
 {
@@ -131,23 +114,33 @@ spool_classic_create_context(lList **answer_list, const char *args)
 
    DENTER(TOP_LAYER);
 
-   /* check parameters - both must be set and be absolute paths */
+   /* check parameter - must be set and be an absolute spool directory path */
    if (args == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
-                              MSG_SPOOL_INCORRECTPATHSFORCOMMONANDSPOOLDIR);
+                              MSG_SPOOL_INCORRECTSPOOLDIRPATH);
    } else {
-      char *common_dir, *spool_dir;
+      char *first_token, *second_token, *spool_dir;
       struct saved_vars_s *strtok_context = nullptr;
 
-      common_dir = sge_strtok_r(args, ";", &strtok_context);
-      spool_dir  = sge_strtok_r(nullptr, ";", &strtok_context);
+      /* The classic spooling parameter is the absolute path of the spool
+       * directory. The legacy form "<common_dir>;<spool_dir>", where the
+       * configuration was spooled into a separate common directory, is no longer
+       * supported: configuration now lives in the spool directory, so a
+       * bootstrap file still carrying the two-argument form must be migrated and
+       * is rejected here rather than silently ignoring the common directory. */
+      first_token  = sge_strtok_r(args, ";", &strtok_context);
+      second_token = sge_strtok_r(nullptr, ";", &strtok_context);
+      spool_dir = first_token;
 
-      if (common_dir == nullptr || spool_dir == nullptr ||
-         *common_dir != '/' || *spool_dir != '/') {
+      if (second_token != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
-                                 MSG_SPOOL_INCORRECTPATHSFORCOMMONANDSPOOLDIR);
+                                 MSG_SPOOL_LEGACYCLASSICPARAMS);
+      } else if (spool_dir == nullptr || *spool_dir != '/') {
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                 ANSWER_QUALITY_ERROR,
+                                 MSG_SPOOL_INCORRECTSPOOLDIRPATH);
       } else {
          int i;
          flatfile_info *field_info;
@@ -280,30 +273,14 @@ spool_classic_create_context(lList **answer_list, const char *args)
          type = spool_context_create_type(answer_list, context, SGE_TYPE_ALL);
          spool_type_add_rule(answer_list, type, rule, true);
 
-         /* create rule and type for all objects spooled in the common dir */
-         rule = spool_context_create_rule(answer_list, context,
-                                          "default rule (common dir)",
-                                          common_dir,
-                                          nullptr,
-                                          spool_classic_common_startup_func,
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          spool_classic_default_list_func,
-                                          spool_classic_default_read_func,
-                                          nullptr, // @todo read keys from flatfile spooling db
-                                          spool_classic_default_write_func,
-                                          spool_classic_default_delete_func,
-                                          spool_default_validate_func,
-                                          spool_default_validate_list_func);
-         lSetRef(rule, SPR_clientdata, field_info);
-         type = spool_context_create_type(answer_list, context,
-                                          SGE_TYPE_CONFIG);
-         spool_type_add_rule(answer_list, type, rule, true);
-         type = spool_context_create_type(answer_list, context,
-                                          SGE_TYPE_SCHEDD_CONF);
-         spool_type_add_rule(answer_list, type, rule, true);
+         /* SGE_TYPE_CONFIG and SGE_TYPE_SCHEDD_CONF are deliberately not given
+          * their own rule any more: with no type-specific rule they fall back to
+          * the SGE_TYPE_ALL rule above (see the rule lookup in the read/write/
+          * list/delete functions) and are therefore spooled into the spool
+          * directory - the global configuration and scheduler configuration as
+          * single files at the spool dir root, the per-host configurations in
+          * the local_conf subdirectory. They no longer use the common
+          * directory. */
       }
       sge_free_saved_vars(strtok_context);
    }
@@ -315,7 +292,10 @@ spool_classic_create_context(lList **answer_list, const char *args)
  * @brief Set up the classic (flatfile) qmaster spool directory.
  *
  * Checks that the spool directory exists, changes into it, and creates the
- * per-object-type subdirectories if they do not yet exist.
+ * per-object-type subdirectories if they do not yet exist. This includes the
+ * local_conf subdirectory holding the per-host configurations; the global
+ * configuration and scheduler configuration are single files at the spool
+ * directory root and need no subdirectory.
  *
  * The subdirectories are created owner-only (0700): they hold authoritative
  * job and configuration spool, and their entry names alone (job IDs, queue
@@ -377,6 +357,7 @@ spool_classic_default_startup_func(lList **answer_list,
          sge_mkdir2(url, RESOURCEQUOTAS_DIR, 0700, true);
          sge_mkdir2(url, AR_DIR, 0700, true);
          sge_mkdir2(url, ROLE_DIR, 0700, true);
+         sge_mkdir2(url, LOCAL_CONF_DIR, 0700, true);
       }
    }
 
