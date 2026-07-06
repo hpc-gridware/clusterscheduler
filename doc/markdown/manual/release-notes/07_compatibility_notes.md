@@ -65,5 +65,24 @@ programmatically, use the file- and directory-based *qconf* interface (`-S<obj>`
 apply) described in the *File-Based Bulk Configuration and Export with qconf* section of the **Major Enhancements** —
 it operates through the qmaster and removes any need to touch spool files directly.
 
+## Classic Spooling: Configuration Stored in the Spool Directory
+
+With *classic* spooling, the global configuration, the per-host local configurations (`local_conf`) and the
+scheduler configuration are now stored in the qmaster spool directory (`$SGE_ROOT/<cell>/spool/qmaster/...`,
+owner-only) together with all other spooled objects. Previously they were kept as flat files under
+`$SGE_ROOT/<cell>/common` (`configuration`, `local_conf/<host>`, `sched_configuration`). The `common`
+directory continues to hold the non-spooled files (`bootstrap`, `act_qmaster`, `settings.sh`, host aliases,
+etc.).
+
+As a consequence, the classic `spooling_params` entry in the `bootstrap` file is now a single qmaster spool
+directory path instead of the two-argument `<common_dir>;<spool_dir>` form, which is no longer accepted
+(see [Upgrade Notes](06_upgrade_notes.md)).
+
+**Impact:** any external tooling that read configuration by path from
+`$SGE_ROOT/<cell>/common/configuration` or `$SGE_ROOT/<cell>/common/local_conf/<host>` must be adapted.
+Reading configuration files directly has never been a supported interface — execution daemons obtain their
+configuration from the qmaster over GDI, not from disk. Use *qconf* (`-sconf`/`-Mconf` and the host-specific
+configuration commands) to read and modify configuration programmatically.
+
 [//]: # (Each file has to end with two empty lines)
 

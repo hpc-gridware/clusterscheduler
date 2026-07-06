@@ -352,8 +352,8 @@ as runtime for jobs that have neither `-l h_rt=...` nor `-l s_rt=...` specified.
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/sched_configuration
-scheduler thread configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/sched_configuration
+scheduler thread configuration (classic spooling; other spooling methods store it in the spooling database)
 
 # SEE ALSO
 

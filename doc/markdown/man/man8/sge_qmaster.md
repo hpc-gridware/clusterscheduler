@@ -37,11 +37,11 @@ access. In this case only jobs being submitted by that same user are handled cor
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/configuration
-xxQS_NAMExx global configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/configuration
+xxQS_NAMExx global configuration (classic spooling; other spooling methods store it in the spooling database)
 
-## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/local_conf/<host>
-xxQS_NAMExx host specific configuration
+## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/spool/qmaster/local_conf/<host>
+xxQS_NAMExx host specific configuration (classic spooling)
 
 ## \<xxQS_NAME_Sxx_ROOT\>/\<xxQS_NAME_Sxx_CELL\>/common/qmaster_args
 xxqs_name_sxx_qmaster argument file

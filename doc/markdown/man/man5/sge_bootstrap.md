@@ -81,8 +81,13 @@ The spooling parameters value for spooling method *berkeleydb* is \[rpc_server:\
 /sge_local/default/spool/qmaster/spooldb for spooling to a local filesystem, or myhost:sge for spooling over a 
 Berkeley DB RPC server.
 
-For spooling method *classic* the spooling parameters take the form \<common_dir>;\<qmaster spool dir>, e.g.
-/sge/default/common;/sge/default/spool/qmaster
+For spooling method *classic* the spooling parameter is the absolute path of the qmaster spool directory, e.g.
+/sge/default/spool/qmaster
+
+The configuration objects (the global configuration, the per-host local configurations and the scheduler
+configuration) are spooled in this directory together with all other objects. The obsolete two-argument form
+\<common_dir>;\<qmaster spool dir> used before version 9.2 is no longer supported and is rejected; the upgrade
+procedure migrates an existing *bootstrap* file automatically.
 
 For spooling method *postgres* the spooling parameters take the form of a libpq keyword/value conninfo string, e.g.
 host=pgdb.example.com port=5432 dbname=gcs_spool user=gcs sslmode=require passfile=/sge/default/common/.pgpass
