@@ -45,6 +45,11 @@
 #define DEFAULT_DEPARTMENT "defaultdepartment"
 #define AR_USERS           "arusers"
 
+/* reserved usersets backing the manager/operator lists (CS-2394); managed via
+ * the manager/operator interface (qconf -am/-dm/-ao/-do), not the userset CLI */
+#define MANAGER_USERSET    "manager"
+#define OPERATOR_USERSET   "operator"
+
 extern const char *userset_types[];
 
 int
