@@ -41,10 +41,6 @@
 #include "ocs_TopologyString.h"
 #include "sge_conf.h"
 
-const std::string ocs::TopologyString::DATA_NODE_CHARACTERS = DATA_NODE_CHARACTERS_DEFINE;
-const std::string ocs::TopologyString::HARDWARE_NODE_CHARACTERS = HARDWARE_NODE_CHARACTERS_DEFINE;
-const std::string ocs::TopologyString::STRUCTURE_CHARACTERS = "()";
-
 // e.g., "(N[size=4096](S(X[size=512](Y(C(T)(T)))(Y(C(T)(T)))(Y(E(T))(E(T))(E(T))(E(T))))))"
 ocs::TopologyString::TopologyString(const std::string& topology) {
    reset_topology(topology);

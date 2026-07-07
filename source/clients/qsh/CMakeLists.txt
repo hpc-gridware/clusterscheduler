@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2023-2024 HPC-Gridware GmbH
+#  Copyright 2023-2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -30,7 +30,8 @@ add_executable(
       ../../common/sge_options.cc
       ../../common/usage.cc
       ../../common/sge_ijs_comm.cc
-      ../../common/sge_ijs_threads.cc)
+      ../../common/sge_ijs_threads.cc
+      ../../common/ocs_ClientSanitizerOptions.cc)
 target_include_directories(qsh PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(

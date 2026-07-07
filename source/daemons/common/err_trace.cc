@@ -885,7 +885,12 @@ static void shepherd_trace_chown_intern(const char* job_owner, FILE* fp,
        * We don't have to change any file ownerships there. */
 		if(getuid() == SGE_SUPERUSER_UID) {
 			/* root */
-			strcpy(g_job_owner, job_owner);
+			/* Callers include shepherd_trace_init_intern (line 844) which
+			 * passes g_job_owner itself; strcpy(g_job_owner, g_job_owner)
+			 * is UB per POSIX (overlapping ranges) and ASan trips on it.
+			 * sge_strlcpy is a byte-by-byte forward copy that handles the
+			 * dst == src case cleanly and also bounds-checks. */
+			sge_strlcpy(g_job_owner, job_owner, SGE_PATH_MAX);
 			if(sge_user2uid(job_owner, &jobuser_id, &jobuser_gid, 1) == 0) {
 				/* Now try to give the file to the job user. root (and later
              * the admin user) will still be able to write to it through

@@ -97,6 +97,7 @@ set(QMASTER_SOURCES
         ../../common/sge_options.cc
         ../../common/usage.cc
         ../../common/execution_states.cc
+        ../../common/ocs_SanitizerOptions.cc
 )
 
 # normal qmaster without python

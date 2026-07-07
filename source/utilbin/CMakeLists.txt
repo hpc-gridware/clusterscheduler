@@ -119,7 +119,7 @@ target_link_libraries(
       ${SGE_LIBS})
 
 # spooldefaults
-add_executable(spooldefaults spooldefaults.cc)
+add_executable(spooldefaults spooldefaults.cc ../common/ocs_SanitizerOptions.cc)
 target_include_directories(spooldefaults PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       spooldefaults
@@ -136,7 +136,7 @@ target_link_libraries(
       ${SGE_LIBS})
 
 # spooledit
-add_executable(spooledit spooledit.cc)
+add_executable(spooledit spooledit.cc ../common/ocs_SanitizerOptions.cc)
 target_include_directories(spooledit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       spooledit
@@ -153,7 +153,7 @@ target_link_libraries(
       ${SGE_LIBS})
 
 # spoolinit
-add_executable(spoolinit spoolinit.cc)
+add_executable(spoolinit spoolinit.cc ../common/ocs_SanitizerOptions.cc)
 target_include_directories(spoolinit PRIVATE ${SGE_INCLUDES})
 target_link_libraries(
       spoolinit

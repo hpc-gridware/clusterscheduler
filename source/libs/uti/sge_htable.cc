@@ -621,8 +621,14 @@ int hash_func_pointer(const void *key) {
 }
 
 int hash_func_string(const void *key) {
-   int hash = 0;
-   const char *c = (const char *)key;
+   /* Accumulate in unsigned so overflow is well-defined wraparound instead
+    * of signed-overflow UB (UBSan caught the latter on long-running qmasters
+    * where hash grew past INT_MAX). Read bytes through unsigned char so
+    * high-bit-set bytes zero-extend rather than sign-extend into a negative
+    * addend — otherwise non-ASCII strings cluster into a narrow hash range.
+    */
+   unsigned int hash = 0;
+   const auto *c = (const unsigned char *)key;
 
    if (c != nullptr) {
       do {
@@ -630,7 +636,7 @@ int hash_func_string(const void *key) {
       } while (*c++ != 0);
    }
 
-   return hash;
+   return (int) hash;
 }
 
 /****** uti/htable/-Compare-Functions() ***************************************
