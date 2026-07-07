@@ -46,11 +46,9 @@
 #  define __has_feature(x) 0
 #endif
 
-#if 0
 #if defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer)
 extern "C" const char *
 __lsan_default_options() {
    return "detect_leaks=0";
 }
-#endif
 #endif
