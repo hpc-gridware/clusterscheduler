@@ -1,7 +1,7 @@
 /*___INFO__MARK_BEGIN_NEW__*/
 /***************************************************************************
  *
- *  Copyright 2024-2025 HPC-Gridware GmbH
+ *  Copyright 2024-2026 HPC-Gridware GmbH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -127,10 +127,14 @@ ocs::gdi::Request::get_response(lList **alpp, gdi::Command::Cmd cmd, gdi::SubCom
       *olpp = tmp_list;
    }
 
-   // get the answer list for the given id
+   // get the answer list for the given id. Use answer_list_replace so that any
+   // answer_list the caller has accumulated from a previous get_response() call
+   // on the same alpp gets freed instead of orphaned; every prior request's
+   // per-task answer_list used to leak silently because success/info entries
+   // never tripped answer_list_has_error().
    lList *tmp_answer_list = nullptr;
    lXchgList(map, MA_answers, &tmp_answer_list);
-   *alpp = tmp_answer_list;
+   answer_list_replace(alpp, &tmp_answer_list);
 
    DRETURN(true);
 }
