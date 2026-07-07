@@ -102,6 +102,14 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, l
       DRETURN(STATUS_EUNKNOWN);
    }
 
+   /* the manager/operator usersets back the manager/operator lists (CS-2394);
+    * they are reserved and must be changed via qconf -am/-dm/-ao/-do, not deleted */
+   if (strcmp(userset_name, MANAGER_USERSET) == 0 || strcmp(userset_name, OPERATOR_USERSET) == 0) {
+      ERROR(MSG_USERSET_RESERVED_NODELETE_S, userset_name);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_EEXIST);
+   }
+
    /* search for userset with this name and remove it from the list */
    if (!(found = lGetElemStrRW(*userset_list, US_name, userset_name))) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_USERSET, userset_name);

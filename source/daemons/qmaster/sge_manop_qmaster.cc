@@ -41,6 +41,9 @@
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/ocs_DataStore.h"
+#include "sgeobj/sge_userset.h"
+#include "sgeobj/cull/sge_userset_US_L.h"
+#include "sgeobj/cull/sge_userset_UE_L.h"
 
 #include "spool/sge_spooling.h"
 
@@ -51,26 +54,30 @@
 #include "msg_qmaster.h"
 #include "ocs_Bootstrap.h"
 
-/* ------------------------------------------------------------
-
-   sge_add_manop() - adds an manop list to the global manager/operator
-                     list
-
-   if the invoking process is the qmaster 
-   the added manop list is spooled in the MANAGER_FILE/OPERATOR_FILE
-
-   target may be SGE_UM_LIST or SGE_UO_LIST
-*/
+/**
+ * @brief Add a manager or operator.
+ *
+ * Adds the given user/group name to the reserved "manager"/"operator" userset
+ * (CS-2394), creating the userset (type US_ACL) on first use, then spools it and
+ * emits the corresponding userset event. The UM_LIST/UO_LIST GDI interface is
+ * unchanged: @a ep is still a UM_Type/UO_Type element carrying the name.
+ *
+ * @param packet  GDI packet of the request
+ * @param task    GDI task (unused)
+ * @param ep      request element (UM_Type/UO_Type) carrying the name to add
+ * @param alpp    answer list for messages
+ * @param ruser   user that triggered the request
+ * @param rhost   host from which the request was triggered
+ * @param target  UM_LIST (manager) or UO_LIST (operator)
+ * @return STATUS_OK, or a STATUS_* error code
+ */
 int
 sge_add_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target) {
    const char *manop_name;
    const char *object_name;
-   lList **lpp = nullptr;
-   lListElem *added;
+   const char *userset_name;
    int pos;
    int key;
-   lDescr *descr = nullptr;
-   ev_event eve = sgeE_EVENTSIZE;
 
    DENTER(TOP_LAYER);
 
@@ -82,18 +89,14 @@ sge_add_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
 
    switch (target) {
       case ocs::gdi::Target::UM_LIST:
-         lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
+         userset_name = MANAGER_USERSET;
          key = UM_name;
-         descr = UM_Type;
-         eve = sgeE_MANAGER_ADD;
          break;
       case ocs::gdi::Target::UO_LIST:
-         lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
+         userset_name = OPERATOR_USERSET;
          key = UO_name;
-         descr = UO_Type;
-         eve = sgeE_OPERATOR_ADD;
          break;
       default :
          DPRINTF("unknown target passed to %s\n", __func__);
@@ -114,25 +117,39 @@ sge_add_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (lGetElemStr(*lpp, key, manop_name)) {
+   /* locate the reserved userset; reject a duplicate entry */
+   lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+   lListElem *userset = lGetElemStrRW(*master_userset_list, US_name, userset_name);
+   if (userset != nullptr && lGetSubStr(userset, UE_name, manop_name, US_entries) != nullptr) {
       ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   /* update in interal lists */
-   added = lAddElemStr(lpp, key, manop_name, descr);
+   /* create the reserved userset (US_ACL) on first use */
+   bool created_userset = false;
+   if (userset == nullptr) {
+      userset = lAddElemStr(master_userset_list, US_name, userset_name, US_Type);
+      lSetUlong(userset, US_type, US_ACL);
+      created_userset = true;
+   }
 
-   /* update on file */
+   /* add the entry to the userset */
+   lAddSubStr(userset, UE_name, manop_name, US_entries, UE_Type);
+
+   /* spool the userset and emit the userset event */
+   ev_event eve = created_userset ? sgeE_USERSET_ADD : sgeE_USERSET_MOD;
    if (!sge_event_spool(alpp, 0, eve,
-                        0, 0, manop_name, nullptr, nullptr,
-                        added, nullptr, nullptr, true, true, packet->gdi_session)) {
+                        0, 0, userset_name, nullptr, nullptr,
+                        userset, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
-      /* remove element from list */
-      lRemoveElem(*lpp, &added);
-
+      /* roll back */
+      lDelSubStr(userset, UE_name, manop_name, US_entries);
+      if (created_userset) {
+         lRemoveElem(*master_userset_list, &userset);
+      }
       DRETURN(STATUS_EDISK);
    }
 
@@ -141,41 +158,33 @@ sge_add_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
    DRETURN(STATUS_OK);
 }
 
-/****** sge_manop_qmaster/sge_del_manop() **************************************
-*  NAME
-*     sge_del_manop() -- delete manager or operator
-*
-*  SYNOPSIS
-*     int 
-*     sge_del_manop(sge_gdi_ctx_class_t *ctx, lListElem *ep, lList **alpp, 
-*                   char *ruser, char *rhost, uint32_t target)
-*
-*  FUNCTION
-*     Deletes a manager or an operator from the corresponding master list.
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - gdi context
-*     lListElem *ep            - the manager/operator to delete
-*     lList **alpp             - answer list to return messages
-*     char *ruser              - user having triggered the action
-*     char *rhost              - host from which the action has been triggered
-*     uint32_t target          - SGE_UM_LIST or SGE_UO_LIST
-*
-*  RESULT
-*     int - STATUS_OK or STATUS_* error code
-*
-*  NOTES
-*     MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
-*******************************************************************************/
+/**
+ * @brief Delete a manager or operator.
+ *
+ * Removes the given user/group name from the reserved "manager"/"operator"
+ * userset (CS-2394), then spools the userset and emits a userset MOD event. The
+ * reserved userset itself is kept even when it becomes empty. Removal of "root"
+ * and of the configured admin user is refused. The UM_LIST/UO_LIST GDI interface
+ * is unchanged.
+ *
+ * @param packet  GDI packet of the request
+ * @param task    GDI task (unused)
+ * @param ep      request element (UM_Type/UO_Type) carrying the name to remove
+ * @param alpp    answer list for messages
+ * @param ruser   user that triggered the request
+ * @param rhost   host from which the request was triggered
+ * @param target  UM_LIST (manager) or UO_LIST (operator)
+ * @return STATUS_OK, or a STATUS_* error code
+ *
+ * MT-NOTE: sge_del_manop() is MT safe - if we hold the global lock.
+ */
 int
 sge_del_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **alpp, char *ruser, char *rhost, ocs::gdi::Target target) {
-   lListElem *found;
    int pos;
    const char *manop_name;
    const char *object_name;
-   lList **lpp = nullptr;
+   const char *userset_name;
    int key = NoName;
-   ev_event eve = sgeE_EVENTSIZE;
 
    DENTER(TOP_LAYER);
 
@@ -187,16 +196,14 @@ sge_del_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
 
    switch (target) {
       case ocs::gdi::Target::UM_LIST:
-         lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
          object_name = MSG_OBJ_MANAGER;
+         userset_name = MANAGER_USERSET;
          key = UM_name;
-         eve = sgeE_MANAGER_DEL;
          break;
       case ocs::gdi::Target::UO_LIST:
-         lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
          object_name = MSG_OBJ_OPERATOR;
+         userset_name = OPERATOR_USERSET;
          key = UO_name;
-         eve = sgeE_OPERATOR_DEL;
          break;
       default :
          DPRINTF("unknown target passed to %s\n", __func__);
@@ -232,28 +239,28 @@ sge_del_manop(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lLi
       DRETURN(STATUS_EEXIST);
    }
 
-   found = lGetElemStrRW(*lpp, key, manop_name);
-   if (!found) {
+   lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+   lListElem *userset = lGetElemStrRW(*master_userset_list, US_name, userset_name);
+   if (userset == nullptr || lGetSubStr(userset, UE_name, manop_name, US_entries) == nullptr) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
 
-   lDechainElem(*lpp, found);
+   /* remove the entry; the reserved userset itself is kept */
+   lDelSubStr(userset, UE_name, manop_name, US_entries);
 
-   /* update on file */
-   if (!sge_event_spool(alpp, 0, eve,
-                        0, 0, manop_name, nullptr, nullptr,
-                        nullptr, nullptr, nullptr, true, true, packet->gdi_session)) {
+   if (!sge_event_spool(alpp, 0, sgeE_USERSET_MOD,
+                        0, 0, userset_name, nullptr, nullptr,
+                        userset, nullptr, nullptr, true, true, packet->gdi_session)) {
       ERROR(MSG_CANTSPOOL_SS, object_name, manop_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
 
-      /* chain in again */
-      lAppendElem(*lpp, found);
+      /* roll back */
+      lAddSubStr(userset, UE_name, manop_name, US_entries, UE_Type);
 
       DRETURN(STATUS_EDISK);
    }
-   lFreeElem(&found);
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, manop_name, object_name);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

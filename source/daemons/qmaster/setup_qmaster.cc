@@ -73,6 +73,9 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_manop.h"
+#include "sgeobj/sge_userset.h"
+#include "sgeobj/cull/sge_userset_US_L.h"
+#include "sgeobj/cull/sge_userset_UE_L.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
@@ -984,6 +987,55 @@ setup_qmaster() {
    DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
+
+   /*
+    * CS-2394: managers/operators are stored in the reserved "manager"/"operator"
+    * usersets. Ensure they exist; if a reserved userset is missing, seed it from
+    * the (legacy) manager/operator master list plus root and the admin user. This
+    * also migrates an upgraded cluster whose managers/operators were spooled as
+    * the old flat lists. Idempotent: an existing reserved userset is left as-is.
+    */
+   {
+      lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
+      const char *admin_user_name = ocs::Bootstrap::get_admin_user();
+      const struct {
+         const char *us_name;
+         sge_object_type legacy_type;
+         int legacy_key;
+      } manop_seed[] = {
+         {MANAGER_USERSET,  SGE_TYPE_MANAGER,  UM_name},
+         {OPERATOR_USERSET, SGE_TYPE_OPERATOR, UO_name},
+      };
+
+      for (const auto &seed : manop_seed) {
+         if (lGetElemStr(*master_userset_list, US_name, seed.us_name) != nullptr) {
+            continue;
+         }
+
+         lListElem *us = lAddElemStr(master_userset_list, US_name, seed.us_name, US_Type);
+         lSetUlong(us, US_type, US_ACL);
+
+         /* migrate the legacy manager/operator members, then ensure root + admin */
+         for_each_ep_lv(le, *ocs::DataStore::get_master_list(seed.legacy_type)) {
+            const char *nm = lGetString(le, seed.legacy_key);
+            if (nm != nullptr && lGetSubStr(us, UE_name, nm, US_entries) == nullptr) {
+               lAddSubStr(us, UE_name, nm, US_entries, UE_Type);
+            }
+         }
+         if (lGetSubStr(us, UE_name, "root", US_entries) == nullptr) {
+            lAddSubStr(us, UE_name, "root", US_entries, UE_Type);
+         }
+         if (admin_user_name != nullptr && lGetSubStr(us, UE_name, admin_user_name, US_entries) == nullptr) {
+            lAddSubStr(us, UE_name, admin_user_name, US_entries, UE_Type);
+         }
+
+         if (!spool_write_object(&answer_list, spooling_context, us, seed.us_name, SGE_TYPE_USERSET, true)) {
+            answer_list_output(&answer_list);
+            CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
+            DRETURN(-1);
+         }
+      }
+   }
 
    DPRINTF("calendar list ------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR),
