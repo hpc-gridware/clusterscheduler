@@ -944,45 +944,9 @@ setup_qmaster() {
       host_ensure_slots_are_defined(ehost, processors);
    }
 
-   DPRINTF("manager_list----------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER), SGE_TYPE_MANAGER);
-   answer_list_output(&answer_list);
-   const char *root_user = "root";
-   lList **master_manager_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
-   if (lGetElemStr(*master_manager_list, UM_name, root_user) == nullptr) {
-      lListElem *ep = lAddElemStr(master_manager_list, UM_name, root_user, UM_Type);
-
-      if (!spool_write_object(&answer_list, spooling_context, ep, root_user, SGE_TYPE_MANAGER, true)) {
-         answer_list_output(&answer_list);
-         CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
-         DRETURN(-1);
-      }
-   }
-   for_each_rw_lv(ep, *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER)) {
-      DPRINTF("%s\n", lGetString(ep, UM_name));
-   }
-
    DPRINTF("host group definitions-----------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
-
-   DPRINTF("operator_list----------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR), SGE_TYPE_OPERATOR);
-   answer_list_output(&answer_list);
-   lList **master_operator_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
-   if (lGetElemStr(*master_operator_list, UO_name, root_user) == nullptr) {
-      lListElem *ep = lAddElemStr(master_operator_list, UO_name, root_user, UO_Type);
-
-      if (!spool_write_object(&answer_list, spooling_context, ep, root_user, SGE_TYPE_OPERATOR, true)) {
-         answer_list_output(&answer_list);
-         CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEOPERATORLIST);
-         DRETURN(-1);
-      }
-   }
-   for_each_rw_lv(ep, *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR)) {
-      DPRINTF("%s\n", lGetString(ep, UO_name));
-   }
-
 
    DPRINTF("userset_list------------------------------\n");
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
@@ -990,46 +954,27 @@ setup_qmaster() {
 
    /*
     * CS-2394: managers/operators are stored in the reserved "manager"/"operator"
-    * usersets. Ensure they exist; if a reserved userset is missing, seed it from
-    * the (legacy) manager/operator master list plus root and the admin user. This
-    * also migrates an upgraded cluster whose managers/operators were spooled as
-    * the old flat lists. Idempotent: an existing reserved userset is left as-is.
+    * usersets. Ensure they exist and contain root plus the admin user. Existing
+    * clusters carry their members across an upgrade via the qconf -am/-ao replay
+    * in load_config.sh. Idempotent: an existing reserved userset is left as-is.
     */
    {
       lList **master_userset_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
       const char *admin_user_name = ocs::Bootstrap::get_admin_user();
-      const struct {
-         const char *us_name;
-         sge_object_type legacy_type;
-         int legacy_key;
-      } manop_seed[] = {
-         {MANAGER_USERSET,  SGE_TYPE_MANAGER,  UM_name},
-         {OPERATOR_USERSET, SGE_TYPE_OPERATOR, UO_name},
-      };
 
-      for (const auto &seed : manop_seed) {
-         if (lGetElemStr(*master_userset_list, US_name, seed.us_name) != nullptr) {
+      for (const char *us_name : {MANAGER_USERSET, OPERATOR_USERSET}) {
+         if (lGetElemStr(*master_userset_list, US_name, us_name) != nullptr) {
             continue;
          }
 
-         lListElem *us = lAddElemStr(master_userset_list, US_name, seed.us_name, US_Type);
+         lListElem *us = lAddElemStr(master_userset_list, US_name, us_name, US_Type);
          lSetUlong(us, US_type, US_ACL);
-
-         /* migrate the legacy manager/operator members, then ensure root + admin */
-         for_each_ep_lv(le, *ocs::DataStore::get_master_list(seed.legacy_type)) {
-            const char *nm = lGetString(le, seed.legacy_key);
-            if (nm != nullptr && lGetSubStr(us, UE_name, nm, US_entries) == nullptr) {
-               lAddSubStr(us, UE_name, nm, US_entries, UE_Type);
-            }
-         }
-         if (lGetSubStr(us, UE_name, "root", US_entries) == nullptr) {
-            lAddSubStr(us, UE_name, "root", US_entries, UE_Type);
-         }
+         lAddSubStr(us, UE_name, "root", US_entries, UE_Type);
          if (admin_user_name != nullptr && lGetSubStr(us, UE_name, admin_user_name, US_entries) == nullptr) {
             lAddSubStr(us, UE_name, admin_user_name, US_entries, UE_Type);
          }
 
-         if (!spool_write_object(&answer_list, spooling_context, us, seed.us_name, SGE_TYPE_USERSET, true)) {
+         if (!spool_write_object(&answer_list, spooling_context, us, us_name, SGE_TYPE_USERSET, true)) {
             answer_list_output(&answer_list);
             CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
             DRETURN(-1);
