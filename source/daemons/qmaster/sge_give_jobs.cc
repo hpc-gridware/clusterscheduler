@@ -130,7 +130,7 @@ send_slave_jobs_wc(lListElem *tmpjep, monitoring_t *monitor, uint64_t gdi_sessio
 static int
 send_job(const char *rhost, lListElem *jep, lListElem *jatep, lListElem *hep, int master, uint64_t gdi_session);
 
-static int
+static void
 sge_bury_job(const char *sge_root, lListElem *jep, uint32_t jid, lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session);
 
 static void
@@ -1796,38 +1796,121 @@ reduce_queue_limits(const lList *master_centry_list, const lListElem *gdil_ep, l
 }
 
 /*-------------------------------------------------------------------------*/
-/* unlink/rename the job specific files on disk, send event to scheduler   */
+/* CS-1908: sge_bury_job SPLIT into a finish-side pair for retention.       */
+/*                                                                         */
+/* Before CS-1908 the finish-side actions (signal-resend removal, successor */
+/* release, security hook, suser unregister, category detach) and the      */
+/* bury-side actions (script unlink, spool delete, sgeE_*_DEL emit, list   */
+/* removal) all fired in a single sge_bury_job call at the moment a JAT    */
+/* reached its end. Under retention these phases separate in time by up to */
+/* finished_jobs_keep_time seconds, so they separate in code too:          */
+/*                                                                         */
+/*   sge_finish_ja_task -- finish-side. Runs at JAT_end_time whether or    */
+/*                         not retention holds the JAT. Idempotent-safe.   */
+/*                                                                         */
+/*   sge_bury_ja_task   -- bury-side. Runs at prune time from the U5       */
+/*                         retention sweep, or immediately after the       */
+/*                         finish-side when retention is off.              */
+/*                                                                         */
+/*   sge_bury_job       -- legacy wrapper. Calls finish-side then bury-    */
+/*                         side back-to-back so pre-CS-1908 callers see    */
+/*                         identical behaviour.                            */
 /*-------------------------------------------------------------------------*/
-static int
-sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session) {
-   uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
-   int remove_job = (!ja_task || job_get_ja_tasks(job) == 1);
-   const lList *master_suser_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
-   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
+/** @brief CS-1908 finish-side: actions that must run at JAT_end_time,
+ * whether or not retention holds the JAT on master_job_list. Runs from
+ * the legacy sge_bury_job wrapper today; under retention U4 calls this
+ * directly  and defers sge_bury_ja_task to the U5 retention sweep. */
+void
+sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int no_events, uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    if (job == nullptr) {
+      lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
       job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
    }
+
+   const uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
+
+   /* Per-JAT cleanup: fires unconditionally on every JAT finish, whether or
+    * not this is the last JAT of the JB. */
+
+   // kill any pending resend for this specific JAT
    te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, job_id, ja_task_id, nullptr);
 
-   /*
-    * Remove the job with the last task
-    * or
-    * Remove one ja task
-    */
-   if (remove_job) {
+   /* Array-dependency (JB_ja_ad_*) predecessor-list cleanup. Idempotent:
+    * lDelSubUlong removes the predecessor entry on the first successful call,
+    * subsequent JATs of the same predecessor find nothing to remove and skip
+    * the flush. */
+   release_successor_jobs_ad(job, gdi_session);
+
+   /* Per-JAT successor-task release (array dependencies keyed on this task).
+    * sge_task_depend_get_range reads only the JB dependency structure, not
+    * the JAT itself, so timing this at finish is safe. */
+   release_successor_tasks_ad(job, ja_task_id, gdi_session);
+
+   /* Whole-JOB done detection: fire JOB-level cleanup when the JB has no
+    * more work pending. Two ways this can be true:
+    *   (1) This is the only remaining JAT on JB_ja_tasks (pre-CS-1908
+    *       semantic: the bury-side has removed the earlier JATs one by one
+    *       so this is the last). Preserved for the wrapper flow AND for the
+    *       COMMIT_ST_FINISHED_FAILED / COMMIT_ST_NO_RESOURCES paths (KTD8)
+    *       where JAT_status is not necessarily JFINISHED.
+    *   (2) All enrolled JATs are JFINISHED and no unenrolled tasks remain
+    *       (CS-1908 retention semantic: JATs stay on JB_ja_tasks with the
+    *       JFINISHED marker; the whole array is done when every remaining
+    *       JAT is JFINISHED and no pending tasks are left).
+    * Under retention U4 sets JFINISHED on the current JAT BEFORE calling
+    * finish-side, mirroring the pre-CS-1908 ordering at sge_give_jobs.cc
+    * :1261 → :1287, so (2) sees the current JAT as JFINISHED already. */
+   bool job_done = (job_get_ja_tasks(job) == 1);
+   if (!job_done && job_get_not_enrolled_ja_tasks(job) == 0) {
+      job_done = true;
+      for_each_ep_lv(iter_jat, lGetList(job, JB_ja_tasks)) {
+         if (lGetUlong(iter_jat, JAT_status) != JFINISHED) {
+            job_done = false;
+            break;
+         }
+      }
+   }
+
+   if (job_done) {
       release_successor_jobs(job, gdi_session);
 
-      /* also flushes task dependency cache */
-      release_successor_jobs_ad(job, gdi_session);
-
-      /*
-       * security hook
-       */
+      // security hook
       delete_credentials(sge_root, job);
 
+      // release the SUSER slot the JB held
+      const lList *master_suser_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
+      suser_unregister_job(job, master_suser_list);
+
+      // update the category. A retained-JFINISHED JAT no longer occupies a
+      // category slot from the scheduler's perspective; the R16a audit
+      // records this decision.
+      lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
+      ocs::CategoryQmaster::detach_job(master_category_list, job, !no_events, gdi_session);
+   }
+
+   DRETURN_VOID;
+}
+
+/** @brief CS-1908 bury-side: remove the JAT from master_job_list, unlink its
+ * spool entry, emit the DEL event. When this is the last JAT on the JB, also
+ * unlink the job script and exec file and remove the whole JB. Runs from the
+ * legacy sge_bury_job wrapper today; under retention U5's sweep calls this
+ * directly. Idempotent on already-removed JATs is not guaranteed — callers
+ * must ensure the JAT is on the list when invoking. */
+void
+sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   if (job == nullptr) {
+      job = lGetElemUlongRW(master_job_list, JB_job_number, job_id);
+   }
+
+   const uint32_t ja_task_id = lGetUlong(ja_task, JAT_task_number);
+   if (const bool remove_job = (!ja_task || job_get_ja_tasks(job) == 1); remove_job) {
       /*
        * do not try to remove script file for interactive jobs
        */
@@ -1853,13 +1936,6 @@ sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *j
 
          spool_transaction(&answer_list, spool_get_default_context(), STC_commit);
       }
-
-      // remove the job
-      suser_unregister_job(job, master_suser_list);
-
-      // update the category
-      lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-      ocs::CategoryQmaster::detach_job(master_category_list, job, !no_events, gdi_session);
 
       // send events
       if (!no_events) {
@@ -1900,14 +1976,19 @@ sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *j
             sge_dstring_free(&buffer);
          }
       }
-
-      /* release the successor tasks. this might have been done before
-         but to make sure, we do it again. we need to do this last to
-         make sure the task is gone when dependencies are calculated */
-      release_successor_tasks_ad(job, ja_task_id, gdi_session);
    }
 
-   DRETURN(True);
+   DRETURN_VOID;
+}
+
+/** @brief Legacy wrapper. Existing callers of sge_bury_job see the finish-side
+ * and bury-side run back-to-back, which is identical to pre-CS-1908 behaviour.
+ * New callers under retention (U4 finish path, U5 sweep) call the two split
+ * functions independently. */
+static void
+sge_bury_job(const char *sge_root, lListElem *job, uint32_t job_id, lListElem *ja_task, int spool_job, int no_events, uint64_t gdi_session) {
+   sge_finish_ja_task(sge_root, job, job_id, ja_task, no_events, gdi_session);
+   sge_bury_ja_task(sge_root, job, job_id, ja_task, spool_job, no_events, gdi_session);
 }
 
 /****** sge_give_jobs/copyJob() ************************************************
