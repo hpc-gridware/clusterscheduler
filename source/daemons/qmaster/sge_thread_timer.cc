@@ -466,36 +466,9 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    DRETURN_VOID;
 }
 
-/**
- * @brief Drop any pending finished-jobs sweep event and re-queue at +5 s so a
- * runtime qconf -mconf change to a finished_jobs_* tunable takes effect
- * promptly. Called from configuration_qmaster.cc.
- *
- * When both retention tunables are 0 (feature just turned off) the requeue
- * carries sweep_all=1 so the next tick drains any retained ja_tasks left over
- * from the previous retention window instead of stranding them on
- * master_job_list. Otherwise the requeue is a normal sweep_all=0 event.
- *
- * te_delete_all_one_time_events (not te_delete_one_time_event) is used so
- * both sweep_all=0 and sweep_all=1 pending events are cleared -- filtering
- * by a specific aKey1 would leave the other variant behind.
- */
-void
-sge_reschedule_finished_jobs_sweep() {
-   DENTER(TOP_LAYER);
-
-   te_delete_all_one_time_events(TYPE_FINISHED_JOBS_SWEEP_EVENT);
-
-   const uint32_t sweep_all = (mconf_get_finished_jobs_keep_time() == 0 &&
-                               mconf_get_finished_jobs_max() == 0) ? 1u : 0u;
-   te_event_t ev = te_new_event(sge_get_gmt64() + sge_gmt32_to_gmt64(5),
-                                TYPE_FINISHED_JOBS_SWEEP_EVENT, ONE_TIME_EVENT,
-                                sweep_all, 0, "finished-jobs-sweep");
-   te_add_event(ev);
-   te_free_event(&ev);
-
-   DRETURN_VOID;
-}
+/* sge_reschedule_finished_jobs_sweep() lives in ocs_FinishedJobs.cc so it can
+ * be linked into consumers (e.g. lightweight test binaries) that do not pull
+ * in this whole translation unit. See ocs_FinishedJobs.h. */
 
 /****** qmaster/sge_thread_timer/sge_timer_register_event_handler() *************
 *  NAME

@@ -56,3 +56,23 @@
  *  Returns 0 on success, a negative value on a hard error (missing jep/jatep).
  */
 int sge_book_finished_job_usage(lListElem *jep, lListElem *jatep, monitoring_t *monitor, uint64_t gdi_session);
+
+/** CS-1908 finished-job retention: drop any pending retention-sweep event and
+ *  re-queue at +5 s so a runtime qconf -mconf change to a finished_jobs_*
+ *  tunable takes effect within seconds rather than up to sweep_interval away.
+ *  Called from configuration_qmaster.cc after the config has been swapped in.
+ *
+ *  When both retention tunables are 0 at reschedule time (feature just turned
+ *  off) the requeued event carries sweep_all=1 so the next tick drains any
+ *  retained ja_tasks left over from the previous retention window instead of
+ *  stranding them on master_job_list. Otherwise the requeue is a normal
+ *  sweep_all=0 event.
+ *
+ *  Lives in ocs_FinishedJob.cc rather than sge_thread_timer.cc so consumers
+ *  that do not link the timed-event thread's full translation unit (e.g.
+ *  lightweight test binaries such as test_qmaster_calendar) can still resolve
+ *  the symbol. The sweep handler itself remains in sge_thread_timer.cc.
+ *  Mirrors the CS-1239 split between sge_sharetree_tick_handler
+ *  (sge_thread_timer.cc) and sge_reschedule_sharetree_tick (ocs_SharetreeUsage.cc).
+ */
+void sge_reschedule_finished_jobs_sweep();
