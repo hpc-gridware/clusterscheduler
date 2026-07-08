@@ -1265,18 +1265,23 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
          continue;
       }
 
-      /* ignore modify requests if all job tasks are already JFINISHED
-         and no task id remains in not yet ran task id lists */
+      /* Ignore modify requests if all job tasks are already JFINISHED and
+       * no task id remains in not-yet-ran task id lists. Under CS-1908
+       * retention this branch is reachable for as long as the retention
+       * window holds the finished JB (previously the JFINISHED window was
+       * microseconds and the skip was defensive), so emit an INFO answer
+       * so the user knows why nothing was modified. */
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
-         const lListElem *ja_task;
          bool all_finished = true;
-         for_each_ep(ja_task, lGetList(jobep, JB_ja_tasks)) {
+         for_each_ep_lv(ja_task, lGetList(jobep, JB_ja_tasks)) {
             if (lGetUlong(ja_task, JAT_status) != JFINISHED) {
                all_finished = false;
                break;
             }
          }
          if (all_finished) {
+            INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, lGetUlong(jobep, JB_job_number));
+            answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
             continue;
          }
       }
