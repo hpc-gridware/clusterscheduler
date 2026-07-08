@@ -477,6 +477,38 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
          DPRINTF("Returning procedure information is not implemented yet\n");
          answer_list_add(&(task->answer_list), "Returning procedure information is not implemented yet", STATUS_OK, ANSWER_QUALITY_END);
          break;
+      case ocs::gdi::Target::UM_LIST:
+      case ocs::gdi::Target::UO_LIST: {
+         /*
+          * CS-2394: managers/operators are stored in the reserved "manager"/
+          * "operator" userset. Build the UM_Type/UO_Type name list from that
+          * userset so the -sm/-so (GET) output is unchanged.
+          */
+         const bool is_manager = (task->target == ocs::gdi::Target::UM_LIST);
+         const char *userset_name = is_manager ? MANAGER_USERSET : OPERATOR_USERSET;
+         const int name_nm = is_manager ? static_cast<int>(UM_name) : static_cast<int>(UO_name);
+         const lDescr *descr = is_manager ? UM_Type : UO_Type;
+
+         const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
+         const lListElem *userset = lGetElemStr(master_userset_list, US_name, userset_name);
+         lList *manop_list = lCreateList("", descr);
+         if (userset != nullptr) {
+            for_each_ep_lv(ue, lGetList(userset, US_entries)) {
+               lAddElemStr(&manop_list, name_nm, lGetString(ue, UE_name), descr);
+            }
+         } else {
+            /* legacy fallback (userset not created yet), matching manop_is_manager() */
+            const lList *legacy = *ocs::DataStore::get_master_list(is_manager ? SGE_TYPE_MANAGER : SGE_TYPE_OPERATOR);
+            for_each_ep_lv(le, legacy) {
+               lAddElemStr(&manop_list, name_nm, lGetString(le, name_nm), descr);
+            }
+         }
+         task->data_list = lSelectHashPack("", manop_list, task->condition, task->enumeration, false, nullptr);
+         task->do_select_pack_simultaneous = false;
+         answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
+         lFreeList(&manop_list);
+         break;
+      }
       default:
          /*
           * Issue 1365
