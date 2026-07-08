@@ -703,6 +703,7 @@
 #define MSG_ROLE_PARENT_DOESNOTEXIST_SS        _MESSAGE(33989, _("denied: role " SFQ " referenced in parent_role_list of role " SFQ " does not exist"))
 #define MSG_ROLE_STILL_REFERENCED_INPARENT_SS  _MESSAGE(33990, _("denied: role " SFQ " cannot be deleted: still referenced in parent_role_list of role " SFQ))
 #define MSG_USERSET_RESERVED_NODELETE_S        _MESSAGE(33992, _("denied: the reserved userset " SFQ " cannot be deleted; use qconf -am/-dm (manager) or -ao/-do (operator)"))
+#define MSG_USERSET_RESERVED_NOMODIFY_S        _MESSAGE(33993, _("denied: the reserved userset " SFQ " cannot be modified via the userset interface; use qconf -am/-dm (manager) or -ao/-do (operator)"))
 #define MSG_ROLE_PARENT_CYCLE_SS               _MESSAGE(33991, _("denied: adding role " SFQ " as parent of role " SFQ " would create a cycle in the role hierarchy"))
 
 // clang-format on

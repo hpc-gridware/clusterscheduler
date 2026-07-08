@@ -641,6 +641,16 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
       }
    }
    userset_name = lGetString(new_userset, US_name);
+
+   /* the manager/operator usersets back the manager/operator lists (CS-2394);
+    * they are reserved and must be changed via qconf -am/-dm/-ao/-do, not the
+    * userset interface (-au/-du/-mu/-Mu/-Au) */
+   if (strcmp(userset_name, MANAGER_USERSET) == 0 || strcmp(userset_name, OPERATOR_USERSET) == 0) {
+      ERROR(MSG_USERSET_RESERVED_NOMODIFY_S, userset_name);
+      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
+      goto ERROR;
+   }
+
    if (add && verify_str_key(
            alpp, userset_name, MAX_VERIFY_STRING, object->object_name, KEY_TABLE) != STATUS_OK) {
       goto ERROR;
