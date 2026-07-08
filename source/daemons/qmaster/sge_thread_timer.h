@@ -52,3 +52,9 @@ sge_timer_terminate();
 
 [[noreturn]] void *
 sge_timer_main(void *arg);
+
+/* CS-1908: called from configuration_qmaster.cc after qconf -mconf to make
+ * changes to finished_jobs_sweep_interval (or a fresh enable of retention)
+ * take effect promptly rather than waiting for the next scheduled tick. */
+void
+sge_reschedule_finished_jobs_sweep();

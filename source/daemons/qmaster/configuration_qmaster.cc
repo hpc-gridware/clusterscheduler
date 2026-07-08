@@ -74,6 +74,7 @@
 #include "sge.h"
 #include "ocs_SharetreeUsage.h"
 #include "sge_persistence_qmaster.h"
+#include "sge_thread_timer.h"
 #include "sge_userprj_qmaster.h"
 #include "reschedule.h"
 #include "msg_common.h"
@@ -410,6 +411,13 @@ sge_mod_configuration(lListElem *aConf, lList **anAnswer, const char *aUser, con
       // schedule unless we explicitly re-arm it. issue_1385 pins
       // STREE_SPOOL_INTERVAL low then reads the spool file within seconds.
       sge_reschedule_sharetree_spool();
+
+      // CS-1908: FINISHED_JOBS_SWEEP_INTERVAL may have changed, or the admin
+      // may have just flipped retention on. The pending one-time sweep event
+      // was scheduled with the *previous* interval; drop it and re-queue at
+      // +5 s so the new cadence takes effect within seconds rather than up
+      // to sweep_interval away.
+      sge_reschedule_finished_jobs_sweep();
    }
 
    /* invalidate configuration cache */
