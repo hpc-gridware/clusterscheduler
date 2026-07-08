@@ -47,7 +47,9 @@
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_string.h"
 #include "uti/sge_time.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -970,7 +972,8 @@ setup_qmaster() {
          lListElem *us = lAddElemStr(master_userset_list, US_name, us_name, US_Type);
          lSetUlong(us, US_type, US_ACL);
          lAddSubStr(us, UE_name, "root", US_entries, UE_Type);
-         if (admin_user_name != nullptr && lGetSubStr(us, UE_name, admin_user_name, US_entries) == nullptr) {
+         if (admin_user_name != nullptr && sge_strnullcasecmp(admin_user_name, NONE_STR) != 0 &&
+             lGetSubStr(us, UE_name, admin_user_name, US_entries) == nullptr) {
             lAddSubStr(us, UE_name, admin_user_name, US_entries, UE_Type);
          }
 

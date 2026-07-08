@@ -2120,13 +2120,8 @@ CreateSGEStartUpScripts()
 
       rm -f $TMP_SGE_STARTUP_FILE ${TMP_SGE_STARTUP_FILE}.0 ${TMP_SGE_STARTUP_FILE}.1
 
-      if [ $euid = 0 -a "$ADMINUSER" != default -a $QMASTER = "install" -a $hosttype = "qmaster" ]; then
-         AddDefaultManager root $ADMINUSER
-         AddDefaultOperator $ADMINUSER
-      elif [ $euid != 0 -a $hosttype = "qmaster" ]; then
-         AddDefaultManager $USER
-         AddDefaultOperator $USER
-      fi
+      # CS-2394: managers/operators are seeded as the reserved usersets by qmaster
+      # startup (setup_qmaster.cc); no separate manager/operator file seeding here.
 
       $INFOTEXT "Creating >%s< script" $STARTUP_FILE_NAME
    fi
@@ -2685,26 +2680,6 @@ InstallRcScript()
 }
 
 
-
-#-------------------------------------------------------------------------
-# AddDefaultManager
-#
-AddDefaultManager()
-{
-   ExecuteAsAdmin $SPOOLDEFAULTS managers $*
-#  TruncCreateAndMakeWriteable $QMDIR/managers
-#  $ECHO $1 >> $QMDIR/managers
-#  SetPerm $QMDIR/managers
-}
-
-
-#-------------------------------------------------------------------------
-# AddDefaultOperator
-#
-AddDefaultOperator()
-{
-   ExecuteAsAdmin $SPOOLDEFAULTS operators $*
-}
 
 MoveLog()
 {

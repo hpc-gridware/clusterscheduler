@@ -84,9 +84,6 @@ const char *get_classic_spooling_method()
    return spooling_method;
 }
 
-static bool write_manop(int spool, ocs::gdi::Target target);
-static bool read_manop(ocs::gdi::Target target);
-
 /**
  * @brief Create a classic (flatfile) spooling context.
  *
@@ -541,12 +538,6 @@ spool_classic_default_list_func(lList **answer_list,
             break;
          case SGE_TYPE_EXECHOST:
             directory = EXECHOST_DIR;
-            break;
-         case SGE_TYPE_MANAGER:
-            ret = read_manop(ocs::gdi::Target::UM_LIST);
-            break;
-         case SGE_TYPE_OPERATOR:
-            ret = read_manop(ocs::gdi::Target::UO_LIST);
             break;
          case SGE_TYPE_PE:
             directory = PE_DIR;
@@ -1006,12 +997,6 @@ spool_classic_default_write_func(lList **answer_list,
          directory = EXECHOST_DIR;
          filename  = key;
          break;
-      case SGE_TYPE_MANAGER:
-         ret = write_manop(1, ocs::gdi::Target::UM_LIST);
-         break;
-      case SGE_TYPE_OPERATOR:
-         ret = write_manop(1, ocs::gdi::Target::UO_LIST);
-         break;
       case SGE_TYPE_PE:
          directory = PE_DIR;
          filename = key;
@@ -1320,12 +1305,6 @@ spool_classic_default_delete_func(lList **answer_list,
             sge_free(&dup);
          }
          break;
-      case SGE_TYPE_MANAGER:
-         write_manop(1, ocs::gdi::Target::UM_LIST);
-         break;
-      case SGE_TYPE_OPERATOR:
-         write_manop(1, ocs::gdi::Target::UO_LIST);
-         break;
       case SGE_TYPE_SHARETREE:
          ret = sge_unlink(nullptr, SHARETREE_FILE);
          break;
@@ -1380,148 +1359,3 @@ spool_classic_default_delete_func(lList **answer_list,
    DRETURN(ret);
 }
 
-/**
- * @brief Spool the managers or operators name list to its flat file.
- *
- * Writes the manager (MAN_FILE) or operator (OP_FILE) list to a dot-prefixed
- * temporary file in the current (qmaster spool) directory and renames it into
- * place. The file is created owner-only (0600): it enumerates the cluster's
- * administrative accounts, so group/other must have neither read access
- * (disclosure of who the admins are) nor write access (tampering with the
- * manager/operator list is a privilege-escalation vector). See CS-2352.
- *
- * @param[in] spool   if non-zero, prepend the standard version comment header
- * @param[in] target  UM_LIST for the manager list, UO_LIST for the operator list
- * @return true on success, false on error
- */
-static bool write_manop(int spool, ocs::gdi::Target target) {
-   DENTER(TOP_LAYER);
-   FILE *fp;
-   const lList *lp;
-   char filename[255], real_filename[255];
-   dstring ds = DSTRING_INIT;
-   int key = NoName;
-
-   switch (target) {
-   case ocs::gdi::Target::UM_LIST:
-      lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-      strcpy(filename, ".");
-      strcat(filename, MAN_FILE);
-      strcpy(real_filename, MAN_FILE);
-      key = UM_name;
-      break;
-
-   case ocs::gdi::Target::UO_LIST:
-      lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
-      strcpy(filename, ".");
-      strcat(filename, OP_FILE);
-      strcpy(real_filename, OP_FILE);
-      key = UO_name;
-      break;
-
-   default:
-      DRETURN(false);
-   }
-
-   /* Create the spool file owner-only (0600): it lists administrative accounts,
-    * so group/other must have neither read (disclosure) nor write (tampering ->
-    * privilege escalation) access. O_NOFOLLOW defeats a symlink pre-placement on
-    * the dot-temp. See CS-2352. */
-   {
-      int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW,
-                    S_IRUSR | S_IWUSR);
-      if (fd == -1) {
-         ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
-         DRETURN(false);
-      }
-      fp = fdopen(fd, "w");
-      if (!fp) {
-         ERROR(MSG_ERRORWRITINGFILE_SS, filename, strerror(errno));
-         close(fd);
-         DRETURN(false);
-      }
-   }
-
-   if (spool && sge_spoolmsg_write(fp, COMMENT_CHAR,
-             feature_get_product_name(FS_VERSION, &ds)) < 0) {
-      sge_dstring_free(&ds);
-      goto FPRINTF_ERROR;
-   }
-   sge_dstring_free(&ds);
-
-   for_each_ep_lv(ep, lp) {
-      FPRINTF((fp, "%s\n", lGetString(ep, key)));
-   }
-
-   FCLOSE(fp);
-
-   if (rename(filename, real_filename) == -1) {
-      DRETURN(false);
-   } else {
-      strcpy(filename, real_filename);
-   }
-
-   DRETURN(true);
-
-FPRINTF_ERROR:
-FCLOSE_ERROR:
-   DRETURN(false);
-}
-
-static bool read_manop(ocs::gdi::Target target) {
-   lList **lpp;
-   stringT filename;
-   char str[256];
-   FILE *fp;
-   SGE_STRUCT_STAT st;
-   int key = NoName;
-   lDescr *descr = nullptr;
-
-   DENTER(TOP_LAYER);
-
-   switch (target) {
-   case ocs::gdi::Target::UM_LIST:
-      lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
-      strcpy(filename, MAN_FILE);
-      key = UM_name;
-      descr = UM_Type;
-      break;
-
-   case ocs::gdi::Target::UO_LIST:
-      lpp = ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
-      strcpy(filename, OP_FILE);
-      key = UO_name;
-      descr = UO_Type;
-      break;
-
-   default:
-      DRETURN(false);
-   }
-
-   /* if no such file exists. ok return without error */
-   if (SGE_STAT(filename, &st) && errno==ENOENT) {
-      DRETURN(true);
-   }
-
-   fp = fopen(filename, "r");
-   if (!fp) {
-      ERROR(MSG_FILE_ERROROPENINGX_S, filename);
-      DRETURN(false);
-   }
-
-   lFreeList(lpp);
-   *lpp = lCreateList("man/op list", descr);
-
-   while (fscanf(fp, "%[^\n]\n", str) == 1) {
-      if (str[0] != COMMENT_CHAR) {
-         lAddElemStr(lpp, key, str, descr);
-      }
-   }
-
-   FCLOSE(fp);
-
-   DRETURN(true);
-FCLOSE_ERROR:
-   ERROR(MSG_FILE_ERRORCLOSEINGX_S, filename);
-   DRETURN(false);
-}

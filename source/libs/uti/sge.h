@@ -172,8 +172,6 @@
 #define RESOURCEQUOTAS_DIR        "resource_quotas"
 #define AR_DIR                    "advance_reservations"
 
-#define MAN_FILE                  "managers"
-#define OP_FILE                   "operators"
 #define SEQ_NUM_FILE              "jobseqnum"
 #define ARSEQ_NUM_FILE            "arseqnum"
 #define ALIAS_FILE                "host_aliases"

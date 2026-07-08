@@ -129,36 +129,6 @@ static int init_framework()
    DRETURN(ret);
 }
 
-static int spool_manops(sge_object_type type, int argc, char *argv[])
-{
-   int ret = EXIT_SUCCESS;
-   int i;
-   lList *answer_list = nullptr;
-   lList **lpp = ocs::DataStore::get_master_list_rw(type);
-   int key = object_type_get_key_nm(type);
-   const lDescr *descr = object_type_get_descr(type);
-
-   DENTER(TOP_LAYER);
-
-   if (*lpp == nullptr) {
-      *lpp = lCreateList("master list", descr);
-   }
-
-   for (i = 2; i < argc; i++) {
-      const char *name = argv[i];
-      lListElem *ep = lAddElemStr(lpp, key, name, descr);
-
-      if (!spool_write_object(&answer_list, spool_get_default_context(),
-                              ep, name, type, true)) {
-         /* error output has been done in spooling function */
-         answer_list_output(&answer_list);
-         ret = EXIT_FAILURE;
-      }
-   }
-
-   DRETURN(ret);
-}
-
 static int spool_configuration(int argc, char *argv[])
 {
    int ret = EXIT_SUCCESS;
@@ -417,10 +387,6 @@ int main(int argc, char *argv[])
                ret = spool_exechosts(argc, argv);
             } else if (strcmp(argv[1], "local_conf") == 0) {
                ret = spool_local_conf(argc, argv);
-            } else if (strcmp(argv[1], "managers") == 0) {
-               ret = spool_manops(SGE_TYPE_MANAGER, argc, argv);
-            } else if (strcmp(argv[1], "operators") == 0) {
-               ret = spool_manops(SGE_TYPE_OPERATOR, argc, argv);
             } else if (strcmp(argv[1], "pes") == 0) {
                ret = spool_pes(argc, argv);
             } else if (strcmp(argv[1], "projects") == 0) {
