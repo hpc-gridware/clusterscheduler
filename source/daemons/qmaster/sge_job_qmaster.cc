@@ -4144,7 +4144,13 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
                } else {
                   sge_commit_job(job, tmp_task, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
                                  COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, packet->gdi_session);
-                  ja_task_buried = true;
+                  /* CS-1908: under retention (finished_jobs_keep_time > 0 or
+                   * finished_jobs_max > 0) sge_commit_job's _EE path does NOT
+                   * bury the ja_task -- it flips JAT_status to JFINISHED and
+                   * leaves the task on JB_ja_tasks for the U5 sweep to prune
+                   * later. Detect the actual outcome by checking whether the
+                   * ja_task is still on JB_ja_tasks. */
+                  ja_task_buried = (lGetSubUlong(job, JAT_task_number, task_number, JB_ja_tasks) == nullptr);
                   showmessage = 1;
                   if (!*alltasks && showmessage) {
                      range_list_insert_id(&range_list, nullptr, task_number);
@@ -4153,7 +4159,9 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, lList **a
 
                if (ja_task_buried && --remaining_enrolled == 0) {
                   /* Last enrolled ja_task buried -> `job` element has been
-                   * removed from the master job list and is no longer valid. */
+                   * removed from the master job list and is no longer valid.
+                   * Under CS-1908 retention this branch does not fire because
+                   * ja_task_buried is false when the JAT stays retained. */
                   job = nullptr;
                   break;
                }

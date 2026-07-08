@@ -67,6 +67,7 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_qinstance_state.h"
 #include "sgeobj/sge_ckpt.h"
+#include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
@@ -1280,11 +1281,69 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
           * deferred to the TET sharetree-spool handler. */
          sge_book_finished_job_usage(jep, jatep, monitor, gdi_session);
 
-         /* Bury the ja_task / job. sge_bury_job opens its own spool transaction
-          * around its writes (spool_delete_script + spool_delete_object) and
-          * emits sgeE_JATASK_DEL or sgeE_JOB_DEL. No outer transaction here
-          * because BerkeleyDB transactions do not nest. */
-         sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
+         /* CS-1908 retention: keep the finished ja_task on master_job_list for
+          * a configurable window instead of burying it inline. Gate on either
+          * retention-semantics tunable being non-zero; when both are 0 the
+          * feature is off and we bury as pre-CS-1908.
+          *
+          * Under retention we:
+          *  (1) propagate execd's end_time from JR_usage onto master's
+          *      JAT_end_time (KTD2 correction, closes the pre-existing TODO
+          *      at sge_ja_task.cc:482). Retention's age comparison reads
+          *      JAT_end_time.
+          *  (2) fold all finished pe_tasks into the PE_TASK_PAST_USAGE_CONTAINER
+          *      on JAT_task_list and remove the individual pe_task elements.
+          *      Per-pe_task detail would balloon memory for tight-PE workloads;
+          *      the aggregate container carries the usage a qstat -j reader
+          *      needs and per-pe_task detail lives in accounting (KTD in origin).
+          *  (3) run sge_finish_ja_task -- the U3 finish-side (signal-resend
+          *      removal, per-JAT + whole-JOB successor release, security
+          *      hooks, suser_unregister_job, category detach).
+          *  (4) sge_event_spool(sgeE_JATASK_MOD, ...) -- one call = spool
+          *      write + mirror event (KTD5).
+          *  (5) skip sge_bury_ja_task -- the U5 retention sweep prunes it
+          *      when the time OR count limit bites. */
+         if (mconf_get_finished_jobs_keep_time() > 0 || mconf_get_finished_jobs_max() > 0) {
+            // (1) propagate execd end_time into master JAT_end_time
+            const uint64_t end_time = usage_list_get_ulong64_usage(lGetList(jr, JR_usage), "end_time", 0);
+            if (end_time != 0) {
+               lSetUlong64(jatep, JAT_end_time, end_time);
+            }
+
+            // (2) fold finished pe_tasks into PAST_USAGE_CONTAINER, remove pe_tasks
+            lList *pe_task_list = lGetListRW(jatep, JAT_task_list);
+            if (pe_task_list != nullptr) {
+               pe_task_sum_past_usage_all(pe_task_list);
+               lListElem *pe_task = lFirstRW(pe_task_list);
+               while (pe_task != nullptr) {
+                  lListElem *next_pe_task = lNextRW(pe_task);
+                  if (strcmp(lGetString(pe_task, PET_id), PE_TASK_PAST_USAGE_CONTAINER) != 0) {
+                     lRemoveElem(pe_task_list, &pe_task);
+                  }
+                  pe_task = next_pe_task;
+               }
+            }
+
+            // (3) finish-side (U3): signal-resend removal, successor release,
+            //     security hooks, suser_unregister_job, category detach
+            sge_finish_ja_task(sge_root, jep, jobid, jatep, no_events, gdi_session);
+
+            // (4) spool the modification + emit sgeE_JATASK_MOD (KTD5)
+            lList *answer_list = nullptr;
+            sge_event_spool(&answer_list, now, sgeE_JATASK_MOD, jobid, jataskid,
+                            nullptr, nullptr, session, jep, jatep, nullptr,
+                            true, true, gdi_session);
+            answer_list_output(&answer_list);
+
+            // (5) bury deferred to U5 retention sweep
+         } else {
+            /* Retention off: bury the ja_task / job inline as pre-CS-1908.
+             * sge_bury_job opens its own spool transaction around its writes
+             * (spool_delete_script + spool_delete_object) and emits
+             * sgeE_JATASK_DEL or sgeE_JOB_DEL. No outer transaction here
+             * because BerkeleyDB transactions do not nest. */
+            sge_bury_job(sge_root, jep, jobid, jatep, spool_job, no_events, gdi_session);
+         }
          break;
 
       case COMMIT_ST_NO_RESOURCES: /* triggered by ORT_remove_immediate_job */
