@@ -329,28 +329,36 @@ wakeup_tty_to_commlib_thread(const char *source) {
    DRETURN_VOID;
 }
 
-/****** tty_to_commlib() *******************************************************
-*  NAME
-*     tty_to_commlib() -- tty_to_commlib thread entry point and main loop
-*
-*  SYNOPSIS
-*     void* tty_to_commlib(void *t_conf)
-*
-*  FUNCTION
-*     Entry point and main loop of the tty_to_commlib thread.
-*     Reads data from the tty and writes it to the commlib.
-*
-*  INPUTS
-*     void *t_conf - pointer to cl_thread_settings_t struct of the thread
-*
-*  RESULT
-*     void* - always nullptr
-*
-*  NOTES
-*     MT-NOTE: tty_to_commlib is MT-safe ?
-*
-*  SEE ALSO
-*******************************************************************************/
+/**
+ * @brief Decide whether the stdin-forwarding thread may read STDIN right now.
+ *
+ * Reading the controlling terminal from a background process group raises
+ * SIGTTIN, which stops the whole qrsh/qlogin client ("Stopped (tty input)").
+ * We may only read STDIN when either it is not a terminal (a pipe/file redirect,
+ * which carries no SIGTTIN risk) or the client currently owns the terminal, i.e.
+ * it is the terminal's foreground process group. When backgrounded we skip the
+ * read; forwarding resumes automatically once the client is in the foreground
+ * again, because the select loop re-evaluates this on every iteration.
+ *
+ * @return true if STDIN may be read without risking SIGTTIN, false otherwise
+ */
+static bool client_may_read_stdin() {
+   if (!isatty(STDIN_FILENO)) {
+      return true;
+   }
+   return tcgetpgrp(STDIN_FILENO) == getpgrp();
+}
+
+/**
+ * @brief tty_to_commlib thread entry point and main loop.
+ *
+ * Reads data from the tty and forwards it to the commlib (to the shepherd of the
+ * interactive job). Only reads STDIN while the client owns the terminal (see
+ * client_may_read_stdin()), so a backgrounded client is not stopped by SIGTTIN.
+ *
+ * @param t_conf pointer to the cl_thread_settings_t struct of the thread
+ * @return always nullptr
+ */
 void *tty_to_commlib(void *t_conf) {
    DENTER(TOP_LAYER);
 
@@ -370,8 +378,9 @@ void *tty_to_commlib(void *t_conf) {
       // We wait on the wakeup_pipe for a byte sent from the commlib_to_tty thread.
       fd_set read_fds;
       FD_ZERO(&read_fds);
-      if (g_nostdin == 0 && g_client_connected) {
-         /* wait for input on tty */
+      if (g_nostdin == 0 && g_client_connected && client_may_read_stdin()) {
+         /* wait for input on tty - but only while we own the terminal, otherwise
+          * a background read() would raise SIGTTIN and stop the whole client */
          FD_SET(STDIN_FILENO, &read_fds);
       }
       if (g_wakeup_pipe[0] != -1) {
