@@ -28,7 +28,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -87,7 +87,15 @@ struct qstat_env_str {
    lEnumeration *what_JB_Type;
    lEnumeration *what_JAT_Type_template;
    lEnumeration *what_JAT_Type_list;
-   
+
+   /* Name of the load variable shown in the "load_avg" column of qstat -f.
+    * Populated in qstat_env_prepare() from SGE_QSTAT_LOAD_AVG (CS-2387),
+    * defaults to LOAD_ATTR_LOAD_AVG when the env var is unset or empty.
+    * Points at either the env-var storage (stable for the process lifetime)
+    * or a static string literal — not owned, not freed by qstat_env_destroy.
+    */
+   const char *load_avg_variable;
+
 };
 
 

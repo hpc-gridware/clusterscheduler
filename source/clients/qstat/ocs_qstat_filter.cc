@@ -27,7 +27,7 @@
  * 
  *   All Rights Reserved.
  * 
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -435,11 +435,23 @@ static void calc_longest_queue_length(qstat_env_t *qstat_env) {
    
 
 
-static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList **alpp) 
+static int qstat_env_prepare(qstat_env_t* qstat_env, bool need_job_list, lList **alpp)
 {
    int ret = 0;
 
    DENTER(TOP_LAYER);
+
+   /* CS-2387: pick the load variable shown in the qstat -f load_avg column
+    * from SGE_QSTAT_LOAD_AVG (typically load_* or np_load_*). Empty / unset
+    * falls back to "load_avg" for backward compatibility. The unrelated
+    * SGE_LOAD_AVG env var (used by select_by_queue_state to compute alarm /
+    * suspend state) is intentionally NOT consulted here.
+    */
+   const char *load_avg_variable = getenv("SGE_QSTAT_LOAD_AVG");
+   if (load_avg_variable == nullptr || *load_avg_variable == '\0') {
+      load_avg_variable = LOAD_ATTR_LOAD_AVG;
+   }
+   qstat_env->load_avg_variable = load_avg_variable;
 
    bool perm_return = ocs::gdi::Client::sge_gdi_get_permission(alpp, &qstat_env->is_manager, nullptr, nullptr, nullptr);
    if (!perm_return) {
@@ -1351,26 +1363,25 @@ static int handle_queue(lListElem *q, qstat_env_t *qstat_env, qstat_handler_t *h
    DENTER(TOP_LAYER);
 
    char arch_string[80];
-   const char *load_avg_str;
    char load_alarm_reason[MAX_STRING_SIZE];
    char suspend_alarm_reason[MAX_STRING_SIZE];
    const char *queue_name = nullptr;
    u_long32 interval;
-   
+
    queue_summary_t summary;
    DSTRING_STATIC(type_string, 32);
    DSTRING_STATIC(state_string, 32);
    int ret = 0;
-   
+
    memset(&summary, 0, sizeof(queue_summary_t));
-   
+
    *load_alarm_reason = 0;
    *suspend_alarm_reason = 0;
 
-   /* make it possible to display any load value in qstat output */
-   if (!(load_avg_str=getenv("SGE_LOAD_AVG")) || !strlen(load_avg_str))
-      load_avg_str = LOAD_ATTR_LOAD_AVG;
-   
+   /* CS-2387: display column driven by qstat_env->load_avg_variable
+    * (SGE_QSTAT_LOAD_AVG, resolved in qstat_env_prepare).
+    */
+   const char *load_avg_str = qstat_env->load_avg_variable;
    summary.load_avg_str = load_avg_str;
    
    if (!(qstat_env->full_listing & QSTAT_DISPLAY_FULL)) {
