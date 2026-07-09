@@ -1304,11 +1304,22 @@ sge_commit_job(lListElem *jep, lListElem *jatep, lListElem *jr, sge_commit_mode_
           *  (5) skip sge_bury_ja_task -- the U5 retention sweep prunes it
           *      when the time OR count limit bites. */
          if (mconf_get_finished_jobs_keep_time() > 0 || mconf_get_finished_jobs_max() > 0) {
-            // (1) propagate execd end_time into master JAT_end_time
-            const uint64_t end_time = usage_list_get_ulong64_usage(lGetList(jr, JR_usage), "end_time", 0);
-            if (end_time != 0) {
-               lSetUlong64(jatep, JAT_end_time, end_time);
+            /* (1) stamp master JAT_end_time. Prefer execd's shepherd-recorded
+             * end_time from JR_usage (accurate to the moment the child exited),
+             * fall back to sge_get_gmt64() when the field is absent -- happens
+             * on paths where jr is nullptr (SUSPENDED-on-cancel, NEVER_RAN
+             * cases) or where execd delivered a JR with no usage list at all
+             * (some interactive/qrsh teardowns write no usage file, so
+             * reaper_execd's convert_attribute never runs). Under retention
+             * the sweep handler compares finished[i].end_time > 0 && ... +
+             * keep_time_delta < curr_time; leaving JAT_end_time at 0 makes
+             * time-based pruning silently no-op while count-based pruning
+             * still works, which is exactly the symptom pattern. */
+            uint64_t end_time = usage_list_get_ulong64_usage(lGetList(jr, JR_usage), "end_time", 0);
+            if (end_time == 0) {
+               end_time = sge_get_gmt64();
             }
+            lSetUlong64(jatep, JAT_end_time, end_time);
 
             // (2) fold finished pe_tasks into PAST_USAGE_CONTAINER, remove pe_tasks
             lList *pe_task_list = lGetListRW(jatep, JAT_task_list);
