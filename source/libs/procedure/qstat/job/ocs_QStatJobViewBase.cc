@@ -158,6 +158,7 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const lList *ilp, const l
          report_task_exec_queue_list(os, job, jatep);
          report_task_exec_host_list(os, job, jatep);
          report_task_start_time(os, job, jatep);
+         report_task_end_time(os, job, jatep);
          report_task_resource_map(os, job, jatep);
          report_task_error_reason(os, job, jatep);
 

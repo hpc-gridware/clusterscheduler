@@ -115,6 +115,7 @@ namespace ocs {
       void report_task_exec_queue_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
       void report_task_exec_host_list(std::ostream &os, const lListElem *job, const lListElem *task) override;
       void report_task_start_time(std::ostream &os, const lListElem *job, const lListElem *task) override;
+      void report_task_end_time(std::ostream &os, const lListElem *job, const lListElem *task) override;
       void report_task_resource_map(std::ostream &os, const lListElem *job, const lListElem *task) override;
       void report_task_error_reason(std::ostream &os, const lListElem *job, const lListElem *task) override;
    };

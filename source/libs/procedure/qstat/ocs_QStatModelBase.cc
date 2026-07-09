@@ -719,7 +719,7 @@ lEnumeration *ocs::QStatModelBase::get_job_view_what() {
                                    "%I%I%I"
                                    "%I->%T(%I%I%I"
                                    "%I%I%I%I"
-                                   "%I%I%I"
+                                   "%I%I%I%I"
                                    "%I)%I"
 
                                    "%I%I%I->%T"
@@ -744,7 +744,7 @@ lEnumeration *ocs::QStatModelBase::get_job_view_what() {
             JB_env_list, JB_job_args, JB_script_file,
             JB_ja_tasks, JAT_Type, JAT_state, JAT_status, JAT_hold,
             JAT_task_number, JAT_scaled_usage_list, JAT_job_restarted, JAT_task_list,
-            JAT_message_list, JAT_start_time, JAT_granted_resources_list,
+            JAT_message_list, JAT_start_time, JAT_end_time, JAT_granted_resources_list,
             JAT_granted_destin_identifier_list, JB_context,
 
             JB_cwd, JB_stderr_path_list, JB_jid_predecessor_list, JRE_Type,
