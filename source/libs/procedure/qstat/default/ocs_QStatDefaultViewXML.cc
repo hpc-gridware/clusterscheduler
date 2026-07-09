@@ -325,7 +325,10 @@ void ocs::QStatDefaultViewXML::report_finished_jobs_started(std::ostream &os, QS
 void ocs::QStatDefaultViewXML::report_finished_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
    lList *target_list = lGetListRW(job_list_elem, XMLE_List);
-   qstat_xml_finish_job_list("finished", target_list);
+   /* CS-1908 U7: renamed from "finished" — under retention this tag holds the
+    * ja_tasks currently retained in the finished-history window (not the
+    * transient JOBS-WAITING-FOR-ACCOUNTING queue it modeled before). */
+   qstat_xml_finish_job_list("finished_retained", target_list);
 
    DRETURN_VOID;
 }

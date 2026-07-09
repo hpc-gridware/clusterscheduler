@@ -88,7 +88,7 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
           * come after multi byte options starting with the same character (e.g. "hs")!
           */
          static const char* flags[] = {
-            "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "a", nullptr
+            "hu", "hs", "ho", "hd", "hj", "ha", "h", "p", "r", "s", "f", "a", nullptr
          };
          static uint32_t bits[] = {
             (QSTAT_DISPLAY_USERHOLD|QSTAT_DISPLAY_PENDING),
@@ -101,7 +101,12 @@ void ocs::QStatModelBase::apply_state_filter(QStatParameter &parameter) {
             QSTAT_DISPLAY_PENDING,
             QSTAT_DISPLAY_RUNNING,
             QSTAT_DISPLAY_SUSPENDED,
-            (QSTAT_DISPLAY_PENDING|QSTAT_DISPLAY_RUNNING|QSTAT_DISPLAY_SUSPENDED),
+            QSTAT_DISPLAY_FINISHED,  /* CS-1908: qstat -s f = retained finished ja_tasks */
+            /* CS-1908: `-s a` means "all states" and now includes the
+             * QSTAT_DISPLAY_FINISHED retention bit. The plain `qstat` default
+             * (QStatParameter::show_) still excludes finished so users opt
+             * into the retention window either via `-s a` or `-s f`. */
+            (QSTAT_DISPLAY_PENDING|QSTAT_DISPLAY_RUNNING|QSTAT_DISPLAY_SUSPENDED|QSTAT_DISPLAY_FINISHED),
             0
          };
 

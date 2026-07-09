@@ -213,8 +213,28 @@ void ocs::QStatDefaultViewPlain::report_pending_jobs_finished(std::ostream &os) 
 
 void ocs::QStatDefaultViewPlain::report_finished_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   if (!finished_header_printed) {
-      show_header_with_title(os, parameter, MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING);
+   /* CS-1908 U7: the section header used to say "JOBS WAITING FOR
+    * ACCOUNTING" (MSG_QSTAT_PRT_JOBSWAITINGFORACCOUNTING) which reflected
+    * the transient meaning of JFINISHED pre-retention. Under retention
+    * these ja_tasks are durable finished-history, so use the CS-1908
+    * MSG_QSTAT_PRT_FINISHEDJOBS ("RETAINED FINISHED JOBS") instead.
+    *
+    * Note: unlike report_pending_jobs_started, the banner does NOT gate on
+    * QSTAT_DISPLAY_FULL. The retention window is a semantically distinct
+    * section (durable history vs live queue) and a plain `qstat -s f` or
+    * `qstat -s a` should still visually separate it from any pending/running
+    * rows above.
+    *
+    * The explicit trailing "\n" is required because show_header_with_title
+    * ends with the closing `#####` line and no trailing newline, on the
+    * assumption that the next writer will emit its own leading `\n`. That
+    * assumption holds when QSTAT_DISPLAY_FULL is set (report_job:250-252
+    * short-circuits the column-header block and line ~332 emits `\n` before
+    * job data) but not under a bare `-s f`, where the column-header block
+    * would otherwise glue itself to the closing `#####`. */
+   if (!finished_header_printed && (parameter.show_ & QSTAT_DISPLAY_FINISHED)) {
+      show_header_with_title(os, parameter, MSG_QSTAT_PRT_FINISHEDJOBS);
+      os << "\n";
       finished_header_printed = true;
    }
    DRETURN_VOID;

@@ -345,21 +345,14 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, lListElem *job, 
       summary.department = lGetString(job, JB_department);
    }
 
-   /* move status info into state info */
-   jstate = lGetUlong(jatep, JAT_state);
-   if (lGetUlong(jatep, JAT_status)==JTRANSFERING) {
-      jstate |= JTRANSFERING;
-      jstate &= ~JRUNNING;
-   }
-
-   if (lGetList(job, JB_jid_predecessor_list) || lGetUlong(jatep, JAT_hold)) {
-      jstate |= JHELD;
-   }
-
-   if (lGetUlong(jatep, JAT_job_restarted)) {
-      jstate &= ~JWAITING;
-      jstate |= JMIGRATING;
-   }
+   /* CS-1908: reuse the shared status-into-state combiner so the state
+    * character reflects JAT_status transitions (JRUNNING, JTRANSFERING,
+    * JFINISHED) plus the JAT_hold / JB_jid_predecessor / JAT_job_restarted
+    * overlays. Under retention, JAT_status == JFINISHED yields
+    * JFINISHED_DISPLAY -> FINISHED_SYM ('f'), matching the `-s f` filter
+    * letter and distinct from the pre-retention transient 'x' (JEXITING).
+    * Also picks up the JSUSPENDED handling the inlined logic was missing. */
+   jstate = jatask_combine_state_and_status_for_output(job, jatep);
 
    job_get_state_string(summary.state, jstate);
    if (sge_time) {
@@ -792,8 +785,12 @@ ocs::QStatDefaultController::process_subtask(std::ostream &os, lListElem *job, l
       tstate |= JTRANSFERING;
       tstate &= ~JRUNNING;
    } else if (tstatus==JFINISHED) {
-      tstate |= JEXITING;
-      tstate &= ~(JRUNNING|JTRANSFERING);
+      /* CS-1908: retained finished ja_task rows render as 'f'
+       * (FINISHED_SYM via JFINISHED_DISPLAY) rather than the pre-retention
+       * transient 'x' (EXITING_SYM via JEXITING). See the parallel change
+       * in jatask_combine_state_and_status_for_output. */
+      tstate |= JFINISHED_DISPLAY;
+      tstate &= ~(JRUNNING|JTRANSFERING|JEXITING);
    }
 
    if (lGetList(job, JB_jid_predecessor_list) || lGetUlong(ja_task, JAT_hold)) {
@@ -965,30 +962,70 @@ void ocs::QStatDefaultController::process_jobs_finished_state(std::ostream &os, 
    int count = 0;
    dstring dyn_task_str = DSTRING_INIT;
 
+   /* CS-1908 U7: render finished ja_tasks only when the caller opted in via
+    * qstat -s f (QSTAT_DISPLAY_FINISHED bit) or an all-states filter. Prior
+    * to CS-1908 this branch was gated behind the MORE_INFO env-var debug
+    * hook. */
+   if ((parameter.show_ & QSTAT_DISPLAY_FINISHED) == 0) {
+      sge_dstring_free(&dyn_task_str);
+      DRETURN_VOID;
+   }
+
    for_each_rw_lv(jep, model.get_job_list()) {
+      lList *ja_task_list = nullptr;
+      bool FoundTasks = false;
+
       for_each_rw_lv(jatep, lGetList(jep, JB_ja_tasks)) {
-         if (lGetUlong(jatep, JAT_status) == JFINISHED) {
-            lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable)|TAG_FOUND_IT);
+         if (lGetUlong(jatep, JAT_status) != JFINISHED) {
+            continue;
+         }
+         lSetUlong(jatep, JAT_suitable, lGetUlong(jatep, JAT_suitable) | TAG_FOUND_IT);
 
-            // @todo a switch would be better to enable this
-            if (parameter.get_variable("MORE_INFO") == nullptr) {
-               continue;
+         if (lGetNumberOfElem(parameter.get_user_list()) &&
+             !(lGetUlong(jatep, JAT_suitable) & TAG_SELECT_IT)) {
+            continue;
+         }
+
+         /* CS-1908 U7: -g d drills down to per-JAT rows; otherwise range-group
+          * the finished JATs of this JB into one summary row (state character
+          * `f`, JAT-id-range in the ja-task-ID column). Mirrors the pending
+          * path's summary-vs-detail fork. */
+         if ((parameter.group_opt_ & GROUP_NO_TASK_GROUPS) > 0) {
+            sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
+
+            if (count == 0) {
+               view.report_finished_jobs_started(os, parameter);
             }
+            process_job(os, jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str, 0, 0, 0, parameter, model, view);
 
-            if (!lGetNumberOfElem(parameter.get_user_list()) ||
-                (lGetNumberOfElem(parameter.get_user_list()) && (lGetUlong(jatep, JAT_suitable) & TAG_SELECT_IT))) {
-
-               if (count == 0) {
-                  view.report_finished_jobs_started(os, parameter);
-               }
-               sge_dstring_sprintf(&dyn_task_str, sge_u32, lGetUlong(jatep, JAT_task_number));
-
-               process_job(os, jep, jatep, nullptr, nullptr, true, nullptr, &dyn_task_str, 0, 0, 0, parameter, model, view);
-
-               count++;
+            count++;
+         } else {
+            if (ja_task_list == nullptr) {
+               ja_task_list = lCreateList("", lGetElemDescr(jatep));
             }
+            lAppendElem(ja_task_list, lCopyElem(jatep));
+            FoundTasks = true;
          }
       }
+
+      if ((parameter.group_opt_ & GROUP_NO_TASK_GROUPS) == 0 && FoundTasks && ja_task_list != nullptr) {
+         lList *task_group = nullptr;
+
+         while ((task_group = ja_task_list_split_group(&ja_task_list))) {
+            sge_dstring_clear(&dyn_task_str);
+            ja_task_list_print_to_string(task_group, &dyn_task_str);
+
+            if (count == 0) {
+               view.report_finished_jobs_started(os, parameter);
+            }
+            process_job(os, jep, lFirstRW(task_group), nullptr, nullptr, true, nullptr, &dyn_task_str, 0, 0, 0, parameter, model, view);
+
+            lFreeList(&task_group);
+
+            count++;
+         }
+      }
+      lFreeList(&ja_task_list);
    }
 
    if (count > 0) {

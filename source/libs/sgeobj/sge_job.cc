@@ -2054,6 +2054,15 @@ void job_get_state_string(char *str, uint32_t op)
       str[count++] = EXITING_SYM;
    }
 
+   /* CS-1908 finished-job retention: JFINISHED_DISPLAY is a synthetic bit
+    * set by jatask_combine_state_and_status_for_output when JAT_status is
+    * JFINISHED so retained rows render as 'f' rather than the transient 'x'
+    * (JEXITING) the pre-retention world used. Bit is disjoint from every
+    * real JAT_state bit, so this check does not fire on any legacy state. */
+   if (VALID(JFINISHED_DISPLAY, op)) {
+      str[count++] = FINISHED_SYM;
+   }
+
    str[count++] = '\0';
 
    DRETURN_VOID;
@@ -4684,8 +4693,18 @@ jatask_combine_state_and_status_for_output(const lListElem *job, const lListElem
       state |= JTRANSFERING;
       state &= ~JRUNNING;
    } else if (status == JFINISHED) {
-      state |= JEXITING;
-      state &= ~(JRUNNING | JTRANSFERING);
+      /* CS-1908 finished-job retention: retained rows carry JAT_status ==
+       * JFINISHED. Pre-retention this transient state rendered as 'x' via
+       * JEXITING (see EXITING_SYM). Under retention the row lives on
+       * master_job_list for finished_jobs_keep_time seconds, so 'x' is
+       * misleading — it means "in the process of exiting", but the JAT
+       * has actually already exited and is being kept as history. Emit the
+       * dedicated JFINISHED_DISPLAY bit instead so job_get_state_string
+       * renders FINISHED_SYM ('f'), matching the `-s f` filter letter.
+       * Also clear JEXITING so any stale bit left from the JAT's earlier
+       * lifetime doesn't leak an extra 'x' into the state string. */
+      state |= JFINISHED_DISPLAY;
+      state &= ~(JRUNNING | JTRANSFERING | JEXITING);
    }
 
    // correct running state if the job is suspended (remove the 'r')
