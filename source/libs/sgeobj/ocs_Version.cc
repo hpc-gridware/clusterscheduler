@@ -38,7 +38,7 @@
 // change dist/inst_sge also!
 #define OCS_VERSION_MAJOR 9
 #define OCS_VERSION_MINOR 1
-#define OCS_VERSION_PATCH 3
+#define OCS_VERSION_PATCH 4
 #define OCS_VERSION_SUFFIX ""
 
 const std::string OCS_VERSION_STRING{std::to_string(OCS_VERSION_MAJOR) + "."
