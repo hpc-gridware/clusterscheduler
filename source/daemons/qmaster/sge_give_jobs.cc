@@ -1943,11 +1943,12 @@ sge_finish_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListE
       const lList *master_suser_list = *ocs::DataStore::get_master_list(SGE_TYPE_SUSER);
       suser_unregister_job(job, master_suser_list);
 
-      // update the category. A retained-JFINISHED JAT no longer occupies a
-      // category slot from the scheduler's perspective; the R16a audit
-      // records this decision.
-      lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-      ocs::CategoryQmaster::detach_job(master_category_list, job, !no_events, gdi_session);
+      /* CS-1908: category detach is deferred to sge_bury_ja_task's remove_job
+       * block. The invariant "JB is on master_job_list ⇒ its category is
+       * attached (JB_category_id != 0 and the CT element exists)" must hold
+       * for the whole retention window, otherwise the scheduler thread's
+       * refresh_cat_data_in_job trips its SGE_ASSERT. So the detach fires
+       * only at the actual JB removal from master_job_list, not here. */
    }
 
    DRETURN_VOID;
@@ -2002,6 +2003,17 @@ sge_bury_ja_task(const char *sge_root, lListElem *job, uint32_t job_id, lListEle
                        nullptr, nullptr, lGetString(job, JB_session), nullptr, gdi_session);
 
       }
+
+      /* CS-1908: detach from category refcount at the same moment the JB
+       * leaves master_job_list, so the scheduler thread's
+       * refresh_cat_data_in_job never observes a JB with a stale
+       * JB_category_id. Under the legacy sge_bury_job wrapper this
+       * runs back-to-back with the finish-side steps, matching pre-CS-1908
+       * behaviour; under retention it fires only at prune time from the
+       * U5 sweep, so retained-JFINISHED JBs keep their category slot for
+       * the full retention window. */
+      lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
+      ocs::CategoryQmaster::detach_job(master_category_list, job, !no_events, gdi_session);
 
       // final job removal
       lRemoveElem(master_job_list, &job);
