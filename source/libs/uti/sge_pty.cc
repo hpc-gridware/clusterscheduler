@@ -41,26 +41,30 @@
 static struct termios prev_termios;
 static int g_raw_mode = 0;
 
-/****** uti/pty/terminal_enter_raw_mode() **************************************
-*  NAME
-*     terminal_enter_raw_mode() -- Sets terminal to raw mode 
-*
-*  SYNOPSIS
-*     int terminal_enter_raw_mode() 
-*
-*  FUNCTION
-*     Sets terminal to raw mode, i.e. no control characters are interpreted any
-*     more, but are simply printed.
-*
-*  RESULT
-*     int - 0 if Ok, else errno
-*
-*  NOTES
-*     MT-NOTE: terminal_enter_raw_mode() is not MT safe 
-*
-*  SEE ALSO
-*     pty/terminal_leave_raw_mode
-*******************************************************************************/
+/**
+ * @brief Test whether we currently own the controlling terminal on STDOUT.
+ *
+ * Calling tcsetattr() on the controlling terminal from a background process
+ * group raises SIGTTOU, which stops the whole client. Raw-mode enter/leave must
+ * therefore only touch the terminal when we are its foreground process group.
+ *
+ * @return true if STDOUT's foreground process group is our process group
+ */
+static bool terminal_is_foreground() {
+   return tcgetpgrp(STDOUT_FILENO) == getpgrp();
+}
+
+/**
+ * @brief Set the terminal to raw mode.
+ *
+ * Puts STDOUT's controlling terminal into raw mode (control characters are no
+ * longer interpreted, they are simply printed). When the client runs in the
+ * background, applying the mode now would raise SIGTTOU and stop the client, so
+ * the change is deferred: the function returns 0 without modifying the terminal
+ * and the SIGCONT re-entry path re-applies it once we are in the foreground.
+ *
+ * @return 0 on success (or when deferred while backgrounded), else errno
+ */
 int terminal_enter_raw_mode() {
    struct termios tio {};
    int ret = 0;
@@ -82,6 +86,11 @@ int terminal_enter_raw_mode() {
       tio.c_cc[VMIN] = 1;
       tio.c_cc[VTIME] = 0;
 
+      if (!terminal_is_foreground()) {
+         /* Backgrounded: applying now would SIGTTOU-stop us. Defer - the SIGCONT
+          * re-entry path re-applies raw mode once we are foreground. */
+         return 0;
+      }
       if (tcsetattr(STDOUT_FILENO, TCSADRAIN, &tio) == -1) {
          ret = errno;
       } else {
@@ -91,29 +100,23 @@ int terminal_enter_raw_mode() {
    return ret;
 }
 
-/****** uti/pty/terminal_leave_raw_mode() **************************************
-*  NAME
-*     terminal_leave_raw_mode() -- restore previous terminal mode
-*
-*  SYNOPSIS
-*     int terminal_leave_raw_mode() 
-*
-*  FUNCTION
-*     Restores the previous terminal mode.
-*
-*  RESULT
-*     int - 0 if Ok, else errno
-*
-*  NOTES
-*     MT-NOTE: terminal_leave_raw_mode() is not MT safe 
-*
-*  SEE ALSO
-*     pty/terminal_enter_raw_mode()
-*******************************************************************************/
+/**
+ * @brief Restore the previous terminal mode.
+ *
+ * Undoes terminal_enter_raw_mode(). If the client is currently backgrounded the
+ * restoring tcsetattr() would raise SIGTTOU (e.g. during teardown or atexit), so
+ * it is skipped best-effort; the shell typically resets the tty on prompt return.
+ *
+ * @return 0 on success (or when skipped while backgrounded), else errno
+ */
 int terminal_leave_raw_mode() {
    int ret = 0;
 
    if (g_raw_mode == 1) {
+      if (!terminal_is_foreground()) {
+         /* best-effort: don't SIGTTOU during teardown/atexit while backgrounded */
+         return 0;
+      }
       if (tcsetattr(STDOUT_FILENO, TCSADRAIN, &prev_termios) == -1) {
          ret = errno;
       } else {

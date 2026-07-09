@@ -591,6 +591,26 @@ static bool tty_local_suspend_client()
 }
 
 /**
+ * @brief Decide whether the stdin-forwarding thread may read STDIN right now.
+ *
+ * Reading the controlling terminal from a background process group raises
+ * SIGTTIN, which stops the whole qrsh/qlogin client ("Stopped (tty input)").
+ * We may only read STDIN when either it is not a terminal (a pipe/file redirect,
+ * which carries no SIGTTIN risk) or the client currently owns the terminal, i.e.
+ * it is the terminal's foreground process group. When backgrounded we skip the
+ * read; forwarding resumes automatically once the client is in the foreground
+ * again, because the select loop re-evaluates this on every iteration.
+ *
+ * @return true if STDIN may be read without risking SIGTTIN, false otherwise
+ */
+static bool client_may_read_stdin() {
+   if (!isatty(STDIN_FILENO)) {
+      return true;
+   }
+   return tcgetpgrp(STDIN_FILENO) == getpgrp();
+}
+
+/**
  * @brief Entry point and main loop of the tty_to_commlib thread.
  *
  * Reads data from the local terminal (stdin) and forwards it to the commlib
@@ -626,8 +646,9 @@ void *tty_to_commlib(void *t_conf) {
       // We wait on the wakeup_pipe for a byte sent from the commlib_to_tty thread.
       fd_set read_fds;
       FD_ZERO(&read_fds);
-      if (g_nostdin == 0 && g_client_connected) {
-         /* wait for input on tty */
+      if (g_nostdin == 0 && g_client_connected && client_may_read_stdin()) {
+         /* wait for input on tty - but only while we own the terminal, otherwise
+          * a background read() would raise SIGTTIN and stop the whole client */
          FD_SET(STDIN_FILENO, &read_fds);
       }
       if (g_wakeup_pipe[0] != -1) {
