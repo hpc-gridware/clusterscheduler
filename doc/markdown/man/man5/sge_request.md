@@ -24,6 +24,36 @@ then the cluster global default request file.
 Note, that the `-clear` option to qsub(1) or qsh(1) can be used to discard any previous settings at any time in 
 a default request file, in the embedded script flags or in a qsub(1) or qsh(1) command-line option.
 
+## Precedence between sources
+
+Requests may come from several sources. In increasing order of precedence:
+
+1.  the cluster global default request file
+    (*\$xxQS_NAME_Sxx_ROOT/\$xxQS_NAME_Sxx_CELL/common/xxqs_name_sxx_request*)
+2.  the user private default request file (*\$HOME/.xxqs_name_sxx_request*)
+3.  the working directory local default request file
+    (*\$cwd/.xxqs_name_sxx_request*)
+4.  submit options embedded in the job script as `#$` special comments
+5.  submit options from the qsub(1) / qsh(1) command line, or — for DRMAA
+    submissions — options from *DRMAA_NATIVE_SPECIFICATION* and options set via
+    `drmaa_set_attribute(3)` / `drmaa_set_vector_attribute(3)`
+
+Two per-option rules apply when the same switch appears at multiple sources:
+
+-   `-q` — union within one source, override across sources. Multiple `-q`
+    switches at the same source contribute all their entries to the resulting
+    *hard_queue_list*, but as soon as a higher-precedence source specifies
+    `-q` at all, every `-q` from every lower source is discarded and only the
+    higher source's `-q` list is used.
+-   `-l` — union within one source, "last one wins" per variable across
+    sources. If the same resource variable (e.g. *h_rt*) appears at multiple
+    sources, the highest-precedence source's value for that variable wins;
+    variables that appear only at lower sources are kept. Different variables
+    from different sources therefore accumulate.
+
+Other options either use "last occurrence wins" semantics or accumulate; the
+per-option description in qsub(1) is authoritative.
+
 The format of the default request definition files is:
 
 -   The default request files may contain an arbitrary number of lines. Blank lines and lines with a '#' sign in 

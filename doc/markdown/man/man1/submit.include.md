@@ -1040,6 +1040,13 @@ There may be multiple `-l` switches in a single command. You may request multipl
 both in the same command line. In case of a serial job multiple `-l` switches refine the definition for the sought 
 queue.
 
+Options can arrive from different sources (default request files, script special comments, the command line, and
+— for DRMAA submissions — *DRMAA_NATIVE_SPECIFICATION* and DRMAA job template attributes; see xxqs_name_sxx_request(5)
+for the full precedence order). Within one source, comma-separated `-l` entries and repeated `-l` switches are
+unioned. Across sources, the "last one wins" per resource variable: if the same resource variable (for example
+*h_rt*) is set at multiple sources, the highest-precedence source's value for that variable replaces every lower
+source's value; variables that appear only at lower sources are kept.
+
 With parallel jobs (see `-pe` option above) the `-l` option can be applied to the whole job, to the master tasks 
 or to the slave tasks only by using the `-scope` option.
 
@@ -1332,6 +1339,14 @@ Defines or redefines a list of cluster queues, queue domains or queue instances 
 this job. Please find a description of *wc_queue_list* in xxqs_name_sxx_types(1). This parameter
 has all the properties of a resource request and will be merged with requirements derived from the `-l` option
 described above.
+
+Options can arrive from different sources (default request files, script special comments, the command line, and
+— for DRMAA submissions — *DRMAA_NATIVE_SPECIFICATION* and DRMAA job template attributes; see xxqs_name_sxx_request(5)
+for the full precedence order). Within one source, comma-separated queue references and repeated `-q` switches are
+unioned into a single queue list. Across sources, the highest-precedence source that specifies `-q` at all replaces
+the `-q` list from every lower source — the lists are *not* unioned. This mirrors the behaviour of the
+xxqs_name_sxx_request(5) default request files and applies uniformly to qsub(1)-family submissions and to DRMAA
+submissions since release 9.1.4 (CS-2404 fix).
 
 With parallel jobs (see `-pe` option above) the `-q` option can be applied to the whole job, to the master queue 
 or to the slave queues by using the `-scope` option.
