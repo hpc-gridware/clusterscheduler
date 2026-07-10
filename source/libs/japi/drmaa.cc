@@ -27,7 +27,7 @@
  *
  *   All Rights Reserved.
  *
- *  Portions of this software are Copyright (c) 2023-2025 HPC-Gridware GmbH
+ *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
 /*___INFO__MARK_END__*/
@@ -3585,7 +3585,15 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
    DENTER(TOP_LAYER);
 
    /*
-    * Order is very important here
+    * Order is very important here — lowest precedence source first,
+    * highest last. For the -q switch each higher-precedence source
+    * REPLACES the -q from every lower source (mirroring qsub's
+    * opt_list_merge_command_lines in source/clients/common/ocs_client_parse.cc).
+    * Without this, a native spec like -q myqueue@myhost gets unioned with
+    * the sge_request default instead of overriding it — regression fixed by
+    * CS-2404. Every other switch is simply concatenated; the "last value
+    * per variable wins" behaviour for -l et al. is handled later in
+    * cull_parse_job_parameter.
     */
    if (*opts_default != nullptr) {
       DPRINTF("Adding default options\n");
@@ -3618,7 +3626,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       if (*opts_all == nullptr) {
          *opts_all = *opts_scriptfile;
       } else {
-         lAddList(*opts_all, opts_scriptfile);
+         lOverrideStrList(*opts_all, *opts_scriptfile, SPA_switch_val, "-q");
       }
       *opts_scriptfile = nullptr;
    }
@@ -3630,7 +3638,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       if (*opts_all == nullptr) {
          *opts_all = *opts_job_cat;
       } else {
-         lAddList(*opts_all, opts_job_cat);
+         lOverrideStrList(*opts_all, *opts_job_cat, SPA_switch_val, "-q");
       }
       *opts_job_cat = nullptr;
    }
@@ -3642,7 +3650,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       if (*opts_all == nullptr) {
          *opts_all = *opts_native;
       } else {
-         lAddList(*opts_all, opts_native);
+         lOverrideStrList(*opts_all, *opts_native, SPA_switch_val, "-q");
       }
       *opts_native = nullptr;
    }
@@ -3653,7 +3661,7 @@ static void merge_drmaa_options(lList **opts_all, lList **opts_default,
       if (*opts_all == nullptr) {
          *opts_all = *opts_drmaa;
       } else {
-         lAddList(*opts_all, opts_drmaa);
+         lOverrideStrList(*opts_all, *opts_drmaa, SPA_switch_val, "-q");
       }
       *opts_drmaa = nullptr;
    }

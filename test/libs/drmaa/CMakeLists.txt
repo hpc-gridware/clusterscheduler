@@ -1,7 +1,7 @@
 #___INFO__MARK_BEGIN_NEW__
 ###########################################################################
 #  
-#  Copyright 2024 HPC-Gridware GmbH
+#  Copyright 2024,2026 HPC-Gridware GmbH
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -55,6 +55,13 @@ target_include_directories(test_drmaa_sync PRIVATE "./")
 target_link_libraries(test_drmaa_sync PRIVATE drmaa ${SGE_LIBS})
 add_test(NAME test_drmaa_sync COMMAND test_drmaa_sync)
 
+# CS-2404 regression probe. Driven by the testsuite check at
+# testsuite/src/checktree/system_tests/drmaa/precedence; not wired into
+# CTest because it needs a live cluster + tmpdir/sge_request setup.
+add_executable(test_drmaa_cs2404 ../../../test/libs/drmaa/test_drmaa_cs2404.cc)
+target_include_directories(test_drmaa_cs2404 PRIVATE "./")
+target_link_libraries(test_drmaa_cs2404 PRIVATE drmaa ${SGE_LIBS})
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_issue1768 DESTINATION testbin/${SGE_ARCH})
@@ -64,4 +71,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_drmaa_no_bin DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_perf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_drmaa_sync DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_drmaa_cs2404 DESTINATION testbin/${SGE_ARCH})
 endif ()
