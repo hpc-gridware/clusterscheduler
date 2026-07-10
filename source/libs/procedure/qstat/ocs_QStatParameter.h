@@ -27,6 +27,7 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_qinstance_state.h"
 
 #include "ocs_ProcedureParameter.h"
@@ -98,6 +99,7 @@ namespace ocs {
       static constexpr auto QUEUE_STATE = "queue_state";
       static constexpr auto EXPLAIN_BITS = "explain_bits";
       static constexpr auto GROUP_OPT = "group_opt";
+      static constexpr auto LOAD_AVG_VARIABLE = "load_avg_variable";
 
    public:
       // @todo cleanup: declare protected and provide access methods
@@ -120,6 +122,18 @@ namespace ocs {
       uint32_t queue_state_ = std::numeric_limits<uint32_t>::max(); ///< -qs
       uint32_t explain_bits_ = QI_DEFAULT; ///< -explain
       uint32_t group_opt_ = 0; ///< -g
+
+      /* Load variable shown in the "load_avg" column of `qstat -f`.
+       * Resolved from SGE_QSTAT_LOAD_AVG on the client side (see
+       * QStatParameterClient::parse_parameters); marshalled to the server via
+       * get_bundle() / set_bundle() so server-rendered qstat (ExecContext::SERVER)
+       * honours the caller's env var. Default is LOAD_ATTR_NP_LOAD_AVG on the
+       * 9.2 branch (CS-2387 phase-2 flip); V91_BRANCH kept LOAD_ATTR_LOAD_AVG.
+       */
+      std::string load_avg_variable_ = LOAD_ATTR_NP_LOAD_AVG;
+
+      [[nodiscard]] const char *get_load_avg_variable() const { return load_avg_variable_.c_str(); }
+      void set_load_avg_variable(const char *value) { load_avg_variable_ = value != nullptr ? value : ""; }
 
 #pragma endregion
 

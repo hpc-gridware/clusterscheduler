@@ -506,6 +506,14 @@ SGE_LONG_QNAMES
 with this variable. The minimum display length is 10 characters. If one does not know the best display length, one 
 can set *SGE_LONG_QNAMES* to -1 and `qstat` will figure out the best length.
 
+SGE_QSTAT_LOAD_AVG  
+Selects which load variable is shown in the *load_avg* column of `qstat -f` output. Any of the raw values *load_short*,
+*load_medium*, *load_long*, *load_avg* and the per-processor-normalized variants *np_load_short*, *np_load_medium*,
+*np_load_long*, *np_load_avg* (default) are accepted; other values are ignored and the default is used. If the requested
+variable is not reported by an execution host, the affected row displays *-NA-* in the *load_avg* column. This variable
+affects only the display; alarm and suspend threshold evaluation are unchanged. In earlier releases (9.1.x) the default
+was *load_avg*; the default was flipped to *np_load_avg* in 9.2.0.
+
 # FILES
 
 For a complete list of files used by all xxQS_NAMExx commands, see xxqs_name_sxx_intro(1).
