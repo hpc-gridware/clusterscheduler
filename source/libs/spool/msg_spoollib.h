@@ -1,33 +1,33 @@
 #pragma once
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2024,2026 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -37,7 +37,7 @@
 
 // clang-format off
 
-/* 
+/*
  * libs/spool/sge_spooling.c
  */
 #define MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS     _MESSAGE(59000, _("object type " SFQ " is not handled in spooling context " SFQ))
@@ -62,13 +62,13 @@
 #define MSG_SPOOL_TRIGGEROFRULEFAILED_SS  _MESSAGE(59023,_("trigger function of rule " SFQ " in context " SFQ " failed"))
 #define MSG_SPOOL_TRANSACTIONOFRULEFAILED_SS  _MESSAGE(59024,_("transaction function of rule " SFQ " in context " SFQ " failed"))
 #define MSG_SPOOL_SETOPTIONOFRULEFAILED_SS  _MESSAGE(59025,_("set_option function of rule " SFQ " in context " SFQ " failed"))
-/* 
+/*
  * libs/spool/sge_spooling_utilities.c
  */
 #define MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS _MESSAGE(59100, _("don't know how to spool list attribute " SFQ " in function " SFQ ""))
 #define MSG_UNKNOWNOBJECTTYPEFOR_SS _MESSAGE(59101, _("unknown object type for list attribute " SFQ " in function " SFQ))
 #define MSG_NONAMEFORATTRIBUTE_D _MESSAGE(59103, _("no or invalid name for attribute %d"))
-#define MSG_SPOOL_CANTRESOLVEHOSTNAME_SS _MESSAGE(59104, _("can't resolve host name " SFQ ": " SFN))
+#define MSG_SPOOL_CANTRESOLVEHOSTNAME_SS _MESSAGE(59104, _("can't resolve host name " SFQ ": " SFN4))
 
 /*
  * libs/spool/<method>/<code>

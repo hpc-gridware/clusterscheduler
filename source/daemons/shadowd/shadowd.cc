@@ -1,32 +1,32 @@
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
- * 
+ *
  *  The Contents of this file are made available subject to the terms of
  *  the Sun Industry Standards Source License Version 1.2
- * 
+ *
  *  Sun Microsystems Inc., March, 2001
- * 
- * 
+ *
+ *
  *  Sun Industry Standards Source License Version 1.2
  *  =================================================
  *  The contents of this file are subject to the Sun Industry Standards
  *  Source License Version 1.2 (the "License"); You may not use this file
  *  except in compliance with the License. You may obtain a copy of the
  *  License at http://gridengine.sunsource.net/Gridengine_SISSL_license.html
- * 
+ *
  *  Software provided under this License is provided on an "AS IS" basis,
  *  WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
  *  WITHOUT LIMITATION, WARRANTIES THAT THE SOFTWARE IS FREE OF DEFECTS,
  *  MERCHANTABLE, FIT FOR A PARTICULAR PURPOSE, OR NON-INFRINGING.
  *  See the License for the specific provisions governing your rights and
  *  obligations concerning the Software.
- * 
+ *
  *   The Initial Developer of the Original Code is: Sun Microsystems, Inc.
- * 
+ *
  *   Copyright: 2001 by Sun Microsystems, Inc.
- * 
+ *
  *   All Rights Reserved.
- * 
+ *
  *  Portions of this software are Copyright (c) 2023-2026 HPC-Gridware GmbH
  *
  ************************************************************************/
@@ -139,7 +139,7 @@ shadowd_is_old_master_enrolled(int sge_test_heartbeat, int sge_qmaster_port, cha
    DPRINTF("Try to send status information message to previous master host " SFQ " to port %ld\n", oldqmaster, sge_qmaster_port);
    ret = cl_commlib_get_endpoint_status(handle, oldqmaster, to_cstr(QMASTER), 1, &status);
    if (ret != CL_RETVAL_OK) {
-      DPRINTF("cl_commlib_get_endpoint_status() returned " SFQ "\n", cl_get_error_text(ret));
+      DPRINTF("cl_commlib_get_endpoint_status() returned " SFN4 "\n", cl_get_error_text(ret));
       is_up_and_running = 0;
       DPRINTF("old qmaster not responding - No master found\n");
    } else {
@@ -343,7 +343,7 @@ main(int argc, char **argv) {
 
 
       /* Only check when we could read the heartbeat file at least two times
-       * (last_heartbeat and heartbeat) without error 
+       * (last_heartbeat and heartbeat) without error
        */
       if (last_heartbeat > 0 && heartbeat > 0) {
 
@@ -389,7 +389,7 @@ main(int argc, char **argv) {
                         DPRINTF("qmaster_name: " SFN "\n", qmaster_name);
 
                         /*
-                         * open logfile as admin user for initial qmaster/schedd 
+                         * open logfile as admin user for initial qmaster/schedd
                          * startup messages
                          */
                         out = SGE_OPEN3(qmaster_out_file, O_CREAT | O_WRONLY | O_APPEND,
@@ -452,7 +452,7 @@ shadowd_exit_func(int i) {
    if (sge_smf_used() == 1) {
       /* We don't do disable on svcadm restart */
       if (sge_strnullcmp(sge_smf_get_instance_state(), SCF_STATE_STRING_ONLINE) == 0 &&
-          sge_strnullcmp(sge_smf_get_instance_next_state(), SCF_STATE_STRING_NONE) == 0) {      
+          sge_strnullcmp(sge_smf_get_instance_next_state(), SCF_STATE_STRING_NONE) == 0) {
          sge_smf_temporary_disable_instance();
       }
    }
@@ -541,8 +541,8 @@ check_if_valid_shadow(char *binpath, char *oldqmaster, const char *act_qmaster_f
 /*----------------------------------------------------------------------
  * host_in_file
  * look if resolved host is in "file"
- * return  
- *         0 if present 
+ * return
+ *         0 if present
  *         1 if not
  *        -1 error occurred
  *----------------------------------------------------------------------*/
