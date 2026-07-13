@@ -1065,7 +1065,7 @@ ocs::gdi::ClientBase::gdi_is_alive(lList **answer_list) {
    if (cl_ret != CL_RETVAL_OK) {
 #if 0
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              "cl_commlib_get_endpoint_status failed: " SFQ, cl_get_error_text(cl_ret));
+                              "cl_commlib_get_endpoint_status failed: " SFN4, cl_get_error_text(cl_ret));
 #endif
    } else {
       DEBUG(SFNMAX, MSG_GDI_QMASTER_STILL_RUNNING);
