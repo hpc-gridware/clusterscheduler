@@ -18,8 +18,9 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cstdio>
 #include <filesystem>
-#include <fstream>
+#include <unistd.h>
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_feature.h"
@@ -55,6 +56,7 @@ namespace ocs {
    std::string ReportingFileWriter::usage_patterns;
    std::vector<std::pair<std::string, std::string>> ReportingFileWriter::usage_pattern_list;
    std::vector<std::string> ReportingFileWriter::online_usage_vars;
+   bool ReportingFileWriter::sync_write = false;
 
    // We have two mutexes to protec access to the writers and the configuration parameters.
    // Make sure to use the mutexes in the right order, i.e., always lock the writer_mutex before
@@ -278,6 +280,12 @@ namespace ocs {
          std::vector<std::string> new_online_usage_vars = mconf_get_online_usage_vars();
          sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
          online_usage_vars = std::move(new_online_usage_vars);
+         sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+         // sync_write flag - fsync accounting/reporting/monitoring files before close
+         bool new_sync_write = mconf_get_reporting_sync_write();
+         sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+         sync_write = new_sync_write;
          sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
 
          // now configure all active Writers
@@ -636,6 +644,9 @@ namespace ocs {
     * If there is data to write then flush it to file.
     * If the file does not yet exist then a comment containing the OCS version
     * is written to the head of the file.
+    * If the reporting_params sub-option sync_write is enabled (CS-2411), the
+    * file is fsync'd before close to prevent NFSv3 "Stale file handle" errors
+    * on the closing syscall when the file is rotated/deleted by another host.
     * Possible file IO errors are logged to the messages file.
     *
     * @return true on success, false on error
@@ -655,7 +666,7 @@ namespace ocs {
          /* Single non-throwing syscall avoids a race where the file could vanish between
           * an exists() check and a follow-up is_empty() call (the latter would throw and
           * terminate sge_qmaster). file_size() reports the missing-file case via ec; the
-          * ofstream below reopens with std::ios::app and recreates the file if needed.
+          * fopen("a") below recreates the file if needed.
           */
          std::error_code ec;
          auto size_on_disk = std::filesystem::file_size(filename, ec);
@@ -665,44 +676,57 @@ namespace ocs {
             }
          }
 
-         std::ofstream stream;
-         stream.open(filename, std::ios::app);
-         if (!stream.is_open()) {
+         // snapshot the sync_write flag once per flush so the whole cycle is consistent
+         sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+         bool do_sync = sync_write;
+         sge_mutex_unlock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);
+
+         FILE *fp = fopen(filename.c_str(), "a");
+         if (fp == nullptr) {
             DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
             ERROR(MSG_ERROROPENINGFILEFORWRITING_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
             ret = false;
          }
 
          /* write comment if necessary */
-         if (ret) {
-            if (write_comment) {
-               int spool_ret;
-               DSTRING_STATIC(version_dstring, MAX_STRING_SIZE);
-               const char *version_string;
-
-               version_string = feature_get_product_name(FS_VERSION, &version_dstring);
-               spool_ret = sge_spoolmsg_write(stream, COMMENT_CHAR, version_string);
-               if (spool_ret != 0) {
-                  DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
-                  ERROR(MSG_ERRORWRITINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
-                  ret = false;
-               }
-            }
-         }
-
-         /* write data */
-         if (ret) {
-            stream << buffer;
-            if (stream.fail()) {
+         if (ret && write_comment) {
+            DSTRING_STATIC(version_dstring, MAX_STRING_SIZE);
+            const char *version_string = feature_get_product_name(FS_VERSION, &version_dstring);
+            if (sge_spoolmsg_write(fp, COMMENT_CHAR, version_string) != 0) {
                DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
                ERROR(MSG_ERRORWRITINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
                ret = false;
             }
          }
 
-         /* close file */
-         stream.close();
-         if (stream.fail()) {
+         /* write data */
+         if (ret) {
+            if (fwrite(buffer.data(), 1, size, fp) != size) {
+               DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
+               ERROR(MSG_ERRORWRITINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
+               ret = false;
+            }
+         }
+
+         /* push stdio buffers to the kernel before we optionally fsync */
+         if (ret && fflush(fp) != 0) {
+            DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
+            ERROR(MSG_ERRORFLUSHINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
+            ret = false;
+         }
+
+         /* force durability before close - avoids stale-handle errors on NFSv3
+          * when the file is rotated/deleted by another host between our writes
+          * and our close. See CS-2411.
+          */
+         if (ret && do_sync && fsync(fileno(fp)) != 0) {
+            DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
+            ERROR(MSG_ERRORFSYNCINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
+            ret = false;
+         }
+
+         /* close file even on error, to avoid fd leaks */
+         if (fp != nullptr && fclose(fp) != 0) {
             DSTRING_STATIC(error_dstring, MAX_STRING_SIZE);
             ERROR(MSG_ERRORCLOSINGFILE_SS, filename.c_str(), sge_strerror(errno, &error_dstring));
             ret = false;

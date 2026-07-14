@@ -61,6 +61,7 @@ namespace ocs {
       u_long64 next_flush_time;
       static std::vector<std::pair<std::string, std::string>> usage_pattern_list;
       static std::vector<std::string> online_usage_vars;
+      static bool sync_write;
       static pthread_mutex_t config_mutex;
       static std::string config_mutex_name;
 
