@@ -21,6 +21,7 @@
 #if defined(OCS_WITH_SYSTEMD)
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <dlfcn.h>
 
 #include "sge_bootstrap_env.h"
@@ -436,9 +437,18 @@ namespace ocs::uti {
          DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
          bool not_exists = false;
          if (sd_bus_get_property("Scope", scope_name, property_name, value, &error_dstr, &not_exists)) {
-            DPRINTF("property %s is reported by systemd", property_name.c_str());
-            unclear_properties[property_name] = true;
-            ret = true;
+            // Some properties (e.g. MemoryPeak on cgroup v1) exist on the bus but return
+            // UINT64_MAX to signal "no data". Treat that as "not really available" so we
+            // fall back to the alternative code path instead of caching a bogus value.
+            if (value == std::numeric_limits<uint64_t>::max()) {
+               DPRINTF("property %s is reported by systemd but returns UINT64_MAX (no data)",
+                       property_name.c_str());
+               unclear_properties[property_name] = false;
+            } else {
+               DPRINTF("property %s is reported by systemd", property_name.c_str());
+               unclear_properties[property_name] = true;
+               ret = true;
+            }
          } else if (not_exists) {
             DPRINTF("property %s is not reported by systemd", property_name.c_str());
             unclear_properties[property_name] = false;
