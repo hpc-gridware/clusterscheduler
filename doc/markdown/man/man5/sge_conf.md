@@ -482,6 +482,61 @@ Changing *max_advance_reservations* will take immediate effect.
 
 This value is a global configuration parameter only. It cannot be overwritten by the execution host local configuration.
 
+## finished_jobs_keep_time
+
+A *time* value (`HH:MM:SS`, or `0` to disable) controlling how long xxqs_name_sxx_qmaster(8) keeps a finished
+job / array task in the job list before pruning it. Together with *finished_jobs_max* this defines the retention
+window that replaces the pre-9.2 zombie-job mechanism: for as long as a finished job / array task is retained it
+remains visible to qstat(1) `-s f`, addressable by qstat(1) `-j`, and resubmittable via qresub(1).
+
+Pruning is age-based: a retained job / array task is dropped when the age of its `end_time` (as reported by execd)
+exceeds this value. The check runs on the retention sweep schedule (see *FINISHED_JOBS_SWEEP_INTERVAL* under
+*qmaster_params*).
+
+The default is `0`, which disables age-based retention. When both *finished_jobs_keep_time* and *finished_jobs_max*
+are `0` the retention feature is off and finished jobs / array tasks are removed from the job list immediately
+(pre-9.2 behaviour). When either is non-zero the sweep runs on schedule; the pruning rule is "whichever bites
+first" — a job / array task is dropped as soon as it exceeds *finished_jobs_keep_time* OR the total count of
+retained finished jobs / array tasks exceeds *finished_jobs_max*.
+
+Changing *finished_jobs_keep_time* takes immediate effect via `qconf -mconf` without restarting any daemon; the
+next sweep observes the new value.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local
+configuration.
+
+## finished_jobs_max
+
+An unsigned integer (`0` to disable) capping the total number of retained finished jobs / array tasks that
+xxqs_name_sxx_qmaster(8) keeps in the job list. When the count exceeds the cap, the oldest retained entries (by
+`end_time`) are pruned first until the count returns to the cap.
+
+The default is `0` (no count cap). See *finished_jobs_keep_time* above for the combined semantics of the two
+retention tunables.
+
+Changing *finished_jobs_max* takes immediate effect via `qconf -mconf`. Lowering the value below the current
+retained count triggers the difference on the next sweep tick; the sweep can be bounded per tick via
+*FINISHED_JOBS_SWEEP_BATCH* under *qmaster_params* so that large drains do not hold the qmaster global lock for an
+unbounded time.
+
+**Sizing notes.** Retention keeps finished jobs / array tasks in three places that grow linearly with the count:
+
+- **Memory.** Each retained finished job / array task carries its full internal representation (usage,
+  environment, granted resources, message list). A rough working estimate is 5–20 KB per retained entry depending
+  on job shape; a retention window that holds a few tens of thousands of finished entries adds low hundreds of MB
+  to the qmaster resident set.
+- **Spool I/O.** Each retained finished job / array task still occupies its spool slot (classic file layout,
+  BerkeleyDB entry, or Postgres row) until it is pruned. Set *finished_jobs_max* conservatively when spooling to
+  a shared filesystem; the sweep's per-tick prune batches (see *FINISHED_JOBS_SWEEP_BATCH*) also cap the write
+  burst rate on backend storage during drain.
+- **Startup.** All retained finished jobs / array tasks are reloaded from the spool at qmaster startup. Startup
+  time scales with the size of the retained set on top of the running/pending set. On very large windows and
+  shared-filesystem spooling this can add measurable startup latency; the BerkeleyDB and Postgres backends are
+  noticeably faster than classic.
+
+This value is a global configuration parameter only. It cannot be overwritten by the execution host local
+configuration.
+
 ## enforce_project
 
 If set to *true*, users are required to request a project whenever submitting a job. See the `-P` option to 
@@ -708,6 +763,29 @@ Note: Forced deletion for jobs is executed differently depending on whether user
 or not. In case of administrative users, the jobs are removed from the internal database of xxQS_NAMExx immediately. 
 For regular users, the equivalent of a normal qdel(1) is executed first, and deletion is forced only if the normal
 cancellation was unsuccessful.
+
+***FINISHED_JOBS_SWEEP_BATCH***
+
+An unsigned integer capping the number of retained finished jobs / array tasks the retention sweep may prune in a
+single tick. Values `<= 0` are treated as the built-in default (100). The sweep releases and re-acquires the
+qmaster global lock between batches, so a large drain (typically triggered by dropping *finished_jobs_max* to `0`
+at runtime) can proceed without holding the global lock for longer than one batch's worth of work.
+
+Only meaningful when the retention feature is on (see *finished_jobs_keep_time* and *finished_jobs_max*).
+
+Changing this parameter takes immediate effect via `qconf -mconf`.
+
+***FINISHED_JOBS_SWEEP_INTERVAL***
+
+A *time* value (`HH:MM:SS`) controlling how often the retention sweep fires. Values `<= 0` are treated as the
+built-in default (10 seconds). The sweep runs under the qmaster global write lock and honours the per-tick
+prune cap set by *FINISHED_JOBS_SWEEP_BATCH*.
+
+Only meaningful when the retention feature is on (see *finished_jobs_keep_time* and *finished_jobs_max*). When
+both retention tunables are `0` the sweep does not fire.
+
+Changing this parameter takes immediate effect via `qconf -mconf`; the next tick is scheduled at the new
+interval.
 
 ***FORBID_RESCHEDULE***
 

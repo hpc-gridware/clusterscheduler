@@ -242,5 +242,65 @@ configuration-management workflows.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### Retained Finished Jobs
+
+Version 9.2 removes the pre-existing *zombie jobs* mechanism (CS-1905) and replaces it with a stronger
+finished-job history that keeps finished jobs / array tasks in the job list for a configurable window. Operators
+and `qstat`-consuming integrations regain visibility into recently completed work with the full job / PE-task
+aggregate detail, `deleted_by` attribution, `qresub` reachability, and JSON/XML support — capabilities the older
+zombie shape did not carry.
+
+**How it works**
+
+Two global configuration attributes control retention:
+
+- `finished_jobs_keep_time` (*time*, default `0` = disabled) — how long a finished job / array task is kept
+  before it is pruned, measured from its `end_time`.
+- `finished_jobs_max` (*int*, default `0` = disabled) — an upper bound on the total number of retained finished
+  jobs / array tasks; the oldest are pruned first when the count exceeds this value.
+
+When either is non-zero, retention is on and pruning follows the "whichever bites first" rule. When both are `0`
+the feature is off and finished jobs / array tasks are removed from the job list immediately, preserving the
+pre-9.2 behaviour.
+
+Two further `qmaster_params` sub-keys control sweep cadence and per-tick prune cap:
+
+- `FINISHED_JOBS_SWEEP_INTERVAL` (*time*, default `00:00:10`) — how often the sweep fires.
+- `FINISHED_JOBS_SWEEP_BATCH` (*int*, default `100`) — how many entries the sweep may prune per tick; the sweep
+  releases and re-acquires the qmaster global lock between batches so a large drain does not hold the lock for
+  an unbounded time.
+
+All four parameters change effect immediately via `qconf -mconf` without restarting any daemon. See
+`sge_conf(5)` for the full reference including sizing notes for memory, spool I/O, and startup impact.
+
+**qstat surface**
+
+- `qstat -s f` renders one summary row per job whose tasks include a retained finished one; retained finished
+  jobs / array tasks show the new state character `f`.
+- `qstat -s f -g d` drills to per-task rows for retained arrays; `qstat -j <jid>` shows the retained detail
+  including an `end_time` row.
+- `qstat -s a` (the "all" shortcut) now includes retained finished jobs in addition to pending/running/suspended/held.
+- `qstat` without the `-s` option is unchanged: `p|r|s` only — retained finished jobs must be requested
+  explicitly with `-s f` or `-s a`.
+- `-fmt json` and `-fmt xml` emit the retention block under the key/tag `jobs_finished_retained` /
+  `<finished_retained>`.
+
+**qresub, qalter, qhold, qrls, qmod, qdel**
+
+- `qresub <jid>` on a retained finished job / array task resubmits it as a new job — the retained history is
+  preserved.
+- `qalter`, `qhold`, `qrls`, and `qmod` return an informational answer against a retained finished job / array
+  task (*"job N is already finished; modification requests are not applied"*) and leave the retained entry
+  unchanged.
+- `qdel` on a retained finished job / array task is a no-op; the retained entry is pruned by the sweep, not by
+  `qdel`.
+
+**Removal of `qstat -s z`**
+
+The zombie-jobs list is gone, and with it the `qstat -s z` option. Callers that relied on `-s z` should switch
+to `-s f` (retained finished jobs) or, for accounting history beyond the retention window, `qacct(1)`.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 [//]: # (Each file has to end with two empty lines)
 
