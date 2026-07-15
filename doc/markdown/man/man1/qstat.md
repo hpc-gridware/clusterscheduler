@@ -14,7 +14,7 @@ date: __DATE__
 
 `qstat` \[`-ext`\] \[`-f`\] \[`-F` \[*resource_name*,...\]\] \[`-g` {c\|d\|t}+ \] \[`-help`\] \[`-j` \[*job_list*\]\] 
 \[`-l` *resource*=*val*,...\] \[`-ne`\] \[`-pe` *pe_name*,...\] \[`-pri`\] \[`-q` *wc_queue_list*\] 
-\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
+\[`-qs` {a\|c\|d\|o\|s\|u\|A\|C\|D\|E\|S}\] \[`-r`\] \[`-s` {r\|p\|s\|f\|hu\|ho\|hs\|hd\|hj\|ha\|h\|a}+\]  
 \[`-t`\] \[`-U` *user*,...\] \[`-u` *user*,...\] \[`-urg`\] \[`-xml`\]
 
 # DESCRIPTION
