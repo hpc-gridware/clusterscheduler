@@ -1159,7 +1159,10 @@ ocs::QStatDefaultController::process_queue(std::ostream &os, lListElem *queue, Q
    }
 
    QStatDefaultViewBase::queue_summary_t summary {};
-   summary.load_avg_str = LOAD_ATTR_LOAD_AVG;
+   // CS-2387: load variable resolved on the client from SGE_QSTAT_LOAD_AVG and
+   // marshalled through QStatParameter, so both client- and server-rendered
+   // qstat (see ExecContext::SERVER path in ocs_qstat.cc) honour the caller's env.
+   summary.load_avg_str = parameter.get_load_avg_variable();
 
 
    // compute the load and check for alarm states

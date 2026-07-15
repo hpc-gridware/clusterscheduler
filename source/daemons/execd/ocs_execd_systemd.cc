@@ -18,6 +18,8 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <limits>
+
 #include "cull/cull.h"
 
 #include "ocs_common_systemd.h"
@@ -248,9 +250,17 @@ namespace ocs::execd {
          uint64_t value{};
          std::string property{property_str};
          if (systemd.sd_bus_get_property("Scope", scope, property, value, &error_dstr)) {
-            double usage_value = value * factor;
-            lSetDouble(usage_elem, UA_value, usage_value);
-            DPRINTF("==> Updated usage %s for scope '%s': %f\n", usage_attr_str, scope.c_str(), usage_value);
+            // Systemd uses UINT64_MAX as a sentinel for "no data" / "unlimited" on memory
+            // properties (e.g. MemoryPeak on cgroup v1). Casting that to double rounds up
+            // to 2^64 and would surface as a bogus maxrss / cpu value in the accounting.
+            if (value == std::numeric_limits<uint64_t>::max()) {
+               DPRINTF("==> systemd returned UINT64_MAX (no data) for %s in scope '%s', skipping\n",
+                       property_str, scope.c_str());
+            } else {
+               double usage_value = value * factor;
+               lSetDouble(usage_elem, UA_value, usage_value);
+               DPRINTF("==> Updated usage %s for scope '%s': %f\n", usage_attr_str, scope.c_str(), usage_value);
+            }
          } else {
             // I18N, and the message should already contain all necessary information (?)
             WARNING(MSG_CANNOT_TO_GET_PROPERTY_SSS, property.c_str(), scope.c_str(), sge_dstring_get_string(&error_dstr));

@@ -193,6 +193,7 @@ bool mconf_get_do_monitoring();
 bool mconf_get_do_joblog();
 int mconf_get_reporting_flush_time();
 int mconf_get_accounting_flush_time();
+bool mconf_get_reporting_sync_write();
 bool mconf_get_old_accounting();
 bool mconf_get_old_reporting();
 int mconf_get_sharelog_time();

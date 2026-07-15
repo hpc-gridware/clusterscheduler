@@ -594,5 +594,26 @@ bool ocs::QStatParameterClient::parse_parameters(lList **answer_list, char **arg
    }
 
    str_list_transform_user_list(&user_list_, answer_list, username);
+
+   // CS-2387: resolve SGE_QSTAT_LOAD_AVG on the client side so that the value
+   // reaches server-rendered qstat (ExecContext::SERVER) through the marshalled
+   // QStatParameter bundle. Validated against the same whitelist as SGE_LOAD_AVG
+   // in QStatModelBase::select_by_queue_state; unknown / unset / empty values
+   // leave the default (LOAD_ATTR_NP_LOAD_AVG) in place.
+   {
+      const char *load_avg_variable = getenv("SGE_QSTAT_LOAD_AVG");
+      static const char *valid_load_attrs[] = {
+         LOAD_ATTR_LOAD_AVG, LOAD_ATTR_LOAD_SHORT, LOAD_ATTR_LOAD_MEDIUM, LOAD_ATTR_LOAD_LONG,
+         LOAD_ATTR_NP_LOAD_AVG, LOAD_ATTR_NP_LOAD_SHORT, LOAD_ATTR_NP_LOAD_MEDIUM, LOAD_ATTR_NP_LOAD_LONG,
+         nullptr
+      };
+      for (int i = 0; valid_load_attrs[i] != nullptr; i++) {
+         if (load_avg_variable != nullptr && strcmp(load_avg_variable, valid_load_attrs[i]) == 0) {
+            set_load_avg_variable(load_avg_variable);
+            break;
+         }
+      }
+   }
+
    DRETURN(true);
 }

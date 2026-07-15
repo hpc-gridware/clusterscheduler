@@ -1420,6 +1420,15 @@ data. Setting it to 00:00:00 will disable accounting data buffering; as soon as 
 written to the accounting file. If this parameter is not set, the accounting data flush interval will
 default to the value of the *flush_time* parameter.
 
+***sync_write***
+
+If set to *true*, contents of the accounting, reporting and monitoring files are flushed to stable storage
+(via *fsync*(2)) before the file is closed at the end of each flush cycle. This can prevent NFSv3 "Stale
+file handle" errors during file close on clusters where the accounting/reporting file is written on an NFSv3
+mount and is rotated or archived by an external process on a different host. The default is *false*.
+Enabling *sync_write* has a performance impact; combining it with *accounting_flush_time=00:00:00* is not
+recommended, as it will trigger a fsync per accounting record.
+
 ***joblog***  
 
 If this parameter is set to true, the reporting file will contain job logging information. See  

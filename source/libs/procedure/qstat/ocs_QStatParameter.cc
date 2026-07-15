@@ -116,6 +116,18 @@ void ocs::QStatParameter::set_bundle(const lList *bundle) {
    group_opt_ = lGetUlong(lFirst(group_opt_list), ULNG_value);
    DPRINTF("group_opt_: " sge_u32 "\n", group_opt_);
 
+   // SGE_QSTAT_LOAD_AVG (CS-2387) — resolved on the client, marshalled here.
+   // Missing from older client bundles is fine; we keep the default in that case.
+   const lListElem *load_avg_variable_param = lGetElemStr(bundle, SPP_name, LOAD_AVG_VARIABLE);
+   if (load_avg_variable_param != nullptr) {
+      const lList *load_avg_variable_list = lGetList(load_avg_variable_param, SPP_value_list);
+      const char *value = lGetString(lFirst(load_avg_variable_list), ST_name);
+      if (value != nullptr && *value != '\0') {
+         load_avg_variable_ = value;
+      }
+   }
+   DPRINTF("load_avg_variable_: %s\n", load_avg_variable_.c_str());
+
    // -l
    lListElem *resource_param = lGetElemStrRW(bundle, SPP_name, RESOURCE_LIST);
    resource_list_ = nullptr;
@@ -266,6 +278,13 @@ lList *ocs::QStatParameter::get_bundle() {
    ep = lAddElemStr(&bundle, SPP_name, GROUP_OPT, SPP_Type);
    lSetList(ep, SPP_value_list, group_opt_list);
    DPRINTF("group_opt_=%u\n", static_cast<uint32_t>(group_opt_));
+
+   // SGE_QSTAT_LOAD_AVG (CS-2387)
+   lList *load_avg_variable_list = nullptr;
+   lAddElemStr(&load_avg_variable_list, ST_name, load_avg_variable_.c_str(), ST_Type);
+   ep = lAddElemStr(&bundle, SPP_name, LOAD_AVG_VARIABLE, SPP_Type);
+   lSetList(ep, SPP_value_list, load_avg_variable_list);
+   DPRINTF("load_avg_variable_=%s\n", load_avg_variable_.c_str());
 
    DRETURN(bundle);
 }

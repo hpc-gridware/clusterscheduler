@@ -243,6 +243,7 @@ static bool do_monitoring         = false;
 static bool do_joblog             = false;
 static int reporting_flush_time   = 15;
 static int accounting_flush_time  = -1;
+static bool reporting_sync_write  = false;
 static bool old_accounting = false;
 static bool old_reporting = false;
 static int sharelog_time          = 0;
@@ -1144,6 +1145,7 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
       do_joblog = false;
       reporting_flush_time = 15;
       accounting_flush_time = -1;
+      reporting_sync_write = false;
       old_accounting = false;
       old_reporting = false;
       sharelog_time = 0;
@@ -1376,6 +1378,9 @@ int merge_configuration(lList **answer_list, uint32_t progid, const char *cell_r
                accounting_flush_time = -1;
             }
 
+            continue;
+         }
+         if (parse_bool_param(s, "sync_write", &reporting_sync_write)) {
             continue;
          }
          if (parse_bool_param(s, "old_accounting", &old_accounting)) {
@@ -3033,6 +3038,22 @@ int mconf_get_accounting_flush_time() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    ret = accounting_flush_time;
+
+   SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
+   DRETURN(ret);
+}
+
+/**
+ * Return whether accounting / reporting / monitoring files are to be flushed
+ * with fsync(2) before close. Controlled by the reporting_params sub-option
+ * sync_write; defaults to false. See CS-2411 for the NFSv3 "Stale file handle"
+ * scenario that motivates this option.
+ */
+bool mconf_get_reporting_sync_write() {
+   DENTER(BASIS_LAYER);
+   SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
+
+   bool ret = reporting_sync_write;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
