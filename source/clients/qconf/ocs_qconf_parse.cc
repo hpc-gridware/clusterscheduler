@@ -7814,11 +7814,6 @@ static bool show_object_list(ocs::gdi::Target target, lDescr *type, int keynm, c
    case EV_host:
       where = lWhere("%T(%I==%u))", type, EV_id, EV_ID_SCHEDD);
       break;
-   case US_name:
-      /* CS-2394: hide the reserved manager/operator usersets from -sul; they are
-       * managed and shown via qconf -am/-dm/-sm and -ao/-do/-so */
-      where = lWhere("%T(!(%Ic=%s || %Ic=%s))", type, keynm, MANAGER_USERSET, keynm, OPERATOR_USERSET);
-      break;
    default:
       where = nullptr; /* all elements */
       break;

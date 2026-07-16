@@ -35,6 +35,7 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/ocs_Role.h"
@@ -58,6 +59,7 @@
 #include "sge_persistence_qmaster.h"
 #include "sge_utility_qmaster.h"
 #include "sge_resource_quota_qmaster.h"
+#include "ocs_Bootstrap.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
 
@@ -642,15 +644,6 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    }
    userset_name = lGetString(new_userset, US_name);
 
-   /* the manager/operator usersets back the manager/operator lists (CS-2394);
-    * they are reserved and must be changed via qconf -am/-dm/-ao/-do, not the
-    * userset interface (-au/-du/-mu/-Mu/-Au) */
-   if (strcmp(userset_name, MANAGER_USERSET) == 0 || strcmp(userset_name, OPERATOR_USERSET) == 0) {
-      ERROR(MSG_USERSET_RESERVED_NOMODIFY_S, userset_name);
-      answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-      goto ERROR;
-   }
-
    if (add && verify_str_key(
            alpp, userset_name, MAX_VERIFY_STRING, object->object_name, KEY_TABLE) != STATUS_OK) {
       goto ERROR;
@@ -681,6 +674,36 @@ int userset_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **alpp, lL
    /* interpret user/group names */
    if (userset_validate_entries(new_userset, alpp) != STATUS_OK) {
       goto ERROR;
+   }
+
+   /* the manager/operator usersets back the manager/operator lists (CS-2394).
+    * They may be changed via the userset interface, but they must stay an ACL and
+    * must not lose root or the admin user - the same guarantee qconf -dm/-do gives. */
+   if (strcmp(userset_name, MANAGER_USERSET) == 0 || strcmp(userset_name, OPERATOR_USERSET) == 0) {
+      const char *manop_name = (strcmp(userset_name, MANAGER_USERSET) == 0) ? MSG_OBJ_MANAGER : MSG_OBJ_OPERATOR;
+
+      /* NOTE: these rejections must not use STATUS_EEXIST: sge_client_del_user()
+       * (qconf -du) maps STATUS_EEXIST to "access list does not exist" and drops
+       * our message. STATUS_ESEMANTIC makes the client print the text below. */
+      if ((lGetUlong(new_userset, US_type) & US_ACL) == 0) {
+         ERROR(MSG_USERSET_RESERVED_MUSTBEACL_S, userset_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         goto ERROR;
+      }
+
+      /* admin_user "none" is the sentinel for "no admin user", it is not seeded either */
+      const char *admin_user = ocs::Bootstrap::get_admin_user();
+      if (lGetSubStr(new_userset, UE_name, "root", US_entries) == nullptr) {
+         ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, "root", manop_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         goto ERROR;
+      }
+      if (admin_user != nullptr && sge_strnullcasecmp(admin_user, NONE_STR) != 0 &&
+          lGetSubStr(new_userset, UE_name, admin_user, US_entries) == nullptr) {
+         ERROR(MSG_SGETEXT_MAY_NOT_REMOVE_USER_FROM_LIST_SS, admin_user, manop_name);
+         answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
+         goto ERROR;
+      }
    }
 
    /*
