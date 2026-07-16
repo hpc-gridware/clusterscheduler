@@ -162,59 +162,37 @@ user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *master_userse
 /**
  * Was the packet initiated by a manager?
  *
- * Managers are held in the reserved "manager" userset (CS-2394). The legacy
- * master manager list is only used as a fallback during the transition, i.e.
- * until seeding/migration have created the userset.
+ * Managers are held in the reserved "manager" userset (CS-2394).
  *
- * @param packet              GDI packet containing the ownership information of the request creator
- * @param master_manager_list Master manager list (legacy fallback)
- * @return                    True if packet initiator was a manager.
+ * @param packet  GDI packet containing the ownership information of the request creator
+ * @return        True if packet initiator was a manager.
  */
 bool
-manop_is_manager(const ocs::gdi::Packet *packet, const lList *master_manager_list) {
+manop_is_manager(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   if (lGetElemStr(master_userset_list, US_name, MANAGER_USERSET) != nullptr) {
-      DRETURN(user_is_X_user(packet, master_userset_list, MANAGER_USERSET));
-   }
-
-   // legacy fallback (userset not created yet)
-   if (user_list_is_user_grp_sgrp_in_list(packet, master_manager_list, UM_name)) {
-      DRETURN(true);
-   }
-   DRETURN(false);
+   DRETURN(user_is_X_user(packet, master_userset_list, MANAGER_USERSET));
 }
 
 /**
  * Was the packet initiated by an operator?
  *
- * Operators are held in the reserved "operator" userset (CS-2394); the legacy
- * master operator list is only a fallback until the userset exists. Managers are
+ * Operators are held in the reserved "operator" userset (CS-2394). Managers are
  * automatically operators.
  *
- * @param packet               GDI packet containing the ownership information of the request creator
- * @param master_manager_list  Master manager list (legacy fallback, via manop_is_manager)
- * @param master_operator_list Master operator list (legacy fallback)
- * @return                     True if packet initiator was an operator.
+ * @param packet  GDI packet containing the ownership information of the request creator
+ * @return        True if packet initiator was an operator.
  */
 bool
-manop_is_operator(const ocs::gdi::Packet *packet, const lList *master_manager_list, const lList *master_operator_list) {
+manop_is_operator(const ocs::gdi::Packet *packet) {
    DENTER(TOP_LAYER);
 
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
-   if (lGetElemStr(master_userset_list, US_name, OPERATOR_USERSET) != nullptr) {
-      if (user_is_X_user(packet, master_userset_list, OPERATOR_USERSET)) {
-         DRETURN(true);
-      }
-   } else if (user_list_is_user_grp_sgrp_in_list(packet, master_operator_list, UO_name)) {
-      // legacy fallback (userset not created yet)
+   if (user_is_X_user(packet, master_userset_list, OPERATOR_USERSET)) {
       DRETURN(true);
    }
 
    // managers are automatically operators
-   if (manop_is_manager(packet, master_manager_list)) {
-      DRETURN(true);
-   }
-   DRETURN(false);
+   DRETURN(manop_is_manager(packet));
 }

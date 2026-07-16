@@ -2941,7 +2941,9 @@ BackupConfig()
    BUP_PG_DUMP_FILE="postgres-config.sql"
    BUP_CLASSIC_COMMON_FILE_LIST_TMP="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh st.enabled act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST_TMP="sgeCA"
-   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas managers operators pe projects qinstances schedd submit_hosts users usersets"
+   # CS-2394: no managers/operators files any more - managers/operators are members of
+   # the reserved "manager"/"operator" usersets, covered by the usersets entry below.
+   BUP_CLASSIC_SPOOL_FILE_LIST_TMP="configs sched_configuration jobseqnum advance_reservations admin_hosts calendars centry ckpt cqueues exec_hosts hostgroups resource_quotas pe projects qinstances schedd submit_hosts users usersets"
    BUP_COMMON_FILE_LIST=""
    BUP_SPOOL_FILE_LIST=""
    BUP_SPOOL_DIR_LIST=""
@@ -3038,13 +3040,16 @@ resource_quotas advance_reservations roles"
       fi
    done
 
-   # managers/operators and the scheduler configuration (sched_configuration) are
-   # plain files at the spool root (not in an object dir). They expose the
-   # cluster's administrative accounts and configuration, so group/other must have
-   # neither read nor write access (disclosure + privilege-escalation vector). The
-   # global and per-host configurations live in the configs directory and are
-   # hardened below.
-   for f in managers operators sched_configuration; do
+   # The scheduler configuration (sched_configuration) is a plain file at the spool
+   # root (not in an object dir). It exposes the cluster's configuration, so
+   # group/other must have neither read nor write access (disclosure +
+   # privilege-escalation vector). The global and per-host configurations live in the
+   # configs directory and are hardened below.
+   #
+   # CS-2394: the administrative accounts are no longer plain managers/operators files
+   # at the spool root - they are members of the reserved "manager"/"operator" usersets
+   # and are hardened above with the rest of the usersets object dir.
+   for f in sched_configuration; do
       if [ -f "$qm_spool_dir/$f" ]; then
          ExecuteAsAdmin $CHMOD 600 "$qm_spool_dir/$f"
       fi
@@ -3084,7 +3089,9 @@ RestoreConfig()
    # directory. Same-version restore only.
    BUP_CLASSIC_COMMON_FILE_LIST="accounting bootstrap qtask sge_request sge_aliases sge_ar_request sge_qstat sge_qselect sge_qquota settings.sh act_qmaster sgemaster host_aliases settings.csh sgeexecd shadow_masters st.enabled cluster_name slice_name"
    BUP_CLASSIC_DIR_LIST="sgeCA"
-   BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups managers operators pe projects qinstances resource_quotas schedd submit_hosts users usersets"
+   # CS-2394: no managers/operators files any more - their content lives in the reserved
+   # "manager"/"operator" usersets, restored via the usersets entry.
+   BUP_CLASSIC_SPOOL_FILE_LIST="configs sched_configuration jobseqnum admin_hosts advance_reservations calendars centry ckpt cqueues exec_hosts hostgroups pe projects qinstances resource_quotas schedd submit_hosts users usersets"
 
    MKDIR="mkdir -p"
    CP="cp -f"

@@ -241,7 +241,7 @@ const int SOURCE_LIST[LIST_MAX][3] = {
  *****************************************************
  */
 
-#define total_update_eventsMAX 22
+#define total_update_eventsMAX 20
 
 const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST,
                                        sgeE_CALENDAR_LIST,
@@ -252,8 +252,6 @@ const int total_update_events[total_update_eventsMAX + 1] = {sgeE_ADMINHOST_LIST
                                        sgeE_CATEGORY_LIST,
                                        sgeE_JOB_LIST,
                                        sgeE_JOB_SCHEDD_INFO_LIST,
-                                       sgeE_MANAGER_LIST,
-                                       sgeE_OPERATOR_LIST,
                                        sgeE_PE_LIST,
                                        sgeE_CQUEUE_LIST,
                                        sgeE_SCHED_CONF,
@@ -277,8 +275,6 @@ const int block_events[total_update_eventsMAX][9] = {
    {sgeE_CATEGORY_ADD,  sgeE_CATEGORY_DEL,  sgeE_CATEGORY_MOD,  -1, -1, -1, -1, -1, -1},
    {sgeE_JOB_ADD, sgeE_JOB_DEL, sgeE_JOB_MOD, sgeE_JOB_USAGE, sgeE_JOB_FINAL_USAGE, sgeE_JOB_FINISH, -1, -1},
    {sgeE_JOB_SCHEDD_INFO_ADD, sgeE_JOB_SCHEDD_INFO_DEL, sgeE_JOB_SCHEDD_INFO_MOD, -1, -1, -1, -1, -1, -1},
-   {sgeE_MANAGER_ADD,         sgeE_MANAGER_DEL,         sgeE_MANAGER_MOD,         -1, -1, -1, -1, -1, -1},
-   {sgeE_OPERATOR_ADD,        sgeE_OPERATOR_DEL,        sgeE_OPERATOR_MOD,        -1, -1, -1, -1, -1, -1},
    {sgeE_PE_ADD,              sgeE_PE_DEL,              sgeE_PE_MOD,              -1, -1, -1, -1, -1, -1},
    {sgeE_CQUEUE_ADD,          sgeE_CQUEUE_DEL,          sgeE_CQUEUE_MOD, sgeE_QINSTANCE_ADD, sgeE_QINSTANCE_DEL, sgeE_QINSTANCE_MOD, sgeE_QINSTANCE_SOS, sgeE_QINSTANCE_USOS, -1},
    {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -450,7 +446,6 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
    const char *host;
    const char *commproc;
    uint32_t commproc_id;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -533,7 +528,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, lList 
       ** for internal clients (==> update_func != nullptr)
       ** and manager/operator
       */
-      if (update_func == nullptr && !manop_is_manager(packet, master_manager_list)) {
+      if (update_func == nullptr && !manop_is_manager(packet)) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          ERROR(SFNMAX, MSG_WRONG_USER_FORFIXEDID);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
@@ -784,8 +779,6 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_CATEGORY_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_JOB_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_JOB_SCHEDD_INFO_LIST);
-      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_MANAGER_LIST);
-      check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_OPERATOR_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_NEW_SHARETREE);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_PE_LIST);
       check_send_new_subscribed_list(old_sub, new_sub, event_client, sgeE_PROJECT_LIST);
@@ -1149,7 +1142,6 @@ int
 sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_id, lList **alpp) {
    lListElem *client = nullptr;
    int ret = 0;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -1163,7 +1155,7 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
    client = get_event_client(event_client_id);
 
    if (client != nullptr) {
-      if (!manop_is_manager(packet, master_manager_list) && (packet->uid != lGetUlong(client, EV_uid))) {
+      if (!manop_is_manager(packet) && (packet->uid != lGetUlong(client, EV_uid))) {
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
          answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED,
                          ANSWER_QUALITY_ERROR);
@@ -1224,10 +1216,9 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **a
 {
    DENTER(TOP_LAYER);
    uint32_t id = 0;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
 
-   if (!manop_is_manager(packet, master_manager_list)) {
+   if (!manop_is_manager(packet)) {
       answer_list_add(alpp, MSG_COM_NOSHUTDOWNPERMS, STATUS_DENIED, ANSWER_QUALITY_ERROR);
       DRETURN(EPERM);
    }
@@ -1955,8 +1946,6 @@ init_send_events() {
    SEND_EVENTS[sgeE_CATEGORY_LIST] = true;
    SEND_EVENTS[sgeE_JOB_LIST] = true;
    SEND_EVENTS[sgeE_JOB_SCHEDD_INFO_LIST] = true;
-   SEND_EVENTS[sgeE_MANAGER_LIST] = true;
-   SEND_EVENTS[sgeE_OPERATOR_LIST] = true;
    SEND_EVENTS[sgeE_PE_LIST] = true;
    SEND_EVENTS[sgeE_PROJECT_LIST] = true;
    SEND_EVENTS[sgeE_QMASTER_GOES_DOWN] = true;
@@ -2375,8 +2364,6 @@ total_update(lListElem *event_client, uint64_t gdi_session)
    total_update_event(event_client, sgeE_CATEGORY_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_JOB_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_JOB_SCHEDD_INFO_LIST, false, gdi_session);
-   total_update_event(event_client, sgeE_MANAGER_LIST, false, gdi_session);
-   total_update_event(event_client, sgeE_OPERATOR_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_PE_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_CQUEUE_LIST, false, gdi_session);
    total_update_event(event_client, sgeE_SCHED_CONF, false, gdi_session);
@@ -2876,14 +2863,8 @@ static void total_update_event(lListElem *event_client, ev_event type, bool new_
          case sgeE_JOB_SCHEDD_INFO_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_JOB_SCHEDD_INFO);
             break;
-         case sgeE_MANAGER_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-            break;
          case sgeE_NEW_SHARETREE:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_SHARETREE);
-            break;
-         case sgeE_OPERATOR_LIST:
-            lp = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
             break;
          case sgeE_PE_LIST:
             lp = *ocs::DataStore::get_master_list(SGE_TYPE_PE);

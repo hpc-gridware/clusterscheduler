@@ -100,8 +100,7 @@ sge_gdi_kill_master(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
       sge_dstring_free(&dbg_msg);
    }
 
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   if (!manop_is_manager(packet, master_manager_list)) {
+   if (!manop_is_manager(packet)) {
       ERROR(SFNMAX, MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;

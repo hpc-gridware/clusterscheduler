@@ -338,22 +338,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          element = object;
          object_type = SGE_TYPE_JOB_SCHEDD_INFO;
          break;
-      case sgeE_MANAGER_LIST:
-      case sgeE_MANAGER_ADD:
-      case sgeE_MANAGER_DEL:
-      case sgeE_MANAGER_MOD:
-         key = strkey;
-         element = object;
-         object_type = SGE_TYPE_MANAGER;
-         break;
-      case sgeE_OPERATOR_LIST:
-      case sgeE_OPERATOR_ADD:
-      case sgeE_OPERATOR_DEL:
-      case sgeE_OPERATOR_MOD:
-         key = strkey;
-         element = object;
-         object_type = SGE_TYPE_OPERATOR;
-         break;
       case sgeE_NEW_SHARETREE:
          /* we have only one sharetree - there is no key */
          key = "sharetree";
@@ -489,8 +473,6 @@ sge_event_spool(lList **answer_list, uint64_t timestamp, ev_event event, uint32_
          case sgeE_PETASK_DEL:
          case sgeE_JOB_DEL:
          case sgeE_JOB_SCHEDD_INFO_DEL:
-         case sgeE_MANAGER_DEL:
-         case sgeE_OPERATOR_DEL:
          case sgeE_PE_DEL:
          case sgeE_PROJECT_DEL:
          case sgeE_CQUEUE_DEL:

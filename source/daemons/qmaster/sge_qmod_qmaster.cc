@@ -439,10 +439,8 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem
    DENTER(TOP_LAYER);
 
    int result = 0;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    bool isowner = qinstance_is_owner(packet, qep);
-   bool isoperator = manop_is_operator(packet, master_manager_list, master_operator_list);
+   bool isoperator = manop_is_operator(packet);
 
    if (!isowner && !isoperator) {
       ERROR(MSG_QUEUE_NOCHANGEQPERMS_SS, packet->user, lGetString(qep, QU_full_name));
@@ -538,10 +536,8 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *
    // need to be either owner
    // or operator/manager on an admin host
    if (sge_strnullcmp(packet->user, lGetString(jep, JB_owner)) != 0) {
-      const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-      const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
-      if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+      if (!manop_is_operator(packet)) {
          ERROR(MSG_JOB_NOMODJOBPERMS_SU, packet->user, job_id);
          answer_list_add(answer, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          DRETURN(-1);

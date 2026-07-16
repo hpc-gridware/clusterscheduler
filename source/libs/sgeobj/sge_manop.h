@@ -41,5 +41,5 @@
 bool user_list_is_user_grp_sgrp_in_list(const ocs::gdi::Packet *packet, const lList *usr_grp_sgrp_list, int nm);
 bool user_is_ar_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);
 bool user_is_deadline_user(const ocs::gdi::Packet *packet, const lList *ar_users_list);
-bool manop_is_manager(const ocs::gdi::Packet *packet, const lList *master_manager_list);
-bool manop_is_operator(const ocs::gdi::Packet *packet, const lList *master_manager_list, const lList *master_operator_list);
+bool manop_is_manager(const ocs::gdi::Packet *packet);
+bool manop_is_operator(const ocs::gdi::Packet *packet);

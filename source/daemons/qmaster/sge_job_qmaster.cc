@@ -392,8 +392,6 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
    int alltasks = 1;
    lListElem *nxt, *job = nullptr;
    bool forced = false;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    lList *master_cqueue_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    lList *master_job_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
@@ -417,7 +415,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
 
    /* first lets make sure they have permission if a force is involved */
    if (!mconf_get_enable_forced_qdel()) {/* Flag ENABLE_FORCED_QDEL in qmaster_params */
-      if (forced && !manop_is_manager(packet, master_manager_list)) {
+      if (forced && !manop_is_manager(packet)) {
          ERROR(MSG_JOB_FORCEDDELETEPERMS_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -513,7 +511,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task,  lListElem
       job_number = lGetUlong(job, JB_job_number);
 
       /* Does user have privileges to delete the job/task? */
-      if (job_check_owner(packet, job_number, master_job_list, master_manager_list, master_operator_list)) {
+      if (job_check_owner(packet, job_number, master_job_list)) {
          ERROR(MSG_DELETEPERMS_SSU, packet->user, SGE_OBJ_JOB, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          njobs++;
@@ -889,7 +887,6 @@ job_list_filter(lList *user_list, const char *jobid, lCondition **job_filter) {
 static int
 verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_users_flag, int all_jobs_flag, int jid_flag, int user_list_flag) {
    DENTER(TOP_LAYER);
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    /* Reject incorrect requests */
    if (!all_users_flag && !all_jobs_flag && !jid_flag && !user_list_flag) {
@@ -916,7 +913,7 @@ verify_job_list_filter(const ocs::gdi::Packet *packet, lList **alpp, int all_use
 #endif
 
    /* case 1,3: Only manager can modify all jobs of all users */
-   if (all_users_flag && !jid_flag && !manop_is_manager(packet, master_manager_list)) {
+   if (all_users_flag && !jid_flag && !manop_is_manager(packet)) {
       ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, "modify all jobs");
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -1175,8 +1172,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
    bool job_name_flag = false;
    char *job_mod_name = nullptr;
    const char *job_name = nullptr;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    if (jep == nullptr) {
@@ -1291,8 +1286,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem 
 
       /* general check whether ruser is allowed to modify this job */
       if (strcmp(packet->user, lGetString(jobep, JB_owner))
-          && !manop_is_operator(packet, master_manager_list, master_operator_list)
-          && !manop_is_manager(packet, master_manager_list)) {
+          && !manop_is_operator(packet)
+          && !manop_is_manager(packet)) {
          ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, MSG_JOB_CHANGEATTR);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
          lFreeWhere(&job_where);
@@ -1666,8 +1661,6 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
    uint32_t jobid = lGetUlong(job, JB_job_number);
    uint32_t jataskid = lGetUlong(new_ja_task, JAT_task_number);
    int pos;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
 
    DENTER(TOP_LAYER);
 
@@ -1678,7 +1671,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
          uint32_t uval;
 
          /* need to be operator */
-         if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+         if (!manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGESHAREFUNC);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
@@ -1741,7 +1734,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
 
       if (new_hold != old_hold) {
          if ((target & MINUS_H_TGT_SYSTEM) == MINUS_H_TGT_SYSTEM) {
-            if (!manop_is_manager(packet, master_manager_list)) {
+            if (!manop_is_manager(packet)) {
                uint32_t new_mask = op_code_and_hold & ~MINUS_H_TGT_SYSTEM;
                lSetPosUlong(tep, pos, new_mask);
                ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, is_sub_op_code ? MSG_JOB_RMHOLDMNG : MSG_JOB_SETHOLDMNG);
@@ -1751,7 +1744,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
          }
 
          if ((target & MINUS_H_TGT_OPERATOR) == MINUS_H_TGT_OPERATOR) {
-            if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+            if (!manop_is_operator(packet)) {
                uint32_t new_mask = op_code_and_hold & ~MINUS_H_TGT_OPERATOR;
                lSetPosUlong(tep, pos, new_mask);
 
@@ -1764,7 +1757,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, lListElem *job, lListElem *n
 
          if ((target & MINUS_H_TGT_USER) == MINUS_H_TGT_USER) {
             if (strcmp(packet->user, lGetString(job, JB_owner)) &&
-                !manop_is_operator(packet, master_manager_list, master_operator_list)) {
+                !manop_is_operator(packet)) {
                uint32_t new_mask = op_code_and_hold & ~MINUS_H_TGT_USER;
                lSetPosUlong(tep, pos, new_mask);
                ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, is_sub_op_code ? MSG_JOB_RMHOLDUSER : MSG_JOB_SETHOLDUSER);
@@ -1950,8 +1943,6 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
 
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_ckpt_list = *ocs::DataStore::get_master_list(SGE_TYPE_CKPT);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
@@ -2080,7 +2071,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       uval = lGetPosUlong(jep, pos);
 
       /* need to be operator */
-      if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+      if (!manop_is_operator(packet)) {
          ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGEOVERRIDETICKS);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ENOOPR);
@@ -2102,7 +2093,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       uval = lGetPosUlong(jep, pos);
       if (uval > (old_priority = lGetUlong(new_job, JB_priority))) {
          /* need to be at least operator */
-         if (!manop_is_operator(packet, master_manager_list, master_operator_list)) {
+         if (!manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_PRIOINC);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
@@ -2126,7 +2117,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       if (uval != (old_jobshare = lGetUlong(new_job, JB_jobshare))) {
          /* need to be owner or at least operator */
          if (strcmp(packet->user, lGetString(new_job, JB_owner)) &&
-             !manop_is_operator(packet, master_manager_list, master_operator_list)) {
+             !manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGEJOBSHARE);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
@@ -2149,7 +2140,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, lListElem *new_job, lListElem
       if (uval != ar_id) {
          /* need to be owner or at least operator */
          if (strcmp(packet->user, lGetString(new_job, JB_owner)) &&
-             !manop_is_operator(packet, master_manager_list, master_operator_list)) {
+             !manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGEJOBAR);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_ENOOPR);
@@ -3664,7 +3655,6 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
    const lListElem *old_jep;
    lListElem *new_jep;
    int dummy_trigger = 0;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
 
    DENTER(TOP_LAYER);
@@ -3686,7 +3676,7 @@ int sge_gdi_copy_job(lListElem *jep, lList **alpp, lList **lpp,
    }
 
    /* ensure copy is allowed */
-   if (strcmp(packet->user, lGetString(old_jep, JB_owner)) && !manop_is_manager(packet, master_manager_list)) {
+   if (strcmp(packet->user, lGetString(old_jep, JB_owner)) && !manop_is_manager(packet)) {
       ERROR(MSG_JOB_NORESUBPERMS_SSS, packet->user, packet->host, lGetString(old_jep, JB_owner));
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);

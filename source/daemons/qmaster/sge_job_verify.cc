@@ -345,8 +345,6 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
    const lList *master_cqueue_list = *ocs::DataStore::get_master_list(SGE_TYPE_CQUEUE);
    const lList *master_hgroup_list = *ocs::DataStore::get_master_list(SGE_TYPE_HGROUP);
    const lList *master_centry_list = *ocs::DataStore::get_master_list(SGE_TYPE_CENTRY);
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   const lList *master_operator_list = *ocs::DataStore::get_master_list(SGE_TYPE_OPERATOR);
    const lList *master_job_list = *ocs::DataStore::get_master_list(SGE_TYPE_JOB);
    const lList *master_userset_list = *ocs::DataStore::get_master_list(SGE_TYPE_USERSET);
    const lList *master_pe_list = *ocs::DataStore::get_master_list(SGE_TYPE_PE);
@@ -910,7 +908,7 @@ sge_job_verify_adjust(lListElem *jep, lList **alpp, lList **lpp,
     * jobs with higher priority than 0 (=BASE_PRIORITY)
     */
    if (lGetUlong(jep, JB_priority) > BASE_PRIORITY &&
-       !manop_is_operator(packet, master_manager_list, master_operator_list)) {
+       !manop_is_operator(packet)) {
       ERROR(SFNMAX, MSG_JOB_NONADMINPRIO);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);

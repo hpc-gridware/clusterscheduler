@@ -551,30 +551,6 @@ sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
             evc->ec_mod_subscription_where(evc, sgeE_JOB_SCHEDD_INFO_MOD, what_el, where_el);
          }
          break;
-      case SGE_TYPE_MANAGER:
-         evc->ec_subscribe(evc, sgeE_MANAGER_LIST);
-         evc->ec_subscribe(evc, sgeE_MANAGER_ADD);
-         evc->ec_subscribe(evc, sgeE_MANAGER_DEL);
-         evc->ec_subscribe(evc, sgeE_MANAGER_MOD);
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_MANAGER_LIST, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_MANAGER_ADD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_MANAGER_DEL, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_MANAGER_MOD, what_el, where_el);
-         }
-         break;
-      case SGE_TYPE_OPERATOR:
-         evc->ec_subscribe(evc, sgeE_OPERATOR_LIST);
-         evc->ec_subscribe(evc, sgeE_OPERATOR_ADD);
-         evc->ec_subscribe(evc, sgeE_OPERATOR_DEL);
-         evc->ec_subscribe(evc, sgeE_OPERATOR_MOD);
-         if (what_el && where_el) {
-            evc->ec_mod_subscription_where(evc, sgeE_OPERATOR_LIST, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_OPERATOR_ADD, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_OPERATOR_DEL, what_el, where_el);
-            evc->ec_mod_subscription_where(evc, sgeE_OPERATOR_MOD, what_el, where_el);
-         }
-         break;
       case SGE_TYPE_SHARETREE:
          evc->ec_subscribe(evc, sgeE_NEW_SHARETREE);
          if (what_el && where_el) {
@@ -903,18 +879,6 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
          evc->ec_unsubscribe(evc, sgeE_JOB_SCHEDD_INFO_ADD);
          evc->ec_unsubscribe(evc, sgeE_JOB_SCHEDD_INFO_DEL);
          evc->ec_unsubscribe(evc, sgeE_JOB_SCHEDD_INFO_MOD);
-         break;
-      case SGE_TYPE_MANAGER:
-         evc->ec_unsubscribe(evc, sgeE_MANAGER_LIST);
-         evc->ec_unsubscribe(evc, sgeE_MANAGER_ADD);
-         evc->ec_unsubscribe(evc, sgeE_MANAGER_DEL);
-         evc->ec_unsubscribe(evc, sgeE_MANAGER_MOD);
-         break;
-      case SGE_TYPE_OPERATOR:
-         evc->ec_unsubscribe(evc, sgeE_OPERATOR_LIST);
-         evc->ec_unsubscribe(evc, sgeE_OPERATOR_ADD);
-         evc->ec_unsubscribe(evc, sgeE_OPERATOR_DEL);
-         evc->ec_unsubscribe(evc, sgeE_OPERATOR_MOD);
          break;
       case SGE_TYPE_SHARETREE:
          evc->ec_unsubscribe(evc, sgeE_NEW_SHARETREE);
@@ -1281,32 +1245,6 @@ sge_mirror_process_event_list_(sge_evc_class_t *evc, lList *event_list)
             break;
          case sgeE_JOB_SCHEDD_INFO_MOD:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_JOB_SCHEDD_INFO, SGE_EMA_MOD, event);
-            break;
-
-         case sgeE_MANAGER_LIST:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_MANAGER, SGE_EMA_LIST, event);
-            break;
-         case sgeE_MANAGER_ADD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_MANAGER, SGE_EMA_ADD, event);
-            break;
-         case sgeE_MANAGER_DEL:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_MANAGER, SGE_EMA_DEL, event);
-            break;
-         case sgeE_MANAGER_MOD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_MANAGER, SGE_EMA_MOD, event);
-            break;
-
-         case sgeE_OPERATOR_LIST:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_OPERATOR, SGE_EMA_LIST, event);
-            break;
-         case sgeE_OPERATOR_ADD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_OPERATOR, SGE_EMA_ADD, event);
-            break;
-         case sgeE_OPERATOR_DEL:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_OPERATOR, SGE_EMA_DEL, event);
-            break;
-         case sgeE_OPERATOR_MOD:
-            ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_OPERATOR, SGE_EMA_MOD, event);
             break;
 
          case sgeE_NEW_SHARETREE:

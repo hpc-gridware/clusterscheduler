@@ -2200,13 +2200,13 @@ int job_check_qsh_display(const lListElem *job, lList **answer_list,
 *            0, if the user is the job owner
 *            1, if the user is not the job owner
 ******************************************************************************/
-int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list)
+int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list)
 {
    const lListElem *job;
 
    DENTER(TOP_LAYER);
 
-   if (manop_is_operator(packet, master_manager_list, master_operator_list)) {
+   if (manop_is_operator(packet)) {
       DRETURN(0);
    }
 

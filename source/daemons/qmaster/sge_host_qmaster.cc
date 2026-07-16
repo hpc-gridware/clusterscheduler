@@ -1068,11 +1068,10 @@ exec_host_change_queue_version(const char *exechost_name, uint64_t gdi_session) 
  ****/
 void
 sge_gdi_kill_exechost(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(GDI_LAYER);
 
-   if (!manop_is_manager(packet, master_manager_list)) {
+   if (!manop_is_manager(packet)) {
       ERROR(SFNMAX, MSG_OBJ_SHUTDOWNPERMS);
       answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOMGR, ANSWER_QUALITY_ERROR);
       DRETURN_VOID;

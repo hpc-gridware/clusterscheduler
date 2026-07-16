@@ -142,8 +142,14 @@ option above) to the xxQS_NAMExx trusted host list automatically. Requires root/
 ## -am *user*,...
 Adds the indicated users to the xxQS_NAMExx manager list. Requires root/manager privileges.
 
+The manager list is the *manager* access list (see xxqs_name_sxx_access_list(5)). This switch is a
+convenience equivalent of `-au` *user* *manager*.
+
 ## -ao *user*,...
 Adds the indicated users to the xxQS_NAMExx operator list. Requires root/manager privileges.
+
+The operator list is the *operator* access list (see xxqs_name_sxx_access_list(5)). This switch is a
+convenience equivalent of `-au` *user* *operator*.
 
 ## -as *hostname*, ...
 Add hosts *hostname* to the list of hosts allowed to submit xxQS_NAMExx jobs and control their behavior only.
@@ -260,6 +266,9 @@ Object-specific notes:
   role.
 - `-dul` deletes whole usersets (ACLs); to remove individual users *from* an ACL use
   `-du` (see below) instead.
+- `-dul` deletion is refused for the reserved *manager* and *operator* usersets, which
+  hold the cluster's manager and operator lists (see xxqs_name_sxx_access_list(5)).
+  Remove their members instead.
 
 Requires root/manager privileges (`-dul` also accepts operator privilege).
 
@@ -336,6 +345,9 @@ Deletes the current share tree. Requires root/manager privileges.
 ## -du *user*,... *acl_name*,...
 Deletes one or more users from one or more xxQS_NAMExx access control lists (ACLs). Requires
 root/manager/operator privileges.
+
+The user *root* and the admin user cannot be removed from the reserved *manager* and *operator* access
+lists (see xxqs_name_sxx_access_list(5)), the same restriction that applies to `-dm` and `-do`.
 
 ## -f
 Modifier for the delete operations. Suppresses the interactive confirmation prompt that a directory based delete

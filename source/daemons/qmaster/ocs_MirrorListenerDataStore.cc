@@ -44,17 +44,8 @@ void ocs::MirrorListenerDataStore::subscribe_events() {
    evc->ec_set_flush(evc, sgeE_HGROUP_MOD, true, 0);
    evc->ec_set_flush(evc, sgeE_HGROUP_DEL, true, 0);
 
-   sge_mirror_subscribe(evc, SGE_TYPE_MANAGER, nullptr, nullptr, nullptr, nullptr, nullptr);
-   evc->ec_set_flush(evc, sgeE_MANAGER_LIST, true, 0);
-   evc->ec_set_flush(evc, sgeE_MANAGER_ADD, true, 0);
-   evc->ec_set_flush(evc, sgeE_MANAGER_MOD, true, 0);
-   evc->ec_set_flush(evc, sgeE_MANAGER_DEL, true, 0);
-
-   sge_mirror_subscribe(evc, SGE_TYPE_OPERATOR, nullptr, nullptr, nullptr, nullptr, nullptr);
-   evc->ec_set_flush(evc, sgeE_OPERATOR_LIST, true, 0);
-   evc->ec_set_flush(evc, sgeE_OPERATOR_ADD, true, 0);
-   evc->ec_set_flush(evc, sgeE_OPERATOR_MOD, true, 0);
-   evc->ec_set_flush(evc, sgeE_OPERATOR_DEL, true, 0);
+   // CS-2394: managers/operators are members of the reserved "manager"/"operator"
+   // usersets, so the USERSET subscription below covers them.
 
    // We need just the name to see if a host is an execution host
    lEnumeration *eh_what = lWhat("%T(%I)", EH_Type, EH_name);

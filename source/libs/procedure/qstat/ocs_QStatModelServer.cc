@@ -28,8 +28,7 @@
 bool
 ocs::QStatModelServer::fetch_data(lList **answer_list, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
-   const lList *master_manager_list = *DataStore::get_master_list(SGE_TYPE_MANAGER);
-   is_manager_ = manop_is_manager(packet, master_manager_list);
+   is_manager_ = manop_is_manager(packet);
    const lList *master_job_list = *DataStore::get_master_list(SGE_TYPE_JOB);
 
    lEnumeration* sme_what = get_sme_what();

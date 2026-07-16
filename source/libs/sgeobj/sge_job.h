@@ -413,7 +413,7 @@ int job_check_qsh_display(const lListElem *job,
                           lList **answer_list,
                           bool output_warning);
 
-int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list, const lList *master_manager_list, const lList *master_operator_list);
+int job_check_owner(const ocs::gdi::Packet *packet, uint32_t job_id, lList *master_job_list);
 
 int job_resolve_host_for_path_list(const lListElem *job, lList **answer_list, int name);
 

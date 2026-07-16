@@ -46,6 +46,34 @@ Allows to specify a deadline for jobs (see qsub(1) -dl).
 The *defaultdepartment* is the default department for users that are not assigned to any other department.
 In difference to other departments, users or groups of users must not explicitly be referenced in the *entries* field of the *defaultdepartment* so that a user can be part of the *defaultdepartment*.
 
+## manager
+
+Holds the xxQS_NAMExx managers. A user, primary group (@group) or supplementary group referenced in the
+*entries* field of the *manager* access list has manager permissions.
+
+The *manager* access list is the single place where managers are stored. The `qconf -am`, `-dm` and `-sm`
+options operate on it and are kept for convenience; they are a different view of the same object. Adding a
+user with `qconf -au user manager` therefore has exactly the same effect as `qconf -am user`, and the user
+shows up in both `qconf -su manager` and `qconf -sm`.
+
+## operator
+
+Holds the xxQS_NAMExx operators, analogous to the *manager* access list, with `qconf -ao`, `-do` and `-so`
+as the equivalent convenience options. Managers are automatically operators, they do not have to be
+referenced in the *operator* access list.
+
+The *manager* and *operator* access lists are created automatically and always contain at least the user
+*root* and the admin user. Because they carry the permissions of the cluster, the following restrictions
+apply to them, and to them only:
+
+* They cannot be deleted (`qconf -dul`, `-Du`).
+* Their *type* must remain *ACL*.
+* The user *root* and the admin user cannot be removed from them - neither via `qconf -dm`/`-do` nor via
+  the access list options `-du`, `-mu`, `-Mu`.
+
+Apart from that they behave like any other access list: they are listed by `qconf -sul`, shown by
+`qconf -su`, and modified with `-au`, `-du`, `-mu`, `-Mu` and `-Au`.
+
 # FORMAT
 
 The following list of access list parameters specifies the access list content:

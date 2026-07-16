@@ -128,6 +128,52 @@ DumpOptionToFile()
 }
 
 
+# CS-2394: since 9.2 the access list (userset) names "manager" and "operator" are
+# reserved - they hold the manager and operator lists. A cluster older than 9.2 may
+# have a user-defined access list of that name, which cannot be carried over: the
+# upgraded cluster would resolve every reference to it (queue/host/pe user_lists,
+# project acl, ...) to the reserved list instead, silently changing access rights.
+# Such a collision must be resolved by the administrator in the old cluster before
+# the upgrade, so abort here - while the old cluster is still untouched - instead of
+# failing halfway through the upgrade.
+#
+#   $1 - the access list names reported by "qconf -sul" of the old cluster
+CheckReservedAccessListNames()
+{
+   acl_list=$1
+
+   # Access lists named manager/operator are expected (and reserved) from 9.2 on.
+   # $VERSION looks like "GCS 9.2.0prealpha (070726-1535)".
+   ver=`echo "$VERSION" | awk '{print $2}'`
+   ver_major=`echo "$ver" | cut -d. -f1 | tr -cd '0-9'`
+   ver_minor=`echo "$ver" | cut -d. -f2 | tr -cd '0-9'`
+   if [ -n "$ver_major" ] && [ -n "$ver_minor" ]; then
+      if [ "$ver_major" -gt 9 ] || { [ "$ver_major" -eq 9 ] && [ "$ver_minor" -ge 2 ]; }; then
+         return 0
+      fi
+   fi
+
+   for acl in $acl_list; do
+      case "$acl" in
+         manager|operator)
+            $INFOTEXT ""
+            $INFOTEXT "[CRITICAL] The cluster contains a user-defined access list named \"$acl\"."
+            $INFOTEXT "Beginning with version 9.2 the access list names \"manager\" and \"operator\""
+            $INFOTEXT "are reserved: they hold the manager and operator lists of the cluster."
+            $INFOTEXT ""
+            $INFOTEXT "Rename the access list \"$acl\" in the running cluster and adapt everything"
+            $INFOTEXT "that references it (user_lists/xuser_lists of queues, hosts, parallel"
+            $INFOTEXT "environments and the cluster configuration, acl/xacl of projects, resource"
+            $INFOTEXT "quota sets), then start the upgrade again."
+            $INFOTEXT ""
+            $INFOTEXT "No data has been changed. The upgrade is aborted."
+            exit 1
+         ;;
+      esac
+   done
+   return 0
+}
+
 #Backup selected files from SgeCell (bootstrap, etc.)
 BackupSgeCell()
 {
@@ -323,6 +369,8 @@ DumpListToLocation "$list" $DEST_DIR/pe "-sp"
 
 #     -sul                          <show user ACL lists>
 list=`$QCONF -sul 2>/dev/null`
+# CS-2394: refuse to upgrade a pre-9.2 cluster that uses the now-reserved names
+CheckReservedAccessListNames "$list"
 #     -su acl_name                  <show user ACL>
 DumpListToLocation "$list" $DEST_DIR/usersets "-su"
 

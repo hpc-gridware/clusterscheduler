@@ -194,23 +194,14 @@ static bool read_spooled_data()
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master submit host list\n", lGetNumberOfElem(master_list));
 
-   /* managers */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_MANAGER);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_MANAGER);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master manager list\n", lGetNumberOfElem(master_list));
+   /* CS-2394: managers/operators are no longer spooled as own lists - they are
+    * members of the reserved "manager"/"operator" usersets, covered below. */
 
    /* host groups */
    master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP);
    spool_read_list(&answer_list, context, &master_list, SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
    DPRINTF("read %d entries to master host group list\n", lGetNumberOfElem(master_list));
-
-   /* operators */
-   master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_OPERATOR);
-   spool_read_list(&answer_list, context, &master_list, SGE_TYPE_OPERATOR);
-   answer_list_output(&answer_list);
-   DPRINTF("read %d entries to master operator list\n", lGetNumberOfElem(master_list));
 
    /* usersets */
    master_list = *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET);
@@ -320,8 +311,6 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, sg
             break;
          case SGE_TYPE_CALENDAR:
          case SGE_TYPE_CKPT:
-         case SGE_TYPE_MANAGER:
-         case SGE_TYPE_OPERATOR:
          case SGE_TYPE_PE:
          case SGE_TYPE_PROJECT:
          case SGE_TYPE_CQUEUE:
@@ -463,21 +452,6 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    switch(action) {
       case SGE_EMA_LIST:
          switch(type) {
-            case SGE_TYPE_MANAGER:
-            case SGE_TYPE_OPERATOR:
-               /* The "classic" spooling functions always write all list entries
-                * to the spool file, not individual ones.
-                * Therefore we have to call the writing function once after
-                * the master list has been updated by the mirroring
-                */
-               if(strcmp(lGetString(context, SPC_name), "classic spooling") == 0) {
-                  ep = lFirst(*master_list);
-                  if(ep != nullptr) {
-                     spool_write_object(&answer_list, context, ep, nullptr, type, false);
-                     answer_list_output(&answer_list);
-                  }
-               }   
-               break;
             case SGE_TYPE_SHARETREE:
                ep = lFirst(*master_list);
                if(ep != nullptr) {
@@ -499,8 +473,6 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
             case SGE_TYPE_CONFIG:
             case SGE_TYPE_CALENDAR:
             case SGE_TYPE_CKPT:
-            case SGE_TYPE_MANAGER:
-            case SGE_TYPE_OPERATOR:
             case SGE_TYPE_PE:
             case SGE_TYPE_PROJECT:
             case SGE_TYPE_CQUEUE:
@@ -537,8 +509,6 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
 
             case SGE_TYPE_CALENDAR:
             case SGE_TYPE_CKPT:
-            case SGE_TYPE_MANAGER:
-            case SGE_TYPE_OPERATOR:
             case SGE_TYPE_PE:
             case SGE_TYPE_PROJECT:
             case SGE_TYPE_CQUEUE:

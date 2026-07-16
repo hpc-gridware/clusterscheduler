@@ -91,8 +91,12 @@ typedef enum {
    SGE_TYPE_PETASK,
    SGE_TYPE_JOB,
    SGE_TYPE_JOB_SCHEDD_INFO,
-   SGE_TYPE_MANAGER,
-   SGE_TYPE_OPERATOR, // 10
+   /* CS-2394: no longer back a master list (managers/operators live in the reserved
+    * "manager"/"operator" usersets). Kept as reserved slots: the values index
+    * object_base[] and are exposed to the Python bridge, so removing them renumbers
+    * every type below. */
+   SGE_TYPE_MANAGER,  // unused since 9.2.0 (reserved slot)
+   SGE_TYPE_OPERATOR, // 10 - unused since 9.2.0 (reserved slot)
    SGE_TYPE_SHARETREE,
    SGE_TYPE_PE,
    SGE_TYPE_PROJECT,

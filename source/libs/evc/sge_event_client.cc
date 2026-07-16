@@ -441,16 +441,6 @@
 *        sgeE_JOB_SCHEDD_INFO_DEL         event jobs schedd info deleted
 *        sgeE_JOB_SCHEDD_INFO_MOD         event jobs schedd info modified
 *
-*        sgeE_MANAGER_LIST                send manager list at registration
-*        sgeE_MANAGER_ADD                 event add manager
-*        sgeE_MANAGER_DEL                 event delete manager
-*        sgeE_MANAGER_MOD                 event modify manager
-*
-*        sgeE_OPERATOR_LIST               send operator list at registration
-*        sgeE_OPERATOR_ADD                event add operator
-*        sgeE_OPERATOR_DEL                event delete operator
-*        sgeE_OPERATOR_MOD                event modify operator
-*
 *        sgeE_NEW_SHARETREE               replace possibly existing share tree
 *
 *        sgeE_PE_LIST                     send pe list at registration

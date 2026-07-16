@@ -336,8 +336,7 @@ get_gdi_executor_ds(ocs::gdi::Packet *packet) {
          type = get_most_restrictive_datastore(type, ocs::DataStore::READER);
       } else if (operation == ocs::gdi::Command::GET) {
          bool is_qconf = (strcmp(packet->commproc, to_cstr(QCONF)) == 0);
-         const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-         bool is_manager = manop_is_manager(packet, master_manager_list);
+         bool is_manager = manop_is_manager(packet);
 
          if (is_qconf && is_manager) {
             // get requests from qconf triggered by managers (e.g. GET request for qconf -mq) require GLOBAL DS to avoid outdated data
@@ -417,8 +416,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 
 #if defined(WITH_EXTENSIONS)
    // handle GDI request limits but only if request is not triggered by a manager
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
-   if (local_ret && !manop_is_manager(packet, master_manager_list)) {
+   if (local_ret && !manop_is_manager(packet)) {
       ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
       limits_instance.parse_from_config(&packet->tasks[0]->answer_list);
 

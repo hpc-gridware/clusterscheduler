@@ -979,7 +979,8 @@ setup_qmaster() {
 
          if (!spool_write_object(&answer_list, spooling_context, us, us_name, SGE_TYPE_USERSET, true)) {
             answer_list_output(&answer_list);
-            CRITICAL(SFNMAX, MSG_CONFIG_CANTWRITEMANAGERLIST);
+            CRITICAL(SFNMAX, strcmp(us_name, MANAGER_USERSET) == 0 ?
+                             MSG_CONFIG_CANTWRITEMANAGERLIST : MSG_CONFIG_CANTWRITEOPERATORLIST);
             DRETURN(-1);
          }
       }

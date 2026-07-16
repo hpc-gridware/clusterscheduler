@@ -85,6 +85,11 @@ static object_description object_base[SGE_TYPE_ALL] = {
         {"PETASK",            PET_Type,  PET_id},
         {"JOB",               JB_Type,   JB_job_number},
         {"JOB_SCHEDD_INFO",   SME_Type,  NoName},
+        /* CS-2394: MANAGER/OPERATOR no longer back a master list - they live in the
+         * reserved "manager"/"operator" usersets. UM_Type/UO_Type survive as GDI
+         * transport for the unchanged UM_LIST/UO_LIST targets. These two rows are
+         * positional (object_base[] is indexed by sge_object_type) and must stay as
+         * long as the enum slots do. */
         {"MANAGER",           UM_Type,   UM_name},
         {"OPERATOR",          UO_Type,   UO_name},
         {"SHARETREE",         STN_Type,  STN_name},

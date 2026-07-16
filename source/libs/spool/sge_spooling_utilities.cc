@@ -509,8 +509,6 @@ bool spool_default_validate_func(lList **answer_list,
       case SGE_TYPE_USER:
          NULL_OUT_NONE(object, UU_default_project);
          break;
-      case SGE_TYPE_MANAGER:
-      case SGE_TYPE_OPERATOR:
       case SGE_TYPE_HGROUP:
       case SGE_TYPE_CALENDAR:
       case SGE_TYPE_PROJECT:
@@ -558,8 +556,6 @@ spool_default_validate_list_func(lList **answer_list,
       case SGE_TYPE_CENTRY:
          centry_list_sort(*ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY));
          break;
-      case SGE_TYPE_MANAGER:
-      case SGE_TYPE_OPERATOR:
       case SGE_TYPE_HGROUP:
       case SGE_TYPE_CALENDAR:
       case SGE_TYPE_PROJECT:

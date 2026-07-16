@@ -40,5 +40,29 @@ and the configuration is re-spooled there. No manual action is required. If you 
 by other means, update `spooling_params` to the qmaster spool directory path before starting the upgraded
 qmaster.
 
+## Managers and Operators Are Stored as Access Lists
+
+Managers and operators are no longer stored in the `managers` and `operators` files of the qmaster spool
+directory. They are now the members of two reserved access lists (usersets) named `manager` and `operator`,
+spooled with all other access lists. See the
+[Compatibility Notes](07_compatibility_notes.md#managers-and-operators-are-reserved-access-lists) for what
+this changes at the user interface.
+
+The regular upgrade procedure (`inst_sge -upd`) handles the migration automatically: the existing managers
+and operators are dumped from the old cluster and re-added to the upgraded one, where they are stored in the
+reserved access lists. No manual action is required, and the old `managers`/`operators` files are simply no
+longer used. As always, the upgrade procedure has to be run — replacing only the binaries is not a supported
+way to install a new version.
+
+**If your cluster uses an access list named `manager` or `operator`**, it must be renamed before the
+upgrade, because those two names are now reserved. The upgrade detects this and aborts with an explanatory
+message while the old cluster is still untouched, so that no half-migrated cluster can result.
+
+Such an access list cannot be carried over automatically: everything that references it — the
+`user_lists`/`xuser_lists` of queues, hosts, parallel environments and the cluster configuration, the
+`acl`/`xacl` of projects, and resource quota sets — would silently resolve to the reserved manager or
+operator list after the upgrade, and with that to different access rights. Rename the access list in the old
+cluster, adapt the objects that reference it, and start the upgrade again.
+
 [//]: # (Each file has to end with two empty lines)
 

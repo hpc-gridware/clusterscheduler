@@ -483,7 +483,6 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
    bool has_manager_privileges = false;
    dstring buffer = DSTRING_INIT;
    lCondition *ar_where = nullptr;
-   const lList *master_manager_list = *ocs::DataStore::get_master_list(SGE_TYPE_MANAGER);
 
    DENTER(TOP_LAYER);
 
@@ -509,7 +508,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
          const char *user_name = lGetString(user, ST_name);
          bool is_pattern = ocs::is_pattern(user_name);
 
-         if (is_pattern && !manop_is_manager(packet, master_manager_list)) {
+         if (is_pattern && !manop_is_manager(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_MGR_TO_SS, packet->user, "modify all advance reservations");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
@@ -586,7 +585,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *ep, lList **al
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (manop_is_manager(packet, master_manager_list)) {
+   if (manop_is_manager(packet)) {
       has_manager_privileges = true;
    }
 

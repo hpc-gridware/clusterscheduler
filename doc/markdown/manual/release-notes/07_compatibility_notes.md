@@ -84,5 +84,32 @@ Reading configuration files directly has never been a supported interface — ex
 configuration from the qmaster over GDI, not from disk. Use *qconf* (`-sconf`/`-Mconf` and the host-specific
 configuration commands) to read and modify configuration programmatically.
 
+## Managers and Operators Are Reserved Access Lists
+
+Managers and operators are now stored as the members of two reserved access lists (usersets) named `manager`
+and `operator`, instead of in their own `managers` and `operators` files in the qmaster spool directory. The
+access list is the single place where they live, which allows RBAC roles to reference managers and operators
+by access list name instead of duplicating those lists.
+
+**The manager and operator command line interface is unchanged.** `qconf -am`, `-dm`, `-sm`, `-ao`, `-do` and
+`-so` behave exactly as before and produce the same output; they are kept for convenience and now operate on
+the reserved access lists.
+
+In addition, both access lists are ordinary access lists at the interface: they are listed by `qconf -sul`,
+shown by `qconf -su manager`, and can be modified with `-au`, `-du`, `-mu`, `-Mu` and `-Au`. `qconf -au user
+manager` and `qconf -am user` are two ways of doing the same thing. Because these two access lists carry the
+permissions of the cluster, three restrictions apply to them and to no other access list:
+
+* they cannot be deleted (`qconf -dul`, `-Du`),
+* their *type* must remain *ACL*,
+* the user *root* and the admin user cannot be removed from them — the same rule `-dm`/`-do` always enforced,
+  now also enforced when going through `-du`/`-mu`.
+
+**Impact:** the `managers` and `operators` files no longer exist, and the qmaster no longer reads them. Any
+tooling that read those files directly must use `qconf -sm`/`-so` (unchanged) instead. Reading spool files
+directly has never been a supported interface. Clusters that use an access list named `manager` or
+`operator` must rename it before upgrading; the upgrade detects the collision and aborts with an
+explanatory message — see the [Upgrade Notes](06_upgrade_notes.md#managers-and-operators-are-stored-as-access-lists).
+
 [//]: # (Each file has to end with two empty lines)
 

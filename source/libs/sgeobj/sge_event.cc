@@ -206,33 +206,8 @@ const char *event_text(const lListElem *event, dstring *buffer)
       sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "JOB_SCHEDD_INFO", job_get_id_string(intkey, intkey2, strkey, &id_dstring));
       break;
 
-   /* -------------------- */
-   case sgeE_MANAGER_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "MANAGER", n);
-      break;
-   case sgeE_MANAGER_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "MANAGER", strkey);
-      break;
-   case sgeE_MANAGER_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "MANAGER", strkey);
-      break;
-   case sgeE_MANAGER_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "MANAGER", strkey);
-      break;
-
-   /* -------------------- */
-   case sgeE_OPERATOR_LIST:
-      sge_dstring_sprintf(buffer, MSG_EVENT_OBJECTLISTXELEMENTS_USI, number, "OPERATOR", n);
-      break;
-   case sgeE_OPERATOR_ADD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_ADDOBJECTX_USS, number, "OPERATOR", strkey);
-      break;
-   case sgeE_OPERATOR_DEL:
-      sge_dstring_sprintf(buffer, MSG_EVENT_DELOBJECTX_USS, number, "OPERATOR", strkey);
-      break;
-   case sgeE_OPERATOR_MOD:
-      sge_dstring_sprintf(buffer, MSG_EVENT_MODOBJECTX_USS, number, "OPERATOR", strkey);
-      break;
+   /* CS-2394: the sgeE_MANAGER_ and sgeE_OPERATOR_ events are vestigial and never
+    * emitted; managers/operators are carried by the sgeE_USERSET_ events. */
 
    /* -------------------- */
    case sgeE_NEW_SHARETREE:
