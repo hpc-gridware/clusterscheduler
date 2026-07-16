@@ -748,10 +748,28 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
             for_each_ep_lv(ep, usage_list) {
                const char *name = lGetString(ep, UA_name);
                if (sge_eval_expression(ocs::CEntry::Type::STR, pattern.c_str(), name, nullptr, true, pattern_is_expression) == 0) {
-                  write_json(*writer, name,
-                             reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
-                                                            name, name, 0));
-
+                  // CS-849: branch on presence of UA_svalue. String custom
+                  // usage values are emitted as native JSON strings (no
+                  // wrapper). For do_accounting_summary=true the numeric path
+                  // aggregates across pe_tasks; strings have no defined
+                  // aggregation semantic, so string elements are silently
+                  // skipped in summary mode. Silent (DPRINTF-only, not
+                  // WARNING) because large PE jobs with per-pe_task string
+                  // custom usage would otherwise flood the messages file.
+                  // See usage_patterns note in sge_conf(5).
+                  const char *svalue = lGetString(ep, UA_svalue);
+                  if (svalue != nullptr) {
+                     if (do_accounting_summary) {
+                        DPRINTF("string custom usage '%s' skipped from accounting_summary output for job " sge_u32 "\n",
+                                name, lGetUlong(jr, JR_job_number));
+                     } else {
+                        write_json(*writer, name, svalue);
+                     }
+                  } else {
+                     write_json(*writer, name,
+                                reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
+                                                               name, name, 0));
+                  }
                }
             }
 

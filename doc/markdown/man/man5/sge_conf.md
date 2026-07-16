@@ -1408,6 +1408,20 @@ Examples:
     usage_patterns=gpu:nvidia.*|amd.*  
     usage_patterns=gpu:nvidia.*;power:power-*
 
+Custom usage values may be either numeric or strings. The type is derived from the value written 
+to the shepherd usage file by the epilog script: a value surrounded by matching quotes (`"..."` or 
+`'...'`) is a string with the quotes stripped; an unquoted value that parses as a number is 
+numeric; the case-insensitive tokens `true`/`false` coerce to numeric `1`/`0`; anything else is a 
+string. Use quotes to force numeric-looking data (identifiers, version markers, categorical 
+labels) to be recorded as strings.
+
+Numeric and string custom usage values are written to accounting and reporting records with their 
+respective JSON types and are displayed by *xxqs_name_sxx_qacct(1)*. Note that when parallel job 
+accounting is aggregated per parallel-environment (parallel environments with `accounting_summary=TRUE`, 
+see *xxqs_name_sxx_pe(5)*), string custom usage values are silently skipped from the summary record: 
+they have no defined per-pe_task aggregation semantic. The per-pe_task acct records still carry the 
+string values as usual.
+
 ***online_usage***
 
 When set to a non-empty value, xxQS_NAMExx writes a continuous stream of *online_usage* records to the

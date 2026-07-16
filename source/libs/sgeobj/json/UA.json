@@ -46,6 +46,21 @@
                "name": "SPOOL_SUBLIST"
             }
          ]
+      },
+      {
+         "name": "svalue",
+         "summary": "String Value",
+         "description": [
+            {
+               "line": "Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849."
+            }
+         ],
+         "type": "lStringT",
+         "flags": [
+            {
+               "name": "SPOOL_SUBLIST"
+            }
+         ]
       }
    ]
 }

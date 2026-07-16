@@ -285,6 +285,7 @@ static spooling_field UE_sub_fields[] = {
 static spooling_field UA_sub_fields[] = {
    {  UA_name,             0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  UA_value,            0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
+   {  UA_svalue,           0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr},
    {  NoName,              0, nullptr,                false, nullptr, false, nullptr, nullptr, nullptr}
 };
 
