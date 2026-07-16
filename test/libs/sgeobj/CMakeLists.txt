@@ -77,6 +77,14 @@ target_include_directories(test_sgeobj_role PRIVATE "./")
 target_link_libraries(test_sgeobj_role PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_role COMMAND test_sgeobj_role)
 
+# manop_is_manager()/manop_is_operator() take a gdi::Packet, so libgdi is needed.
+# It must be listed before sgeobj: ocs_gdi_Packet.cc references jsv_do_verify() and
+# ocs::Version::get_version(), which live in sgeobj.
+add_executable(test_sgeobj_manop test_sgeobj_manop.cc)
+target_include_directories(test_sgeobj_manop PRIVATE "./")
+target_link_libraries(test_sgeobj_manop PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_manop COMMAND test_sgeobj_manop)
+
 add_executable(test_sgeobj_usage test_sgeobj_usage.cc)
 target_include_directories(test_sgeobj_usage PRIVATE "./")
 target_link_libraries(test_sgeobj_usage PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
@@ -108,6 +116,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_schedd_conf DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_utility DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_role DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_manop DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_usage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_usage_parse DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_ulong DESTINATION testbin/${SGE_ARCH})
