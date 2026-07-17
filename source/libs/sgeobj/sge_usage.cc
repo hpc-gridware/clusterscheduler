@@ -32,7 +32,11 @@
  ************************************************************************/
 /*___INFO__MARK_END__*/
 
+#include <cctype>
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "cull/cull.h"
 
@@ -401,4 +405,109 @@ lList *scaled_usage /* UA_Type */
    }
 
    return scaled_usage;
+}
+
+/**
+ * Case-insensitive equality for a null-terminated string against a fixed
+ * literal. Local helper for the bool-coercion branch in usage_parse_value.
+ */
+static bool
+str_iequal(const char *value, const char *literal) {
+   while (*literal != '\0') {
+      if (std::tolower(static_cast<unsigned char>(*value)) !=
+          std::tolower(static_cast<unsigned char>(*literal))) {
+         return false;
+      }
+      ++value;
+      ++literal;
+   }
+   return *value == '\0';
+}
+
+/**
+ * Try to parse @p value as a full double. Returns true and sets @p out when
+ * the entire string was consumed as a valid finite double; false otherwise
+ * (including leading/trailing whitespace, partial parse, NaN/Infinity).
+ */
+static bool
+parse_full_double(const char *value, double &out) {
+   if (value[0] == '\0') {
+      return false;
+   }
+   char *end = nullptr;
+   errno = 0;
+   double d = std::strtod(value, &end);
+   if (errno != 0 || end == value || *end != '\0') {
+      return false;
+   }
+   out = d;
+   return true;
+}
+
+/**
+ * Parse a raw shepherd-usage-file value into a fresh UA_Type element.
+ * Discrimination rule (CS-849, origin AE3):
+ *   1. length ≥ 2 && value starts and ends with the same quote character
+ *      ('"' or '\''): strip both quotes, UA_svalue = interior, no escape processing.
+ *      Empty pair "" yields an empty-string UA_svalue.
+ *   2. Else parses as a full double: UA_value = the parsed number.
+ *   3. Else case-insensitively equals "true" (UA_value = 1) or "false" (UA_value = 0).
+ *   4. Else raw string: UA_svalue = the value as-is, including any stray
+ *      leading quote (unmatched, mismatched, or single-character).
+ * Standard USAGE_ATTR_* code paths never invoke this helper; UA_svalue is
+ * reserved for custom usage values that arrive through the shepherd path.
+ */
+lListElem *
+usage_parse_value(const char *name, const char *value) {
+   if (name == nullptr) {
+      return nullptr;
+   }
+   if (value == nullptr) {
+      value = "";
+   }
+
+   lListElem *ep = lCreateElem(UA_Type);
+   lSetString(ep, UA_name, name);
+
+   // (1) quote-prefix rule — matched pair strips.
+   // Empty quoted pair ("" or '') is a special case: CULL's wire format
+   // (packstr / unpackstr) cannot distinguish an empty string from nullptr,
+   // so an empty svalue would silently become nullptr after execd → qmaster
+   // GDI transport and the downstream writer would fall through to the
+   // numeric branch. To keep semantics consistent end-to-end we treat an
+   // empty quoted pair as "no value" and return nullptr, which the caller
+   // (reaper_execd) already handles by skipping the entry.
+   const std::size_t len = std::strlen(value);
+   if (len >= 2 &&
+       (value[0] == '"' || value[0] == '\'') &&
+       value[len - 1] == value[0]) {
+      if (len == 2) {
+         lFreeElem(&ep);
+         return nullptr;
+      }
+      std::string interior(value + 1, len - 2);
+      lSetString(ep, UA_svalue, interior.c_str());
+      return ep;
+   }
+
+   // (2) full-double parse.
+   double d = 0.0;
+   if (parse_full_double(value, d)) {
+      lSetDouble(ep, UA_value, d);
+      return ep;
+   }
+
+   // (3) case-insensitive bool coercion.
+   if (str_iequal(value, "true")) {
+      lSetDouble(ep, UA_value, 1.0);
+      return ep;
+   }
+   if (str_iequal(value, "false")) {
+      lSetDouble(ep, UA_value, 0.0);
+      return ep;
+   }
+
+   // (4) raw string.
+   lSetString(ep, UA_svalue, value);
+   return ep;
 }

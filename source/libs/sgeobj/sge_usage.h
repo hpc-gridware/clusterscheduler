@@ -104,3 +104,16 @@ void
 usage_list_sum(lList *usage_list, const lList *add_usage_list);
 
 lList *scale_usage(const lList *scaling, const lList *prev_usage, lList *scaled_usage);
+
+/**
+ * Parse a raw <variable>=<value> pair from the shepherd usage file (or an
+ * equivalent source) into a UA_Type element with the correctly-typed value.
+ * See CS-849 for the discrimination rule; the CTest module at
+ * test/libs/sgeobj/test_sgeobj_usage.cc exhaustively covers origin AE3.
+ *
+ * The caller owns the returned element (must lFreeElem it or attach it to
+ * a usage list). Returns nullptr only when @p name is nullptr; empty string
+ * values and empty variable names are accepted.
+ */
+lListElem *
+usage_parse_value(const char *name, const char *value);

@@ -1626,13 +1626,32 @@ read_dusage(lListElem *jr, const char *jobdir, uint32_t jobid, uint32_t jataskid
 
          build_derived_final_usage(jr, jobid, jataskid, pe_task_id);
 
-         // report whatever is remaining in the usage list
+         // report whatever is remaining in the usage list. Each shepherd usage
+         // line is classified via the CS-849 discrimination rule
+         // (usage_parse_value): the resulting element carries either UA_value
+         // (numeric) or UA_svalue (string) but never both. The factory-append
+         // shape bypasses add_usage()'s numeric-only path entirely.
          const lListElem *ep;
          for_each_ep(ep, cflp) {
             const char *name = lGetString(ep, CF_name);
             const char *value = lGetString(ep, CF_value);
             DEBUG("additional usage variable %s = %s", name, value);
-            add_usage(jr, name, value, 0.0);
+            lListElem *parsed = usage_parse_value(name, value);
+            if (parsed == nullptr) {
+               continue;
+            }
+            lList *usage_list = lGetListRW(jr, JR_usage);
+            if (usage_list == nullptr) {
+               usage_list = lCreateList("usage", UA_Type);
+               lSetList(jr, JR_usage, usage_list);
+            }
+            // replace any earlier entry with the same name (e.g. one added by
+            // build_derived_final_usage) so the shepherd file wins
+            lListElem *existing = lGetElemStrRW(usage_list, UA_name, name);
+            if (existing != nullptr) {
+               lRemoveElem(usage_list, &existing);
+            }
+            lAppendElem(usage_list, parsed);
          }
          lFreeList(&cflp);
       } else {

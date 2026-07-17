@@ -1457,10 +1457,18 @@ static void showjob(sge_rusage_type *dusage) {
          printf(SHOWJOB_FLOAT_18_0,   MSG_HISTORY_SHOWJOB_MAXPSS,       dusage->maxpss);
       }
 
-      // print further usage values
+      // print further usage values. CS-849: branch on UA_svalue — string custom
+      // usage values render via the existing text-column formatter; numerics
+      // keep the existing float formatter. Both share the same 35-char
+      // label column so alignment is consistent.
       if (dusage->other_usage != nullptr) {
          for_each_ep_lv(ep, dusage->other_usage) {
-            printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+            const char *svalue = lGetString(ep, UA_svalue);
+            if (svalue != nullptr) {
+               printf(SHOWJOB_STRING_20, lGetString(ep, UA_name), svalue);
+            } else {
+               printf(SHOWJOB_FLOAT_18_3, lGetString(ep, UA_name), lGetDouble(ep, UA_value));
+            }
          }
       }
    }
@@ -2268,17 +2276,29 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
                   d->maxpss = DBL_MAX;
                }
             } else {
+               // Non-standard usage sub-object (e.g. "process", "gpu", or any
+               // custom usage_patterns group). Each entry is either a JSON
+               // number (populates UA_value) or a JSON string (populates
+               // UA_svalue, CS-849). Other JSON types are skipped.
                const rapidjson::Value &json_usage = itr->value;
                for (rapidjson::Value::ConstMemberIterator usage_itr = json_usage.MemberBegin(); usage_itr != json_usage.MemberEnd(); ++usage_itr) {
                   const char *name = usage_itr->name.GetString();
-                  double value = usage_itr->value.GetDouble();
                   lListElem *ep = lGetElemStrRW(d->other_usage, UA_name, name);
-                  if (ep == nullptr) {
-                     ep = lAddElemStr(&(d->other_usage), UA_name, name, UA_Type);
-                     if (ep != nullptr) {
-                        lSetDouble(ep, UA_value, value);
-                     }
+                  if (ep != nullptr) {
+                     continue;   // first-wins per pre-CS-849 semantics
                   }
+                  ep = lAddElemStr(&(d->other_usage), UA_name, name, UA_Type);
+                  if (ep == nullptr) {
+                     continue;
+                  }
+                  if (usage_itr->value.IsString()) {
+                     lSetString(ep, UA_svalue, usage_itr->value.GetString());
+                  } else if (usage_itr->value.IsNumber()) {
+                     lSetDouble(ep, UA_value, usage_itr->value.GetDouble());
+                  }
+                  // other types (bool, array, object, null): entry created
+                  // with a name but no value — matches the shepherd-side
+                  // "drop unexpected types" policy
                }
             }
          }
