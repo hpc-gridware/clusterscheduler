@@ -470,11 +470,21 @@ usage_parse_value(const char *name, const char *value) {
    lSetString(ep, UA_name, name);
 
    // (1) quote-prefix rule — matched pair strips.
+   // Empty quoted pair ("" or '') is a special case: CULL's wire format
+   // (packstr / unpackstr) cannot distinguish an empty string from nullptr,
+   // so an empty svalue would silently become nullptr after execd → qmaster
+   // GDI transport and the downstream writer would fall through to the
+   // numeric branch. To keep semantics consistent end-to-end we treat an
+   // empty quoted pair as "no value" and return nullptr, which the caller
+   // (reaper_execd) already handles by skipping the entry.
    const std::size_t len = std::strlen(value);
    if (len >= 2 &&
        (value[0] == '"' || value[0] == '\'') &&
        value[len - 1] == value[0]) {
-      // interior may be empty; svalue is set to a (possibly empty) string
+      if (len == 2) {
+         lFreeElem(&ep);
+         return nullptr;
+      }
       std::string interior(value + 1, len - 2);
       lSetString(ep, UA_svalue, interior.c_str());
       return ep;

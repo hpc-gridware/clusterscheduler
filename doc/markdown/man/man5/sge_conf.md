@@ -1413,7 +1413,9 @@ to the shepherd usage file by the epilog script: a value surrounded by matching 
 `'...'`) is a string with the quotes stripped; an unquoted value that parses as a number is 
 numeric; the case-insensitive tokens `true`/`false` coerce to numeric `1`/`0`; anything else is a 
 string. Use quotes to force numeric-looking data (identifiers, version markers, categorical 
-labels) to be recorded as strings.
+labels) to be recorded as strings. An empty quoted pair (`""` or `''`) is silently skipped — 
+empty strings cannot be distinguished from absent values by the internal transport, so no row is 
+recorded for such variables.
 
 Numeric and string custom usage values are written to accounting and reporting records with their 
 respective JSON types and are displayed by *xxqs_name_sxx_qacct(1)*. Note that when parallel job 

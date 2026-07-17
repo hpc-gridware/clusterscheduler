@@ -129,9 +129,19 @@ int main(int, char *[]) {
    CHECK(9, "\"3.14e5\" -> string \"3.14e5\"",
          check_element("x", "\"3.14e5\"", true, "3.14e5", 0.0));
 
-   // Empty pair
-   CHECK(10, "\"\" -> string of length 0",
-         check_element("x", "\"\"", true, "", 0.0));
+   // Empty pair returns nullptr — see sge_usage.cc comment. CULL's wire
+   // format cannot distinguish empty string from nullptr, so empty custom
+   // usage values are dropped at parse time to keep semantics consistent.
+   {
+      lListElem *empty_ep = usage_parse_value("x", "\"\"");
+      if (empty_ep != nullptr) {
+         printf("FAIL  [T10] \"\" -> expected nullptr (skip), got element\n");
+         ++s_fail;
+         lFreeElem(&empty_ep);
+      } else {
+         printf("ok    [T10] \"\" -> nullptr (empty pair skipped)\n");
+      }
+   }
 
    // Unmatched opening quote — raw, leading quote kept as part of the string
    CHECK(11, "\"hello (unmatched) -> string \"\\\"hello\"",
